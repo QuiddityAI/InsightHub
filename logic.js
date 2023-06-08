@@ -2,10 +2,34 @@ import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
 
 createApp({
     data() {
-    return {
-        message: 'Hello Vue!'
-    }
-    }
+        return {
+            message: 'Hello Vue!',
+            query: "",
+            search_results: [],
+        }
+    },
+    methods: {
+        submit_query(event) {
+            // `this` inside methods points to the current active instance
+            const that = this  // not sure if neccessary
+            const query = this.query
+            let data = {
+                query: query,
+            }
+            $.ajax({
+                url: "http://localhost:55123/api/query",
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                type: 'POST',
+            })
+                .done(function(result) {
+                    that.search_results = result
+                })
+                .fail(function() {
+                    alert( "error" );
+                })
+        }
+      }
 }).mount('#app')
 
 
