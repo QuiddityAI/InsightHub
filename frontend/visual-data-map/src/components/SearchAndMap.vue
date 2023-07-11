@@ -177,17 +177,21 @@ export default {
     <main>
       <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
 
-        <p> Searching in 200k PubMed articles using vector and BM25 hybrid search.</p>
-        <br>
+
+        <label for="search" class="block text-sm font-medium leading-6 text-gray-900">Searching in 200k PubMed articles using vector and BM25 hybrid search</label>
 
         <!-- search event is not standard -->
-        <input type="search" @search="submit_query" v-model="query" placeholder="Search" />
-        <br>
+        <div class="relative mt-2 w-1/2 rounded-md shadow-sm">
+          <input type="search" name="search" @search="submit_query" v-model="query" placeholder="Search" class="block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+        </div>
         <br>
 
-        <ul>
-          <li v-for="item in search_results">
-            {{ item.title }}
+        <ul role="list" class="">
+          <li v-for="item in search_results" :key="item.title" class="flex justify-between py-2">
+            <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
+              <p class="text-sm font-semibold leading-6 text-gray-900">{{ item.title }}</p>
+              <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.journal }}</p>
+            </div>
           </li>
         </ul>
 
