@@ -16,7 +16,6 @@ else:
 
 
 weaviate_server_url = "http://localhost:8080"
-
 embeddings_path = data_root / 'PubMedBERT_embeddings_float16.npy'
 master_data_path = data_root / 'pubmed_landscape_data.csv'
 item_class_name = "Paper"
@@ -55,7 +54,7 @@ def add_data():
         # Batch import all Paper
         with open(master_data_path, newline='') as csvfile:
             csvreader = csv.DictReader(csvfile)
-            
+
             for i, row in enumerate(csvreader):
                 # print(f"importing paper: {i+1}")
                 # print(row['Title'][:30])
