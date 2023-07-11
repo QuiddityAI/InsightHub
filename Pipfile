@@ -9,6 +9,9 @@ flask = "*"
 flask-cors = "*"
 torch = "*"
 transformers = "*"
+scikit-learn = "*"
+plotly = "*"
+pandas = "*"
 
 [dev-packages]
 
