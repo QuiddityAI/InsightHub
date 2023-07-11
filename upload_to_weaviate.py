@@ -2,13 +2,21 @@ import csv
 from pathlib import Path
 import time
 import uuid
+import sys
 
 import weaviate
 import numpy as np
 
+if sys.platform == "darwin":
+    # Macbook
+    data_root = Path('/Users/tim/vector-search/pubmed_embeddings/')
+else:
+    # Desktop
+    data_root = Path('/media/tim/Exchange/pubmed_embeddings/')
+
 
 weaviate_server_url = "http://localhost:8080"
-data_root = Path('/media/tim/Exchange/pubmed_embeddings/')
+
 embeddings_path = data_root / 'PubMedBERT_embeddings_float16.npy'
 master_data_path = data_root / 'pubmed_landscape_data.csv'
 item_class_name = "Paper"
@@ -79,7 +87,7 @@ def add_data():
     end = time.time()
     total_time = end - begin
     print(f"Total time: {total_time:.1f} s, time per item: {(total_time * 1000) / max_items:.2f} ms")
-    # For 20'000 items and batch size 100:
+    # For 200'000 items and batch size 100:
     # Total time: 329.6 s, time per item: 1.65 ms
 
 # {'error': [{'message': 'update prop-specific indices: store is read-only'}]}
