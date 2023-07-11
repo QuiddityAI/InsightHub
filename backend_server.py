@@ -46,7 +46,7 @@ def generate_embeddings(abstracts, tokenizer, model, device):
         BERT-based model.
     device : str, {"cuda", "cpu"}
         "cuda" if torch.cuda.is_available() else "cpu".
-        
+
     Returns
     -------
     embedding_cls : ndarray
@@ -69,7 +69,7 @@ def generate_embeddings(abstracts, tokenizer, model, device):
     # inference
     print("run model...")
     begin = time.time()
-    outputs = model(**inputs)[0].cpu().detach() 
+    outputs = model(**inputs)[0].cpu().detach()
     end = time.time()
     print(f"Time: {end - begin:.2f} sec")
 
@@ -77,13 +77,13 @@ def generate_embeddings(abstracts, tokenizer, model, device):
     embedding_sep = outputs[:, -1, :].numpy()
     embedding_cls = outputs[:, 0, :].numpy()
 
-    
-    return embedding_cls, embedding_sep, embedding_av 
+
+    return embedding_cls, embedding_sep, embedding_av
 
 
 # from https://github.com/berenslab/pubmed-landscape/blob/main/scripts/02-ls-data-obtain-BERT-embeddings.ipynb
 
-# specifying model 
+# specifying model
 checkpoint = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
 
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
@@ -106,9 +106,9 @@ def query():
     query = data.get("query")
     if not query:
         return jsonify([])
-    
+
     _, embedding, _ = generate_embeddings(query, tokenizer, model, device)
-    
+
     response = (
         weaviate_client.query
         .get("Paper", ["title", "journal"])
@@ -121,6 +121,62 @@ def query():
 
     result = response["data"]["Get"]["Paper"]
     return jsonify(result)
+
+
+@app.route('/api/map', methods=['POST'])
+def map_html():
+    data = request.json
+    query = data.get("query")
+    if not query:
+        return jsonify([])
+
+    _, embedding, _ = generate_embeddings(query, tokenizer, model, device)
+
+    response = (
+        weaviate_client.query
+        .get("Paper", ["title"])
+        .with_near_vector({
+            "vector": embedding
+        })
+        .with_limit(600)
+        .with_additional(["id", "distance"]).do()
+    )
+    elements = response["data"]["Get"]["Paper"]
+
+    vectors = []
+    titles = []
+    distances = []
+
+    for e in elements:
+        d = weaviate_client.data_object.get_by_id(
+            uuid=e["_additional"]["id"],
+            class_name='Paper',
+            with_vector=True
+        )
+        vectors.append(d["vector"])
+        distances.append(e["_additional"]["distance"])
+        titles.append(e["title"])
+
+    from sklearn.manifold import TSNE
+    import plotly.express as px
+
+    features = np.asarray(vectors)
+    print(features.shape)
+
+    tsne = TSNE(n_components=2, random_state=0)
+    projections = tsne.fit_transform(features)
+    x = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
+
+    fig = px.scatter(
+        x, x=0, y=1,
+        text=titles,
+        color=distances
+    )
+    fig.for_each_trace(lambda t: t.update(texttemplate="-", textposition='top center'))
+    html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+    js = html.split('<script type="text/javascript">')[2]
+    js = js.replace("</script>", "").replace("</div>", "")
+    return jsonify({"html": html, "js": js})
 
 
 if __name__ == "__main__":
