@@ -1,0 +1,1 @@
+source "$(pipenv --venv)/bin/activate"
