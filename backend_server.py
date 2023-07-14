@@ -112,11 +112,15 @@ def query():
     response = (
         weaviate_client.query
         .get("Paper", ["title", "journal"])
-        .with_near_vector({
-            "vector": embedding
-        })
+        # .with_near_vector({
+        #     "vector": embedding
+        # })
+        .with_hybrid(
+            query = query,
+            vector = embedding[0]
+        )
         .with_limit(10)
-        .with_additional(["distance"]).do()
+        .with_additional(["distance", "score", "explainScore"]).do()
     )
 
     result = response["data"]["Get"]["Paper"]
