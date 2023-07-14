@@ -19,7 +19,8 @@ weaviate_server_url = "http://localhost:8080"
 embeddings_path = data_root / 'PubMedBERT_embeddings_float16.npy'
 master_data_path = data_root / 'pubmed_landscape_data.csv'
 item_class_name = "Paper"
-max_items = 200000
+offset = 1125001
+max_items = 5000000
 
 
 client = weaviate.Client(
@@ -48,44 +49,56 @@ def add_data():
     # print(embeddings[0])
 
     begin = time.time()
+    actual_count = 0
 
-    # Configure a batch process
-    with client.batch(batch_size=100) as batch:
-        # Batch import all Paper
-        with open(master_data_path, newline='') as csvfile:
-            csvreader = csv.DictReader(csvfile)
+    try:
+        # Configure a batch process
+        with client.batch(batch_size=100) as batch:
+            # Batch import all Paper
+            with open(master_data_path, newline='') as csvfile:
+                csvreader = csv.DictReader(csvfile)
 
-            for i, row in enumerate(csvreader):
-                # print(f"importing paper: {i+1}")
-                # print(row['Title'][:30])
-                # print(embeddings[i][0], len(embeddings[i]))
+                for i, row in enumerate(csvreader):
+                    if i < offset:
+                        continue
 
-                properties = {
-                    "title": row["Title"],
-                    "journal": row["Journal"],
-                    "pmid": row["PMID"],
-                    "year": row["Year"],
-                    "labels": row["Labels"],
-                    "colors": row["Colors"],
-                }
+                    if i%1000 == 1:
+                        print(f"{100*((i-offset)/max_items):.0f} %, {i-offset} of {max_items} ({i}) ")
 
-                # generate a consistent uuid from the PMID of the paper:
-                id = uuid.uuid3(uuid.NAMESPACE_URL, row["PMID"])
+                    # print(f"importing paper: {i+1}")
+                    # print(row['Title'][:30])
+                    # print(embeddings[i][0], len(embeddings[i]))
 
-                batch.add_data_object(
-                    properties,
-                    item_class_name,
-                    vector=embeddings[i],
-                    uuid=id,
-                )
-                # if "batch" if full now, it will flush the data and reset (?)
+                    properties = {
+                        "title": row["Title"],
+                        "journal": row["Journal"],
+                        "pmid": row["PMID"],
+                        "year": row["Year"],
+                        "labels": row["Labels"],
+                        "colors": row["Colors"],
+                    }
 
-                if i >= max_items:
-                    break
+                    # generate a consistent uuid from the PMID of the paper:
+                    id = uuid.uuid3(uuid.NAMESPACE_URL, row["PMID"])
+
+                    batch.add_data_object(
+                        properties,
+                        item_class_name,
+                        vector=embeddings[i],
+                        uuid=id,
+                    )
+                    # if "batch" if full now, it will flush the data and reset (?)
+
+                    actual_count += 1
+
+                    if (i - offset) >= max_items:
+                        break
+    except KeyboardInterrupt:
+        pass
 
     end = time.time()
     total_time = end - begin
-    print(f"Total time: {total_time:.1f} s, time per item: {(total_time * 1000) / max_items:.2f} ms")
+    print(f"Total time: {total_time:.1f} s, time per item: {(total_time * 1000) / actual_count:.2f} ms, items added: {actual_count}")
     # For 200'000 items and batch size 100:
     # Total time: 329.6 s, time per item: 1.65 ms
 
