@@ -8,3 +8,6 @@ An interactive map to visualise large sets of data embeddings using WebGL
 - create vite app with `cd frontend && npm create vite@latest`
 - install tailwind by following this: https://tailwindcss.com/docs/guides/vite
 
+### Change pip temp dir to install large dependencies
+
+`export TMPDIR=$HOME/tmp`

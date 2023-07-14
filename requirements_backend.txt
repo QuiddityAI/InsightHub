@@ -1,5 +1,5 @@
 flask
-flas_cors
+flask_cors
 torch
 transformers
 # plotly
