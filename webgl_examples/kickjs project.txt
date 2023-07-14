@@ -1,0 +1,62 @@
+Settings:
+
+points, blending on, normal blend, z test not equal
+
+
+----------------------------------------------------------
+
+attribute vec3 vertex;
+attribute vec3 normal;
+attribute vec2 uv1;
+attribute vec4 tangent;
+
+uniform mat4 _mv; // model-view matrix
+uniform mat4 _mvProj; // model-view-projection matrix
+uniform mat3 _norm; // normal matrix
+uniform float _time; // time in seconds
+
+varying vec2 uv;
+varying vec3 n;
+
+void main(void) {
+	gl_PointSize = 30.0;
+	
+	// compute position
+	gl_Position = _mvProj * vec4(vertex, 1.0);
+
+	uv = uv1;
+	// compute light info
+	n = normalize(_norm * normal);
+}
+
+
+----------------------------------------------------------
+
+precision highp float;
+
+varying vec3 n;
+varying vec2 uv;
+
+uniform sampler2D tex;
+
+
+//#pragma include "noise2D.glsl // for snoise(vec2 v)
+//#pragma include "noise3D.glsl" //  for snoise(vec3 v)
+//#pragma include "noise4D.glsl" //  for snoise(vec4 v)
+//#pragma include "cellular2D.glsl" //  for cellular(vec2 P)
+//#pragma include "cellular2x2.glsl" //  for cellular2x2(vec2 P)
+//#pragma include "cellular2x2x2.glsl" //  for cellular2x2x2(vec3 P)
+//#pragma include "cellular3D.glsl" //  cellular(vec3 P)
+
+void main(void)
+{
+    
+	vec2 uv = gl_PointCoord.xy;
+    
+    float circleArea = 1.0 - step(0.5, length(uv - 0.5));// smoothstep(0.5, 0.4, length(uv - 0.5));
+    
+    gl_FragColor.rgb = 0.8 + 0.2 * sin(uv.yxx) + vec3(0.1, 0.0, 0.3);
+    gl_FragColor.a = circleArea;
+    
+	//gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+}
