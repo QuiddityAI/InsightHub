@@ -3,6 +3,7 @@ from pathlib import Path
 import time
 import uuid
 import sys
+import datetime
 
 import weaviate
 import numpy as np
@@ -12,15 +13,15 @@ if sys.platform == "darwin":
     data_root = Path('/Users/tim/vector-search/pubmed_embeddings/')
 else:
     # Desktop
-    data_root = Path('/media/tim/Exchange/pubmed_embeddings/')
+    data_root = Path('/data/pubmed_embeddings/')
 
 
 weaviate_server_url = "http://localhost:8080"
 embeddings_path = data_root / 'PubMedBERT_embeddings_float16.npy'
 master_data_path = data_root / 'pubmed_landscape_data.csv'
 item_class_name = "Paper"
-offset = 1125001
-max_items = 5000000
+offset = 2630001
+max_items = 5000000 - 2630001
 
 
 client = weaviate.Client(
@@ -42,8 +43,6 @@ def initial_setup():
 
 
 def add_data():
-    # Load data
-    # TODO
 
     embeddings = np.load(embeddings_path, mmap_mode='r')
     # print(embeddings[0])
@@ -62,8 +61,14 @@ def add_data():
                     if i < offset:
                         continue
 
-                    if i%1000 == 1:
-                        print(f"{100*((i-offset)/max_items):.0f} %, {i-offset} of {max_items} ({i}) ")
+                    if i%10000 == 1 and actual_count:
+                        print(f"{100*((i-offset)/max_items):.1f} %, {i-offset} of {max_items} (current index: {i}) ")
+                        total_time = time.time() - begin
+                        time_per_item_sec = total_time / actual_count
+                        time_left_min = ((max_items - actual_count) * time_per_item_sec) / 60.0
+                        wall_time_end = datetime.datetime.now() + datetime.timedelta(minutes=time_left_min)
+                        print(f"Time left: {time_left_min:.1f} min ({wall_time_end.time().isoformat(timespec='minutes')}), time per item: {time_per_item_sec * 1000:.2f} ms")
+
 
                     # print(f"importing paper: {i+1}")
                     # print(row['Title'][:30])
@@ -76,6 +81,7 @@ def add_data():
                         "year": row["Year"],
                         "labels": row["Labels"],
                         "colors": row["Colors"],
+                        "source_index": i,
                     }
 
                     # generate a consistent uuid from the PMID of the paper:
@@ -87,7 +93,7 @@ def add_data():
                         vector=embeddings[i],
                         uuid=id,
                     )
-                    # if "batch" if full now, it will flush the data and reset (?)
+                    # if "batch" is full now, it will flush the data and reset (?)
 
                     actual_count += 1
 
