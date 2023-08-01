@@ -1,3 +1,4 @@
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
@@ -37,7 +38,10 @@ def query():
     if not query:
         return jsonify([])
 
+    t1 = time.time()
     embedding = get_embedding(query)
+    t2 = time.time()
+    generate_embedding_duration = t2 - t1
 
     response = (
         weaviate_client.query
@@ -52,8 +56,16 @@ def query():
         .with_limit(10)
         .with_additional(["distance", "score", "explainScore"]).do()
     )
+    t3 = time.time()
+    vector_db_query = t3 - t2
 
-    result = response["data"]["Get"]["Paper"]
+    result = {
+        "items": response["data"]["Get"]["Paper"],
+        "timings": [
+            {"part": "generate_embedding_duration", "duration": generate_embedding_duration},
+            {"part": "vector_db_query", "duration": vector_db_query},
+        ]
+    }
     return jsonify(result)
 
 
@@ -66,6 +78,8 @@ def map_html():
 
     embedding = get_embedding(query)
 
+    timings = []
+    t1 = time.time()
     response = (
         weaviate_client.query
         .get("Paper", ["title"])
@@ -76,6 +90,8 @@ def map_html():
         .with_additional(["id", "distance"]).do()
     )
     elements = response["data"]["Get"]["Paper"]
+    t2 = time.time()
+    timings.append({"part": "vector db query", "duration": t2 - t1})
 
     vectors = []
     titles = []
@@ -90,27 +106,49 @@ def map_html():
         vectors.append(d["vector"])
         distances.append(e["_additional"]["distance"])
         titles.append(e["title"])
+    t3 = time.time()
+    timings.append({"part": "getting vectors", "duration": t3 - t2})
 
     from sklearn.manifold import TSNE
     import plotly.express as px
 
     features = np.asarray(vectors)
     print(features.shape)
+    t4 = time.time()
+    timings.append({"part": "convert to numpy", "duration": t4 - t3})
 
     tsne = TSNE(n_components=2, random_state=0)
+    t5 = time.time()
+    timings.append({"part": "TSNE ctor", "duration": t5 - t4})
     projections = tsne.fit_transform(features)
+    t6 = time.time()
+    timings.append({"part": "fit transform", "duration": t6 - t5})
     x = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
+    t7 = time.time()
+    timings.append({"part": "rearrange", "duration": t7 - t6})
 
     fig = px.scatter(
         x, x=0, y=1,
         text=titles,
         color=distances
     )
+    t8 = time.time()
+    timings.append({"part": "scatter()", "duration": t8 - t7})
     fig.for_each_trace(lambda t: t.update(texttemplate="-", textposition='top center'))
+    t9 = time.time()
+    timings.append({"part": "for each trace()", "duration": t9 - t8})
     html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+    t10 = time.time()
+    timings.append({"part": "to_html", "duration": t10- t9})
     js = html.split('<script type="text/javascript">')[2]
     js = js.replace("</script>", "").replace("</div>", "")
-    return jsonify({"html": html, "js": js})
+
+    result = {
+        "html": html,
+        "js": js,
+        "timings": timings
+    }
+    return jsonify(result)
 
 
 if __name__ == "__main__":

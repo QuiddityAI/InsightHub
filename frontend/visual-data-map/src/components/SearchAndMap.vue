@@ -12,8 +12,10 @@ export default {
       message: 'Hello!',
       query: "",
       search_results: [],
+      search_timings: "",
       map_html: "",
       map_js: "",
+      map_timings: "",
       userNavigation: [
         { name: 'Your Profile', href: '#' },
         { name: 'Settings', href: '#' },
@@ -46,7 +48,8 @@ export default {
         type: 'POST',
       })
         .done(function (result) {
-          that.search_results = result
+          that.search_results = result["items"]
+          that.search_timings = result["timings"]
           that.map_html = ""
 
           $.ajax({
@@ -58,6 +61,7 @@ export default {
             .done(function (map_html) {
               that.map_html = map_html["html"]
               that.map_js = map_html["js"]
+              that.map_timings = map_html["timings"]
               setTimeout(() => {
                 eval(map_html["js"])
               }, 200)
@@ -185,6 +189,18 @@ export default {
           <input type="search" name="search" @search="submit_query" v-model="query" placeholder="Search" class="block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
         </div>
         <br>
+
+        <ul role="list" class="">
+          <li v-for="item in search_timings" :key="item.part" class="">
+            {{ item.part }}: {{ item.duration * 1000 }} ms
+          </li>
+        </ul>
+        ---
+        <ul role="list" class="">
+          <li v-for="item in map_timings" :key="item.part" class="">
+            {{ item.part }}: {{ item.duration * 1000 }} ms
+          </li>
+        </ul>
 
         <ul role="list" class="">
           <li v-for="item in search_results" :key="item.title" class="flex justify-between py-2">
