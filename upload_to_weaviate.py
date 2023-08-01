@@ -4,6 +4,7 @@ import time
 import uuid
 import sys
 import datetime
+import os
 
 import weaviate
 import numpy as np
@@ -20,8 +21,7 @@ weaviate_server_url = "http://localhost:8080"
 embeddings_path = data_root / 'PubMedBERT_embeddings_float16.npy'
 master_data_path = data_root / 'pubmed_landscape_data.csv'
 item_class_name = "Paper"
-offset = 2630001
-max_items = 5000000 - 2630001
+max_items = 5000000
 
 
 client = weaviate.Client(
@@ -42,13 +42,30 @@ def initial_setup():
         print(e)
 
 
+def save_last_index(index: int) -> None:
+    with open("progress.txt", "w") as f:
+        f.write(str(index))
+
+
+def load_last_index() -> int:
+    if os.path.exists("progress.txt"):
+        with open("progress.txt", "r") as f:
+            index: int = int(f.read())
+        return index
+    else:
+        return 0
+
+
 def add_data():
+    global max_items
 
     embeddings = np.load(embeddings_path, mmap_mode='r')
     # print(embeddings[0])
 
     begin = time.time()
     actual_count = 0
+    offset = load_last_index()
+    max_items -= offset
 
     try:
         # Configure a batch process
@@ -68,6 +85,7 @@ def add_data():
                         time_left_min = ((max_items - actual_count) * time_per_item_sec) / 60.0
                         wall_time_end = datetime.datetime.now() + datetime.timedelta(minutes=time_left_min)
                         print(f"Time left: {time_left_min:.1f} min ({wall_time_end.time().isoformat(timespec='minutes')}), time per item: {time_per_item_sec * 1000:.2f} ms")
+                        save_last_index(i)
 
 
                     # print(f"importing paper: {i+1}")
