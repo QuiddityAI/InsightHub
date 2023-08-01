@@ -69,6 +69,10 @@ def query():
     return jsonify(result)
 
 
+from sklearn.manifold import TSNE
+import plotly.express as px
+
+
 @app.route('/api/map', methods=['POST'])
 def map_html():
     data = request.json
@@ -76,7 +80,7 @@ def map_html():
     if not query:
         return jsonify([])
 
-    embedding = get_embedding(query)
+    embedding = get_embedding(query)  # 768 dimensions, float 16
 
     timings = []
     t1 = time.time()
@@ -87,7 +91,7 @@ def map_html():
             "vector": embedding
         })
         .with_limit(600)
-        .with_additional(["id", "distance"]).do()
+        .with_additional(["id", "distance", "vector"]).do()
     )
     elements = response["data"]["Get"]["Paper"]
     t2 = time.time()
@@ -98,19 +102,11 @@ def map_html():
     distances = []
 
     for e in elements:
-        d = weaviate_client.data_object.get_by_id(
-            uuid=e["_additional"]["id"],
-            class_name='Paper',
-            with_vector=True
-        )
-        vectors.append(d["vector"])
+        vectors.append(e["_additional"]["vector"])
         distances.append(e["_additional"]["distance"])
         titles.append(e["title"])
     t3 = time.time()
     timings.append({"part": "getting vectors", "duration": t3 - t2})
-
-    from sklearn.manifold import TSNE
-    import plotly.express as px
 
     features = np.asarray(vectors)
     print(features.shape)
