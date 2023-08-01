@@ -117,12 +117,10 @@ def map_html():
     t4 = time.time()
     timings.append({"part": "convert to numpy", "duration": t4 - t3})
 
-    tsne = TSNE(n_components=2, random_state=0)
-    t5 = time.time()
-    timings.append({"part": "TSNE ctor", "duration": t5 - t4})
+    tsne = TSNE(n_components=2, random_state=0)  # instant
     projections = tsne.fit_transform(features)
     t6 = time.time()
-    timings.append({"part": "fit transform", "duration": t6 - t5})
+    timings.append({"part": "fit transform", "duration": t6 - t4})
     x = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
     t7 = time.time()
     timings.append({"part": "rearrange", "duration": t7 - t6})
@@ -138,8 +136,6 @@ def map_html():
     t9 = time.time()
     timings.append({"part": "for each trace()", "duration": t9 - t8})
     html = fig.to_html(full_html=False, include_plotlyjs='cdn')
-    t10 = time.time()
-    timings.append({"part": "to_html", "duration": t10- t9})
     js = html.split('<script type="text/javascript">')[2]
     js = js.replace("</script>", "").replace("</div>", "")
 

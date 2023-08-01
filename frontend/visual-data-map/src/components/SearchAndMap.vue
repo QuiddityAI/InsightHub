@@ -182,7 +182,7 @@ export default {
       <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
 
 
-        <label for="search" class="block text-sm font-medium leading-6 text-gray-900">Searching in 200k PubMed articles using vector and BM25 hybrid search</label>
+        <label for="search" class="block text-sm font-medium leading-6 text-gray-900">Searching in 5 Million PubMed articles using vector and BM25 hybrid search</label>
 
         <!-- search event is not standard -->
         <div class="relative mt-2 w-1/2 rounded-md shadow-sm">
@@ -192,13 +192,13 @@ export default {
 
         <ul role="list" class="">
           <li v-for="item in search_timings" :key="item.part" class="">
-            {{ item.part }}: {{ item.duration * 1000 }} ms
+            {{ item.part }}: {{ item.duration.toFixed(2) }} s
           </li>
         </ul>
         ---
         <ul role="list" class="">
           <li v-for="item in map_timings" :key="item.part" class="">
-            {{ item.part }}: {{ item.duration * 1000 }} ms
+            {{ item.part }}: {{ item.duration.toFixed(2) }} s
           </li>
         </ul>
 
