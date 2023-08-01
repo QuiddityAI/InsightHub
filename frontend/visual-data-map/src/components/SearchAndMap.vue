@@ -50,6 +50,7 @@ export default {
         .done(function (result) {
           that.search_results = result["items"]
           that.search_timings = result["timings"]
+          that.map_timings = []
           that.map_html = ""
 
           $.ajax({
