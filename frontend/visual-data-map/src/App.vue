@@ -1,9 +1,9 @@
 <script setup>
-import SearchAndMap from './components/SearchAndMap.vue';
+import MainNavigation from './components/MainNavigation.vue';
 </script>
 
 <template>
-  <SearchAndMap/>
+  <MainNavigation/>
 </template>
 
 <style scoped>
