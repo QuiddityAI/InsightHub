@@ -22,6 +22,13 @@ export default {
       // `this` inside methods points to the current active instance
       const that = this  // not sure if neccessary
 
+
+      that.search_results = []
+      that.search_timings = []
+      that.map_html = ""
+      that.map_js = ""
+      that.map_timings = []
+
       const payload = {
         query: this.query,
       }
@@ -80,8 +87,9 @@ export default {
             <ul role="list" class="">
               <li v-for="item in search_results" :key="item.title" class="flex justify-between py-2">
                 <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
-                  <p class="text-sm font-semibold leading-6 text-gray-900">{{ item.title }}</p>
-                  <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.journal }}</p>
+                  <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
+                  <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.journal }}, {{ item.year.toFixed(0) }}</p>
+                  <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract"></div></p>
                 </div>
               </li>
             </ul>

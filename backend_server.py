@@ -1,4 +1,5 @@
 import time
+import re
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -40,7 +41,7 @@ def get_search_results_for_list(queries: list[str], limit: int):
 
         response = (
             weaviate_client.query
-            .get("Paper", ["title", "journal"])
+            .get("Paper", ["title", "journal", "year", "pmid"])
             # .with_near_vector({
             #     "vector": embedding
             # })
@@ -56,6 +57,40 @@ def get_search_results_for_list(queries: list[str], limit: int):
     return results
 
 
+def get_pubmed_abstract(pmid: str):
+    try:
+        result = requests.get(f"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id={pmid}&retmode=text&rettype=abstract")
+        raw_xml = result.text
+        abstract = raw_xml  # .split("<AbstractText>")[1].split("</AbstractText>")[0]
+    except IndexError:
+        return ""
+    except Exception as e:
+        print(e)
+        return ""
+    return abstract
+
+
+def enrich_search_results(results, query):
+    # def add_abstract(i, item):
+    #     results[i]["abstract"] = get_pubmed_abstract(item["pmid"]).replace("\n", "<br>")
+
+    # with ThreadPoolExecutor(max_workers=10) as thread_pool:
+    #     for i, item in enumerate(results):
+    #         thread_pool.submit(add_abstract, i, item)
+
+    for i, item in enumerate(results):
+        title = item["title"]
+        abstract = get_pubmed_abstract(item["pmid"]).replace("\n", "<br>")
+        for word in query.split(" "):
+            replacement = '<span class="font-bold">\\1</span>'
+            title = re.sub(f"({re.escape(word)})", replacement, title, flags=re.IGNORECASE)
+            abstract = re.sub(f"({re.escape(word)})", replacement, abstract, flags=re.IGNORECASE)
+        results[i]["title"] = title
+        results[i]["abstract"] = abstract
+        results[i]["year"] = int(float(item["year"]))
+    return results
+
+
 @app.route('/api/query', methods=['POST'])
 def query():
     query = request.json.get("query")
@@ -67,6 +102,10 @@ def query():
     search_results = get_search_results_for_list(query.split(" OR "), limit=10)
     t2 = time.time()
     timings.append({"part": "vector DB hybrid query", "duration": t2 - t1})
+
+    search_results = enrich_search_results(search_results, query)
+    t3 = time.time()
+    timings.append({"part": "enriching results", "duration": t3 - t2})
 
     result = {
         "items": search_results,
