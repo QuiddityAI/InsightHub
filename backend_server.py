@@ -17,6 +17,8 @@ import numpy as np
 from sklearn.manifold import TSNE
 import plotly.express as px
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 
 weaviate_server_url = "http://localhost:8080"
 item_class_name = "Paper"
@@ -94,9 +96,12 @@ words_ignored_for_highlighting = ("on", "in", "using", "with", "the", "a")
 
 
 def enrich_search_results(results, query):
+    corpus = []
+
     for i, item in enumerate(results):
         title = item["title"]
-        abstract = get_pubmed_abstract(item["pmid"]).replace("\n", "<br>")
+        abstract = get_pubmed_abstract(item["pmid"])
+        corpus.append(title + " " + abstract)
         for word in query.split(" "):
             if word in words_ignored_for_highlighting:
                 continue
@@ -104,8 +109,19 @@ def enrich_search_results(results, query):
             title = re.sub(f"\\b({re.escape(word)})\\b", replacement, title, flags=re.IGNORECASE)
             abstract = re.sub(f"\\b({re.escape(word)})\\b", replacement, abstract, flags=re.IGNORECASE)
         results[i]["title"] = title
-        results[i]["abstract"] = abstract
+        results[i]["abstract"] = abstract.replace("\n", "<br>")
         results[i]["year"] = int(float(item["year"]))
+
+    # highlight TF-IDF words:
+    vectorizer = TfidfVectorizer(stop_words="english")
+    tf_idf_matrix = vectorizer.fit_transform(corpus)  # not numpy but scipy sparse array
+    words = vectorizer.get_feature_names_out()
+
+    for i, item in enumerate(results):
+        # converting scipy sparse array to numpy using toarray() and selecting the only row [0]
+        sort_indexes_of_important_words = np.argsort(tf_idf_matrix[i].toarray()[0])
+        most_important_words = words[sort_indexes_of_important_words[-5:]][::-1]
+        results[i]["most_important_words"] = list(most_important_words)
     return results
 
 

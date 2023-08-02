@@ -67,7 +67,7 @@ export default {
 
 
         <label for="search" class="block text-sm font-medium leading-6 text-gray-900">
-          Searching in subset of 5M (of 26M) PubMed articles using vector and BM25 hybrid search
+          Searching in subset of 5M (of 20M) PubMed articles using vector and BM25 hybrid search
         </label>
 
         <!-- search event is not standard -->
@@ -89,6 +89,7 @@ export default {
                 <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
                   <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
                   <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.journal }}, {{ item.year.toFixed(0) }}</p>
+                  <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.most_important_words }}</p>
                   <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract"></div></p>
                 </div>
               </li>
