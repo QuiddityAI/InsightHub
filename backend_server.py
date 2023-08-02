@@ -31,9 +31,29 @@ def get_embedding(query: str) -> np.ndarray:
     return np.asarray(result.json()["embedding"])
 
 
-@app.route('/')
-def index():
-    return '<h1>Hello!</h1>'
+def get_search_results_for_list(queries: list[str], limit: int):
+    results = []
+
+    for query in queries:
+        embedding = get_embedding(query)  # roughly 40ms on CPU, 10ms on GPU
+          # 768 dimensions, float 16
+
+        response = (
+            weaviate_client.query
+            .get("Paper", ["title", "journal"])
+            # .with_near_vector({
+            #     "vector": embedding
+            # })
+            .with_hybrid(
+                query = query,
+                vector = embedding[0]
+            )
+            .with_limit(limit // len(queries))
+            .with_additional(["distance", "score", "explainScore"]).do()
+        )
+        results += response["data"]["Get"]["Paper"]
+
+    return results
 
 
 @app.route('/api/query', methods=['POST'])
@@ -43,31 +63,37 @@ def query():
         return jsonify({})
 
     timings = []
-
-    embedding = get_embedding(query)  # roughly 40ms on CPU, 10ms on GPU
-
     t1 = time.time()
-    response = (
-        weaviate_client.query
-        .get("Paper", ["title", "journal"])
-        # .with_near_vector({
-        #     "vector": embedding
-        # })
-        .with_hybrid(
-            query = query,
-            vector = embedding[0]
-        )
-        .with_limit(10)
-        .with_additional(["distance", "score", "explainScore"]).do()
-    )
+    search_results = get_search_results_for_list(query.split(" OR "), limit=10)
     t2 = time.time()
     timings.append({"part": "vector DB hybrid query", "duration": t2 - t1})
 
     result = {
-        "items": response["data"]["Get"]["Paper"],
+        "items": search_results,
         "timings": timings,
     }
     return jsonify(result)
+
+
+def get_search_results_for_map(queries: list[str], limit: int):
+    results = []
+
+    for query in queries:
+        embedding = get_embedding(query)  # roughly 40ms on CPU, 10ms on GPU
+          # 768 dimensions, float 16
+
+        response = (
+            weaviate_client.query
+            .get("Paper", ["title"])
+            .with_near_vector({
+                "vector": embedding
+            })
+            .with_limit(limit // len(queries))
+            .with_additional(["id", "distance", "vector"]).do()
+        )
+        results += response["data"]["Get"]["Paper"]
+
+    return results
 
 
 @app.route('/api/map', methods=['POST'])
@@ -76,20 +102,9 @@ def map_html():
     if not query:
         return jsonify({})
 
-    embedding = get_embedding(query)  # 768 dimensions, float 16
-
     timings = []
     t1 = time.time()
-    response = (
-        weaviate_client.query
-        .get("Paper", ["title"])
-        .with_near_vector({
-            "vector": embedding
-        })
-        .with_limit(600)
-        .with_additional(["id", "distance", "vector"]).do()
-    )
-    elements = response["data"]["Get"]["Paper"]
+    elements = get_search_results_for_map(query.split(" OR "), limit=600)
     t2 = time.time()
     timings.append({"part": "vector DB pure vector query, limit 600", "duration": t2 - t1})
 
@@ -103,7 +118,6 @@ def map_html():
         titles.append(e["title"])
 
     features = np.asarray(vectors)  # shape 600x768
-
     t4 = time.time()
     timings.append({"part": "convert to numpy", "duration": t4 - t2})
 
@@ -125,7 +139,7 @@ def map_html():
     fig.for_each_trace(lambda t: t.update(texttemplate="-", textposition='top center'))
     html = fig.to_html(full_html=False, include_plotlyjs='cdn')
     t9 = time.time()
-    timings.append({"part": "add title to each element and convert to HTML", "duration": t9 - t8})
+    timings.append({"part": "hide title for elements and convert to HTML", "duration": t9 - t8})
 
     js = html.split('<script type="text/javascript">')[2]
     js = js.replace("</script>", "").replace("</div>", "")
