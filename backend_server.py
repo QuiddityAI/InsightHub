@@ -1,4 +1,5 @@
 import time
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
@@ -7,6 +8,10 @@ CORS(app) # This will enable CORS for all routes
 
 import weaviate
 import numpy as np
+
+# for tsne:
+from sklearn.manifold import TSNE
+import plotly.express as px
 
 
 weaviate_server_url = "http://localhost:8080"
@@ -33,16 +38,15 @@ def index():
 
 @app.route('/api/query', methods=['POST'])
 def query():
-    data = request.json
-    query = data.get("query")
+    query = request.json.get("query")
     if not query:
-        return jsonify([])
+        return jsonify({})
+
+    timings = []
+
+    embedding = get_embedding(query)  # roughly 40ms on CPU, 10ms on GPU
 
     t1 = time.time()
-    embedding = get_embedding(query)
-    t2 = time.time()
-    generate_embedding_duration = t2 - t1
-
     response = (
         weaviate_client.query
         .get("Paper", ["title", "journal"])
@@ -56,29 +60,21 @@ def query():
         .with_limit(10)
         .with_additional(["distance", "score", "explainScore"]).do()
     )
-    t3 = time.time()
-    vector_db_query = t3 - t2
+    t2 = time.time()
+    timings.append({"part": "vector DB hybrid query", "duration": t2 - t1})
 
     result = {
         "items": response["data"]["Get"]["Paper"],
-        "timings": [
-            {"part": "generate_embedding_duration", "duration": generate_embedding_duration},
-            {"part": "vector_db_query", "duration": vector_db_query},
-        ]
+        "timings": timings,
     }
     return jsonify(result)
 
 
-from sklearn.manifold import TSNE
-import plotly.express as px
-
-
 @app.route('/api/map', methods=['POST'])
 def map_html():
-    data = request.json
-    query = data.get("query")
+    query = request.json.get("query")
     if not query:
-        return jsonify([])
+        return jsonify({})
 
     embedding = get_embedding(query)  # 768 dimensions, float 16
 
@@ -95,7 +91,7 @@ def map_html():
     )
     elements = response["data"]["Get"]["Paper"]
     t2 = time.time()
-    timings.append({"part": "vector db query", "duration": t2 - t1})
+    timings.append({"part": "vector DB pure vector query, limit 600", "duration": t2 - t1})
 
     vectors = []
     titles = []
@@ -105,33 +101,32 @@ def map_html():
         vectors.append(e["_additional"]["vector"])
         distances.append(e["_additional"]["distance"])
         titles.append(e["title"])
-    t3 = time.time()
-    timings.append({"part": "getting vectors", "duration": t3 - t2})
 
-    features = np.asarray(vectors)
-    print(features.shape)
+    features = np.asarray(vectors)  # shape 600x768
+
     t4 = time.time()
-    timings.append({"part": "convert to numpy", "duration": t4 - t3})
+    timings.append({"part": "convert to numpy", "duration": t4 - t2})
 
     tsne = TSNE(n_components=2, random_state=0)  # instant
     projections = tsne.fit_transform(features)
     t6 = time.time()
     timings.append({"part": "fit transform", "duration": t6 - t4})
-    x = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
-    t7 = time.time()
-    timings.append({"part": "rearrange", "duration": t7 - t6})
+
+    plot_elements = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
 
     fig = px.scatter(
-        x, x=0, y=1,
+        plot_elements, x=0, y=1,
         text=titles,
         color=distances
     )
     t8 = time.time()
-    timings.append({"part": "scatter()", "duration": t8 - t7})
+    timings.append({"part": "create plotly scatter plot", "duration": t8 - t6})
+
     fig.for_each_trace(lambda t: t.update(texttemplate="-", textposition='top center'))
-    t9 = time.time()
-    timings.append({"part": "for each trace()", "duration": t9 - t8})
     html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+    t9 = time.time()
+    timings.append({"part": "add title to each element and convert to HTML", "duration": t9 - t8})
+
     js = html.split('<script type="text/javascript">')[2]
     js = js.replace("</script>", "").replace("</div>", "")
 
