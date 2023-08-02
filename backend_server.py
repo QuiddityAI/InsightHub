@@ -1,3 +1,6 @@
+import mmap
+from pathlib import Path
+import pickle
 import time
 import re
 
@@ -57,7 +60,24 @@ def get_search_results_for_list(queries: list[str], limit: int):
     return results
 
 
-def get_pubmed_abstract(pmid: str):
+data_root = Path('/data/pubmed_embeddings/')
+abstracts_path = data_root / 'pubmed_landscape_abstracts.csv'
+
+with open(data_root / "pmid_to_pos_and_length.pkl", "rb") as f:
+    pmid_to_abstract_pos_and_length = pickle.load(f)
+
+with open(abstracts_path, "r+") as f:
+    abstracts_mmap_file = mmap.mmap(f.fileno(), 0)
+
+
+def get_pubmed_abstract(pmid):
+    pos, length = pmid_to_abstract_pos_and_length[pmid]
+    abstract = abstracts_mmap_file[pos : pos + length].decode()
+    abstract = abstract.strip('"')
+    return abstract
+
+
+def get_pubmed_abstract_online(pmid: str):
     try:
         result = requests.get(f"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id={pmid}&retmode=text&rettype=abstract")
         raw_xml = result.text
@@ -70,21 +90,19 @@ def get_pubmed_abstract(pmid: str):
     return abstract
 
 
+words_ignored_for_highlighting = ("on", "in", "using", "with", "the", "a")
+
+
 def enrich_search_results(results, query):
-    # def add_abstract(i, item):
-    #     results[i]["abstract"] = get_pubmed_abstract(item["pmid"]).replace("\n", "<br>")
-
-    # with ThreadPoolExecutor(max_workers=10) as thread_pool:
-    #     for i, item in enumerate(results):
-    #         thread_pool.submit(add_abstract, i, item)
-
     for i, item in enumerate(results):
         title = item["title"]
         abstract = get_pubmed_abstract(item["pmid"]).replace("\n", "<br>")
         for word in query.split(" "):
+            if word in words_ignored_for_highlighting:
+                continue
             replacement = '<span class="font-bold">\\1</span>'
-            title = re.sub(f"({re.escape(word)})", replacement, title, flags=re.IGNORECASE)
-            abstract = re.sub(f"({re.escape(word)})", replacement, abstract, flags=re.IGNORECASE)
+            title = re.sub(f"\\b({re.escape(word)})\\b", replacement, title, flags=re.IGNORECASE)
+            abstract = re.sub(f"\\b({re.escape(word)})\\b", replacement, abstract, flags=re.IGNORECASE)
         results[i]["title"] = title
         results[i]["abstract"] = abstract
         results[i]["year"] = int(float(item["year"]))
