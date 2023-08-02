@@ -4,6 +4,8 @@
 
 <script>
 
+import httpClient from '../api/httpClient';
+
 export default {
   data() {
     return {
@@ -19,43 +21,27 @@ export default {
     submit_query(event) {
       // `this` inside methods points to the current active instance
       const that = this  // not sure if neccessary
-      const query = this.query
-      let data = {
-        query: query,
+
+      const payload = {
+        query: this.query,
       }
-      $.ajax({
-        url: "http://localhost:55123/api/query",
-        data: JSON.stringify(data),
-        contentType: 'application/json',
-        type: 'POST',
-      })
-        .done(function (result) {
-          that.search_results = result["items"]
-          that.search_timings = result["timings"]
+
+      httpClient.post("/api/query", payload)
+        .then(function (response) {
+          that.search_results = response.data["items"]
+          that.search_timings = response.data["timings"]
           that.map_timings = []
           that.map_html = ""
 
-          $.ajax({
-            url: "http://localhost:55123/api/map",
-            data: JSON.stringify(data),
-            contentType: 'application/json',
-            type: 'POST',
-          })
-            .done(function (map_html) {
-              that.map_html = map_html["html"]
-              that.map_js = map_html["js"]
-              that.map_timings = map_html["timings"]
+          httpClient.post("/api/map", payload)
+            .then(function (response) {
+              that.map_html = response.data["html"]
+              that.map_js = response.data["js"]
+              that.map_timings = response.data["timings"]
               setTimeout(() => {
-                eval(map_html["js"])
+                eval(response.data["js"])
               }, 200)
-
             })
-            .fail(function () {
-              alert("error");
-            })
-        })
-        .fail(function () {
-          alert("error");
         })
     }
   }
