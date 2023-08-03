@@ -14,7 +14,8 @@ import weaviate
 import numpy as np
 
 # for tsne:
-from sklearn.manifold import TSNE
+# from sklearn.manifold import TSNE
+import umap
 import plotly.express as px
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -232,8 +233,9 @@ def map_html():
     t4 = time.time()
     timings.append({"part": "convert to numpy", "duration": t4 - t2})
 
-    tsne = TSNE(n_components=2, random_state=0)  # instant
-    projections = tsne.fit_transform(features)
+    # tsne = TSNE(n_components=2, random_state=0)  # instant
+    # projections = tsne.fit_transform(features)
+    projections = umap.UMAP().fit_transform(features)
     cluster_labels = cluster_results(projections)
     cluster_titles, cluster_centers = get_cluster_titles(cluster_labels, projections, elements)
     t6 = time.time()
