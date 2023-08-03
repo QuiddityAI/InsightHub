@@ -22,8 +22,6 @@ npm install
 
 ```
 # set up port forwardings in local terminal
-# backend (accessed from JS in browser):
-ssh -L 55123:localhost:55123 home-server
 # frontend:
 ssh -L 55140:localhost:55140 home-server
 
