@@ -68,7 +68,7 @@ checkpoint = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
 
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModel.from_pretrained(checkpoint)
-device = 'cuda'
+device = 'cpu'  # 'cuda'
 model = model.to(device)
 
 
