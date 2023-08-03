@@ -18,6 +18,7 @@ from sklearn.manifold import TSNE
 import plotly.express as px
 
 from sklearn.feature_extraction.text import TfidfVectorizer
+import hdbscan
 
 
 weaviate_server_url = "http://localhost:8080"
@@ -157,7 +158,7 @@ def get_search_results_for_map(queries: list[str], limit: int):
 
         response = (
             weaviate_client.query
-            .get("Paper", ["title"])
+            .get("Paper", ["title", "pmid"])
             .with_near_vector({
                 "vector": embedding
             })
@@ -167,6 +168,43 @@ def get_search_results_for_map(queries: list[str], limit: int):
         results += response["data"]["Get"]["Paper"]
 
     return results
+
+
+def cluster_results(projections):
+    clusterer = hdbscan.HDBSCAN()
+    clusterer.fit(projections)
+    return clusterer.labels_
+
+
+def get_cluster_titles(cluster_labels, projections, results):
+    num_clusters = max(cluster_labels) + 1
+    texts_per_cluster = [""] * num_clusters
+    points_per_cluster_x = [[] for i in range(num_clusters)]
+    points_per_cluster_y = [[] for i in range(num_clusters)]
+
+    for result_index, cluster_index in enumerate(cluster_labels):
+        if cluster_index <= -1: continue
+        text = results[result_index]["title"] + " " + get_pubmed_abstract(results[result_index]["pmid"])
+        texts_per_cluster[cluster_index] += text
+        points_per_cluster_x[cluster_index].append(projections[result_index][0])
+        points_per_cluster_y[cluster_index].append(projections[result_index][1])
+
+    # highlight TF-IDF words:
+    vectorizer = TfidfVectorizer(stop_words="english")
+    tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
+    words = vectorizer.get_feature_names_out()
+
+    cluster_titles = []
+    cluster_centers = []
+
+    for cluster_index in range(num_clusters):
+        # converting scipy sparse array to numpy using toarray() and selecting the only row [0]
+        sort_indexes_of_important_words = np.argsort(tf_idf_matrix[cluster_index].toarray()[0])
+        most_important_words = words[sort_indexes_of_important_words[-3:]][::-1]
+        cluster_titles.append(list(most_important_words))
+        cluster_centers.append((np.mean(points_per_cluster_x[cluster_index]), np.mean(points_per_cluster_y[cluster_index])))
+
+    return cluster_titles, cluster_centers
 
 
 @app.route('/api/map', methods=['POST'])
@@ -196,6 +234,8 @@ def map_html():
 
     tsne = TSNE(n_components=2, random_state=0)  # instant
     projections = tsne.fit_transform(features)
+    cluster_labels = cluster_results(projections)
+    cluster_titles, cluster_centers = get_cluster_titles(cluster_labels, projections, elements)
     t6 = time.time()
     timings.append({"part": "fit transform", "duration": t6 - t4})
 
@@ -204,10 +244,15 @@ def map_html():
     fig = px.scatter(
         plot_elements, x=0, y=1,
         text=titles,
-        color=distances
+        #color=distances,
+        color=cluster_labels,
     )
     t8 = time.time()
     timings.append({"part": "create plotly scatter plot", "duration": t8 - t6})
+
+    for i in range(len(cluster_titles)):
+        fig.add_annotation(x=cluster_centers[i][0], y=cluster_centers[i][1],
+            text=", ".join(cluster_titles[i]))
 
     fig.for_each_trace(lambda t: t.update(texttemplate="-", textposition='top center'))
     html = fig.to_html(full_html=False, include_plotlyjs='cdn')

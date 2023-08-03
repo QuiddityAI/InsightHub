@@ -12,6 +12,7 @@ transformers = "*"
 scikit-learn = "*"
 plotly = "*"
 pandas = "*"
+hdbscan = "*"
 
 [dev-packages]
 
