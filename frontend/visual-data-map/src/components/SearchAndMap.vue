@@ -15,6 +15,7 @@ export default {
       map_html: "",
       map_js: "",
       map_timings: "",
+      cluster_uids: [],
     }
   },
   methods: {
@@ -27,6 +28,7 @@ export default {
       that.search_timings = []
       that.map_html = ""
       that.map_js = ""
+      that.cluster_uids = []
       that.map_timings = []
 
       const payload = {
@@ -44,12 +46,17 @@ export default {
             .then(function (response) {
               that.map_html = response.data["html"]
               that.map_js = response.data["js"]
+              that.cluster_uids = response.data["cluster_uids"]
               that.map_timings = response.data["timings"]
               setTimeout(() => {
                 eval(response.data["js"])
               }, 200)
             })
         })
+    },
+    show_cluster(cluster_item) {
+      this.query = `cluster_id: ${cluster_item.cluster_id} (${cluster_item.cluster_title})`
+      this.submit_query()
     }
   }
 }
@@ -105,6 +112,14 @@ export default {
 
           <div>
             <div v-html="map_html" style="height: 450px"></div>
+
+            <ul role="list" class="">
+              <li v-for="item in cluster_uids" :key="item.part" class="">
+                <button @click="show_cluster(item)" class="m-3 bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">
+                  {{ item.cluster_title }}
+                </button>
+              </li>
+            </ul>
 
             <ul role="list" class="">
               <li v-for="item in map_timings" :key="item.part" class="text-gray-300">

@@ -3,6 +3,7 @@ from pathlib import Path
 import pickle
 import time
 import re
+from functools import lru_cache
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -43,6 +44,11 @@ def get_search_results_for_list(queries: list[str], limit: int):
     results = []
 
     for query in queries:
+        if query.startswith("cluster_id: "):
+            cluster_uid = query.split("cluster_id: ")[1].split(" (")[0]
+            results += cluster_cache[cluster_uid][:10]
+            continue
+
         embedding = get_embedding(query)  # roughly 40ms on CPU, 10ms on GPU
           # 768 dimensions, float 16
 
@@ -129,7 +135,11 @@ def enrich_search_results(results, query):
 
 @app.route('/api/query', methods=['POST'])
 def query():
-    query = request.json.get("query")
+    return _query(request.json.get("query"))
+
+
+@lru_cache()
+def _query(query):
     if not query:
         return jsonify({})
 
@@ -154,17 +164,22 @@ def get_search_results_for_map(queries: list[str], limit: int):
     results = []
 
     for query in queries:
+        if query.startswith("cluster_id: "):
+            cluster_uid = query.split("cluster_id: ")[1].split(" (")[0]
+            results += cluster_cache[cluster_uid]
+            continue
+
         embedding = get_embedding(query)  # roughly 40ms on CPU, 10ms on GPU
           # 768 dimensions, float 16
 
         response = (
             weaviate_client.query
-            .get("Paper", ["title", "pmid"])
+            .get("Paper", ["title", "journal", "year", "pmid"])
             .with_near_vector({
                 "vector": embedding
             })
             .with_limit(limit // len(queries))
-            .with_additional(["id", "distance", "vector"]).do()
+            .with_additional(["id", "distance", "vector", "explainScore", "score"]).do()
         )
         results += response["data"]["Get"]["Paper"]
 
@@ -176,12 +191,19 @@ def cluster_results(projections):
     clusterer.fit(projections)
     return clusterer.labels_
 
+last_cluster_id = 0
+cluster_cache = {}  # cluster_id -> search_results
+
 
 def get_cluster_titles(cluster_labels, projections, results, timings):
+    global last_cluster_id, cluster_cache
     num_clusters = max(cluster_labels) + 1
+    if num_clusters <= 0:
+        return [], [], []
     texts_per_cluster = [""] * num_clusters
     points_per_cluster_x = [[] for i in range(num_clusters)]
     points_per_cluster_y = [[] for i in range(num_clusters)]
+    results_by_cluster = [[] for i in range(num_clusters)]
 
     t1 = time.time()
     for result_index, cluster_index in enumerate(cluster_labels):
@@ -190,6 +212,7 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
         texts_per_cluster[cluster_index] += text
         points_per_cluster_x[cluster_index].append(projections[result_index][0])
         points_per_cluster_y[cluster_index].append(projections[result_index][1])
+        results_by_cluster[cluster_index].append(results[result_index])
     t2 = time.time()
     timings.append({"part": "getting abstracts from disk", "duration": t2 - t1})
 
@@ -200,6 +223,7 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
 
     cluster_titles = []
     cluster_centers = []
+    cluster_uids = []
 
     for cluster_index in range(num_clusters):
         # converting scipy sparse array to numpy using toarray() and selecting the only row [0]
@@ -207,15 +231,24 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
         most_important_words = words[sort_indexes_of_important_words[-3:]][::-1]
         cluster_titles.append(list(most_important_words))
         cluster_centers.append((np.mean(points_per_cluster_x[cluster_index]), np.mean(points_per_cluster_y[cluster_index])))
+        last_cluster_id += 1
+        cluster_uid = str(last_cluster_id)
+        cluster_cache[cluster_uid] = results_by_cluster[cluster_index]
+        cluster_uids.append({"cluster_id": cluster_uid, "cluster_title": ", ".join(list(most_important_words)) + f" ({len(results_by_cluster[cluster_index])})"})
     t3 = time.time()
     timings.append({"part": "Tf-Idf", "duration": t3 - t2})
 
-    return cluster_titles, cluster_centers
+    return cluster_titles, cluster_centers, cluster_uids
 
 
 @app.route('/api/map', methods=['POST'])
 def map_html():
     query = request.json.get("query")
+    return _map_html(query)
+
+
+@lru_cache()
+def _map_html(query):
     if not query:
         return jsonify({})
 
@@ -244,7 +277,7 @@ def map_html():
     t6 = time.time()
     timings.append({"part": "UMAP fit transform", "duration": t6 - t4})
     cluster_labels = cluster_results(projections)
-    cluster_titles, cluster_centers = get_cluster_titles(cluster_labels, projections, elements, timings)
+    cluster_titles, cluster_centers, cluster_uids = get_cluster_titles(cluster_labels, projections, elements, timings)
     t7 = time.time()
 
     plot_elements = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
@@ -273,6 +306,7 @@ def map_html():
     result = {
         "html": html,
         "js": js,
+        "cluster_uids": cluster_uids,
         "timings": timings
     }
     return jsonify(result)
