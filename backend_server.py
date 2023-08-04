@@ -94,7 +94,7 @@ def get_pubmed_abstract_online(pmid: str):
     return abstract
 
 
-words_ignored_for_highlighting = ("on", "in", "using", "with", "the", "a")
+words_ignored_for_highlighting = ("on", "in", "using", "with", "the", "a", "of")
 
 
 def enrich_search_results(results, query):
@@ -177,18 +177,21 @@ def cluster_results(projections):
     return clusterer.labels_
 
 
-def get_cluster_titles(cluster_labels, projections, results):
+def get_cluster_titles(cluster_labels, projections, results, timings):
     num_clusters = max(cluster_labels) + 1
     texts_per_cluster = [""] * num_clusters
     points_per_cluster_x = [[] for i in range(num_clusters)]
     points_per_cluster_y = [[] for i in range(num_clusters)]
 
+    t1 = time.time()
     for result_index, cluster_index in enumerate(cluster_labels):
         if cluster_index <= -1: continue
         text = results[result_index]["title"] + " " + get_pubmed_abstract(results[result_index]["pmid"])
         texts_per_cluster[cluster_index] += text
         points_per_cluster_x[cluster_index].append(projections[result_index][0])
         points_per_cluster_y[cluster_index].append(projections[result_index][1])
+    t2 = time.time()
+    timings.append({"part": "getting abstracts from disk", "duration": t2 - t1})
 
     # highlight TF-IDF words:
     vectorizer = TfidfVectorizer(stop_words="english")
@@ -204,6 +207,8 @@ def get_cluster_titles(cluster_labels, projections, results):
         most_important_words = words[sort_indexes_of_important_words[-3:]][::-1]
         cluster_titles.append(list(most_important_words))
         cluster_centers.append((np.mean(points_per_cluster_x[cluster_index]), np.mean(points_per_cluster_y[cluster_index])))
+    t3 = time.time()
+    timings.append({"part": "Tf-Idf", "duration": t3 - t2})
 
     return cluster_titles, cluster_centers
 
@@ -236,10 +241,11 @@ def map_html():
     # tsne = TSNE(n_components=2, random_state=0)  # instant
     # projections = tsne.fit_transform(features)
     projections = umap.UMAP().fit_transform(features)
-    cluster_labels = cluster_results(projections)
-    cluster_titles, cluster_centers = get_cluster_titles(cluster_labels, projections, elements)
     t6 = time.time()
-    timings.append({"part": "fit transform", "duration": t6 - t4})
+    timings.append({"part": "UMAP fit transform", "duration": t6 - t4})
+    cluster_labels = cluster_results(projections)
+    cluster_titles, cluster_centers = get_cluster_titles(cluster_labels, projections, elements, timings)
+    t7 = time.time()
 
     plot_elements = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
 
@@ -250,7 +256,7 @@ def map_html():
         color=cluster_labels,
     )
     t8 = time.time()
-    timings.append({"part": "create plotly scatter plot", "duration": t8 - t6})
+    timings.append({"part": "create plotly scatter plot", "duration": t8 - t7})
 
     for i in range(len(cluster_titles)):
         fig.add_annotation(x=cluster_centers[i][0], y=cluster_centers[i][1],
