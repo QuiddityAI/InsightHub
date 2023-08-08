@@ -19,3 +19,5 @@
 *.vsix
 
 progress.txt
+
+__pycache__/
