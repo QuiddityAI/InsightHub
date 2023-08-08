@@ -4,6 +4,7 @@ import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuIt
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 import SearchAndMap from './SearchAndMap.vue';
+import SearchAndMapAbsclust from './SearchAndMapAbsclust.vue';
 </script>
 
 <script>
@@ -25,7 +26,8 @@ export default {
         email: 'tom@example.com',
         imageUrl:
           'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      }
+      },
+      urlHashPart: window.location.hash,
     }
   },
   methods: {
@@ -128,7 +130,8 @@ export default {
       </DisclosurePanel>
     </Disclosure>
 
-    <SearchAndMap/>
+    <SearchAndMap v-if="urlHashPart !== '#absclust'"/>
+    <SearchAndMapAbsclust v-if="urlHashPart === '#absclust'"/>
   </div>
 </template>
 

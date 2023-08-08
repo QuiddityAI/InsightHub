@@ -14,8 +14,10 @@ plotly = "*"
 pandas = "*"
 hdbscan = "*"
 umap-learn = "*"
+typesense = "*"
 
 [dev-packages]
+ipykernel = "*"
 
 [requires]
 python_version = "3.10"
