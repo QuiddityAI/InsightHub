@@ -21,3 +21,6 @@
 progress.txt
 
 __pycache__/
+
+absclust_search_cache.pkl
+embedding_cache.pkl
