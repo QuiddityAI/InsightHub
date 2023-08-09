@@ -71,12 +71,12 @@ export default {
         <div v-html="map_html"></div>
       </div>
 
-      <div v-if="!!search_results && !map_html" class="absolute flex top-1/2 left-2/3 items-center">
+      <!-- <div v-show="search_results && !map_html" class="absolute flex top-1/2 left-2/3 items-center">
         <div class="relative h-8 w-8 block">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
           <span class="relative inline-flex rounded-full h-8 w-8 bg-sky-500 opacity-50"></span>
         </div>
-      </div>
+      </div> -->
 
       <!-- content area -->
       <div class="relative h-screen mx-auto max-w-7xl sm:px-6 lg:px-8 grid grid-cols-2 gap-4 pointer-events-none">
