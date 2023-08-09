@@ -231,44 +231,25 @@ def _map_html(query):
     cluster_titles, cluster_centers, cluster_uids = get_cluster_titles(cluster_labels, projections, elements, timings)
     t7 = time.time()
 
-    plot_elements = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
+    positionsX = projections[:, 0]
+    positionsY = projections[:, 1]
+    cluster_id_per_point = cluster_labels
 
-    fig = px.scatter(
-        plot_elements, x=0, y=1,
-        text=titles,
-        #color=distances,
-        color=cluster_labels,
-        #size=distances,  # needs normalization with min size
-    )
-    t8 = time.time()
-    timings.append({"part": "create plotly scatter plot", "duration": t8 - t7})
-
-    for i in range(len(cluster_titles)):
-        cluster_title = ", ".join(cluster_titles[i])
-        annotation_html = f'<b>{cluster_title}</b>'
-        fig.add_annotation(x=cluster_centers[i][0], y=cluster_centers[i][1],
-            text=annotation_html, bgcolor="white", opacity=0.85)
-
-    fig.for_each_trace(lambda t: t.update(texttemplate="<br>", textposition='top center', textfont = {'color': "rgba(0, 0, 0, 0)"}))
-    fig.update_layout(showlegend=False)
-    fig.update_xaxes(visible=False)
-    fig.update_yaxes(visible=False)
-    fig.update(layout_coloraxis_showscale=False)
-    fig.update_layout(margin=dict(l = 0, r = 0, t = 0, b = 0),
-                      paper_bgcolor='rgba(0,0,0,0)',
-                      plot_bgcolor='rgba(0,0,0,0)')
-    html = fig.to_html(full_html=False, include_plotlyjs='cdn')
-    t9 = time.time()
-    timings.append({"part": "hide title for elements and convert to HTML", "duration": t9 - t8})
-
-    js = html.split('<script type="text/javascript">')[2]
-    js = js.replace("</script>", "").replace("</div>", "")
+    # for i in range(len(cluster_titles)):
+    #     cluster_title = ", ".join(cluster_titles[i])
+    #     annotation_html = f'<b>{cluster_title}</b>'
+    #     fig.add_annotation(x=cluster_centers[i][0], y=cluster_centers[i][1],
+    #         text=annotation_html, bgcolor="white", opacity=0.85)
 
     result = {
-        "html": html,
-        "js": js,
+        "per_point_data": {
+            "positionsX": positionsX.tolist(),
+            "positionsY": positionsY.tolist(),
+            "cluster_ids": cluster_id_per_point.tolist(),
+            "distances": distances,
+        },
         "cluster_uids": cluster_uids,
-        "timings": timings
+        "timings": timings,
     }
     return jsonify(result)
 

@@ -12,10 +12,9 @@ export default {
       query: "",
       search_results: [],
       search_timings: "",
-      map_html: "",
-      map_js: "",
-      map_timings: "",
       cluster_uids: [],
+      map_timings: "",
+      windowHeight: 0,
     }
   },
   methods: {
@@ -23,13 +22,11 @@ export default {
       // `this` inside methods points to the current active instance
       const that = this  // not sure if neccessary
 
-
       that.search_results = []
       that.search_timings = []
-      that.map_html = ""
-      that.map_js = ""
       that.cluster_uids = []
       that.map_timings = []
+      // TODO: clear map
 
       const payload = {
         query: this.query,
@@ -39,18 +36,16 @@ export default {
         .then(function (response) {
           that.search_results = response.data["items"]
           that.search_timings = response.data["timings"]
-          that.map_timings = []
-          that.map_html = ""
 
           httpClient.post("/api/map", payload)
             .then(function (response) {
-              that.map_html = response.data["html"]
-              that.map_js = response.data["js"]
               that.cluster_uids = response.data["cluster_uids"]
               that.map_timings = response.data["timings"]
-              setTimeout(() => {
-                eval(response.data["js"])
-              }, 200)
+
+              that.$refs.embedding_map.currentPositionsX = response.data["per_point_data"]["positionsX"]
+              that.$refs.embedding_map.currentPositionsY = response.data["per_point_data"]["positionsY"]
+              that.$refs.embedding_map.cluster_ids = response.data["per_point_data"]["cluster_ids"]
+              that.$refs.embedding_map.updateMap()
             })
         })
     },
@@ -59,6 +54,8 @@ export default {
       this.submit_query()
     },
     updateMapPassiveMargin() {
+      this.windowHeight = window.innerHeight
+
       this.$refs.embedding_map.passiveMarginsLRTB = [
         this.$refs.left_column.getBoundingClientRect().right + 50,
         window.innerWidth - this.$refs.right_column.getBoundingClientRect().right,
@@ -147,7 +144,7 @@ export default {
         <!-- right column (e.g. for showing box with details for selected result) -->
         <div ref="right_column" class="overflow-y-auto pointer-events-none">
 
-          <div style="height: 400px"></div>
+          <div :style="{height: (windowHeight - 150) + 'px'}"></div>
 
           <ul role="list" class="pointer-events-auto">
             <li v-for="item in cluster_uids" :key="item.part" class="">
