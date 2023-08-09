@@ -1,7 +1,0 @@
-flask
-flask_cors
-torch
-transformers
-# plotly
-# pandas
-# scikit-learn
