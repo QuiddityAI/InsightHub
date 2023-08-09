@@ -119,12 +119,13 @@ def get_search_results_for_map(queries: list[str], limit: int):
         # for i in range(0, len(texts), chunk_size):
         #     embeddings = np.append(embeddings, get_embedding(texts[i:i+chunk_size]), axis=0)
 
-        texts = {item["DOI"]: item.get("title", "") + " " + item.get("abstract", "")[:2000] for item in results_part}
-        embeddings = get_openai_embedding_batch(texts)
-        save_embedding_cache()
+        #texts = {item["DOI"]: item.get("title", "") + " " + item.get("abstract", "")[:2000] for item in results_part}
+        #embeddings = get_openai_embedding_batch(texts)
+        #save_embedding_cache()
 
         for item in tqdm(results_part):
-            item_embedding = embeddings[item["DOI"]]
+            #item_embedding = embeddings[item["DOI"]]
+            item_embedding = get_embedding(item.get("title", "") + " " + item.get("abstract", ""), item["DOI"])
             item["vector"] = item_embedding
             item["distance"] = np.dot(query_embedding, item_embedding)
 

@@ -9,8 +9,8 @@ import openai
 from tqdm import tqdm
 
 
-#embedding_model = "BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
-embedding_model = "openai"
+embedding_model = "BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
+#embedding_model = "openai"
 embedding_strategy = "sep_token"
 embedding_cache_path = "embedding_cache.pkl"
 
