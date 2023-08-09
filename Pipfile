@@ -15,6 +15,7 @@ pandas = "*"
 hdbscan = "*"
 umap-learn = "*"
 typesense = "*"
+openai = "*"
 
 [dev-packages]
 ipykernel = "*"

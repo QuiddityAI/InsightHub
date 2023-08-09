@@ -19,7 +19,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import hdbscan
 
 
-from utils.model_client import get_embedding, save_embedding_cache
+from utils.model_client import get_embedding, get_openai_embedding_batch, save_embedding_cache
 from utils.absclust_client import get_absclust_search_results, save_search_cache
 
 
@@ -119,10 +119,13 @@ def get_search_results_for_map(queries: list[str], limit: int):
         # for i in range(0, len(texts), chunk_size):
         #     embeddings = np.append(embeddings, get_embedding(texts[i:i+chunk_size]), axis=0)
 
+        texts = {item["DOI"]: item.get("title", "") + " " + item.get("abstract", "")[:2000] for item in results_part}
+        embeddings = get_openai_embedding_batch(texts)
+        save_embedding_cache()
+
         for item in tqdm(results_part):
-            text = item.get("title", "") + " " + item.get("abstract", "")
-            item_embedding = get_embedding(text, item["DOI"])
-            item["vector"] = item_embedding.tolist()
+            item_embedding = embeddings[item["DOI"]]
+            item["vector"] = item_embedding
             item["distance"] = np.dot(query_embedding, item_embedding)
 
         results += results_part
