@@ -1,5 +1,5 @@
 <script setup>
-
+import EmbeddingMap from './EmbeddingMap.vue';
 </script>
 
 <script>
@@ -57,8 +57,23 @@ export default {
     show_cluster(cluster_item) {
       this.query = `cluster_id: ${cluster_item.cluster_id} (${cluster_item.cluster_title})`
       this.submit_query()
-    }
-  }
+    },
+    updateMapPassiveMargin() {
+      this.$refs.embedding_map.passiveMarginsLRTB = [
+        this.$refs.left_column.getBoundingClientRect().right + 50,
+        window.innerWidth - this.$refs.right_column.getBoundingClientRect().right,
+        50,
+        150
+      ]
+    },
+  },
+  mounted() {
+    this.updateMapPassiveMargin()
+    window.onresize = this.updateMapPassiveMargin
+  },
+  updated() {
+    this.updateMapPassiveMargin()
+  },
 }
 
 </script>
@@ -68,7 +83,7 @@ export default {
     <main>
 
       <div class="absolute top-0 w-screen h-screen">
-        <div v-html="map_html"></div>
+        <EmbeddingMap ref="embedding_map"/>
       </div>
 
       <!-- <div v-show="search_results && !map_html" class="absolute flex top-1/2 left-2/3 items-center">
@@ -82,7 +97,7 @@ export default {
       <div class="relative h-screen mx-auto max-w-7xl sm:px-6 lg:px-8 grid grid-cols-2 gap-4 pointer-events-none">
 
         <!-- left column -->
-        <div class="overflow-y-auto pointer-events-auto">
+        <div ref="left_column" class="overflow-y-auto pointer-events-auto">
 
           <div class="h-8"></div>
 
@@ -130,7 +145,7 @@ export default {
         </div>
 
         <!-- right column (e.g. for showing box with details for selected result) -->
-        <div class="overflow-y-auto pointer-events-none">
+        <div ref="right_column" class="overflow-y-auto pointer-events-none">
 
           <div style="height: 400px"></div>
 
