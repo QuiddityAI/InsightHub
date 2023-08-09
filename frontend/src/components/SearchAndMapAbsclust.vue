@@ -64,72 +64,94 @@ export default {
 </script>
 
 <template>
-  <!-- <header class="bg-white shadow">
-      <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Search & Map</h1>
-      </div>
-    </header> -->
+
     <main>
-      <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
 
+      <div class="absolute top-0 w-screen h-screen">
+        <div v-html="map_html"></div>
+      </div>
 
-        <label for="search" class="block text-sm font-medium leading-6 text-gray-900">
-          Searching in subset of 5M (of 20M) PubMed articles using vector and BM25 hybrid search
-        </label>
+      <div v-if="!!search_results && !map_html" class="absolute flex top-1/2 left-2/3 items-center">
+        <div class="relative h-8 w-8 block">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-8 w-8 bg-sky-500 opacity-50"></span>
+        </div>
+      </div>
 
-        <!-- search event is not standard -->
-          <div class="relative mt-2 w-2/3 rounded-md shadow-sm">
-              <input type="search" name="search" @search="submit_query" v-model="query"
-              placeholder="Search"
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1
-            ring-inset ring-gray-300 placeholder:text-gray-400
-            focus:ring-2 focus:ring-inset focus:ring-indigo-600
-            sm:text-sm sm:leading-6" />
+      <!-- content area -->
+      <div class="relative h-screen mx-auto max-w-7xl sm:px-6 lg:px-8 grid grid-cols-2 gap-4 pointer-events-none">
+
+        <!-- left column -->
+        <div class="overflow-y-auto pointer-events-auto">
+
+          <div class="h-8"></div>
+
+          <!-- search card -->
+          <div class="sticky top-0 rounded-md shadow-sm bg-white p-3">
+            <div class="flex justify-between">
+              <select class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+                <option value="absclust" selected>AbsClust Database</option>
+                <option value="pubmed">PubMed</option>
+              </select>
+              <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">60 Million Items</span>
+            </div>
+
+            <!-- note: search event is not standard -->
+            <div class="relative rounded-md shadow-sm">
+                <input type="search" name="search" @search="submit_query" v-model="query"
+                placeholder="Search"
+                class="block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1
+              ring-inset ring-gray-300 placeholder:text-gray-400
+              focus:ring-2 focus:ring-inset focus:ring-indigo-600
+              sm:text-sm sm:leading-6" />
+            </div>
           </div>
-        <br>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
+          <!-- result list -->
+          <ul role="list">
+            <li v-for="item in search_results" :key="item.title" class="flex justify-between py-2">
+              <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
+                <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
+                <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
+                <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.most_important_words }}</p>
+                <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract"></div></p>
+              </div>
+            </li>
+          </ul>
 
-            <ul role="list" class="">
-              <li v-for="item in search_results" :key="item.title" class="flex justify-between py-2">
-                <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
-                  <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
-                  <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
-                  <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.most_important_words }}</p>
-                  <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract"></div></p>
-                </div>
-              </li>
-            </ul>
+          <!-- timings -->
+          <ul role="list">
+            <li v-for="item in search_timings" :key="item.part" class="text-gray-300">
+              {{ item.part }}: {{ item.duration.toFixed(2) }} s
+            </li>
+          </ul>
 
+          <div class="h-4"></div>
+        </div>
 
-            <ul role="list" class="">
-              <li v-for="item in search_timings" :key="item.part" class="text-gray-300">
-                {{ item.part }}: {{ item.duration.toFixed(2) }} s
-              </li>
-            </ul>
-          </div>
+        <!-- right column (e.g. for showing box with details for selected result) -->
+        <div class="overflow-y-auto pointer-events-none">
 
-          <div>
-            <div v-html="map_html" style="height: 450px"></div>
+          <div style="height: 400px"></div>
 
-            <ul role="list" class="">
-              <li v-for="item in cluster_uids" :key="item.part" class="">
-                <button @click="show_cluster(item)" class="m-3 bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">
-                  {{ item.cluster_title }}
-                </button>
-              </li>
-            </ul>
+          <ul role="list" class="pointer-events-auto">
+            <li v-for="item in cluster_uids" :key="item.part" class="">
+              <button @click="show_cluster(item)" class="m-3 bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">
+                {{ item.cluster_title }}
+              </button>
+            </li>
+          </ul>
 
-            <ul role="list" class="">
-              <li v-for="item in map_timings" :key="item.part" class="text-gray-300">
-                {{ item.part }}: {{ item.duration.toFixed(2) }} s
-              </li>
-            </ul>
-          </div>
+          <ul role="list">
+            <li v-for="item in map_timings" :key="item.part" class="text-gray-300">
+              {{ item.part }}: {{ item.duration.toFixed(2) }} s
+            </li>
+          </ul>
         </div>
 
       </div>
+
+      <!--  -->
     </main>
 </template>
 

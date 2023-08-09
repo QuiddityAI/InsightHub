@@ -125,7 +125,7 @@ def get_search_results_for_map(queries: list[str], limit: int):
 
         for item in tqdm(results_part):
             #item_embedding = embeddings[item["DOI"]]
-            item_embedding = get_embedding(item.get("title", "") + " " + item.get("abstract", ""), item["DOI"])
+            item_embedding = get_embedding(item.get("title", "") + " " + item.get("abstract", ""), item["DOI"]).tolist()
             item["vector"] = item_embedding
             item["distance"] = np.dot(query_embedding, item_embedding)
 
@@ -254,7 +254,9 @@ def _map_html(query):
     fig.update_xaxes(visible=False)
     fig.update_yaxes(visible=False)
     fig.update(layout_coloraxis_showscale=False)
-    fig.update_layout(margin=dict(l = 0, r = 0, t = 0, b = 0))
+    fig.update_layout(margin=dict(l = 0, r = 0, t = 0, b = 0),
+                      paper_bgcolor='rgba(0,0,0,0)',
+                      plot_bgcolor='rgba(0,0,0,0)')
     html = fig.to_html(full_html=False, include_plotlyjs='cdn')
     t9 = time.time()
     timings.append({"part": "hide title for elements and convert to HTML", "duration": t9 - t8})
