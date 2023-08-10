@@ -4,6 +4,76 @@
 
 <script>
 
+import { Renderer, Camera, Geometry, Program, Mesh } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
+
+const vertex = /* glsl */ `
+    attribute float positionX;
+    attribute float positionY;
+    attribute float clusterId;
+
+    uniform mat4 modelMatrix;
+    uniform mat4 viewMatrix;
+    uniform mat4 projectionMatrix;
+
+    uniform float baseOffsetX;
+    uniform float baseOffsetY;
+    uniform float baseScaleX;
+    uniform float baseScaleY;
+    uniform float activeAreaWidth;
+    uniform float activeAreaHeight;
+    uniform float marginLeft;
+    uniform float marginBottom;
+
+    varying float clusterIdVar;
+
+    void main() {
+
+        clusterIdVar = clusterId;
+
+        vec3 rawPos = vec3(positionX, positionY, -1.0);
+
+        vec3 normalizedPos = (rawPos + vec3(baseOffsetX, baseOffsetY, 0.0)) * vec3(baseScaleX, baseScaleY, 1.0);
+
+        vec3 shiftedToActiveAreaPos = normalizedPos * vec3(activeAreaWidth, activeAreaHeight, 1.0) + vec3(marginLeft, marginBottom, 0.0);
+
+        // positions are 0->1, so make -1->1
+        // edit: we stay for now in 0-1 space
+        vec3 pos = shiftedToActiveAreaPos;// * 2.0 - 1.0;
+
+        // Scale towards camera to be more interesting
+        // pos.z *= 10.0;
+
+        // modelMatrix is one of the automatically attached uniforms when using the Mesh class
+        vec4 mPos = modelMatrix * vec4(pos, 1.0);
+
+        // get the model view position so that we can scale the points off into the distance
+        vec4 mvPos = viewMatrix * mPos;
+        gl_PointSize = 5.0;
+        gl_Position = projectionMatrix * mvPos;
+    }
+`;
+
+const fragment = /* glsl */ `
+    precision highp float;
+
+    varying float clusterIdVar;
+
+    vec3 hsv2rgb(vec3 c) {
+        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
+
+    void main() {
+        vec2 uv = gl_PointCoord.xy;
+
+        float circle = smoothstep(0.5, 0.4, length(uv - 0.5)) * 0.8;
+
+        gl_FragColor.rgb = hsv2rgb(vec3(clusterIdVar / 10.0, 0.7, 1.0));
+        gl_FragColor.a = circle;
+    }
+`;
+
 export default {
   data() {
     return {
@@ -31,36 +101,86 @@ export default {
       currentPanY: 0.0,
       targetPanX: 0.0,
       targetPanY: 0.0,
+
+      renderer: null,
+      camera: null,
+      glContext: null,
     }
   },
+  mounted() {
+    this.setupWebGl()
+  },
   methods: {
+    setupWebGl() {
+      this.renderer = new Renderer({ depth: false });
+      this.glContext = this.renderer.gl;
+      this.$refs.webGlArea.appendChild(this.glContext.canvas);
+      this.glContext.clearColor(0.93, 0.94, 0.95, 1);
+
+      this.camera = new Camera(this.glContext, { left: 0.00001, right: 1, top: 1, bottom: 0.0001 });
+      this.camera.position.z = 1;
+
+      const that = this
+
+      function resize() {
+        that.renderer.setSize(window.innerWidth, window.innerHeight);
+        //that.camera.perspective({ aspect: that.glContext.canvas.width / that.glContext.canvas.height });
+      }
+      window.addEventListener('resize', resize, false);
+      resize();
+      this.updateMap()
+
+
+      // requestAnimationFrame(update);
+      // function update(t) {
+      //     requestAnimationFrame(update);
+
+      //     // add some slight overall movement to be more interesting
+      //     particles.rotation.x = Math.sin(t * 0.0002) * 0.1;
+      //     particles.rotation.y = Math.cos(t * 0.0005) * 0.15;
+      //     particles.rotation.z += 0.01;
+
+      //     program.uniforms.uTime.value = t * 0.001;
+      //     renderer.render({ scene: particles, camera });
+      // }
+    },
     updateMap() {
       this.baseOffsetX = -Math.min(...this.currentPositionsX)
       this.baseOffsetY = -Math.min(...this.currentPositionsY)
       this.baseScaleX = 1.0 / (Math.max(...this.currentPositionsX) + this.baseOffsetX)
       this.baseScaleY = 1.0 / (Math.max(...this.currentPositionsY) + this.baseOffsetY)
-      this.drawCanvas()
-    },
-    drawCanvas() {
-      var canvas = this.$refs.myCanvas;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      var ctx = canvas.getContext("2d");
+
       const ww = window.innerWidth
       const wh = window.innerHeight
       const activeAreaWidth = ww - this.passiveMarginsLRTB[0] - this.passiveMarginsLRTB[1]
       const activeAreaHeight = wh - this.passiveMarginsLRTB[2] - this.passiveMarginsLRTB[3]
-      const px = this.currentPositionsX
-      const py = this.currentPositionsY
 
-      for (const i of Array(px.length).keys()) {
-        ctx.fillStyle = `hsl(${this.cluster_ids[i] * 36}, 80%, 50%)`
-        const relativeX = (px[i] + this.baseOffsetX) * this.baseScaleX  // between 0 - 1
-        const relativeY = (py[i] + this.baseOffsetY) * this.baseScaleY  // between 0 - 1
-        const finalX = this.passiveMarginsLRTB[0] + (relativeX * activeAreaWidth)
-        const finalY = this.passiveMarginsLRTB[2] + (relativeY * activeAreaHeight)
-        ctx.fillRect(finalX, finalY, 1, 1);
-      }
+      const geometry = new Geometry(this.glContext, {
+          positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
+          positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
+          clusterId: { size: 1, data: new Float32Array(this.cluster_ids) },
+      });
+
+      const program = new Program(this.glContext, {
+          vertex,
+          fragment,
+          uniforms: {
+            baseOffsetX: { value: this.baseOffsetX },
+            baseOffsetY: { value: this.baseOffsetY },
+            baseScaleX: { value: this.baseScaleX },
+            baseScaleY: { value: this.baseScaleY },
+            activeAreaWidth: { value: activeAreaWidth / ww },
+            activeAreaHeight: { value: activeAreaHeight / wh },
+            marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
+            marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
+          },
+          transparent: true,
+          depthTest: false,
+      });
+
+      const points = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry, program });
+
+      this.renderer.render({ scene: points, camera: this.camera });
     },
   },
 }
@@ -69,7 +189,7 @@ export default {
 
 <template>
 
-  <canvas ref="myCanvas" class="fixed w-full h-full"></canvas>
+  <div ref="webGlArea" class="fixed w-full h-full"></div>
 
   <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div>
 
