@@ -42,15 +42,16 @@ export default {
               that.cluster_uids = response.data["cluster_uids"]
               that.map_timings = response.data["timings"]
 
-              that.$refs.embedding_map.currentPositionsX = response.data["per_point_data"]["positionsX"]
-              that.$refs.embedding_map.currentPositionsY = response.data["per_point_data"]["positionsY"]
-              that.$refs.embedding_map.cluster_ids = response.data["per_point_data"]["cluster_ids"]
+              that.$refs.embedding_map.currentPositionsX = response.data["per_point_data"]["positions_x"]
+              that.$refs.embedding_map.currentPositionsY = response.data["per_point_data"]["positions_y"]
+              that.$refs.embedding_map.clusterIdsPerPoint = response.data["per_point_data"]["cluster_ids"]
+              that.$refs.embedding_map.clusterData = response.data["cluster_data"]
               that.$refs.embedding_map.updateMap()
             })
         })
     },
     show_cluster(cluster_item) {
-      this.query = `cluster_id: ${cluster_item.cluster_id} (${cluster_item.cluster_title})`
+      this.query = `cluster_id: ${cluster_item.uid} (${cluster_item.title})`
       this.submit_query()
     },
     updateMapPassiveMargin() {
@@ -66,7 +67,7 @@ export default {
   },
   mounted() {
     this.updateMapPassiveMargin()
-    window.onresize = this.updateMapPassiveMargin
+    window.addEventListener("resize", this.updateMapPassiveMargin)
   },
   updated() {
     this.updateMapPassiveMargin()
@@ -80,7 +81,7 @@ export default {
     <main>
 
       <div class="absolute top-0 w-screen h-screen">
-        <EmbeddingMap ref="embedding_map"/>
+        <EmbeddingMap ref="embedding_map" @show_cluster="show_cluster"/>
       </div>
 
       <!-- <div v-show="search_results && !map_html" class="absolute flex top-1/2 left-2/3 items-center">
@@ -145,14 +146,6 @@ export default {
         <div ref="right_column" class="overflow-y-auto pointer-events-none">
 
           <div :style="{height: (windowHeight - 150) + 'px'}"></div>
-
-          <ul role="list" class="pointer-events-auto">
-            <li v-for="item in cluster_uids" :key="item.part" class="">
-              <button @click="show_cluster(item)" class="m-3 bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">
-                {{ item.cluster_title }}
-              </button>
-            </li>
-          </ul>
 
           <ul role="list">
             <li v-for="item in map_timings" :key="item.part" class="text-gray-300">

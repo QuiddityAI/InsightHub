@@ -95,7 +95,8 @@ export default {
       targetPositionsY: [],
       colors: [],
       sizes: [],
-      cluster_ids: [],
+      clusterIdsPerPoint: [],
+      clusterData: [],
 
       // internal:
       currentVelocityX: [],
@@ -116,13 +117,41 @@ export default {
       glContext: null,
     }
   },
+  computed: {
+    activeAreaWidth() {
+      return window.innerWidth - this.passiveMarginsLRTB[0] - this.passiveMarginsLRTB[1]
+    },
+    activeAreaHeight() {
+      return window.innerHeight - this.passiveMarginsLRTB[2] - this.passiveMarginsLRTB[3]
+    },
+  },
+  emits: [
+    "show_cluster",
+  ],
   mounted() {
     this.setupWebGl()
     this.setupPanZoom();
   },
   methods: {
+    screenLeftFromRelative(x) {
+      const normalizedPos = (x + this.baseOffsetX) * this.baseScaleX
+      const shiftedToActiveAreaPos = normalizedPos * this.activeAreaWidth + this.passiveMarginsLRTB[0]
+      const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPanX
+      return pannedAndZoomed
+    },
+    screenBottomFromRelative(y) {
+      const normalizedPos = (y + this.baseOffsetY) * this.baseScaleY
+      const shiftedToActiveAreaPos = normalizedPos * this.activeAreaHeight + this.passiveMarginsLRTB[3]
+      const zoomed = ((shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom) + window.innerHeight
+      const pannedAndZoomed = zoomed - this.currentPanY
+      return pannedAndZoomed
+    },
     setupPanZoom() {
-      const instance = panzoom(this.$refs.panZoomProxy);
+      const instance = panzoom(this.$refs.panZoomProxy, {
+        zoomSpeed: 0.35, // 35% per mouse wheel event
+        minZoom: 0.7,
+        bounds: true,
+      });
 
       const that = this
 
@@ -175,15 +204,13 @@ export default {
 
       const ww = window.innerWidth
       const wh = window.innerHeight
-      const activeAreaWidth = ww - this.passiveMarginsLRTB[0] - this.passiveMarginsLRTB[1]
-      const activeAreaHeight = wh - this.passiveMarginsLRTB[2] - this.passiveMarginsLRTB[3]
 
       // FIXME: re-creating the geometry each time the map is moved is not efficient
       // find a way to just update uniforms?
       const geometry = new Geometry(this.glContext, {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
-          clusterId: { size: 1, data: new Float32Array(this.cluster_ids) },
+          clusterId: { size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
       });
 
       const program = new Program(this.glContext, {
@@ -194,8 +221,8 @@ export default {
             baseOffsetY: { value: this.baseOffsetY },
             baseScaleX: { value: this.baseScaleX },
             baseScaleY: { value: this.baseScaleY },
-            activeAreaWidth: { value: activeAreaWidth / ww },
-            activeAreaHeight: { value: activeAreaHeight / wh },
+            activeAreaWidth: { value: this.activeAreaWidth / ww },
+            activeAreaHeight: { value: this.activeAreaHeight / wh },
             marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
             marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
             panX: { value: this.currentPanX / ww },
@@ -216,12 +243,25 @@ export default {
 </script>
 
 <template>
+  <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
   <div ref="webGlArea" class="fixed w-full h-full"></div>
 
-  <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div>
+  <!-- this div shows a gray outline around the "active area" for debugging purposes -->
+  <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
 
-  <div class="fixed w-full h-full" ref="panZoomProxy"></div>
+
+  <div v-for="cluster_label in clusterData" class="fixed"
+  :style="{
+    'left': screenLeftFromRelative(cluster_label.center[0]) + 'px',
+    'bottom': screenBottomFromRelative(cluster_label.center[1]) + 'px',
+    }">
+    <button @click="$emit('show_cluster', cluster_label)" class="px-1 bg-white/50 hover:bg-white text-gray-500 rounded">
+      {{ cluster_label.title }}
+    </button>
+  </div>
+
+
 
 </template>
 

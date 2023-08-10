@@ -172,24 +172,22 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
     tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
     words = vectorizer.get_feature_names_out()
 
-    cluster_titles = []
-    cluster_centers = []
-    cluster_uids = []
+    cluster_data = []
 
     for cluster_index in range(num_clusters):
         # converting scipy sparse array to numpy using toarray() and selecting the only row [0]
         sort_indexes_of_important_words = np.argsort(tf_idf_matrix[cluster_index].toarray()[0])
         most_important_words = words[sort_indexes_of_important_words[-3:]][::-1]
-        cluster_titles.append(list(most_important_words))
-        cluster_centers.append((np.mean(points_per_cluster_x[cluster_index]), np.mean(points_per_cluster_y[cluster_index])))
+        cluster_center = (float(np.mean(points_per_cluster_x[cluster_index])), float(np.mean(points_per_cluster_y[cluster_index])))
         last_cluster_id += 1
         cluster_uid = str(last_cluster_id)
         cluster_cache[cluster_uid] = results_by_cluster[cluster_index]
-        cluster_uids.append({"cluster_id": cluster_uid, "cluster_title": ", ".join(list(most_important_words)) + f" ({len(results_by_cluster[cluster_index])})"})
+        cluster_title = ", ".join(list(most_important_words)) + f" ({len(results_by_cluster[cluster_index])})"
+        cluster_data.append({"uid": cluster_uid, "title": cluster_title, "center": cluster_center})
     t3 = time.time()
     timings.append({"part": "Tf-Idf", "duration": t3 - t2})
 
-    return cluster_titles, cluster_centers, cluster_uids
+    return cluster_data
 
 
 @app.route('/api/map', methods=['POST'])
@@ -228,7 +226,7 @@ def _map_html(query):
     t6 = time.time()
     timings.append({"part": "UMAP fit transform", "duration": t6 - t4})
     cluster_labels = cluster_results(projections)
-    cluster_titles, cluster_centers, cluster_uids = get_cluster_titles(cluster_labels, projections, elements, timings)
+    cluster_data = get_cluster_titles(cluster_labels, projections, elements, timings)
     t7 = time.time()
 
     positionsX = projections[:, 0]
@@ -243,12 +241,12 @@ def _map_html(query):
 
     result = {
         "per_point_data": {
-            "positionsX": positionsX.tolist(),
-            "positionsY": positionsY.tolist(),
+            "positions_x": positionsX.tolist(),
+            "positions_y": positionsY.tolist(),
             "cluster_ids": cluster_id_per_point.tolist(),
             "distances": distances,
         },
-        "cluster_uids": cluster_uids,
+        "cluster_data": cluster_data,
         "timings": timings,
     }
     return jsonify(result)
