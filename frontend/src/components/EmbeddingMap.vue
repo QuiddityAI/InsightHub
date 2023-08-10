@@ -4,6 +4,8 @@
 
 <script>
 
+import panzoom from 'panzoom';
+
 import { Renderer, Camera, Geometry, Program, Mesh } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
 
 const vertex = /* glsl */ `
@@ -23,6 +25,9 @@ const vertex = /* glsl */ `
     uniform float activeAreaHeight;
     uniform float marginLeft;
     uniform float marginBottom;
+    uniform float panX;
+    uniform float panY;
+    uniform float zoom;
 
     varying float clusterIdVar;
 
@@ -36,9 +41,13 @@ const vertex = /* glsl */ `
 
         vec3 shiftedToActiveAreaPos = normalizedPos * vec3(activeAreaWidth, activeAreaHeight, 1.0) + vec3(marginLeft, marginBottom, 0.0);
 
+        // zoom origin is at top left (0, 1), so we first need to move the points there, then zoom, and then move back
+        vec3 zoomedPos = ((shiftedToActiveAreaPos - vec3(0.0, 1.0, 0.0)) * zoom) + vec3(0.0, 1.0, 0.0);
+        vec3 pannedAndZoomedPos = zoomedPos + vec3(panX, -panY, 0);
+
         // positions are 0->1, so make -1->1
         // edit: we stay for now in 0-1 space
-        vec3 pos = shiftedToActiveAreaPos;// * 2.0 - 1.0;
+        vec3 pos = pannedAndZoomedPos;// * 2.0 - 1.0;
 
         // Scale towards camera to be more interesting
         // pos.z *= 10.0;
@@ -109,8 +118,22 @@ export default {
   },
   mounted() {
     this.setupWebGl()
+    this.setupPanZoom();
   },
   methods: {
+    setupPanZoom() {
+      const instance = panzoom(this.$refs.panZoomProxy);
+
+      const that = this
+
+      instance.on('transform', function(e) {
+        const transform = e.getTransform()
+        that.currentPanX = transform.x
+        that.currentPanY = transform.y
+        that.currentZoom = transform.scale
+        that.updateMap()
+      });
+    },
     setupWebGl() {
       this.renderer = new Renderer({ depth: false });
       this.glContext = this.renderer.gl;
@@ -155,6 +178,8 @@ export default {
       const activeAreaWidth = ww - this.passiveMarginsLRTB[0] - this.passiveMarginsLRTB[1]
       const activeAreaHeight = wh - this.passiveMarginsLRTB[2] - this.passiveMarginsLRTB[3]
 
+      // FIXME: re-creating the geometry each time the map is moved is not efficient
+      // find a way to just update uniforms?
       const geometry = new Geometry(this.glContext, {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
@@ -173,6 +198,9 @@ export default {
             activeAreaHeight: { value: activeAreaHeight / wh },
             marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
             marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
+            panX: { value: this.currentPanX / ww },
+            panY: { value: this.currentPanY / wh },
+            zoom: { value: this.currentZoom },
           },
           transparent: true,
           depthTest: false,
@@ -193,6 +221,7 @@ export default {
 
   <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div>
 
+  <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
 </template>
 
