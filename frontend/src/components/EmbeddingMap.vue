@@ -8,10 +8,12 @@ import panzoom from 'panzoom';
 
 import { Renderer, Camera, Geometry, Program, Mesh } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
 
-const vertex = /* glsl */ `
-    attribute float positionX;
-    attribute float positionY;
-    attribute float clusterId;
+const vertex = /* glsl */ `\
+    #version 300 es
+
+    in float positionX;
+    in float positionY;
+    in float clusterId;
 
     uniform mat4 modelMatrix;
     uniform mat4 viewMatrix;
@@ -28,12 +30,15 @@ const vertex = /* glsl */ `
     uniform float panX;
     uniform float panY;
     uniform float zoom;
+    uniform int highlightedPointIdx;
 
-    varying float clusterIdVar;
+    out float clusterIdVar;
+    out float isHighlighted;
 
     void main() {
 
         clusterIdVar = clusterId;
+        isHighlighted = (gl_VertexID == highlightedPointIdx) ? 1.0 : 0.0;
 
         vec3 rawPos = vec3(positionX, positionY, -1.0);
 
@@ -62,10 +67,15 @@ const vertex = /* glsl */ `
     }
 `;
 
-const fragment = /* glsl */ `
+const fragment = /* glsl */ `\
+    #version 300 es
+
     precision highp float;
 
-    varying float clusterIdVar;
+    in float clusterIdVar;
+    in float isHighlighted;
+
+    out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
     vec3 hsv2rgb(vec3 c) {
         vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -78,8 +88,8 @@ const fragment = /* glsl */ `
 
         float circle = smoothstep(0.5, 0.4, length(uv - 0.5)) * 0.8;
 
-        gl_FragColor.rgb = hsv2rgb(vec3(clusterIdVar / 10.0, 0.7, 1.0));
-        gl_FragColor.a = circle;
+        FragColor.rgb = hsv2rgb(vec3(clusterIdVar / 10.0, 0.7, isHighlighted > 0.5 ? 0.0 : 1.0));
+        FragColor.a = circle;
     }
 `;
 
@@ -111,6 +121,7 @@ export default {
       currentPanY: 0.0,
       targetPanX: 0.0,
       targetPanY: 0.0,
+      highlightedPointIdx: -1,
 
       renderer: null,
       camera: null,
@@ -216,7 +227,7 @@ export default {
       const program = new Program(this.glContext, {
           vertex,
           fragment,
-          uniforms: {
+          uniforms: {  // types are inferred from shader code
             baseOffsetX: { value: this.baseOffsetX },
             baseOffsetY: { value: this.baseOffsetY },
             baseScaleX: { value: this.baseScaleX },
@@ -228,6 +239,7 @@ export default {
             panX: { value: this.currentPanX / ww },
             panY: { value: this.currentPanY / wh },
             zoom: { value: this.currentZoom },
+            highlightedPointIdx: { value: this.highlightedPointIdx },
           },
           transparent: true,
           depthTest: false,
@@ -237,6 +249,36 @@ export default {
 
       this.renderer.render({ scene: points, camera: this.camera });
     },
+    updateOnHover(event) {
+      if (event.buttons) return;
+      const notPannedAndZoomedX = (event.clientX - this.currentPanX) / this.currentZoom
+      const notShiftedToActiveAreaX = (notPannedAndZoomedX - this.passiveMarginsLRTB[0]) / this.activeAreaWidth
+      const notNormalizedX = notShiftedToActiveAreaX / this.baseScaleX - this.baseOffsetX
+
+      const notPannedY = (window.innerHeight - event.clientY) + this.currentPanY
+      const notPannedAndZoomedY = (notPannedY - window.innerHeight) / this.currentZoom + window.innerHeight
+      const notShiftedToActiveAreaY = (notPannedAndZoomedY - this.passiveMarginsLRTB[3]) / this.activeAreaHeight
+      const notNormalizedY = notShiftedToActiveAreaY / this.baseScaleY - this.baseOffsetY
+
+      let closestIdx = null
+      let closestDist = 10000000
+      for (const i of Array(this.currentPositionsX.length).keys()) {
+        const a = this.currentPositionsX[i] - notNormalizedX
+        const b = this.currentPositionsY[i] - notNormalizedY
+        const distance = Math.sqrt(a*a + b*b)
+        if (distance < closestDist) {
+          closestDist = distance
+          closestIdx = i
+        }
+      }
+      const threshold = 100  // FIXME: this should be the size of a point in px converted to the embedding scale
+      if (closestIdx && closestDist < threshold) {
+        this.highlightedPointIdx = closestIdx
+      } else {
+        this.highlightedPointIdx = -1
+      }
+      this.updateMap()
+    },
   },
 }
 
@@ -245,7 +287,7 @@ export default {
 <template>
   <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
-  <div ref="webGlArea" class="fixed w-full h-full"></div>
+  <div ref="webGlArea" @mousemove="this.updateOnHover" class="fixed w-full h-full"></div>
 
   <!-- this div shows a gray outline around the "active area" for debugging purposes -->
   <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
