@@ -13,4 +13,5 @@ export default defineConfig({
     },
   },
   plugins: [vue()],
+  assetsInclude: ["**/*.vert", "**/*.frag"],
 })
