@@ -126,6 +126,8 @@ export default {
       renderer: null,
       camera: null,
       glContext: null,
+      glProgram: null,
+      glMesh: null,
     }
   },
   computed: {
@@ -171,7 +173,7 @@ export default {
         that.currentPanX = transform.x
         that.currentPanY = transform.y
         that.currentZoom = transform.scale
-        that.updateMap()
+        that.updateUniforms()
       });
     },
     setupWebGl() {
@@ -224,7 +226,7 @@ export default {
           clusterId: { size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
       });
 
-      const program = new Program(this.glContext, {
+      this.glProgram = new Program(this.glContext, {
           vertex,
           fragment,
           uniforms: {  // types are inferred from shader code
@@ -245,9 +247,34 @@ export default {
           depthTest: false,
       });
 
-      const points = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry, program });
+      this.glMesh = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry, program: this.glProgram });
 
-      this.renderer.render({ scene: points, camera: this.camera });
+      this.renderer.render({ scene: this.glMesh, camera: this.camera });
+    },
+    updateUniforms() {
+      this.baseOffsetX = -Math.min(...this.currentPositionsX)
+      this.baseOffsetY = -Math.min(...this.currentPositionsY)
+      this.baseScaleX = 1.0 / (Math.max(...this.currentPositionsX) + this.baseOffsetX)
+      this.baseScaleY = 1.0 / (Math.max(...this.currentPositionsY) + this.baseOffsetY)
+
+      const ww = window.innerWidth
+      const wh = window.innerHeight
+
+      this.glProgram.uniforms = {  // types are inferred from shader code
+            baseOffsetX: { value: this.baseOffsetX },
+            baseOffsetY: { value: this.baseOffsetY },
+            baseScaleX: { value: this.baseScaleX },
+            baseScaleY: { value: this.baseScaleY },
+            activeAreaWidth: { value: this.activeAreaWidth / ww },
+            activeAreaHeight: { value: this.activeAreaHeight / wh },
+            marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
+            marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
+            panX: { value: this.currentPanX / ww },
+            panY: { value: this.currentPanY / wh },
+            zoom: { value: this.currentZoom },
+            highlightedPointIdx: { value: this.highlightedPointIdx },
+          }
+        this.renderer.render({ scene: this.glMesh, camera: this.camera });
     },
     updateOnHover(event) {
       if (event.buttons) return;
@@ -277,7 +304,7 @@ export default {
       } else {
         this.highlightedPointIdx = -1
       }
-      this.updateMap()
+      this.updateUniforms()
     },
   },
 }
