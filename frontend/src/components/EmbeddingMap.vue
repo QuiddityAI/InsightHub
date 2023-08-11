@@ -113,25 +113,43 @@ export default {
       resize();
       this.updateMap()
 
+      let lastUpdateTimeInMs = performance.now()
 
-      // requestAnimationFrame(update);
-      // function update(t) {
-      //     requestAnimationFrame(update);
+      requestAnimationFrame(update);
+      function update(currentTimeInMs) {
+        requestAnimationFrame(update);
 
-      //     // add some slight overall movement to be more interesting
-      //     particles.rotation.x = Math.sin(t * 0.0002) * 0.1;
-      //     particles.rotation.y = Math.cos(t * 0.0005) * 0.15;
-      //     particles.rotation.z += 0.01;
+        const plotWidth = 5.0  // rough number of units from left to right end of plot
+        const timeToMoveAcrossWholePlotInMs = 1000.0
+        const distancePerMs = plotWidth / timeToMoveAcrossWholePlotInMs
+        const distanceSinceLastFrame = distancePerMs * (currentTimeInMs - lastUpdateTimeInMs)
 
-      //     program.uniforms.uTime.value = t * 0.001;
-      //     renderer.render({ scene: particles, camera });
-      // }
+        let somethingChanged = false
+
+        if (that.currentPositionsX.length === that.targetPositionsX.length) {
+          for (const i of Array(that.targetPositionsX.length).keys()) {
+            const diffX = that.targetPositionsX[i] - that.currentPositionsX[i]
+            const diffY = that.targetPositionsY[i] - that.currentPositionsY[i]
+
+            if (diffX === 0.0 && diffY === 0.0) continue;
+            somethingChanged = true
+
+            that.currentPositionsX[i] += Math.min(distanceSinceLastFrame * (diffX / Math.max(diffX, diffY)), Math.abs(diffX)) * Math.sign(diffX)
+            that.currentPositionsY[i] += Math.min(distanceSinceLastFrame * (diffY / Math.max(diffX, diffY)), Math.abs(diffY)) * Math.sign(diffY)
+          }
+        }
+        lastUpdateTimeInMs = currentTimeInMs
+
+        if (somethingChanged) {
+          that.updateMap()
+        }
+      }
     },
     updateMap() {
-      this.baseOffsetX = -Math.min(...this.currentPositionsX)
-      this.baseOffsetY = -Math.min(...this.currentPositionsY)
-      this.baseScaleX = 1.0 / (Math.max(...this.currentPositionsX) + this.baseOffsetX)
-      this.baseScaleY = 1.0 / (Math.max(...this.currentPositionsY) + this.baseOffsetY)
+      this.baseOffsetX = -Math.min(...this.targetPositionsX)
+      this.baseOffsetY = -Math.min(...this.targetPositionsY)
+      this.baseScaleX = 1.0 / (Math.max(...this.targetPositionsX) + this.baseOffsetX)
+      this.baseScaleY = 1.0 / (Math.max(...this.targetPositionsY) + this.baseOffsetY)
 
       const ww = window.innerWidth
       const wh = window.innerHeight
@@ -170,10 +188,10 @@ export default {
       this.renderer.render({ scene: this.glMesh, camera: this.camera });
     },
     updateUniforms() {
-      this.baseOffsetX = -Math.min(...this.currentPositionsX)
-      this.baseOffsetY = -Math.min(...this.currentPositionsY)
-      this.baseScaleX = 1.0 / (Math.max(...this.currentPositionsX) + this.baseOffsetX)
-      this.baseScaleY = 1.0 / (Math.max(...this.currentPositionsY) + this.baseOffsetY)
+      this.baseOffsetX = -Math.min(...this.targetPositionsX)
+      this.baseOffsetY = -Math.min(...this.targetPositionsY)
+      this.baseScaleX = 1.0 / (Math.max(...this.targetPositionsX) + this.baseOffsetX)
+      this.baseScaleY = 1.0 / (Math.max(...this.targetPositionsY) + this.baseOffsetY)
 
       const ww = window.innerWidth
       const wh = window.innerHeight

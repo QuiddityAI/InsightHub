@@ -42,8 +42,11 @@ export default {
               that.cluster_uids = response.data["cluster_uids"]
               that.map_timings = response.data["timings"]
 
-              that.$refs.embedding_map.currentPositionsX = response.data["per_point_data"]["positions_x"]
-              that.$refs.embedding_map.currentPositionsY = response.data["per_point_data"]["positions_y"]
+              that.$refs.embedding_map.targetPositionsX = response.data["per_point_data"]["positions_x"]
+              that.$refs.embedding_map.targetPositionsY = response.data["per_point_data"]["positions_y"]
+              that.$refs.embedding_map.currentPositionsX = Array(that.$refs.embedding_map.targetPositionsX.length).fill(0.0)
+              that.$refs.embedding_map.currentPositionsY = Array(that.$refs.embedding_map.targetPositionsY.length).fill(0.0)
+
               that.$refs.embedding_map.clusterIdsPerPoint = response.data["per_point_data"]["cluster_ids"]
               that.$refs.embedding_map.clusterData = response.data["cluster_data"]
               that.$refs.embedding_map.updateMap()
