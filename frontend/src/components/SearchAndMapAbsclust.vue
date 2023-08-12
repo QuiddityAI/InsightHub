@@ -6,6 +6,8 @@ import EmbeddingMap from './EmbeddingMap.vue';
 
 import httpClient from '../api/httpClient';
 
+import * as math from 'mathjs'
+
 export default {
   data() {
     return {
@@ -44,8 +46,10 @@ export default {
 
               that.$refs.embedding_map.targetPositionsX = response.data["per_point_data"]["positions_x"]
               that.$refs.embedding_map.targetPositionsY = response.data["per_point_data"]["positions_y"]
-              that.$refs.embedding_map.currentPositionsX = Array(that.$refs.embedding_map.targetPositionsX.length).fill(0.0)
-              that.$refs.embedding_map.currentPositionsY = Array(that.$refs.embedding_map.targetPositionsY.length).fill(0.0)
+              that.$refs.embedding_map.currentPositionsX = Array(that.$refs.embedding_map.targetPositionsX.length).fill(math.mean(response.data["per_point_data"]["positions_x"]))
+              that.$refs.embedding_map.currentPositionsY = Array(that.$refs.embedding_map.targetPositionsY.length).fill(math.mean(response.data["per_point_data"]["positions_y"]))
+              that.$refs.embedding_map.currentVelocityX = Array(that.$refs.embedding_map.targetPositionsX.length).fill(0.0)
+              that.$refs.embedding_map.currentVelocityY = Array(that.$refs.embedding_map.targetPositionsY.length).fill(0.0)
 
               that.$refs.embedding_map.clusterIdsPerPoint = response.data["per_point_data"]["cluster_ids"]
               that.$refs.embedding_map.clusterData = response.data["cluster_data"]

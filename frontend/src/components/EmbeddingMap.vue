@@ -7,6 +7,7 @@
 import panzoom from 'panzoom';
 
 import { Renderer, Camera, Geometry, Program, Mesh } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
+import * as math from 'mathjs'
 
 import vertex from './points.vert?raw'
 import fragment from './points.frag?raw'
@@ -77,6 +78,19 @@ export default {
       const pannedAndZoomed = zoomed - this.currentPanY
       return pannedAndZoomed
     },
+    screenToEmbeddingX(screenX) {
+      const notPannedAndZoomedX = (screenX - this.currentPanX) / this.currentZoom
+      const notShiftedToActiveAreaX = (notPannedAndZoomedX - this.passiveMarginsLRTB[0]) / this.activeAreaWidth
+      const notNormalizedX = notShiftedToActiveAreaX / this.baseScaleX - this.baseOffsetX
+      return notNormalizedX
+    },
+    screenToEmbeddingY(screenY) {
+      const notPannedY = (window.innerHeight - screenY) + this.currentPanY
+      const notPannedAndZoomedY = (notPannedY - window.innerHeight) / this.currentZoom + window.innerHeight
+      const notShiftedToActiveAreaY = (notPannedAndZoomedY - this.passiveMarginsLRTB[3]) / this.activeAreaHeight
+      const notNormalizedY = notShiftedToActiveAreaY / this.baseScaleY - this.baseOffsetY
+      return notNormalizedY
+    },
     setupPanZoom() {
       const instance = panzoom(this.$refs.panZoomProxy, {
         zoomSpeed: 0.35, // 35% per mouse wheel event
@@ -115,14 +129,32 @@ export default {
 
       let lastUpdateTimeInMs = performance.now()
 
+      function getAccelerationOfSpring(currentPos, currentVelocity, targetPosition, stiffness, mass, damping) {
+        const displacement = currentPos - targetPosition
+        const k = -stiffness  // in kg / s^2
+        const d = -damping  // in kg / s
+        const Fspring = k * displacement
+        const Fdamping = d * currentVelocity
+        const acceleration = (Fspring + Fdamping) / mass
+        return acceleration
+      }
+
       requestAnimationFrame(update);
       function update(currentTimeInMs) {
         requestAnimationFrame(update);
 
-        const plotWidth = 5.0  // rough number of units from left to right end of plot
-        const timeToMoveAcrossWholePlotInMs = 1000.0
-        const distancePerMs = plotWidth / timeToMoveAcrossWholePlotInMs
-        const distanceSinceLastFrame = distancePerMs * (currentTimeInMs - lastUpdateTimeInMs)
+        const timeSinceLastUpdateInSec = (currentTimeInMs - lastUpdateTimeInMs) / 1000.0
+        lastUpdateTimeInMs = currentTimeInMs
+
+        if (that.currentPositionsX.length == 0) return;
+
+        // restDelta means at which distance from the target position the movement stops and they
+        // jump to the target (otherwise the motion could go on forever)
+        // here we assume that the plot is about 700px wide and if the delta is less than a pixel, it should stop
+        const restDelta = (math.max(that.targetPositionsX) - math.min(that.targetPositionsX)) / 700.0
+        // to make sure overshoots still work, we don't stop the motion if the speed is still
+        // greater than restSpeed, here defined as restDelta per 1/5th second
+        const restSpeed = restDelta / 0.2  // in restDelta units per sec
 
         let somethingChanged = false
 
@@ -130,18 +162,33 @@ export default {
           for (const i of Array(that.targetPositionsX.length).keys()) {
             const diffX = that.targetPositionsX[i] - that.currentPositionsX[i]
             const diffY = that.targetPositionsY[i] - that.currentPositionsY[i]
-
             if (diffX === 0.0 && diffY === 0.0) continue;
             somethingChanged = true
 
-            that.currentPositionsX[i] += Math.min(distanceSinceLastFrame * (diffX / Math.max(diffX, diffY)), Math.abs(diffX)) * Math.sign(diffX)
-            that.currentPositionsY[i] += Math.min(distanceSinceLastFrame * (diffY / Math.max(diffX, diffY)), Math.abs(diffY)) * Math.sign(diffY)
+            const aX = getAccelerationOfSpring(
+              that.currentPositionsX[i], that.currentVelocityX[i], that.targetPositionsX[i],
+              /* stiffness */ 10.0, /* mass */ 2.0, /* damping */ 4.0
+            )
+            that.currentVelocityX[i] += aX * timeSinceLastUpdateInSec
+            that.currentPositionsX[i] += that.currentVelocityX[i] * timeSinceLastUpdateInSec
+            if (Math.abs(that.currentVelocityX[i]) < restSpeed && Math.abs(diffX) < restDelta) {
+              that.currentPositionsX[i] = that.targetPositionsX[i]
+            }
+
+            const aY = getAccelerationOfSpring(
+              that.currentPositionsY[i], that.currentVelocityY[i], that.targetPositionsY[i],
+              /* stiffness */ 10.0, /* mass */ 2.0, /* damping */ 4.0
+            )
+            that.currentVelocityY[i] += aY * timeSinceLastUpdateInSec
+            that.currentPositionsY[i] += that.currentVelocityY[i] * timeSinceLastUpdateInSec
+            if (Math.abs(that.currentVelocityY[i]) < restSpeed && Math.abs(diffY) < restDelta) {
+              that.currentPositionsY[i] = that.targetPositionsY[i]
+            }
           }
         }
-        lastUpdateTimeInMs = currentTimeInMs
 
         if (somethingChanged) {
-          that.updateMap()
+          that.updateGeometry()
         }
       }
     },
@@ -150,17 +197,17 @@ export default {
       this.baseOffsetY = -Math.min(...this.targetPositionsY)
       this.baseScaleX = 1.0 / (Math.max(...this.targetPositionsX) + this.baseOffsetX)
       this.baseScaleY = 1.0 / (Math.max(...this.targetPositionsY) + this.baseOffsetY)
-
-      const ww = window.innerWidth
-      const wh = window.innerHeight
-
-      // FIXME: re-creating the geometry each time the map is moved is not efficient
-      // find a way to just update uniforms?
+      this.updateGeometry()
+    },
+    updateGeometry() {
       const geometry = new Geometry(this.glContext, {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
           clusterId: { size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
       });
+
+      const ww = window.innerWidth
+      const wh = window.innerHeight
 
       this.glProgram = new Program(this.glContext, {
           vertex,
@@ -188,10 +235,6 @@ export default {
       this.renderer.render({ scene: this.glMesh, camera: this.camera });
     },
     updateUniforms() {
-      this.baseOffsetX = -Math.min(...this.targetPositionsX)
-      this.baseOffsetY = -Math.min(...this.targetPositionsY)
-      this.baseScaleX = 1.0 / (Math.max(...this.targetPositionsX) + this.baseOffsetX)
-      this.baseScaleY = 1.0 / (Math.max(...this.targetPositionsY) + this.baseOffsetY)
 
       const ww = window.innerWidth
       const wh = window.innerHeight
@@ -214,20 +257,14 @@ export default {
     },
     updateOnHover(event) {
       if (event.buttons) return;
-      const notPannedAndZoomedX = (event.clientX - this.currentPanX) / this.currentZoom
-      const notShiftedToActiveAreaX = (notPannedAndZoomedX - this.passiveMarginsLRTB[0]) / this.activeAreaWidth
-      const notNormalizedX = notShiftedToActiveAreaX / this.baseScaleX - this.baseOffsetX
-
-      const notPannedY = (window.innerHeight - event.clientY) + this.currentPanY
-      const notPannedAndZoomedY = (notPannedY - window.innerHeight) / this.currentZoom + window.innerHeight
-      const notShiftedToActiveAreaY = (notPannedAndZoomedY - this.passiveMarginsLRTB[3]) / this.activeAreaHeight
-      const notNormalizedY = notShiftedToActiveAreaY / this.baseScaleY - this.baseOffsetY
+      const mousePosInEmbeddingSpaceX = this.screenToEmbeddingX(event.clientX)
+      const mousePosInEmbeddingSpaceY = this.screenToEmbeddingX(event.clientY)
 
       let closestIdx = null
       let closestDist = 10000000
       for (const i of Array(this.currentPositionsX.length).keys()) {
-        const a = this.currentPositionsX[i] - notNormalizedX
-        const b = this.currentPositionsY[i] - notNormalizedY
+        const a = this.currentPositionsX[i] - mousePosInEmbeddingSpaceX
+        const b = this.currentPositionsY[i] - mousePosInEmbeddingSpaceY
         const distance = Math.sqrt(a*a + b*b)
         if (distance < closestDist) {
           closestDist = distance
