@@ -35,7 +35,7 @@ def get_embedding_strategies():
 
 @app.route('/api/embedding', methods=['POST'])
 def get_embedding():
-    global tokenizer, model, current_checkpoint
+    global tokenizer, model, current_checkpoint, device
     data = request.json
     text = data.get("text")  # might also be a list of texts (a batch)
     model_name = data.get("model")
@@ -49,7 +49,13 @@ def get_embedding():
     if current_checkpoint != checkpoint:
         tokenizer = AutoTokenizer.from_pretrained(checkpoint)
         model = AutoModel.from_pretrained(checkpoint)
-        model = model.to(device)
+        try:
+            model = model.to(device)
+        except RuntimeError as e:
+            logging.error(e)
+            logging.warning("Using GPU didn't work, trying it now on the CPU...")
+            device = "cpu"
+            model = model.to(device)
         current_checkpoint = checkpoint
 
     embedding_cls, embedding_sep, embedding_av = generate_embeddings(text, tokenizer, model, device)
@@ -130,17 +136,17 @@ def test_embedding():
     text2 = "This is a different sentence. This is another very different sentence."
     texts = [text1, text2]
 
-    embedding_cls, embedding_sep, embedding_av = generate_embeddings_pubmed(text1, tokenizer, model, device)
+    embedding_cls, embedding_sep, embedding_av = generate_embeddings(text1, tokenizer, model, device)
     print("Single text 1:")
     print("embedding_cls.shape, embedding_sep.shape, embedding_av.shape")
     print(embedding_cls.shape, embedding_sep.shape, embedding_av.shape)
 
-    embedding_cls, embedding_sep, embedding_av = generate_embeddings_pubmed(text2, tokenizer, model, device)
+    embedding_cls, embedding_sep, embedding_av = generate_embeddings(text2, tokenizer, model, device)
     print("Single text 2:")
     print("embedding_cls.shape, embedding_sep.shape, embedding_av.shape")
     print(embedding_cls.shape, embedding_sep.shape, embedding_av.shape)
 
-    embedding_cls, embedding_sep, embedding_av = generate_embeddings_pubmed(texts, tokenizer, model, device)
+    embedding_cls, embedding_sep, embedding_av = generate_embeddings(texts, tokenizer, model, device)
     print("Batch of texts:")
     print("embedding_cls.shape, embedding_sep.shape, embedding_av.shape")
     print(embedding_cls.shape, embedding_sep.shape, embedding_av.shape)
