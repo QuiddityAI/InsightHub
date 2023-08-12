@@ -1,6 +1,9 @@
+import logging
 import time
 import re
 from functools import lru_cache
+import uuid
+from threading import Thread
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -99,7 +102,7 @@ def _query(query):
     return jsonify(result)
 
 
-def get_search_results_for_map(queries: list[str], limit: int):
+def get_search_results_for_map(queries: list[str], limit: int, task_id: str=None):
     results = []
 
     for query in queries:
@@ -123,11 +126,17 @@ def get_search_results_for_map(queries: list[str], limit: int):
         #embeddings = get_openai_embedding_batch(texts)
         #save_embedding_cache()
 
-        for item in tqdm(results_part):
+        if task_id:
+            umap_tasks[task_id]["progress"]["total_steps"] = len(results_part)
+
+        for i, item in enumerate(results_part):
             #item_embedding = embeddings[item["DOI"]]
             item_embedding = get_embedding(item.get("title", "") + " " + item.get("abstract", ""), item["DOI"]).tolist()
             item["vector"] = item_embedding
             item["distance"] = np.dot(query_embedding, item_embedding)
+
+            if task_id:
+                umap_tasks[task_id]["progress"]["current_step"] = i
 
         results += results_part
 
@@ -190,20 +199,50 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
     return cluster_data
 
 
+umap_tasks = {}
+
+
 @app.route('/api/map', methods=['POST'])
 def map_html():
     query = request.json.get("query")
-    return _map_html(query)
-
-
-@lru_cache()
-def _map_html(query):
     if not query:
         return jsonify({})
 
+    task_id = str(uuid.uuid4())
+    umap_tasks[task_id] = {
+        "finished": False,
+        "result": None,
+        "progress": {"embeddings_available": False, "total_steps": 1, "current_step": 0},
+    }
+
+    thread = Thread(target = _finish_map_html, args = (task_id, query))
+    thread.start()
+
+    return jsonify({"task_id": task_id})
+
+
+@app.route('/api/map/result', methods=['POST'])
+def get_map_html_result():
+    task_id = request.json.get("task_id")
+    if task_id not in umap_tasks:
+        logging.warning("task_id not found")
+        return "task_id not found", 404
+
+    result = umap_tasks[task_id]
+
+    if result["finished"]:
+        del umap_tasks[task_id]
+
+    # TODO: if the task is never retrieved, it gets never deleted
+    # instead go through tasks every few minutes and delete old ones
+
+    return result
+
+
+def _finish_map_html(task_id, query):
     timings = []
     t1 = time.time()
-    elements = get_search_results_for_map(query.split(" OR "), limit=3000)
+    elements = get_search_results_for_map(query.split(" OR "), limit=3000, task_id=task_id)
     t2 = time.time()
     timings.append({"part": "vector DB pure vector query, limit 600", "duration": t2 - t1})
 
@@ -222,7 +261,37 @@ def _map_html(query):
 
     # tsne = TSNE(n_components=2, random_state=0)  # instant
     # projections = tsne.fit_transform(features)
-    projections = umap.UMAP(random_state=99, min_dist=0.05).fit_transform(features)
+
+    def on_progress(working_in_embedding_space, current_iteration, total_iterations, embeddings):
+        umap_tasks[task_id]["progress"] = {
+            "embeddings_available": working_in_embedding_space,
+            "total_steps": total_iterations,
+            "current_step": current_iteration,
+        }
+        projections = embeddings
+
+        if working_in_embedding_space and projections is not None:
+            positionsX = projections[:, 0]
+            positionsY = projections[:, 1]
+
+            result = {
+                "per_point_data": {
+                    "positions_x": positionsX.tolist(),
+                    "positions_y": positionsY.tolist(),
+                    "cluster_ids": [0] * len(positionsX),
+                    "distances": distances,
+                },
+                "cluster_data": [],
+                "timings": [],
+            }
+            umap_tasks[task_id]["result"] = result
+
+    # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
+    # Progress might only be available below 4096
+
+    projections = umap.UMAP(random_state=99, min_dist=0.05, n_epochs=2000).fit_transform(features, on_progress_callback=on_progress)
+
+    # callback for intermediate results can be added here: https://github.com/lmcinnes/umap/blob/master/umap/layouts.py#L417
     t6 = time.time()
     timings.append({"part": "UMAP fit transform", "duration": t6 - t4})
     cluster_labels = cluster_results(projections)
@@ -232,12 +301,6 @@ def _map_html(query):
     positionsX = projections[:, 0]
     positionsY = projections[:, 1]
     cluster_id_per_point = cluster_labels
-
-    # for i in range(len(cluster_titles)):
-    #     cluster_title = ", ".join(cluster_titles[i])
-    #     annotation_html = f'<b>{cluster_title}</b>'
-    #     fig.add_annotation(x=cluster_centers[i][0], y=cluster_centers[i][1],
-    #         text=annotation_html, bgcolor="white", opacity=0.85)
 
     result = {
         "per_point_data": {
@@ -249,7 +312,9 @@ def _map_html(query):
         "cluster_data": cluster_data,
         "timings": timings,
     }
-    return jsonify(result)
+
+    umap_tasks[task_id]["result"] = result
+    umap_tasks[task_id]["finished"] = True
 
 
 if __name__ == "__main__":

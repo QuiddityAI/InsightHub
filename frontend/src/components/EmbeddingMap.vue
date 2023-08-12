@@ -146,7 +146,7 @@ export default {
         const timeSinceLastUpdateInSec = (currentTimeInMs - lastUpdateTimeInMs) / 1000.0
         lastUpdateTimeInMs = currentTimeInMs
 
-        if (that.currentPositionsX.length == 0) return;
+        if (that.currentPositionsX.length == 0 || that.currentPositionsX.length != that.targetPositionsX.length) return;
 
         // restDelta means at which distance from the target position the movement stops and they
         // jump to the target (otherwise the motion could go on forever)
@@ -167,7 +167,7 @@ export default {
 
             const aX = getAccelerationOfSpring(
               that.currentPositionsX[i], that.currentVelocityX[i], that.targetPositionsX[i],
-              /* stiffness */ 10.0, /* mass */ 2.0, /* damping */ 4.0
+              /* stiffness */ 20.0, /* mass */ 1.0, /* damping */ 6.0
             )
             that.currentVelocityX[i] += aX * timeSinceLastUpdateInSec
             that.currentPositionsX[i] += that.currentVelocityX[i] * timeSinceLastUpdateInSec
@@ -177,7 +177,7 @@ export default {
 
             const aY = getAccelerationOfSpring(
               that.currentPositionsY[i], that.currentVelocityY[i], that.targetPositionsY[i],
-              /* stiffness */ 10.0, /* mass */ 2.0, /* damping */ 4.0
+              /* stiffness */ 20.0, /* mass */ 1.0, /* damping */ 6.0
             )
             that.currentVelocityY[i] += aY * timeSinceLastUpdateInSec
             that.currentPositionsY[i] += that.currentVelocityY[i] * timeSinceLastUpdateInSec
@@ -193,13 +193,32 @@ export default {
       }
     },
     updateMap() {
-      this.baseOffsetX = -Math.min(...this.targetPositionsX)
-      this.baseOffsetY = -Math.min(...this.targetPositionsY)
-      this.baseScaleX = 1.0 / (Math.max(...this.targetPositionsX) + this.baseOffsetX)
-      this.baseScaleY = 1.0 / (Math.max(...this.targetPositionsY) + this.baseOffsetY)
+      if (this.targetPositionsX.length > 0) {
+        this.baseOffsetX = -math.min(this.targetPositionsX)
+        this.baseOffsetY = -math.min(this.targetPositionsY)
+        this.baseScaleX = 1.0 / (math.max(this.targetPositionsX) + this.baseOffsetX)
+        this.baseScaleY = 1.0 / (math.max(this.targetPositionsY) + this.baseOffsetY)
+      }
       this.updateGeometry()
     },
     updateGeometry() {
+      if (this.currentVelocityX.length != this.targetPositionsX.length) {
+        this.currentVelocityX = Array(this.targetPositionsX.length).fill(0.0)
+        this.currentVelocityY = Array(this.targetPositionsY.length).fill(0.0)
+      }
+      if (this.currentPositionsX.length != this.targetPositionsX.length) {
+        if (this.targetPositionsX.length > 0) {
+          this.currentPositionsX = Array(this.targetPositionsX.length).fill(math.mean(this.targetPositionsX))
+          this.currentPositionsY = Array(this.targetPositionsY.length).fill(math.mean(this.targetPositionsY))
+        } else {
+          this.currentPositionsX = []
+          this.currentPositionsY = []
+        }
+      }
+      if (this.clusterIdsPerPoint.length != this.targetPositionsX.length) {
+        this.clusterIdsPerPoint = Array(this.targetPositionsX.length).fill(0)
+      }
+
       const geometry = new Geometry(this.glContext, {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },

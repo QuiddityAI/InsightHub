@@ -14,6 +14,10 @@ export default {
       query: "",
       search_results: [],
       search_timings: "",
+      map_task_id: null,
+      show_loading_bar: false,
+      map_viewport_is_adjusted: false,
+      progress: 0.0,
       cluster_uids: [],
       map_timings: "",
       windowHeight: 0,
@@ -28,7 +32,10 @@ export default {
       that.search_timings = []
       that.cluster_uids = []
       that.map_timings = []
-      // TODO: clear map
+      that.$refs.embedding_map.targetPositionsX = []
+      that.$refs.embedding_map.targetPositionsY = []
+      that.$refs.embedding_map.clusterData = []
+      that.$refs.embedding_map.updateMap()
 
       const payload = {
         query: this.query,
@@ -41,20 +48,54 @@ export default {
 
           httpClient.post("/api/map", payload)
             .then(function (response) {
-              that.cluster_uids = response.data["cluster_uids"]
-              that.map_timings = response.data["timings"]
-
-              that.$refs.embedding_map.targetPositionsX = response.data["per_point_data"]["positions_x"]
-              that.$refs.embedding_map.targetPositionsY = response.data["per_point_data"]["positions_y"]
-              that.$refs.embedding_map.currentPositionsX = Array(that.$refs.embedding_map.targetPositionsX.length).fill(math.mean(response.data["per_point_data"]["positions_x"]))
-              that.$refs.embedding_map.currentPositionsY = Array(that.$refs.embedding_map.targetPositionsY.length).fill(math.mean(response.data["per_point_data"]["positions_y"]))
-              that.$refs.embedding_map.currentVelocityX = Array(that.$refs.embedding_map.targetPositionsX.length).fill(0.0)
-              that.$refs.embedding_map.currentVelocityY = Array(that.$refs.embedding_map.targetPositionsY.length).fill(0.0)
-
-              that.$refs.embedding_map.clusterIdsPerPoint = response.data["per_point_data"]["cluster_ids"]
-              that.$refs.embedding_map.clusterData = response.data["cluster_data"]
-              that.$refs.embedding_map.updateMap()
+              that.map_task_id = response.data["task_id"]
+              that.map_viewport_is_adjusted = false
             })
+        })
+    },
+    get_mapping_progress() {
+      const that = this
+      if (!this.map_task_id) return;
+      const payload = {
+        task_id: this.map_task_id,
+      }
+      httpClient.post("/api/map/result", payload)
+        .then(function (response) {
+          const finished = response.data["finished"]
+
+          if (finished) {
+            // no need to get further results:
+            that.map_task_id = null
+          }
+
+          const progress = response.data["progress"]
+
+          that.show_loading_bar = !progress.embeddings_available
+          that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
+
+          const result = response.data["result"]
+
+          if (result) {
+            that.$refs.embedding_map.targetPositionsX = result["per_point_data"]["positions_x"]
+            that.$refs.embedding_map.targetPositionsY = result["per_point_data"]["positions_y"]
+            that.$refs.embedding_map.clusterIdsPerPoint = result["per_point_data"]["cluster_ids"]
+
+            that.$refs.embedding_map.clusterData = result["cluster_data"]
+
+            if (that.map_viewport_is_adjusted) {
+              that.$refs.embedding_map.updateGeometry()
+            } else {
+              that.$refs.embedding_map.updateMap()
+              that.map_viewport_is_adjusted = true
+            }
+
+            that.map_timings = result["timings"]
+          }
+        })
+        .catch(function () {
+          // no need to get further results:
+          that.map_task_id = null
+          console.log("404 error?")
         })
     },
     show_cluster(cluster_item) {
@@ -75,6 +116,10 @@ export default {
   mounted() {
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
+
+    setInterval(function(){
+        this.get_mapping_progress()
+    }.bind(this), 100);
   },
   updated() {
     this.updateMapPassiveMargin()
@@ -152,7 +197,11 @@ export default {
         <!-- right column (e.g. for showing box with details for selected result) -->
         <div ref="right_column" class="overflow-y-auto pointer-events-none">
 
-          <div :style="{height: (windowHeight - 150) + 'px'}"></div>
+          <div class="flex" :style="{height: (windowHeight - 150) + 'px'}">
+            <div v-if="show_loading_bar" class="self-center w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+              <div class="bg-blue-600 h-2.5 rounded-full" :style="{'width': (progress * 100).toFixed(0) + '%'}"></div>
+            </div>
+          </div>
 
           <ul role="list">
             <li v-for="item in map_timings" :key="item.part" class="text-gray-300">
