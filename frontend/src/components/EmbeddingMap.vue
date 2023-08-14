@@ -236,6 +236,8 @@ export default {
             baseOffsetY: { value: this.baseOffsetY },
             baseScaleX: { value: this.baseScaleX },
             baseScaleY: { value: this.baseScaleY },
+            viewportWidth: { value: ww },
+            viewportHeight: { value: wh },
             activeAreaWidth: { value: this.activeAreaWidth / ww },
             activeAreaHeight: { value: this.activeAreaHeight / wh },
             marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
@@ -263,6 +265,8 @@ export default {
             baseOffsetY: { value: this.baseOffsetY },
             baseScaleX: { value: this.baseScaleX },
             baseScaleY: { value: this.baseScaleY },
+            viewportWidth: { value: ww },
+            viewportHeight: { value: wh },
             activeAreaWidth: { value: this.activeAreaWidth / ww },
             activeAreaHeight: { value: this.activeAreaHeight / wh },
             marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
@@ -277,7 +281,7 @@ export default {
     updateOnHover(event) {
       if (event.buttons) return;
       const mousePosInEmbeddingSpaceX = this.screenToEmbeddingX(event.clientX)
-      const mousePosInEmbeddingSpaceY = this.screenToEmbeddingX(event.clientY)
+      const mousePosInEmbeddingSpaceY = this.screenToEmbeddingY(event.clientY)
 
       let closestIdx = null
       let closestDist = 10000000

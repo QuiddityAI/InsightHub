@@ -35,6 +35,8 @@ void main() {
 
     vec3 shiftedToActiveAreaPos = normalizedPos * vec3(activeAreaWidth, activeAreaHeight, 1.0) + vec3(marginLeft, marginBottom, 0.0);
 
+    // TODO: modify camera for pan and zoom instead of vertex position (to make sure dots stay the same size)
+
     // zoom origin is at top left (0, 1), so we first need to move the points there, then zoom, and then move back
     vec3 zoomedPos = ((shiftedToActiveAreaPos - vec3(0.0, 1.0, 0.0)) * zoom) + vec3(0.0, 1.0, 0.0);
     vec3 pannedAndZoomedPos = zoomedPos + vec3(panX, -panY, 0);
@@ -51,6 +53,6 @@ void main() {
 
     // get the model view position so that we can scale the points off into the distance
     vec4 mvPos = viewMatrix * mPos;
-    gl_PointSize = 5.0;
+    gl_PointSize = 5.0 * zoom;
     gl_Position = projectionMatrix * mvPos;
 }
