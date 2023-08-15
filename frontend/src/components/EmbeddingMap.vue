@@ -127,7 +127,7 @@ export default {
     },
     resetPanAndZoom() {
       this.panzoomInstance.moveTo(0, 0);
-      this.panzoomInstance.zoomTo(0, 0, 1);
+      this.panzoomInstance.zoomAbs(0, 0, 1);
     },
     setupWebGl() {
       this.renderer = new Renderer({ depth: false, dpr: window.devicePixelRatio || 1.0 });
@@ -420,7 +420,7 @@ export default {
     'left': screenLeftFromRelative(cluster_label.center[0]) + 'px',
     'bottom': screenBottomFromRelative(cluster_label.center[1]) + 'px',
     }">
-    <button @click="$emit('show_cluster', cluster_label)" class="px-1 bg-white/50 hover:bg-white text-gray-500 rounded">
+    <button @click="$emit('show_cluster', cluster_label)" class="px-1 backdrop-blur-sm bg-white/50 hover:bg-white text-gray-500 text-xs rounded">
       {{ cluster_label.title }}
     </button>
   </div>
