@@ -9,6 +9,7 @@ uniform float viewportWidth;
 uniform float viewportHeight;
 uniform float lightPositionX;
 uniform float lightPositionY;
+uniform float devicePixelRatio;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
@@ -33,7 +34,7 @@ void main() {
 	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
     float circleArea = 1.0 - step(1.0, distFromCenter);
 
-	vec2 viewPortSize = vec2(viewportWidth, viewportHeight);
+	vec2 viewPortSize = vec2(viewportWidth * devicePixelRatio, viewportHeight * devicePixelRatio);
 	vec2 relativeScreenPos = gl_FragCoord.xy / viewPortSize;  // 0-1, from bottom left
 	// FragColor = vec4(relativeScreenPos, 1.0, 1.0);
 

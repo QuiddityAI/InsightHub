@@ -20,6 +20,7 @@ uniform float panX;
 uniform float panY;
 uniform float zoom;
 uniform int highlightedPointIdx;
+uniform float devicePixelRatio;
 
 out float clusterIdVar;
 out float isHighlighted;
@@ -53,6 +54,6 @@ void main() {
 
     // get the model view position so that we can scale the points off into the distance
     vec4 mvPos = viewMatrix * mPos;
-    gl_PointSize = 5.0 * zoom;
+    gl_PointSize = 5.0 * zoom * devicePixelRatio;
     gl_Position = projectionMatrix * mvPos;
 }

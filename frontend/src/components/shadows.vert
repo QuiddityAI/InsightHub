@@ -21,6 +21,7 @@ uniform float zoom;
 uniform int highlightedPointIdx;
 uniform float lightPositionX;
 uniform float lightPositionY;
+uniform float devicePixelRatio;
 
 out float isHighlighted;
 
@@ -42,8 +43,8 @@ void main() {
 
     // shadow direction:
 	vec3 lightPos = vec3(lightPositionX, lightPositionY, -2.0);
-	vec3 relativeShadowOffset = pannedAndZoomedPos - lightPos;
-    vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 100.0);
+	vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * zoom;
+    vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / (100.0 * devicePixelRatio));
 
     // positions are 0->1, so make -1->1
     // edit: we stay for now in 0-1 space
@@ -57,6 +58,6 @@ void main() {
 
     // get the model view position so that we can scale the points off into the distance
     vec4 mvPos = viewMatrix * mPos;
-    gl_PointSize = 10.0 * zoom;
+    gl_PointSize = 10.0 * zoom * devicePixelRatio;
     gl_Position = projectionMatrix * mvPos;
 }

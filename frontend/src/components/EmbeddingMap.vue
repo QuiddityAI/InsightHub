@@ -116,7 +116,7 @@ export default {
       });
     },
     setupWebGl() {
-      this.renderer = new Renderer({ depth: false });
+      this.renderer = new Renderer({ depth: false, dpr: window.devicePixelRatio || 1.0 });
       this.glContext = this.renderer.gl;
       this.$refs.webGlArea.appendChild(this.glContext.canvas);
       this.glContext.clearColor(0.93, 0.94, 0.95, 1);
@@ -284,6 +284,7 @@ export default {
         highlightedPointIdx: { value: this.highlightedPointIdx },
         lightPositionX: { value: this.lightPositionX },
         lightPositionY: { value: this.lightPositionY },
+        devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
       }
     },
     updateUniforms() {
