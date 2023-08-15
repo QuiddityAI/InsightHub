@@ -16,6 +16,7 @@ hdbscan = "*"
 umap-learn = "*"
 typesense = "*"
 openai = "*"
+spacy = "*"
 
 [dev-packages]
 ipykernel = "*"

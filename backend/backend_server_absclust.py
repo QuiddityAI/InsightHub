@@ -7,6 +7,8 @@ from threading import Thread
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
+from utils.cluster_title import ClusterTitles
 app = Flask(__name__)
 CORS(app) # This will enable CORS for all routes
 
@@ -56,11 +58,12 @@ def enrich_search_results(results, query):
         for word in query.split(" "):
             if word in words_ignored_for_highlighting:
                 continue
+            # TODO: this breaks when title contains words like "bold" or "font"
             replacement = '<span class="font-bold">\\1</span>'
             title = re.sub(f"\\b({re.escape(word)})\\b", replacement, title, flags=re.IGNORECASE)
             abstract = re.sub(f"\\b({re.escape(word)})\\b", replacement, abstract, flags=re.IGNORECASE)
-        results[i]["title"] = title
-        results[i]["abstract"] = abstract.replace("\n", "<br>")
+        results[i]["title_enriched"] = title
+        results[i]["abstract_enriched"] = abstract.replace("\n", "<br>")
 
     # highlight TF-IDF words:
     vectorizer = TfidfVectorizer(stop_words="english")
@@ -159,7 +162,7 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
     global last_cluster_id, cluster_cache
     num_clusters = max(cluster_labels) + 1
     if num_clusters <= 0:
-        return [], [], []
+        return []
     texts_per_cluster = [""] * num_clusters
     points_per_cluster_x = [[] for i in range(num_clusters)]
     points_per_cluster_y = [[] for i in range(num_clusters)]
@@ -177,7 +180,9 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
     timings.append({"part": "getting abstracts from disk", "duration": t2 - t1})
 
     # highlight TF-IDF words:
-    vectorizer = TfidfVectorizer(stop_words="english")
+    tf_idf_helper = ClusterTitles()
+    # vectorizer = TfidfVectorizer(stop_words="english")
+    vectorizer = TfidfVectorizer(analyzer=tf_idf_helper.tokenize)
     tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
     words = vectorizer.get_feature_names_out()
 
@@ -293,7 +298,7 @@ def _finish_map_html(task_id, query):
     # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
     # Progress might only be available below 4096
 
-    projections = umap.UMAP(random_state=99, min_dist=0.05, n_epochs=2000).fit_transform(features, on_progress_callback=on_progress)
+    projections = umap.UMAP(random_state=99, min_dist=0.05, n_epochs=500).fit_transform(features, on_progress_callback=on_progress)
 
     # callback for intermediate results can be added here: https://github.com/lmcinnes/umap/blob/master/umap/layouts.py#L417
     t6 = time.time()

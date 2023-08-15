@@ -13,6 +13,7 @@ An interactive map to visualise large sets of data embeddings using WebGL
 ```
 python3.10 -m pip install pipenv
 python3.10 -m pipenv install
+python3 -m spacy download en_core_web_sm
 
 cd frontend/visual-data-map
 npm install

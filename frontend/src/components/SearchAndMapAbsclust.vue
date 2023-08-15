@@ -191,10 +191,10 @@ export default {
           <ul role="list">
             <li v-for="item in search_results" :key="item.title" class="flex justify-between py-2">
               <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
-                <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
+                <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title_enriched"></div></p>
                 <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
                 <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.most_important_words }}</p>
-                <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract"></div></p>
+                <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract_enriched"></div></p>
               </div>
             </li>
           </ul>
