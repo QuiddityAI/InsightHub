@@ -36,6 +36,14 @@ export default {
       baseScaleY: 1.0,
       baseOffsetX: 0.0,
       baseOffsetY: 0.0,
+      baseScaleTargetX: 1.0,
+      baseScaleTargetY: 1.0,
+      baseOffsetTargetX: 0.0,
+      baseOffsetTargetY: 0.0,
+      baseScaleVelocityX: 0.0,
+      baseScaleVelocityY: 0.0,
+      baseOffsetVelocityX: 0.0,
+      baseOffsetVelocityY: 0.0,
       currentZoom: 1.0,
       targetZoom: 1.0,
       currentPanX: 0.0,
@@ -45,6 +53,8 @@ export default {
       highlightedPointIdx: -1,
       lightPositionX: 0.5,
       lightPositionY: 1.5,
+
+      panzoomInstance: null,
 
       renderer: null,
       camera: null,
@@ -99,7 +109,7 @@ export default {
       return notNormalizedY
     },
     setupPanZoom() {
-      const instance = panzoom(this.$refs.panZoomProxy, {
+      this.panzoomInstance = panzoom(this.$refs.panZoomProxy, {
         zoomSpeed: 0.35, // 35% per mouse wheel event
         minZoom: 0.7,
         bounds: true,
@@ -107,13 +117,17 @@ export default {
 
       const that = this
 
-      instance.on('transform', function(e) {
+      this.panzoomInstance.on('transform', function(e) {
         const transform = e.getTransform()
         that.currentPanX = transform.x
         that.currentPanY = transform.y
         that.currentZoom = transform.scale
         that.updateUniforms()
       });
+    },
+    resetPanAndZoom() {
+      this.panzoomInstance.moveTo(0, 0);
+      this.panzoomInstance.zoomTo(0, 0, 1);
     },
     setupWebGl() {
       this.renderer = new Renderer({ depth: false, dpr: window.devicePixelRatio || 1.0 });
@@ -132,7 +146,7 @@ export default {
       }
       window.addEventListener('resize', resize, false);
       resize();
-      this.updateMap()
+      this.updateGeometry()
 
       let lastUpdateTimeInMs = performance.now()
 
@@ -163,14 +177,71 @@ export default {
         // greater than restSpeed, here defined as restDelta per 1/5th second
         const restSpeed = restDelta / 0.2  // in restDelta units per sec
 
-        let somethingChanged = false
+        let geometryChanged = false
+        let uniformsChanged = false
+
+        const baseOffsetDiffX = that.baseOffsetTargetX - that.baseOffsetX
+        const baseOffsetDiffY = that.baseOffsetTargetY - that.baseOffsetY
+        if (baseOffsetDiffX !== 0.0 || baseOffsetDiffY !== 0.0) {
+          uniformsChanged = true
+
+          const aX = getAccelerationOfSpring(
+            that.baseOffsetX, that.baseOffsetVelocityX, that.baseOffsetTargetX,
+            /* stiffness */ 15.0, /* mass */ 1.0, /* damping */ 8.0
+          )
+          that.baseOffsetVelocityX += aX * timeSinceLastUpdateInSec
+          that.baseOffsetX += that.baseOffsetVelocityX * timeSinceLastUpdateInSec
+          if (Math.abs(that.baseOffsetVelocityX) < restSpeed && Math.abs(baseOffsetDiffX) < restDelta) {
+            that.baseOffsetX = that.baseOffsetTargetX
+          }
+
+          const aY = getAccelerationOfSpring(
+            that.baseOffsetY, that.baseOffsetVelocityY, that.baseOffsetTargetY,
+            /* stiffness */ 15.0, /* mass */ 1.0, /* damping */ 8.0
+          )
+          that.baseOffsetVelocityY += aY * timeSinceLastUpdateInSec
+          that.baseOffsetY += that.baseOffsetVelocityY * timeSinceLastUpdateInSec
+          if (Math.abs(that.baseOffsetVelocityY) < restSpeed && Math.abs(baseOffsetDiffY) < restDelta) {
+            that.baseOffsetY = that.baseOffsetTargetY
+          }
+        }
+
+        const baseScaleDiffX = that.baseScaleTargetX - that.baseScaleX
+        const baseScaleDiffY = that.baseScaleTargetY - that.baseScaleY
+
+        const restSpeedScale = 0.0005
+        const restDeltaScale = 0.00005
+
+        if (baseScaleDiffX !== 0.0 || baseScaleDiffY !== 0.0) {
+          uniformsChanged = true
+
+          const aX = getAccelerationOfSpring(
+            that.baseScaleX, that.baseScaleVelocityX, that.baseScaleTargetX,
+            /* stiffness */ 15.0, /* mass */ 1.0, /* damping */ 8.0
+          )
+          that.baseScaleVelocityX += aX * timeSinceLastUpdateInSec
+          that.baseScaleX += that.baseScaleVelocityX * timeSinceLastUpdateInSec
+          if (Math.abs(that.baseScaleVelocityX) < restSpeedScale && Math.abs(baseScaleDiffX) < restDeltaScale) {
+            that.baseScaleX = that.baseScaleTargetX
+          }
+
+          const aY = getAccelerationOfSpring(
+            that.baseScaleY, that.baseScaleVelocityY, that.baseScaleTargetY,
+            /* stiffness */ 15.0, /* mass */ 1.0, /* damping */ 8.0
+          )
+          that.baseScaleVelocityY += aY * timeSinceLastUpdateInSec
+          that.baseScaleY += that.baseScaleVelocityY * timeSinceLastUpdateInSec
+          if (Math.abs(that.baseScaleVelocityY) < restSpeedScale && Math.abs(baseScaleDiffY) < restDeltaScale) {
+            that.baseScaleY = that.baseScaleTargetY
+          }
+        }
 
         if (that.currentPositionsX.length === that.targetPositionsX.length) {
           for (const i of Array(that.targetPositionsX.length).keys()) {
             const diffX = that.targetPositionsX[i] - that.currentPositionsX[i]
             const diffY = that.targetPositionsY[i] - that.currentPositionsY[i]
             if (diffX === 0.0 && diffY === 0.0) continue;
-            somethingChanged = true
+            geometryChanged = true
 
             const aX = getAccelerationOfSpring(
               that.currentPositionsX[i], that.currentVelocityX[i], that.targetPositionsX[i],
@@ -194,19 +265,30 @@ export default {
           }
         }
 
-        if (somethingChanged) {
+        if (geometryChanged) {
           that.updateGeometry()
+        } else if (uniformsChanged) {
+          that.updateUniforms()
         }
       }
     },
-    updateMap() {
-      if (this.targetPositionsX.length > 0) {
-        this.baseOffsetX = -math.min(this.targetPositionsX)
-        this.baseOffsetY = -math.min(this.targetPositionsY)
-        this.baseScaleX = 1.0 / (math.max(this.targetPositionsX) + this.baseOffsetX)
-        this.baseScaleY = 1.0 / (math.max(this.targetPositionsY) + this.baseOffsetY)
-      }
-      this.updateGeometry()
+    centerAndFitDataToActiveAreaSmooth() {
+      if (this.targetPositionsX.length === 0) return;
+      this.baseOffsetTargetX = -math.min(this.targetPositionsX)
+      this.baseOffsetTargetY = -math.min(this.targetPositionsY)
+      this.baseScaleTargetX = 1.0 / (math.max(this.targetPositionsX) + this.baseOffsetTargetX)
+      this.baseScaleTargetY = 1.0 / (math.max(this.targetPositionsY) + this.baseOffsetTargetY)
+    },
+    centerAndFitDataToActiveAreaInstant() {
+      this.centerAndFitDataToActiveAreaSmooth()
+      this.baseOffsetX = this.baseOffsetTargetX
+      this.baseOffsetY = this.baseOffsetTargetY
+      this.baseScaleX = this.baseScaleTargetX
+      this.baseScaleY = this.baseScaleTargetY
+      this.baseOffsetVelocityX = 0.0
+      this.baseOffsetVelocityY = 0.0
+      this.baseScaleVelocityX = 0.0
+      this.baseScaleVelocityY = 0.0
     },
     updateGeometry() {
       if (this.currentVelocityX.length != this.targetPositionsX.length) {

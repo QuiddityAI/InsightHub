@@ -35,7 +35,8 @@ export default {
       that.$refs.embedding_map.targetPositionsX = []
       that.$refs.embedding_map.targetPositionsY = []
       that.$refs.embedding_map.clusterData = []
-      that.$refs.embedding_map.updateMap()
+      that.$refs.embedding_map.updateGeometry()
+      that.map_viewport_is_adjusted = false
 
       const payload = {
         query: this.query,
@@ -55,7 +56,12 @@ export default {
     },
     get_mapping_progress() {
       const that = this
-      if (!this.map_task_id) return;
+      if (!this.map_task_id) {
+        setTimeout(function() {
+          this.get_mapping_progress()
+        }.bind(this), 100);
+        return
+      }
       const payload = {
         task_id: this.map_task_id,
       }
@@ -83,19 +89,30 @@ export default {
             that.$refs.embedding_map.clusterData = result["cluster_data"]
 
             if (that.map_viewport_is_adjusted) {
-              that.$refs.embedding_map.updateGeometry()
+              that.$refs.embedding_map.centerAndFitDataToActiveAreaSmooth()
             } else {
-              that.$refs.embedding_map.updateMap()
+              that.$refs.embedding_map.resetPanAndZoom()
+              that.$refs.embedding_map.centerAndFitDataToActiveAreaInstant()
               that.map_viewport_is_adjusted = true
             }
+            that.$refs.embedding_map.updateGeometry()
 
             that.map_timings = result["timings"]
           }
         })
-        .catch(function () {
-          // no need to get further results:
-          that.map_task_id = null
-          console.log("404 error?")
+        .catch(function (error) {
+          if (error.response && error.response.status === 404) {
+            // no more data for this task, stop polling:
+            that.map_task_id = null
+            console.log("404 response")
+          } else {
+            console.log(error)
+          }
+        })
+        .finally(function() {
+          setTimeout(function() {
+            that.get_mapping_progress()
+          }.bind(this), 100);
         })
     },
     show_cluster(cluster_item) {
@@ -117,9 +134,7 @@ export default {
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
 
-    setInterval(function(){
-        this.get_mapping_progress()
-    }.bind(this), 100);
+    this.get_mapping_progress()
   },
   updated() {
     this.updateMapPassiveMargin()
