@@ -2,7 +2,6 @@
 
 in float positionX;
 in float positionY;
-in float clusterId;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
@@ -20,16 +19,16 @@ uniform float panX;
 uniform float panY;
 uniform float zoom;
 uniform int highlightedPointIdx;
+uniform float lightPositionX;
+uniform float lightPositionY;
 
-out float clusterIdVar;
 out float isHighlighted;
 
 void main() {
 
-    clusterIdVar = clusterId;
     isHighlighted = (gl_VertexID == highlightedPointIdx) ? 1.0 : 0.0;
 
-    vec3 rawPos = vec3(positionX, positionY, (gl_VertexID == highlightedPointIdx) ? -0.9 : -1.0);
+    vec3 rawPos = vec3(positionX, positionY, -2.0);
 
     vec3 normalizedPos = (rawPos + vec3(baseOffsetX, baseOffsetY, 0.0)) * vec3(baseScaleX, baseScaleY, 1.0);
 
@@ -41,9 +40,14 @@ void main() {
     vec3 zoomedPos = ((shiftedToActiveAreaPos - vec3(0.0, 1.0, 0.0)) * zoom) + vec3(0.0, 1.0, 0.0);
     vec3 pannedAndZoomedPos = zoomedPos + vec3(panX, -panY, 0);
 
+    // shadow direction:
+	vec3 lightPos = vec3(lightPositionX, lightPositionY, -2.0);
+	vec3 relativeShadowOffset = pannedAndZoomedPos - lightPos;
+    vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 100.0);
+
     // positions are 0->1, so make -1->1
     // edit: we stay for now in 0-1 space
-    vec3 pos = pannedAndZoomedPos;// * 2.0 - 1.0;
+    vec3 pos = shadowOffsetPos;// * 2.0 - 1.0;
 
     // Scale towards camera to be more interesting
     // pos.z *= 10.0;
@@ -53,6 +57,6 @@ void main() {
 
     // get the model view position so that we can scale the points off into the distance
     vec4 mvPos = viewMatrix * mPos;
-    gl_PointSize = 5.0 * zoom;
+    gl_PointSize = 10.0 * zoom;
     gl_Position = projectionMatrix * mvPos;
 }

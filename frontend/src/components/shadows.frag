@@ -1,0 +1,31 @@
+#version 300 es
+
+precision highp float;
+
+in float isHighlighted;
+
+uniform float viewportWidth;
+uniform float viewportHeight;
+
+out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
+
+float rand(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec3 baseShadowColor = vec3(0.6);
+
+    // basics:
+    // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
+    vec2 posFromBottomLeft = vec2(gl_PointCoord.x, 1.0 - gl_PointCoord.y);  // 0 - 1
+	vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
+	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
+
+    //float noise = 0.2 * rand(floor(posFromCenter * 40.0)/40.0);
+
+    float circleArea = 1.0 - smoothstep(0.0, 1.0, distFromCenter);
+
+    FragColor.rgb = baseShadowColor;
+    FragColor.a = pow(circleArea, 1.3);
+}

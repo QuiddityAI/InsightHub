@@ -6,11 +6,13 @@
 
 import panzoom from 'panzoom';
 
-import { Renderer, Camera, Geometry, Program, Mesh } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
+import { Renderer, Camera, Geometry, Program, Mesh, Transform } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
 import * as math from 'mathjs'
 
-import vertex from './points.vert?raw'
-import fragment from './points.frag?raw'
+import pointsVertexShader from './points.vert?raw'
+import pointsFragmentShader from './points.frag?raw'
+import shadowsVertexShader from './shadows.vert?raw'
+import shadowsFragmentShader from './shadows.frag?raw'
 
 export default {
   data() {
@@ -41,12 +43,17 @@ export default {
       targetPanX: 0.0,
       targetPanY: 0.0,
       highlightedPointIdx: -1,
+      lightPositionX: 0.5,
+      lightPositionY: 1.5,
 
       renderer: null,
       camera: null,
       glContext: null,
       glProgram: null,
       glMesh: null,
+      glProgramShadows: null,
+      glMeshShadows: null,
+      glScene: null,
     }
   },
   computed: {
@@ -219,69 +226,78 @@ export default {
         this.clusterIdsPerPoint = Array(this.targetPositionsX.length).fill(0)
       }
 
-      const geometry = new Geometry(this.glContext, {
+      this.glScene = new Transform();
+
+      const shadowGeometry = new Geometry(this.glContext, {
+          positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
+          positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
+      });
+
+      this.glProgramShadows = new Program(this.glContext, {
+          vertex: shadowsVertexShader,
+          fragment: shadowsFragmentShader,
+          uniforms: this.getUniforms(),
+          transparent: true,
+          depthTest: false,
+      });
+
+      this.glMeshShadows = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry: shadowGeometry, program: this.glProgramShadows });
+      this.glMeshShadows.setParent(this.glScene)
+
+      const pointsGeometry = new Geometry(this.glContext, {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
           clusterId: { size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
       });
 
-      const ww = window.innerWidth
-      const wh = window.innerHeight
-
       this.glProgram = new Program(this.glContext, {
-          vertex,
-          fragment,
-          uniforms: {  // types are inferred from shader code
-            baseOffsetX: { value: this.baseOffsetX },
-            baseOffsetY: { value: this.baseOffsetY },
-            baseScaleX: { value: this.baseScaleX },
-            baseScaleY: { value: this.baseScaleY },
-            viewportWidth: { value: ww },
-            viewportHeight: { value: wh },
-            activeAreaWidth: { value: this.activeAreaWidth / ww },
-            activeAreaHeight: { value: this.activeAreaHeight / wh },
-            marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
-            marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
-            panX: { value: this.currentPanX / ww },
-            panY: { value: this.currentPanY / wh },
-            zoom: { value: this.currentZoom },
-            highlightedPointIdx: { value: this.highlightedPointIdx },
-          },
+          vertex: pointsVertexShader,
+          fragment: pointsFragmentShader,
+          uniforms: this.getUniforms(),
           transparent: true,
           depthTest: false,
+          // depthFunc: this.glContext.NOTEQUAL,
       });
 
-      this.glMesh = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry, program: this.glProgram });
+      this.glMesh = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry: pointsGeometry, program: this.glProgram });
+      this.glMesh.setParent(this.glScene)
 
-      this.renderer.render({ scene: this.glMesh, camera: this.camera });
+      this.renderer.render({ scene: this.glScene, camera: this.camera });
     },
-    updateUniforms() {
-
+    getUniforms() {
       const ww = window.innerWidth
       const wh = window.innerHeight
-
-      this.glProgram.uniforms = {  // types are inferred from shader code
-            baseOffsetX: { value: this.baseOffsetX },
-            baseOffsetY: { value: this.baseOffsetY },
-            baseScaleX: { value: this.baseScaleX },
-            baseScaleY: { value: this.baseScaleY },
-            viewportWidth: { value: ww },
-            viewportHeight: { value: wh },
-            activeAreaWidth: { value: this.activeAreaWidth / ww },
-            activeAreaHeight: { value: this.activeAreaHeight / wh },
-            marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
-            marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
-            panX: { value: this.currentPanX / ww },
-            panY: { value: this.currentPanY / wh },
-            zoom: { value: this.currentZoom },
-            highlightedPointIdx: { value: this.highlightedPointIdx },
-          }
-        this.renderer.render({ scene: this.glMesh, camera: this.camera });
+      return {  // types are inferred from shader code
+        baseOffsetX: { value: this.baseOffsetX },
+        baseOffsetY: { value: this.baseOffsetY },
+        baseScaleX: { value: this.baseScaleX },
+        baseScaleY: { value: this.baseScaleY },
+        viewportWidth: { value: ww },
+        viewportHeight: { value: wh },
+        activeAreaWidth: { value: this.activeAreaWidth / ww },
+        activeAreaHeight: { value: this.activeAreaHeight / wh },
+        marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
+        marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
+        panX: { value: this.currentPanX / ww },
+        panY: { value: this.currentPanY / wh },
+        zoom: { value: this.currentZoom },
+        highlightedPointIdx: { value: this.highlightedPointIdx },
+        lightPositionX: { value: this.lightPositionX },
+        lightPositionY: { value: this.lightPositionY },
+      }
+    },
+    updateUniforms() {
+      this.glProgram.uniforms = this.getUniforms()
+      this.glProgramShadows.uniforms = this.getUniforms()
+      this.renderer.render({ scene: this.glScene, camera: this.camera });
     },
     updateOnHover(event) {
       if (event.buttons) return;
       const mousePosInEmbeddingSpaceX = this.screenToEmbeddingX(event.clientX)
       const mousePosInEmbeddingSpaceY = this.screenToEmbeddingY(event.clientY)
+
+      // this.lightPositionX = event.clientX / window.innerWidth
+      // this.lightPositionY = 1.0 - event.clientY / window.innerHeight
 
       let closestIdx = null
       let closestDist = 10000000
