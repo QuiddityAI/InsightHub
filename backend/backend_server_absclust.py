@@ -208,7 +208,11 @@ def map_html():
     if not query:
         return jsonify({})
 
-    task_id = str(uuid.uuid4())
+    task_id = query # str(uuid.uuid4())
+
+    if task_id in umap_tasks:
+        return jsonify({"task_id": task_id})
+
     umap_tasks[task_id] = {
         "finished": False,
         "result": None,
@@ -230,8 +234,8 @@ def get_map_html_result():
 
     result = umap_tasks[task_id]
 
-    if result["finished"]:
-        del umap_tasks[task_id]
+    # if result["finished"]:
+    #     del umap_tasks[task_id]
 
     # TODO: if the task is never retrieved, it gets never deleted
     # instead go through tasks every few minutes and delete old ones
