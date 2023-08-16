@@ -5,6 +5,7 @@ precision highp float;
 in float clusterIdVar;
 in float isHighlighted;
 
+uniform float zoom;
 uniform float viewportWidth;
 uniform float viewportHeight;
 uniform float lightPositionX;
@@ -32,7 +33,9 @@ void main() {
     vec2 posFromBottomLeft = vec2(gl_PointCoord.x, 1.0 - gl_PointCoord.y);  // 0 - 1
 	vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
 	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
-    float circleArea = 1.0 - step(1.0, distFromCenter);
+    float pointRadiusPx = (5.0 * zoom * devicePixelRatio) / 2.0;
+    float antiAliasingEdgePx = devicePixelRatio > 1.0 ? 0.0 : 1.0;
+    float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
 
 	vec2 viewPortSize = vec2(viewportWidth * devicePixelRatio, viewportHeight * devicePixelRatio);
 	vec2 relativeScreenPos = gl_FragCoord.xy / viewPortSize;  // 0-1, from bottom left
