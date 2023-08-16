@@ -13,6 +13,7 @@ export default {
     return {
       query: "",
       search_results: [],
+      map_item_details: [],
       search_timings: "",
       map_task_id: null,
       show_loading_bar: false,
@@ -21,6 +22,8 @@ export default {
       cluster_uids: [],
       map_timings: "",
       windowHeight: 0,
+
+      selectedDocumentIdx: -1,
     }
   },
   methods: {
@@ -103,6 +106,7 @@ export default {
             that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(result["per_point_data"]["citations"])
             that.$refs.embedding_map.saturation = normalizeArray(result["per_point_data"]["distances"], 3.0)
 
+            that.map_item_details = result["item_details"]
             that.$refs.embedding_map.itemDetails = result["item_details"]
             that.$refs.embedding_map.clusterData = result["cluster_data"]
 
@@ -147,6 +151,14 @@ export default {
         150
       ]
     },
+    show_document_details(pointIdx) {
+      this.selectedDocumentIdx = pointIdx
+      this.$refs.embedding_map.selectedPointIdx = pointIdx
+    },
+    close_document_details() {
+      this.selectedDocumentIdx = -1
+      this.$refs.embedding_map.selectedPointIdx = -1
+    },
   },
   mounted() {
     this.updateMapPassiveMargin()
@@ -166,7 +178,7 @@ export default {
     <main>
 
       <div class="absolute top-0 w-screen h-screen">
-        <EmbeddingMap ref="embedding_map" @show_cluster="show_cluster"/>
+        <EmbeddingMap ref="embedding_map" @show_cluster="show_cluster" @point_selected="show_document_details"/>
       </div>
 
       <!-- <div v-show="search_results && !map_html" class="absolute flex top-1/2 left-2/3 items-center">
@@ -229,6 +241,18 @@ export default {
 
         <!-- right column (e.g. for showing box with details for selected result) -->
         <div ref="right_column" class="overflow-y-auto pointer-events-none">
+
+          <div class="h-8"></div>
+
+          <div v-if="selectedDocumentIdx !== -1" class="pointer-events-auto w-full">
+            <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
+                <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="map_item_details[selectedDocumentIdx].title"></div></p>
+                <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].container_title }}, {{ map_item_details[selectedDocumentIdx].issued_year.toFixed(0) }}</p>
+                <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].most_important_words }}</p>
+                <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="map_item_details[selectedDocumentIdx].abstract_enriched"></div></p>
+                <button @click="close_document_details" class="px-3 py-1 bg-blue-600/50 hover:bg-blue-600 rounded">Close</button>
+              </div>
+          </div>
 
           <div class="flex" :style="{height: (windowHeight - 150) + 'px'}">
             <div v-if="show_loading_bar" class="self-center w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">

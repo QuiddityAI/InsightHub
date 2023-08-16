@@ -5,6 +5,7 @@ precision highp float;
 in float clusterIdVar;
 in float isHighlighted;
 in float saturationVar;
+in float isSelected;
 
 uniform float zoom;
 uniform float viewportWidth;
@@ -27,7 +28,16 @@ float rand(vec2 co) {
 
 void main() {
     // diffuse color:
-    vec3 pointColor = clusterIdVar < 0.0 ? vec3(isHighlighted > 0.5 ? 0.0 : 0.7) : hsv2rgb(vec3(clusterIdVar / 10.0, 0.1 + saturationVar * 1.0, isHighlighted > 0.5 ? 0.0 : 0.8));
+    // TODO: the diffuse color is the same for all fragments of this vertex, so it could be done in the vertex shader
+    float hue = clusterIdVar / 10.0;
+    float sat = 0.1 + saturationVar * 1.0;
+    float val = isHighlighted > 0.5 ? 0.0 : 0.8;
+    vec3 normalColor = hsv2rgb(vec3(hue, sat, val));
+    vec3 highlightedColor = vec3(0.0);
+    vec3 selectedColor = vec3(1.0, 0.0, 0.0);
+    vec3 unclustered_color = vec3(0.7);
+
+    vec3 pointColor = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (clusterIdVar < 0.0 ? unclustered_color : normalColor));
 
     // basics:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left

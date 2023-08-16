@@ -30,6 +30,7 @@ export default {
 
       itemDetails: [],
       clusterData: [],
+      selectedPointIdx: -1,
 
       // internal:
       currentPositionsX: [],
@@ -80,6 +81,7 @@ export default {
   },
   emits: [
     "show_cluster",
+    "point_selected",
   ],
   mounted() {
     this.setupWebGl()
@@ -389,6 +391,7 @@ export default {
         lightPositionX: { value: this.lightPositionX },
         lightPositionY: { value: this.lightPositionY },
         devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
+        selectedPointIdx: { value: this.selectedPointIdx },
       }
     },
     updateUniforms() {
@@ -427,6 +430,10 @@ export default {
       }
       this.updateUniforms()
     },
+    onClick() {
+      if (this.highlightedPointIdx === -1) return;
+      this.$emit('point_selected', this.highlightedPointIdx)
+    },
   },
 }
 
@@ -435,7 +442,7 @@ export default {
 <template>
   <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
-  <div ref="webGlArea" @mousemove="this.updateOnHover" class="fixed w-full h-full"></div>
+  <div ref="webGlArea" @mousemove="this.updateOnHover" @click="this.onClick" class="fixed w-full h-full"></div>
 
   <!-- this div shows a gray outline around the "active area" for debugging purposes -->
   <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->

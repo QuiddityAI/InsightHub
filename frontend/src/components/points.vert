@@ -22,10 +22,12 @@ uniform float panX;
 uniform float panY;
 uniform float zoom;
 uniform int highlightedPointIdx;
+uniform int selectedPointIdx;
 uniform float devicePixelRatio;
 
 out float clusterIdVar;
 out float isHighlighted;
+out float isSelected;
 out float saturationVar;
 
 void main() {
@@ -33,6 +35,7 @@ void main() {
     clusterIdVar = clusterId;
     saturationVar = saturation;
     isHighlighted = (gl_VertexID == highlightedPointIdx) ? 1.0 : 0.0;
+    isSelected = (gl_VertexID == selectedPointIdx) ? 1.0 : 0.0;
 
     vec3 rawPos = vec3(positionX, positionY, (gl_VertexID == highlightedPointIdx) ? -0.9 : -1.0);
 
