@@ -1,3 +1,4 @@
+from copy import deepcopy
 import logging
 import time
 import re
@@ -279,6 +280,7 @@ def _finish_map_html(task_id, query):
             positionsY = projections[:, 1]
 
             result = {
+                "item_details": [],
                 "per_point_data": {
                     "positions_x": positionsX.tolist(),
                     "positions_y": positionsY.tolist(),
@@ -308,11 +310,15 @@ def _finish_map_html(task_id, query):
     cluster_id_per_point = cluster_labels
 
     # remove abstracts from search results to reduce size of response:
-    for item in elements:
-        del item["abstract"]
+
+    item_details = deepcopy(elements)
+
+    for item in item_details:
+        if "abstract" in item:
+            del item["abstract"]
 
     result = {
-        "item_details": elements,
+        "item_details": item_details,
         "per_point_data": {
             "positions_x": positionsX.tolist(),
             "positions_y": positionsY.tolist(),

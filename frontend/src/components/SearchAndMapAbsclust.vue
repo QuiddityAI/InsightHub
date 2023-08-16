@@ -31,7 +31,9 @@ export default {
       // `this` inside methods points to the current active instance
       const that = this  // not sure if neccessary
 
+      that.selectedDocumentIdx = -1
       that.search_results = []
+      that.map_item_details = []
       that.search_timings = []
       that.cluster_uids = []
       that.map_timings = []
@@ -244,7 +246,7 @@ export default {
 
           <div class="h-8"></div>
 
-          <div v-if="selectedDocumentIdx !== -1" class="pointer-events-auto w-full">
+          <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="pointer-events-auto w-full">
             <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
                 <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="map_item_details[selectedDocumentIdx].title"></div></p>
                 <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].container_title }}, {{ map_item_details[selectedDocumentIdx].issued_year.toFixed(0) }}</p>
