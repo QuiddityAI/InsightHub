@@ -103,6 +103,7 @@ export default {
             that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(result["per_point_data"]["citations"])
             that.$refs.embedding_map.saturation = normalizeArray(result["per_point_data"]["distances"], 3.0)
 
+            that.$refs.embedding_map.itemDetails = result["item_details"]
             that.$refs.embedding_map.clusterData = result["cluster_data"]
 
             if (that.map_viewport_is_adjusted) {

@@ -28,6 +28,7 @@ export default {
       pointSizes: [],
       clusterIdsPerPoint: [],
 
+      itemDetails: [],
       clusterData: [],
 
       // internal:
@@ -97,6 +98,19 @@ export default {
       const zoomed = ((shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom) + window.innerHeight
       const pannedAndZoomed = zoomed - this.currentPanY
       return pannedAndZoomed
+    },
+    screenRightFromRelative(x) {
+      const normalizedPos = (x + this.baseOffsetX) * this.baseScaleX
+      const shiftedToActiveAreaPos = normalizedPos * this.activeAreaWidth + this.passiveMarginsLRTB[0]
+      const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPanX
+      return window.innerWidth - pannedAndZoomed
+    },
+    screenTopFromRelative(y) {
+      const normalizedPos = (y + this.baseOffsetY) * this.baseScaleY
+      const shiftedToActiveAreaPos = normalizedPos * this.activeAreaHeight + this.passiveMarginsLRTB[3]
+      const zoomed = ((shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom) + window.innerHeight
+      const pannedAndZoomed = zoomed - this.currentPanY
+      return window.innerHeight - pannedAndZoomed
     },
     screenToEmbeddingX(screenX) {
       const notPannedAndZoomedX = (screenX - this.currentPanX) / this.currentZoom
@@ -401,7 +415,11 @@ export default {
           closestIdx = i
         }
       }
-      const threshold = 100  // FIXME: this should be the size of a point in px converted to the embedding scale
+      const pointSize = this.pointSizes[closestIdx]
+      const zoomAdjustment = (this.currentZoom - 1.0) * 0.3 + 1.0;
+      const pointSizeScreenPx = (5.0 + 15.0 * pointSize) * zoomAdjustment * window.devicePixelRatio;
+      const pointSizeEmbedding = this.screenToEmbeddingX(pointSizeScreenPx) - this.screenToEmbeddingX(0)
+      const threshold = pointSizeEmbedding
       if (closestIdx && closestDist < threshold) {
         this.highlightedPointIdx = closestIdx
       } else {
@@ -431,6 +449,16 @@ export default {
     <button @click="$emit('show_cluster', cluster_label)" class="px-1 backdrop-blur-sm bg-white/50 hover:bg-white text-gray-500 text-xs rounded">
       {{ cluster_label.title }}
     </button>
+  </div>
+
+  <div v-if="highlightedPointIdx !== -1" class="fixed pointer-events-none"
+  :style="{
+    'right': screenRightFromRelative(currentPositionsX[highlightedPointIdx]) + 'px',
+    'top': screenTopFromRelative(currentPositionsY[highlightedPointIdx]) + 'px',
+    'max-width': '200px',
+    }">
+    <div v-html="itemDetails[highlightedPointIdx].title" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
+    </div>
   </div>
 
 

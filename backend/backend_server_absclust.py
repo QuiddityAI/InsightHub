@@ -307,7 +307,12 @@ def _finish_map_html(task_id, query):
     positionsY = projections[:, 1]
     cluster_id_per_point = cluster_labels
 
+    # remove abstracts from search results to reduce size of response:
+    for item in elements:
+        del item["abstract"]
+
     result = {
+        "item_details": elements,
         "per_point_data": {
             "positions_x": positionsX.tolist(),
             "positions_y": positionsY.tolist(),
