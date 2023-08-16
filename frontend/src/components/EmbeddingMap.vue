@@ -19,17 +19,20 @@ export default {
     return {
       // external:
       passiveMarginsLRTB: [0, 0, 0, 0],
+
       point_uids: [],
-      currentPositionsX: [],
-      currentPositionsY: [],
       targetPositionsX: [],
       targetPositionsY: [],
+      saturation: [],
       colors: [],
-      sizes: [],
+      pointSizes: [],
       clusterIdsPerPoint: [],
+
       clusterData: [],
 
       // internal:
+      currentPositionsX: [],
+      currentPositionsY: [],
       currentVelocityX: [],
       currentVelocityY: [],
       baseScaleX: 1.0,
@@ -291,28 +294,31 @@ export default {
       this.baseScaleVelocityY = 0.0
     },
     updateGeometry() {
-      if (this.currentVelocityX.length != this.targetPositionsX.length) {
-        this.currentVelocityX = Array(this.targetPositionsX.length).fill(0.0)
-        this.currentVelocityY = Array(this.targetPositionsY.length).fill(0.0)
-      }
-      if (this.currentPositionsX.length != this.targetPositionsX.length) {
-        if (this.targetPositionsX.length > 0) {
-          this.currentPositionsX = Array(this.targetPositionsX.length).fill(math.mean(this.targetPositionsX))
-          this.currentPositionsY = Array(this.targetPositionsY.length).fill(math.mean(this.targetPositionsY))
-        } else {
-          this.currentPositionsX = []
-          this.currentPositionsY = []
+      function ensureLength(x, size, fillValue) {
+        if (x.length != size) {
+          return Array(size).fill(fillValue)
         }
+        return x
       }
-      if (this.clusterIdsPerPoint.length != this.targetPositionsX.length) {
-        this.clusterIdsPerPoint = Array(this.targetPositionsX.length).fill(0)
-      }
+
+      const pointCount = this.targetPositionsX.length
+      this.targetPositionsY = ensureLength(this.targetPositionsY, pointCount, 0.0)
+
+      this.currentPositionsX = ensureLength(this.currentPositionsX, pointCount, pointCount > 0 ? math.mean(this.targetPositionsX) : 0.0)
+      this.currentPositionsY = ensureLength(this.currentPositionsY, pointCount, pointCount > 0 ? math.mean(this.targetPositionsY) : 0.0)
+      this.currentVelocityX = ensureLength(this.currentVelocityX, pointCount, 0.0)
+      this.currentVelocityY = ensureLength(this.currentVelocityY, pointCount, 0.0)
+
+      this.clusterIdsPerPoint = ensureLength(this.clusterIdsPerPoint, pointCount, 0)
+      this.saturation = ensureLength(this.saturation, pointCount, 1.0)
+      this.pointSizes = ensureLength(this.pointSizes, pointCount, 0.5)
 
       this.glScene = new Transform();
 
       const shadowGeometry = new Geometry(this.glContext, {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
+          pointSize: { size: 1, data: new Float32Array(this.pointSizes) },
       });
 
       this.glProgramShadows = new Program(this.glContext, {
@@ -330,6 +336,8 @@ export default {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
           clusterId: { size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
+          saturation: { size: 1, data: new Float32Array(this.saturation) },
+          pointSize: { size: 1, data: new Float32Array(this.pointSizes) },
       });
 
       this.glProgram = new Program(this.glContext, {

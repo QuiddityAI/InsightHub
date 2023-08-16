@@ -255,14 +255,9 @@ def _finish_map_html(task_id, query):
     t2 = time.time()
     timings.append({"part": "vector DB pure vector query, limit 600", "duration": t2 - t1})
 
-    vectors = []
-    titles = []
-    distances = []
-
-    for e in elements:
-        vectors.append(e["vector"])
-        distances.append(e["distance"])
-        titles.append(e.get("title", ""))
+    vectors = [e["vector"] for e in elements]
+    distances = [e["distance"] for e in elements]
+    citations = [e.get("citedby", 0) for e in elements]
 
     features = np.asarray(vectors)  # shape 600x768
     t4 = time.time()
@@ -287,8 +282,9 @@ def _finish_map_html(task_id, query):
                 "per_point_data": {
                     "positions_x": positionsX.tolist(),
                     "positions_y": positionsY.tolist(),
-                    "cluster_ids": [0] * len(positionsX),
+                    "cluster_ids": [-1] * len(positionsX),
                     "distances": distances,
+                    "citations": citations,
                 },
                 "cluster_data": [],
                 "timings": [],
@@ -317,6 +313,7 @@ def _finish_map_html(task_id, query):
             "positions_y": positionsY.tolist(),
             "cluster_ids": cluster_id_per_point.tolist(),
             "distances": distances,
+            "citations": citations,
         },
         "cluster_data": cluster_data,
         "timings": timings,

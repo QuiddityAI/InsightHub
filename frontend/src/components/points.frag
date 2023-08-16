@@ -4,6 +4,7 @@ precision highp float;
 
 in float clusterIdVar;
 in float isHighlighted;
+in float saturationVar;
 
 uniform float zoom;
 uniform float viewportWidth;
@@ -26,7 +27,7 @@ float rand(vec2 co) {
 
 void main() {
     // diffuse color:
-    vec3 pointColor = clusterIdVar < 0.0 ? vec3(isHighlighted > 0.5 ? 0.0 : 0.7) : hsv2rgb(vec3(clusterIdVar / 10.0, 0.8, isHighlighted > 0.5 ? 0.0 : 0.8));
+    vec3 pointColor = clusterIdVar < 0.0 ? vec3(isHighlighted > 0.5 ? 0.0 : 0.7) : hsv2rgb(vec3(clusterIdVar / 10.0, 0.1 + saturationVar * 1.0, isHighlighted > 0.5 ? 0.0 : 0.8));
 
     // basics:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left

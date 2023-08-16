@@ -3,6 +3,8 @@
 in float positionX;
 in float positionY;
 in float clusterId;
+in float saturation;
+in float pointSize;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
@@ -24,10 +26,12 @@ uniform float devicePixelRatio;
 
 out float clusterIdVar;
 out float isHighlighted;
+out float saturationVar;
 
 void main() {
 
     clusterIdVar = clusterId;
+    saturationVar = saturation;
     isHighlighted = (gl_VertexID == highlightedPointIdx) ? 1.0 : 0.0;
 
     vec3 rawPos = vec3(positionX, positionY, (gl_VertexID == highlightedPointIdx) ? -0.9 : -1.0);
@@ -54,6 +58,6 @@ void main() {
 
     // get the model view position so that we can scale the points off into the distance
     vec4 mvPos = viewMatrix * mPos;
-    gl_PointSize = 5.0 * zoom * devicePixelRatio;
+    gl_PointSize = (5.0 + 15.0 * pointSize) * zoom * devicePixelRatio;
     gl_Position = projectionMatrix * mvPos;
 }

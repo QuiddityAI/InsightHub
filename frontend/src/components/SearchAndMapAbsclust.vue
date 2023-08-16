@@ -81,10 +81,27 @@ export default {
 
           const result = response.data["result"]
 
+          function normalizeArray(a, gamma=1.0, max_default=1.0) {
+            if (a.length === 0) return a;
+            a = math.subtract(a, math.min(a))
+            return math.dotPow(math.divide(a, math.max(math.max(a), max_default)), gamma)
+          }
+
+          function normalizeArrayMedianGamma(a, max_default=1.0) {
+            if (a.length === 0) return a;
+            a = math.subtract(a, math.min(a))
+            a = math.divide(a, math.max(math.max(a), max_default))
+            // using the median as gamma should provide a good, balanced distribution:
+            const gamma = math.max(0.1, math.median(a) * 0.6)
+            return math.dotPow(a, gamma)
+          }
+
           if (result) {
             that.$refs.embedding_map.targetPositionsX = result["per_point_data"]["positions_x"]
             that.$refs.embedding_map.targetPositionsY = result["per_point_data"]["positions_y"]
             that.$refs.embedding_map.clusterIdsPerPoint = result["per_point_data"]["cluster_ids"]
+            that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(result["per_point_data"]["citations"])
+            that.$refs.embedding_map.saturation = normalizeArray(result["per_point_data"]["distances"], 3.0)
 
             that.$refs.embedding_map.clusterData = result["cluster_data"]
 
