@@ -181,8 +181,8 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
 
     # highlight TF-IDF words:
     tf_idf_helper = ClusterTitles()
-    # vectorizer = TfidfVectorizer(stop_words="english")
-    vectorizer = TfidfVectorizer(analyzer=tf_idf_helper.tokenize)
+    vectorizer = TfidfVectorizer(stop_words="english")
+    # vectorizer = TfidfVectorizer(analyzer=tf_idf_helper.tokenize)
     tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
     words = vectorizer.get_feature_names_out()
 
