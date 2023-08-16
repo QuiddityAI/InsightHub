@@ -58,6 +58,7 @@ void main() {
 
     // get the model view position so that we can scale the points off into the distance
     vec4 mvPos = viewMatrix * mPos;
-    gl_PointSize = (5.0 + 15.0 * pointSize) * zoom * devicePixelRatio;
+    float zoomAdjustment = (zoom - 1.0) * 0.3 + 1.0;
+    gl_PointSize = (5.0 + 15.0 * pointSize) * zoomAdjustment * devicePixelRatio;
     gl_Position = projectionMatrix * mvPos;
 }
