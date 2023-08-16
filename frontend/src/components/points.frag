@@ -26,7 +26,7 @@ float rand(vec2 co) {
 
 void main() {
     // diffuse color:
-    vec3 pointColor = hsv2rgb(vec3(clusterIdVar / 10.0, 0.8, isHighlighted > 0.5 ? 0.0 : 0.8));
+    vec3 pointColor = clusterIdVar < 0.0 ? vec3(isHighlighted > 0.5 ? 0.0 : 0.7) : hsv2rgb(vec3(clusterIdVar / 10.0, 0.8, isHighlighted > 0.5 ? 0.0 : 0.8));
 
     // basics:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
@@ -55,5 +55,5 @@ void main() {
 
     //gl_FragColor.rgb = 0.5 + 0.2 * sin(posFromBottomLeft.yxx) + vec3(0.1, 0.0, 0.3);
     FragColor.rgb = pointColor + 0.6 * vec3(specColor) + noise - edgeHighlight;
-    FragColor.a = circleArea;
+    FragColor.a = circleArea * 0.7;
 }
