@@ -44,7 +44,7 @@ void main() {
     // shadow direction:
 	vec3 lightPos = vec3(lightPositionX, lightPositionY, -2.0);
 	vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * zoom;
-    vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / (100.0 * devicePixelRatio));
+    vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 200.0);
 
     // positions are 0->1, so make -1->1
     // edit: we stay for now in 0-1 space
