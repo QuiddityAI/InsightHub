@@ -11,7 +11,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug import serving
 
-from utils.cluster_title import ClusterTitles
 app = Flask(__name__)
 CORS(app) # This will enable CORS for all routes
 
@@ -28,7 +27,9 @@ import hdbscan
 
 
 from utils.model_client import get_embedding, get_openai_embedding_batch, save_embedding_cache
-from utils.absclust_client import get_absclust_search_results, save_search_cache
+from utils.absclust_database_client import get_absclust_search_results, save_search_cache
+from utils.gensim_w2v_vectorizer import GensimW2VVectorizer
+from utils.cluster_title import ClusterTitles
 
 
 # exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
@@ -131,24 +132,31 @@ def get_search_results_for_map(queries: list[str], limit: int, task_id: str=None
             continue
 
         results_part = get_absclust_search_results(query, limit)
+        results += results_part
 
-        query_embedding = get_embedding(query)
+    save_search_cache()
+    return results
 
-        # using the code below leads to broken vectors for some reasons:
-        # texts = [item.get("title", "") + " " + item.get("abstract", "") for item in results_part]
-        # chunk_size = 30  # 30 -> 2.7GB GPU RAM (almost linear)
-        # embeddings = np.zeros((0, 768))
-        # for i in range(0, len(texts), chunk_size):
-        #     embeddings = np.append(embeddings, get_embedding(texts[i:i+chunk_size]), axis=0)
 
-        #texts = {item["DOI"]: item.get("title", "") + " " + item.get("abstract", "")[:2000] for item in results_part}
-        #embeddings = get_openai_embedding_batch(texts)
-        #save_embedding_cache()
+def add_vectors_to_results(search_results, query, task_id):
+    query_embedding = get_embedding(query)
 
+    # using the code below leads to broken vectors for some reasons:
+    # texts = [item.get("title", "") + " " + item.get("abstract", "") for item in results_part]
+    # chunk_size = 30  # 30 -> 2.7GB GPU RAM (almost linear)
+    # embeddings = np.zeros((0, 768))
+    # for i in range(0, len(texts), chunk_size):
+    #     embeddings = np.append(embeddings, get_embedding(texts[i:i+chunk_size]), axis=0)
+
+    #texts = {item["DOI"]: item.get("title", "") + " " + item.get("abstract", "")[:2000] for item in results_part}
+    #embeddings = get_openai_embedding_batch(texts)
+    #save_embedding_cache()
+
+    if task_params[task_id]["vectorizer"] in ["pubmedbert", "openai"]:
         if task_id:
-            umap_tasks[task_id]["progress"]["total_steps"] = len(results_part)
+            umap_tasks[task_id]["progress"]["total_steps"] = len(search_results)
 
-        for i, item in enumerate(results_part):
+        for i, item in enumerate(search_results):
             #item_embedding = embeddings[item["DOI"]]
             item_embedding = get_embedding(item.get("title", "") + " " + item.get("abstract", ""), item["DOI"]).tolist()
             item["vector"] = item_embedding
@@ -157,12 +165,28 @@ def get_search_results_for_map(queries: list[str], limit: int, task_id: str=None
             if task_id:
                 umap_tasks[task_id]["progress"]["current_step"] = i
 
-        results += results_part
+    elif task_params[task_id]["vectorizer"] == "gensim_w2v_tf_idf":
 
-    save_search_cache()
+        corpus = [item["abstract"] for item in search_results]
+        vectorizer = GensimW2VVectorizer()
+        vectorizer.prepare(corpus)
+        query_embedding = vectorizer.get_embedding(query)
+
+        if task_id:
+            umap_tasks[task_id]["progress"]["total_steps"] = len(search_results)
+
+        for i, item in enumerate(search_results):
+            item_embedding = vectorizer.get_embedding(item.get("abstract", "")).tolist()
+            item["vector"] = item_embedding
+            item["distance"] = np.dot(query_embedding, item_embedding)
+
+            if task_id:
+                umap_tasks[task_id]["progress"]["current_step"] = i
+
+    else:
+        logging.error("vectorizer unknown: " + task_params[task_id]["vectorizer"])
+
     save_embedding_cache()
-
-    return results
 
 
 def cluster_results(projections):
@@ -220,21 +244,24 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
     return cluster_data
 
 
+task_params = {}
 umap_tasks = {}
 map_details = {}
 
 
 @app.route('/api/map', methods=['POST'])
 def map_html():
-    query = request.json.get("query")
+    params = request.json
+    query = params.get("query")
     if not query:
         return jsonify({})
 
-    task_id = query # str(uuid.uuid4())
+    task_id = query + json.dumps(params) # str(uuid.uuid4())
 
     if task_id in umap_tasks:
         return jsonify({"task_id": task_id})
 
+    task_params[task_id] = params
     umap_tasks[task_id] = {
         "finished": False,
         "result": None,
@@ -308,6 +335,7 @@ def _finish_map_html(task_id, query):
     timings = []
     t1 = time.time()
     elements = get_search_results_for_map(query.split(" OR "), limit=3000, task_id=task_id)
+    add_vectors_to_results(elements, query, task_id)
     t2 = time.time()
     timings.append({"part": "vector DB pure vector query, limit 600", "duration": t2 - t1})
 
@@ -381,48 +409,6 @@ def _finish_map_html(task_id, query):
 
     umap_tasks[task_id]["result"] = result
     umap_tasks[task_id]["finished"] = True
-
-    return
-
-    # copied from AbsClust:
-    import gensim
-
-    t8 = time.time()
-
-    def _w2v_iter_heuristic(nrows):
-        def model(x, k, b):
-            return k * np.log(x + 1) + b
-
-        good_coefs = [-33.3979472, 307.3030023]
-        # minimal_coefs = [-17.04255579, 160.19563678]
-        n = model(nrows, *good_coefs)
-        n = np.clip(n, 3, 120)
-        return int(n)
-
-    sentences = []
-    for e in elements:
-        for sentence in e["abstract"].split(". "):
-            sentences.append(sentence.split( ))
-
-    emb_dim = 256
-    window_size = 7
-    n_epochs = _w2v_iter_heuristic(len(elements))
-    n_workers = 8
-    t9 = time.time()
-    print(f"gensim model preparation: {t9 - t8:.2f}s, abstract count {len(elements)}, sentence count {len(sentences)}, n_epochs {n_epochs}, n_workers {n_workers}")
-
-    gen_sim_w2v_model = gensim.models.Word2Vec(
-        sentences,
-        vector_size=emb_dim,
-        window=window_size,
-        epochs=n_epochs,
-        min_alpha=1e-5,
-        workers=n_workers,
-        compute_loss=True,
-        sg=0,
-    )
-    t10 = time.time()
-    print(f"gensim model training: {t10 - t9:.2f}s")
 
 
 if __name__ == "__main__":

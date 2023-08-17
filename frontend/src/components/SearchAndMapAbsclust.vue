@@ -61,7 +61,7 @@ export default {
         {id: "openai", title: "OpenAI"},
         {id: "tf_idf", title: "Tf-Idf"},
       ],
-      selected_vectorizer: "gensim_w2v_tf_idf",
+      selected_vectorizer: "pubmedbert",
       available_dim_reducers: [
         {id: "umap", title: "UMAP"},
         {id: "t_sne", title: "T-SNE"},
@@ -406,8 +406,8 @@ export default {
               </div>
           </div>
 
-          <div class="flex" :style="{height: (windowHeight - 150) + 'px'}">
-            <div v-if="show_loading_bar" class="self-center w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div class="flex w-full justify-center" :style="{height: (windowHeight - 150) + 'px'}">
+            <div v-if="show_loading_bar" class="self-center w-20 bg-gray-400 rounded-full h-2.5">
               <div class="bg-blue-600 h-2.5 rounded-full" :style="{'width': (progress * 100).toFixed(0) + '%'}"></div>
             </div>
           </div>
