@@ -464,7 +464,7 @@ export default {
     'top': screenTopFromRelative(currentPositionsY[highlightedPointIdx]) + 'px',
     'max-width': '200px',
     }">
-    <div v-html="itemDetails[highlightedPointIdx].title" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
+    <div v-html="itemDetails.length > highlightedPointIdx ? itemDetails[highlightedPointIdx].title : 'loading...'" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
     </div>
   </div>
 

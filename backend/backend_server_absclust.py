@@ -196,7 +196,7 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
     timings.append({"part": "getting abstracts from disk", "duration": t2 - t1})
 
     # highlight TF-IDF words:
-    tf_idf_helper = ClusterTitles()
+    # tf_idf_helper = ClusterTitles()
     vectorizer = TfidfVectorizer(stop_words="english")
     # vectorizer = TfidfVectorizer(analyzer=tf_idf_helper.tokenize)
     tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
@@ -221,6 +221,7 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
 
 
 umap_tasks = {}
+map_details = {}
 
 
 @app.route('/api/map', methods=['POST'])
@@ -254,6 +255,24 @@ def get_map_html_result():
         return "task_id not found", 404
 
     result = umap_tasks[task_id]
+
+    # if result["finished"]:
+    #     del umap_tasks[task_id]
+
+    # TODO: if the task is never retrieved, it gets never deleted
+    # instead go through tasks every few minutes and delete old ones
+
+    return result
+
+
+@app.route('/api/map/details', methods=['POST'])
+def get_map_details():
+    task_id = request.json.get("task_id")
+    if task_id not in map_details:
+        logging.warning("task_id not found")
+        return "task_id not found", 404
+
+    result = map_details[task_id]
 
     # if result["finished"]:
     #     del umap_tasks[task_id]
@@ -324,16 +343,7 @@ def _finish_map_html(task_id, query):
     positionsY = projections[:, 1]
     cluster_id_per_point = cluster_labels
 
-    # remove abstracts from search results to reduce size of response:
-
-    item_details = deepcopy(elements)
-
-    for item in item_details:
-        if "abstract" in item:
-            del item["abstract"]
-
     result = {
-        "item_details": item_details,
         "per_point_data": {
             "positions_x": positionsX.tolist(),
             "positions_y": positionsY.tolist(),
@@ -344,6 +354,16 @@ def _finish_map_html(task_id, query):
         "cluster_data": cluster_data,
         "timings": timings,
     }
+
+    # transferring all titles takes is up to 1 MByte, so we are doing it in a separate endpoint
+    # for this, we are copying the results here:
+    # remove abstracts from search results to reduce size of response:
+    item_details = deepcopy(elements)
+    for item in item_details:
+        if "abstract" in item:
+            del item["abstract"]
+            del item["vector"]
+    map_details[task_id] = item_details
 
     umap_tasks[task_id]["result"] = result
     umap_tasks[task_id]["finished"] = True

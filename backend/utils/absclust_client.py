@@ -1,6 +1,7 @@
 import math
 import pickle
 import os
+from copy import deepcopy
 
 import typesense
 
@@ -39,7 +40,9 @@ def get_absclust_search_results(query: str, limit: int):
     global search_results_cache
 
     if query + str(limit) in search_results_cache:
-        return search_results_cache[query + str(limit)]
+        # use deepcopy to prevent other methods overriding the content in the cache
+        # because it would be passed as a reference
+        return deepcopy(search_results_cache[query + str(limit)])
 
     collection = ts_client.collections["articles"]
     results_raw = []
@@ -79,4 +82,4 @@ def get_absclust_search_results(query: str, limit: int):
 
     search_results_cache[query + str(limit)] = results_part
 
-    return results_part
+    return deepcopy(results_part)
