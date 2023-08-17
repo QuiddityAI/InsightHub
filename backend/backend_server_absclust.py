@@ -5,9 +5,11 @@ import re
 from functools import lru_cache
 import uuid
 from threading import Thread
+import json
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from werkzeug import serving
 
 from utils.cluster_title import ClusterTitles
 app = Flask(__name__)
@@ -27,6 +29,18 @@ import hdbscan
 
 from utils.model_client import get_embedding, get_openai_embedding_batch, save_embedding_cache
 from utils.absclust_client import get_absclust_search_results, save_search_cache
+
+
+# exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
+parent_log_request = serving.WSGIRequestHandler.log_request
+
+def log_request(self, *args, **kwargs):
+    if self.path == '/api/map/result':
+        return
+
+    parent_log_request(self, *args, **kwargs)
+
+serving.WSGIRequestHandler.log_request = log_request
 
 
 def get_search_results_for_list(queries: list[str], limit: int):
@@ -81,6 +95,7 @@ def enrich_search_results(results, query):
 
 @app.route('/api/query', methods=['POST'])
 def query():
+    print(json.dumps(request.json, indent=2))
     return _query(request.json.get("query"))
 
 
