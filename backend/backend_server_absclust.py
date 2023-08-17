@@ -30,6 +30,7 @@ from utils.model_client import get_embedding, get_openai_embedding_batch, save_e
 from utils.absclust_database_client import get_absclust_search_results, save_search_cache
 from utils.gensim_w2v_vectorizer import GensimW2VVectorizer
 from utils.cluster_title import ClusterTitles
+from utils.tokenizer import tokenize
 
 
 # exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
@@ -221,7 +222,8 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
 
     # highlight TF-IDF words:
     # tf_idf_helper = ClusterTitles()
-    vectorizer = TfidfVectorizer(stop_words="english")
+    # vectorizer = TfidfVectorizer(stop_words="english")
+    vectorizer = TfidfVectorizer(analyzer=tokenize, max_df=0.7)
     # vectorizer = TfidfVectorizer(analyzer=tf_idf_helper.tokenize)
     tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
     words = vectorizer.get_feature_names_out()

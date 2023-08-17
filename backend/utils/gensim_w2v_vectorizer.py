@@ -5,6 +5,8 @@ import gensim
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+from utils.tokenizer import tokenize
+
 
 class TfidfEmbeddingVectorizer(object):
     def __init__(self, word2vec, dim, sublinear_tf=False):
@@ -31,7 +33,7 @@ class TfidfEmbeddingVectorizer(object):
         return self
 
     def transform(self, text):
-        words = text.split(" ")  # TODO: use tokenizer
+        words = tokenize(text)
         return np.mean(
                     [
                         self.word2vec[w] * self.word2weight[w]
@@ -66,7 +68,7 @@ class GensimW2VVectorizer():
         sentences = []
         for abstract in corpus:
             for sentence in abstract.split(". "):
-                sentences.append(sentence.split( ))  # TODO: use tokenizer
+                sentences.append(tokenize(sentence))
 
         emb_dim = 256
         window_size = 7
@@ -96,7 +98,7 @@ class GensimW2VVectorizer():
         )
         # to calculate tf-idfs we want list (abstracts) of lists words
         # i.e. we flatten over the sentence axis
-        self.tev.fit([abstract.split( ) for abstract in corpus])  # TODO: use tokenizer
+        self.tev.fit([tokenize(abstract) for abstract in corpus])
         t11 = time.time()
 
         print(f"TfidfEmbeddingVectorizer training: {t11 - t10:.2f}s")
