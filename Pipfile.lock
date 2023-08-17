@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "6eb2aa95c3d1195639a347d71a715d28fbc2ffbb6dbb866ba06ca693f018bc5d"
+            "sha256": "3da60110ea43e8cb7a61d919a0054720c0a86785076751e07d4424bb9c80306f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -601,6 +601,36 @@
             "markers": "python_version >= '3.8'",
             "version": "==2023.6.0"
         },
+        "gensim": {
+            "hashes": [
+                "sha256:00e652c6df1fb92adf909f6a6b9015ca1eae23e3aa36565449ec34a6008e4d18",
+                "sha256:14e429352ad80c075c6ce16a43e5010abaf4b7e021c84b84d88b0461924a1836",
+                "sha256:28a7d31df1cd6ad2f676d48f7e193547f593bee5f0924ae75c1de3eede96b2f2",
+                "sha256:55f837bdab49fea1f4151a3d3882d0d04ee9a964bb654a7c868a856ca86fbf20",
+                "sha256:563c184a8c26b92059273fe53561e91953da7d8b3ab292d703431cf807f36342",
+                "sha256:56b24c3a506c4acdc131326377e04d378dc72a6120f3d2de234ebdfbfda58305",
+                "sha256:57c3af9e2834c1c9ca12f981b5ab615505e2d6b69f4d4963ccbf5d2cec583a6e",
+                "sha256:5a4b55f5d88a7d445d6dcb94316ab43005844da7dfefc0a592a96f3d06ea0905",
+                "sha256:6098f4edb4148d56e815f58eae7a7fd57e0b832d5602b9e7637a5c1d740da30f",
+                "sha256:64c0e7104e1b421cb718ec7a79f7d4d26deba4c194785e133fa2dec75d2ba614",
+                "sha256:840a858035029e1f85a6e5ae90ef1d7def1e594677af94722bd0a0eb21a710f3",
+                "sha256:8b5f11c0e6a5308086b48e8f6841223a4fa1a37d513684612b7ee854b533015f",
+                "sha256:9a6e9a51fdf1dccf6b6d035b38efdef703b93aff10d6f4112c4e91a182136a74",
+                "sha256:ad4364ca6fddb03438aaaa377927a76832a28a53b9f7ebaf4c2a7e42dc4ed5c1",
+                "sha256:adf32a4e131dd7f448eb224b4cde7ef3ae0f6f601b482cfca9d1ae2923c2fe9f",
+                "sha256:b6ea3a726b53d2d229bf171f1aecebb5b1bd7f24192c1cfd3ca571e1d248ab86",
+                "sha256:c193da0e6a0cdba0ddc0bfd53cb25bbbbdbbbd09305ac4924f2746bc07a97d29",
+                "sha256:c3f92470f9d5128633fac6bc9686ac4c1c6ca7b2ffdef825669901f002567ea9",
+                "sha256:ce58a7d9f7a501d670bc2335059f4c1e22800ad12fd968733d12d0565aa49b26",
+                "sha256:d3ef3e9272de44e6c35c69b5a19c2e306a3c0094db1de9b2547d35b90d1cbe19",
+                "sha256:e04ab4f2d55bebaca7cec291ac182618be0ef52c8bf36453f69de8d5256c2182",
+                "sha256:e924e972fabd8a09fe3f06e732b7e05a51c2cb3010871c205717e949bbb05cf4",
+                "sha256:e93244c50a58c3e08a0f6ee8d552dadd77296f2eac62ff8cc9ef296aa905d734",
+                "sha256:f183702cf2c3e36a2441236b6e3144d934255307359ef8eee3ac099041400806"
+            ],
+            "index": "pypi",
+            "version": "==4.3.1"
+        },
         "hdbscan": {
             "hashes": [
                 "sha256:314b586eeace80c96311c9acc6b2805f7c4fac434db55925a578c3c4d294118e",
@@ -1088,11 +1118,11 @@
         },
         "plotly": {
             "hashes": [
-                "sha256:046ba0cd9f6b251780e0d93313016ec5e2cb69d9a68da818cd7110e6c77a4011",
-                "sha256:13dc052665dcb4d9eefd89847c0b144984e99aca5c8008f9885d2583b77d8b7d"
+                "sha256:19cc34f339acd4e624177806c14df22f388f23fb70658b03aad959a0e650a0dc",
+                "sha256:295ac25edeb18c893abb71dcadcea075b78fd6fdf07cee4217a4e1009667925b"
             ],
             "index": "pypi",
-            "version": "==5.16.0"
+            "version": "==5.16.1"
         },
         "preshed": {
             "hashes": [
@@ -1520,11 +1550,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:11e52c67415a381d10d6b462ced9cfb97066179f0e871399e006c4ab101fc85f",
-                "sha256:baf1fdb41c6da4cd2eae722e135500da913332ab3f2f5c7d33af9b492acb5235"
+                "sha256:d59c97e7b774979a5ccb96388efc9eb65518004537e85d52e81eaee89ab6dd91",
+                "sha256:e13e1b0bc760e9b0127eda042845999b2f913e12437046e663b833aa96d89715"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==68.0.0"
+            "markers": "python_version >= '3.8'",
+            "version": "==68.1.0"
         },
         "six": {
             "hashes": [

@@ -17,6 +17,7 @@ umap-learn = "*"
 typesense = "*"
 openai = "*"
 spacy = "*"
+gensim = "*"
 
 [dev-packages]
 ipykernel = "*"

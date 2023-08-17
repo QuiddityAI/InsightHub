@@ -333,6 +333,48 @@ def _finish_map_html(task_id, query):
     umap_tasks[task_id]["result"] = result
     umap_tasks[task_id]["finished"] = True
 
+    return
+
+    # copied from AbsClust:
+    import gensim
+
+    t8 = time.time()
+
+    def _w2v_iter_heuristic(nrows):
+        def model(x, k, b):
+            return k * np.log(x + 1) + b
+
+        good_coefs = [-33.3979472, 307.3030023]
+        # minimal_coefs = [-17.04255579, 160.19563678]
+        n = model(nrows, *good_coefs)
+        n = np.clip(n, 3, 120)
+        return int(n)
+
+    sentences = []
+    for e in elements:
+        for sentence in e["abstract"].split(". "):
+            sentences.append(sentence.split( ))
+
+    emb_dim = 256
+    window_size = 7
+    n_epochs = _w2v_iter_heuristic(len(elements))
+    n_workers = 8
+    t9 = time.time()
+    print(f"gensim model preparation: {t9 - t8:.2f}s, abstract count {len(elements)}, sentence count {len(sentences)}, n_epochs {n_epochs}, n_workers {n_workers}")
+
+    gen_sim_w2v_model = gensim.models.Word2Vec(
+        sentences,
+        vector_size=emb_dim,
+        window=window_size,
+        epochs=n_epochs,
+        min_alpha=1e-5,
+        workers=n_workers,
+        compute_loss=True,
+        sg=0,
+    )
+    t10 = time.time()
+    print(f"gensim model training: {t10 - t9:.2f}s")
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port='55123', debug=True)
