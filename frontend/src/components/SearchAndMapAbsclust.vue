@@ -17,6 +17,7 @@ export default {
       map_item_details: [],
       search_timings: "",
       map_task_id: null,
+      map_is_in_progess: false,
       show_loading_bar: false,
       map_viewport_is_adjusted: false,
       progress: 0.0,
@@ -24,6 +25,7 @@ export default {
       map_timings: "",
       windowHeight: 0,
       selectedDocumentIdx: -1,
+      selectedDocumentDetails: null,
 
       // settings:
       show_settings: false,
@@ -129,13 +131,14 @@ export default {
           httpClient.post("/api/map", payload)
             .then(function (response) {
               that.map_task_id = response.data["task_id"]
+              that.map_is_in_progess = true
               that.map_viewport_is_adjusted = false
             })
         })
     },
     get_mapping_progress() {
       const that = this
-      if (!this.map_task_id) {
+      if (!this.map_task_id || !this.map_is_in_progess) {
         setTimeout(function() {
           this.get_mapping_progress()
         }.bind(this), 100);
@@ -150,7 +153,7 @@ export default {
 
           if (finished) {
             // no need to get further results:
-            that.map_task_id = null
+            that.map_is_in_progess = false
           }
 
           const progress = response.data["progress"]
@@ -210,7 +213,7 @@ export default {
         .catch(function (error) {
           if (error.response && error.response.status === 404) {
             // no more data for this task, stop polling:
-            that.map_task_id = null
+            that.map_is_in_progess = false
             console.log("404 response")
           } else {
             console.log(error)
@@ -237,12 +240,23 @@ export default {
       ]
     },
     show_document_details(pointIdx) {
+      const that = this
       this.selectedDocumentIdx = pointIdx
       this.$refs.embedding_map.selectedPointIdx = pointIdx
+
+      const payload = {
+        task_id: this.map_task_id,
+        index: this.selectedDocumentIdx,
+      }
+      httpClient.post("/api/document/details", payload)
+        .then(function (response) {
+          that.selectedDocumentDetails = response.data
+        })
     },
     close_document_details() {
       this.selectedDocumentIdx = -1
       this.$refs.embedding_map.selectedPointIdx = -1
+      this.selectedDocumentDetails = null
     },
   },
   mounted() {
@@ -387,7 +401,7 @@ export default {
                 <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="map_item_details[selectedDocumentIdx].title"></div></p>
                 <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].container_title }}, {{ map_item_details[selectedDocumentIdx].issued_year.toFixed(0) }}</p>
                 <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].most_important_words }}</p>
-                <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="map_item_details[selectedDocumentIdx].abstract_enriched"></div></p>
+                <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="selectedDocumentDetails ? selectedDocumentDetails.abstract : 'loading...'"></div></p>
                 <button @click="close_document_details" class="px-3 py-1 bg-blue-600/50 hover:bg-blue-600 rounded">Close</button>
               </div>
           </div>

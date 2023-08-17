@@ -272,7 +272,15 @@ def get_map_details():
         logging.warning("task_id not found")
         return "task_id not found", 404
 
-    result = map_details[task_id]
+    # transferring all titles takes is up to 1 MByte, so we are doing it in a separate endpoint
+    # for this, we are copying the results here:
+    # remove abstracts from search results to reduce size of response:
+    item_details = deepcopy(map_details[task_id])
+    for item in item_details:
+        if "abstract" in item:
+            del item["abstract"]
+            del item["vector"]
+    result = item_details
 
     # if result["finished"]:
     #     del umap_tasks[task_id]
@@ -281,6 +289,19 @@ def get_map_details():
     # instead go through tasks every few minutes and delete old ones
 
     return result
+
+
+@app.route('/api/document/details', methods=['POST'])
+def get_document_details():
+    # FIXME: the abstract should be retrived from the database and not the "map details" cache,
+    # as the cache would be empty already
+    task_id = request.json.get("task_id")
+    index = request.json.get("index")
+    if task_id not in map_details or len(map_details[task_id]) <= index:
+        logging.warning("task_id not found or index out of range")
+        return "task_id not found", 404
+
+    return map_details[task_id][index]
 
 
 def _finish_map_html(task_id, query):
@@ -355,15 +376,8 @@ def _finish_map_html(task_id, query):
         "timings": timings,
     }
 
-    # transferring all titles takes is up to 1 MByte, so we are doing it in a separate endpoint
-    # for this, we are copying the results here:
-    # remove abstracts from search results to reduce size of response:
-    item_details = deepcopy(elements)
-    for item in item_details:
-        if "abstract" in item:
-            del item["abstract"]
-            del item["vector"]
-    map_details[task_id] = item_details
+    # FIXME: this also stores vectors a second time in the cache (33MB per request)
+    map_details[task_id] = elements
 
     umap_tasks[task_id]["result"] = result
     umap_tasks[task_id]["finished"] = True
