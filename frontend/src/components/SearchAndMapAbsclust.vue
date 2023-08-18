@@ -27,6 +27,9 @@ export default {
       selectedDocumentIdx: -1,
       selectedDocumentDetails: null,
 
+      // tabs:
+      selected_tab: "map",
+
       // settings:
       show_settings: false,
       available_databases: [
@@ -107,6 +110,7 @@ export default {
       that.$refs.embedding_map.itemDetails = []
       that.$refs.embedding_map.updateGeometry()
       that.map_viewport_is_adjusted = false
+      that.selected_tab = "results"
 
       const payload = {
         query: this.query,
@@ -291,12 +295,12 @@ export default {
       <div class="relative h-screen mx-auto max-w-7xl sm:px-6 lg:px-8 grid grid-cols-2 gap-4 pointer-events-none">
 
         <!-- left column -->
-        <div ref="left_column" class="overflow-y-auto pointer-events-auto">
+        <div ref="left_column" class="h-screen flex flex-col">
 
-          <div class="h-8"></div>
+          <div class="flex-none h-8"></div>
 
           <!-- search card -->
-          <div class="sticky top-0 rounded-md shadow-sm bg-white p-3">
+          <div class="flex-none rounded-md shadow-sm bg-white p-3  pointer-events-auto">
             <div class="flex justify-between">
               <select v-model="selected_database" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
                 <option v-for="item in available_databases" :value="item.id" selected>{{ item.title }}</option>
@@ -369,17 +373,47 @@ export default {
             </div>
           </div>
 
-          <!-- result list -->
-          <ul role="list">
-            <li v-for="item in search_results" :key="item.title" class="flex justify-between py-2">
-              <div class="min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
-                <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title_enriched"></div></p>
-                <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
-                <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.most_important_words }}</p>
-                <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract_enriched"></div></p>
+          <!-- tab box -->
+          <div class="flex-initial flex flex-col overflow-hidden mt-3 rounded-md shadow-sm bg-white pointer-events-auto">
+            <div class="flex-none flex flex-row gap-1 py-3 text-gray-500">
+              <button @click="selected_tab = 'map'" :class="{'text-blue-500': selected_tab === 'map'}" class="flex-none px-5">
+                ◯
+              </button>
+              <button @click="selected_tab = 'results'" :class="{'text-blue-500': selected_tab === 'results'}" class="flex-1">
+                Results
+              </button>
+              <button @click="selected_tab = 'history'" :class="{'text-blue-500': selected_tab === 'history'}" class="flex-1">
+                History
+              </button>
+              <button @click="selected_tab = 'maps'" :class="{'text-blue-500': selected_tab === 'maps'}" class="flex-1">
+                Maps
+              </button>
+              <button @click="selected_tab = 'lists'" :class="{'text-blue-500': selected_tab === 'lists'}" class="flex-1">
+                Lists
+              </button>
+            </div>
+            <hr v-if="selected_tab !== 'map'" class="h-px bg-gray-200 border-0">
+
+            <div class="flex-initial overflow-y-auto px-3" style="min-height: 0;">
+              <!-- result list -->
+              <div v-if="selected_tab === 'results'">
+                <ul v-if="search_results.length !== 0" role="list" class="pt-3">
+                  <li v-for="item in search_results" :key="item.title" class="justify-between pb-3">
+                    <div class="bg-gray-100/50 rounded p-3">
+                      <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title_enriched"></div></p>
+                      <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
+                      <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.most_important_words }}</p>
+                      <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract_enriched"></div></p>
+                    </div>
+                  </li>
+                </ul>
+                <div v-if="search_results.length === 0" class="h-20 flex flex-col text-center place-content-center">
+                  <p class="flex-none text-gray-400">No Results Yet</p>
+                </div>
               </div>
-            </li>
-          </ul>
+            </div>
+
+          </div>
 
           <!-- timings -->
           <ul role="list">

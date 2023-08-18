@@ -104,7 +104,7 @@ def query():
 @lru_cache()
 def _query(query):
     if not query:
-        return jsonify({})
+        return jsonify({"items": [], "timings": []})
 
     timings = []
     t1 = time.time()
