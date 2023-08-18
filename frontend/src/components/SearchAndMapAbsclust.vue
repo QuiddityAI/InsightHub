@@ -30,6 +30,25 @@ export default {
       // tabs:
       selected_tab: "map",
 
+      // lists:
+      lists: {
+        default: {
+          title: "Favorites",
+          positives: [{title: "Foo Bar", issued_year: 2017, container_title: "Some Journal"}, {title: "Foo Bar", issued_year: 2017, container_title: "Some Journal"}],
+          negatives: [{title: "Foo Bar", issued_year: 2017, container_title: "Some Journal"}],
+        },
+        mxene_research: {
+          title: "MXene Research",
+          positives: [],
+          negatives: [],
+        },
+        cancer_research: {
+          title: "Cancer Research",
+          positives: [],
+          negatives: [],
+        },
+      },
+
       // settings:
       show_settings: false,
       available_databases: [
@@ -411,6 +430,55 @@ export default {
                   <p class="flex-none text-gray-400">No Results Yet</p>
                 </div>
               </div>
+
+              <!-- history -->
+              <div v-if="selected_tab === 'history'">
+                <div class="h-20 flex flex-col text-center place-content-center">
+                  <p class="flex-none text-gray-400">Search History</p>
+                </div>
+              </div>
+
+              <!-- history -->
+              <div v-if="selected_tab === 'maps'">
+                <div class="h-20 flex flex-col text-center place-content-center">
+                  <p class="flex-none text-gray-400">Store Maps<br>(with annotations and custom clustering)</p>
+                </div>
+              </div>
+
+              <!-- lists -->
+              <div v-if="selected_tab === 'lists'">
+                <ul v-if="Object.keys(lists).length !== 0" role="list" class="pt-3">
+                  <li v-for="list in lists" :key="list.title" class="justify-between pb-3">
+                    <div class="flex flex-row gap-3">
+                      <span class="text-gray-500 font-medium">{{ list.title }}</span>
+                      <div class="flex-1"></div>
+                      <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Recommend Similar</button>
+                      <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
+                    </div>
+                    <ul class="pt-2">
+                      <li v-for="(item, index) in list.positives" :key="item.title" class="justify-between pb-2">
+                        <div class="bg-green-100/50 rounded px-3 py-2">
+                          <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
+                          <p class="truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
+                          <button @click="list.positives.splice(index, 1)" class="text-sm text-gray-500">Remove</button>
+                        </div>
+                      </li>
+                    </ul>
+                    <ul class="pt-2">
+                      <li v-for="(item, index) in list.negatives" :key="item.title" class="justify-between pb-2">
+                        <div class="bg-red-100/50 rounded px-3 py-2">
+                          <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
+                          <p class="truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
+                          <button @click="list.negatives.splice(index, 1)" class="text-sm text-gray-500">Remove</button>
+                        </div>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+                <div v-if="Object.keys(lists).length === 0" class="h-20 flex flex-col text-center place-content-center">
+                  <p class="flex-none text-gray-400">No Results Yet</p>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -436,7 +504,12 @@ export default {
                 <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].container_title }}, {{ map_item_details[selectedDocumentIdx].issued_year.toFixed(0) }}</p>
                 <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].most_important_words }}</p>
                 <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="selectedDocumentDetails ? selectedDocumentDetails.abstract : 'loading...'"></div></p>
-                <button @click="close_document_details" class="px-3 py-1 bg-blue-600/50 hover:bg-blue-600 rounded">Close</button>
+                <div class="flex flex-row">
+                  <button @click="lists.default.positives.push(map_item_details[selectedDocumentIdx])" class="px-3 py-1 mr-3 bg-green-600/50 hover:bg-blue-600 rounded">Positive</button>
+                  <button @click="lists.default.negatives.push(map_item_details[selectedDocumentIdx])" class="px-3 py-1 mr-3 bg-red-600/50 hover:bg-blue-600 rounded">Negative</button>
+                  <div class="flex-1"></div>
+                  <button @click="close_document_details" class="px-3 py-1 bg-blue-600/50 hover:bg-blue-600 rounded">Close</button>
+                </div>
               </div>
           </div>
 
