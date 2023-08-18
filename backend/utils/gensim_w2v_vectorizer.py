@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+import math
 
 import gensim
 import numpy as np
@@ -16,19 +17,30 @@ class TfidfEmbeddingVectorizer(object):
         self.sublinear_tf = sublinear_tf
 
     def fit(self, X):
-        tfidf = TfidfVectorizer(analyzer=lambda x: x, sublinear_tf=self.sublinear_tf)
-        tfidf.fit(X)
-        # if a word was never seen - it must be at least as infrequent
-        # as any of the known words - so the default idf is the max of
-        # known idf's
-        max_idf = max(tfidf.idf_)
-
         t1 = time.time()
+        tfidf = TfidfVectorizer(analyzer=lambda x: x, sublinear_tf=self.sublinear_tf, min_df=2)
+        tfidf.fit(X)
+        t2 = time.time()
+        print(f"tf idf vectorizer fit(): {t2 - t1:.2}s")
+        # if a word was never seen - its IDF is at least log(N/df) with N being
+        # the number of documents and df being the number of documents where it
+        # appears in, being at most 1
+        max_idf = math.log(len(X) / 1)
+
         # TODO: this is slow, about 3s for 2k abstracts corpus (-> 20k unique words?)
         self.word2weight = defaultdict(
             lambda: max_idf, [(w, tfidf.idf_[i]) for w, i in tfidf.vocabulary_.items()]
         )
-        print(f"tf idf vectorizer word2weight preproc: {time.time() - t1:.2}s")
+        print(f"tf idf vectorizer word2weight dict: {time.time() - t2:.2}s")
+        print(f"vocab size: {len(tfidf.vocabulary_)}")
+        # with new tokenizer:
+        # 15k vocab size with min_df=1 and 1.6k abstracts, 0.1s fit() 1.9s word2weight dict
+        # 6.8k vocab size with min_df=2 and 1.6k abstracts, 0.1s fit() 0.75s word2weight dict
+        # 4.9k vocab size with min_df=3 and 1.6k abstracts, 0.1s fit() 0.55s word2weight dict
+
+        # with spacy tokenizer:
+        # 11k vocab size with min_df=1 and 1.6k abstracts, 0.1s fit() 1.2s word2weight dict
+        # 5k vocab size with min_df=2 and 1.6k abstracts, 0.1s fit() 0.57s word2weight dict
 
         return self
 
@@ -98,10 +110,14 @@ class GensimW2VVectorizer():
         )
         # to calculate tf-idfs we want list (abstracts) of lists words
         # i.e. we flatten over the sentence axis
-        self.tev.fit([tokenize(abstract) for abstract in corpus])
+        t105 = time.time()
+        tokens = [tokenize(abstract) for abstract in corpus]
         t11 = time.time()
+        print(f"tokenize: {t11 - t105:.2f}s")  # 0.5s for 1.6k abstracts with new one, 15s with spacy one
+        self.tev.fit(tokens)
+        t12 = time.time()
 
-        print(f"TfidfEmbeddingVectorizer training: {t11 - t10:.2f}s")
+        print(f"TfidfEmbeddingVectorizer training total: {t12 - t11:.2f}s")
 
 
     def get_embedding(self, text):
