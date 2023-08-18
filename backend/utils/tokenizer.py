@@ -1,6 +1,6 @@
 import re
 
-test = """
+examples_of_scientific_texts = """
 2D MXene
 Abstract
 
@@ -83,5 +83,11 @@ def tokenize(text):
 
 
 if __name__ == "__main__":
-    for line in test.splitlines():
+    for line in examples_of_scientific_texts.splitlines():
         print(" | ".join(tokenize(line)))
+    print(" | ".join(tokenize(examples_of_scientific_texts)))
+
+    from cluster_title import ClusterTitles
+    tf_idf_helper = ClusterTitles()
+    for line in examples_of_scientific_texts.splitlines():
+        print(" | ".join(tf_idf_helper.tokenize(line)))
