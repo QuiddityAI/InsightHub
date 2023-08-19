@@ -80,7 +80,7 @@ export default {
     },
   },
   emits: [
-    "show_cluster",
+    "cluster_selected",
     "point_selected",
   ],
   mounted() {
@@ -88,6 +88,14 @@ export default {
     this.setupPanZoom();
   },
   methods: {
+    reset_map() {
+      this.targetPositionsX = []
+      this.targetPositionsY = []
+      this.clusterData = []
+      this.itemDetails = []
+      // TODO: check if this is all
+      this.updateGeometry()
+    },
     screenLeftFromRelative(x) {
       const normalizedPos = (x + this.baseOffsetX) * this.baseScaleX
       const shiftedToActiveAreaPos = normalizedPos * this.activeAreaWidth + this.passiveMarginsLRTB[0]
@@ -440,6 +448,7 @@ export default {
 </script>
 
 <template>
+<div>
   <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
   <div ref="webGlArea" @mousemove="this.updateOnHover" @click="this.onClick" class="fixed w-full h-full"></div>
@@ -453,7 +462,7 @@ export default {
     'left': screenLeftFromRelative(cluster_label.center[0]) + 'px',
     'bottom': screenBottomFromRelative(cluster_label.center[1]) + 'px',
     }">
-    <button @click="$emit('show_cluster', cluster_label)" class="px-1 backdrop-blur-sm bg-white/50 hover:bg-white text-gray-500 text-xs rounded">
+    <button @click="$emit('cluster_selected', cluster_label)" class="px-1 backdrop-blur-sm bg-white/50 hover:bg-white text-gray-500 text-xs rounded">
       {{ cluster_label.title }}
     </button>
   </div>
@@ -467,9 +476,7 @@ export default {
     <div v-html="itemDetails.length > highlightedPointIdx ? itemDetails[highlightedPointIdx].title : 'loading...'" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
     </div>
   </div>
-
-
-
+</div>
 </template>
 
 <style scoped></style>

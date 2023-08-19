@@ -1,4 +1,5 @@
 {
     "python.analysis.typeCheckingMode": "off",
-    "files.trimTrailingWhitespace": true
+    "files.trimTrailingWhitespace": true,
+    "editor.tabSize": 2
 }
