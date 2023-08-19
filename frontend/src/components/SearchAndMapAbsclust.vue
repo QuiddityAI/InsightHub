@@ -223,12 +223,21 @@ export default {
       this.selectedDocumentDetails = null
     },
     updateMapPassiveMargin() {
-      this.$refs.embedding_map.passiveMarginsLRTB = [
-        this.$refs.left_column.getBoundingClientRect().right + 50,
-        window.innerWidth - this.$refs.right_column.getBoundingClientRect().right,
-        50,
-        150
-      ]
+      if (window.innerWidth > 640) {
+        this.$refs.embedding_map.passiveMarginsLRTB = [
+          this.$refs.left_column.getBoundingClientRect().right + 50,
+          window.innerWidth - this.$refs.right_column.getBoundingClientRect().right,
+          50,
+          150
+        ]
+      } else {
+        this.$refs.embedding_map.passiveMarginsLRTB = [
+          50,
+          50,
+          250,
+          50
+        ]
+      }
     },
   },
   mounted() {
@@ -249,10 +258,10 @@ export default {
         @point_selected="show_document_details"/>
 
       <!-- content area -->
-      <div class="relative h-screen mx-auto max-w-7xl sm:px-6 lg:px-8 grid grid-cols-2 gap-4 pointer-events-none">
+      <div class="relative h-screen mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row grid-cols-1 md:grid-cols-2 gap-4 pointer-events-none">
 
         <!-- left column -->
-        <div ref="left_column" class="h-screen flex flex-col">
+        <div ref="left_column" class="flex-1 flex flex-col">
 
           <div class="flex-none h-8"></div>
 
@@ -383,7 +392,7 @@ export default {
         </div>
 
         <!-- right column (e.g. for showing box with details for selected result) -->
-        <div ref="right_column" class="h-screen flex flex-col pointer-events-none">
+        <div ref="right_column" class="flex-1 flex flex-col pointer-events-none">
 
           <div class="flex-none h-8"></div>
 
