@@ -9,10 +9,10 @@ import panzoom from 'panzoom';
 import { Renderer, Camera, Geometry, Program, Mesh, Transform } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
 import * as math from 'mathjs'
 
-import pointsVertexShader from './points.vert?raw'
-import pointsFragmentShader from './points.frag?raw'
-import shadowsVertexShader from './shadows.vert?raw'
-import shadowsFragmentShader from './shadows.frag?raw'
+import pointsVertexShader from '../shaders/points.vert?raw'
+import pointsFragmentShader from '../shaders/points.frag?raw'
+import shadowsVertexShader from '../shaders/shadows.vert?raw'
+import shadowsFragmentShader from '../shaders/shadows.frag?raw'
 
 export default {
   data() {
