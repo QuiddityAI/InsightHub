@@ -1,1 +1,0 @@
-- document how weaviate was installed
