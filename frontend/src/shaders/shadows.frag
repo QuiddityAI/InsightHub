@@ -16,16 +16,14 @@ float rand(vec2 co) {
 void main() {
     vec3 baseShadowColor = vec3(0.6);
 
-    // basics:
+    // position of this fragment within point vertex:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
     vec2 posFromBottomLeft = vec2(gl_PointCoord.x, 1.0 - gl_PointCoord.y);  // 0 - 1
 	vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
 	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
 
-    //float noise = 0.2 * rand(floor(posFromCenter * 40.0)/40.0);
-
-    float circleArea = 1.0 - smoothstep(0.0, 1.0, distFromCenter);
+    float smoothShadowDarkness = pow(1.0 - smoothstep(0.0, 1.0, distFromCenter), 1.3);
 
     FragColor.rgb = baseShadowColor;
-    FragColor.a = pow(circleArea, 1.3);
+    FragColor.a = smoothShadowDarkness;
 }

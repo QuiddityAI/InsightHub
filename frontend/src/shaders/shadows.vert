@@ -27,13 +27,12 @@ uniform float devicePixelRatio;
 out float isHighlighted;
 
 void main() {
-
+    // pass data to fragment shader by setting varying variables:
     isHighlighted = (gl_VertexID == highlightedPointIdx) ? 1.0 : 0.0;
 
+    // position calculation:
     vec3 rawPos = vec3(positionX, positionY, -2.0);
-
     vec3 normalizedPos = (rawPos + vec3(baseOffsetX, baseOffsetY, 0.0)) * vec3(baseScaleX, baseScaleY, 1.0);
-
     vec3 shiftedToActiveAreaPos = normalizedPos * vec3(activeAreaWidth, activeAreaHeight, 1.0) + vec3(marginLeft, marginBottom, 0.0);
 
     // TODO: modify camera for pan and zoom instead of vertex position (to make sure dots stay the same size)
@@ -47,19 +46,18 @@ void main() {
 	vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * zoom;
     vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 200.0);
 
-    // positions are 0->1, so make -1->1
-    // edit: we stay for now in 0-1 space
-    vec3 pos = shadowOffsetPos;// * 2.0 - 1.0;
+    // position is now in range 0.0 - 1.0
+    vec3 pos = shadowOffsetPos;
 
-    // Scale towards camera to be more interesting
-    // pos.z *= 10.0;
-
-    // modelMatrix is one of the automatically attached uniforms when using the Mesh class
+    // transform position:
+    // (modelMatrix is automatically set by the Mesh class)
     vec4 mPos = modelMatrix * vec4(pos, 1.0);
-
-    // get the model view position so that we can scale the points off into the distance
     vec4 mvPos = viewMatrix * mPos;
-    float zoomAdjustment = (zoom - 1.0) * 0.3 + 1.0;
-    gl_PointSize = (5.0 + 15.0 * pointSize) * 1.5 * zoomAdjustment * devicePixelRatio;
     gl_Position = projectionMatrix * mvPos;
+
+    // point size:
+    // (see points.vert shader for how zoomAdjustment works)
+    float zoomAdjustment = (zoom - 1.0) * 0.3 + 1.0;
+    float shadowScale = 1.5;
+    gl_PointSize = (5.0 + 15.0 * pointSize) * shadowScale * zoomAdjustment * devicePixelRatio;
 }
