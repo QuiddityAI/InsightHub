@@ -2,7 +2,6 @@ from copy import deepcopy
 import logging
 import time
 from functools import lru_cache
-import uuid
 from threading import Thread
 import json
 
@@ -59,7 +58,7 @@ def _query(params_str):
     params = json.loads(params_str)
     query = params.get("query")
     if not query:
-        return jsonify({"items": [], "timings": []})
+        return "query parameter is missing", 400
 
     timings = Timings()
 
@@ -94,6 +93,111 @@ def get_search_results_for_list(queries: list[str], limit: int):
     return results
 
 
+@app.route('/api/map', methods=['POST'])
+def get_or_create_map_task():
+    params = request.json
+    query = params.get("query")
+    if not query:
+        return "query parameter is missing", 400
+
+    task_id = json.dumps(params)
+
+    if task_id not in mapping_tasks:
+        task_params[task_id] = params
+        mapping_tasks[task_id] = {
+            "finished": False,
+            "result": None,
+            "progress": {
+                "embeddings_available": False,
+                "total_steps": 1,
+                "current_step": 0
+            },
+        }
+        thread = Thread(target = generate_map, args = (task_id,))
+        thread.start()
+
+    return jsonify({"task_id": task_id})
+
+
+def generate_map(task_id):
+    params = task_params[task_id]
+    query = params.get("query")
+
+    timings = Timings()
+
+    elements = get_search_results_for_map(query.split(" OR "), limit=params.get("max_items_used_for_mapping", 3000), task_id=task_id)
+    timings.log("database query")
+    add_vectors_to_results(elements, query, task_id)
+    timings.log("adding vectors")
+
+    vectors = [e["vector"] for e in elements]
+    distances = [e["distance"] for e in elements]
+    citations = [e.get("citedby", 0) for e in elements]
+    features = np.asarray(vectors)  # shape result_count x 768
+    timings.log("convert to numpy")
+
+    def on_umap_progress(working_in_embedding_space, current_iteration, total_iterations, embeddings):
+        mapping_tasks[task_id]["progress"] = {
+            "embeddings_available": working_in_embedding_space,
+            "total_steps": total_iterations,
+            "current_step": current_iteration,
+        }
+        projections = embeddings
+
+        if working_in_embedding_space and projections is not None:
+            positionsX = projections[:, 0]
+            positionsY = projections[:, 1]
+
+            result = {
+                "item_details": [],
+                "per_point_data": {
+                    "positions_x": positionsX.tolist(),
+                    "positions_y": positionsY.tolist(),
+                    "cluster_ids": [-1] * len(positionsX),
+                    "distances": distances,
+                    "citations": citations,
+                },
+                "cluster_data": [],
+                "timings": [],
+            }
+            mapping_tasks[task_id]["result"] = result
+
+    # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
+    # Progress might only be available below 4096
+
+    umap_parameters = params.get("dim_reducer_parameters", {})
+    umap_task = umap.UMAP(random_state=99, min_dist=umap_parameters.get("min_dist", 0.05), n_epochs=umap_parameters.get("n_epochs", 500))
+    projections = umap_task.fit_transform(features, on_progress_callback=on_umap_progress)
+    timings.log("UMAP fit transform")
+
+    cluster_labels = cluster_results(projections)
+    timings.log("clustering")
+    cluster_data = get_cluster_titles(cluster_labels, projections, elements, timings)
+    timings.log("cluster title")
+
+    positionsX = projections[:, 0]
+    positionsY = projections[:, 1]
+    cluster_id_per_point = cluster_labels
+
+    result = {
+        "per_point_data": {
+            "positions_x": positionsX.tolist(),
+            "positions_y": positionsY.tolist(),
+            "cluster_ids": cluster_id_per_point.tolist(),
+            "distances": distances,
+            "citations": citations,
+        },
+        "cluster_data": cluster_data,
+        "timings": timings.get_timestamps(),
+    }
+
+    # FIXME: this also stores vectors a second time in the cache (33MB per request)
+    map_details[task_id] = elements
+
+    mapping_tasks[task_id]["result"] = result
+    mapping_tasks[task_id]["finished"] = True
+
+
 def get_search_results_for_map(queries: list[str], limit: int, task_id: str=None):
     results = []
 
@@ -126,7 +230,7 @@ def add_vectors_to_results(search_results, query, task_id):
 
     if task_params[task_id]["vectorizer"] in ["pubmedbert", "openai"]:
         if task_id:
-            umap_tasks[task_id]["progress"]["total_steps"] = len(search_results)
+            mapping_tasks[task_id]["progress"]["total_steps"] = len(search_results)
 
         for i, item in enumerate(search_results):
             #item_embedding = embeddings[item["DOI"]]
@@ -135,7 +239,7 @@ def add_vectors_to_results(search_results, query, task_id):
             item["distance"] = np.dot(query_embedding, item_embedding)
 
             if task_id:
-                umap_tasks[task_id]["progress"]["current_step"] = i
+                mapping_tasks[task_id]["progress"]["current_step"] = i
 
     elif task_params[task_id]["vectorizer"] == "gensim_w2v_tf_idf":
 
@@ -145,7 +249,7 @@ def add_vectors_to_results(search_results, query, task_id):
         query_embedding = vectorizer.get_embedding(query)
 
         if task_id:
-            umap_tasks[task_id]["progress"]["total_steps"] = len(search_results)
+            mapping_tasks[task_id]["progress"]["total_steps"] = len(search_results)
 
         for i, item in enumerate(search_results):
             item_embedding = vectorizer.get_embedding(item.get("abstract", "")).tolist()
@@ -153,7 +257,7 @@ def add_vectors_to_results(search_results, query, task_id):
             item["distance"] = np.dot(query_embedding, item_embedding)
 
             if task_id:
-                umap_tasks[task_id]["progress"]["current_step"] = i
+                mapping_tasks[task_id]["progress"]["current_step"] = i
 
     else:
         logging.error("vectorizer unknown: " + task_params[task_id]["vectorizer"])
@@ -180,7 +284,6 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
     points_per_cluster_y = [[] for i in range(num_clusters)]
     results_by_cluster = [[] for i in range(num_clusters)]
 
-    t1 = time.time()
     for result_index, cluster_index in enumerate(cluster_labels):
         if cluster_index <= -1: continue
         text = results[result_index]["title"] + " " + results[result_index]["abstract"]
@@ -188,8 +291,7 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
         points_per_cluster_x[cluster_index].append(projections[result_index][0])
         points_per_cluster_y[cluster_index].append(projections[result_index][1])
         results_by_cluster[cluster_index].append(results[result_index])
-    t2 = time.time()
-    timings.append({"part": "getting abstracts from disk", "duration": t2 - t1})
+    timings.log("getting abstracts from disk")
 
     # highlight TF-IDF words:
     # tf_idf_helper = ClusterTitles()
@@ -211,50 +313,24 @@ def get_cluster_titles(cluster_labels, projections, results, timings):
         cluster_cache[cluster_uid] = results_by_cluster[cluster_index]
         cluster_title = ", ".join(list(most_important_words)) + f" ({len(results_by_cluster[cluster_index])})"
         cluster_data.append({"uid": cluster_uid, "title": cluster_title, "center": cluster_center})
-    t3 = time.time()
-    timings.append({"part": "Tf-Idf", "duration": t3 - t2})
+    timings.log("Tf-Idf")
 
     return cluster_data
 
 
 task_params = {}
-umap_tasks = {}
+mapping_tasks = {}
 map_details = {}
-
-
-@app.route('/api/map', methods=['POST'])
-def map_html():
-    params = request.json
-    query = params.get("query")
-    if not query:
-        return jsonify({})
-
-    task_id = query + json.dumps(params) # str(uuid.uuid4())
-
-    if task_id in umap_tasks:
-        return jsonify({"task_id": task_id})
-
-    task_params[task_id] = params
-    umap_tasks[task_id] = {
-        "finished": False,
-        "result": None,
-        "progress": {"embeddings_available": False, "total_steps": 1, "current_step": 0},
-    }
-
-    thread = Thread(target = _finish_map_html, args = (task_id, query))
-    thread.start()
-
-    return jsonify({"task_id": task_id})
 
 
 @app.route('/api/map/result', methods=['POST'])
 def get_map_html_result():
     task_id = request.json.get("task_id")
-    if task_id not in umap_tasks:
+    if task_id not in mapping_tasks:
         logging.warning("task_id not found")
         return "task_id not found", 404
 
-    result = umap_tasks[task_id]
+    result = mapping_tasks[task_id]
 
     # if result["finished"]:
     #     del umap_tasks[task_id]
@@ -302,86 +378,6 @@ def get_document_details():
         return "task_id not found", 404
 
     return map_details[task_id][index]
-
-
-def _finish_map_html(task_id, query):
-    timings = []
-    t1 = time.time()
-    elements = get_search_results_for_map(query.split(" OR "), limit=3000, task_id=task_id)
-    add_vectors_to_results(elements, query, task_id)
-    t2 = time.time()
-    timings.append({"part": "vector DB pure vector query, limit 600", "duration": t2 - t1})
-
-    vectors = [e["vector"] for e in elements]
-    distances = [e["distance"] for e in elements]
-    citations = [e.get("citedby", 0) for e in elements]
-
-    features = np.asarray(vectors)  # shape 600x768
-    t4 = time.time()
-    timings.append({"part": "convert to numpy", "duration": t4 - t2})
-
-    # tsne = TSNE(n_components=2, random_state=0)  # instant
-    # projections = tsne.fit_transform(features)
-
-    def on_progress(working_in_embedding_space, current_iteration, total_iterations, embeddings):
-        umap_tasks[task_id]["progress"] = {
-            "embeddings_available": working_in_embedding_space,
-            "total_steps": total_iterations,
-            "current_step": current_iteration,
-        }
-        projections = embeddings
-
-        if working_in_embedding_space and projections is not None:
-            positionsX = projections[:, 0]
-            positionsY = projections[:, 1]
-
-            result = {
-                "item_details": [],
-                "per_point_data": {
-                    "positions_x": positionsX.tolist(),
-                    "positions_y": positionsY.tolist(),
-                    "cluster_ids": [-1] * len(positionsX),
-                    "distances": distances,
-                    "citations": citations,
-                },
-                "cluster_data": [],
-                "timings": [],
-            }
-            umap_tasks[task_id]["result"] = result
-
-    # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
-    # Progress might only be available below 4096
-
-    projections = umap.UMAP(random_state=99, min_dist=0.05, n_epochs=500).fit_transform(features, on_progress_callback=on_progress)
-
-    # callback for intermediate results can be added here: https://github.com/lmcinnes/umap/blob/master/umap/layouts.py#L417
-    t6 = time.time()
-    timings.append({"part": "UMAP fit transform", "duration": t6 - t4})
-    cluster_labels = cluster_results(projections)
-    cluster_data = get_cluster_titles(cluster_labels, projections, elements, timings)
-    t7 = time.time()
-
-    positionsX = projections[:, 0]
-    positionsY = projections[:, 1]
-    cluster_id_per_point = cluster_labels
-
-    result = {
-        "per_point_data": {
-            "positions_x": positionsX.tolist(),
-            "positions_y": positionsY.tolist(),
-            "cluster_ids": cluster_id_per_point.tolist(),
-            "distances": distances,
-            "citations": citations,
-        },
-        "cluster_data": cluster_data,
-        "timings": timings,
-    }
-
-    # FIXME: this also stores vectors a second time in the cache (33MB per request)
-    map_details[task_id] = elements
-
-    umap_tasks[task_id]["result"] = result
-    umap_tasks[task_id]["finished"] = True
 
 
 if __name__ == "__main__":

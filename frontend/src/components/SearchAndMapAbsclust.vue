@@ -97,6 +97,8 @@ export default {
 
       this.reset_search_results_and_map()
 
+      if (!this.query) return;
+
       this.selected_tab = "results"
 
       const payload = this.$refs.parameters_area.get_parameters()
@@ -121,18 +123,13 @@ export default {
           that.map_task_id = response.data["task_id"]
           that.map_viewport_is_adjusted = false
           that.map_is_in_progess = true
+          that.request_mapping_progress()
         })
     },
     request_mapping_progress() {
       const that = this
 
-      if (!this.map_task_id || !this.map_is_in_progess) {
-        // nothing is happening at the moment, try again in a few ms:
-        setTimeout(function() {
-          this.request_mapping_progress()
-        }.bind(this), 100);
-        return
-      }
+      if (!this.map_task_id || !this.map_is_in_progess) return;
 
       const payload = {
         task_id: this.map_task_id,
@@ -243,8 +240,6 @@ export default {
   mounted() {
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
-
-    this.request_mapping_progress()
   },
 }
 
