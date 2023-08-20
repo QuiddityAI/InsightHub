@@ -10,9 +10,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug import serving
 
-app = Flask(__name__)
-CORS(app) # This will enable CORS for all routes
-
 import numpy as np
 
 # for tsne:
@@ -22,14 +19,19 @@ import umap
 from sklearn.feature_extraction.text import TfidfVectorizer
 import hdbscan
 
-
 from utils.model_client import get_embedding, get_openai_embedding_batch, save_embedding_cache
 from utils.absclust_database_client import get_absclust_search_results, save_search_cache
 from utils.gensim_w2v_vectorizer import GensimW2VVectorizer
 from utils.cluster_title import ClusterTitles
 from utils.tokenizer import tokenize
 from utils.postprocess_search_results import enrich_search_results
+from utils.collect_timings import Timings
 
+
+# --- Set up: ---
+
+app = Flask(__name__)
+CORS(app) # This will enable CORS for all routes
 
 # exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
 parent_log_request = serving.WSGIRequestHandler.log_request
@@ -41,6 +43,38 @@ def log_request(self, *args, **kwargs):
     parent_log_request(self, *args, **kwargs)
 
 serving.WSGIRequestHandler.log_request = log_request
+
+
+# --- Routes: ---
+
+@app.route('/api/query', methods=['POST'])
+def query():
+    params_str = json.dumps(request.json, indent=2)
+    print(params_str)
+    return _query(params_str)
+
+
+@lru_cache()
+def _query(params_str):
+    params = json.loads(params_str)
+    query = params.get("query")
+    if not query:
+        return jsonify({"items": [], "timings": []})
+
+    timings = Timings()
+
+    # TODO: currently only first page is returned
+    search_results = get_search_results_for_list(query.split(" OR "), limit=params.get("result_list_items_per_page", 10))
+    timings.log("database query")
+
+    search_results = enrich_search_results(search_results, query)
+    timings.log("enriching results")
+
+    result = {
+        "items": search_results,
+        "timings": timings.get_timestamps(),
+    }
+    return jsonify(result)
 
 
 def get_search_results_for_list(queries: list[str], limit: int):
@@ -58,36 +92,6 @@ def get_search_results_for_list(queries: list[str], limit: int):
     save_search_cache()
 
     return results
-
-
-@app.route('/api/query', methods=['POST'])
-def query():
-    print(json.dumps(request.json, indent=2))
-    return _query(request.json.get("query"))
-
-
-@lru_cache()
-def _query(query):
-    if not query:
-        return jsonify({"items": [], "timings": []})
-
-    timings = []
-    t1 = time.time()
-    search_results = get_search_results_for_list(query.split(" OR "), limit=10)
-    t2 = time.time()
-    timings.append({"part": "vector DB hybrid query", "duration": t2 - t1})
-
-    search_results = enrich_search_results(search_results, query)
-    t3 = time.time()
-    timings.append({"part": "enriching results", "duration": t3 - t2})
-
-    result = {
-        "items": search_results,
-        "timings": timings,
-    }
-    return jsonify(result)
-
-
 
 
 def get_search_results_for_map(queries: list[str], limit: int, task_id: str=None):
