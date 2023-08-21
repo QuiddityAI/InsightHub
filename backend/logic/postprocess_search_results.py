@@ -1,15 +1,9 @@
-import logging
-import time
 import re
-from functools import lru_cache
-import uuid
 
 import numpy as np
-from tqdm import tqdm
-
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from utils.tokenizer import tokenize
+from utils.regex_tokenizer import tokenize
 
 
 words_ignored_for_highlighting = ("on", "in", "using", "with", "the", "a", "of")

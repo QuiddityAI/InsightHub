@@ -4,7 +4,7 @@ import re
 import spacy
 
 
-class ClusterTitles:
+class SpacyTokenizer:
 
     def __init__(self) -> None:
         self.preproc = 'spacy'

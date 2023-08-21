@@ -87,7 +87,7 @@ if __name__ == "__main__":
         print(" | ".join(tokenize(line)))
     print(" | ".join(tokenize(examples_of_scientific_texts)))
 
-    from cluster_title import ClusterTitles
-    tf_idf_helper = ClusterTitles()
+    from utils.spacy_tokenizer import SpacyTokenizer
+    tf_idf_helper = SpacyTokenizer()
     for line in examples_of_scientific_texts.splitlines():
         print(" | ".join(tf_idf_helper.tokenize(line)))
