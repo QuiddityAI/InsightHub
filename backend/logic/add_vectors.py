@@ -21,6 +21,10 @@ def add_vectors_to_results(search_results, query, params, task_results=None):
     #save_embedding_cache()
 
     if params["vectorizer"] in ["pubmedbert", "openai"]:
+        if params["search_strategy"] == "vector" or params["selected_database"] == "pubmed":
+            # the vectors are already in the search results
+            return
+
         if task_results is not None:
             task_results["progress"]["total_steps"] = len(search_results)
 

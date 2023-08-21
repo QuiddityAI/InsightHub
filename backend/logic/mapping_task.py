@@ -11,9 +11,12 @@ import umap
 
 from utils.collect_timings import Timings
 
-from logic.absclust_database_client import get_absclust_search_results, save_search_cache
+from database_client.absclust_database_client import get_absclust_search_results, save_search_cache
+from database_client import weaviate_database_client
+
 from logic.add_vectors import add_vectors_to_results
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
+from logic.model_client import get_embedding
 
 
 # global caches:
@@ -49,7 +52,7 @@ def generate_map(task_id):
 
     timings = Timings()
 
-    search_results = get_search_results_for_map(query.split(" OR "), limit=params.get("max_items_used_for_mapping", 3000), task_id=task_id)
+    search_results = get_search_results_for_map(query.split(" OR "), limit=params.get("max_items_used_for_mapping", 3000), params=params, task_id=task_id)
     timings.log("database query")
 
     # eventually, the vectors should come directly from the database
@@ -120,7 +123,7 @@ def generate_map(task_id):
     mapping_tasks[task_id]["finished"] = True
 
 
-def get_search_results_for_map(queries: list[str], limit: int, task_id: str=None):
+def get_search_results_for_map(queries: list[str], limit: int, params:dict, task_id: str=None):
     results = []
 
     for query in queries:
@@ -129,7 +132,11 @@ def get_search_results_for_map(queries: list[str], limit: int, task_id: str=None
             results += deepcopy(cluster_cache[cluster_uid])
             continue
 
-        results_part = get_absclust_search_results(query, limit)
+        if params["selected_database"] == "absclust":
+            results_part = get_absclust_search_results(query, limit)
+        elif params["selected_database"] == "pubmed":
+            vector = get_embedding(query)
+            results_part = weaviate_database_client.get_results_for_map(query, vector, limit)
         results += results_part
 
     save_search_cache()
@@ -137,7 +144,7 @@ def get_search_results_for_map(queries: list[str], limit: int, task_id: str=None
 
 
 # TODO: this method shouldn't be here (but currently it has for the cluster_cache)
-def get_search_results_for_list(queries: list[str], limit: int):
+def get_search_results_for_list(queries: list[str], limit: int, params: dict):
     results = []
 
     for query in queries:
@@ -146,7 +153,11 @@ def get_search_results_for_list(queries: list[str], limit: int):
             results += cluster_cache[cluster_uid][:10]
             continue
 
-        results_part = get_absclust_search_results(query, limit)
+        if params["selected_database"] == "absclust":
+            results_part = get_absclust_search_results(query, limit)
+        elif params["selected_database"] == "pubmed":
+            vector = get_embedding(query)
+            results_part = weaviate_database_client.get_results_for_list(query, vector, limit)
         results += results_part
 
     save_search_cache()

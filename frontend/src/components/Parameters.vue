@@ -8,7 +8,6 @@ export default {
     return {
 
       // settings:
-      show_settings: false,
       available_search_strategies: [
         {id: "typesense", title: "Keyword-based (Typesense)", parameters: []},
         {id: "vector", title: "Vector Similarity", parameters: []},

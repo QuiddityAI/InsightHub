@@ -1,315 +1,110 @@
-import mmap
-from pathlib import Path
-import pickle
-import time
-import re
 from functools import lru_cache
+import json
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import requests
+from werkzeug import serving
+
+from utils.collect_timings import Timings
+
+from logic.postprocess_search_results import enrich_search_results
+from logic.mapping_task import get_or_create_mapping_task, get_mapping_task_results, get_map_details, get_document_details, get_search_results_for_list
+
+
+# --- Flask set up: ---
+
 app = Flask(__name__)
 CORS(app) # This will enable CORS for all routes
 
-import weaviate
-import numpy as np
+# exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
+parent_log_request = serving.WSGIRequestHandler.log_request
 
-# for tsne:
-# from sklearn.manifold import TSNE
-import umap
-import plotly.express as px
+def log_request(self, *args, **kwargs):
+    if self.path == '/api/map/result':
+        return
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-import hdbscan
+    parent_log_request(self, *args, **kwargs)
 
-
-weaviate_server_url = "http://localhost:8080"
-item_class_name = "Paper"
-
-weaviate_client = weaviate.Client(
-    url = weaviate_server_url,
-    # using anonymous connection, no auth needed
-    # auth_client_secret=weaviate.AuthApiKey(api_key="YOUR-WEAVIATE-API-KEY"),
-)
+serving.WSGIRequestHandler.log_request = log_request
 
 
-def get_embedding(query: str) -> np.ndarray:
-    url = 'http://localhost:55180/api/embedding/pubmedbert'
-    data = {'query': query}
-    result = requests.post(url, json=data)
-    return np.asarray(result.json()["embedding"])
-
-
-def get_search_results_for_list(queries: list[str], limit: int):
-    results = []
-
-    for query in queries:
-        if query.startswith("cluster_id: "):
-            cluster_uid = query.split("cluster_id: ")[1].split(" (")[0]
-            results += cluster_cache[cluster_uid][:10]
-            continue
-
-        embedding = get_embedding(query)  # roughly 40ms on CPU, 10ms on GPU
-          # 768 dimensions, float 16
-
-        response = (
-            weaviate_client.query
-            .get("Paper", ["title", "journal", "year", "pmid"])
-            # .with_near_vector({
-            #     "vector": embedding
-            # })
-            .with_hybrid(
-                query = query,
-                vector = embedding[0]
-            )
-            .with_limit(limit // len(queries))
-            .with_additional(["distance", "score", "explainScore"]).do()
-        )
-        results += response["data"]["Get"]["Paper"]
-
-    return results
-
-
-data_root = Path('/data/pubmed_embeddings/')
-abstracts_path = data_root / 'pubmed_landscape_abstracts.csv'
-
-with open(data_root / "pmid_to_pos_and_length.pkl", "rb") as f:
-    pmid_to_abstract_pos_and_length = pickle.load(f)
-
-with open(abstracts_path, "r+") as f:
-    abstracts_mmap_file = mmap.mmap(f.fileno(), 0)
-
-
-def get_pubmed_abstract(pmid):
-    pos, length = pmid_to_abstract_pos_and_length[pmid]
-    abstract = abstracts_mmap_file[pos : pos + length].decode()
-    abstract = abstract.strip('"')
-    return abstract
-
-
-def get_pubmed_abstract_online(pmid: str):
-    try:
-        result = requests.get(f"http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id={pmid}&retmode=text&rettype=abstract")
-        raw_xml = result.text
-        abstract = raw_xml  # .split("<AbstractText>")[1].split("</AbstractText>")[0]
-    except IndexError:
-        return ""
-    except Exception as e:
-        print(e)
-        return ""
-    return abstract
-
-
-words_ignored_for_highlighting = ("on", "in", "using", "with", "the", "a", "of")
-
-
-def enrich_search_results(results, query):
-    corpus = []
-
-    for i, item in enumerate(results):
-        title = item["title"]
-        abstract = get_pubmed_abstract(item["pmid"])
-        corpus.append(title + " " + abstract)
-        for word in query.split(" "):
-            if word in words_ignored_for_highlighting:
-                continue
-            replacement = '<span class="font-bold">\\1</span>'
-            title = re.sub(f"\\b({re.escape(word)})\\b", replacement, title, flags=re.IGNORECASE)
-            abstract = re.sub(f"\\b({re.escape(word)})\\b", replacement, abstract, flags=re.IGNORECASE)
-        results[i]["title"] = title
-        results[i]["abstract"] = abstract.replace("\n", "<br>")
-        results[i]["year"] = int(float(item["year"]))
-
-    # highlight TF-IDF words:
-    vectorizer = TfidfVectorizer(stop_words="english")
-    tf_idf_matrix = vectorizer.fit_transform(corpus)  # not numpy but scipy sparse array
-    words = vectorizer.get_feature_names_out()
-
-    for i, item in enumerate(results):
-        # converting scipy sparse array to numpy using toarray() and selecting the only row [0]
-        sort_indexes_of_important_words = np.argsort(tf_idf_matrix[i].toarray()[0])
-        most_important_words = words[sort_indexes_of_important_words[-5:]][::-1]
-        results[i]["most_important_words"] = list(most_important_words)
-    return results
-
+# --- Routes: ---
 
 @app.route('/api/query', methods=['POST'])
 def query():
-    return _query(request.json.get("query"))
+    # turn params into string to make it cachable (aka hashable):
+    params_str = json.dumps(request.json, indent=2)
+    print(params_str)
+    return _query(params_str)
 
 
 @lru_cache()
-def _query(query):
+def _query(params_str):
+    params = json.loads(params_str)
+    query = params.get("query")
     if not query:
-        return jsonify({})
+        return "query parameter is missing", 400
 
-    timings = []
-    t1 = time.time()
-    search_results = get_search_results_for_list(query.split(" OR "), limit=10)
-    t2 = time.time()
-    timings.append({"part": "vector DB hybrid query", "duration": t2 - t1})
+    timings = Timings()
+
+    # TODO: currently only first page is returned
+    search_results = get_search_results_for_list(query.split(" OR "), limit=params.get("result_list_items_per_page", 10), params=params)
+    timings.log("database query")
 
     search_results = enrich_search_results(search_results, query)
-    t3 = time.time()
-    timings.append({"part": "enriching results", "duration": t3 - t2})
+    timings.log("enriching results")
 
     result = {
         "items": search_results,
-        "timings": timings,
+        "timings": timings.get_timestamps(),
     }
     return jsonify(result)
-
-
-def get_search_results_for_map(queries: list[str], limit: int):
-    results = []
-
-    for query in queries:
-        if query.startswith("cluster_id: "):
-            cluster_uid = query.split("cluster_id: ")[1].split(" (")[0]
-            results += cluster_cache[cluster_uid]
-            continue
-
-        embedding = get_embedding(query)  # roughly 40ms on CPU, 10ms on GPU
-          # 768 dimensions, float 16
-
-        response = (
-            weaviate_client.query
-            .get("Paper", ["title", "journal", "year", "pmid"])
-            .with_near_vector({
-                "vector": embedding
-            })
-            .with_limit(limit // len(queries))
-            .with_additional(["id", "distance", "vector", "explainScore", "score"]).do()
-        )
-        results += response["data"]["Get"]["Paper"]
-
-    return results
-
-
-def cluster_results(projections):
-    clusterer = hdbscan.HDBSCAN()
-    clusterer.fit(projections)
-    return clusterer.labels_
-
-last_cluster_id = 0
-cluster_cache = {}  # cluster_id -> search_results
-
-
-def get_cluster_titles(cluster_labels, projections, results, timings):
-    global last_cluster_id, cluster_cache
-    num_clusters = max(cluster_labels) + 1
-    if num_clusters <= 0:
-        return [], [], []
-    texts_per_cluster = [""] * num_clusters
-    points_per_cluster_x = [[] for i in range(num_clusters)]
-    points_per_cluster_y = [[] for i in range(num_clusters)]
-    results_by_cluster = [[] for i in range(num_clusters)]
-
-    t1 = time.time()
-    for result_index, cluster_index in enumerate(cluster_labels):
-        if cluster_index <= -1: continue
-        text = results[result_index]["title"] + " " + get_pubmed_abstract(results[result_index]["pmid"])
-        texts_per_cluster[cluster_index] += text
-        points_per_cluster_x[cluster_index].append(projections[result_index][0])
-        points_per_cluster_y[cluster_index].append(projections[result_index][1])
-        results_by_cluster[cluster_index].append(results[result_index])
-    t2 = time.time()
-    timings.append({"part": "getting abstracts from disk", "duration": t2 - t1})
-
-    # highlight TF-IDF words:
-    vectorizer = TfidfVectorizer(stop_words="english")
-    tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
-    words = vectorizer.get_feature_names_out()
-
-    cluster_titles = []
-    cluster_centers = []
-    cluster_uids = []
-
-    for cluster_index in range(num_clusters):
-        # converting scipy sparse array to numpy using toarray() and selecting the only row [0]
-        sort_indexes_of_important_words = np.argsort(tf_idf_matrix[cluster_index].toarray()[0])
-        most_important_words = words[sort_indexes_of_important_words[-3:]][::-1]
-        cluster_titles.append(list(most_important_words))
-        cluster_centers.append((np.mean(points_per_cluster_x[cluster_index]), np.mean(points_per_cluster_y[cluster_index])))
-        last_cluster_id += 1
-        cluster_uid = str(last_cluster_id)
-        cluster_cache[cluster_uid] = results_by_cluster[cluster_index]
-        cluster_uids.append({"cluster_id": cluster_uid, "cluster_title": ", ".join(list(most_important_words)) + f" ({len(results_by_cluster[cluster_index])})"})
-    t3 = time.time()
-    timings.append({"part": "Tf-Idf", "duration": t3 - t2})
-
-    return cluster_titles, cluster_centers, cluster_uids
 
 
 @app.route('/api/map', methods=['POST'])
-def map_html():
-    query = request.json.get("query")
-    return _map_html(query)
-
-
-@lru_cache()
-def _map_html(query):
+def get_or_create_map_task():
+    params = request.json
+    query = params.get("query")
     if not query:
-        return jsonify({})
+        return "query parameter is missing", 400
 
-    timings = []
-    t1 = time.time()
-    elements = get_search_results_for_map(query.split(" OR "), limit=600)
-    t2 = time.time()
-    timings.append({"part": "vector DB pure vector query, limit 600", "duration": t2 - t1})
+    task_id = get_or_create_mapping_task(params)
 
-    vectors = []
-    titles = []
-    distances = []
+    return jsonify({"task_id": task_id})
 
-    for e in elements:
-        vectors.append(e["_additional"]["vector"])
-        distances.append(e["_additional"]["distance"])
-        titles.append(e["title"])
 
-    features = np.asarray(vectors)  # shape 600x768
-    t4 = time.time()
-    timings.append({"part": "convert to numpy", "duration": t4 - t2})
+@app.route('/api/map/result', methods=['POST'])
+def retrive_mapping_results():
+    task_id = request.json.get("task_id")
+    result = get_mapping_task_results(task_id)
 
-    # tsne = TSNE(n_components=2, random_state=0)  # instant
-    # projections = tsne.fit_transform(features)
-    projections = umap.UMAP().fit_transform(features)
-    t6 = time.time()
-    timings.append({"part": "UMAP fit transform", "duration": t6 - t4})
-    cluster_labels = cluster_results(projections)
-    cluster_titles, cluster_centers, cluster_uids = get_cluster_titles(cluster_labels, projections, elements, timings)
-    t7 = time.time()
+    if result is None:
+        return "task_id not found", 404
 
-    plot_elements = [(projections[i][0], projections[i][1], titles[i]) for i in range(len(projections))]
+    return result
 
-    fig = px.scatter(
-        plot_elements, x=0, y=1,
-        text=titles,
-        #color=distances,
-        color=cluster_labels,
-    )
-    t8 = time.time()
-    timings.append({"part": "create plotly scatter plot", "duration": t8 - t7})
 
-    for i in range(len(cluster_titles)):
-        fig.add_annotation(x=cluster_centers[i][0], y=cluster_centers[i][1],
-            text=", ".join(cluster_titles[i]))
+@app.route('/api/map/details', methods=['POST'])
+def retrieve_map_details():
+    task_id = request.json.get("task_id")
+    result = get_map_details(task_id)
 
-    fig.for_each_trace(lambda t: t.update(texttemplate="-", textposition='top center'))
-    html = fig.to_html(full_html=False, include_plotlyjs='cdn')
-    t9 = time.time()
-    timings.append({"part": "hide title for elements and convert to HTML", "duration": t9 - t8})
+    if result is None:
+        return "task_id not found", 404
 
-    js = html.split('<script type="text/javascript">')[2]
-    js = js.replace("</script>", "").replace("</div>", "")
+    return result
 
-    result = {
-        "html": html,
-        "js": js,
-        "cluster_uids": cluster_uids,
-        "timings": timings
-    }
-    return jsonify(result)
+
+@app.route('/api/document/details', methods=['POST'])
+def retrieve_document_details():
+    task_id = request.json.get("task_id")
+    index = request.json.get("index")
+    result = get_document_details(task_id, index)
+
+    if result is None:
+        return "task_id or index not found", 404
+
+    return result
 
 
 if __name__ == "__main__":
