@@ -86,7 +86,8 @@ export default {
       this. progress = 0.0
 
       // map:
-      this.$refs.embedding_map.reset_map()
+      this.$refs.embedding_map.resetData()
+      this.$refs.embedding_map.resetPanAndZoom()
 
       // selection:
       this.selectedDocumentIdx = -1

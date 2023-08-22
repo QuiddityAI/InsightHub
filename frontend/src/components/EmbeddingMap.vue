@@ -20,7 +20,6 @@ export default {
       // external:
       passiveMarginsLRTB: [0, 0, 0, 0],
 
-      point_uids: [],
       targetPositionsX: [],
       targetPositionsY: [],
       saturation: [],
@@ -30,28 +29,30 @@ export default {
 
       itemDetails: [],
       clusterData: [],
-      selectedPointIdx: -1,
 
       // internal:
       currentPositionsX: [],
       currentPositionsY: [],
       currentVelocityX: [],
       currentVelocityY: [],
+
       baseScale: [1.0, 1.0],
       baseOffset: [0.0, 0.0],
       baseScaleTarget: [1.0, 1.0],
       baseOffsetTarget: [0.0, 0.0],
       baseScaleVelocity: [0.0, 0.0],
       baseOffsetVelocity: [0.0, 0.0],
-      currentZoom: 1.0,
-      targetZoom: 1.0,
-      currentPan: [0.0, 0.0],
-      targetPan: [0.0, 0.0],
-      highlightedPointIdx: -1,
-      lightPosition: [0.5, 1.5],
 
       panzoomInstance: null,
+      currentZoom: 1.0,
+      currentPan: [0.0, 0.0],
 
+      // mouseover highlight and selection:
+      selectedPointIdx: -1,  // set externally
+      highlightedPointIdx: -1,  // set internally by mouseover
+      mouseDownPosition: [-1, -1],
+
+      // rendering:
       renderer: null,
       camera: null,
       glContext: null,
@@ -60,8 +61,7 @@ export default {
       glProgramShadows: null,
       glMeshShadows: null,
       glScene: null,
-
-      mouseDownPosition: [-1, -1],
+      lightPosition: [0.5, 1.5],
     }
   },
   computed: {
@@ -81,13 +81,25 @@ export default {
     this.setupPanZoom();
   },
   methods: {
-    reset_map() {
+    resetData() {
       this.targetPositionsX = []
       this.targetPositionsY = []
-      this.clusterData = []
+      this.saturation = [],
+      this.colors = [],
+      this.pointSizes = [],
+      this.clusterIdsPerPoint = [],
+
       this.itemDetails = []
-      // TODO: check if this is all
+      this.clusterData = []
+
+      this.selectedPointIdx = -1
+      this.highlightedPointIdx = -1
+
       this.updateGeometry()
+    },
+    resetPanAndZoom() {
+      this.panzoomInstance.moveTo(0, 0);
+      this.panzoomInstance.zoomAbs(0, 0, 1);
     },
     screenLeftFromRelative(x) {
       const normalizedPos = (x + this.baseOffset[0]) * this.baseScale[0]
@@ -143,10 +155,6 @@ export default {
         that.currentZoom = transform.scale
         that.updateUniforms()
       });
-    },
-    resetPanAndZoom() {
-      this.panzoomInstance.moveTo(0, 0);
-      this.panzoomInstance.zoomAbs(0, 0, 1);
     },
     setupWebGl() {
       this.renderer = new Renderer({ depth: false, dpr: window.devicePixelRatio || 1.0 });
@@ -396,6 +404,9 @@ export default {
       }
       this.updateUniforms()
     },
+    onMouseLeave() {
+      this.highlightedPointIdx = -1
+    },
     onMouseDown(event) {
       this.mouseDownPosition = [event.clientX, event.clientY]
     },
@@ -414,7 +425,7 @@ export default {
 <div>
   <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
-  <div ref="webGlArea" @mousemove="this.updateOnHover" @mousedown.left="onMouseDown" @mouseup.left="onMouseUp" class="fixed w-full h-full"></div>
+  <div ref="webGlArea" @mousemove="this.updateOnHover" @mousedown.left="onMouseDown" @mouseup.left="onMouseUp" @mouseleave="onMouseLeave" class="fixed w-full h-full"></div>
 
   <!-- this div shows a gray outline around the "active area" for debugging purposes -->
   <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
