@@ -39,6 +39,7 @@ export default {
       ],
       selected_dim_reducer: "umap",
       dim_reducer_parameters: {
+        "shape": {title: "shape", default: "2d", value: "2d", options: [{id: "2d", title: "2D"}, {id: "1d_plus_distance_polar", title: "1D + Distance (Polar)"}]},
         "n_neighbors": {title: "n_neighbors", default: 15, value: 15},
         "min_dist": {title: "min_dist", default: 0.05, value: 0.05},
         "n_epochs": {title: "n_epochs", default: 500, value: 500},
@@ -67,6 +68,7 @@ export default {
         vectorizer: this.selected_vectorizer,
         cluster_title_strategy: this.selected_cluster_title_strategy,
         dim_reducer_parameters: {
+          shape: this.dim_reducer_parameters.shape.value,
           n_neighbors: this.dim_reducer_parameters.n_neighbors.value,
           min_dist: this.dim_reducer_parameters.min_dist.value,
           n_epochs: this.dim_reducer_parameters.n_epochs.value,
@@ -106,6 +108,12 @@ export default {
       <span class="text-gray-500 text-sm">Cluster Title Strategy:</span>
       <select v-model="selected_cluster_title_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
           <option v-for="item in available_cluster_title_strategies" :value="item.id" selected>{{ item.title }}</option>
+      </select>
+    </div>
+    <div class="flex justify-between items-center">
+      <span class="text-gray-500 text-sm">Dim. Red. Shape:</span>
+      <select v-model="dim_reducer_parameters.shape.value" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+          <option v-for="item in dim_reducer_parameters.shape.options" :value="item.id" selected>{{ item.title }}</option>
       </select>
     </div>
     <div class="flex justify-between items-center">

@@ -10,6 +10,7 @@ import numpy as np
 import umap
 
 from utils.collect_timings import Timings
+from utils.helpers import normalize_array, polar_to_cartesian
 
 from database_client.absclust_database_client import get_absclust_search_results, save_search_cache
 from database_client import weaviate_database_client
@@ -65,6 +66,8 @@ def generate_map(task_id):
     citations = [e.get("citedby", 0) for e in search_results]
     timings.log("convert to numpy")
 
+    umap_parameters = params.get("dim_reducer_parameters", {})
+
     def on_umap_progress(working_in_embedding_space, current_iteration, total_iterations, projections):
         mapping_tasks[task_id]["progress"] = {
             "embeddings_available": working_in_embedding_space,
@@ -73,6 +76,9 @@ def generate_map(task_id):
         }
 
         if working_in_embedding_space and projections is not None:
+            if umap_parameters.get("shape") == "1d_plus_distance_polar":
+                projections = np.column_stack(polar_to_cartesian(1 - normalize_array(distances), normalize_array(projections[:, 0]) * np.pi * 2))
+
             result = {
                 "per_point_data": {
                     "positions_x": projections[:, 0].tolist(),
@@ -89,13 +95,16 @@ def generate_map(task_id):
     # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
     # Progress might only be available below 4096
 
-    umap_parameters = params.get("dim_reducer_parameters", {})
-    umap_task = umap.UMAP(random_state=99, min_dist=umap_parameters.get("min_dist", 0.05), n_epochs=umap_parameters.get("n_epochs", 500))
+    target_dimensions = 1 if umap_parameters.get("shape") == "1d_plus_distance_polar" else 2
+    umap_task = umap.UMAP(n_components=target_dimensions, random_state=99, min_dist=umap_parameters.get("min_dist", 0.05), n_epochs=umap_parameters.get("n_epochs", 500))
     projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
     timings.log("UMAP fit transform")
 
     cluster_id_per_point = clusterize_results(projections)
     timings.log("clustering")
+
+    if umap_parameters.get("shape") == "1d_plus_distance_polar":
+        projections = np.column_stack(polar_to_cartesian(1 - normalize_array(distances), normalize_array(projections[:, 0]) * np.pi * 2))
 
     cluster_data = get_cluster_titles(cluster_id_per_point, projections, search_results, timings, cluster_cache)
     timings.log("cluster title")
