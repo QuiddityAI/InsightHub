@@ -69,6 +69,8 @@ export default {
       glProgramShadows: null,
       glMeshShadows: null,
       glScene: null,
+
+      mouseDownPosition: [-1, -1],
     }
   },
   computed: {
@@ -438,8 +440,13 @@ export default {
       }
       this.updateUniforms()
     },
-    onClick() {
+    onMouseDown(event) {
+      this.mouseDownPosition = [event.clientX, event.clientY]
+    },
+    onMouseUp(event) {
       if (this.highlightedPointIdx === -1) return;
+      const mouseMovementDistance = math.distance(this.mouseDownPosition, [event.clientX, event.clientY])
+      if (mouseMovementDistance > 5) return;
       this.$emit('point_selected', this.highlightedPointIdx)
     },
   },
@@ -451,7 +458,7 @@ export default {
 <div>
   <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
-  <div ref="webGlArea" @mousemove="this.updateOnHover" @click="this.onClick" class="fixed w-full h-full"></div>
+  <div ref="webGlArea" @mousemove="this.updateOnHover" @mousedown.left="onMouseDown" @mouseup.left="onMouseUp" class="fixed w-full h-full"></div>
 
   <!-- this div shows a gray outline around the "active area" for debugging purposes -->
   <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
