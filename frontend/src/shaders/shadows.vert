@@ -8,20 +8,15 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
-uniform float baseOffsetX;
-uniform float baseOffsetY;
-uniform float baseScaleX;
-uniform float baseScaleY;
-uniform float activeAreaWidth;
-uniform float activeAreaHeight;
+uniform vec2 baseOffset;
+uniform vec2 baseScale;
+uniform vec2 activeAreaSize;
 uniform float marginLeft;
 uniform float marginBottom;
-uniform float panX;
-uniform float panY;
+uniform vec2 pan;
 uniform float zoom;
 uniform int highlightedPointIdx;
-uniform float lightPositionX;
-uniform float lightPositionY;
+uniform vec2 lightPosition;
 uniform float devicePixelRatio;
 
 out float isHighlighted;
@@ -32,17 +27,17 @@ void main() {
 
     // position calculation:
     vec3 rawPos = vec3(positionX, positionY, -2.0);
-    vec3 normalizedPos = (rawPos + vec3(baseOffsetX, baseOffsetY, 0.0)) * vec3(baseScaleX, baseScaleY, 1.0);
-    vec3 shiftedToActiveAreaPos = normalizedPos * vec3(activeAreaWidth, activeAreaHeight, 1.0) + vec3(marginLeft, marginBottom, 0.0);
+    vec3 normalizedPos = (rawPos + vec3(baseOffset, 0.0)) * vec3(baseScale, 1.0);
+    vec3 shiftedToActiveAreaPos = normalizedPos * vec3(activeAreaSize, 1.0) + vec3(marginLeft, marginBottom, 0.0);
 
     // TODO: modify camera for pan and zoom instead of vertex position (to make sure dots stay the same size)
 
     // zoom origin is at top left (0, 1), so we first need to move the points there, then zoom, and then move back
     vec3 zoomedPos = ((shiftedToActiveAreaPos - vec3(0.0, 1.0, 0.0)) * zoom) + vec3(0.0, 1.0, 0.0);
-    vec3 pannedAndZoomedPos = zoomedPos + vec3(panX, -panY, 0);
+    vec3 pannedAndZoomedPos = zoomedPos + vec3(pan.x, -pan.y, 0);
 
     // shadow direction:
-	vec3 lightPos = vec3(lightPositionX, lightPositionY, -2.0);
+	vec3 lightPos = vec3(lightPosition, -2.0);
 	vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * zoom;
     vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 200.0);
 

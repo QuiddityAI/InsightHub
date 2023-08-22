@@ -9,10 +9,8 @@ in float saturationVar;
 in vec3 diffuseColor;
 
 uniform float zoom;
-uniform float viewportWidth;
-uniform float viewportHeight;
-uniform float lightPositionX;
-uniform float lightPositionY;
+uniform vec2 viewportSize;
+uniform vec2 lightPosition;
 uniform float devicePixelRatio;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
@@ -42,13 +40,11 @@ void main() {
     float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
 
     // position of this fragment on the screen:
-    vec2 viewPortSize = vec2(viewportWidth * devicePixelRatio, viewportHeight * devicePixelRatio);
-	vec2 relativeScreenPos = gl_FragCoord.xy / viewPortSize;  // 0-1, from bottom left
+	vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
 
     // specular color:
     // (creating a fake-3D appearance by drawing a bright specular highlight)
-	vec2 lightPos = vec2(lightPositionX, lightPositionY);
-	vec2 specularPosFromCenterOfCircle = (lightPos - relativeScreenPos) * 0.5;
+	vec2 specularPosFromCenterOfCircle = (lightPosition - relativeScreenPos) * 0.5;
     float specColor = 1.0 - length(posFromCenter - specularPosFromCenterOfCircle);
     specColor = max(0.0, pow(specColor, 2.5));
 

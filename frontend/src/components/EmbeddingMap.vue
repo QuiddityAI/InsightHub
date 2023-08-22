@@ -37,27 +37,18 @@ export default {
       currentPositionsY: [],
       currentVelocityX: [],
       currentVelocityY: [],
-      baseScaleX: 1.0,
-      baseScaleY: 1.0,
-      baseOffsetX: 0.0,
-      baseOffsetY: 0.0,
-      baseScaleTargetX: 1.0,
-      baseScaleTargetY: 1.0,
-      baseOffsetTargetX: 0.0,
-      baseOffsetTargetY: 0.0,
-      baseScaleVelocityX: 0.0,
-      baseScaleVelocityY: 0.0,
-      baseOffsetVelocityX: 0.0,
-      baseOffsetVelocityY: 0.0,
+      baseScale: [1.0, 1.0],
+      baseOffset: [0.0, 0.0],
+      baseScaleTarget: [1.0, 1.0],
+      baseOffsetTarget: [0.0, 0.0],
+      baseScaleVelocity: [0.0, 0.0],
+      baseOffsetVelocity: [0.0, 0.0],
       currentZoom: 1.0,
       targetZoom: 1.0,
-      currentPanX: 0.0,
-      currentPanY: 0.0,
-      targetPanX: 0.0,
-      targetPanY: 0.0,
+      currentPan: [0.0, 0.0],
+      targetPan: [0.0, 0.0],
       highlightedPointIdx: -1,
-      lightPositionX: 0.5,
-      lightPositionY: 1.5,
+      lightPosition: [0.5, 1.5],
 
       panzoomInstance: null,
 
@@ -99,42 +90,42 @@ export default {
       this.updateGeometry()
     },
     screenLeftFromRelative(x) {
-      const normalizedPos = (x + this.baseOffsetX) * this.baseScaleX
+      const normalizedPos = (x + this.baseOffset[0]) * this.baseScale[0]
       const shiftedToActiveAreaPos = normalizedPos * this.activeAreaWidth + this.passiveMarginsLRTB[0]
-      const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPanX
+      const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPan[0]
       return pannedAndZoomed
     },
     screenBottomFromRelative(y) {
-      const normalizedPos = (y + this.baseOffsetY) * this.baseScaleY
+      const normalizedPos = (y + this.baseOffset[1]) * this.baseScale[1]
       const shiftedToActiveAreaPos = normalizedPos * this.activeAreaHeight + this.passiveMarginsLRTB[3]
       const zoomed = ((shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom) + window.innerHeight
-      const pannedAndZoomed = zoomed - this.currentPanY
+      const pannedAndZoomed = zoomed - this.currentPan[1]
       return pannedAndZoomed
     },
     screenRightFromRelative(x) {
-      const normalizedPos = (x + this.baseOffsetX) * this.baseScaleX
+      const normalizedPos = (x + this.baseOffset[0]) * this.baseScale[0]
       const shiftedToActiveAreaPos = normalizedPos * this.activeAreaWidth + this.passiveMarginsLRTB[0]
-      const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPanX
+      const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPan[0]
       return window.innerWidth - pannedAndZoomed
     },
     screenTopFromRelative(y) {
-      const normalizedPos = (y + this.baseOffsetY) * this.baseScaleY
+      const normalizedPos = (y + this.baseOffset[1]) * this.baseScale[1]
       const shiftedToActiveAreaPos = normalizedPos * this.activeAreaHeight + this.passiveMarginsLRTB[3]
       const zoomed = ((shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom) + window.innerHeight
-      const pannedAndZoomed = zoomed - this.currentPanY
+      const pannedAndZoomed = zoomed - this.currentPan[1]
       return window.innerHeight - pannedAndZoomed
     },
     screenToEmbeddingX(screenX) {
-      const notPannedAndZoomedX = (screenX - this.currentPanX) / this.currentZoom
+      const notPannedAndZoomedX = (screenX - this.currentPan[0]) / this.currentZoom
       const notShiftedToActiveAreaX = (notPannedAndZoomedX - this.passiveMarginsLRTB[0]) / this.activeAreaWidth
-      const notNormalizedX = notShiftedToActiveAreaX / this.baseScaleX - this.baseOffsetX
+      const notNormalizedX = notShiftedToActiveAreaX / this.baseScale[0] - this.baseOffset[0]
       return notNormalizedX
     },
     screenToEmbeddingY(screenY) {
-      const notPannedY = (window.innerHeight - screenY) + this.currentPanY
+      const notPannedY = (window.innerHeight - screenY) + this.currentPan[1]
       const notPannedAndZoomedY = (notPannedY - window.innerHeight) / this.currentZoom + window.innerHeight
       const notShiftedToActiveAreaY = (notPannedAndZoomedY - this.passiveMarginsLRTB[3]) / this.activeAreaHeight
-      const notNormalizedY = notShiftedToActiveAreaY / this.baseScaleY - this.baseOffsetY
+      const notNormalizedY = notShiftedToActiveAreaY / this.baseScale[1] - this.baseOffset[1]
       return notNormalizedY
     },
     setupPanZoom() {
@@ -148,8 +139,7 @@ export default {
 
       this.panzoomInstance.on('transform', function(e) {
         const transform = e.getTransform()
-        that.currentPanX = transform.x
-        that.currentPanY = transform.y
+        that.currentPan = [transform.x, transform.y]
         that.currentZoom = transform.scale
         that.updateUniforms()
       });
@@ -179,13 +169,14 @@ export default {
 
       let lastUpdateTimeInMs = performance.now()
 
-      function getAccelerationOfSpring(currentPos, currentVelocity, targetPosition, stiffness, mass, damping) {
-        const displacement = currentPos - targetPosition
+      function getAccelerationOfSpringArr(currentPos, currentVelocity, targetPosition, stiffness, mass, damping) {
+        // inspired by https://blog.maximeheckel.com/posts/the-physics-behind-spring-animations/
+        const displacement = math.subtract(currentPos, targetPosition)
         const k = -stiffness  // in kg / s^2
         const d = -damping  // in kg / s
-        const Fspring = k * displacement
-        const Fdamping = d * currentVelocity
-        const acceleration = (Fspring + Fdamping) / mass
+        const Fspring = math.dotMultiply(k, displacement)
+        const Fdamping = math.dotMultiply(d, currentVelocity)
+        const acceleration = math.divide(math.add(Fspring, Fdamping), mass)
         return acceleration
       }
 
@@ -209,88 +200,65 @@ export default {
         let geometryChanged = false
         let uniformsChanged = false
 
-        const baseOffsetDiffX = that.baseOffsetTargetX - that.baseOffsetX
-        const baseOffsetDiffY = that.baseOffsetTargetY - that.baseOffsetY
-        if (baseOffsetDiffX !== 0.0 || baseOffsetDiffY !== 0.0) {
+        const baseOffsetDiff = math.subtract(that.baseOffsetTarget, that.baseOffset)
+        if (math.max(math.abs(baseOffsetDiff)) !== 0.0) {
           uniformsChanged = true
 
-          const aX = getAccelerationOfSpring(
-            that.baseOffsetX, that.baseOffsetVelocityX, that.baseOffsetTargetX,
+          const a = getAccelerationOfSpringArr(
+            that.baseOffset, that.baseOffsetVelocity, that.baseOffsetTarget,
             /* stiffness */ 15.0, /* mass */ 1.0, /* damping */ 8.0
           )
-          that.baseOffsetVelocityX += aX * timeSinceLastUpdateInSec
-          that.baseOffsetX += that.baseOffsetVelocityX * timeSinceLastUpdateInSec
-          if (Math.abs(that.baseOffsetVelocityX) < restSpeed && Math.abs(baseOffsetDiffX) < restDelta) {
-            that.baseOffsetX = that.baseOffsetTargetX
-          }
-
-          const aY = getAccelerationOfSpring(
-            that.baseOffsetY, that.baseOffsetVelocityY, that.baseOffsetTargetY,
-            /* stiffness */ 15.0, /* mass */ 1.0, /* damping */ 8.0
-          )
-          that.baseOffsetVelocityY += aY * timeSinceLastUpdateInSec
-          that.baseOffsetY += that.baseOffsetVelocityY * timeSinceLastUpdateInSec
-          if (Math.abs(that.baseOffsetVelocityY) < restSpeed && Math.abs(baseOffsetDiffY) < restDelta) {
-            that.baseOffsetY = that.baseOffsetTargetY
+          that.baseOffsetVelocity = math.add(that.baseOffsetVelocity, math.dotMultiply(a, timeSinceLastUpdateInSec))
+          that.baseOffset = math.add(that.baseOffset, math.dotMultiply(that.baseOffsetVelocity, timeSinceLastUpdateInSec))
+          if (math.max(math.abs(that.baseOffsetVelocity)) < restSpeed && math.max(math.abs(baseOffsetDiff)) < restDelta) {
+            that.baseOffset = that.baseOffsetTarget.slice()  // using slice to copy the array
           }
         }
-
-        const baseScaleDiffX = that.baseScaleTargetX - that.baseScaleX
-        const baseScaleDiffY = that.baseScaleTargetY - that.baseScaleY
 
         const restSpeedScale = 0.0005
         const restDeltaScale = 0.00005
 
-        if (baseScaleDiffX !== 0.0 || baseScaleDiffY !== 0.0) {
+        const baseScaleDiff = math.subtract(that.baseScaleTarget, that.baseScale)
+        if (math.max(math.abs(baseScaleDiff)) !== 0.0) {
           uniformsChanged = true
 
-          const aX = getAccelerationOfSpring(
-            that.baseScaleX, that.baseScaleVelocityX, that.baseScaleTargetX,
+          const a = getAccelerationOfSpringArr(
+            that.baseScale, that.baseScaleVelocity, that.baseScaleTarget,
             /* stiffness */ 15.0, /* mass */ 1.0, /* damping */ 8.0
           )
-          that.baseScaleVelocityX += aX * timeSinceLastUpdateInSec
-          that.baseScaleX += that.baseScaleVelocityX * timeSinceLastUpdateInSec
-          if (Math.abs(that.baseScaleVelocityX) < restSpeedScale && Math.abs(baseScaleDiffX) < restDeltaScale) {
-            that.baseScaleX = that.baseScaleTargetX
-          }
-
-          const aY = getAccelerationOfSpring(
-            that.baseScaleY, that.baseScaleVelocityY, that.baseScaleTargetY,
-            /* stiffness */ 15.0, /* mass */ 1.0, /* damping */ 8.0
-          )
-          that.baseScaleVelocityY += aY * timeSinceLastUpdateInSec
-          that.baseScaleY += that.baseScaleVelocityY * timeSinceLastUpdateInSec
-          if (Math.abs(that.baseScaleVelocityY) < restSpeedScale && Math.abs(baseScaleDiffY) < restDeltaScale) {
-            that.baseScaleY = that.baseScaleTargetY
+          that.baseScaleVelocity = math.add(that.baseScaleVelocity, math.dotMultiply(a, timeSinceLastUpdateInSec))
+          that.baseScale = math.add(that.baseScale, math.dotMultiply(that.baseScaleVelocity, timeSinceLastUpdateInSec))
+          if (math.max(math.abs(that.baseScaleVelocity)) < restSpeedScale && math.max(math.abs(baseScaleDiff)) < restDeltaScale) {
+            that.baseScale = that.baseScaleTarget.slice()  // using slice to copy the array
           }
         }
 
         if (that.currentPositionsX.length === that.targetPositionsX.length) {
-          for (const i of Array(that.targetPositionsX.length).keys()) {
-            const diffX = that.targetPositionsX[i] - that.currentPositionsX[i]
-            const diffY = that.targetPositionsY[i] - that.currentPositionsY[i]
-            if (diffX === 0.0 && diffY === 0.0) continue;
+          const diffX = math.subtract(that.targetPositionsX, that.currentPositionsX)
+          const diffY = math.subtract(that.targetPositionsY, that.currentPositionsY)
+          if (math.max(math.abs(diffX)) !== 0.0 || math.max(math.abs(diffY)) !== 0.0) {
             geometryChanged = true
 
-            const aX = getAccelerationOfSpring(
-              that.currentPositionsX[i], that.currentVelocityX[i], that.targetPositionsX[i],
+            const aX = getAccelerationOfSpringArr(
+              that.currentPositionsX, that.currentVelocityX, that.targetPositionsX,
               /* stiffness */ 20.0, /* mass */ 1.0, /* damping */ 6.0
             )
-            that.currentVelocityX[i] += aX * timeSinceLastUpdateInSec
-            that.currentPositionsX[i] += that.currentVelocityX[i] * timeSinceLastUpdateInSec
-            if (Math.abs(that.currentVelocityX[i]) < restSpeed && Math.abs(diffX) < restDelta) {
-              that.currentPositionsX[i] = that.targetPositionsX[i]
+            that.currentVelocityX = math.add(that.currentVelocityX, math.dotMultiply(aX, timeSinceLastUpdateInSec))
+            that.currentPositionsX = math.add(that.currentPositionsX, math.dotMultiply(that.currentVelocityX, timeSinceLastUpdateInSec))
+            if (math.max(math.abs(that.currentVelocityX)) < restSpeed && math.max(math.abs(diffX) < restDelta)) {
+              that.currentPositionsX = that.targetPositionsX.slice()  // using slice to copy the array
             }
 
-            const aY = getAccelerationOfSpring(
-              that.currentPositionsY[i], that.currentVelocityY[i], that.targetPositionsY[i],
+            const aY = getAccelerationOfSpringArr(
+              that.currentPositionsY, that.currentVelocityY, that.targetPositionsY,
               /* stiffness */ 20.0, /* mass */ 1.0, /* damping */ 6.0
             )
-            that.currentVelocityY[i] += aY * timeSinceLastUpdateInSec
-            that.currentPositionsY[i] += that.currentVelocityY[i] * timeSinceLastUpdateInSec
-            if (Math.abs(that.currentVelocityY[i]) < restSpeed && Math.abs(diffY) < restDelta) {
-              that.currentPositionsY[i] = that.targetPositionsY[i]
+            that.currentVelocityY = math.add(that.currentVelocityY, math.dotMultiply(aY, timeSinceLastUpdateInSec))
+            that.currentPositionsY = math.add(that.currentPositionsY, math.dotMultiply(that.currentVelocityY, timeSinceLastUpdateInSec))
+            if (math.max(math.abs(that.currentVelocityY)) < restSpeed && math.max(math.abs(diffY) < restDelta)) {
+              that.currentPositionsY = that.targetPositionsY.slice()  // using slice to copy the array
             }
+
           }
         }
 
@@ -303,21 +271,16 @@ export default {
     },
     centerAndFitDataToActiveAreaSmooth() {
       if (this.targetPositionsX.length === 0) return;
-      this.baseOffsetTargetX = -math.min(this.targetPositionsX)
-      this.baseOffsetTargetY = -math.min(this.targetPositionsY)
-      this.baseScaleTargetX = 1.0 / (math.max(this.targetPositionsX) + this.baseOffsetTargetX)
-      this.baseScaleTargetY = 1.0 / (math.max(this.targetPositionsY) + this.baseOffsetTargetY)
+      this.baseOffsetTarget = [-math.min(this.targetPositionsX), -math.min(this.targetPositionsY)]
+      this.baseScaleTarget[0] = 1.0 / (math.max(this.targetPositionsX) + this.baseOffsetTarget[0])
+      this.baseScaleTarget[1] = 1.0 / (math.max(this.targetPositionsY) + this.baseOffsetTarget[1])
     },
     centerAndFitDataToActiveAreaInstant() {
       this.centerAndFitDataToActiveAreaSmooth()
-      this.baseOffsetX = this.baseOffsetTargetX
-      this.baseOffsetY = this.baseOffsetTargetY
-      this.baseScaleX = this.baseScaleTargetX
-      this.baseScaleY = this.baseScaleTargetY
-      this.baseOffsetVelocityX = 0.0
-      this.baseOffsetVelocityY = 0.0
-      this.baseScaleVelocityX = 0.0
-      this.baseScaleVelocityY = 0.0
+      this.baseOffset = this.baseOffsetTarget.slice()  // using slice to copy the array
+      this.baseScale = this.baseScaleTarget.slice()  // using slice to copy the array
+      this.baseOffsetVelocity = [0.0, 0.0]
+      this.baseScaleVelocity = [0.0, 0.0]
     },
     updateGeometry() {
       function ensureLength(x, size, fillValue) {
@@ -384,22 +347,16 @@ export default {
       const ww = window.innerWidth
       const wh = window.innerHeight
       return {  // types are inferred from shader code
-        baseOffsetX: { value: this.baseOffsetX },
-        baseOffsetY: { value: this.baseOffsetY },
-        baseScaleX: { value: this.baseScaleX },
-        baseScaleY: { value: this.baseScaleY },
-        viewportWidth: { value: ww },
-        viewportHeight: { value: wh },
-        activeAreaWidth: { value: this.activeAreaWidth / ww },
-        activeAreaHeight: { value: this.activeAreaHeight / wh },
+        baseOffset: { value: this.baseOffset },
+        baseScale: { value: this.baseScale },
+        viewportSize: { value: [ww, wh] },
+        activeAreaSize: { value: [this.activeAreaWidth / ww, this.activeAreaHeight / wh] },
         marginLeft: { value: this.passiveMarginsLRTB[0] / ww },
         marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
-        panX: { value: this.currentPanX / ww },
-        panY: { value: this.currentPanY / wh },
+        pan: { value: math.dotDivide(this.currentPan, [ww, wh]) },
         zoom: { value: this.currentZoom },
         highlightedPointIdx: { value: this.highlightedPointIdx },
-        lightPositionX: { value: this.lightPositionX },
-        lightPositionY: { value: this.lightPositionY },
+        lightPosition: { value: this.lightPosition },
         devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
         selectedPointIdx: { value: this.selectedPointIdx },
       }
@@ -414,8 +371,7 @@ export default {
       const mousePosInEmbeddingSpaceX = this.screenToEmbeddingX(event.clientX)
       const mousePosInEmbeddingSpaceY = this.screenToEmbeddingY(event.clientY)
 
-      // this.lightPositionX = event.clientX / window.innerWidth
-      // this.lightPositionY = 1.0 - event.clientY / window.innerHeight
+      // this.lightPosition = [event.clientX / window.innerWidth,  1.0 - event.clientY / window.innerHeight]
 
       let closestIdx = null
       let closestDist = 10000000
