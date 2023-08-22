@@ -226,10 +226,10 @@ export default {
       this.selectedDocumentDetails = null
     },
     updateMapPassiveMargin() {
-      if (window.innerWidth > 640) {
+      if (window.innerWidth > 768) {
         this.$refs.embedding_map.passiveMarginsLRTB = [
           this.$refs.left_column.getBoundingClientRect().right + 50,
-          window.innerWidth - this.$refs.right_column.getBoundingClientRect().right,
+          50,
           50,
           150
         ]
@@ -252,7 +252,7 @@ export default {
 </script>
 
 <template>
-    <main>
+    <main class="overflow-hidden">
 
       <EmbeddingMap ref="embedding_map" class="absolute top-0 w-screen h-screen"
         @cluster_selected="narrow_down_on_cluster"
@@ -273,12 +273,11 @@ export default {
       </div>
 
       <!-- content area -->
-      <div class="relative h-screen mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row grid-cols-1 md:grid-cols-2 gap-4 pointer-events-none">
+      <div class="relative h-screen mr-auto max-w-7xl px-3 py-6 xl:px-12 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0 min-w-0 overflow-hidden pointer-events-none"
+        style="grid-auto-rows: minmax(auto, min-content);">
 
         <!-- left column -->
-        <div ref="left_column" class="flex-1 flex flex-col">
-
-          <div class="flex-none h-8"></div>
+        <div ref="left_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <!-- search card -->
           <div class="flex-none rounded-md shadow-sm bg-white p-3  pointer-events-auto">
@@ -382,16 +381,11 @@ export default {
                 </div>
               </div>
             </div>
-
           </div>
-
-          <div class="h-4"></div>
         </div>
 
         <!-- right column (e.g. for showing box with details for selected result) -->
-        <div ref="right_column" class="flex-1 flex flex-col pointer-events-none">
-
-          <div class="flex-none h-8"></div>
+        <div ref="right_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
             <ObjectDetailsModal :item="map_item_details[selectedDocumentIdx]" :abstract="selectedDocumentDetails ? selectedDocumentDetails.abstract : 'loading...'"
@@ -401,8 +395,8 @@ export default {
             ></ObjectDetailsModal>
           </div>
 
-          <div class="flex-1 flex w-full justify-center">
-            <div v-if="show_loading_bar" class="self-center w-20 bg-gray-400 rounded-full h-2.5">
+          <div v-if="show_loading_bar" class="flex-1 flex w-full justify-center">
+            <div class="self-center w-20 bg-gray-400 rounded-full h-2.5">
               <div class="bg-blue-600 h-2.5 rounded-full" :style="{'width': (progress * 100).toFixed(0) + '%'}"></div>
             </div>
           </div>
