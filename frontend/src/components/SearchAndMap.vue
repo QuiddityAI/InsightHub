@@ -255,6 +255,20 @@ export default {
         @cluster_selected="narrow_down_on_cluster"
         @point_selected="show_document_details"/>
 
+      <div v-if="$refs.parameters_area ? $refs.parameters_area.show_timings : false" class="absolute bottom-0 right-0 text-right">
+        <!-- timings -->
+        <ul role="list">
+            <li v-for="item in search_timings" :key="item.part" class="text-gray-300">
+              {{ item.part }}: {{ item.duration.toFixed(2) }} s
+            </li>
+          </ul>
+          <ul role="list">
+            <li v-for="item in map_timings" :key="item.part" class="text-gray-300">
+              {{ item.part }}: {{ item.duration.toFixed(2) }} s
+            </li>
+          </ul>
+      </div>
+
       <!-- content area -->
       <div class="relative h-screen mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row grid-cols-1 md:grid-cols-2 gap-4 pointer-events-none">
 
@@ -379,13 +393,6 @@ export default {
 
           </div>
 
-          <!-- timings -->
-          <ul role="list">
-            <li v-for="item in search_timings" :key="item.part" class="text-gray-300">
-              {{ item.part }}: {{ item.duration.toFixed(2) }} s
-            </li>
-          </ul>
-
           <div class="h-4"></div>
         </div>
 
@@ -414,12 +421,6 @@ export default {
               <div class="bg-blue-600 h-2.5 rounded-full" :style="{'width': (progress * 100).toFixed(0) + '%'}"></div>
             </div>
           </div>
-
-          <ul class="flex-none" role="list">
-            <li v-for="item in map_timings" :key="item.part" class="text-gray-300">
-              {{ item.part }}: {{ item.duration.toFixed(2) }} s
-            </li>
-          </ul>
         </div>
 
       </div>

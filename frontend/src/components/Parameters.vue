@@ -58,6 +58,9 @@ export default {
         {id: "generative_ai", title: "generative_ai"},
       ],
       selected_cluster_title_strategy: "tf_idf_top_3",
+
+      // UI only:
+      show_timings: false,
     }
   },
   methods: {
@@ -139,6 +142,10 @@ export default {
       <span class="text-gray-500 text-sm">Max. items for map:</span>
       <span class="text-gray-500 text-sm"> {{ max_items_used_for_mapping }} </span>
       <input v-model.number="max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+    </div>
+    <div class="flex justify-between items-center">
+      <span class="text-gray-500 text-sm">Show timings:</span>
+      <input v-model="show_timings" type="checkbox">
     </div>
   </div>
 </template>
