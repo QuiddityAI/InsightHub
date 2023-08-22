@@ -1,6 +1,9 @@
 <script setup>
 import EmbeddingMap from './EmbeddingMap.vue';
 import Parameters from './Parameters.vue';
+import ResultListItem from './ResultListItem.vue';
+import ObjectDetailsModal from './ObjectDetailsModal.vue';
+import CollectionListItem from './CollectionListItem.vue';
 import { AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 </script>
 
@@ -328,12 +331,7 @@ export default {
               <div v-if="selected_tab === 'results'">
                 <ul v-if="search_results.length !== 0" role="list" class="pt-3">
                   <li v-for="item in search_results" :key="item.title" class="justify-between pb-3">
-                    <div class="bg-gray-100/50 rounded p-3">
-                      <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title_enriched"></div></p>
-                      <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
-                      <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ item.most_important_words }}</p>
-                      <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="item.abstract_enriched"></div></p>
-                    </div>
+                    <ResultListItem :item="item"></ResultListItem>
                   </li>
                 </ul>
                 <div v-if="search_results.length === 0" class="h-20 flex flex-col text-center place-content-center">
@@ -367,20 +365,14 @@ export default {
                     </div>
                     <ul class="pt-2">
                       <li v-for="(item, index) in list.positives" :key="item.title" class="justify-between pb-2">
-                        <div class="bg-green-100/50 rounded px-3 py-2">
-                          <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
-                          <p class="truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
-                          <button @click="list.positives.splice(index, 1)" class="text-sm text-gray-500">Remove</button>
-                        </div>
+                        <CollectionListItem :item="item" :is-positive="true" @remove="list.positives.splice(index, 1)">
+                        </CollectionListItem>
                       </li>
                     </ul>
                     <ul class="pt-2">
                       <li v-for="(item, index) in list.negatives" :key="item.title" class="justify-between pb-2">
-                        <div class="bg-red-100/50 rounded px-3 py-2">
-                          <p class="text-sm font-medium leading-6 text-gray-900"><div v-html="item.title"></div></p>
-                          <p class="truncate text-xs leading-5 text-gray-500">{{ item.container_title }}, {{ item.issued_year.toFixed(0) }}</p>
-                          <button @click="list.negatives.splice(index, 1)" class="text-sm text-gray-500">Remove</button>
-                        </div>
+                        <CollectionListItem :item="item" :is-positive="false" @remove="list.negatives.splice(index, 1)">
+                        </CollectionListItem>
                       </li>
                     </ul>
                   </li>
@@ -402,18 +394,11 @@ export default {
           <div class="flex-none h-8"></div>
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
-            <div class="flex-initial flex flex-col overflow-hidden min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
-              <p class="flex-none text-sm font-medium leading-6 text-gray-900"><div v-html="map_item_details[selectedDocumentIdx].title"></div></p>
-              <p class="flex-none mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].container_title }}, {{ map_item_details[selectedDocumentIdx].issued_year.toFixed(0) }}</p>
-              <p class="flex-none mt-1 truncate text-xs leading-5 text-gray-500">{{ map_item_details[selectedDocumentIdx].most_important_words }}</p>
-              <p class="flex-1 overflow-y-auto mt-2 text-xs leading-5 text-gray-700" v-html="selectedDocumentDetails ? selectedDocumentDetails.abstract : 'loading...'"></p>
-              <div class="flex-none flex flex-row">
-                <button @click="lists.default.positives.push(map_item_details[selectedDocumentIdx])" class="px-3 py-1 mr-3 bg-green-600/50 hover:bg-blue-600 rounded">Positive</button>
-                <button @click="lists.default.negatives.push(map_item_details[selectedDocumentIdx])" class="px-3 py-1 mr-3 bg-red-600/50 hover:bg-blue-600 rounded">Negative</button>
-                <div class="flex-1"></div>
-                <button @click="close_document_details" class="px-3 py-1 bg-blue-600/50 hover:bg-blue-600 rounded">Close</button>
-              </div>
-            </div>
+            <ObjectDetailsModal :item="map_item_details[selectedDocumentIdx]" :abstract="selectedDocumentDetails ? selectedDocumentDetails.abstract : 'loading...'"
+              @addToPositives="lists.default.positives.push(map_item_details[selectedDocumentIdx])"
+              @addToNegatives="lists.default.negatives.push(map_item_details[selectedDocumentIdx])"
+              @close="close_document_details"
+            ></ObjectDetailsModal>
           </div>
 
           <div class="flex-1 flex w-full justify-center">
