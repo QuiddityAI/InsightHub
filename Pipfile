@@ -19,6 +19,7 @@ openai = "*"
 spacy = "*"
 gensim = "*"
 django = "*"
+django-extensions = "*"
 
 [dev-packages]
 ipykernel = "*"
