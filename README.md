@@ -50,7 +50,7 @@ npx vite --port 55140
 `export TMPDIR=$HOME/tmp`
 
 
-### Set-up Django
+### How Django backend was created:
 
 ```
 python3 -m pipenv install Django  # version 4.2.2
@@ -58,6 +58,7 @@ django-admin startproject project_base
 mv project_base django_backend
 cd django_backend
 python manage.py startapp data_map_backend
-
+python manage.py migrate
+sh start_server.py
 ```
 [::]
