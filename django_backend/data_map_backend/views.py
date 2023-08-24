@@ -2,10 +2,12 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
+from django.contrib.auth.decorators import login_required
 
 from .models import Organization
 
 
+@login_required()
 @csrf_exempt
 def get_organizations(request):
     if request.method != 'GET':

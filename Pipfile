@@ -27,6 +27,7 @@ markdown = "*"
 django-filter = "*"
 drf-social-oauth2 = "*"
 social-auth-app-django = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 ipykernel = "*"

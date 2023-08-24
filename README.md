@@ -64,3 +64,12 @@ python manage.py collectstatic
 sh start_server.py
 ```
 [::]
+
+
+# Set up OAuth2 API authentication
+
+- create a new application using ´/o/applications`
+  - use client credentials type and confidential
+- create a new access token using the admin interface
+- use it like this: `curl -H "Authorization: Bearer <access_token>" -X GET "http://localhost:55125/data_map/organizations"`
+- see also: https://django-oauth-toolkit.readthedocs.io/en/latest/tutorial/tutorial_03.html

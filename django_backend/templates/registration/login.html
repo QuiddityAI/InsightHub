@@ -11,4 +11,6 @@
     </form>
 
     <a href="{% url "social:begin" "google-oauth2" %}">Google</a>
+
+    <input type="hidden" name="next" value="{{ next }}" />
 {% endblock content %}

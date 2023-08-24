@@ -44,11 +44,13 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework',
     'oauth2_provider',
+    'corsheaders',
     'social_django',
     'drf_social_oauth2',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -58,6 +60,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
 ]
 
 ROOT_URLCONF = 'project_base.urls'
@@ -152,9 +155,10 @@ REST_FRAMEWORK = {
 
 # DRF Social OAuth2
 AUTHENTICATION_BACKENDS = (
-   'social_core.backends.google.GoogleOAuth2',
-   'drf_social_oauth2.backends.DjangoOAuth2',
-   'django.contrib.auth.backends.ModelBackend',
+    'oauth2_provider.backends.OAuth2Backend',
+    'social_core.backends.google.GoogleOAuth2',
+    'drf_social_oauth2.backends.DjangoOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
 )
 
 DRFSO2_PROPRIETARY_BACKEND_NAME = "VisualDataMapBackend"
@@ -167,3 +171,5 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'  # clie
 LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'
 LOGIN_REDIRECT_URL = 'home'
+
+CORS_ORIGIN_ALLOW_ALL = True
