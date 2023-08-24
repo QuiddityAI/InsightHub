@@ -21,6 +21,7 @@ gensim = "*"
 django = "*"
 django-extensions = "*"
 djangoql = "*"
+django-simple-history = "*"
 
 [dev-packages]
 ipykernel = "*"
