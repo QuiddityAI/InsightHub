@@ -22,6 +22,9 @@ django = "*"
 django-extensions = "*"
 djangoql = "*"
 django-simple-history = "*"
+djangorestframework = "*"
+markdown = "*"
+django-filter = "*"
 
 [dev-packages]
 ipykernel = "*"

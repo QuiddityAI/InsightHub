@@ -28,4 +28,5 @@ urlpatterns = [
     path('', redirect_to_admin),  # we only use the admin interface for now
     path('admin/', admin.site.urls),
     path("data_map/", include('data_map_backend.urls')),
+    path('api-auth/', include('rest_framework.urls'))
 ]

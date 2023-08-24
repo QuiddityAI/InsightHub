@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'djangoql',
     'simple_history',
     'django_extensions',
+    'django_filters',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -127,3 +129,13 @@ STATIC_ROOT = 'static_root/'  # should be changed to where the static files will
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Rest Framework
+
+REST_FRAMEWORK = {
+    # Use Django's standard `django.contrib.auth` permissions,
+    # or allow read-only access for unauthenticated users.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    ]
+}
