@@ -25,6 +25,8 @@ django-simple-history = "*"
 djangorestframework = "*"
 markdown = "*"
 django-filter = "*"
+drf-social-oauth2 = "*"
+social-auth-app-django = "*"
 
 [dev-packages]
 ipykernel = "*"

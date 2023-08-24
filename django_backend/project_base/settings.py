@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'django_extensions',
     'django_filters',
     'rest_framework',
+    'oauth2_provider',
+    'social_django',
+    'drf_social_oauth2',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
 ROOT_URLCONF = 'project_base.urls'
@@ -61,7 +65,7 @@ ROOT_URLCONF = 'project_base.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates',],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -69,6 +73,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -137,5 +143,27 @@ REST_FRAMEWORK = {
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    ]
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+        'drf_social_oauth2.authentication.SocialAuthentication',
+    ),
 }
+
+# DRF Social OAuth2
+AUTHENTICATION_BACKENDS = (
+   'social_core.backends.google.GoogleOAuth2',
+   'drf_social_oauth2.backends.DjangoOAuth2',
+   'django.contrib.auth.backends.ModelBackend',
+)
+
+DRFSO2_PROPRIETARY_BACKEND_NAME = "VisualDataMapBackend"
+# DRFSO2_URL_NAMESPACE = ?  # namespace for reversing URLs
+# ACTIVATE_JWT = ?  # If set to True the access and refresh tokens will be JWTed. Default is False.
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '181787399123-6i9msa4oqik73gir0ei6g6lhp5jtgcau.apps.googleusercontent.com'  # client id
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'  # client secret
+
+LOGIN_URL = 'login'
+LOGOUT_URL = 'logout'
+LOGIN_REDIRECT_URL = 'home'

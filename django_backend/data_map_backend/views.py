@@ -15,3 +15,12 @@ def get_organizations(request):
     result = serializers.serialize('json', all_objects)
 
     return HttpResponse(result, status=200, content_type='application/json')
+
+
+from django.shortcuts import render
+from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+class HomeView(LoginRequiredMixin, TemplateView):
+    template_name = "home.html"
+

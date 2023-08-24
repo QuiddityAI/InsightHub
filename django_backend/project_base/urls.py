@@ -15,8 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.shortcuts import redirect
+
+from django.contrib.auth import views as auth_views
+import data_map_backend
 
 
 def redirect_to_admin(request):
@@ -25,8 +28,15 @@ def redirect_to_admin(request):
 
 
 urlpatterns = [
-    path('', redirect_to_admin),  # we only use the admin interface for now
+    path('', include('social_django.urls', namespace='social')),
+    # path('', redirect_to_admin),  # we only use the admin interface for now
     path('admin/', admin.site.urls),
     path("data_map/", include('data_map_backend.urls')),
-    path('api-auth/', include('rest_framework.urls'))
+    path('api-auth/', include('rest_framework.urls')),
+    re_path(r'^auth/', include('drf_social_oauth2.urls', namespace='drf')),
+    path('', data_map_backend.views.HomeView.as_view(), name='home'),
+
+    # Login and Logout
+    path('login/', auth_views.LoginView.as_view(), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
 ]
