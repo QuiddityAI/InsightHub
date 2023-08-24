@@ -60,6 +60,7 @@ cd django_backend
 python manage.py startapp data_map_backend
 python manage.py migrate
 python manage.py createsuperuser
+python manage.py collectstatic
 sh start_server.py
 ```
 [::]

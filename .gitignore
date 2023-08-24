@@ -29,3 +29,4 @@ openai_credentials.json
 
 # Django
 db.sqlite3
+static_root/
