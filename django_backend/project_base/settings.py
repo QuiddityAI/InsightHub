@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-%q9_x-^4%d128ss#4xp&*hzg%%7&gru*=mg@qzb=w)$40_5lae
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]  # TODO: change this as soons as fixed IP is used to IPv4 and v6 of server
 
 
 # Application definition
