@@ -59,6 +59,7 @@ mv project_base django_backend
 cd django_backend
 python manage.py startapp data_map_backend
 python manage.py migrate
+python manage.py createsuperuser
 sh start_server.py
 ```
 [::]
