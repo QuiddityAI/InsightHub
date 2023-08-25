@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cd856dd0b3b382e438cd4c06953ba52d9906e74bc9487cd81279298d0531c1fa"
+            "sha256": "ec247df0c6f5c0a094e921fbfa99b643e3f958e892517ca3a8d25c8a6c3dfc4e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -557,6 +557,14 @@
             ],
             "index": "pypi",
             "version": "==23.2"
+        },
+        "django-jazzmin": {
+            "hashes": [
+                "sha256:5bb07055cf19183030724f976904fd8b6337559727959340a43832fab0531812",
+                "sha256:fb554c2d564649c65243b13385121fdbdda58521f49544f9d7cb9c414a4908d4"
+            ],
+            "index": "pypi",
+            "version": "==2.6.0"
         },
         "django-oauth-toolkit": {
             "hashes": [
@@ -2103,11 +2111,11 @@
         },
         "weaviate-client": {
             "hashes": [
-                "sha256:3d3bb75c1d96b2b71e213c5eb885ae3e3f42e4304955383c467d100187d9ff8e",
-                "sha256:3ffd7f1460c9e32755d84d4f5fc63dfc0bd990dbe2c3dc20d5c68119d467680e"
+                "sha256:035f395fb8b17008224dc8a9ca4459b7ef4a2b0449209ac0c8d0f2e3b9a77f59",
+                "sha256:826b28237f7143ee4c51b988c5c37494760b4377a8536acc772a2194eb33f30c"
             ],
             "index": "pypi",
-            "version": "==3.23.0"
+            "version": "==3.23.1"
         },
         "werkzeug": {
             "hashes": [

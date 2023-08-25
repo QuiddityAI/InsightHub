@@ -28,6 +28,7 @@ django-filter = "*"
 drf-social-oauth2 = "*"
 social-auth-app-django = "*"
 django-cors-headers = "*"
+django-jazzmin = "*"
 
 [dev-packages]
 ipykernel = "*"

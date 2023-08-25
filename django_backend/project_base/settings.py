@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ["*"]  # TODO: change this as soons as fixed IP is used to IPv4 
 
 INSTALLED_APPS = [
     "data_map_backend.apps.DataMapBackendConfig",
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
