@@ -59,6 +59,11 @@ class Generator(models.Model):
         max_length=200,
         blank=False,
         null=False)
+    identifier = models.CharField(
+        verbose_name="Identifier",
+        max_length=200,
+        blank=False,
+        null=False)
     description = models.TextField(
         verbose_name="Description",
         blank=True,
@@ -187,6 +192,22 @@ class ObjectSchema(models.Model):
         on_delete=models.PROTECT,
         blank=False,
         null=False)
+    result_list_rendering = models.TextField(
+        verbose_name="Rendering (Result List)",
+        blank=True,
+        null=True)
+    collection_list_rendering = models.TextField(
+        verbose_name="Rendering (Collection List)",
+        blank=True,
+        null=True)
+    hover_label_rendering = models.TextField(
+        verbose_name="Rendering (Hover Label)",
+        blank=True,
+        null=True)
+    detail_view_rendering = models.TextField(
+        verbose_name="Rendering (Detail View)",
+        blank=True,
+        null=True)
 
     history = HistoricalRecords()
 
