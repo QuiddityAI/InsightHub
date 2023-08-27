@@ -246,6 +246,7 @@ class ObjectField(models.Model):
         verbose_name="Schema",
         to=ObjectSchema,
         on_delete=models.CASCADE,
+        related_name='object_fields',
         blank=False,
         null=False)
     description = models.CharField(
@@ -299,6 +300,7 @@ class ObjectField(models.Model):
     source_fields = models.ManyToManyField(
         verbose_name="Source Fields",
         to='self',
+        symmetrical=False,
         blank=True)
     should_be_generated = models.BooleanField(
         verbose_name="Should be generated",
