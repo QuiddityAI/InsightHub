@@ -73,69 +73,52 @@ def get_generator_function(name, parameters) -> function:
     pass
 
 
+def get_changed_fields(primary_key_field, batch, schema):
+    # getting internal id from mongo using primary_key_field needs that field to be indexed
+    # in Mongo, which it might not be
+    primary_keys = []
+
+    for element in batch:
+        primary_keys.append(element[primary_key_field])
+
+    current_versions = []  # TODO: mongo.get(schema=schema_id, where primary_key_field in primary_key)
+    # alternatively: rely on changed_fields parameter (provided by sender, same for all elements)
+    # alternatively: rely on only fields being present that changed -> changed_fields = new_element.keys()
+
+    changed_fields_total = []
+    for new_element, current_element in zip(batch, current_versions):
+        changed_fields = set()
+        for field in new_element.keys():
+            if new_element[field] != current_element.get(field):
+                changed_fields.insert(field)
+        changed_fields_total.append(changed_fields)
+
+    return changed_fields_total
+
+
+def get_index_settings(schema):
+    vector_db_fields = []
+    text_db_fields = []
+    filtering_fields = []
+
+    for field in schema.object_fields:
+        if field.is_available_for_search and field.field_type == FieldType.VECTOR:
+            vector_db_table_name = f'{schema.id}_{field.identifier}'
+            vector_db_fields.append([field.identifier, vector_db_table_name])
+        elif field.is_available_for_search and field.field_type == FieldType.TEXT:
+            text_db_table_name = f'{schema.id}_{field.identifier}'
+            text_db_fields.append([field.identifier, text_db_table_name])
+
+        if field.is_available_for_filtering:
+            filtering_fields.append(field.identifier)
+
+    return DotDict({'vector_db_fields': vector_db_fields, 'text_db_fields': text_db_fields, 'filtering_fields': filtering_fields})
+
+
 @csrf_exempt
 def add_elements(request):
-    if request.method != 'POST':
-        return HttpResponse(status=405)
 
-    try:
-        data = json.loads(request.body)
-    except ValueError:
-        return HttpResponse(status=400)
-
-    schema_id: str = data["schema_id"]  # TODO: catch error
-    schema: ObjectSchema = ObjectSchema.objects.get(id=schema_id)  # TODO: catch error
-    # TODO: check if sender is allowed to add data to this schema / organization
-
-    fields: list[ObjectField] = ObjectField.objects.filter(schema=schema_id)
-
-    # TODO: check if table in Mongo exists
-    # if not, create it and mark filterable fields as indexed
-
-    pipeline_steps = []
-    for field in fields:
-        if field.should_be_generated:
-            dependencies = field.source_fields
-            # TODO
-
-
-    # TODO: check generate_if_not_exits and skip_generators settings
-
-    batch = data["elements"]
-
-    # [ (generator: summary, target field: summary_ai, element_ids: (id, id), source field data: (data, data)) ]
-
-    for element in batch:
-        # TODO: check required, non-generatable fields
-        pass
-
-    for pipeline_step in pipeline_steps:
-        element_indexes = []
-        source_data_total = []
-        # TODO: condition_func = eval(pipeline_step["generating_condition"])
-
-        for i, element in enumerate(batch):
-            element_indexes.append(i)
-            source_data = []
-            # TODO: if not condition(element): continue
-            for source_field in pipeline_step["source_fields"]:
-                source_data.append(element[source_field])
-            source_data_total.append(source_data)
-
-        generator_func = get_generator_function(pipeline_step["generator_name"], pipeline_step["generator_parameters"])
-
-        results = generator_func(element_indexes, source_data_total)
-
-        for element_index, result in zip(element_indexes, results):
-            batch[element_index][pipeline_step["target_field"]] = result
-
-    for element in batch:
-        # TODO: store in MongoDB
-        pass
-
-
-
-    return HttpResponse(status=204, content_type='application/json')
+    # basically update() but with changed_fields being all of them
 
 
 @csrf_exempt
@@ -149,106 +132,41 @@ def update_elements(request):
         return HttpResponse(status=400)
 
     schema_id: str = data["schema_id"]  # TODO: catch error
-    schema: ObjectSchema = ObjectSchema.objects.get(id=schema_id)  # TODO: catch error
-    # TODO: check if sender is allowed to add data to this schema / organization
-
-    fields: list[ObjectField] = ObjectField.objects.filter(schema=schema_id)
-
-    pipeline_steps = []
-    steps_added = []
-    any_field_skipped = True
-    while any_field_skipped:  # FIXME: endless loop if circular dependency
-        phase_steps = []
-        any_field_skipped = False
-        for field in fields:
-            if field in steps_added: continue
-            this_field_skipped = False
-            if field.should_be_generated:
-                dependencies = field.source_fields
-                for dep in dependencies:
-                    if dep.should_be_generated and dep not in steps_added:
-                        this_field_skipped = True
-                        break
-                if this_field_skipped:
-                    any_field_skipped = True
-                    continue
-                phase_steps.append({
-                    'source_fields': field.source_fields,
-                    'generator_name': field.generator.name,
-                    'generator_parameters': field.generator_parameters,
-                    'target_field': field.identifier,
-                })
-                steps_added.append(field)
-        if phase_steps:
-            pipeline_steps.append(phase_steps)
+    schema: ObjectSchema = get_object_schema(schema_id)
 
     # TODO: check generate_if_not_exits and skip_generators settings
+    pipeline_steps = get_pipeline_steps()
 
     batch = data["elements"]
 
-    # [ (generator: summary, target field: summary_ai, element_ids: (id, id), source field data: (data, data)) ]
-
-    # getting internal id from mongo using primary_key_field needs that field to be indexed
-    # in Mongo, which it might not be
-    primary_key_field: str = data["primary_key_field"]  # TODO: catch error
-    primary_keys = []
-
-    for element in batch:
-        primary_keys.append(element[primary_key_field])
-
-    current_versions = []  # TODO: mongo.get(schema=schema_id, where primary_key_field in primary_key)
-    # alternatively: rely on changed_fields parameter (provided by sender, same for all elements)
-    # alternatively: rely on only fields being present that changed -> changed_fields = new_element.keys()
-
-    changed_fields_total = []
-    for new_element, current_element in zip(batch, current_versions):
-        changed_fields = []
-        for field in new_element.keys():
-            if new_element[field] != current_element.get(field):
-                changed_fields.append(field)
-        changed_fields_total.append(changed_fields)
+    changed_fields_total = get_changed_fields(primary_key_field, batch, schema)
 
     for phase in pipeline_steps:
         for pipeline_step in phase:  # TODO: this can be done in parallel
             element_indexes = []
             source_data_total = []
-            # TODO: condition_func = eval(pipeline_step["generating_condition"])
 
             for i, element in enumerate(batch):
                 if not set(changed_fields_total[i]) & set(pipeline_step["source_fields"]): continue
-                # TODO: if not condition(element): continue
+                if pipeline_step.condition_function is not None and not condition(element): continue
+
                 element_indexes.append(i)
                 source_data = []
                 for source_field in pipeline_step["source_fields"]:
                     source_data.append(element[source_field])
                 source_data_total.append(source_data)
 
-            generator_func = get_generator_function(pipeline_step["generator_name"], pipeline_step["generator_parameters"])
-
-            results = generator_func(source_data_total)
+            results = pipeline_step.generator_func(source_data_total)
 
             for element_index, result in zip(element_indexes, results):
-                batch[element_index][pipeline_step["target_field"]] = result
-                changed_fields_total[element_index].append(pipeline_step["target_field"])
+                batch[element_index][pipeline_step.target_field] = result
+                changed_fields_total[element_index].insert(pipeline_step.target_field)
 
     for element in batch:
         # TODO: upsert in MongoDB
         pass
 
-    vector_db_fields = []
-    text_db_fields = []
-    filtering_fields = []
-
-    for field in fields:
-        if field.is_available_for_search and field.field_type == FieldType.VECTOR:
-            vector_db_table_name = f'{schema.id}_{field.identifier}'
-            vector_db_fields.append([field.identifier, vector_db_table_name])
-        elif field.is_available_for_search and field.field_type == FieldType.TEXT:
-            text_db_table_name = f'{schema.id}_{field.identifier}'
-            text_db_fields.append([field.identifier, text_db_table_name])
-
-        if field.is_available_for_filtering:
-            filtering_fields.append(field.identifier)
+    index_settings = get_index_settings(schema)
 
     # TODO: ensure the tables exist
     # TODO: skip if no indexed fields
@@ -256,12 +174,14 @@ def update_elements(request):
     for element in batch:
         # TODO: if no intersection between db_fields and changed_fields: continue
         filtering_attributes = {}
-        for field in filtering_fields:
+        for field in index_settings.filtering_fields:
             filtering_attributes[field] = element[field]
-        for field, table in vector_db_fields:
+        for field, table in index_settings.vector_db_fields:
+            # TODO: batch this
             # qdrant.upsert(table: table, id: element.id, vector: element[field], attributes: filtering_attributes)
             pass
-        for field, table in text_db_fields:
+        for field, table in index_settings.text_db_fields:
+            # TODO: batch this
             # typesense.upsert(table: table, id: element.id, text: element[field], attributes: filtering_attributes)
             pass
 
