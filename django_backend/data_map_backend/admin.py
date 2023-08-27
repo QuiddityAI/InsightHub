@@ -85,6 +85,17 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         ObjectFieldInline,
     ]
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # only show fields of same schema for source fields:
+        if db_field.name == "thumbnail_image":
+            try:
+                schema_id = int(request.path.split("/")[-3])
+            except ValueError:
+                kwargs["queryset"] = ObjectField.objects.filter(schema = -1)
+            else:
+                kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
+        return super(ObjectSchemaAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 @admin.register(ObjectField)
 class ObjectFieldAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):

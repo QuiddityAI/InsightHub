@@ -208,6 +208,12 @@ class ObjectSchema(models.Model):
         verbose_name="Rendering (Detail View)",
         blank=True,
         null=True)
+    thumbnail_image = models.ForeignKey(
+        verbose_name="Thumbnail Image",
+        to='ObjectField',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
 
     history = HistoricalRecords()
 
