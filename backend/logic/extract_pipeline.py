@@ -1,8 +1,11 @@
+import json
 import logging
 
 from utils.dotdict import DotDict
+from logic.generator_functions import get_generator_function
 
 
+# TODO: add changed_at as parameter and cache function (using changed_at as measure for dropping the cache)
 def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = []) -> list[list[dict]]:
     schema = DotDict(schema)
     if has_circular_dependency(schema):
@@ -31,10 +34,16 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
                 if this_field_skipped:
                     any_field_skipped = True
                     continue
+
+                generator_identifier = field.generator.identifier
+                generator_parameters = json.loads(field.generator_parameters) if field.generator_parameters else {}
+                generator_function = get_generator_function(generator_identifier, generator_parameters)
+                condition_function = eval(field.generating_condition) if field.generating_condition else None
+
                 phase_steps.append({
                     'source_fields': field.source_fields,
-                    'generator_identifier': field.generator.identifier,
-                    'generator_parameters': field.generator_parameters,
+                    'generator_function': generator_function,
+                    'condition_function': condition_function,
                     'target_field': field.identifier,
                 })
                 steps_added_this_phase.append(field.identifier)
