@@ -1,5 +1,10 @@
 {
-    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.typeCheckingMode": "basic",
     "files.trimTrailingWhitespace": true,
-    "editor.tabSize": 2
+    "editor.tabSize": 2,
+    "[python]": {
+        "editor.detectIndentation" : false,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+    }
 }
