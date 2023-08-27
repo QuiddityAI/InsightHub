@@ -1,30 +1,72 @@
 import json
 
 from django.http import HttpResponse
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.core import serializers
+from rest_framework import serializers as drf_serializers
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from .models import FieldType, Organization, ObjectSchema, ObjectField
+from .models import ObjectSchema, ObjectField, Generator, EmbeddingSpace
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
 
-@login_required()
+class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
+    class Meta:
+        model = EmbeddingSpace
+        exclude = ['created_at', 'changed_at']
+
+
+class GeneratorSerializer(drf_serializers.ModelSerializer):
+    embedding_space = EmbeddingSpaceSerializer(read_only=True)
+
+    class Meta:
+        model = Generator
+        exclude = ['created_at', 'changed_at']
+
+
+class ObjectFieldSerializer(drf_serializers.ModelSerializer):
+    source_fields = drf_serializers.StringRelatedField(many=True, read_only=True)
+    generator = GeneratorSerializer(read_only=True)
+
+    class Meta:
+        model = ObjectField
+        exclude = ['created_at', 'changed_at', '_order', 'description']
+
+
+class ObjectSchemaSerializer(drf_serializers.ModelSerializer):
+    object_fields = ObjectFieldSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ObjectSchema
+        exclude = ['created_at', 'changed_at']
+
+
+#@login_required()
 @csrf_exempt
-def get_organizations(request):
-    if request.method != 'GET':
+def get_object_schema(request):
+    if request.method != 'POST':
         return HttpResponse(status=405)
 
-    all_objects = Organization.objects.all()
-    result = serializers.serialize('json', all_objects)
+    try:
+        data = json.loads(request.body)
+        schema_id: str = data["schema_id"]  # TODO: catch error
+    except ValueError:
+        return HttpResponse(status=400)
+
+    schema: ObjectSchema = ObjectSchema.objects.get(id=schema_id)
+    # TODO: check permission to read this object
+
+    schema_dict = ObjectSchemaSerializer(instance=schema).data
+    schema_dict["object_fields"] = {item['identifier']: item for item in schema_dict["object_fields"]}
+
+    result = json.dumps(schema_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
+
 
 """
 def get_generator_function(name, parameters) -> function:
