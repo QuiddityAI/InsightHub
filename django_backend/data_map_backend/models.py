@@ -23,6 +23,7 @@ class FieldType(models.TextChoices):
     AUDIO = "AUDIO", "Audio"
     VIDEO = "VIDEO", "Video"
     FOREIGN_KEY = "FOREIGN_KEY", "Reference to other element"
+    BOOL = "BOOL", "Bool"
 
 
 class EmbeddingSpace(models.Model):

@@ -29,6 +29,7 @@ drf-social-oauth2 = "*"
 social-auth-app-django = "*"
 django-cors-headers = "*"
 django-jazzmin = "*"
+qdrant-client = "*"
 
 [dev-packages]
 ipykernel = "*"

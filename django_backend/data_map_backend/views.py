@@ -163,6 +163,7 @@ def update_elements(request):
                 changed_fields_total[element_index].insert(pipeline_step.target_field)
 
     for element in batch:
+        # make sure primary key exists, if not, generate it
         # TODO: upsert in MongoDB
         pass
 
