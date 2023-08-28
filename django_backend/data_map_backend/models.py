@@ -192,6 +192,13 @@ class ObjectSchema(models.Model):
         on_delete=models.PROTECT,
         blank=False,
         null=False)
+    primary_key = models.ForeignKey(
+        verbose_name="Primary Key",
+        to='ObjectField',
+        related_name='+',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True)
     result_list_rendering = models.TextField(
         verbose_name="Rendering (Result List)",
         blank=True,
@@ -211,6 +218,7 @@ class ObjectSchema(models.Model):
     thumbnail_image = models.ForeignKey(
         verbose_name="Thumbnail Image",
         to='ObjectField',
+        related_name='+',
         on_delete=models.SET_NULL,
         blank=True,
         null=True)
