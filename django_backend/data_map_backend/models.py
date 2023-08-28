@@ -266,6 +266,10 @@ class ObjectField(models.Model):
         default=False,
         blank=False,
         null=False)
+    vector_size = models.IntegerField(
+        verbose_name="Vector Size",
+        blank=True,
+        null=True)
     is_required = models.BooleanField(
         verbose_name="Required",
         default=False,
@@ -281,6 +285,10 @@ class ObjectField(models.Model):
         default=False,
         blank=False,
         null=False)
+    index_parameters = models.TextField(
+        verbose_name="Index Parameters",
+        blank=True,
+        null=True)
     generator = models.ForeignKey(
         verbose_name="Generator",
         to=Generator,
