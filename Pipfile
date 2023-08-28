@@ -30,6 +30,7 @@ social-auth-app-django = "*"
 django-cors-headers = "*"
 django-jazzmin = "*"
 qdrant-client = "*"
+pymongo = "*"
 
 [dev-packages]
 ipykernel = "*"
