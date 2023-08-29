@@ -20,28 +20,38 @@ class JSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-schema = DotDict(get_object_schema(3))
+def test_schema_serialization():
+    schema = DotDict(get_object_schema(3))
 
-print(json.dumps(schema, indent=4, cls=JSONEncoder))
+    print(json.dumps(schema, indent=4, cls=JSONEncoder))
 
-steps = get_pipeline_steps(schema)
+    steps = get_pipeline_steps(schema)
 
-print(json.dumps(steps, indent=4, cls=JSONEncoder))
+    print(json.dumps(steps, indent=4, cls=JSONEncoder))
 
-vse_client = VectorSearchEngineClient()
+    return schema
 
-vector_field = 'openai_vector'
 
-# vse_client.remove_schema(schema.id, vector_field)
-vse_client.ensure_schema_exists(schema, vector_field)
+def test_vector_db_client(schema):
+    vse_client = VectorSearchEngineClient()
 
-item = {
-    "description": "White crew neck t-shirt",
-    "year": 2017,
-}
+    vector_field = 'openai_vector'
 
-vse_client.upsert_items(schema.id, vector_field, [32, 34], [item, item], [[4, 5, 6, 7]]*2)
+    # vse_client.remove_schema(schema.id, vector_field)
+    vse_client.ensure_schema_exists(schema, vector_field)
 
-items = vse_client.get_items_near_vector(schema.id, vector_field, [7, 8, 4, 5], {}, limit=5)
-print(items)
+    item = {
+        "description": "White crew neck t-shirt",
+        "year": 2017,
+    }
+
+    vse_client.upsert_items(schema.id, vector_field, [32, 34], [item, item], [[4, 5, 6, 7]]*2)
+
+    items = vse_client.get_items_near_vector(schema.id, vector_field, [7, 8, 4, 5], {}, limit=5)
+    print(items)
+
+
+if __name__ == "__main__":
+    schema = test_schema_serialization()
+    # test_vector_db_client(schema)
 

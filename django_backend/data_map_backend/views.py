@@ -39,6 +39,7 @@ class ObjectFieldSerializer(drf_serializers.ModelSerializer):
 
 class ObjectSchemaSerializer(drf_serializers.ModelSerializer):
     object_fields = ObjectFieldSerializer(many=True, read_only=True)
+    primary_key = drf_serializers.StringRelatedField(many=False, read_only=True)
 
     class Meta:
         model = ObjectSchema
