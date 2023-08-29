@@ -30,6 +30,10 @@ def save_embedding_cache():
 def get_embedding(text: str, text_id: str = None) -> np.ndarray:
     if embedding_model == "openai":
         return get_openai_embedding(text, text_id)
+    return get_pubmedbert_embedding(text, text_id)
+
+
+def get_pubmedbert_embedding(text: str, text_id: str = None):
 
     config_name = embedding_model + embedding_strategy
     if text_id and text_id in embedding_cache[config_name]:
@@ -49,7 +53,7 @@ def get_embedding(text: str, text_id: str = None) -> np.ndarray:
     return embedding
 
 
-with open("openai_credentials.json", "rb") as f:
+with open("../openai_credentials.json", "rb") as f:
     openai_credentials = json.load(f)
 
 

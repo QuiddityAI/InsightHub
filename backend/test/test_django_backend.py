@@ -3,12 +3,15 @@ Run with "python3 -m test.test_django_backend"
 """
 
 import json
+import time
+import csv
 import logging
 from typing import Callable
 from utils.dotdict import DotDict
 
 from database_client.django_client import get_object_schema
 from logic.extract_pipeline import get_pipeline_steps
+from logic.insert_logic import insert_many, update_database_layout
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 
 logging.root.setLevel(logging.INFO)
@@ -51,7 +54,39 @@ def test_vector_db_client(schema):
     print(items)
 
 
+def test_insert_many():
+    schema_id = 4
+    update_database_layout(schema_id)
+
+    elements = []
+    max_elements = 1000
+    counter = 0
+
+    # see here: https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews?select=books_data.csv
+    with open('/data/kaggle_amazon_book_reviews_3M/books_data.csv') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            #print(json.dumps(row, indent=4))
+            #break
+            try:
+                row['authors'] = json.loads(row['authors'].replace("'", '"')) if row['authors'] else []
+                row['categories'] = json.loads(row['categories'].replace("'", '"')) if row['categories'] else []
+            except json.decoder.JSONDecodeError:
+                print("Json decode error")
+                continue
+            elements.append(row)
+            counter += 1
+            if counter >= max_elements:
+                break
+
+    t1 = time.time()
+    insert_many(schema_id, elements)
+    t2 = time.time()
+    print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(elements))*1000:.2f} ms")
+
+
 if __name__ == "__main__":
-    schema = test_schema_serialization()
+    # schema = test_schema_serialization()
     # test_vector_db_client(schema)
+    test_insert_many()
 

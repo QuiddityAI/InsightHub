@@ -1,4 +1,5 @@
 import logging
+from bson import UuidRepresentation
 
 from pymongo import MongoClient, ReplaceOne, UpdateOne
 from pymongo.errors import BulkWriteError
@@ -6,7 +7,7 @@ from pymongo.errors import BulkWriteError
 from utils.dotdict import DotDict
 
 
-# docker run --name mongo mongodb/mongodb-community-server:latest
+# docker run --name mongo --rm -p 27017:27017 mongodb/mongodb-community-server:latest
 
 mongo_host = "localhost"
 mongo_port = 27017
@@ -16,11 +17,11 @@ mongo_db_name = "visual_data_map"
 class ObjectStorageEngineClient(object):
 
     # using a singleton here to have only one DB connection, but lazy-load it only when used to speed up startup time
-    _instance: "ObjectStorageEngineClient"
+    _instance: "ObjectStorageEngineClient" = None # type: ignore
 
 
     def __init__(self):
-        self.client = MongoClient(mongo_host, mongo_port)
+        self.client = MongoClient(mongo_host, mongo_port, uuidRepresentation='standard')
         self.db = self.client[mongo_db_name]
 
 
@@ -32,7 +33,7 @@ class ObjectStorageEngineClient(object):
 
 
     def get_collection(self, schema_id: int):
-        return self.db[f'schema_{schema_id}']
+        return get_collection_with_numpy_support(f'schema_{schema_id}', self.db)
 
 
     def ensure_schema_exists(self, schema: dict):
@@ -54,7 +55,7 @@ class ObjectStorageEngineClient(object):
         requests = []
         for item in batch:
             # TODO: check if UUID hex string should be converted to BSON UUID value for better performance
-            requests.append(ReplaceOne({"_id": item["id"]}, item))
+            requests.append(ReplaceOne({"_id": item["_id"]}, item, upsert=True))
         try:
             collection.bulk_write(requests, ordered=False)
         except BulkWriteError as bwe:
@@ -87,3 +88,36 @@ class ObjectStorageEngineClient(object):
     def clear_field(self, schema_id, field):
         collection = self.get_collection(schema_id)
         collection.update({}, {"$set": {field: None}})
+
+
+# add support for numpy ndarrays to Mongo:
+# see here: https://stackoverflow.com/a/66410481
+
+import pickle
+from bson.binary import Binary, USER_DEFINED_SUBTYPE
+from bson.codec_options import TypeCodec, TypeRegistry, CodecOptions
+import numpy as np
+
+
+class NumpyCodec(TypeCodec):
+    python_type = np.ndarray # type: ignore
+    bson_type = Binary # type: ignore
+
+    def transform_python(self, value):
+        return Binary(pickle.dumps(value, protocol=2), USER_DEFINED_SUBTYPE)
+
+    def transform_bson(self, value):
+        if value.subtype == USER_DEFINED_SUBTYPE:
+            return pickle.loads(value)
+        return value
+
+def get_codec_options():
+    numpy_codec = NumpyCodec()
+    type_registry = TypeRegistry([numpy_codec])
+    codec_options = CodecOptions(type_registry=type_registry, uuid_representation=UuidRepresentation.STANDARD)
+    return codec_options
+
+def get_collection_with_numpy_support(name, db):
+    codec_options = get_codec_options()
+    return db.get_collection(name, codec_options=codec_options)
+

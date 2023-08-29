@@ -12,14 +12,14 @@ from utils.field_types import FieldType
 qdrant_host = "localhost"
 qdrant_port = 55201  # 6333
 
-# docker run -p 55201:6333 qdrant/qdrant:latest
+# docker run --name qdrant --rm -p 55201:6333 qdrant/qdrant:latest
 # then see http://localhost:55201/dashboard
 
 
 class VectorSearchEngineClient(object):
 
     # using a singleton here to have only one DB connection, but lazy-load it only when used to speed up startup time
-    _instance: "VectorSearchEngineClient"
+    _instance: "VectorSearchEngineClient" = None # type: ignore
 
 
     def __init__(self):
@@ -93,7 +93,7 @@ class VectorSearchEngineClient(object):
                 continue
             if field.field_type not in indexable_field_type_to_qdrant_type:
                 continue
-            if field.is_array:
+            if field.is_array and field.field_type != FieldType.TAG:
                 logging.warning("Array fields are not yet supported for indexing in Qdrant, must be flattened somehow")
                 continue
 

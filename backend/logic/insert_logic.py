@@ -16,8 +16,9 @@ def update_database_layout(schema_id: int):
     object_storage_client.ensure_schema_exists(schema)
     vector_db_client = VectorSearchEngineClient.get_instance()
     index_settings = get_index_settings(schema)
-    for field in index_settings.vector_db_fields:
+    for field in index_settings.indexed_vector_fields:
         vector_db_client.ensure_schema_exists(schema, field, update_params=True, delete_if_params_changed=False)
+    # TODO: do same for text search engine
 
 
 def insert_many(schema_id: int, elements: list[dict]):
@@ -27,9 +28,11 @@ def insert_many(schema_id: int, elements: list[dict]):
         # make sure primary key exists, if not, generate it
         if not "_id" in element:
             if schema.primary_key in element and element[schema.primary_key] != "":
-                element["_id"] = uuid5(uuid.NAMESPACE_URL, element[schema.primary_key]).hex
+                element["_id"] = uuid5(uuid.NAMESPACE_URL, element[schema.primary_key])
             else:
-                element["_id"] = uuid4().hex
+                element["_id"] = uuid4()
+        elif isinstance("_id", str):
+            element["_id"] = uuid.UUID(element["_id"])
 
     # for upsert / update case: get changed fields:
     # changed_fields_total = get_changed_fields(primary_key_field, elements, schema)
@@ -62,7 +65,7 @@ def insert_many(schema_id: int, elements: list[dict]):
                         source_data.append(element[source_field])
                 source_data_total.append(source_data)
 
-            results = pipeline_step.generator_func(source_data_total)
+            results = pipeline_step.generator_function(source_data_total)
 
             for element_index, result in zip(element_indexes, results):
                 elements[element_index][pipeline_step.target_field] = result
@@ -83,12 +86,12 @@ def insert_many(schema_id: int, elements: list[dict]):
         for element in elements:
             if vector_field not in element or element[vector_field] is None:
                 continue
-            ids.append(element['_id'])
+            ids.append(element['_id'].hex)
             vectors.append(element[vector_field])
 
             filtering_attributes = {}
-            for vector_field in index_settings.filtering_fields:
-                filtering_attributes[vector_field] = element.get(vector_field)
+            for filtering_field in index_settings.filtering_fields:
+                filtering_attributes[filtering_field] = element.get(filtering_field)
             payloads.append(filtering_attributes)
 
         vector_db_client.upsert_items(schema.id, vector_field, ids, payloads, vectors)
@@ -103,7 +106,7 @@ def get_index_settings(schema: DotDict):
     indexed_text_fields = []
     filtering_fields = []
 
-    for field in schema.object_fields:
+    for field in schema.object_fields.values():
         if field.is_available_for_search and field.field_type == FieldType.VECTOR:
             indexed_vector_fields.append(field.identifier)
         elif field.is_available_for_search and field.field_type == FieldType.TEXT:
