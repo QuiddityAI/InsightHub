@@ -15,9 +15,20 @@ mongo_db_name = "visual_data_map"
 
 class ObjectStorageEngineClient(object):
 
+    # using a singleton here to have only one DB connection, but lazy-load it only when used to speed up startup time
+    _instance: "ObjectStorageEngineClient"
+
+
     def __init__(self):
         self.client = MongoClient(mongo_host, mongo_port)
         self.db = self.client[mongo_db_name]
+
+
+    @staticmethod
+    def get_instance() -> "ObjectStorageEngineClient":
+        if ObjectStorageEngineClient._instance is None:
+            ObjectStorageEngineClient._instance = ObjectStorageEngineClient()
+        return ObjectStorageEngineClient._instance
 
 
     def get_collection(self, schema_id: int):
@@ -42,7 +53,7 @@ class ObjectStorageEngineClient(object):
         collection = self.get_collection(schema_id)
         requests = []
         for item in batch:
-            # TODO: make sure this is the same UUID used for Vector DB
+            # TODO: check if UUID hex string should be converted to BSON UUID value for better performance
             requests.append(ReplaceOne({"_id": item["id"]}, item))
         try:
             collection.bulk_write(requests, ordered=False)

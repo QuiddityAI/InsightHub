@@ -6,9 +6,11 @@ from flask_cors import CORS
 from werkzeug import serving
 
 from utils.collect_timings import Timings
+from utils.dotdict import DotDict
 
 from logic.postprocess_search_results import enrich_search_results
 from logic.mapping_task import get_or_create_mapping_task, get_mapping_task_results, get_map_details, get_document_details, get_search_results_for_list
+from logic.insert_logic import insert_many, update_database_layout
 
 
 # --- Flask set up: ---
@@ -28,7 +30,25 @@ def log_request(self, *args, **kwargs):
 serving.WSGIRequestHandler.log_request = log_request
 
 
-# --- Routes: ---
+# --- New Routes: ---
+
+@app.route('/api/update_database_layout', methods=['POST'])
+def update_database_layout_route():
+    # TODO: check auth
+    params = DotDict(request.json) # type: ignore
+    update_database_layout(params.schema_id)
+    return "", 204
+
+
+@app.route('/api/insert_many_sync', methods=['POST'])
+def insert_many_sync_route():
+    # TODO: check auth
+    params = DotDict(request.json) # type: ignore
+    insert_many(params.schema_id, params.elements)
+    return "", 204
+
+
+# --- Old Routes: ---
 
 @app.route('/api/query', methods=['POST'])
 def query():
@@ -63,7 +83,7 @@ def _query(params_str):
 
 @app.route('/api/map', methods=['POST'])
 def get_or_create_map_task():
-    params = request.json
+    params = request.json or {}
     query = params.get("query")
     if not query:
         return "query parameter is missing", 400
@@ -75,7 +95,8 @@ def get_or_create_map_task():
 
 @app.route('/api/map/result', methods=['POST'])
 def retrive_mapping_results():
-    task_id = request.json.get("task_id")
+    params = request.json or {}
+    task_id = params.get("task_id")
     result = get_mapping_task_results(task_id)
 
     if result is None:
@@ -86,7 +107,8 @@ def retrive_mapping_results():
 
 @app.route('/api/map/details', methods=['POST'])
 def retrieve_map_details():
-    task_id = request.json.get("task_id")
+    params = request.json or {}
+    task_id = params.get("task_id")
     result = get_map_details(task_id)
 
     if result is None:
@@ -97,8 +119,9 @@ def retrieve_map_details():
 
 @app.route('/api/document/details', methods=['POST'])
 def retrieve_document_details():
-    task_id = request.json.get("task_id")
-    index = request.json.get("index")
+    params = request.json or {}
+    task_id = params.get("task_id")
+    index = params.get("index")
     result = get_document_details(task_id, index)
 
     if result is None:
@@ -108,4 +131,4 @@ def retrieve_document_details():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port='55123', debug=True)
+    app.run(host='0.0.0.0', port=55123, debug=True)

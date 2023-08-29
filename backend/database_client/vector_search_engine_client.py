@@ -18,9 +18,20 @@ qdrant_port = 55201  # 6333
 
 class VectorSearchEngineClient(object):
 
+    # using a singleton here to have only one DB connection, but lazy-load it only when used to speed up startup time
+    _instance: "VectorSearchEngineClient"
+
+
     def __init__(self):
         self.client = QdrantClient(qdrant_host, port=qdrant_port)  # , grpc_port=6334, prefer_grpc=True
         # self.client = QdrantClient(":memory:")
+
+
+    @staticmethod
+    def get_instance() -> "VectorSearchEngineClient":
+        if VectorSearchEngineClient._instance is None:
+            VectorSearchEngineClient._instance = VectorSearchEngineClient()
+        return VectorSearchEngineClient._instance
 
 
     def _get_collection_name(self, schema_id: int, vector_field: str):

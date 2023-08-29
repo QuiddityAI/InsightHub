@@ -6,8 +6,19 @@ typesense_host = "http://localhost:55202"
 
 class TextSearchEngineClient(object):
 
+    # using a singleton here to have only one DB connection, but lazy-load it only when used to speed up startup time
+    _instance: "TextSearchEngineClient"
+
+
     def __init__(self):
         pass
+
+
+    @staticmethod
+    def get_instance() -> "TextSearchEngineClient":
+        if TextSearchEngineClient._instance is None:
+            TextSearchEngineClient._instance = TextSearchEngineClient()
+        return TextSearchEngineClient._instance
 
 
     def ensure_schema_exists(self, schema: dict):
