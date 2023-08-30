@@ -92,6 +92,10 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         ObjectFieldInline,
     ]
 
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+    }
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # only show fields of same schema for source fields:
         if db_field.name in ["primary_key", "thumbnail_image"]:
