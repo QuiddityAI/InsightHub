@@ -299,14 +299,12 @@ class ObjectField(models.Model):
         on_delete=models.PROTECT,
         blank=True,
         null=True)
-    generator_parameters = models.CharField(
+    generator_parameters = models.TextField(
         verbose_name="Generator Parameters",
-        max_length=200,
         blank=True,
         null=True)
-    generating_condition = models.CharField(
+    generating_condition = models.TextField(
         verbose_name="Generating Condition",
-        max_length=200,
         blank=True,
         null=True)
     source_fields = models.ManyToManyField(

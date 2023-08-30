@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.utils.safestring import mark_safe
+from django.forms import Textarea
+from django.db import models
 
 from djangoql.admin import DjangoQLSearchMixin
 from simple_history.admin import SimpleHistoryAdmin
@@ -59,6 +61,10 @@ class ObjectFieldInline(admin.StackedInline):
     model = ObjectField
     readonly_fields = ('changed_at', 'created_at')
     extra = 0
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+    }
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         # only show fields of same schema for source fields:
