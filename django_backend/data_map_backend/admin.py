@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.safestring import mark_safe
 
 from djangoql.admin import DjangoQLSearchMixin
 from simple_history.admin import SimpleHistoryAdmin
@@ -79,7 +80,7 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     search_fields = ('name_plural', 'organization')
     ordering = ['organization', 'name_plural']
 
-    readonly_fields = ('changed_at', 'created_at')
+    readonly_fields = ('changed_at', 'created_at', 'get_field_overview_table_html')
 
     inlines = [
         ObjectFieldInline,
@@ -95,6 +96,27 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
             else:
                 kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
         return super(ObjectSchemaAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_field_overview_table_html(self, obj):
+        header = ["Type", "Identifier", "Search / Filter / Generated", "Generator"]
+        html = """<table style='border: 1px solid; border-collapse: collapse;'>\n<tr>"""
+        for item in header:
+            html += f"<th style='border: 1px solid;'>{item}</th>\n"
+        html += "</tr>\n"
+
+        for field in obj.object_fields.all():
+            html += "<tr style='border: 1px solid;'>\n"
+            html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.field_type + ('[]' if field.is_array else '')}</td>\n"
+            html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.identifier} {'<i>(PK)</i>' if obj.primary_key == field else ''}</td>\n"
+            attributes = f"{'s' if field.is_available_for_search else '-'} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
+            html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
+            html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
+            html += "</tr>\n"
+
+        html += "</table>"
+        return mark_safe(html)
+
+    get_field_overview_table_html.short_description='Field Overview'
 
 
 @admin.register(ObjectField)
