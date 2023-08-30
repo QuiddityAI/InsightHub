@@ -279,11 +279,6 @@ class ObjectField(models.Model):
         verbose_name="Vector Size",
         blank=True,
         null=True)
-    is_required = models.BooleanField(
-        verbose_name="Required",
-        default=False,
-        blank=False,
-        null=False)
     is_available_for_search = models.BooleanField(
         verbose_name="Available for fuzzy text or vector search",
         default=False,
