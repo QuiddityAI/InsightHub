@@ -38,7 +38,8 @@ def get_or_create_mapping_task(params):
             "progress": {
                 "embeddings_available": False,
                 "total_steps": 1,
-                "current_step": 0
+                "current_step": 0,
+                "step_title": "Preparation",
             },
         }
         thread = Thread(target = generate_map, args = (task_id,))
@@ -53,13 +54,14 @@ def generate_map(task_id):
 
     timings = Timings()
 
+    mapping_tasks[task_id]['progress']['step_title'] = "Getting search results"
     search_results = get_search_results_for_map(query.split(" OR "), limit=params.get("max_items_used_for_mapping", 3000), params=params, task_id=task_id)
     timings.log("database query")
 
     # eventually, the vectors should come directly from the database
     # but for the AbsClust database, the vectors need to be added on-demand:
-    add_vectors_to_results(search_results, query, task_params[task_id], mapping_tasks[task_id])
-    timings.log("adding vectors")
+    mapping_tasks[task_id]['progress']['step_title'] = "Generating vectors"
+    add_vectors_to_results(search_results, query, task_params[task_id], mapping_tasks[task_id], timings)
 
     vectors = np.asarray([e["vector"] for e in search_results])  # shape result_count x 768
     distances = [e["distance"] for e in search_results]
@@ -73,6 +75,7 @@ def generate_map(task_id):
             "embeddings_available": working_in_embedding_space,
             "total_steps": total_iterations,
             "current_step": current_iteration,
+            "step_title": "UMAP 2/2: finetuning" if working_in_embedding_space else "UMAP 1/2: pair-wise distances",
         }
 
         if working_in_embedding_space and projections is not None:
@@ -95,17 +98,20 @@ def generate_map(task_id):
     # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
     # Progress might only be available below 4096
 
+    mapping_tasks[task_id]['progress']['step_title'] = "UMAP Preparation"
     target_dimensions = 1 if umap_parameters.get("shape") == "1d_plus_distance_polar" else 2
     umap_task = umap.UMAP(n_components=target_dimensions, random_state=99, min_dist=umap_parameters.get("min_dist", 0.05), n_epochs=umap_parameters.get("n_epochs", 500))
     projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
     timings.log("UMAP fit transform")
 
+    mapping_tasks[task_id]['progress']['step_title'] = "Clusterize results"
     cluster_id_per_point = clusterize_results(projections)
     timings.log("clustering")
 
     if umap_parameters.get("shape") == "1d_plus_distance_polar":
         projections = np.column_stack(polar_to_cartesian(1 - normalize_array(distances), normalize_array(projections[:, 0]) * np.pi * 2))
 
+    mapping_tasks[task_id]['progress']['step_title'] = "Find cluster titles"
     cluster_data = get_cluster_titles(cluster_id_per_point, projections, search_results, timings, cluster_cache)
     timings.log("cluster title")
 

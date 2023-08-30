@@ -32,6 +32,7 @@ export default {
       show_loading_bar: false,
       map_viewport_is_adjusted: false,
       progress: 0.0,
+      progress_step_title: "",
 
       // selection:
       selectedDocumentIdx: -1,
@@ -86,7 +87,8 @@ export default {
       this.map_viewport_is_adjusted = false
       this.show_loading_bar = false
       this.map_viewport_is_adjusted = false
-      this. progress = 0.0
+      this.progress = 0.0
+      this.progress_step_title = ""
 
       // map:
       this.$refs.embedding_map.resetData()
@@ -163,6 +165,7 @@ export default {
 
           that.show_loading_bar = !progress.embeddings_available
           that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
+          that.progress_step_title = progress.step_title
 
           const result = response.data["result"]
 
@@ -265,6 +268,7 @@ export default {
               {{ item.part }}: {{ item.duration.toFixed(2) }} s
             </li>
           </ul>
+          <hr>
           <ul role="list">
             <li v-for="item in map_timings" :key="item.part" class="text-gray-300">
               {{ item.part }}: {{ item.duration.toFixed(2) }} s
@@ -395,9 +399,10 @@ export default {
             ></ObjectDetailsModal>
           </div>
 
-          <div v-if="show_loading_bar" class="flex-1 flex w-full justify-center">
-            <div class="self-center w-20 bg-gray-400 rounded-full h-2.5">
-              <div class="bg-blue-600 h-2.5 rounded-full" :style="{'width': (progress * 100).toFixed(0) + '%'}"></div>
+          <div v-if="show_loading_bar" class="flex-1 flex flex-col w-full justify-center">
+            <span class="self-center text-gray-400 font-bold">{{ progress_step_title }}</span>
+            <div class="self-center w-1/5 mt-2 bg-gray-400/50 rounded-full h-2.5">
+              <div class="bg-blue-400 h-2.5 rounded-full" :style="{'width': (progress * 100).toFixed(0) + '%'}"></div>
             </div>
           </div>
         </div>

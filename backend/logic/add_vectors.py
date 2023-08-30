@@ -6,8 +6,7 @@ from logic.model_client import get_embedding, get_openai_embedding_batch, save_e
 from logic.gensim_w2v_vectorizer import GensimW2VVectorizer
 
 
-def add_vectors_to_results(search_results, query, params, task_results=None):
-    query_embedding = get_embedding(query)
+def add_vectors_to_results(search_results, query, params, task_results, timings):
 
     # using the code below leads to broken vectors for some reasons:
     # texts = [item.get("title", "") + " " + item.get("abstract", "") for item in results_part]
@@ -21,12 +20,12 @@ def add_vectors_to_results(search_results, query, params, task_results=None):
     #save_embedding_cache()
 
     if params["vectorizer"] in ["pubmedbert", "openai"]:
+        query_embedding = get_embedding(query)
         if params["search_strategy"] == "vector" or params["selected_database"] == "pubmed":
             # the vectors are already in the search results
             return
 
-        if task_results is not None:
-            task_results["progress"]["total_steps"] = len(search_results)
+        task_results["progress"]["total_steps"] = len(search_results)
 
         for i, item in enumerate(search_results):
             #item_embedding = embeddings[item["DOI"]]
@@ -34,27 +33,28 @@ def add_vectors_to_results(search_results, query, params, task_results=None):
             item["vector"] = item_embedding
             item["distance"] = np.dot(query_embedding, item_embedding)
 
-            if task_results is not None:
-                task_results["progress"]["current_step"] = i
+            task_results["progress"]["current_step"] = i
+
+        timings.log("adding vectors")
 
     elif params["vectorizer"] == "gensim_w2v_tf_idf":
-
+        task_results["progress"]["step_title"] = "Training model"
         corpus = [item["abstract"] for item in search_results]
         vectorizer = GensimW2VVectorizer()
         vectorizer.prepare(corpus)
+        timings.log("training w2v model")
         query_embedding = vectorizer.get_embedding(query)
 
-        if task_results is not None:
-            task_results["progress"]["total_steps"] = len(search_results)
+        task_results["progress"]["step_title"] = "Generating vectors"
+        task_results["progress"]["total_steps"] = len(search_results)
 
         for i, item in enumerate(search_results):
             item_embedding = vectorizer.get_embedding(item.get("abstract", "")).tolist()
             item["vector"] = item_embedding
             item["distance"] = np.dot(query_embedding, item_embedding)
 
-            if task_results is not None:
-                task_results["progress"]["current_step"] = i
-
+            task_results["progress"]["current_step"] = i
+        timings.log("generating embeddings")
     else:
         logging.error("vectorizer unknown: " + params["vectorizer"])
 
