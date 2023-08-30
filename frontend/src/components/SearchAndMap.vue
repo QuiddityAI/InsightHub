@@ -309,7 +309,7 @@ export default {
       </div>
 
       <!-- content area -->
-      <div class="relative h-screen mr-auto max-w-7xl px-3 py-6 xl:px-12 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0 min-w-0 overflow-hidden pointer-events-none"
+      <div class="relative h-screen mr-auto max-w-7xl px-3 pt-6 pb-20 md:pt-6 md:pb-6 xl:px-12 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0 min-w-0 overflow-hidden pointer-events-none"
         style="grid-auto-rows: minmax(auto, min-content);">
 
         <!-- left column -->

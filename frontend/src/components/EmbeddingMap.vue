@@ -145,6 +145,9 @@ export default {
         zoomSpeed: 0.35, // 35% per mouse wheel event
         minZoom: 0.7,
         bounds: true,
+        onTouch: function(e) {
+          return e.touches.length > 1;  // don't prevent touch propagation if there is just one touch (but when there are two or more to prevent zooming the page itself instead of this area only)
+        }
       });
 
       const that = this
@@ -408,9 +411,11 @@ export default {
       this.highlightedPointIdx = -1
     },
     onMouseDown(event) {
+      if (event.pointerType === "mouse" && event.button != 0) return;
       this.mouseDownPosition = [event.clientX, event.clientY]
     },
     onMouseUp(event) {
+      if (event.pointerType === "mouse" && event.button != 0) return;
       if (this.highlightedPointIdx === -1) return;
       const mouseMovementDistance = math.distance(this.mouseDownPosition, [event.clientX, event.clientY])
       if (mouseMovementDistance > 5) return;
@@ -425,7 +430,7 @@ export default {
 <div>
   <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
-  <div ref="webGlArea" @mousemove="this.updateOnHover" @mousedown.left="onMouseDown" @mouseup.left="onMouseUp" @mouseleave="onMouseLeave" class="fixed w-full h-full"></div>
+  <div ref="webGlArea" @mousemove="this.updateOnHover" @mousedown="onMouseDown" @mouseup="onMouseUp" @touchstart="onMouseDown" @touchend="onMouseUp" @mouseleave="onMouseLeave" class="fixed w-full h-full"></div>
 
   <!-- this div shows a gray outline around the "active area" for debugging purposes -->
   <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
