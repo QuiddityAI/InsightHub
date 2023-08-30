@@ -176,6 +176,11 @@ class ObjectSchema(models.Model):
         max_length=200,
         blank=False,
         null=False)
+    short_description = models.CharField(
+        verbose_name="Short Description",
+        max_length=200,
+        blank=True,
+        null=True)
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
