@@ -111,7 +111,7 @@ export default {
       payload.selected_database = this.selected_database
       payload.query = this.query
 
-      httpClient.post("/api/query", payload)
+      httpClient.post("/data_backend/query", payload)
         .then(function (response) {
           that.search_results = response.data["items"]
           that.search_timings = response.data["timings"]
@@ -126,7 +126,7 @@ export default {
       payload.selected_database = this.selected_database
       payload.query = this.query
 
-      httpClient.post("/api/map", payload)
+      httpClient.post("/data_backend/map", payload)
         .then(function (response) {
           that.map_task_id = response.data["task_id"]
           that.map_viewport_is_adjusted = false
@@ -142,7 +142,7 @@ export default {
       const payload = {
         task_id: this.map_task_id,
       }
-      httpClient.post("/api/map/result", payload)
+      httpClient.post("/data_backend/map/result", payload)
         .then(function (response) {
           const mappingIsFinished = response.data["finished"]
 
@@ -151,7 +151,7 @@ export default {
             that.map_is_in_progess = false
 
             // get map details (titles of all points etc.):
-            httpClient.post("/api/map/details", payload)
+            httpClient.post("/data_backend/map/details", payload)
               .then(function (response) {
                 that.map_item_details = response.data
                 that.$refs.embedding_map.itemDetails = response.data
@@ -218,7 +218,7 @@ export default {
         task_id: this.map_task_id,
         index: this.selectedDocumentIdx,
       }
-      httpClient.post("/api/document/details", payload)
+      httpClient.post("/data_backend/document/details", payload)
         .then(function (response) {
           that.selectedDocumentDetails = response.data
         })

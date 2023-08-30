@@ -22,7 +22,7 @@ CORS(app) # This will enable CORS for all routes
 parent_log_request = serving.WSGIRequestHandler.log_request
 
 def log_request(self, *args, **kwargs):
-    if self.path == '/api/map/result':
+    if self.path == '/data_backend/map/result':
         return
 
     parent_log_request(self, *args, **kwargs)
@@ -32,7 +32,7 @@ serving.WSGIRequestHandler.log_request = log_request
 
 # --- New Routes: ---
 
-@app.route('/api/update_database_layout', methods=['POST'])
+@app.route('/data_backend/update_database_layout', methods=['POST'])
 def update_database_layout_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
@@ -40,7 +40,7 @@ def update_database_layout_route():
     return "", 204
 
 
-@app.route('/api/insert_many_sync', methods=['POST'])
+@app.route('/data_backend/insert_many_sync', methods=['POST'])
 def insert_many_sync_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
@@ -50,7 +50,7 @@ def insert_many_sync_route():
 
 # --- Old Routes: ---
 
-@app.route('/api/query', methods=['POST'])
+@app.route('/data_backend/query', methods=['POST'])
 def query():
     # turn params into string to make it cachable (aka hashable):
     params_str = json.dumps(request.json, indent=2)
@@ -81,7 +81,7 @@ def _query(params_str):
     return jsonify(result)
 
 
-@app.route('/api/map', methods=['POST'])
+@app.route('/data_backend/map', methods=['POST'])
 def get_or_create_map_task():
     params = request.json or {}
     query = params.get("query")
@@ -93,7 +93,7 @@ def get_or_create_map_task():
     return jsonify({"task_id": task_id})
 
 
-@app.route('/api/map/result', methods=['POST'])
+@app.route('/data_backend/map/result', methods=['POST'])
 def retrive_mapping_results():
     params = request.json or {}
     task_id = params.get("task_id")
@@ -105,7 +105,7 @@ def retrive_mapping_results():
     return result
 
 
-@app.route('/api/map/details', methods=['POST'])
+@app.route('/data_backend/map/details', methods=['POST'])
 def retrieve_map_details():
     params = request.json or {}
     task_id = params.get("task_id")
@@ -117,7 +117,7 @@ def retrieve_map_details():
     return result
 
 
-@app.route('/api/document/details', methods=['POST'])
+@app.route('/data_backend/document/details', methods=['POST'])
 def retrieve_document_details():
     params = request.json or {}
     task_id = params.get("task_id")

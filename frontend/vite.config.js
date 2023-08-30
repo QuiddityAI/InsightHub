@@ -5,8 +5,13 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   server: {
     proxy: {
-      "/api": {
+      "/data_backend": {
         target: "http://127.0.0.1:55123",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/organization_backend": {
+        target: "http://127.0.0.1:55125",
         changeOrigin: true,
         secure: false,
       },
