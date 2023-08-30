@@ -62,15 +62,9 @@ export default {
 
       // settings:
       show_settings: false,
-      available_databases: [
-        {id: "absclust", title: "AbsClust Database", subtitle: "60 Million Documents"},
-        {id: "pubmed", title: "PubMed Database", subtitle: "5 Mio. Documents (of 20M)"},
-      ],
-      database_information: {
-        "absclust": "60 Million Documents",
-        "pubmed": "5 Mio. Documents (of 20M)",
-      },
-      selected_database: "absclust",
+      available_databases: [],
+      database_information: {},
+      selected_database: 1,
     }
   },
   methods: {
@@ -249,6 +243,16 @@ export default {
   mounted() {
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
+
+    const that = this
+    httpClient.post("/organization_backend/available_schemas", {organization_id: -1})
+        .then(function (response) {
+          that.available_databases = response.data
+          that.database_information = {}
+          for (const database of that.available_databases){
+            that.database_information[database.id] = database.short_description
+          }
+        })
   },
 }
 
@@ -287,7 +291,7 @@ export default {
           <div class="flex-none rounded-md shadow-sm bg-white p-3  pointer-events-auto">
             <div class="flex justify-between">
               <select v-model="selected_database" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-                <option v-for="item in available_databases" :value="item.id" selected>{{ item.title }}</option>
+                <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
               </select>
               <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[selected_database] }}</span>
             </div>

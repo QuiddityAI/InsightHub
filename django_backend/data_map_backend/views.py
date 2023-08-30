@@ -55,7 +55,7 @@ def get_object_schema(request):
 
     try:
         data = json.loads(request.body)
-        schema_id: str = data["schema_id"]  # TODO: catch error
+        schema_id: int = data["schema_id"]  # TODO: catch error
     except ValueError:
         return HttpResponse(status=400)
 
@@ -66,6 +66,32 @@ def get_object_schema(request):
     schema_dict["object_fields"] = {item['identifier']: item for item in schema_dict["object_fields"]}
 
     result = json.dumps(schema_dict)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def get_available_schemas(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        organization_id: int = data["organization_id"]  # TODO: catch error
+    except ValueError:
+        return HttpResponse(status=400)
+
+    #schemas = ObjectSchema.objects.get(organization=organization_id)
+    schemas = ObjectSchema.objects.all()  # FIXME: returning all for now for testing
+    # TODO: check permission to read this object
+
+    result = []
+    for schema in schemas:
+        result.append({"id": schema.id, "name": schema.name,  # type: ignore
+                       "name_plural": schema.name_plural, "short_description": schema.short_description})
+
+    result = json.dumps(result)
 
     return HttpResponse(result, status=200, content_type='application/json')
 

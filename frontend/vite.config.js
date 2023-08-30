@@ -14,6 +14,7 @@ export default defineConfig({
         target: "http://127.0.0.1:55125",
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/organization_backend/, '/data_map/'),
       },
     },
   },
