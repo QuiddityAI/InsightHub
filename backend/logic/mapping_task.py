@@ -147,9 +147,10 @@ def get_search_results_for_map(queries: list[str], limit: int, params:dict, task
             results += deepcopy(cluster_cache[cluster_uid])
             continue
 
-        if params["selected_database"] == "absclust":
+        absclust_schema_id = 1
+        if params["schema_id"] == absclust_schema_id:
             results_part = get_absclust_search_results(query, limit)
-        elif params["selected_database"] == "pubmed":
+        else:
             vector = get_embedding(query)
             results_part = weaviate_database_client.get_results_for_map(query, vector, limit)
         results += results_part
@@ -168,9 +169,10 @@ def get_search_results_for_list(queries: list[str], limit: int, params: dict):
             results += cluster_cache[cluster_uid][:10]
             continue
 
-        if params["selected_database"] == "absclust":
+        absclust_schema_id = 1
+        if params["schema_id"] == absclust_schema_id:
             results_part = get_absclust_search_results(query, limit)
-        elif params["selected_database"] == "pubmed":
+        else:
             vector = get_embedding(query)
             results_part = weaviate_database_client.get_results_for_list(query, vector, limit)
         results += results_part

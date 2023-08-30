@@ -21,7 +21,8 @@ def add_vectors_to_results(search_results, query, params, task_results, timings)
 
     if params["vectorizer"] in ["pubmedbert", "openai"]:
         query_embedding = get_embedding(query)
-        if params["search_strategy"] == "vector" or params["selected_database"] == "pubmed":
+        absclust_schema_id = 1
+        if params["search_strategy"] == "vector" or params["schema_id"] != absclust_schema_id:
             # the vectors are already in the search results
             return
 

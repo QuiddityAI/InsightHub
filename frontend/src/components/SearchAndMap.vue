@@ -13,6 +13,10 @@ import httpClient from '../api/httpClient';
 
 import { normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
 
+class FieldType {
+  static VECTOR = "VECTOR"
+}
+
 export default {
   data() {
     return {
@@ -64,7 +68,8 @@ export default {
       show_settings: false,
       available_databases: [],
       database_information: {},
-      selected_database: 1,
+      selected_database: null,
+      selected_schema: {},
     }
   },
   methods: {
@@ -102,7 +107,7 @@ export default {
       this.selected_tab = "results"
 
       const payload = this.$refs.parameters_area.get_parameters()
-      payload.selected_database = this.selected_database
+      payload.schema_id = this.selected_database
       payload.query = this.query
 
       httpClient.post("/data_backend/query", payload)
@@ -117,7 +122,7 @@ export default {
       const that = this
 
       const payload = this.$refs.parameters_area.get_parameters()
-      payload.selected_database = this.selected_database
+      payload.schema_id = this.selected_database
       payload.query = this.query
 
       httpClient.post("/data_backend/map", payload)
@@ -240,19 +245,42 @@ export default {
       }
     },
   },
+  watch: {
+    selected_database: function(val) {
+      const that = this
+      httpClient.post("/organization_backend/object_schema", {schema_id: this.selected_database})
+        .then(function (response) {
+          that.selected_schema = response.data
+          that.$refs.parameters_area.available_vector_fields = []
+          for (const field_identifier in that.selected_schema.object_fields) {
+            const field = that.selected_schema.object_fields[field_identifier]
+            //if (field.is_available_for_search && field.field_type == FieldType.VECTOR) {
+            if (field.field_type == FieldType.VECTOR) {
+              that.$refs.parameters_area.available_vector_fields.push(field.identifier)
+            }
+            if (that.$refs.parameters_area.available_vector_fields.length > 0) {
+              that.$refs.parameters_area.selected_vector_field = that.$refs.parameters_area.available_vector_fields[0]
+            } else {
+              that.$refs.parameters_area.selected_vector_field = null
+            }
+          }
+        })
+    }
+  },
   mounted() {
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
 
     const that = this
     httpClient.post("/organization_backend/available_schemas", {organization_id: -1})
-        .then(function (response) {
-          that.available_databases = response.data
-          that.database_information = {}
-          for (const database of that.available_databases){
-            that.database_information[database.id] = database.short_description
-          }
-        })
+      .then(function (response) {
+        that.available_databases = response.data
+        that.database_information = {}
+        for (const database of that.available_databases) {
+          that.database_information[database.id] = database.short_description
+        }
+        that.selected_database = 1
+      })
   },
 }
 
