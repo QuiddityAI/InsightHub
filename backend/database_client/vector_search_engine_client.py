@@ -121,7 +121,7 @@ class VectorSearchEngineClient(object):
         self.client.delete(collection_name, ids)
 
 
-    def get_items_near_vector(self, schema_id: int, vector_field: str, query_vector: list, filter_criteria: dict, limit: int) -> list:
+    def get_items_near_vector(self, schema_id: int, vector_field: str, query_vector: list, filter_criteria: dict, return_vectors: bool, limit: int) -> list:
         # TODO: add with_payload and with_vector parameters to control what is returned
         hits = self.client.search(
             collection_name=self._get_collection_name(schema_id, vector_field),
@@ -136,6 +136,8 @@ class VectorSearchEngineClient(object):
             #         )
             #     ]
             # ),
+            with_payload=False,
+            with_vectors=return_vectors,
             limit=limit,
         )
         return hits

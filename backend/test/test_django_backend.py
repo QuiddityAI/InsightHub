@@ -14,23 +14,19 @@ from logic.extract_pipeline import get_pipeline_steps
 from logic.insert_logic import insert_many, update_database_layout
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 
-logging.root.setLevel(logging.INFO)
+from utils.custom_json_encoder import CustomJSONEncoder
 
-class JSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Callable):
-            return "<function>"
-        return json.JSONEncoder.default(self, obj)
+logging.root.setLevel(logging.INFO)
 
 
 def test_schema_serialization():
-    schema = DotDict(get_object_schema(3))
+    schema = get_object_schema(3)
 
-    print(json.dumps(schema, indent=4, cls=JSONEncoder))
+    print(json.dumps(schema, indent=4, cls=CustomJSONEncoder))
 
     steps = get_pipeline_steps(schema)
 
-    print(json.dumps(steps, indent=4, cls=JSONEncoder))
+    print(json.dumps(steps, indent=4, cls=CustomJSONEncoder))
 
     return schema
 

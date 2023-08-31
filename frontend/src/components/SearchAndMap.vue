@@ -25,6 +25,7 @@ export default {
 
       // results:
       search_results: [],
+      search_list_rendering: {},
       map_task_id: null,
       map_item_details: [],
 
@@ -76,6 +77,7 @@ export default {
     reset_search_results_and_map() {
       // results:
       this.search_results = []
+      this.search_list_rendering = {}
       this.map_task_id = null
       this.map_item_details = []
 
@@ -110,12 +112,17 @@ export default {
       payload.schema_id = this.selected_database
       payload.query = this.query
 
-      httpClient.post("/data_backend/query", payload)
+      httpClient.post("/data_backend/search_list_result", payload)
         .then(function (response) {
           that.search_results = response.data["items"]
+          const rendering = response.data["rendering"]
+          for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
+            rendering[field] = eval(rendering[field])
+          }
+          that.search_list_rendering = rendering
           that.search_timings = response.data["timings"]
 
-          that.request_map()
+          // that.request_map()
         })
     },
     request_map() {
@@ -366,7 +373,7 @@ export default {
               <div v-if="selected_tab === 'results'">
                 <ul v-if="search_results.length !== 0" role="list" class="pt-3">
                   <li v-for="item in search_results" :key="item.title" class="justify-between pb-3">
-                    <ResultListItem :item="item"></ResultListItem>
+                    <ResultListItem :item="item" :rendering="search_list_rendering"></ResultListItem>
                   </li>
                 </ul>
                 <div v-if="search_results.length === 0" class="h-20 flex flex-col text-center place-content-center">

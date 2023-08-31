@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 from bson import UuidRepresentation
 
 from pymongo import MongoClient, ReplaceOne, UpdateOne
@@ -62,12 +63,12 @@ class ObjectStorageEngineClient(object):
             logging.error(bwe.details)
 
 
-    def remove_items(self, schema_id: int, ids: list[str]):
+    def remove_items(self, schema_id: int, ids: list[UUID]):
         collection = self.get_collection(schema_id)
         collection.delete_many({"_id": {"$in": ids}})
 
 
-    def get_items_by_primary_keys(self, schema_id: int, ids: list[str], fields: list[str]) -> list:
+    def get_items_by_ids(self, schema_id: int, ids: list[UUID], fields: list[str]) -> list:
         collection = self.get_collection(schema_id)
         result = collection.find(filter={"_id": {"$in": ids}}, projection=fields)
         return list(result)

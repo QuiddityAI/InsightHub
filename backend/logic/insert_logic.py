@@ -11,7 +11,7 @@ from utils.field_types import FieldType
 
 
 def update_database_layout(schema_id: int):
-    schema = DotDict(get_object_schema(schema_id))
+    schema = get_object_schema(schema_id)
     object_storage_client = ObjectStorageEngineClient.get_instance()
     object_storage_client.ensure_schema_exists(schema)
     vector_db_client = VectorSearchEngineClient.get_instance()
@@ -22,7 +22,7 @@ def update_database_layout(schema_id: int):
 
 
 def insert_many(schema_id: int, elements: list[dict]):
-    schema = DotDict(get_object_schema(schema_id))
+    schema = get_object_schema(schema_id)
 
     for element in elements:
         # make sure primary key exists, if not, generate it

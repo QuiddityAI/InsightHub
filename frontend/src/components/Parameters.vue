@@ -72,6 +72,8 @@ export default {
         search_strategy: this.selected_search_strategy,
         tokenizer: this.selected_tokenizer,
         vectorizer: this.selected_vectorizer,
+        result_list_items_per_page: this.result_list_items_per_page,
+        page: this.result_list_current_page,
         cluster_title_strategy: this.selected_cluster_title_strategy,
         dim_reducer_parameters: {
           shape: this.dim_reducer_parameters.shape.value,

@@ -7,10 +7,13 @@ from werkzeug import serving
 
 from utils.collect_timings import Timings
 from utils.dotdict import DotDict
+from utils.custom_json_encoder import CustomJSONEncoder
 
 from logic.postprocess_search_results import enrich_search_results
 from logic.mapping_task import get_or_create_mapping_task, get_mapping_task_results, get_map_details, get_document_details, get_search_results_for_list
 from logic.insert_logic import insert_many, update_database_layout
+
+from database_client.django_client import get_object_schema
 
 
 # --- Flask set up: ---
@@ -48,37 +51,54 @@ def insert_many_sync_route():
     return "", 204
 
 
-# --- Old Routes: ---
-
-@app.route('/data_backend/query', methods=['POST'])
-def query():
+@app.route('/data_backend/search_list_result', methods=['POST'])
+def get_search_list_result():
     # turn params into string to make it cachable (aka hashable):
     params_str = json.dumps(request.json, indent=2)
     print(params_str)
-    return _query(params_str)
+    return _get_search_list_result(params_str)
 
 
-@lru_cache()
-def _query(params_str):
-    params = json.loads(params_str)
-    query = params.get("query")
-    if not query:
-        return "query parameter is missing", 400
-
+#@lru_cache()
+def _get_search_list_result(params_str):
     timings = Timings()
 
+    params = json.loads(params_str)
+    query = params.get("query")
+    limit_per_page = params.get("result_list_items_per_page")
+    page = params.get("page")
+    schema_id = params.get("schema_id")
+    vector_field = params.get("vector_field")
+    if not all([query, limit_per_page, page is not None, schema_id, vector_field]):
+        return "a parameter is missing", 400
+
     # TODO: currently only first page is returned
-    search_results = get_search_results_for_list(query.split(" OR "), limit=params.get("result_list_items_per_page", 10), params=params)
+    schema = get_object_schema(schema_id)
+    list_rendering = json.loads(schema.result_list_rendering)
+    timings.log("preparation")
+
+    search_results = get_search_results_for_list(schema, vector_field, query.split(" OR "), list_rendering['required_fields'], limit=limit_per_page, page=page)
     timings.log("database query")
 
-    search_results = enrich_search_results(search_results, query)
-    timings.log("enriching results")
+    # search_results = enrich_search_results(search_results, query)
+    # timings.log("enriching results")
+    # -> replaced by context dependent generator (for important words per abstract and highlighting of words)
+
+    print(json.dumps(search_results[0], indent=4, cls=CustomJSONEncoder))
 
     result = {
         "items": search_results,
         "timings": timings.get_timestamps(),
+        "rendering": list_rendering,
     }
-    return jsonify(result)
+    response = app.response_class(
+        response=json.dumps(result, cls=CustomJSONEncoder),
+        mimetype='application/json'
+    )
+    return response
+
+
+# --- Old Routes: ---
 
 
 @app.route('/data_backend/map', methods=['POST'])

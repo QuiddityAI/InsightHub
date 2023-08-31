@@ -2,19 +2,23 @@ from copy import deepcopy
 import logging
 from threading import Thread
 import json
+from uuid import UUID
 
 import numpy as np
 
-# for tsne:
-# from sklearn.manifold import TSNE
-import umap
+# import umap  # imported lazily when used
 
 from utils.collect_timings import Timings
 from utils.helpers import normalize_array, polar_to_cartesian
+from utils.dotdict import DotDict
 
 from database_client.absclust_database_client import get_absclust_search_results, save_search_cache
 from database_client import weaviate_database_client
+from database_client.django_client import get_object_schema
+from database_client.vector_search_engine_client import VectorSearchEngineClient
+from database_client.object_storage_client import ObjectStorageEngineClient
 
+from logic.generator_functions import get_generator_function
 from logic.add_vectors import add_vectors_to_results
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
 from logic.model_client import get_embedding
@@ -100,7 +104,25 @@ def generate_map(task_id):
 
     mapping_tasks[task_id]['progress']['step_title'] = "UMAP Preparation"
     target_dimensions = 1 if umap_parameters.get("shape") == "1d_plus_distance_polar" else 2
+    import umap
     umap_task = umap.UMAP(n_components=target_dimensions, random_state=99, min_dist=umap_parameters.get("min_dist", 0.05), n_epochs=umap_parameters.get("n_epochs", 500))
+    """projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
+  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/umap/u
+map_.py", line 2794, in fit_transform
+    self.fit(X, y, on_progress_callback=on_progress_callback)
+  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/umap/u
+map_.py", line 2704, in fit
+    self.embedding_, aux_data = self._fit_embed_data(
+  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/umap/u
+map_.py", line 2738, in _fit_embed_data
+    return simplicial_set_embedding(
+  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/umap/u
+map_.py", line 1076, in simplicial_set_embedding
+    graph.data[graph.data < (graph.data.max() / float(n_epochs))] = 0.0
+  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/numpy/
+core/_methods.py", line 41, in _amax
+    return umr_maximum(a, axis, None, out, keepdims, initial, where)
+ValueError: zero-size array to reduction operation maximum which has no identity"""
     projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
     timings.log("UMAP fit transform")
 
@@ -160,21 +182,30 @@ def get_search_results_for_map(queries: list[str], limit: int, params:dict, task
 
 
 # TODO: this method shouldn't be here (but currently it has for the cluster_cache)
-def get_search_results_for_list(queries: list[str], limit: int, params: dict):
+def get_search_results_for_list(schema: DotDict, vector_field: str, queries: list[str], fields: list[str], limit: int, page: int):
     results = []
 
     for query in queries:
+        # TODO: re-implement with map model as store for clusters
         if query.startswith("cluster_id: "):
             cluster_uid = query.split("cluster_id: ")[1].split(" (")[0]
             results += cluster_cache[cluster_uid][:10]
             continue
 
         absclust_schema_id = 1
-        if params["schema_id"] == absclust_schema_id:
-            results_part = get_absclust_search_results(query, limit)
-        else:
-            vector = get_embedding(query)
-            results_part = weaviate_database_client.get_results_for_list(query, vector, limit)
+        if schema.id == absclust_schema_id:
+            results += get_absclust_search_results(query, limit)
+            continue
+
+        generator = schema.object_fields[vector_field].generator
+        generator_function = get_generator_function(generator.identifier, schema.object_fields[vector_field].generator_parameters)
+        vector = generator_function([query])[0]
+        vector_db_client = VectorSearchEngineClient.get_instance()
+        criteria = {}  # TODO: add criteria
+        vector_search_result = vector_db_client.get_items_near_vector(schema.id, vector_field, vector, criteria, return_vectors=False, limit=limit)
+        ids = [UUID(item.id) for item in vector_search_result]
+        object_storage_client = ObjectStorageEngineClient.get_instance()
+        results_part = object_storage_client.get_items_by_ids(schema.id, ids, fields=fields)
         results += results_part
 
     save_search_cache()
