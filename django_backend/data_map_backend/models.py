@@ -221,6 +221,10 @@ class ObjectSchema(models.Model):
         verbose_name="Rendering (Detail View)",
         blank=True,
         null=True)
+    map_rendering = models.TextField(
+        verbose_name="Rendering (Map)",
+        blank=True,
+        null=True)
     thumbnail_image = models.ForeignKey(
         verbose_name="Thumbnail Image",
         to='ObjectField',

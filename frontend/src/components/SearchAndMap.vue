@@ -122,7 +122,7 @@ export default {
           that.search_list_rendering = rendering
           that.search_timings = response.data["timings"]
 
-          // that.request_map()
+          that.request_map()
         })
     },
     request_map() {
@@ -156,6 +156,12 @@ export default {
             // no need to get further results:
             that.map_is_in_progess = false
 
+            const rendering = response.data["result"]["rendering"]
+            for (const field of ['hover_label']) {
+              rendering[field] = eval(rendering[field])
+            }
+            that.$refs.embedding_map.rendering = rendering
+
             // get map details (titles of all points etc.):
             httpClient.post("/data_backend/map/details", payload)
               .then(function (response) {
@@ -179,7 +185,7 @@ export default {
             that.$refs.embedding_map.targetPositionsX = result["per_point_data"]["positions_x"]
             that.$refs.embedding_map.targetPositionsY = result["per_point_data"]["positions_y"]
             that.$refs.embedding_map.clusterIdsPerPoint = result["per_point_data"]["cluster_ids"]
-            that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(result["per_point_data"]["citations"])
+            that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(result["per_point_data"]["point_sizes"])
             that.$refs.embedding_map.saturation = normalizeArray(result["per_point_data"]["distances"], 3.0)
 
             that.$refs.embedding_map.clusterData = result["cluster_data"]
@@ -266,9 +272,11 @@ export default {
               that.$refs.parameters_area.available_vector_fields.push(field.identifier)
             }
             if (that.$refs.parameters_area.available_vector_fields.length > 0) {
-              that.$refs.parameters_area.selected_vector_field = that.$refs.parameters_area.available_vector_fields[0]
+              that.$refs.parameters_area.selected_search_vector_field = that.$refs.parameters_area.available_vector_fields[0]
+              that.$refs.parameters_area.selected_map_vector_field = that.$refs.parameters_area.available_vector_fields[0]
             } else {
-              that.$refs.parameters_area.selected_vector_field = null
+              that.$refs.parameters_area.selected_search_vector_field = null
+              that.$refs.parameters_area.selected_map_vector_field = null
             }
           }
         })

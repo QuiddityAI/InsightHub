@@ -9,7 +9,8 @@ export default {
 
       // settings:
       available_vector_fields: [],
-      selected_vector_field: null,
+      selected_search_vector_field: null,
+      selected_map_vector_field: null,
       available_search_strategies: [
         {id: "typesense", title: "Keyword-based (Typesense)", parameters: []},
         {id: "vector", title: "Vector Similarity", parameters: []},
@@ -68,7 +69,8 @@ export default {
   methods: {
     get_parameters() {
       return {
-        vector_field: this.selected_vector_field,
+        search_vector_field: this.selected_search_vector_field,
+        map_vector_field: this.selected_map_vector_field,
         search_strategy: this.selected_search_strategy,
         tokenizer: this.selected_tokenizer,
         vectorizer: this.selected_vectorizer,
@@ -95,8 +97,14 @@ export default {
 <template>
   <div>
     <div class="flex justify-between items-center">
-      <span class="text-gray-500 text-sm">Vector Field:</span>
-      <select v-model="selected_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+      <span class="text-gray-500 text-sm">Search Vector Field:</span>
+      <select v-model="selected_search_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+          <option v-for="item in available_vector_fields" :value="item" selected>{{ item }}</option>
+      </select>
+    </div>
+    <div class="flex justify-between items-center">
+      <span class="text-gray-500 text-sm">Map Vector Field:</span>
+      <select v-model="selected_map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
           <option v-for="item in available_vector_fields" :value="item" selected>{{ item }}</option>
       </select>
     </div>

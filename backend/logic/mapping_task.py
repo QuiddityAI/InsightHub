@@ -53,23 +53,37 @@ def get_or_create_mapping_task(params):
 
 
 def generate_map(task_id):
-    params = task_params[task_id]
-    query = params.get("query")
-
     timings = Timings()
 
+    params = task_params[task_id]
+    query = params.get("query")
+    limit = params.get("max_items_used_for_mapping")
+    schema_id = params.get("schema_id")
+    search_vector_field = params.get("search_vector_field")
+    map_vector_field = params.get("map_vector_field")
+    if not all([query, limit, schema_id, search_vector_field, map_vector_field]):
+        mapping_tasks[task_id]['progress']['step_title'] = "a parameter is missing"
+        raise ValueError("a parameter is missing")
+
+    schema = get_object_schema(schema_id)
+    map_rendering = DotDict(json.loads(schema.map_rendering))
+    additional_fields = map_rendering.required_fields
+    timings.log("preparation")
+
     mapping_tasks[task_id]['progress']['step_title'] = "Getting search results"
-    search_results = get_search_results_for_map(query.split(" OR "), limit=params.get("max_items_used_for_mapping", 3000), params=params, task_id=task_id)
+    search_results = get_search_results_for_map(schema, search_vector_field, map_vector_field, query.split(" OR "), additional_fields, limit)
     timings.log("database query")
 
     # eventually, the vectors should come directly from the database
     # but for the AbsClust database, the vectors need to be added on-demand:
-    mapping_tasks[task_id]['progress']['step_title'] = "Generating vectors"
-    add_vectors_to_results(search_results, query, task_params[task_id], mapping_tasks[task_id], timings)
+    absclust_schema_id = 1
+    if schema.id == absclust_schema_id:
+        mapping_tasks[task_id]['progress']['step_title'] = "Generating vectors"
+        add_vectors_to_results(search_results, query, task_params[task_id], mapping_tasks[task_id], timings)
 
-    vectors = np.asarray([e["vector"] for e in search_results])  # shape result_count x 768
-    distances = [e["distance"] for e in search_results]
-    citations = [e.get("citedby", 0) for e in search_results]
+    vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
+    distances = [e["score"] for e in search_results]
+    point_sizes = [e.get(map_rendering.point_size_field) for e in search_results] if map_rendering.point_size_field else [1] * len(search_results)
     timings.log("convert to numpy")
 
     umap_parameters = params.get("dim_reducer_parameters", {})
@@ -92,9 +106,10 @@ def generate_map(task_id):
                     "positions_y": projections[:, 1].tolist(),
                     "cluster_ids": [-1] * len(distances),
                     "distances": distances,
-                    "citations": citations,
+                    "point_sizes": point_sizes,
                 },
                 "cluster_data": [],
+                "rendering": map_rendering,
                 "timings": [],
             }
             mapping_tasks[task_id]["result"] = result
@@ -134,7 +149,7 @@ ValueError: zero-size array to reduction operation maximum which has no identity
         projections = np.column_stack(polar_to_cartesian(1 - normalize_array(distances), normalize_array(projections[:, 0]) * np.pi * 2))
 
     mapping_tasks[task_id]['progress']['step_title'] = "Find cluster titles"
-    cluster_data = get_cluster_titles(cluster_id_per_point, projections, search_results, timings, cluster_cache)
+    cluster_data = []  # get_cluster_titles(cluster_id_per_point, projections, search_results, timings, cluster_cache)
     timings.log("cluster title")
 
     result = {
@@ -143,16 +158,17 @@ ValueError: zero-size array to reduction operation maximum which has no identity
             "positions_y": projections[:, 1].tolist(),
             "cluster_ids": cluster_id_per_point.tolist(),
             "distances": distances,
-            "citations": citations,
+            "point_sizes": point_sizes,
         },
         "cluster_data": cluster_data,
+        "rendering": map_rendering,
         "timings": timings.get_timestamps(),
     }
 
     # don't store vectors again: (up to 33MB for 1.6k items)
     for item in search_results:
-        if "vector" in item:
-            del item["vector"]
+        if map_vector_field in item:
+            del item[map_vector_field]
 
     map_details[task_id] = search_results
 
@@ -160,7 +176,7 @@ ValueError: zero-size array to reduction operation maximum which has no identity
     mapping_tasks[task_id]["finished"] = True
 
 
-def get_search_results_for_map(queries: list[str], limit: int, params:dict, task_id: str=None):
+def get_search_results_for_map(schema: DotDict, search_vector_field: str, map_vector_field: str, queries: list[str], additional_fields: list[str], limit: int):
     results = []
 
     for query in queries:
@@ -170,19 +186,38 @@ def get_search_results_for_map(queries: list[str], limit: int, params:dict, task
             continue
 
         absclust_schema_id = 1
-        if params["schema_id"] == absclust_schema_id:
-            results_part = get_absclust_search_results(query, limit)
-        else:
-            vector = get_embedding(query)
-            results_part = weaviate_database_client.get_results_for_map(query, vector, limit)
-        results += results_part
+        if schema.id == absclust_schema_id:
+            results += get_absclust_search_results(query, limit)
+            continue
+
+        generator = schema.object_fields[search_vector_field].generator
+        generator_function = get_generator_function(generator.identifier, schema.object_fields[search_vector_field].generator_parameters)
+        query_vector = generator_function([query])[0]
+
+        vector_db_client = VectorSearchEngineClient.get_instance()
+        criteria = {}  # TODO: add criteria
+        return_vectors = search_vector_field == map_vector_field
+        vector_search_result = vector_db_client.get_items_near_vector(schema.id, search_vector_field, query_vector, criteria, return_vectors=return_vectors, limit=limit)
+        ids = [UUID(item.id) for item in vector_search_result]
+
+        object_storage_client = ObjectStorageEngineClient.get_instance()
+        if search_vector_field != map_vector_field:
+            additional_fields.append(map_vector_field)
+        object_storage_result = object_storage_client.get_items_by_ids(schema.id, ids, fields=additional_fields)
+
+        for result_item, vector_search_result in zip(object_storage_result, vector_search_result):
+            result_item['score'] = vector_search_result.score
+            if search_vector_field == map_vector_field:
+                result_item[map_vector_field] = vector_search_result.vector[search_vector_field]
+
+        results += object_storage_result
 
     save_search_cache()
     return results
 
 
 # TODO: this method shouldn't be here (but currently it has for the cluster_cache)
-def get_search_results_for_list(schema: DotDict, vector_field: str, queries: list[str], fields: list[str], limit: int, page: int):
+def get_search_results_for_list(schema: DotDict, vector_field: str, queries: list[str], additional_fields: list[str], limit: int, page: int):
     results = []
 
     for query in queries:
@@ -199,14 +234,16 @@ def get_search_results_for_list(schema: DotDict, vector_field: str, queries: lis
 
         generator = schema.object_fields[vector_field].generator
         generator_function = get_generator_function(generator.identifier, schema.object_fields[vector_field].generator_parameters)
-        vector = generator_function([query])[0]
+        query_vector = generator_function([query])[0]
+
         vector_db_client = VectorSearchEngineClient.get_instance()
         criteria = {}  # TODO: add criteria
-        vector_search_result = vector_db_client.get_items_near_vector(schema.id, vector_field, vector, criteria, return_vectors=False, limit=limit)
+        vector_search_result = vector_db_client.get_items_near_vector(schema.id, vector_field, query_vector, criteria, return_vectors=False, limit=limit)
         ids = [UUID(item.id) for item in vector_search_result]
+
         object_storage_client = ObjectStorageEngineClient.get_instance()
-        results_part = object_storage_client.get_items_by_ids(schema.id, ids, fields=fields)
-        results += results_part
+        object_storage_result = object_storage_client.get_items_by_ids(schema.id, ids, fields=additional_fields)
+        results += object_storage_result
 
     save_search_cache()
 

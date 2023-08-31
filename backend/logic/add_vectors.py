@@ -31,8 +31,8 @@ def add_vectors_to_results(search_results, query, params, task_results, timings)
         for i, item in enumerate(search_results):
             #item_embedding = embeddings[item["DOI"]]
             item_embedding = get_embedding(item.get("title", "") + " " + item.get("abstract", ""), item["DOI"]).tolist()
-            item["vector"] = item_embedding
-            item["distance"] = np.dot(query_embedding, item_embedding)
+            item["pubmed_vector"] = item_embedding
+            item["score"] = np.dot(query_embedding, item_embedding)
 
             task_results["progress"]["current_step"] = i
 
@@ -51,8 +51,8 @@ def add_vectors_to_results(search_results, query, params, task_results, timings)
 
         for i, item in enumerate(search_results):
             item_embedding = vectorizer.get_embedding(item.get("abstract", "")).tolist()
-            item["vector"] = item_embedding
-            item["distance"] = np.dot(query_embedding, item_embedding)
+            item["w2v_vector"] = item_embedding
+            item["score"] = np.dot(query_embedding, item_embedding)
 
             task_results["progress"]["current_step"] = i
         timings.log("generating embeddings")

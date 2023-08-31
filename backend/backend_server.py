@@ -68,8 +68,8 @@ def _get_search_list_result(params_str):
     limit_per_page = params.get("result_list_items_per_page")
     page = params.get("page")
     schema_id = params.get("schema_id")
-    vector_field = params.get("vector_field")
-    if not all([query, limit_per_page, page is not None, schema_id, vector_field]):
+    search_vector_field = params.get("search_vector_field")
+    if not all([query, limit_per_page, page is not None, schema_id, search_vector_field]):
         return "a parameter is missing", 400
 
     # TODO: currently only first page is returned
@@ -77,7 +77,7 @@ def _get_search_list_result(params_str):
     list_rendering = json.loads(schema.result_list_rendering)
     timings.log("preparation")
 
-    search_results = get_search_results_for_list(schema, vector_field, query.split(" OR "), list_rendering['required_fields'], limit=limit_per_page, page=page)
+    search_results = get_search_results_for_list(schema, search_vector_field, query.split(" OR "), list_rendering['required_fields'], limit=limit_per_page, page=page)
     timings.log("database query")
 
     # search_results = enrich_search_results(search_results, query)
