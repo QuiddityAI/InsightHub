@@ -1,10 +1,11 @@
 
 import requests
+import os
 
 from utils.dotdict import DotDict
 
 
-backend_url = "http://localhost:55125"
+backend_url = os.getenv("organization_backend_host", "http://localhost:55125")
 
 
 def get_object_schema(schema_id: int) -> DotDict:

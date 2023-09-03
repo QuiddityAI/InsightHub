@@ -1,7 +1,7 @@
+import os
 
 
-
-typesense_host = "http://localhost:55202"
+typesense_host = os.getenv("search_engine_host", "http://localhost:55202")
 
 
 class TextSearchEngineClient(object):

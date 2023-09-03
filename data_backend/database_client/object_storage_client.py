@@ -1,5 +1,7 @@
 import logging
 from uuid import UUID
+import os
+
 from bson import UuidRepresentation
 
 from pymongo import MongoClient, ReplaceOne, UpdateOne
@@ -10,7 +12,7 @@ from utils.dotdict import DotDict
 
 # docker run --name mongo --rm -p 27017:27017 mongodb/mongodb-community-server:latest
 
-mongo_host = "localhost"
+mongo_host = os.getenv("object_storage_host", "localhost")
 mongo_port = 27017
 mongo_db_name = "visual_data_map"
 

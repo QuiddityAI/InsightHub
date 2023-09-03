@@ -1,4 +1,5 @@
 import logging
+import os
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -9,10 +10,10 @@ from utils.dotdict import DotDict
 from utils.field_types import FieldType
 
 
-qdrant_host = "localhost"
-qdrant_port = 55201  # 6333
+qdrant_host = os.getenv("vector_database_host", "localhost")
+qdrant_port = 6333
 
-# docker run --name qdrant --rm -p 55201:6333 qdrant/qdrant:latest
+# docker run --name qdrant --rm -p 6333:6333 qdrant/qdrant:latest
 # then see http://localhost:55201/dashboard
 
 

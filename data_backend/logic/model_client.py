@@ -39,7 +39,7 @@ def get_pubmedbert_embedding(text: str, text_id: str = None):
     if text_id and text_id in embedding_cache[config_name]:
         return embedding_cache[config_name][text_id]
 
-    url = 'http://localhost:55180/api/embedding'
+    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding'
     data = {
         'text': text,
         'model': embedding_model,
