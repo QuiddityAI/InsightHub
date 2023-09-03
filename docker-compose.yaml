@@ -65,14 +65,30 @@ services:
       - opensearch_data:/usr/share/opensearch/data
     ports:
       - "9200:9200"
+      - "9600:9600"
     environment:
       - discovery.type=single-node
+      - http.port=9200
+      - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358,http://tim-desktop:1358
+      - http.cors.enabled=true
+      - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
+      - http.cors.allow-credentials=true
   mongo:
     image: "mongodb/mongodb-community-server:latest"
     volumes:
       - monogdb_data:/data/db
     ports:
       - "27017:27017"
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    ports:
+      - 5601:5601
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
+  dejavu:
+    image: appbaseio/dejavu
+    ports:
+      - 1358:1358
 volumes:
   model_cache:
   qdrant_storage:
