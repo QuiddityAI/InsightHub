@@ -4,6 +4,7 @@ from uuid import uuid4, uuid5
 from database_client.django_client import get_object_schema
 from database_client.object_storage_client import ObjectStorageEngineClient
 from database_client.vector_search_engine_client import VectorSearchEngineClient
+from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.extract_pipeline import get_pipeline_steps
 
 from utils.dotdict import DotDict
@@ -18,7 +19,8 @@ def update_database_layout(schema_id: int):
     index_settings = get_index_settings(schema)
     for field in index_settings.indexed_vector_fields:
         vector_db_client.ensure_schema_exists(schema, field, update_params=True, delete_if_params_changed=False)
-    # TODO: do same for text search engine
+    search_engine_client = TextSearchEngineClient.get_instance()
+    search_engine_client.ensure_schema_exists(schema)
 
 
 def insert_many(schema_id: int, elements: list[dict]):
@@ -96,7 +98,19 @@ def insert_many(schema_id: int, elements: list[dict]):
 
         vector_db_client.upsert_items(schema.id, vector_field, ids, payloads, vectors)
 
-    # TODO: do same for text search engine
+    text_search_engine_ids = []
+    text_search_engine_items = []
+    for element in elements:
+        payload = {}
+        text_search_engine_ids.append(element['_id'])
+        for text_field in index_settings.indexed_text_fields:
+            payload[text_field] = element.get(text_field)
+        for filtering_field in index_settings.filtering_fields:
+            payload[filtering_field] = element.get(filtering_field)
+        text_search_engine_items.append(payload)
+
+    search_engine_client = TextSearchEngineClient.get_instance()
+    search_engine_client.upsert_items(schema.id, text_search_engine_ids, text_search_engine_items)
 
     return
 

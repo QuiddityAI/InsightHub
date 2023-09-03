@@ -7,6 +7,8 @@ import time
 import csv
 import logging
 from typing import Callable
+
+import tqdm
 from utils.dotdict import DotDict
 
 from database_client.django_client import get_object_schema
@@ -55,13 +57,13 @@ def test_insert_many():
     update_database_layout(schema_id)
 
     elements = []
-    max_elements = 1000
+    max_elements = 300000
     counter = 0
 
     # see here: https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews?select=books_data.csv
     with open('/data/kaggle_amazon_book_reviews_3M/books_data.csv') as csvfile:
         reader = csv.DictReader(csvfile)
-        for row in reader:
+        for row in tqdm.tqdm(reader, total=240000):
             #print(json.dumps(row, indent=4))
             #break
             try:
@@ -75,10 +77,12 @@ def test_insert_many():
             if counter >= max_elements:
                 break
 
-    t1 = time.time()
-    insert_many(schema_id, elements)
-    t2 = time.time()
-    print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(elements))*1000:.2f} ms")
+            if counter % 512 == 0:
+                t1 = time.time()
+                insert_many(schema_id, elements)
+                t2 = time.time()
+                print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(elements))*1000:.2f} ms")
+                elements = []
 
 
 if __name__ == "__main__":
