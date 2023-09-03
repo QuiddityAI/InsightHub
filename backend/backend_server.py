@@ -35,6 +35,38 @@ serving.WSGIRequestHandler.log_request = log_request
 
 # --- New Routes: ---
 
+# search needs:
+#   input: text, image, document (if generator in same embd space avail.)
+#   input: negative query (text, image, document) or direction e.g. for image as a word
+#   where: vector fields (threshold algorithm (knee)), text fields (fix typo, synonyms etc.)
+#   enrich results (only for map?, with neural search per text result etc.)
+#   filter results (remove if not both vectors are similar to query etc.)
+#   re-score algorithm (tokenizer, aggregation or generator)
+#   near-duplicate removal or grouping
+#   - How to handle negative queries?
+# list only: rank fusion (based on new score, or alternating),
+#   highlighting (tokenizer) (on-demand for map, means tf-idf corpus should be kept)
+# long list search: updated with map features
+# map needs:
+#   input: existing vector or set of text fields for w2v
+#   multiply with direction word (generator, w2v)
+#   umap / t-SNE
+#   hdbscan / custom clusterizer
+#   cluster title (tf-idf, generative ai)
+#   visual settings (color, size, etc.)
+
+# user settings: fields to search, enrich?, map field(s), cluster size
+
+# How to make it customizable and still offer default search and map for schemas?
+# -> as currently, offer all settings in UI and select basic defaults based on schema
+# How to apply search and map settings to different schemas (with different field names etc.)?
+# Schema could have default set of vector and text search / map fields, but
+# what if there should be two search / map settings for the same schema?
+# E.g. for products, search in title only or in reviews, map based on image or on reviews
+# Should search and map settings be separated? Would map always use same search settings as list?
+# map might be enriched much more, clustering might be done on different aspect (only image, not title)
+# given 100 products all called "white t-shirt", search by title but map by image
+
 @app.route('/data_backend/update_database_layout', methods=['POST'])
 def update_database_layout_route():
     # TODO: check auth

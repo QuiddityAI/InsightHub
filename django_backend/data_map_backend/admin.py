@@ -17,7 +17,6 @@ class EmbeddingSpaceAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     list_display = ('id', 'name')
     list_display_links = ('id', 'name')
     search_fields = ('name',)
-    date_hierarchy = 'created_at'
     ordering = ['name']
 
     readonly_fields = ('changed_at', 'created_at')
@@ -26,10 +25,9 @@ class EmbeddingSpaceAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 @admin.register(Generator)
 class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'requires_context')
     list_display_links = ('id', 'name')
     search_fields = ('name',)
-    date_hierarchy = 'created_at'
     ordering = ['name']
 
     readonly_fields = ('changed_at', 'created_at')
@@ -50,7 +48,6 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     list_display = ('id', 'name')
     list_display_links = ('id', 'name')
     search_fields = ('name',)
-    date_hierarchy = 'created_at'
     ordering = ['name']
 
     readonly_fields = ('changed_at', 'created_at')

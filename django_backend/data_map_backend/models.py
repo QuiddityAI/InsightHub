@@ -80,6 +80,11 @@ class Generator(models.Model):
         editable=False,
         blank=False,
         null=False)
+    requires_context = models.BooleanField(
+        verbose_name="Requires context",
+        default=False,
+        blank=False,
+        null=False)
     embedding_space = models.ForeignKey(
         verbose_name="Embedding Space",
         to=EmbeddingSpace,
