@@ -10,6 +10,8 @@ COPY Pipfile.lock /app
 RUN pipenv requirements > requirements.txt \
     && pip install --no-cache-dir -r requirements.txt
 RUN chown -R appuser /app
+RUN mkdir -p /home/appuser/.cache/huggingface
+RUN chmod -R a+rw /home/appuser/.cache/huggingface
 
 FROM cuda_python_env as model_server
 EXPOSE 55180
