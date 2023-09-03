@@ -6,6 +6,7 @@ services:
       dockerfile: ./docker/model_server.Dockerfile
     volumes:
       - ./:/source_code/
+      - model_cache:/home/appuser/.cache/huggingface/
     ports:
       - "55180:55180"
     deploy:
@@ -54,15 +55,26 @@ services:
       - data_backend_host=http://data-backend:55123
   qdrant:
     image: "qdrant/qdrant:latest"
+    volumes:
+      - qdrant_storage:/qdrant/storage
     ports:
       - "6333:6333"
   opensearch:
     image: "opensearchproject/opensearch:latest"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
     ports:
       - "9200:9200"
     environment:
       - discovery.type=single-node
   mongo:
     image: "mongodb/mongodb-community-server:latest"
+    volumes:
+      - monogdb_data:/data/db
     ports:
       - "27017:27017"
+volumes:
+  model_cache:
+  qdrant_storage:
+  opensearch_data:
+  monogdb_data:
