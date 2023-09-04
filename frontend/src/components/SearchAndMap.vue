@@ -152,15 +152,27 @@ export default {
         .then(function (response) {
           const mappingIsFinished = response.data["finished"]
 
+          const result = response.data["result"]
+
           if (mappingIsFinished) {
             // no need to get further results:
             that.map_is_in_progess = false
 
-            const rendering = response.data["result"]["rendering"]
+            const rendering = result["rendering"]
             for (const field of ['hover_label']) {
               rendering[field] = eval(rendering[field])
             }
             that.$refs.embedding_map.rendering = rendering
+
+            if (result["texture_atlas_path"]) {
+              const image = new Image()
+              image.src = 'data_backend/map/texture_atlas/' + result["texture_atlas_path"]
+              image.onload = () => {
+                that.$refs.embedding_map.textureAtlas = image
+                that.$refs.embedding_map.updateGeometry()
+              }
+
+            }
 
             // get map details (titles of all points etc.):
             httpClient.post("/data_backend/map/details", payload)
@@ -178,8 +190,6 @@ export default {
           that.show_loading_bar = !progress.embeddings_available
           that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
           that.progress_step_title = progress.step_title
-
-          const result = response.data["result"]
 
           if (result) {
             that.$refs.embedding_map.targetPositionsX = result["per_point_data"]["positions_x"]

@@ -23,6 +23,7 @@ uniform float devicePixelRatio;
 
 out vec3 diffuseColor;
 out float clusterIdVar;
+flat out int pointIdxVar;
 out float isHighlighted;
 out float isSelected;
 out float saturationVar;
@@ -38,6 +39,7 @@ void main() {
     // pass data to fragment shader by setting varying variables:
     clusterIdVar = clusterId;
     saturationVar = saturation;
+    pointIdxVar = gl_VertexID;
     isHighlighted = (gl_VertexID == highlightedPointIdx) ? 1.0 : 0.0;
     isSelected = (gl_VertexID == selectedPointIdx) ? 1.0 : 0.0;
 

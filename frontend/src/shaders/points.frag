@@ -3,11 +3,13 @@
 precision highp float;
 
 in float clusterIdVar;
+flat in int pointIdxVar;
 in float isHighlighted;
 in float isSelected;
 in float saturationVar;
 in vec3 diffuseColor;
 
+uniform sampler2D textureAtlas;
 uniform float zoom;
 uniform vec2 viewportSize;
 uniform vec2 lightPosition;
@@ -55,6 +57,12 @@ void main() {
     // noise:
     float noise = 0.1 * rand(floor(posFromCenter * 40.0)/40.0);
 
-    FragColor.rgb = diffuseColor + 0.6 * vec3(specColor) + noise + edgeDarkness;
+    // texture:
+    float uvRow = float(int(pointIdxVar) / (2048 / 32) + 1) / 64.0;
+    float uvCol = float(int(pointIdxVar) % (2048 / 32)) / 64.0;
+    float uvFactor = (2048.0/32.0);
+    vec3 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + posFromBottomLeft / uvFactor).rgb;
+
+    FragColor.rgb = tex; //diffuseColor + 0.6 * vec3(specColor) + noise + edgeDarkness;
     FragColor.a = circleArea * 0.7;
 }

@@ -6,7 +6,7 @@
 
 import panzoom from 'panzoom';
 
-import { Renderer, Camera, Geometry, Program, Mesh, Transform } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
+import { Renderer, Camera, Geometry, Program, Mesh, Transform, Texture } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
 import * as math from 'mathjs'
 
 import pointsVertexShader from '../shaders/points.vert?raw'
@@ -30,6 +30,7 @@ export default {
       itemDetails: [],
       clusterData: [],
       rendering: {},
+      textureAtlas: null,
 
       // internal:
       currentPositionsX: [],
@@ -62,6 +63,7 @@ export default {
       glProgramShadows: null,
       glMeshShadows: null,
       glScene: null,
+      glTexture: null,
       lightPosition: [0.5, 1.5],
     }
   },
@@ -92,6 +94,7 @@ export default {
 
       this.itemDetails = []
       this.clusterData = []
+      this.textureAtlas = null
 
       this.selectedPointIdx = -1
       this.highlightedPointIdx = -1
@@ -341,6 +344,13 @@ export default {
           pointSize: { size: 1, data: new Float32Array(this.pointSizes) },
       });
 
+      this.glTexture = new Texture(this.glContext, {
+        generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.NEAREST
+      });
+      if (this.textureAtlas) {
+        this.glTexture.image = this.textureAtlas;
+      }
+
       this.glProgram = new Program(this.glContext, {
           vertex: pointsVertexShader,
           fragment: pointsFragmentShader,
@@ -371,6 +381,7 @@ export default {
         lightPosition: { value: this.lightPosition },
         devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
         selectedPointIdx: { value: this.selectedPointIdx },
+        textureAtlas: { value: this.glTexture },
       }
     },
     updateUniforms() {
