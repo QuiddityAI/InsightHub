@@ -52,7 +52,7 @@ def test_vector_db_client(schema):
     print(items)
 
 
-def test_insert_many():
+def test_insert_many_books():
     schema_id = 4
     update_database_layout(schema_id)
 
@@ -85,8 +85,35 @@ def test_insert_many():
                 elements = []
 
 
+def test_insert_many_fashion():
+    schema_id = 5
+    update_database_layout(schema_id)
+
+    elements = []
+    max_elements = 10000
+    counter = 0
+
+    # see here: https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-dataset
+    with open('/data/kaggle_fashion_44k/styles.csv') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in tqdm.tqdm(reader, total=max_elements):
+            row['image'] = f'/data/kaggle_fashion_44k/images/{row["id"]}.jpg'
+            elements.append(row)
+            counter += 1
+            if counter >= max_elements:
+                break
+
+            if counter % 512 == 0:
+                t1 = time.time()
+                insert_many(schema_id, elements)
+                t2 = time.time()
+                print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(elements))*1000:.2f} ms")
+                elements = []
+
+
 if __name__ == "__main__":
     # schema = test_schema_serialization()
     # test_vector_db_client(schema)
-    test_insert_many()
+    # test_insert_many_books()
+    test_insert_many_fashion()
 

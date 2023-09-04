@@ -3,6 +3,7 @@ from uuid import UUID
 import os
 
 from bson import UuidRepresentation
+from bson.errors import InvalidDocument
 
 from pymongo import MongoClient, ReplaceOne, UpdateOne
 from pymongo.errors import BulkWriteError
@@ -63,6 +64,10 @@ class ObjectStorageEngineClient(object):
             collection.bulk_write(requests, ordered=False)
         except BulkWriteError as bwe:
             logging.error(bwe.details)
+        except InvalidDocument as error:
+            # FIXME: this can happen when a key is None, but the document should still be inserted then
+            logging.error(error)
+            logging.error(error.args)
 
 
     def remove_items(self, schema_id: int, ids: list[UUID]):
