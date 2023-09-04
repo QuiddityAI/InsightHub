@@ -1,7 +1,8 @@
 from functools import lru_cache
 import json
+import os
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug import serving
 
@@ -167,6 +168,14 @@ def retrieve_map_details():
         return "task_id not found", 404
 
     return result
+
+
+@app.route('/data_backend/map/texture_atlas/<image_path>', methods=['GET'])
+def retrieve_texture_atlas(image_path):
+    if image_path is None or not os.path.exists(image_path):
+        return "texture atlas not found", 404
+
+    return send_from_directory('.', image_path)
 
 
 @app.route('/data_backend/document/details', methods=['POST'])

@@ -31,6 +31,7 @@ services:
       dockerfile: ./docker/data_backend.Dockerfile
     volumes:
       - ./:/source_code/
+      - /data:/data
     ports:
       - "55123:55123"
     depends_on:

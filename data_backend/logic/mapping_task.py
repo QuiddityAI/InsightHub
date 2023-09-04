@@ -3,8 +3,10 @@ import logging
 from threading import Thread
 import json
 from uuid import UUID
+import os
 
 import numpy as np
+from PIL import Image
 
 # import umap  # imported lazily when used
 
@@ -67,7 +69,9 @@ def generate_map(task_id):
 
     schema = get_object_schema(schema_id)
     map_rendering = DotDict(json.loads(schema.map_rendering))
-    additional_fields = map_rendering.required_fields
+    additional_fields = map_rendering.required_fields or []
+    if schema.thumbnail_image:
+        additional_fields.append(schema.thumbnail_image)
     timings.log("preparation")
 
     mapping_tasks[task_id]['progress']['step_title'] = "Getting search results"
@@ -164,6 +168,7 @@ ValueError: zero-size array to reduction operation maximum which has no identity
         "rendering": map_rendering,
         "timings": timings.get_timestamps(),
     }
+    mapping_tasks[task_id]["result"] = result
 
     # don't store vectors again: (up to 33MB for 1.6k items)
     for item in search_results:
@@ -171,8 +176,32 @@ ValueError: zero-size array to reduction operation maximum which has no identity
             del item[map_vector_field]
 
     map_details[task_id] = search_results
+    timings.log("store result")
 
-    mapping_tasks[task_id]["result"] = result
+    # texture atlas:
+    thumbnail_field = schema.thumbnail_image
+    if thumbnail_field:
+        atlas = Image.new("RGBA", (2048, 2048))
+        for i, item in enumerate(search_results):
+            if item[thumbnail_field] and os.path.exists(item[thumbnail_field]):
+                image = Image.open(item[thumbnail_field])
+                image.thumbnail((32, 32))
+                image = image.resize((32, 32))
+                imagesPerLine = (2048/32)
+                posRow: int = int(i / imagesPerLine)
+                posCol: int = int(i % imagesPerLine)
+                atlas.paste(image, (posCol * 32, posRow * 32))
+                image.close()
+            else:
+                logging.warning(f"Image file doesn't exist: {item[thumbnail_field]}")
+                # FIXME: needs to be a different image each time
+                # textures.append(['thumbnail_placeholder.png', 32, 32])
+        atlas_filename = f"atlas_{query}.png"
+        atlas.save(atlas_filename)
+        mapping_tasks[task_id]["result"]["texture_atlas_path"] = atlas_filename
+
+    timings.log("generating texture atlas")
+
     mapping_tasks[task_id]["finished"] = True
 
 
