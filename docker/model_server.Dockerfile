@@ -5,6 +5,8 @@ RUN pip install --upgrade pip wheel
 RUN pip install pipenv
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
+COPY docker/docker_container_base_python_packages.txt /app
+RUN pip install --no-cache-dir -r docker_container_base_python_packages.txt
 COPY Pipfile /app
 COPY Pipfile.lock /app
 RUN pipenv requirements > requirements.txt \

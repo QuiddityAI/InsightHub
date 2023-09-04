@@ -31,3 +31,4 @@ openai_credentials.json
 # Django
 db.sqlite3
 static_root/
+umap_with_progress_callback-add_progress_callback_0.5.3.zip
