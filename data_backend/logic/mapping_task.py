@@ -4,6 +4,7 @@ from threading import Thread
 import json
 from uuid import UUID
 import os
+from functools import lru_cache
 
 import numpy as np
 from PIL import Image
@@ -14,7 +15,7 @@ from utils.collect_timings import Timings
 from utils.helpers import normalize_array, polar_to_cartesian
 from utils.dotdict import DotDict
 
-from database_client.absclust_database_client import get_absclust_search_results, save_search_cache
+from database_client.absclust_database_client import get_absclust_search_results, save_search_cache, get_absclust_item_by_id
 from database_client import weaviate_database_client
 from database_client.django_client import get_object_schema
 from database_client.vector_search_engine_client import VectorSearchEngineClient
@@ -279,7 +280,7 @@ def get_search_results_for_list(schema: DotDict, vector_field: str, queries: lis
     return results
 
 
-def get_mapping_task_results(task_id):
+def get_mapping_task_results(task_id) -> dict | None:
     if task_id not in mapping_tasks:
         logging.warning("task_id not found")
         return None
@@ -326,3 +327,17 @@ def get_document_details(task_id, index):
         return None
 
     return map_details[task_id][index]
+
+
+@lru_cache
+def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str]):
+    absclust_schema_id = 1
+    if schema_id == absclust_schema_id:
+        return get_absclust_item_by_id(item_id)
+
+    object_storage_client = ObjectStorageEngineClient.get_instance()
+    items = object_storage_client.get_items_by_ids(schema_id, [UUID(item_id)], fields=fields)
+    if not items:
+        return None
+
+    return items[0]

@@ -48,24 +48,12 @@ export default {
       // tabs:
       selected_tab: "map",
 
-      // lists:
-      lists: {
-        default: {
-          title: "Favorites",
-          positives: [{title: "Foo Bar", issued_year: 2017, container_title: "Some Journal"}, {title: "Foo Bar", issued_year: 2017, container_title: "Some Journal"}],
-          negatives: [{title: "Foo Bar", issued_year: 2017, container_title: "Some Journal"}],
-        },
-        mxene_research: {
-          title: "MXene Research",
-          positives: [],
-          negatives: [],
-        },
-        cancer_research: {
-          title: "Cancer Research",
-          positives: [],
-          negatives: [],
-        },
-      },
+      // collections:
+      collections: [],
+      last_used_collection_id: null,
+
+      // stored maps:
+      stored_maps: [],
 
       // settings:
       show_settings: false,
@@ -287,6 +275,105 @@ export default {
         ]
       }
     },
+    create_item_collection(name) {
+      const that = this
+      const create_collection_body = {
+        user_id: 1,  // FIXME: hardcoded
+        schema_id: this.selected_database,
+        name: name,
+      }
+      httpClient.post("/organization_backend/add_item_collection", create_collection_body)
+        .then(function (response) {
+          that.collections.push(response.data)
+        })
+    },
+    delete_item_collection(collection_id) {
+      const that = this
+      const delete_collection_body = {
+        collection_id: collection_id,
+      }
+      httpClient.post("/organization_backend/delete_item_collection", delete_collection_body)
+        .then(function (response) {
+          let index_to_be_removed = null
+          let i = 0
+          for (const collection of that.collections) {
+            if (collection.id == collection_id) {
+              index_to_be_removed = i
+              break
+            }
+            i += 1
+          }
+          if (index_to_be_removed !== null) {
+            that.collections.splice(index_to_be_removed, 1)
+          }
+        })
+    },
+    add_item_to_collection(item_index, collection_id, is_positive) {
+      const that = this
+      let collection = null
+      for (const col of this.collections) {
+        if (col.id === collection_id) {
+          collection = col
+          break
+        }
+      }
+      if (!collection) return;
+
+      this.last_used_collection_id = collection.id
+      const item_id = this.map_item_details[item_index]._id
+      if (is_positive) {
+        if (collection.positive_ids.includes(item_id)) return;
+      } else {
+        if (collection.negative_ids.includes(item_id)) return;
+      }
+      const add_item_to_collection_body = {
+        collection_id: collection.id,
+        item_id: item_id,
+        is_positive: is_positive,
+      }
+      httpClient.post("/organization_backend/add_item_to_collection", add_item_to_collection_body)
+        .then(function (response) {
+          if (is_positive) {
+            collection.positive_ids.push(item_id)
+          } else {
+            collection.negative_ids.push(item_id)
+          }
+        })
+    },
+    store_current_map() {
+      const that = this
+      const store_map_body = {
+        user_id: 1,  // FIXME: hardcoded
+        schema_id: this.selected_database,
+        name: this.query,
+        task_id: this.map_task_id,
+      }
+      httpClient.post("/data_backend/map/store", store_map_body)
+        .then(function (response) {
+          that.stored_maps.push(response.data)
+        })
+    },
+    delete_stored_map(stored_map_id) {
+      const that = this
+      const delete_stored_map_body = {
+        stored_map_id: stored_map_id,
+      }
+      httpClient.post("/organization_backend/delete_stored_map", delete_stored_map_body)
+        .then(function (response) {
+          let index_to_be_removed = null
+          let i = 0
+          for (const map of that.stored_maps) {
+            if (map.id == stored_map_id) {
+              index_to_be_removed = i
+              break
+            }
+            i += 1
+          }
+          if (index_to_be_removed !== null) {
+            that.stored_maps.splice(index_to_be_removed, 1)
+          }
+        })
+    },
   },
   watch: {
     selected_database: function(val) {
@@ -300,6 +387,26 @@ export default {
       httpClient.post("/organization_backend/get_search_history", get_history_body)
         .then(function (response) {
           that.search_history = response.data
+        })
+
+      this.collections = []
+      const get_collections_body = {
+        user_id: 1,  // FIXME: hardcoded
+        schema_id: this.selected_database,
+      }
+      httpClient.post("/organization_backend/get_item_collections", get_collections_body)
+        .then(function (response) {
+          that.collections = response.data
+        })
+
+      this.stored_maps = []
+      const get_stored_maps_body = {
+        user_id: 1,  // FIXME: hardcoded
+        schema_id: this.selected_database,
+      }
+      httpClient.post("/organization_backend/get_stored_maps", get_stored_maps_body)
+        .then(function (response) {
+          that.stored_maps = response.data
         })
 
       httpClient.post("/organization_backend/object_schema", {schema_id: this.selected_database})
@@ -386,7 +493,7 @@ export default {
                 placeholder="Search"
                 class="w-full rounded-md border-0 py-1.5 text-gray-900 ring-1
               ring-inset ring-gray-300 placeholder:text-gray-400
-              focus:ring-2 focus:ring-inset focus:ring-indigo-600
+              focus:ring-2 focus:ring-inset focus:ring-blue-400
               sm:text-sm sm:leading-6 shadow-sm" />
               <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-500': !show_settings }">
                 <AdjustmentsHorizontalIcon></AdjustmentsHorizontalIcon>
@@ -398,7 +505,7 @@ export default {
 
           <!-- tab box -->
           <div class="flex-initial flex flex-col overflow-hidden mt-3 rounded-md shadow-sm bg-white pointer-events-auto">
-            <div class="flex-none flex flex-row gap-1 py-3 text-gray-500">
+            <div class="flex-none flex flex-row gap-1 py-3 mx-3 text-gray-500">
               <button @click="selected_tab = 'map'" :class="{'text-blue-500': selected_tab === 'map'}" class="flex-none px-5">
                 ◯
               </button>
@@ -411,8 +518,8 @@ export default {
               <button @click="selected_tab = 'maps'" :class="{'text-blue-500': selected_tab === 'maps'}" class="flex-1">
                 Maps
               </button>
-              <button @click="selected_tab = 'lists'" :class="{'text-blue-500': selected_tab === 'lists'}" class="flex-1">
-                Lists
+              <button @click="selected_tab = 'collections'" :class="{'text-blue-500': selected_tab === 'collections'}" class="flex-1">
+                Collections
               </button>
             </div>
             <hr v-if="selected_tab !== 'map'" class="h-px bg-gray-200 border-0">
@@ -433,7 +540,7 @@ export default {
               <!-- history -->
               <div v-if="selected_tab === 'history'">
                 <ul v-if="Object.keys(search_history).length !== 0" role="list" class="pt-3">
-                  <li v-for="history_item in search_history.slice().reverse()" :key="history_item._id" class="justify-between pb-3">
+                  <li v-for="history_item in search_history.slice().reverse()" :key="history_item.id" class="justify-between pb-3">
                     <div class="flex flex-row gap-3">
                       <span class="text-gray-500 font-medium">{{ history_item.name }}</span>
                       <div class="flex-1"></div>
@@ -448,36 +555,76 @@ export default {
 
               <!-- maps -->
               <div v-if="selected_tab === 'maps'">
-                <div class="h-20 flex flex-col text-center place-content-center">
-                  <p class="flex-none text-gray-400">Store Maps<br>(with annotations and custom clustering)</p>
+                <div class="my-2 flex items-stretch">
+                  <button
+                    class="flex-auto px-2 rounded-md border-0 py-1.5 text-gray-900 ring-1
+                      ring-inset ring-gray-300 placeholder:text-gray-400
+                      focus:ring-2 focus:ring-inset focus:ring-blue-400
+                      sm:text-sm sm:leading-6 shadow-sm"
+                    type="button" @click="store_current_map">
+                    Add Current Map
+                  </button>
+                </div>
+
+                <ul v-if="Object.keys(stored_maps).length !== 0" role="list" class="pt-3">
+                  <li v-for="stored_map in stored_maps" :key="stored_map.name" class="justify-between pb-3">
+                    <div class="flex flex-row gap-3">
+                      <span class="text-gray-500 font-medium">{{ stored_map.name }}</span>
+                      <div class="flex-1"></div>
+                      <button @click="delete_stored_map(stored_map.id)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Delete</button>
+                      <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
+                    </div>
+                  </li>
+                </ul>
+                <div v-if="Object.keys(stored_maps).length === 0" class="h-20 flex flex-col text-center place-content-center">
+                  <p class="flex-none text-gray-400">No Stored Maps Yet</p>
                 </div>
               </div>
 
-              <!-- lists -->
-              <div v-if="selected_tab === 'lists'">
-                <ul v-if="Object.keys(lists).length !== 0" role="list" class="pt-3">
-                  <li v-for="list in lists" :key="list.title" class="justify-between pb-3">
+              <!-- collections -->
+              <div v-if="selected_tab === 'collections'">
+                <div class="my-2 flex items-stretch">
+                  <input ref="new_collection_name"
+                    type="text"
+                    class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 ring-1
+                      ring-inset ring-gray-300 placeholder:text-gray-400
+                      focus:ring-2 focus:ring-inset focus:ring-blue-400
+                      sm:text-sm sm:leading-6 shadow-sm"
+                    placeholder="Collection Name"/>
+                  <button
+                    class="px-2 rounded-r-md border-0 py-1.5 text-gray-900 ring-1
+                      ring-inset ring-gray-300 placeholder:text-gray-400
+                      focus:ring-2 focus:ring-inset focus:ring-blue-400
+                      sm:text-sm sm:leading-6 shadow-sm"
+                    type="button" @click="create_item_collection($refs.new_collection_name.value); $refs.new_collection_name.value = ''">
+                    Create
+                  </button>
+                </div>
+
+                <ul v-if="Object.keys(collections).length !== 0" role="list" class="pt-3">
+                  <li v-for="collection in collections" :key="collection.id" class="justify-between pb-3">
                     <div class="flex flex-row gap-3">
-                      <span class="text-gray-500 font-medium">{{ list.title }}</span>
+                      <span class="text-gray-500 font-medium">{{ collection.name }}</span>
                       <div class="flex-1"></div>
+                      <button @click="delete_item_collection(collection.id)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Delete</button>
                       <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Recommend Similar</button>
                       <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
                     </div>
                     <ul class="pt-2">
-                      <li v-for="(item, index) in list.positives" :key="item.title" class="justify-between pb-2">
-                        <CollectionListItem :item="item" :is-positive="true" @remove="list.positives.splice(index, 1)">
+                      <li v-for="(item_id, index) in collection.positive_ids" :key="item_id" class="justify-between pb-2">
+                        <CollectionListItem :item_id="item_id" :schema_id="selected_database" :is-positive="true" @remove="collection.positives.splice(index, 1)">
                         </CollectionListItem>
                       </li>
                     </ul>
                     <ul class="pt-2">
-                      <li v-for="(item, index) in list.negatives" :key="item.title" class="justify-between pb-2">
-                        <CollectionListItem :item="item" :is-positive="false" @remove="list.negatives.splice(index, 1)">
+                      <li v-for="(item_id, index) in collection.negative_ids" :key="item_id" class="justify-between pb-2">
+                        <CollectionListItem :item_id="item_id" :schema_id="selected_database" :is-positive="false" @remove="collection.negatives.splice(index, 1)">
                         </CollectionListItem>
                       </li>
                     </ul>
                   </li>
                 </ul>
-                <div v-if="Object.keys(lists).length === 0" class="h-20 flex flex-col text-center place-content-center">
+                <div v-if="Object.keys(collections).length === 0" class="h-20 flex flex-col text-center place-content-center">
                   <p class="flex-none text-gray-400">No Results Yet</p>
                 </div>
               </div>
@@ -490,8 +637,9 @@ export default {
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
             <ObjectDetailsModal :item="map_item_details[selectedDocumentIdx]" :abstract="selectedDocumentDetails ? selectedDocumentDetails.abstract : 'loading...'"
-              @addToPositives="lists.default.positives.push(map_item_details[selectedDocumentIdx])"
-              @addToNegatives="lists.default.negatives.push(map_item_details[selectedDocumentIdx])"
+              :collections="collections" :last_used_collection_id="last_used_collection_id"
+              @addToPositives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, true) }"
+              @addToNegatives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, false) }"
               @close="close_document_details"
             ></ObjectDetailsModal>
           </div>

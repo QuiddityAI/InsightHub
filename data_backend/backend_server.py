@@ -11,10 +11,10 @@ from utils.dotdict import DotDict
 from utils.custom_json_encoder import CustomJSONEncoder
 
 from logic.postprocess_search_results import enrich_search_results
-from logic.mapping_task import get_or_create_mapping_task, get_mapping_task_results, get_map_details, get_document_details, get_search_results_for_list
+from logic.mapping_task import get_or_create_mapping_task, get_mapping_task_results, get_map_details, get_document_details, get_search_results_for_list, get_document_details_by_id
 from logic.insert_logic import insert_many, update_database_layout
 
-from database_client.django_client import get_object_schema
+from database_client.django_client import get_object_schema, add_stored_map
 
 
 # --- Flask set up: ---
@@ -187,6 +187,43 @@ def retrieve_document_details():
 
     if result is None:
         return "task_id or index not found", 404
+
+    return result
+
+
+@app.route('/data_backend/document/details_by_id', methods=['POST'])
+def retrieve_document_details_by_id():
+    params = request.json or {}
+    schema_id = params.get("schema_id")
+    item_id = params.get("item_id")
+    fields = params.get("fields")
+    if not all([schema_id is not None, item_id is not None, fields is not None]):
+        return "a parameter is missing", 400
+
+    result = get_document_details_by_id(schema_id, item_id, tuple(fields))
+
+    if result is None:
+        return "document not found", 404
+
+    return result
+
+
+@app.route('/data_backend/map/store', methods=['POST'])
+def store_map():
+    params = request.json or {}
+    user_id = params.get("user_id")
+    schema_id = params.get("schema_id")
+    name = params.get("name")
+    task_id = params.get("task_id")
+
+    if not all([user_id is not None, schema_id is not None, name, task_id is not None]):
+        return "a parameter is missing", 400
+
+    map_data = get_mapping_task_results(task_id)
+    if map_data is None:
+        return "map not found", 404
+
+    result = add_stored_map(task_id, user_id, schema_id, name, map_data)
 
     return result
 

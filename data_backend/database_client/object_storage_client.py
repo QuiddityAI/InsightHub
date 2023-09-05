@@ -1,4 +1,5 @@
 import logging
+from typing import Iterable
 from uuid import UUID
 import os
 
@@ -75,9 +76,9 @@ class ObjectStorageEngineClient(object):
         collection.delete_many({"_id": {"$in": ids}})
 
 
-    def get_items_by_ids(self, schema_id: int, ids: list[UUID], fields: list[str]) -> list:
+    def get_items_by_ids(self, schema_id: int, ids: Iterable[UUID], fields: list[str]) -> list:
         collection = self.get_collection(schema_id)
-        result = collection.find(filter={"_id": {"$in": ids}}, projection=fields)
+        result = collection.find(filter={"_id": {"$in": list(ids)}}, projection=fields)
         return list(result)
 
 

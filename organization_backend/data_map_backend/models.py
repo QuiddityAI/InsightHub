@@ -420,12 +420,14 @@ class ItemCollection(models.Model):
         null=False)
     positive_ids = models.JSONField(
         verbose_name="Positive IDs",
-        blank=True,
-        null=True)
+        default=list,
+        blank=False,
+        null=False)
     negative_ids = models.JSONField(
         verbose_name="Negative IDs",
-        blank=True,
-        null=True)
+        default=list,
+        blank=False,
+        null=False)
 
     history = HistoricalRecords()
 

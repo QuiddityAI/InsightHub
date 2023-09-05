@@ -36,6 +36,12 @@ def save_search_cache():
         pickle.dump(search_results_cache, f)
 
 
+def get_absclust_item_by_id(item_id: str):
+    collection = ts_client.collections["articles"]
+    doc = collection.documents[item_id].retrieve()
+    return doc
+
+
 def get_absclust_search_results(query: str, limit: int):
     global search_results_cache
 
@@ -79,6 +85,7 @@ def get_absclust_search_results(query: str, limit: int):
             item["title"] = "title unknown"
         if "abstract" not in item:
             item["abstract"] = ""
+        item["_id"] = item["id"]
 
     search_results_cache[query + str(limit)] = results_part
 

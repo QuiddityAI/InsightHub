@@ -22,8 +22,8 @@ def get_object_schema(request):
 
     try:
         data = json.loads(request.body)
-        schema_id: int = data["schema_id"]  # TODO: catch error
-    except ValueError:
+        schema_id: int = data["schema_id"]
+    except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     schema: ObjectSchema = ObjectSchema.objects.get(id=schema_id)
@@ -45,8 +45,8 @@ def get_available_schemas(request):
 
     try:
         data = json.loads(request.body)
-        organization_id: int = data["organization_id"]  # TODO: catch error
-    except ValueError:
+        organization_id: int = data["organization_id"]
+    except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     #schemas = ObjectSchema.objects.get(organization=organization_id)
@@ -71,11 +71,11 @@ def add_search_history_item(request):
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]  # TODO: catch error
+        user_id: int = data["user_id"]
         schema_id: int = data["schema_id"]
         name: str = data["name"]
         parameters: dict = data["parameters"]
-    except ValueError:
+    except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     item = SearchHistoryItem()
@@ -99,9 +99,9 @@ def get_search_history(request):
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]  # TODO: catch error
+        user_id: int = data["user_id"]
         schema_id: int = data["schema_id"]
-    except ValueError:
+    except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     items = SearchHistoryItem.objects.filter(user_id=user_id, schema_id=schema_id).order_by('created_at')[:25]
@@ -119,10 +119,10 @@ def add_item_collection(request):
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]  # TODO: catch error
+        user_id: int = data["user_id"]
         schema_id: int = data["schema_id"]
         name: str = data["name"]
-    except ValueError:
+    except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     item = ItemCollection()
@@ -139,17 +139,89 @@ def add_item_collection(request):
 
 #@login_required()
 @csrf_exempt
+def get_item_collections(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]
+        schema_id: int = data["schema_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    items = ItemCollection.objects.filter(user_id=user_id, schema_id=schema_id).order_by('created_at')[:25]
+    serialized_data = ItemCollectionSerializer(items, many=True).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def delete_item_collection(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        collection_id: int = data["collection_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        ItemCollection.objects.get(id=collection_id).delete()
+    except ItemCollection.DoesNotExist:
+        return HttpResponse(status=404)
+
+    return HttpResponse(None, status=204)
+
+
+#@login_required()
+@csrf_exempt
+def add_item_to_collection(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        collection_id: int = data["collection_id"]
+        item_id: str = data["item_id"]
+        is_positive: bool = data["is_positive"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        collection = ItemCollection.objects.get(id=collection_id)
+    except ItemCollection.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if is_positive:
+        if collection.positive_ids is None:
+            collection.positive_ids = []
+        collection.positive_ids.append(item_id)
+    else:
+        if collection.negative_ids is None:
+            collection.negative_ids = []
+        collection.negative_ids.append(item_id)
+    collection.save()
+
+    return HttpResponse(None, status=204)
+
+
+#@login_required()
+@csrf_exempt
 def add_stored_map(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]  # TODO: catch error
+        user_id: int = data["user_id"]
         schema_id: int = data["schema_id"]
         name: str = data["name"]
         map_data: str = data["map_data"]
-    except ValueError:
+    except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     item = StoredMap()
@@ -163,6 +235,46 @@ def add_stored_map(request):
     result = json.dumps(schema_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def get_stored_maps(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]
+        schema_id: int = data["schema_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    items = StoredMap.objects.filter(user_id=user_id, schema_id=schema_id).order_by('created_at')[:25]
+    serialized_data = StoredMapSerializer(items, many=True).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def delete_stored_map(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        stored_map_id: int = data["stored_map_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        StoredMap.objects.get(id=stored_map_id).delete()
+    except StoredMap.DoesNotExist:
+        return HttpResponse(status=404)
+
+    return HttpResponse(None, status=204)
 
 
 """
