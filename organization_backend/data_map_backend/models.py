@@ -343,3 +343,139 @@ class ObjectField(models.Model):
         verbose_name = "Object Field"
         verbose_name_plural = "Object Fields"
         order_with_respect_to = "schema"
+
+
+class SearchHistoryItem(models.Model):
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    user = models.ForeignKey(
+        verbose_name="User",
+        to=User,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    schema = models.ForeignKey(
+        verbose_name="Schema",
+        to=ObjectSchema,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    parameters = models.JSONField(
+        verbose_name="Parameters",
+        blank=True,
+        null=True)
+
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name = "Search History Item"
+        verbose_name_plural = "Search History Items"
+
+
+class ItemCollection(models.Model):
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    user = models.ForeignKey(
+        verbose_name="User",
+        to=User,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    schema = models.ForeignKey(
+        verbose_name="Schema",
+        to=ObjectSchema,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    positive_ids = models.JSONField(
+        verbose_name="Positive IDs",
+        blank=True,
+        null=True)
+    negative_ids = models.JSONField(
+        verbose_name="Negative IDs",
+        blank=True,
+        null=True)
+
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name = "Item Collection"
+        verbose_name_plural = "Item Collections"
+
+
+class StoredMap(models.Model):
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    user = models.ForeignKey(
+        verbose_name="User",
+        to=User,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    schema = models.ForeignKey(
+        verbose_name="Schema",
+        to=ObjectSchema,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    map_data = models.BinaryField(
+        verbose_name="Data",
+        blank=True,
+        null=True)
+
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name = "Stored Map"
+        verbose_name_plural = "Stored Maps"

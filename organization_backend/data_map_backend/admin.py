@@ -6,7 +6,7 @@ from django.db import models
 from djangoql.admin import DjangoQLSearchMixin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import EmbeddingSpace, Generator, Organization, ObjectSchema, ObjectField
+from .models import EmbeddingSpace, Generator, Organization, ObjectSchema, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
 
 # admin.site.site_header = 'Site Header'
 
@@ -133,4 +133,34 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     list_display_links = ('id', 'identifier')
     search_fields = ('identifier', 'description')
 
+    readonly_fields = ('changed_at', 'created_at')
+
+
+@admin.register(SearchHistoryItem)
+class SearchHistoryItemAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'name')
+    list_display_links = ('id', 'name')
+    search_fields = ('name',)
+    ordering = ['name']
+    readonly_fields = ('changed_at', 'created_at')
+
+
+@admin.register(ItemCollection)
+class ItemCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'name')
+    list_display_links = ('id', 'name')
+    search_fields = ('name',)
+    ordering = ['name']
+    readonly_fields = ('changed_at', 'created_at')
+
+
+@admin.register(StoredMap)
+class StoredMapAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'name')
+    list_display_links = ('id', 'name')
+    search_fields = ('name',)
+    ordering = ['name']
     readonly_fields = ('changed_at', 'created_at')
