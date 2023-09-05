@@ -2,49 +2,16 @@ import json
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import serializers as drf_serializers
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from .models import ObjectSchema, ObjectField, Generator, EmbeddingSpace
+from .models import ObjectSchema, SearchHistoryItem, ItemCollection, StoredMap
+from .serializers import ObjectSchemaSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
-
-
-class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
-    class Meta:
-        model = EmbeddingSpace
-        exclude = ['created_at', 'changed_at']
-
-
-class GeneratorSerializer(drf_serializers.ModelSerializer):
-    embedding_space = EmbeddingSpaceSerializer(read_only=True)
-
-    class Meta:
-        model = Generator
-        exclude = ['created_at', 'changed_at']
-
-
-class ObjectFieldSerializer(drf_serializers.ModelSerializer):
-    source_fields = drf_serializers.StringRelatedField(many=True, read_only=True)
-    generator = GeneratorSerializer(read_only=True)
-
-    class Meta:
-        model = ObjectField
-        exclude = ['created_at', 'changed_at', '_order', 'description']
-
-
-class ObjectSchemaSerializer(drf_serializers.ModelSerializer):
-    object_fields = ObjectFieldSerializer(many=True, read_only=True)
-    primary_key = drf_serializers.StringRelatedField(many=False, read_only=True)
-    thumbnail_image = drf_serializers.StringRelatedField(many=False, read_only=True)
-
-    class Meta:
-        model = ObjectSchema
-        exclude = ['created_at', 'changed_at']
 
 
 #@login_required()
@@ -92,6 +59,108 @@ def get_available_schemas(request):
                        "name_plural": schema.name_plural, "short_description": schema.short_description})
 
     result = json.dumps(result)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def add_search_history_item(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]  # TODO: catch error
+        schema_id: int = data["schema_id"]
+        name: str = data["name"]
+        parameters: dict = data["parameters"]
+    except ValueError:
+        return HttpResponse(status=400)
+
+    item = SearchHistoryItem()
+    item.user_id = user_id  # type: ignore
+    item.schema_id = schema_id  # type: ignore
+    item.name = name
+    item.parameters = parameters  # type: ignore
+    item.save()
+
+    serialized_data = SearchHistoryItemSerializer(instance=item).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def get_search_history(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]  # TODO: catch error
+        schema_id: int = data["schema_id"]
+    except ValueError:
+        return HttpResponse(status=400)
+
+    items = SearchHistoryItem.objects.filter(user_id=user_id, schema_id=schema_id).order_by('created_at')[:25]
+    serialized_data = SearchHistoryItemSerializer(items, many=True).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def add_item_collection(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]  # TODO: catch error
+        schema_id: int = data["schema_id"]
+        name: str = data["name"]
+    except ValueError:
+        return HttpResponse(status=400)
+
+    item = ItemCollection()
+    item.user_id = user_id  # type: ignore
+    item.schema_id = schema_id  # type: ignore
+    item.name = name
+    item.save()
+
+    schema_dict = ItemCollectionSerializer(instance=item).data
+    result = json.dumps(schema_dict)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def add_stored_map(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]  # TODO: catch error
+        schema_id: int = data["schema_id"]
+        name: str = data["name"]
+        map_data: str = data["map_data"]
+    except ValueError:
+        return HttpResponse(status=400)
+
+    item = StoredMap()
+    item.user_id = user_id  # type: ignore
+    item.schema_id = schema_id  # type: ignore
+    item.name = name
+    item.map_data = map_data.encode()  # type: ignore  # FIXME: base64 str needs to be decoded
+    item.save()
+
+    schema_dict = ItemCollectionSerializer(instance=item).data
+    result = json.dumps(schema_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
 

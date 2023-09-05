@@ -32,6 +32,8 @@ export default {
       search_timings: "",
       map_timings: "",
 
+      search_history: [],
+
       // mapping progress:
       map_is_in_progess: false,
       show_loading_bar: false,
@@ -99,6 +101,12 @@ export default {
       this.selectedDocumentIdx = -1
       this.selectedDocumentDetails = null
     },
+    run_search_from_history(history_item) {
+      // schema is already correct in this case
+      this.query = history_item.parameters.query
+      // TODO: set other search parameters
+      this.request_search_results()
+    },
     request_search_results() {
       const that = this
 
@@ -108,11 +116,23 @@ export default {
 
       this.selected_tab = "results"
 
-      const payload = this.$refs.parameters_area.get_parameters()
-      payload.schema_id = this.selected_database
-      payload.query = this.query
+      const search_parameters = this.$refs.parameters_area.get_parameters()
+      search_parameters.schema_id = this.selected_database
+      search_parameters.query = this.query
 
-      httpClient.post("/data_backend/search_list_result", payload)
+      const history_item_body = {
+        user_id: 1,  // FIXME: this is hardcoded
+        schema_id: this.selected_database,
+        name: this.query,
+        parameters: search_parameters,
+      }
+
+      httpClient.post("/organization_backend/add_search_history_item", history_item_body)
+        .then(function (response) {
+          that.search_history.push(response.data)
+        })
+
+      httpClient.post("/data_backend/search_list_result", search_parameters)
         .then(function (response) {
           that.search_results = response.data["items"]
           const rendering = response.data["rendering"]
@@ -271,6 +291,17 @@ export default {
   watch: {
     selected_database: function(val) {
       const that = this
+
+      this.search_history = []
+      const get_history_body = {
+        user_id: 1,  // FIXME: hardcoded
+        schema_id: this.selected_database,
+      }
+      httpClient.post("/organization_backend/get_search_history", get_history_body)
+        .then(function (response) {
+          that.search_history = response.data
+        })
+
       httpClient.post("/organization_backend/object_schema", {schema_id: this.selected_database})
         .then(function (response) {
           that.selected_schema = response.data
@@ -401,12 +432,21 @@ export default {
 
               <!-- history -->
               <div v-if="selected_tab === 'history'">
-                <div class="h-20 flex flex-col text-center place-content-center">
-                  <p class="flex-none text-gray-400">Search History</p>
+                <ul v-if="Object.keys(search_history).length !== 0" role="list" class="pt-3">
+                  <li v-for="history_item in search_history.slice().reverse()" :key="history_item._id" class="justify-between pb-3">
+                    <div class="flex flex-row gap-3">
+                      <span class="text-gray-500 font-medium">{{ history_item.name }}</span>
+                      <div class="flex-1"></div>
+                      <button @click="run_search_from_history(history_item)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Run again</button>
+                    </div>
+                  </li>
+                </ul>
+                <div v-if="Object.keys(search_history).length === 0" class="h-20 flex flex-col text-center place-content-center">
+                  <p class="flex-none text-gray-400">No History Yet</p>
                 </div>
               </div>
 
-              <!-- history -->
+              <!-- maps -->
               <div v-if="selected_tab === 'maps'">
                 <div class="h-20 flex flex-col text-center place-content-center">
                   <p class="flex-none text-gray-400">Store Maps<br>(with annotations and custom clustering)</p>
