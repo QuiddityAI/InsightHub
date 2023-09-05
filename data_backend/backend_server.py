@@ -11,7 +11,7 @@ from utils.dotdict import DotDict
 from utils.custom_json_encoder import CustomJSONEncoder
 
 from logic.postprocess_search_results import enrich_search_results
-from logic.mapping_task import get_or_create_mapping_task, get_mapping_task_results, get_map_details, get_document_details, get_search_results_for_list, get_document_details_by_id
+from logic.mapping_task import get_or_create_map, get_map_results, get_document_details, get_search_results_for_list, get_document_details_by_id
 from logic.insert_logic import insert_many, update_database_layout
 
 from database_client.django_client import get_object_schema, add_stored_map
@@ -96,12 +96,12 @@ def get_search_list_result():
 def _get_search_list_result(params_str):
     timings = Timings()
 
-    params = json.loads(params_str)
-    query = params.get("query")
-    limit_per_page = params.get("result_list_items_per_page")
-    page = params.get("page")
-    schema_id = params.get("schema_id")
-    search_vector_field = params.get("search_vector_field")
+    params = DotDict(json.loads(params_str))
+    query = params.search_settings.query
+    limit_per_page = params.search_settings.result_list_items_per_page
+    page = params.search_settings.result_list_current_page
+    schema_id = params.schema_id
+    search_vector_field = params.search_settings.search_vector_field
     if not all([query, limit_per_page, page is not None, schema_id, search_vector_field]):
         return "a parameter is missing", 400
 
@@ -135,37 +135,25 @@ def _get_search_list_result(params_str):
 
 
 @app.route('/data_backend/map', methods=['POST'])
-def get_or_create_map_task():
-    params = request.json or {}
-    query = params.get("query")
+def get_or_create_map_endpoint():
+    params = DotDict(request.json or {})
+    query = params.search_settings.query
     if not query:
         return "query parameter is missing", 400
 
-    task_id = get_or_create_mapping_task(params)
+    map_id = get_or_create_map(params)
 
-    return jsonify({"task_id": task_id})
+    return jsonify({"map_id": map_id})
 
 
 @app.route('/data_backend/map/result', methods=['POST'])
-def retrive_mapping_results():
+def retrive_map_results():
     params = request.json or {}
-    task_id = params.get("task_id")
-    result = get_mapping_task_results(task_id)
+    map_id = params.get("map_id")
+    result = get_map_results(map_id)
 
     if result is None:
-        return "task_id not found", 404
-
-    return result
-
-
-@app.route('/data_backend/map/details', methods=['POST'])
-def retrieve_map_details():
-    params = request.json or {}
-    task_id = params.get("task_id")
-    result = get_map_details(task_id)
-
-    if result is None:
-        return "task_id not found", 404
+        return "map_id not found", 404
 
     return result
 
@@ -214,16 +202,16 @@ def store_map():
     user_id = params.get("user_id")
     schema_id = params.get("schema_id")
     name = params.get("name")
-    task_id = params.get("task_id")
+    map_id = params.get("map_id")
 
-    if not all([user_id is not None, schema_id is not None, name, task_id is not None]):
+    if not all([user_id is not None, schema_id is not None, name, map_id is not None]):
         return "a parameter is missing", 400
 
-    map_data = get_mapping_task_results(task_id)
+    map_data = get_map_results(map_id)
     if map_data is None:
         return "map not found", 404
 
-    result = add_stored_map(task_id, user_id, schema_id, name, map_data)
+    result = add_stored_map(map_id, user_id, schema_id, name, map_data)
 
     return result
 

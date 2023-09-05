@@ -20,14 +20,27 @@ def get_object_schema(schema_id: int) -> DotDict:
     return DotDict(result.json())
 
 
-def add_stored_map(task_id, user_id, schema_id, name, map_data) -> DotDict:
+def add_stored_map(map_id, user_id, schema_id, name, map_data) -> dict:
     url = backend_url + '/data_map/add_stored_map'
     body = {
-        'id': task_id,
         'user_id': user_id,
         'schema_id': schema_id,
         'name': name,
+        'map_id': map_id,
         'map_data': base64.b64encode(json.dumps(map_data, cls=CustomJSONEncoder).encode()).decode()
     }
     result = requests.post(url, json=body)
     return result.json()
+
+
+def get_stored_map_data(map_id: str) -> dict | None:
+    url = backend_url + '/data_map/stored_map_data'
+    data = {
+        'map_id': map_id,
+    }
+    result = requests.post(url, json=data)
+    if result.status_code == 200:
+        map_data = json.loads(base64.b64decode(result.content.decode()))
+        return map_data
+    else:
+        return None

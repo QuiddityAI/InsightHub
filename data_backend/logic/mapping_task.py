@@ -1,10 +1,12 @@
 from copy import deepcopy
+from hashlib import md5
 import logging
 from threading import Thread
 import json
 from uuid import UUID
 import os
 from functools import lru_cache
+import time
 
 import numpy as np
 from PIL import Image
@@ -16,168 +18,179 @@ from utils.helpers import normalize_array, polar_to_cartesian
 from utils.dotdict import DotDict
 
 from database_client.absclust_database_client import get_absclust_search_results, save_search_cache, get_absclust_item_by_id
-from database_client import weaviate_database_client
-from database_client.django_client import get_object_schema
+from database_client.django_client import get_object_schema, get_stored_map_data
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.object_storage_client import ObjectStorageEngineClient
 
 from logic.generator_functions import get_generator_function
 from logic.add_vectors import add_vectors_to_results
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
-from logic.model_client import get_embedding
 
 
-# global caches:
+ABSCLUST_SCHEMA_ID = 1
+
+
+# global temp storage:
+local_maps = {}
+
+# old global vars:
 task_params = {}
 mapping_tasks = {}
 map_details = {}
 cluster_cache = {}  # cluster_id -> search_results
 
 
-def get_or_create_mapping_task(params):
-    task_id = json.dumps(params)
+def get_or_create_map(params):
+    map_id = md5(json.dumps(params).encode()).hexdigest()
 
-    if task_id not in mapping_tasks:
-        task_params[task_id] = params
-        mapping_tasks[task_id] = {
-            "finished": False,
-            "result": None,
-            "progress": {
-                "embeddings_available": False,
-                "total_steps": 1,
-                "current_step": 0,
-                "step_title": "Preparation",
-            },
-        }
-        thread = Thread(target = generate_map, args = (task_id,))
-        thread.start()
+    if map_id not in local_maps:
+        map_data = get_stored_map_data(map_id)
+        if map_data:
+            local_maps[map_id] = map_data
+        else:
+            map_data = {
+                "last_accessed": time.time(),
+                "finished": False,
+                "is_stored": False,
+                "parameters": params,
+                "last_parameters": {
+                        # schema_id, user_id
+                        # search settings
+                        # vectorize settings
+                        # projection settings
+                        # render settings
+                    },
+                "progress": {
+                    "total_steps": 1,
+                    "current_step": 0,
+                    "step_title": "Preparation",
+                    "projections_available": False,
+                },
+                "map_rendering": None,
+                "results": {
+                    "per_point_data": {
+                        "item_ids": [],
+                        "scores": [],
+                        "hover_label_data": [],
+                        "positions_x": [],
+                        "positions_y": [],
+                        "cluster_ids": [],
+                        "point_sizes": [],
 
-    return task_id
+                        "point_colors": [],
+                        "point_roughness": [],
+                        "point_shape": [],
+                    },
+                    "clusters": {
+                        # x: { id: x, title: foo, centerX, centerY }, for each cluster
+                    },
+                    "texture_atlas_path": None,
+                    "w2v_embeddings_file_path": None,
+                },
+            }
+            local_maps[map_id] = map_data
+            thread = Thread(target = generate_map, args = (map_id,))
+            thread.start()
+
+    return map_id
 
 
-def generate_map(task_id):
+def generate_map(map_id):
     timings = Timings()
 
-    params = task_params[task_id]
-    query = params.get("query")
-    limit = params.get("max_items_used_for_mapping")
-    schema_id = params.get("schema_id")
-    search_vector_field = params.get("search_vector_field")
-    map_vector_field = params.get("map_vector_field")
-    if not all([query, limit, schema_id, search_vector_field, map_vector_field]):
-        mapping_tasks[task_id]['progress']['step_title'] = "a parameter is missing"
-        raise ValueError("a parameter is missing")
+    map_data = local_maps[map_id]
+    params = DotDict(map_data["parameters"])
 
+    query = params.search_settings.query
+    limit = params.search_settings.max_items_used_for_mapping
+    schema_id = params.schema_id
+    search_vector_field = params.search_settings.search_vector_field
+    map_vector_field = params.vectorize_settings.map_vector_field
+    if not all([query, limit, schema_id, search_vector_field, map_vector_field]):
+        map_data['progress']['step_title'] = "a parameter is missing"
+        raise ValueError("a parameter is missing")
     schema = get_object_schema(schema_id)
     map_rendering = DotDict(json.loads(schema.map_rendering))
+    map_data["map_rendering"] = map_rendering
+
     additional_fields = map_rendering.required_fields or []
     if schema.thumbnail_image:
         additional_fields.append(schema.thumbnail_image)
     timings.log("preparation")
 
-    mapping_tasks[task_id]['progress']['step_title'] = "Getting search results"
+    map_data['progress']['step_title'] = "Getting search results"
     search_results = get_search_results_for_map(schema, search_vector_field, map_vector_field, query.split(" OR "), additional_fields, limit)
     timings.log("database query")
 
+    map_data["results"]["per_point_data"]["item_ids"] = [item["_id"] for item in search_results]
+
     # eventually, the vectors should come directly from the database
     # but for the AbsClust database, the vectors need to be added on-demand:
-    absclust_schema_id = 1
-    if schema.id == absclust_schema_id:
-        mapping_tasks[task_id]['progress']['step_title'] = "Generating vectors"
-        add_vectors_to_results(search_results, query, task_params[task_id], mapping_tasks[task_id], timings)
+    if schema.id == ABSCLUST_SCHEMA_ID:
+        map_data['progress']['step_title'] = "Generating vectors"
+        add_vectors_to_results(search_results, query, params, map_data, timings)
 
     vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
-    distances = [e["score"] for e in search_results]
+    scores = [e["score"] for e in search_results]
+    map_data["results"]["per_point_data"]["scores"] = scores
     point_sizes = [e.get(map_rendering.point_size_field) for e in search_results] if map_rendering.point_size_field else [1] * len(search_results)
+    map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
+    map_data["results"]["per_point_data"]["cluster_ids"] = [-1] * len(scores),
     timings.log("convert to numpy")
 
-    umap_parameters = params.get("dim_reducer_parameters", {})
+    umap_parameters = params.get("projection_settings", {})
 
     def on_umap_progress(working_in_embedding_space, current_iteration, total_iterations, projections):
-        mapping_tasks[task_id]["progress"] = {
-            "embeddings_available": working_in_embedding_space,
+        map_data["progress"] = {
             "total_steps": total_iterations,
             "current_step": current_iteration,
             "step_title": "UMAP 2/2: finetuning" if working_in_embedding_space else "UMAP 1/2: pair-wise distances",
+            "embeddings_available": working_in_embedding_space,
         }
 
         if working_in_embedding_space and projections is not None:
             if umap_parameters.get("shape") == "1d_plus_distance_polar":
-                projections = np.column_stack(polar_to_cartesian(1 - normalize_array(distances), normalize_array(projections[:, 0]) * np.pi * 2))
+                projections = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
 
-            result = {
-                "per_point_data": {
-                    "positions_x": projections[:, 0].tolist(),
-                    "positions_y": projections[:, 1].tolist(),
-                    "cluster_ids": [-1] * len(distances),
-                    "distances": distances,
-                    "point_sizes": point_sizes,
-                },
-                "cluster_data": [],
-                "rendering": map_rendering,
-                "timings": [],
-            }
-            mapping_tasks[task_id]["result"] = result
+            map_data["results"]["per_point_data"]["positions_x"] = projections[:, 0].tolist()
+            map_data["results"]["per_point_data"]["positions_y"] = projections[:, 1].tolist()
 
     # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
     # Progress might only be available below 4096
 
-    mapping_tasks[task_id]['progress']['step_title'] = "UMAP Preparation"
+    map_data['progress']['step_title'] = "UMAP Preparation"
     target_dimensions = 1 if umap_parameters.get("shape") == "1d_plus_distance_polar" else 2
     import umap
     umap_task = umap.UMAP(n_components=target_dimensions, random_state=99, min_dist=umap_parameters.get("min_dist", 0.05), n_epochs=umap_parameters.get("n_epochs", 500))
-    """projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
-  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/umap/u
-map_.py", line 2794, in fit_transform
-    self.fit(X, y, on_progress_callback=on_progress_callback)
-  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/umap/u
-map_.py", line 2704, in fit
-    self.embedding_, aux_data = self._fit_embed_data(
-  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/umap/u
-map_.py", line 2738, in _fit_embed_data
-    return simplicial_set_embedding(
-  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/umap/u
-map_.py", line 1076, in simplicial_set_embedding
-    graph.data[graph.data < (graph.data.max() / float(n_epochs))] = 0.0
-  File "/home/tim/.local/share/virtualenvs/visual-data-map-Xo4c37dQ/lib/python3.10/site-packages/numpy/
-core/_methods.py", line 41, in _amax
-    return umr_maximum(a, axis, None, out, keepdims, initial, where)
-ValueError: zero-size array to reduction operation maximum which has no identity"""
     projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
     timings.log("UMAP fit transform")
 
-    mapping_tasks[task_id]['progress']['step_title'] = "Clusterize results"
+    map_data['progress']['step_title'] = "Clusterize results"
     cluster_id_per_point = clusterize_results(projections)
     timings.log("clustering")
 
     if umap_parameters.get("shape") == "1d_plus_distance_polar":
-        projections = np.column_stack(polar_to_cartesian(1 - normalize_array(distances), normalize_array(projections[:, 0]) * np.pi * 2))
+        projections = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
 
-    mapping_tasks[task_id]['progress']['step_title'] = "Find cluster titles"
+    map_data["results"]["per_point_data"]["positions_x"] = projections[:, 0].tolist()
+    map_data["results"]["per_point_data"]["positions_y"] = projections[:, 1].tolist()
+    map_data["results"]["per_point_data"]["cluster_ids"] = cluster_id_per_point.tolist()
+
+    hover_label_data_total = []
+    for item in search_results:
+        hover_label_data = {}
+        hover_label_data['_id'] = item['_id']
+        for field in map_rendering.required_fields:
+            hover_label_data[field] = item[field]
+        hover_label_data_total.append(hover_label_data)
+
+    map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
+
+    map_data['progress']['step_title'] = "Find cluster titles"
     cluster_data = []  # get_cluster_titles(cluster_id_per_point, projections, search_results, timings, cluster_cache)
     timings.log("cluster title")
 
-    result = {
-        "per_point_data": {
-            "positions_x": projections[:, 0].tolist(),
-            "positions_y": projections[:, 1].tolist(),
-            "cluster_ids": cluster_id_per_point.tolist(),
-            "distances": distances,
-            "point_sizes": point_sizes,
-        },
-        "cluster_data": cluster_data,
-        "rendering": map_rendering,
-        "timings": timings.get_timestamps(),
-    }
-    mapping_tasks[task_id]["result"] = result
-
-    # don't store vectors again: (up to 33MB for 1.6k items)
-    for item in search_results:
-        if map_vector_field in item:
-            del item[map_vector_field]
-
-    map_details[task_id] = search_results
-    timings.log("store result")
+    map_data["results"]["clusters"] = cluster_data
 
     # texture atlas:
     thumbnail_field = schema.thumbnail_image
@@ -199,11 +212,12 @@ ValueError: zero-size array to reduction operation maximum which has no identity
                 # textures.append(['thumbnail_placeholder.png', 32, 32])
         atlas_filename = f"atlas_{query}.png"
         atlas.save(atlas_filename)
-        mapping_tasks[task_id]["result"]["texture_atlas_path"] = atlas_filename
+        map_data["results"]["texture_atlas_path"] = atlas_filename
 
     timings.log("generating texture atlas")
 
-    mapping_tasks[task_id]["finished"] = True
+    map_data["results"]["timings"] = timings.get_timestamps()
+    map_data["finished"] = True
 
 
 def get_search_results_for_map(schema: DotDict, search_vector_field: str, map_vector_field: str, queries: list[str], additional_fields: list[str], limit: int):
@@ -215,8 +229,7 @@ def get_search_results_for_map(schema: DotDict, search_vector_field: str, map_ve
             results += deepcopy(cluster_cache[cluster_uid])
             continue
 
-        absclust_schema_id = 1
-        if schema.id == absclust_schema_id:
+        if schema.id == ABSCLUST_SCHEMA_ID:
             results += get_absclust_search_results(query, limit)
             continue
 
@@ -257,8 +270,7 @@ def get_search_results_for_list(schema: DotDict, vector_field: str, queries: lis
             results += cluster_cache[cluster_uid][:10]
             continue
 
-        absclust_schema_id = 1
-        if schema.id == absclust_schema_id:
+        if schema.id == ABSCLUST_SCHEMA_ID:
             results += get_absclust_search_results(query, limit)
             continue
 
@@ -280,41 +292,18 @@ def get_search_results_for_list(schema: DotDict, vector_field: str, queries: lis
     return results
 
 
-def get_mapping_task_results(task_id) -> dict | None:
-    if task_id not in mapping_tasks:
-        logging.warning("task_id not found")
-        return None
+def get_map_results(map_id) -> dict | None:
+    if map_id not in local_maps:
+        map_data = get_stored_map_data(map_id)
+        if map_data:
+            local_maps[map_id] = map_data
+        else:
+            logging.warning("map_id not found")
+            return None
 
-    result = mapping_tasks[task_id]
-
-    # if result["finished"]:
-    #     del umap_tasks[task_id]
-
-    # TODO: if the task is never retrieved, it gets never deleted
-    # instead go through tasks every few minutes and delete old ones
-
-    return result
-
-
-def get_map_details(task_id):
-    if task_id not in map_details:
-        logging.warning("task_id not found")
-        return None
-
-    # transferring all titles takes is up to 1 MByte, so we are doing it in a separate endpoint
-    # for this, we are copying the results here:
-    # remove abstracts from search results to reduce size of response:
-    item_details = deepcopy(map_details[task_id])
-    for item in item_details:
-        if "abstract" in item:
-            del item["abstract"]
-    result = item_details
-
-    # if result["finished"]:
-    #     del umap_tasks[task_id]
-
-    # TODO: if the task is never retrieved, it gets never deleted
-    # instead go through tasks every few minutes and delete old ones
+    result = local_maps[map_id]
+    result["last_accessed"] = time.time()
+    # TODO: go through local_maps every hour and delete that ones that weren't been accessed in the last hour
 
     return result
 
@@ -331,8 +320,7 @@ def get_document_details(task_id, index):
 
 @lru_cache
 def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str]):
-    absclust_schema_id = 1
-    if schema_id == absclust_schema_id:
+    if schema_id == ABSCLUST_SCHEMA_ID:
         return get_absclust_item_by_id(item_id)
 
     object_storage_client = ObjectStorageEngineClient.get_instance()

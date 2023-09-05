@@ -220,19 +220,20 @@ def add_stored_map(request):
         user_id: int = data["user_id"]
         schema_id: int = data["schema_id"]
         name: str = data["name"]
+        map_id: str = data["map_id"]
         map_data: str = data["map_data"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    item = StoredMap()
+    item = StoredMap(id=map_id)
     item.user_id = user_id  # type: ignore
     item.schema_id = schema_id  # type: ignore
     item.name = name
     item.map_data = map_data.encode()  # type: ignore  # FIXME: base64 str needs to be decoded
     item.save()
 
-    schema_dict = ItemCollectionSerializer(instance=item).data
-    result = json.dumps(schema_dict)
+    serialized_data = StoredMapSerializer(instance=item).data
+    result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
@@ -255,6 +256,26 @@ def get_stored_maps(request):
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
+def get_stored_map_data(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        map_id: str = data["map_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+    try:
+        map_item = StoredMap.objects.get(id=map_id)
+    except StoredMap.DoesNotExist:
+        return HttpResponse(status=404)
+    result = map_item.map_data
+
+    return HttpResponse(result, status=200, content_type='application/octet-stream')
 
 
 #@login_required()

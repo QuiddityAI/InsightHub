@@ -1,10 +1,17 @@
 <script setup>
+import { mapStores } from 'pinia'
+
 import EmbeddingMap from './EmbeddingMap.vue';
 import Parameters from './Parameters.vue';
 import ResultListItem from './ResultListItem.vue';
 import ObjectDetailsModal from './ObjectDetailsModal.vue';
 import CollectionListItem from './CollectionListItem.vue';
 import { AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
+
+import { useAppStateStore } from '../stores/settings_store'
+
+const appState = useAppStateStore()
+
 </script>
 
 <script>
@@ -20,13 +27,10 @@ class FieldType {
 export default {
   data() {
     return {
-      // input:
-      query: "",
-
       // results:
       search_results: [],
       search_list_rendering: {},
-      map_task_id: null,
+      map_id: null,
       map_item_details: [],
 
       search_timings: "",
@@ -59,7 +63,6 @@ export default {
       show_settings: false,
       available_databases: [],
       database_information: {},
-      selected_database: null,
       selected_schema: {},
     }
   },
@@ -100,19 +103,15 @@ export default {
 
       this.reset_search_results_and_map()
 
-      if (!this.query) return;
+      if (!this.appStateStore.settings.search_settings.query) return;
 
       this.selected_tab = "results"
 
-      const search_parameters = this.$refs.parameters_area.get_parameters()
-      search_parameters.schema_id = this.selected_database
-      search_parameters.query = this.query
-
       const history_item_body = {
         user_id: 1,  // FIXME: this is hardcoded
-        schema_id: this.selected_database,
-        name: this.query,
-        parameters: search_parameters,
+        schema_id: this.appStateStore.settings.schema_id,
+        name: this.appStateStore.settings.search_settings.query,
+        parameters: this.appStateStore.settings,
       }
 
       httpClient.post("/organization_backend/add_search_history_item", history_item_body)
@@ -120,7 +119,7 @@ export default {
           that.search_history.push(response.data)
         })
 
-      httpClient.post("/data_backend/search_list_result", search_parameters)
+      httpClient.post("/data_backend/search_list_result", this.appStateStore.settings)
         .then(function (response) {
           that.search_results = response.data["items"]
           const rendering = response.data["rendering"]
@@ -136,13 +135,9 @@ export default {
     request_map() {
       const that = this
 
-      const payload = this.$refs.parameters_area.get_parameters()
-      payload.schema_id = this.selected_database
-      payload.query = this.query
-
-      httpClient.post("/data_backend/map", payload)
+      httpClient.post("/data_backend/map", this.appStateStore.settings)
         .then(function (response) {
-          that.map_task_id = response.data["task_id"]
+          that.map_id = response.data["map_id"]
           that.map_viewport_is_adjusted = false
           that.map_is_in_progess = true
           that.request_mapping_progress()
@@ -151,46 +146,36 @@ export default {
     request_mapping_progress() {
       const that = this
 
-      if (!this.map_task_id || !this.map_is_in_progess) return;
+      if (!this.map_id || !this.map_is_in_progess) return;
 
       const payload = {
-        task_id: this.map_task_id,
+        map_id: this.map_id,
       }
       httpClient.post("/data_backend/map/result", payload)
         .then(function (response) {
           const mappingIsFinished = response.data["finished"]
 
-          const result = response.data["result"]
+          const results = response.data["results"]
 
           if (mappingIsFinished) {
             // no need to get further results:
             that.map_is_in_progess = false
 
-            const rendering = result["rendering"]
+            const rendering = response.data["map_rendering"]
             for (const field of ['hover_label']) {
               rendering[field] = eval(rendering[field])
             }
             that.$refs.embedding_map.rendering = rendering
 
-            if (result["texture_atlas_path"]) {
+            if (results["texture_atlas_path"]) {
               const image = new Image()
-              image.src = 'data_backend/map/texture_atlas/' + result["texture_atlas_path"]
+              image.src = 'data_backend/map/texture_atlas/' + results["texture_atlas_path"]
               image.onload = () => {
                 that.$refs.embedding_map.textureAtlas = image
                 that.$refs.embedding_map.updateGeometry()
               }
 
             }
-
-            // get map details (titles of all points etc.):
-            httpClient.post("/data_backend/map/details", payload)
-              .then(function (response) {
-                that.map_item_details = response.data
-                that.$refs.embedding_map.itemDetails = response.data
-              })
-              .catch(function (error) {
-                console.log(error)
-              })
           }
 
           const progress = response.data["progress"]
@@ -199,14 +184,19 @@ export default {
           that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
           that.progress_step_title = progress.step_title
 
-          if (result) {
-            that.$refs.embedding_map.targetPositionsX = result["per_point_data"]["positions_x"]
-            that.$refs.embedding_map.targetPositionsY = result["per_point_data"]["positions_y"]
-            that.$refs.embedding_map.clusterIdsPerPoint = result["per_point_data"]["cluster_ids"]
-            that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(result["per_point_data"]["point_sizes"])
-            that.$refs.embedding_map.saturation = normalizeArray(result["per_point_data"]["distances"], 3.0)
+          if (results) {
+            if (results["per_point_data"]["hover_label_data"]) {
+              that.map_item_details = results["per_point_data"]["hover_label_data"]
+              that.$refs.embedding_map.itemDetails = results["per_point_data"]["hover_label_data"]
+            }
 
-            that.$refs.embedding_map.clusterData = result["cluster_data"]
+            that.$refs.embedding_map.targetPositionsX = results["per_point_data"]["positions_x"]
+            that.$refs.embedding_map.targetPositionsY = results["per_point_data"]["positions_y"]
+            that.$refs.embedding_map.clusterIdsPerPoint = results["per_point_data"]["cluster_ids"]
+            that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results["per_point_data"]["point_sizes"])
+            that.$refs.embedding_map.saturation = normalizeArray(results["per_point_data"]["scores"], 3.0)
+
+            that.$refs.embedding_map.clusterData = results["clusters"]
 
             if (that.map_viewport_is_adjusted) {
               that.$refs.embedding_map.centerAndFitDataToActiveAreaSmooth()
@@ -217,7 +207,7 @@ export default {
             }
             that.$refs.embedding_map.updateGeometry()
 
-            that.map_timings = result["timings"]
+            that.map_timings = results["timings"]
           }
         })
         .catch(function (error) {
@@ -243,12 +233,14 @@ export default {
       const that = this
       this.selectedDocumentIdx = pointIdx
       this.$refs.embedding_map.selectedPointIdx = pointIdx
+      const item_id = this.map_item_details[pointIdx]._id
 
       const payload = {
-        task_id: this.map_task_id,
-        index: this.selectedDocumentIdx,
+        schema_id: this.appStateStore.settings.schema_id,
+        item_id: item_id,
+        fields: ["title", "abstract", "container_title", "issued_year", "authors"]
       }
-      httpClient.post("/data_backend/document/details", payload)
+      httpClient.post("/data_backend/document/details_by_id", payload)
         .then(function (response) {
           that.selectedDocumentDetails = response.data
         })
@@ -279,7 +271,7 @@ export default {
       const that = this
       const create_collection_body = {
         user_id: 1,  // FIXME: hardcoded
-        schema_id: this.selected_database,
+        schema_id: this.appStateStore.settings.schema_id,
         name: name,
       }
       httpClient.post("/organization_backend/add_item_collection", create_collection_body)
@@ -344,9 +336,9 @@ export default {
       const that = this
       const store_map_body = {
         user_id: 1,  // FIXME: hardcoded
-        schema_id: this.selected_database,
-        name: this.query,
-        task_id: this.map_task_id,
+        schema_id: this.appStateStore.settings.schema_id,
+        name: this.appStateStore.settings.search_settings.query,
+        map_id: this.map_id,
       }
       httpClient.post("/data_backend/map/store", store_map_body)
         .then(function (response) {
@@ -374,61 +366,17 @@ export default {
           }
         })
     },
-  },
-  watch: {
-    selected_database: function(val) {
+    show_stored_map(stored_map_id) {
       const that = this
-
-      this.search_history = []
-      const get_history_body = {
-        user_id: 1,  // FIXME: hardcoded
-        schema_id: this.selected_database,
-      }
-      httpClient.post("/organization_backend/get_search_history", get_history_body)
-        .then(function (response) {
-          that.search_history = response.data
-        })
-
-      this.collections = []
-      const get_collections_body = {
-        user_id: 1,  // FIXME: hardcoded
-        schema_id: this.selected_database,
-      }
-      httpClient.post("/organization_backend/get_item_collections", get_collections_body)
-        .then(function (response) {
-          that.collections = response.data
-        })
-
-      this.stored_maps = []
-      const get_stored_maps_body = {
-        user_id: 1,  // FIXME: hardcoded
-        schema_id: this.selected_database,
-      }
-      httpClient.post("/organization_backend/get_stored_maps", get_stored_maps_body)
-        .then(function (response) {
-          that.stored_maps = response.data
-        })
-
-      httpClient.post("/organization_backend/object_schema", {schema_id: this.selected_database})
-        .then(function (response) {
-          that.selected_schema = response.data
-          that.$refs.parameters_area.available_vector_fields = []
-          for (const field_identifier in that.selected_schema.object_fields) {
-            const field = that.selected_schema.object_fields[field_identifier]
-            //if (field.is_available_for_search && field.field_type == FieldType.VECTOR) {
-            if (field.field_type == FieldType.VECTOR) {
-              that.$refs.parameters_area.available_vector_fields.push(field.identifier)
-            }
-            if (that.$refs.parameters_area.available_vector_fields.length > 0) {
-              that.$refs.parameters_area.selected_search_vector_field = that.$refs.parameters_area.available_vector_fields[0]
-              that.$refs.parameters_area.selected_map_vector_field = that.$refs.parameters_area.available_vector_fields[0]
-            } else {
-              that.$refs.parameters_area.selected_search_vector_field = null
-              that.$refs.parameters_area.selected_map_vector_field = null
-            }
-          }
-        })
-    }
+      this.reset_search_results_and_map()
+      that.map_id = stored_map_id
+      that.map_viewport_is_adjusted = false
+      that.map_is_in_progess = true
+      that.request_mapping_progress()
+    },
+  },
+  computed: {
+    ...mapStores(useAppStateStore),
   },
   mounted() {
     this.updateMapPassiveMargin()
@@ -442,8 +390,63 @@ export default {
         for (const database of that.available_databases) {
           that.database_information[database.id] = database.short_description
         }
-        that.selected_database = 1
+        that.appStateStore.settings.schema_id = 1
       })
+    },
+  watch: {
+    'appStateStore.settings.schema_id' (newValue, oldValue) {
+      const that = this
+
+      this.search_history = []
+      const get_history_body = {
+        user_id: 1,  // FIXME: hardcoded
+        schema_id: this.appStateStore.settings.schema_id,
+      }
+      httpClient.post("/organization_backend/get_search_history", get_history_body)
+        .then(function (response) {
+          that.search_history = response.data
+        })
+
+      this.collections = []
+      const get_collections_body = {
+        user_id: 1,  // FIXME: hardcoded
+        schema_id: this.appStateStore.settings.schema_id,
+      }
+      httpClient.post("/organization_backend/get_item_collections", get_collections_body)
+        .then(function (response) {
+          that.collections = response.data
+        })
+
+      this.stored_maps = []
+      const get_stored_maps_body = {
+        user_id: 1,  // FIXME: hardcoded
+        schema_id: this.appStateStore.settings.schema_id,
+      }
+      httpClient.post("/organization_backend/get_stored_maps", get_stored_maps_body)
+        .then(function (response) {
+          that.stored_maps = response.data
+        })
+
+      httpClient.post("/organization_backend/object_schema", {schema_id: this.appStateStore.settings.schema_id})
+        .then(function (response) {
+          that.selected_schema = response.data
+          that.appStateStore.available_vector_fields = []
+          for (const field_identifier in that.selected_schema.object_fields) {
+            const field = that.selected_schema.object_fields[field_identifier]
+            //if (field.is_available_for_search && field.field_type == FieldType.VECTOR) {
+            if (field.field_type == FieldType.VECTOR) {
+              that.appStateStore.available_vector_fields.push(field.identifier)
+            }
+            if (that.appStateStore.available_vector_fields.length > 0) {
+              that.appStateStore.settings.search_settings.search_vector_field = that.appStateStore.available_vector_fields[0]
+              that.appStateStore.settings.vectorize_settings.map_vector_field = that.appStateStore.available_vector_fields[0]
+            } else {
+              that.appStateStore.settings.search_settings.search_vector_field = null
+              that.appStateStore.settings.vectorize_settings.map_vector_field = null
+            }
+          }
+        })
+    }
   },
 }
 
@@ -481,15 +484,15 @@ export default {
           <!-- search card -->
           <div class="flex-none rounded-md shadow-sm bg-white p-3  pointer-events-auto">
             <div class="flex justify-between">
-              <select v-model="selected_database" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <select v-model="appState.settings.schema_id" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
                 <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
               </select>
-              <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[selected_database] }}</span>
+              <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[appState.settings.schema_id] }}</span>
             </div>
 
             <div class="flex">
               <!-- note: search event is not standard -->
-              <input type="search" name="search" @search="request_search_results" v-model="query"
+              <input type="search" name="search" @search="request_search_results" v-model="appState.settings.search_settings.query"
                 placeholder="Search"
                 class="w-full rounded-md border-0 py-1.5 text-gray-900 ring-1
               ring-inset ring-gray-300 placeholder:text-gray-400
@@ -572,7 +575,7 @@ export default {
                       <span class="text-gray-500 font-medium">{{ stored_map.name }}</span>
                       <div class="flex-1"></div>
                       <button @click="delete_stored_map(stored_map.id)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Delete</button>
-                      <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
+                      <button @click="show_stored_map(stored_map.id)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
                     </div>
                   </li>
                 </ul>
@@ -612,13 +615,13 @@ export default {
                     </div>
                     <ul class="pt-2">
                       <li v-for="(item_id, index) in collection.positive_ids" :key="item_id" class="justify-between pb-2">
-                        <CollectionListItem :item_id="item_id" :schema_id="selected_database" :is-positive="true" @remove="collection.positives.splice(index, 1)">
+                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="true" @remove="collection.positives.splice(index, 1)">
                         </CollectionListItem>
                       </li>
                     </ul>
                     <ul class="pt-2">
                       <li v-for="(item_id, index) in collection.negative_ids" :key="item_id" class="justify-between pb-2">
-                        <CollectionListItem :item_id="item_id" :schema_id="selected_database" :is-positive="false" @remove="collection.negatives.splice(index, 1)">
+                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="false" @remove="collection.negatives.splice(index, 1)">
                         </CollectionListItem>
                       </li>
                     </ul>

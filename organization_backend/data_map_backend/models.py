@@ -440,6 +440,13 @@ class ItemCollection(models.Model):
 
 
 class StoredMap(models.Model):
+    id = models.CharField(
+        verbose_name="ID",
+        primary_key=True,
+        editable=False,
+        max_length=50,
+        blank=False,
+        null=False)
     name = models.CharField(
         verbose_name="Name",
         max_length=200,
