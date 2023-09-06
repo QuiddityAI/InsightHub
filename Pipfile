@@ -33,6 +33,7 @@ qdrant-client = "*"
 pymongo = "*"
 opensearch-py = "*"
 django-jsonsuit = "*"
+pillow = "*"
 
 [dev-packages]
 ipykernel = "*"
