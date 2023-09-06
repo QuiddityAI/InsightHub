@@ -110,12 +110,13 @@ def generate_map(map_id):
         map_data['progress']['step_title'] = "a parameter is missing"
         raise ValueError("a parameter is missing")
     schema = get_object_schema(schema_id)
-    map_rendering = DotDict(json.loads(schema.map_rendering))
-    map_data["map_rendering"] = map_rendering
+    map_data["hover_label_rendering"] = schema.hover_label_rendering
 
-    additional_fields = map_rendering.required_fields or []
+    additional_fields = set(schema.hover_label_rendering.required_fields or [])
     if schema.thumbnail_image:
-        additional_fields.append(schema.thumbnail_image)
+        additional_fields.add(schema.thumbnail_image)
+    additional_fields = additional_fields.union(schema.descriptive_text_fields)
+    additional_fields = list(additional_fields)
     timings.log("preparation")
 
     map_data['progress']['step_title'] = "Getting search results"
@@ -128,12 +129,12 @@ def generate_map(map_id):
     # but for the AbsClust database, the vectors need to be added on-demand:
     if schema.id == ABSCLUST_SCHEMA_ID:
         map_data['progress']['step_title'] = "Generating vectors"
-        add_vectors_to_results(search_results, query, params, map_data, timings)
+        add_vectors_to_results(search_results, query, params, schema.descriptive_text_fields, map_data, timings)
 
     vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
     scores = [e["score"] for e in search_results]
     map_data["results"]["per_point_data"]["scores"] = scores
-    point_sizes = [e.get(map_rendering.point_size_field) for e in search_results] if map_rendering.point_size_field else [1] * len(search_results)
+    point_sizes = [e.get(params.render_settings.point_size_field) for e in search_results] if params.render_settings.point_size_field else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
     map_data["results"]["per_point_data"]["cluster_ids"] = [-1] * len(scores),
     timings.log("convert to numpy")
@@ -180,14 +181,14 @@ def generate_map(map_id):
     for item in search_results:
         hover_label_data = {}
         hover_label_data['_id'] = item['_id']
-        for field in map_rendering.required_fields:
-            hover_label_data[field] = item[field]
+        for field in schema.hover_label_rendering.required_fields:
+            hover_label_data[field] = item.get(field, None)
         hover_label_data_total.append(hover_label_data)
 
     map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
 
     map_data['progress']['step_title'] = "Find cluster titles"
-    cluster_data = []  # get_cluster_titles(cluster_id_per_point, projections, search_results, timings, cluster_cache)
+    cluster_data = get_cluster_titles(cluster_id_per_point, projections, search_results, schema.descriptive_text_fields, timings, cluster_cache)
     timings.log("cluster title")
 
     map_data["results"]["clusters"] = cluster_data
@@ -210,7 +211,7 @@ def generate_map(map_id):
                 logging.warning(f"Image file doesn't exist: {item[thumbnail_field]}")
                 # FIXME: needs to be a different image each time
                 # textures.append(['thumbnail_placeholder.png', 32, 32])
-        atlas_filename = f"atlas_{query}.png"
+        atlas_filename = f"map_data/atlas_{query}.png"
         atlas.save(atlas_filename)
         map_data["results"]["texture_atlas_path"] = atlas_filename
 
@@ -230,7 +231,7 @@ def get_search_results_for_map(schema: DotDict, search_vector_field: str, map_ve
             continue
 
         if schema.id == ABSCLUST_SCHEMA_ID:
-            results += get_absclust_search_results(query, limit)
+            results += get_absclust_search_results(query, additional_fields, limit)
             continue
 
         generator = schema.object_fields[search_vector_field].generator
@@ -271,7 +272,7 @@ def get_search_results_for_list(schema: DotDict, vector_field: str, queries: lis
             continue
 
         if schema.id == ABSCLUST_SCHEMA_ID:
-            results += get_absclust_search_results(query, limit)
+            results += get_absclust_search_results(query, additional_fields, limit)
             continue
 
         generator = schema.object_fields[vector_field].generator

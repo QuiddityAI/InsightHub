@@ -29,7 +29,7 @@ export default {
 
       itemDetails: [],
       clusterData: [],
-      rendering: {},
+      hover_label_rendering: {},
       textureAtlas: null,
 
       // internal:
@@ -382,6 +382,7 @@ export default {
         devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
         selectedPointIdx: { value: this.selectedPointIdx },
         textureAtlas: { value: this.glTexture },
+        useTextureAtlas: { value: this.textureAtlas !== null },
       }
     },
     updateUniforms() {
@@ -464,7 +465,7 @@ export default {
     'top': screenTopFromRelative(currentPositionsY[highlightedPointIdx]) + 'px',
     'max-width': '200px',
     }">
-    <div v-html="itemDetails.length > highlightedPointIdx ? rendering.hover_label(itemDetails[highlightedPointIdx]) : 'loading...'" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
+    <div v-html="itemDetails.length > highlightedPointIdx ? hover_label_rendering.title(itemDetails[highlightedPointIdx]) : 'loading...'" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
     </div>
   </div>
 </div>

@@ -131,6 +131,13 @@ export default {
       <input v-model.number="appState.settings.search_settings.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
     </div>
     <div class="flex justify-between items-center">
+      <span class="text-gray-500 text-sm">Point Size:</span>
+      <select v-model="appState.settings.render_settings.point_size_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+          <option :value="null" selected>---</option>
+          <option v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
+      </select>
+    </div>
+    <div class="flex justify-between items-center">
       <span class="text-gray-500 text-sm">Show timings:</span>
       <input v-model="show_timings" type="checkbox">
     </div>

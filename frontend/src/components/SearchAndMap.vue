@@ -22,6 +22,8 @@ import { normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
 
 class FieldType {
   static VECTOR = "VECTOR"
+  static INTEGER = "INTEGER"
+  static FLOAT = "FLOAT"
 }
 
 export default {
@@ -161,11 +163,11 @@ export default {
             // no need to get further results:
             that.map_is_in_progess = false
 
-            const rendering = response.data["map_rendering"]
-            for (const field of ['hover_label']) {
-              rendering[field] = eval(rendering[field])
+            const hover_label_rendering = response.data["hover_label_rendering"]
+            for (const field of ['title', 'subtitle', 'body', 'image']) {
+              hover_label_rendering[field] = eval(hover_label_rendering[field])
             }
-            that.$refs.embedding_map.rendering = rendering
+            that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
 
             if (results["texture_atlas_path"]) {
               const image = new Image()
@@ -233,17 +235,6 @@ export default {
       const that = this
       this.selectedDocumentIdx = pointIdx
       this.$refs.embedding_map.selectedPointIdx = pointIdx
-      const item_id = this.map_item_details[pointIdx]._id
-
-      const payload = {
-        schema_id: this.appStateStore.settings.schema_id,
-        item_id: item_id,
-        fields: ["title", "abstract", "container_title", "issued_year", "authors"]
-      }
-      httpClient.post("/data_backend/document/details_by_id", payload)
-        .then(function (response) {
-          that.selectedDocumentDetails = response.data
-        })
     },
     close_document_details() {
       this.selectedDocumentIdx = -1
@@ -431,11 +422,14 @@ export default {
         .then(function (response) {
           that.selected_schema = response.data
           that.appStateStore.available_vector_fields = []
+          that.appStateStore.available_number_fields = []
           for (const field_identifier in that.selected_schema.object_fields) {
             const field = that.selected_schema.object_fields[field_identifier]
             //if (field.is_available_for_search && field.field_type == FieldType.VECTOR) {
             if (field.field_type == FieldType.VECTOR) {
               that.appStateStore.available_vector_fields.push(field.identifier)
+            } else if (field.field_type == FieldType.INTEGER || field.field_type == FieldType.FLOAT) {
+              that.appStateStore.available_number_fields.push(field.identifier)
             }
             if (that.appStateStore.available_vector_fields.length > 0) {
               that.appStateStore.settings.search_settings.search_vector_field = that.appStateStore.available_vector_fields[0]
@@ -443,6 +437,11 @@ export default {
             } else {
               that.appStateStore.settings.search_settings.search_vector_field = null
               that.appStateStore.settings.vectorize_settings.map_vector_field = null
+            }
+            if (that.appStateStore.available_number_fields.length > 0) {
+              that.appStateStore.settings.render_settings.point_size_field = that.appStateStore.available_number_fields[0]
+            } else {
+              that.appStateStore.settings.search_settings.point_size_field = null
             }
           }
         })
@@ -639,7 +638,7 @@ export default {
         <div ref="right_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
-            <ObjectDetailsModal :item="map_item_details[selectedDocumentIdx]" :abstract="selectedDocumentDetails ? selectedDocumentDetails.abstract : 'loading...'"
+            <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :schema="selected_schema"
               :collections="collections" :last_used_collection_id="last_used_collection_id"
               @addToPositives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, true) }"
               @addToNegatives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, false) }"

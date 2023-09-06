@@ -42,7 +42,7 @@ def get_absclust_item_by_id(item_id: str):
     return doc
 
 
-def get_absclust_search_results(query: str, limit: int):
+def get_absclust_search_results(query: str, additional_fields: list[str], limit: int):
     global search_results_cache
 
     if query + str(limit) in search_results_cache:

@@ -14,6 +14,7 @@ uniform float zoom;
 uniform vec2 viewportSize;
 uniform vec2 lightPosition;
 uniform float devicePixelRatio;
+uniform bool useTextureAtlas;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
@@ -63,6 +64,10 @@ void main() {
     float uvFactor = (2048.0/32.0);
     vec3 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + posFromBottomLeft / uvFactor).rgb;
 
-    FragColor.rgb = tex; //diffuseColor + 0.6 * vec3(specColor) + noise + edgeDarkness;
+    if (useTextureAtlas) {
+        FragColor.rgb = tex;
+    } else {
+        FragColor.rgb = diffuseColor + 0.6 * vec3(specColor) + noise + edgeDarkness;
+    }
     FragColor.a = circleArea * 0.7;
 }

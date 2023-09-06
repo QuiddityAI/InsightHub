@@ -28,6 +28,7 @@ export const useAppStateStore = defineStore('appState', {
           dim_reducer: "umap",
         },
         render_settings: {
+          point_size_field: null,
           clusterizer_parameters: {
             min_cluster_size: "auto",
             min_samples: 5,
@@ -37,6 +38,7 @@ export const useAppStateStore = defineStore('appState', {
         },
       },
       available_vector_fields: [],
+      available_number_fields: [],
     }
   },
 })

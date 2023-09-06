@@ -8,7 +8,7 @@ from logic.model_client import get_embedding, get_openai_embedding_batch, save_e
 from logic.gensim_w2v_vectorizer import GensimW2VVectorizer
 
 
-def add_vectors_to_results(search_results, query, params: DotDict, map_data, timings):
+def add_vectors_to_results(search_results, query, params: DotDict, descriptive_text_fields, map_data, timings):
 
     # using the code below leads to broken vectors for some reasons:
     # texts = [item.get("title", "") + " " + item.get("abstract", "") for item in results_part]
@@ -42,7 +42,7 @@ def add_vectors_to_results(search_results, query, params: DotDict, map_data, tim
 
     elif params.vectorize_settings.vectorizer == "gensim_w2v_tf_idf":
         map_data["progress"]["step_title"] = "Training model"
-        corpus = [item["abstract"] for item in search_results]
+        corpus = [" ".join([item[field] for field in descriptive_text_fields]) for item in search_results]
         vectorizer = GensimW2VVectorizer()
         vectorizer.prepare(corpus)
         timings.log("training w2v model")
@@ -52,7 +52,8 @@ def add_vectors_to_results(search_results, query, params: DotDict, map_data, tim
         map_data["progress"]["total_steps"] = len(search_results)
 
         for i, item in enumerate(search_results):
-            item_embedding = vectorizer.get_embedding(item.get("abstract", "")).tolist()
+            text = " ".join([item[field] for field in descriptive_text_fields])
+            item_embedding = vectorizer.get_embedding(text).tolist()
             item["w2v_vector"] = item_embedding
             item["score"] = np.dot(query_embedding, item_embedding)
 

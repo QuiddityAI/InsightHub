@@ -1,4 +1,3 @@
-from functools import lru_cache
 import json
 import os
 
@@ -107,7 +106,7 @@ def _get_search_list_result(params_str):
 
     # TODO: currently only first page is returned
     schema = get_object_schema(schema_id)
-    list_rendering = json.loads(schema.result_list_rendering)
+    list_rendering = schema.result_list_rendering
     timings.log("preparation")
 
     search_results = get_search_results_for_list(schema, search_vector_field, query.split(" OR "), list_rendering['required_fields'], limit=limit_per_page, page=page)

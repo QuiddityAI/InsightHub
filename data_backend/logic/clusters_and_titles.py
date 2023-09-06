@@ -16,7 +16,7 @@ def clusterize_results(projections):
     return clusterer.labels_
 
 
-def get_cluster_titles(cluster_labels, projections, results, timings: Timings, cluster_cache):
+def get_cluster_titles(cluster_labels, projections, results, descriptive_text_fields, timings: Timings, cluster_cache):
     global last_cluster_id
     num_clusters = max(cluster_labels) + 1
     if num_clusters <= 0:
@@ -28,12 +28,12 @@ def get_cluster_titles(cluster_labels, projections, results, timings: Timings, c
 
     for result_index, cluster_index in enumerate(cluster_labels):
         if cluster_index <= -1: continue
-        text = results[result_index]["title"] + " " + results[result_index]["abstract"]
+        text = " ".join([results[result_index][field] for field in descriptive_text_fields])
         texts_per_cluster[cluster_index] += text
         points_per_cluster_x[cluster_index].append(projections[result_index][0])
         points_per_cluster_y[cluster_index].append(projections[result_index][1])
         results_by_cluster[cluster_index].append(results[result_index])
-    timings.log("getting abstracts from disk")
+    timings.log("combining abstracts from search results")
 
     # highlight TF-IDF words:
     # tf_idf_helper = ClusterTitles()
