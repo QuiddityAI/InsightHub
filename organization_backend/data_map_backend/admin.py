@@ -5,6 +5,7 @@ from django.db import models
 
 from djangoql.admin import DjangoQLSearchMixin
 from simple_history.admin import SimpleHistoryAdmin
+from jsonsuit.widgets import JSONSuit
 
 from .models import EmbeddingSpace, Generator, Organization, ObjectSchema, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
 
@@ -91,6 +92,7 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit }
     }
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -103,6 +105,17 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
             else:
                 kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
         return super(ObjectSchemaAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        # only show fields of same schema for source fields:
+        if db_field.name == "descriptive_text_fields":
+            try:
+                schema_id = int(request.path.split("/")[-3])
+            except ValueError:
+                kwargs["queryset"] = ObjectField.objects.filter(schema = -1)
+            else:
+                kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
+        return super(ObjectSchemaAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_field_overview_table_html(self, obj):
         header = ["Type", "Identifier", "Search / Filter / Generated", "Generator"]

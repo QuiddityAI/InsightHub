@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'social_django',
     'drf_social_oauth2',
+    'jsonsuit.apps.JSONSuitConfig',
 ]
 
 MIDDLEWARE = [

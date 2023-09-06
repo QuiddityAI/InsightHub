@@ -30,6 +30,7 @@ class ObjectSchemaSerializer(drf_serializers.ModelSerializer):
     object_fields = ObjectFieldSerializer(many=True, read_only=True)
     primary_key = drf_serializers.StringRelatedField(many=False, read_only=True)
     thumbnail_image = drf_serializers.StringRelatedField(many=False, read_only=True)
+    descriptive_text_fields = drf_serializers.StringRelatedField(many=True, read_only=True)
 
     class Meta:
         model = ObjectSchema

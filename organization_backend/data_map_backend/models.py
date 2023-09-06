@@ -1,3 +1,6 @@
+import copy
+import json
+
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -170,6 +173,26 @@ class Organization(models.Model):
         verbose_name_plural = "Organizations"
 
 
+def get_rendering_json_field_default(fields: list):
+    val = {}
+    val["required_fields"] = []
+    for field in fields:
+        val[field] = "(item) => { return null }"
+    return val
+
+def get_default_result_list_rendering():
+    return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
+
+def get_default_collection_list_rendering():
+    return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
+
+def get_default_hover_label_rendering():
+    return get_rendering_json_field_default(['title', 'subtitle', 'image'])
+
+def get_default_detail_view_rendering():
+    return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
+
+
 class ObjectSchema(models.Model):
     name = models.CharField(
         verbose_name="Name",
@@ -210,31 +233,38 @@ class ObjectSchema(models.Model):
         on_delete=models.PROTECT,
         blank=True,
         null=True)
-    result_list_rendering = models.TextField(
-        verbose_name="Rendering (Result List)",
-        blank=True,
-        null=True)
-    collection_list_rendering = models.TextField(
-        verbose_name="Rendering (Collection List)",
-        blank=True,
-        null=True)
-    hover_label_rendering = models.TextField(
-        verbose_name="Rendering (Hover Label)",
-        blank=True,
-        null=True)
-    detail_view_rendering = models.TextField(
-        verbose_name="Rendering (Detail View)",
-        blank=True,
-        null=True)
-    map_rendering = models.TextField(
-        verbose_name="Rendering (Map)",
-        blank=True,
-        null=True)
     thumbnail_image = models.ForeignKey(
         verbose_name="Thumbnail Image",
         to='ObjectField',
         related_name='+',
         on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+    descriptive_text_fields = models.ManyToManyField(
+        verbose_name="Descriptive Text Fields",
+        help_text="For Word2Vec and Cluster Titles",
+        to='ObjectField',
+        related_name='+',
+        blank=True,
+        null=True)
+    result_list_rendering = models.JSONField(
+        verbose_name="Rendering (Result List)",
+        default=get_default_result_list_rendering,
+        blank=True,
+        null=True)
+    collection_list_rendering =  models.JSONField(
+        verbose_name="Rendering (Collection List)",
+        default=get_default_collection_list_rendering,
+        blank=True,
+        null=True)
+    hover_label_rendering =  models.JSONField(
+        verbose_name="Rendering (Hover Label)",
+        default=get_default_hover_label_rendering,
+        blank=True,
+        null=True)
+    detail_view_rendering =  models.JSONField(
+        verbose_name="Rendering (Detail View)",
+        default=get_default_detail_view_rendering,
         blank=True,
         null=True)
 

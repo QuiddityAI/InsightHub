@@ -32,6 +32,7 @@ django-jazzmin = "*"
 qdrant-client = "*"
 pymongo = "*"
 opensearch-py = "*"
+django-jsonsuit = "*"
 
 [dev-packages]
 ipykernel = "*"
