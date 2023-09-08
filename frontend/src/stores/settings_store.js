@@ -6,18 +6,20 @@ export const useAppStateStore = defineStore('appState', {
       settings: {
         schema_id: null,
         search_settings: {
-          query: "",
-          search_vector_field: null,
-          search_strategy: "typesense",
+          use_separate_queries: false,
+          all_field_query: "",
+          all_field_query_negative: "",
+          separate_queries: {},
+          combined_search_strategy: "fulltext",
           result_list_items_per_page: 10,
           result_list_current_page: 0,
-          result_list_max_pages: 20,  // needed?
-          max_items_used_for_mapping: 2000,
         },
         vectorize_settings: {
+          max_items_used_for_mapping: 2000,
           map_vector_field: null,
           tokenizer: "default",
-          vectorizer: "pubmedbert",
+          use_w2v_model: false,
+          vectorizer: "pubmedbert",  // deprecated
         },
         projection_settings: {
           shape: "2d",
@@ -29,6 +31,8 @@ export const useAppStateStore = defineStore('appState', {
         },
         render_settings: {
           point_size_field: null,
+          point_color_field: 'cluster',
+          show_thumbnails: true,
           clusterizer_parameters: {
             min_cluster_size: "auto",
             min_samples: 5,

@@ -247,6 +247,13 @@ class ObjectSchema(models.Model):
         related_name='+',
         blank=True,
         null=True)
+    default_search_fields = models.ManyToManyField(
+        verbose_name="Default Search Fields",
+        help_text="For combined search",
+        to='ObjectField',
+        related_name='+',
+        blank=True,
+        null=True)
     result_list_rendering = models.JSONField(
         verbose_name="Rendering (Result List)",
         default=get_default_result_list_rendering,

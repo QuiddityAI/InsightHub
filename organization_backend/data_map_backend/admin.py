@@ -108,7 +108,7 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         # only show fields of same schema for source fields:
-        if db_field.name == "descriptive_text_fields":
+        if db_field.name in ["descriptive_text_fields", "default_search_fields"]:
             try:
                 schema_id = int(request.path.split("/")[-3])
             except ValueError:

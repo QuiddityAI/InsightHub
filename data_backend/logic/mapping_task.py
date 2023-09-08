@@ -102,7 +102,7 @@ def generate_map(map_id):
     params = DotDict(map_data["parameters"])
 
     query = params.search_settings.query
-    limit = params.search_settings.max_items_used_for_mapping
+    limit = params.vectorize_settings.max_items_used_for_mapping
     schema_id = params.schema_id
     search_vector_field = params.search_settings.search_vector_field
     map_vector_field = params.vectorize_settings.map_vector_field
