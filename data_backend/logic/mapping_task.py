@@ -260,39 +260,6 @@ def get_search_results_for_map(schema: DotDict, search_vector_field: str, map_ve
     return results
 
 
-# TODO: this method shouldn't be here (but currently it has for the cluster_cache)
-def get_search_results_for_list(schema: DotDict, vector_field: str, queries: list[str], additional_fields: list[str], limit: int, page: int):
-    results = []
-
-    for query in queries:
-        # TODO: re-implement with map model as store for clusters
-        if query.startswith("cluster_id: "):
-            cluster_uid = query.split("cluster_id: ")[1].split(" (")[0]
-            results += cluster_cache[cluster_uid][:10]
-            continue
-
-        if schema.id == ABSCLUST_SCHEMA_ID:
-            results += get_absclust_search_results(query, additional_fields, limit)
-            continue
-
-        generator = schema.object_fields[vector_field].generator
-        generator_function = get_generator_function(generator.identifier, schema.object_fields[vector_field].generator_parameters)
-        query_vector = generator_function([query])[0]
-
-        vector_db_client = VectorSearchEngineClient.get_instance()
-        criteria = {}  # TODO: add criteria
-        vector_search_result = vector_db_client.get_items_near_vector(schema.id, vector_field, query_vector, criteria, return_vectors=False, limit=limit)
-        ids = [UUID(item.id) for item in vector_search_result]
-
-        object_storage_client = ObjectStorageEngineClient.get_instance()
-        object_storage_result = object_storage_client.get_items_by_ids(schema.id, ids, fields=additional_fields)
-        results += object_storage_result
-
-    save_search_cache()
-
-    return results
-
-
 def get_map_results(map_id) -> dict | None:
     if map_id not in local_maps:
         map_data = get_stored_map_data(map_id)

@@ -105,7 +105,7 @@ export default {
 
       this.reset_search_results_and_map()
 
-      if (!this.appStateStore.settings.search_settings.query) return;
+      if (!this.appStateStore.settings.search_settings.all_field_query) return;
 
       this.selected_tab = "results"
 
@@ -131,7 +131,7 @@ export default {
           that.search_list_rendering = rendering
           that.search_timings = response.data["timings"]
 
-          that.request_map()
+          //that.request_map()
         })
     },
     request_map() {
@@ -502,7 +502,7 @@ export default {
               </button>
             </div>
 
-            <Parameters ref="parameters_area" v-show="show_settings" class="mt-3"></Parameters>
+            <Parameters ref="parameters_area" v-show="show_settings" :schema="selected_schema" class="mt-3"></Parameters>
           </div>
 
           <!-- tab box -->

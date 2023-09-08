@@ -5,15 +5,14 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug import serving
 
-from utils.collect_timings import Timings
-from utils.dotdict import DotDict
 from utils.custom_json_encoder import CustomJSONEncoder
+from utils.dotdict import DotDict
 
-from logic.postprocess_search_results import enrich_search_results
-from logic.mapping_task import get_or_create_map, get_map_results, get_document_details, get_search_results_for_list, get_document_details_by_id
+from logic.mapping_task import get_or_create_map, get_map_results, get_document_details, get_document_details_by_id
 from logic.insert_logic import insert_many, update_database_layout
+from logic.search import get_search_list_result
 
-from database_client.django_client import get_object_schema, add_stored_map
+from database_client.django_client import add_stored_map
 
 
 # --- Flask set up: ---
@@ -84,45 +83,16 @@ def insert_many_sync_route():
 
 
 @app.route('/data_backend/search_list_result', methods=['POST'])
-def get_search_list_result():
+def get_search_list_result_endpoint():
     # turn params into string to make it cachable (aka hashable):
     params_str = json.dumps(request.json, indent=2)
     print(params_str)
-    return _get_search_list_result(params_str)
+    try:
+        result = get_search_list_result(params_str)
+    except ValueError as e:
+        print(e)
+        return str(e.args), 400  # TODO: there could be other reasons, e.g. schema not found
 
-
-#@lru_cache()
-def _get_search_list_result(params_str):
-    timings = Timings()
-
-    params = DotDict(json.loads(params_str))
-    query = params.search_settings.query
-    limit_per_page = params.search_settings.result_list_items_per_page
-    page = params.search_settings.result_list_current_page
-    schema_id = params.schema_id
-    search_vector_field = params.search_settings.search_vector_field
-    if not all([query, limit_per_page, page is not None, schema_id, search_vector_field]):
-        return "a parameter is missing", 400
-
-    # TODO: currently only first page is returned
-    schema = get_object_schema(schema_id)
-    list_rendering = schema.result_list_rendering
-    timings.log("preparation")
-
-    search_results = get_search_results_for_list(schema, search_vector_field, query.split(" OR "), list_rendering['required_fields'], limit=limit_per_page, page=page)
-    timings.log("database query")
-
-    # search_results = enrich_search_results(search_results, query)
-    # timings.log("enriching results")
-    # -> replaced by context dependent generator (for important words per abstract and highlighting of words)
-
-    print(json.dumps(search_results[0], indent=4, cls=CustomJSONEncoder))
-
-    result = {
-        "items": search_results,
-        "timings": timings.get_timestamps(),
-        "rendering": list_rendering,
-    }
     response = app.response_class(
         response=json.dumps(result, cls=CustomJSONEncoder),
         mimetype='application/json'

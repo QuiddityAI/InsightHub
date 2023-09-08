@@ -6,6 +6,7 @@ export const useAppStateStore = defineStore('appState', {
       settings: {
         schema_id: null,
         search_settings: {
+          search_type: "external_input",  // or cluster, collection or similar item
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",

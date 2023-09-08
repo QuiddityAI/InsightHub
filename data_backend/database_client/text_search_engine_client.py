@@ -131,3 +131,23 @@ class TextSearchEngineClient(object):
 
     def clear_field(self, schema_id, field):
         return
+
+
+    def get_search_results(self, schema_id, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields):
+        query = {
+            'size': limit,
+            'query': {
+                'multi_match': {
+                    'query': query_positive,
+                    'fields': search_fields,
+                }
+            },
+            '_source': return_fields,
+        }
+
+        response = self.client.search(
+            body = query,
+            index = self._get_index_name(schema_id)
+        )
+        logging.warning(response)
+        return response.get("hits", {}).get("hits", [])

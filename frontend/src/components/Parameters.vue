@@ -24,6 +24,12 @@ const appState = useAppStateStore()
 
 // auto generated filter criteria set (later, maybe simple ones for now)
 
+// external input: combined (pos, neg, text),
+//     separate fields (pos, neg with text or image (if supported)),
+// similar to item (list of fields, e.g. descr. or image, fields are OR),
+// matching to collection (collection id),
+// cluster id of map id
+
 
 export default {
   props: ["schema"],
@@ -82,10 +88,10 @@ export default {
     ...mapStores(useAppStateStore),
   },
   watch: {
-    'schema' (newValue, oldValue) {
+    schema: function (newValue, oldValue) {
       const separate_search_fields = []
       this.appStateStore.settings.search_settings.separate_queries = {}
-      for (const field of this.schema.object_fields) {
+      for (const field of Object.values(this.schema.object_fields)) {
         if (field.is_available_for_search) {
           separate_search_fields.push(field)
           this.appStateStore.settings.search_settings.separate_queries[field.identifier] = {
@@ -117,11 +123,10 @@ export default {
     </div>
     <div v-if="appState.settings.search_settings.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
       <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
-      <input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].query" class="w-1/2 text-gray-500 text-sm">
-      <input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].query_negative" class="w-1/2 text-gray-500 text-sm">
+      <input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].query" placeholder="positive" class="w-1/2 text-gray-500 text-sm">
+      <input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
       Must:<input v-model="appState.settings.search_settings.separate_queries[field.identifier].must" type="checkbox">
-      More / Less:
-      <input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+      T.O.<input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
     </div>
     <!-- <div class="flex justify-between items-center">
       <span class="text-gray-500 text-sm">Search Vector Field:</span>
