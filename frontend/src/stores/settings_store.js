@@ -15,9 +15,9 @@ export const useAppStateStore = defineStore('appState', {
           combined_search_strategy: "hybrid",
           result_list_items_per_page: 10,
           result_list_current_page: 0,
+          max_items_used_for_mapping: 2000,
         },
         vectorize_settings: {
-          max_items_used_for_mapping: 2000,
           map_vector_field: null,
           tokenizer: "default",
           use_w2v_model: false,

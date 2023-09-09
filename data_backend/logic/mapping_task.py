@@ -1,11 +1,8 @@
-from copy import deepcopy
 from hashlib import md5
 import logging
 from threading import Thread
 import json
-from uuid import UUID
 import os
-from functools import lru_cache
 import time
 
 import numpy as np
@@ -17,14 +14,11 @@ from utils.collect_timings import Timings
 from utils.helpers import normalize_array, polar_to_cartesian
 from utils.dotdict import DotDict
 
-from database_client.absclust_database_client import get_absclust_search_results, save_search_cache, get_absclust_item_by_id
 from database_client.django_client import get_object_schema, get_stored_map_data
-from database_client.vector_search_engine_client import VectorSearchEngineClient
-from database_client.object_storage_client import ObjectStorageEngineClient
 
-from logic.generator_functions import get_generator_function
 from logic.add_vectors import add_vectors_to_results
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
+from logic.search import get_search_results
 
 
 ABSCLUST_SCHEMA_ID = 1
@@ -101,26 +95,21 @@ def generate_map(map_id):
     map_data = local_maps[map_id]
     params = DotDict(map_data["parameters"])
 
-    query = params.search_settings.query
-    limit = params.vectorize_settings.max_items_used_for_mapping
+    query = params.search_settings.all_field_query
+    limit = params.search_settings.max_items_used_for_mapping
     schema_id = params.schema_id
-    search_vector_field = params.search_settings.search_vector_field
     map_vector_field = params.vectorize_settings.map_vector_field
-    if not all([query, limit, schema_id, search_vector_field, map_vector_field]):
+    if not all([query, limit, schema_id, map_vector_field]):
         map_data['progress']['step_title'] = "a parameter is missing"
         raise ValueError("a parameter is missing")
     schema = get_object_schema(schema_id)
     map_data["hover_label_rendering"] = schema.hover_label_rendering
 
-    additional_fields = set(schema.hover_label_rendering.required_fields or [])
-    if schema.thumbnail_image:
-        additional_fields.add(schema.thumbnail_image)
-    additional_fields = additional_fields.union(schema.descriptive_text_fields)
-    additional_fields = list(additional_fields)
     timings.log("preparation")
 
     map_data['progress']['step_title'] = "Getting search results"
-    search_results = get_search_results_for_map(schema, search_vector_field, map_vector_field, query.split(" OR "), additional_fields, limit)
+    params_str = json.dumps(map_data["parameters"], indent=2)
+    search_results = get_search_results(params_str, purpose='map')['items']
     timings.log("database query")
 
     map_data["results"]["per_point_data"]["item_ids"] = [item["_id"] for item in search_results]
@@ -132,7 +121,7 @@ def generate_map(map_id):
         add_vectors_to_results(search_results, query, params, schema.descriptive_text_fields, map_data, timings)
 
     vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
-    scores = [e["score"] for e in search_results]
+    scores = [e["_score"] for e in search_results]
     map_data["results"]["per_point_data"]["scores"] = scores
     point_sizes = [e.get(params.render_settings.point_size_field) for e in search_results] if params.render_settings.point_size_field else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
@@ -221,45 +210,6 @@ def generate_map(map_id):
     map_data["finished"] = True
 
 
-def get_search_results_for_map(schema: DotDict, search_vector_field: str, map_vector_field: str, queries: list[str], additional_fields: list[str], limit: int):
-    results = []
-
-    for query in queries:
-        if query.startswith("cluster_id: "):
-            cluster_uid = query.split("cluster_id: ")[1].split(" (")[0]
-            results += deepcopy(cluster_cache[cluster_uid])
-            continue
-
-        if schema.id == ABSCLUST_SCHEMA_ID:
-            results += get_absclust_search_results(query, additional_fields, limit)
-            continue
-
-        generator = schema.object_fields[search_vector_field].generator
-        generator_function = get_generator_function(generator.identifier, schema.object_fields[search_vector_field].generator_parameters)
-        query_vector = generator_function([query])[0]
-
-        vector_db_client = VectorSearchEngineClient.get_instance()
-        criteria = {}  # TODO: add criteria
-        return_vectors = search_vector_field == map_vector_field
-        vector_search_result = vector_db_client.get_items_near_vector(schema.id, search_vector_field, query_vector, criteria, return_vectors=return_vectors, limit=limit)
-        ids = [UUID(item.id) for item in vector_search_result]
-
-        object_storage_client = ObjectStorageEngineClient.get_instance()
-        if search_vector_field != map_vector_field:
-            additional_fields.append(map_vector_field)
-        object_storage_result = object_storage_client.get_items_by_ids(schema.id, ids, fields=additional_fields)
-
-        for result_item, vector_search_result in zip(object_storage_result, vector_search_result):
-            result_item['score'] = vector_search_result.score
-            if search_vector_field == map_vector_field:
-                result_item[map_vector_field] = vector_search_result.vector[search_vector_field]
-
-        results += object_storage_result
-
-    save_search_cache()
-    return results
-
-
 def get_map_results(map_id) -> dict | None:
     if map_id not in local_maps:
         map_data = get_stored_map_data(map_id)
@@ -274,26 +224,3 @@ def get_map_results(map_id) -> dict | None:
     # TODO: go through local_maps every hour and delete that ones that weren't been accessed in the last hour
 
     return result
-
-
-def get_document_details(task_id, index):
-    # FIXME: the abstract should be retrived from the database and not the "map details" cache,
-    # as the cache would be empty already
-    if task_id not in map_details or len(map_details[task_id]) <= index:
-        logging.warning("task_id not found or index out of range")
-        return None
-
-    return map_details[task_id][index]
-
-
-@lru_cache
-def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str]):
-    if schema_id == ABSCLUST_SCHEMA_ID:
-        return get_absclust_item_by_id(item_id)
-
-    object_storage_client = ObjectStorageEngineClient.get_instance()
-    items = object_storage_client.get_items_by_ids(schema_id, [UUID(item_id)], fields=fields)
-    if not items:
-        return None
-
-    return items[0]

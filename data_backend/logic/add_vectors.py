@@ -34,7 +34,7 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
             #item_embedding = embeddings[item["DOI"]]
             item_embedding = get_embedding(item.get("title", "") + " " + item.get("abstract", ""), item["DOI"]).tolist()
             item["pubmed_vector"] = item_embedding
-            item["score"] = np.dot(query_embedding, item_embedding)
+            item["_score"] = np.dot(query_embedding, item_embedding)
 
             map_data["progress"]["current_step"] = i
 
@@ -55,7 +55,7 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
             text = " ".join([item[field] for field in descriptive_text_fields])
             item_embedding = vectorizer.get_embedding(text).tolist()
             item["w2v_vector"] = item_embedding
-            item["score"] = np.dot(query_embedding, item_embedding)
+            item["_score"] = np.dot(query_embedding, item_embedding)
 
             map_data["progress"]["current_step"] = i
         timings.log("generating embeddings")

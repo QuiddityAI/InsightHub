@@ -8,9 +8,9 @@ from werkzeug import serving
 from utils.custom_json_encoder import CustomJSONEncoder
 from utils.dotdict import DotDict
 
-from logic.mapping_task import get_or_create_map, get_map_results, get_document_details, get_document_details_by_id
+from logic.mapping_task import get_or_create_map, get_map_results
 from logic.insert_logic import insert_many, update_database_layout
-from logic.search import get_search_list_result
+from logic.search import get_search_results, get_document_details_by_id
 
 from database_client.django_client import add_stored_map
 
@@ -86,9 +86,9 @@ def insert_many_sync_route():
 def get_search_list_result_endpoint():
     # turn params into string to make it cachable (aka hashable):
     params_str = json.dumps(request.json, indent=2)
-    print(params_str)
+    # print(params_str)
     try:
-        result = get_search_list_result(params_str)
+        result = get_search_results(params_str, purpose='list')
     except ValueError as e:
         print(e)
         return str(e.args), 400  # TODO: there could be other reasons, e.g. schema not found
@@ -106,9 +106,6 @@ def get_search_list_result_endpoint():
 @app.route('/data_backend/map', methods=['POST'])
 def get_or_create_map_endpoint():
     params = DotDict(request.json or {})
-    query = params.search_settings.query
-    if not query:
-        return "query parameter is missing", 400
 
     map_id = get_or_create_map(params)
 
@@ -127,25 +124,13 @@ def retrive_map_results():
     return result
 
 
-@app.route('/data_backend/map/texture_atlas/<image_path>', methods=['GET'])
-def retrieve_texture_atlas(image_path):
-    if image_path is None or not os.path.exists(image_path):
+@app.route('/data_backend/map/texture_atlas/<subfolder>/<image_path>', methods=['GET'])
+def retrieve_texture_atlas(subfolder, image_path):
+    full_path = os.path.join(subfolder, image_path)
+    if image_path is None or not os.path.exists(full_path):
         return "texture atlas not found", 404
 
-    return send_from_directory('.', image_path)
-
-
-@app.route('/data_backend/document/details', methods=['POST'])
-def retrieve_document_details():
-    params = request.json or {}
-    task_id = params.get("task_id")
-    index = params.get("index")
-    result = get_document_details(task_id, index)
-
-    if result is None:
-        return "task_id or index not found", 404
-
-    return result
+    return send_from_directory('.', full_path)
 
 
 @app.route('/data_backend/document/details_by_id', methods=['POST'])
@@ -153,7 +138,7 @@ def retrieve_document_details_by_id():
     params = request.json or {}
     schema_id = params.get("schema_id")
     item_id = params.get("item_id")
-    fields = params.get("fields")
+    fields: list[str] = params.get("fields") # type: ignore
     if not all([schema_id is not None, item_id is not None, fields is not None]):
         return "a parameter is missing", 400
 

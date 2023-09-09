@@ -131,12 +131,12 @@ export default {
           <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
       </select>
     </div> -->
-    <hr>
     <div class="flex justify-between items-center">
       <span class="text-gray-500 text-sm">Max. items for map:</span>
-      <span class="text-gray-500 text-sm"> {{ appState.settings.vectorize_settings.max_items_used_for_mapping }} </span>
-      <input v-model.number="appState.settings.vectorize_settings.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+      <span class="text-gray-500 text-sm"> {{ appState.settings.search_settings.max_items_used_for_mapping }} </span>
+      <input v-model.number="appState.settings.search_settings.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
     </div>
+    <hr>
     <div class="flex justify-between items-center">
       <span class="text-gray-500 text-sm">Use context-trained w2v model:</span>
       <input v-model="appState.settings.vectorize_settings.use_w2v_model" type="checkbox">

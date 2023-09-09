@@ -17,6 +17,6 @@ export default {
     <p class="mt-2 text-xs leading-5 text-gray-700"><div v-html="rendering.body(item)"></div></p>
     <p class="mt-2 text-xs leading-5 text-gray-700"><a :href="rendering.url(item)">Link</a></p>
     <img class="w-10" :src="rendering.url(item)">
-    <span class="text-xs text-gray-500">{{ item._reciprocal_rank_score.toFixed(2) }} {{ item._source_scores }} {{ item._source_types }} {{ item._source_fields }}</span>
+    <span class="text-xs text-gray-500">{{ item._reciprocal_rank_score.toFixed(2) }} {{ item._source_scores }} {{ item._source_types }} {{ item._source_fields }},  {{ item._source_queries }}</span>
   </div>
 </template>

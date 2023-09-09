@@ -112,7 +112,7 @@ export default {
       const history_item_body = {
         user_id: 1,  // FIXME: this is hardcoded
         schema_id: this.appStateStore.settings.schema_id,
-        name: this.appStateStore.settings.search_settings.query,
+        name: this.appStateStore.settings.search_settings.all_field_query,  // TODO: doesn't work for other types
         parameters: this.appStateStore.settings,
       }
 
@@ -131,7 +131,7 @@ export default {
           that.search_list_rendering = rendering
           that.search_timings = response.data["timings"]
 
-          //that.request_map()
+          that.request_map()
         })
     },
     request_map() {

@@ -76,7 +76,7 @@ class ObjectStorageEngineClient(object):
         collection.delete_many({"_id": {"$in": ids}})
 
 
-    def get_items_by_ids(self, schema_id: int, ids: Iterable[UUID], fields: list[str]) -> list:
+    def get_items_by_ids(self, schema_id: int, ids: Iterable[UUID], fields: Iterable[str]) -> list:
         collection = self.get_collection(schema_id)
         result = collection.find(filter={"_id": {"$in": list(ids)}}, projection=fields)
         return list(result)

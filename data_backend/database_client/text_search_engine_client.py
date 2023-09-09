@@ -153,5 +153,4 @@ class TextSearchEngineClient(object):
             body = query,
             index = self._get_index_name(schema_id)
         )
-        logging.warning(response)
         return response.get("hits", {}).get("hits", [])
