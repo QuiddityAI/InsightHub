@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 export const useAppStateStore = defineStore('appState', {
   state: () => {
     return {
+      show_timings: false,
       settings: {
         schema_id: null,
         search_settings: {
@@ -11,7 +12,7 @@ export const useAppStateStore = defineStore('appState', {
           all_field_query: "",
           all_field_query_negative: "",
           separate_queries: {},
-          combined_search_strategy: "fulltext",
+          combined_search_strategy: "hybrid",
           result_list_items_per_page: 10,
           result_list_current_page: 0,
         },

@@ -458,7 +458,7 @@ export default {
         @cluster_selected="narrow_down_on_cluster"
         @point_selected="show_document_details"/>
 
-      <div v-if="$refs.parameters_area ? $refs.parameters_area.show_timings : false" class="absolute bottom-0 right-0 text-right">
+      <div v-if="appState.show_timings" class="absolute bottom-0 right-0 text-right">
         <!-- timings -->
         <ul role="list">
             <li v-for="item in search_timings" :key="item.part" class="text-gray-300">

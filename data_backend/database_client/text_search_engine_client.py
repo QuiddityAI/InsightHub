@@ -133,7 +133,7 @@ class TextSearchEngineClient(object):
         return
 
 
-    def get_search_results(self, schema_id, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields):
+    def get_search_results(self, schema_id, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields, highlights=False):
         query = {
             'size': limit,
             'query': {
@@ -144,6 +144,10 @@ class TextSearchEngineClient(object):
             },
             '_source': return_fields,
         }
+        if highlights:
+            query['highlight'] = {
+                "fields": {field: {} for field in search_fields}
+            }
 
         response = self.client.search(
             body = query,

@@ -77,9 +77,6 @@ export default {
         {id: "tf_idf_top_3", title: "tf_idf_top_3"},
         {id: "generative_ai", title: "generative_ai"},
       ],
-
-      // UI only:
-      show_timings: false,
     }
   },
   mounted() {
@@ -205,7 +202,7 @@ export default {
     <hr>
     <div class="flex justify-between items-center">
       <span class="text-gray-500 text-sm">Show timings:</span>
-      <input v-model="show_timings" type="checkbox">
+      <input v-model="appState.show_timings" type="checkbox">
     </div>
   </div>
 </template>
