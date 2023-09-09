@@ -80,12 +80,22 @@ def get_absclust_search_results(query: str, additional_fields: list[str], limit:
             )
             results_raw.extend(hits["hits"])
     results_part = [a["document"] for a in results_raw[:limit]]
-    for item in results_part:
+    for i, item in enumerate(results_part):
         if "title" not in item:
             item["title"] = "title unknown"
         if "abstract" not in item:
             item["abstract"] = ""
         item["_id"] = item["id"]
+
+        item.update({
+            '_score': 1.0,
+            '_reciprocal_rank_score': 1.0 / (i + 1),
+            '_source_scores': [1.0],
+            '_source_types': ['absclust_db'],
+            '_source_fields': ['unknown'],
+            '_source_queries': [query],
+            '_ranks': [i + 1],
+        })
 
     search_results_cache[query + str(limit)] = results_part
 
