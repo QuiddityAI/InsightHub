@@ -20,3 +20,9 @@ export function normalizeArrayMedianGamma(a, max_default=1.0) {
   const gamma = math.max(0.1, math.median(a) * 0.6)
   return math.dotPow(a, gamma)
 }
+
+export class FieldType {
+  static VECTOR = "VECTOR"
+  static INTEGER = "INTEGER"
+  static FLOAT = "FLOAT"
+}

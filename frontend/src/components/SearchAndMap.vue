@@ -2,12 +2,13 @@
 import { mapStores } from 'pinia'
 
 import EmbeddingMap from './EmbeddingMap.vue';
-import Parameters from './Parameters.vue';
+import SearchArea from './SearchArea.vue';
 import ResultListItem from './ResultListItem.vue';
 import ObjectDetailsModal from './ObjectDetailsModal.vue';
 import CollectionListItem from './CollectionListItem.vue';
-import { AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 
+import httpClient from '../api/httpClient';
+import { normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
 import { useAppStateStore } from '../stores/settings_store'
 
 const appState = useAppStateStore()
@@ -16,15 +17,7 @@ const appState = useAppStateStore()
 
 <script>
 
-import httpClient from '../api/httpClient';
 
-import { normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
-
-class FieldType {
-  static VECTOR = "VECTOR"
-  static INTEGER = "INTEGER"
-  static FLOAT = "FLOAT"
-}
 
 export default {
   data() {
@@ -62,9 +55,6 @@ export default {
       stored_maps: [],
 
       // settings:
-      show_settings: false,
-      available_databases: [],
-      database_information: {},
       selected_schema: {},
     }
   },
@@ -372,18 +362,7 @@ export default {
   mounted() {
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
-
-    const that = this
-    httpClient.post("/organization_backend/available_schemas", {organization_id: -1})
-      .then(function (response) {
-        that.available_databases = response.data
-        that.database_information = {}
-        for (const database of that.available_databases) {
-          that.database_information[database.id] = database.short_description
-        }
-        that.appStateStore.settings.schema_id = 1
-      })
-    },
+  },
   watch: {
     'appStateStore.settings.schema_id' (newValue, oldValue) {
       const that = this
@@ -421,29 +400,6 @@ export default {
       httpClient.post("/organization_backend/object_schema", {schema_id: this.appStateStore.settings.schema_id})
         .then(function (response) {
           that.selected_schema = response.data
-          that.appStateStore.available_vector_fields = []
-          that.appStateStore.available_number_fields = []
-          for (const field_identifier in that.selected_schema.object_fields) {
-            const field = that.selected_schema.object_fields[field_identifier]
-            //if (field.is_available_for_search && field.field_type == FieldType.VECTOR) {
-            if (field.field_type == FieldType.VECTOR) {
-              that.appStateStore.available_vector_fields.push(field.identifier)
-            } else if (field.field_type == FieldType.INTEGER || field.field_type == FieldType.FLOAT) {
-              that.appStateStore.available_number_fields.push(field.identifier)
-            }
-            if (that.appStateStore.available_vector_fields.length > 0) {
-              that.appStateStore.settings.search_settings.search_vector_field = that.appStateStore.available_vector_fields[0]
-              that.appStateStore.settings.vectorize_settings.map_vector_field = that.appStateStore.available_vector_fields[0]
-            } else {
-              that.appStateStore.settings.search_settings.search_vector_field = null
-              that.appStateStore.settings.vectorize_settings.map_vector_field = null
-            }
-            if (that.appStateStore.available_number_fields.length > 0) {
-              that.appStateStore.settings.render_settings.point_size_field = that.appStateStore.available_number_fields[0]
-            } else {
-              that.appStateStore.settings.search_settings.point_size_field = null
-            }
-          }
         })
     }
   },
@@ -481,29 +437,7 @@ export default {
         <div ref="left_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <!-- search card -->
-          <div class="flex-none rounded-md shadow-sm bg-white p-3  pointer-events-auto">
-            <div class="flex justify-between">
-              <select v-model="appState.settings.schema_id" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-                <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
-              </select>
-              <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[appState.settings.schema_id] }}</span>
-            </div>
-
-            <div class="flex">
-              <!-- note: search event is not standard -->
-              <input type="search" name="search" @search="request_search_results" v-model="appState.settings.search_settings.all_field_query"
-                placeholder="Search"
-                class="w-full rounded-md border-0 py-1.5 text-gray-900 ring-1
-              ring-inset ring-gray-300 placeholder:text-gray-400
-              focus:ring-2 focus:ring-inset focus:ring-blue-400
-              sm:text-sm sm:leading-6 shadow-sm" />
-              <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-500': !show_settings }">
-                <AdjustmentsHorizontalIcon></AdjustmentsHorizontalIcon>
-              </button>
-            </div>
-
-            <Parameters ref="parameters_area" v-show="show_settings" :schema="selected_schema" class="mt-3"></Parameters>
-          </div>
+          <SearchArea :schema="selected_schema" class="flex-none rounded-md shadow-sm bg-white p-3 pointer-events-auto"></SearchArea>
 
           <!-- tab box -->
           <div class="flex-initial flex flex-col overflow-hidden mt-3 rounded-md shadow-sm bg-white pointer-events-auto">
