@@ -4,6 +4,7 @@ export const useAppStateStore = defineStore('appState', {
   state: () => {
     return {
       show_timings: false,
+      selected_cluster_title: null,
       settings: {
         schema_id: null,
         search: {
@@ -13,6 +14,9 @@ export const useAppStateStore = defineStore('appState', {
           all_field_query_negative: "",
           combined_search_strategy: "hybrid",
           separate_queries: {},
+
+          cluster_origin_map_id: null,
+          cluster_id: null,
 
           // list results:
           result_list_items_per_page: 10,

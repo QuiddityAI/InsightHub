@@ -218,13 +218,25 @@ export default {
         })
     },
     narrow_down_on_cluster(cluster_item) {
-      this.query = `cluster_id: ${cluster_item.uid} (${cluster_item.title})`
+      this.appStateStore.settings.search.search_type = 'cluster'
+      this.appStateStore.settings.search.cluster_origin_map_id = this.map_id
+      this.appStateStore.settings.search.cluster_id = cluster_item.id
+      this.appStateStore.settings.search.all_field_query = ""
+      this.appStateStore.settings.search.all_field_query_negative = ""
+      this.appStateStore.selected_cluster_title = cluster_item.title
       this.request_search_results()
     },
     show_document_details(pointIdx) {
       const that = this
       this.selectedDocumentIdx = pointIdx
       this.$refs.embedding_map.selectedPointIdx = pointIdx
+    },
+    showSimilarItems() {
+      this.appStateStore.settings.search.search_type = 'similar_to_item'
+      this.appStateStore.settings.search.similar_to_item_id = this.map_item_details[this.selectedDocumentIdx]._id
+      this.appStateStore.settings.search.all_field_query = ""
+      this.appStateStore.settings.search.all_field_query_negative = ""
+      this.request_search_results()
     },
     close_document_details() {
       this.selectedDocumentIdx = -1
@@ -576,6 +588,7 @@ export default {
               :collections="collections" :last_used_collection_id="last_used_collection_id"
               @addToPositives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, true) }"
               @addToNegatives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, false) }"
+              @showSimilarItems="showSimilarItems"
               @close="close_document_details"
             ></ObjectDetailsModal>
           </div>

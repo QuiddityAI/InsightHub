@@ -8,7 +8,7 @@ import httpClient from '../api/httpClient';
 
 export default {
   props: ["schema", "initial_item", "collections", "last_used_collection_id"],
-  emits: ["addToPositives", "addToNegatives", "close"],
+  emits: ["addToPositives", "addToNegatives", "showSimilarItems", "close"],
   data() {
     return {
       selected_collection_id: null,
@@ -69,6 +69,9 @@ export default {
       </button>
       <button @click="$emit('addToNegatives', selected_collection_id)" class="w-10 px-3 mr-3 text-red-600/50 ring-1 ring-gray-300 hover:bg-red-100 rounded-md">
         <HandThumbDownIcon></HandThumbDownIcon>
+      </button>
+      <button @click="$emit('showSimilarItems')" class="px-3 mr-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100 rounded-md">
+        Show Similar Items
       </button>
       <div class="flex-1"></div>
       <button @click="$emit('close')" class="w-12 px-3 text-gray-500 hover:bg-gray-100 rounded-md">

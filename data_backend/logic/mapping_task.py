@@ -31,7 +31,6 @@ local_maps = {}
 task_params = {}
 mapping_tasks = {}
 map_details = {}
-cluster_cache = {}  # cluster_id -> search_results
 
 
 def get_or_create_map(params):
@@ -177,7 +176,7 @@ def generate_map(map_id):
     map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
 
     map_data['progress']['step_title'] = "Find cluster titles"
-    cluster_data = get_cluster_titles(cluster_id_per_point, projections, search_results, schema.descriptive_text_fields, timings, cluster_cache)
+    cluster_data = get_cluster_titles(cluster_id_per_point, projections, search_results, schema.descriptive_text_fields, timings)
     timings.log("cluster title")
 
     map_data["results"]["clusters"] = cluster_data

@@ -162,12 +162,24 @@ export default {
     <!-- Search Field -->
     <div class="flex">
       <!-- note: search event is not standard -->
-      <input type="search" name="search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query"
+      <div class="flex-1 h-9 flex flex-row items-center">
+        <input v-if="appState.settings.search.search_type == 'external_input'" type="search" name="search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query"
         placeholder="Search"
-        class="w-full rounded-md border-0 py-1.5 text-gray-900 ring-1
+        class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
       ring-inset ring-gray-300 placeholder:text-gray-400
       focus:ring-2 focus:ring-inset focus:ring-blue-400
       sm:text-sm sm:leading-6 shadow-sm" />
+        <button v-if="appState.settings.search.search_type == 'cluster'"
+          @click="appState.settings.search.search_type = 'external_input'"
+          class="flex-none rounded-xl bg-blue-400 px-3 text-white">
+          Cluster '{{ appState.selected_cluster_title }}', X
+        </button>
+        <button v-if="appState.settings.search.search_type == 'similar_to_item'"
+          @click="appState.settings.search.search_type = 'external_input'"
+          class="flex-none rounded-xl bg-blue-400 px-3 text-white">
+          Similar to item '{{ appState.settings.search.similar_to_item_id }}', X
+        </button>
+      </div>
       <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-500': !show_settings }">
         <AdjustmentsHorizontalIcon></AdjustmentsHorizontalIcon>
       </button>

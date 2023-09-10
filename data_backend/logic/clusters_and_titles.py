@@ -7,17 +7,13 @@ from utils.regex_tokenizer import tokenize
 from utils.collect_timings import Timings
 
 
-last_cluster_id = 0
-
-
 def clusterize_results(projections):
     clusterer = hdbscan.HDBSCAN(min_cluster_size=max(3, len(projections) // 50), min_samples=5)
     clusterer.fit(projections)
     return clusterer.labels_
 
 
-def get_cluster_titles(cluster_labels, projections, results, descriptive_text_fields, timings: Timings, cluster_cache):
-    global last_cluster_id
+def get_cluster_titles(cluster_labels, projections, results, descriptive_text_fields, timings: Timings):
     num_clusters = max(cluster_labels) + 1
     if num_clusters <= 0:
         return []
@@ -50,11 +46,8 @@ def get_cluster_titles(cluster_labels, projections, results, descriptive_text_fi
         sort_indexes_of_important_words = np.argsort(tf_idf_matrix[cluster_index].toarray()[0])
         most_important_words = words[sort_indexes_of_important_words[-3:]][::-1]
         cluster_center = (float(np.mean(points_per_cluster_x[cluster_index])), float(np.mean(points_per_cluster_y[cluster_index])))
-        last_cluster_id += 1
-        cluster_uid = str(last_cluster_id)
-        cluster_cache[cluster_uid] = results_by_cluster[cluster_index]
         cluster_title = ", ".join(list(most_important_words)) + f" ({len(results_by_cluster[cluster_index])})"
-        cluster_data.append({"uid": cluster_uid, "title": cluster_title, "center": cluster_center})
+        cluster_data.append({"id": cluster_index, "title": cluster_title, "center": cluster_center})
     timings.log("Tf-Idf")
 
     return cluster_data
