@@ -95,10 +95,10 @@ def generate_map(map_id):
     map_data = local_maps[map_id]
     params = DotDict(map_data["parameters"])
 
-    query = params.search_settings.all_field_query
-    limit = params.search_settings.max_items_used_for_mapping
+    query = params.search.all_field_query
+    limit = params.search.max_items_used_for_mapping
     schema_id = params.schema_id
-    map_vector_field = params.vectorize_settings.map_vector_field
+    map_vector_field = params.vectorize.map_vector_field
     if not all([query, limit, schema_id, map_vector_field]):
         map_data['progress']['step_title'] = "a parameter is missing"
         raise ValueError("a parameter is missing")
@@ -123,12 +123,12 @@ def generate_map(map_id):
     vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
     scores = [e["_score"] for e in search_results]
     map_data["results"]["per_point_data"]["scores"] = scores
-    point_sizes = [e.get(params.render_settings.point_size_field) for e in search_results] if params.render_settings.point_size_field else [1] * len(search_results)
+    point_sizes = [e.get(params.rendering.point_size_field) for e in search_results] if params.rendering.point_size_field else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
     map_data["results"]["per_point_data"]["cluster_ids"] = [-1] * len(scores),
     timings.log("convert to numpy")
 
-    umap_parameters = params.get("projection_settings", {})
+    umap_parameters = params.get("projection", {})
 
     def on_umap_progress(working_in_embedding_space, current_iteration, total_iterations, projections):
         map_data["progress"] = {

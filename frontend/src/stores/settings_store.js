@@ -6,24 +6,28 @@ export const useAppStateStore = defineStore('appState', {
       show_timings: false,
       settings: {
         schema_id: null,
-        search_settings: {
+        search: {
           search_type: "external_input",  // or cluster, collection or similar item
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
-          separate_queries: {},
           combined_search_strategy: "hybrid",
+          separate_queries: {},
+
+          // list results:
           result_list_items_per_page: 10,
           result_list_current_page: 0,
+
+          // map results:
           max_items_used_for_mapping: 2000,
         },
-        vectorize_settings: {
+        vectorize: {
           map_vector_field: null,
           tokenizer: "default",
           use_w2v_model: false,
           vectorizer: "pubmedbert",  // deprecated
         },
-        projection_settings: {
+        projection: {
           shape: "2d",
           n_neighbors: 15,
           min_dist: 0.05,
@@ -31,7 +35,7 @@ export const useAppStateStore = defineStore('appState', {
           metric: "euclidean",
           dim_reducer: "umap",
         },
-        render_settings: {
+        rendering: {
           point_size_field: null,
           point_color_field: 'cluster',
           show_thumbnails: true,

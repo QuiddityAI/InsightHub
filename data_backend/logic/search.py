@@ -26,19 +26,19 @@ def get_search_results(params_str: str, purpose: str) -> dict:
 
     schema = get_object_schema(params.schema_id)
 
-    if params.search_settings.search_type == "external_input":
-        if params.search_settings.use_separate_queries:
-            search_results = get_search_results_using_separate_queries(schema, params.search_settings, timings)
+    if params.search.search_type == "external_input":
+        if params.search.use_separate_queries:
+            search_results = get_search_results_using_separate_queries(schema, params.search, timings)
         else:
-            search_results = get_search_results_using_combined_query(schema, params.search_settings, params.vectorize_settings, purpose, timings)
-    elif params.search_settings.search_type == "cluster":
-        search_results = get_search_results_for_cluster(schema, params.search_settings, timings)
-    elif params.search_settings.search_type == "collection":
-        search_results = get_search_results_matching_a_collection(schema, params.search_settings, timings)
-    elif params.search_settings.search_type == "similar_to_item":
-        search_results = get_search_results_similar_to_item(schema, params.search_settings, timings)
+            search_results = get_search_results_using_combined_query(schema, params.search, params.vectorize, purpose, timings)
+    elif params.search.search_type == "cluster":
+        search_results = get_search_results_for_cluster(schema, params.search, timings)
+    elif params.search.search_type == "collection":
+        search_results = get_search_results_matching_a_collection(schema, params.search, timings)
+    elif params.search.search_type == "similar_to_item":
+        search_results = get_search_results_similar_to_item(schema, params.search, timings)
     else:
-        logging.error("Unsupported search type: " + params.search_settings.search_type, timings)
+        logging.error("Unsupported search type: " + params.search.search_type, timings)
         search_results = []
 
     result = {

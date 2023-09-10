@@ -105,11 +105,11 @@ export default {
     schema: function (newValue, oldValue) {
       const that = this
       const separate_search_fields = []
-      this.appStateStore.settings.search_settings.separate_queries = {}
+      this.appStateStore.settings.search.separate_queries = {}
       for (const field of Object.values(this.schema.object_fields)) {
         if (field.is_available_for_search) {
           separate_search_fields.push(field)
-          this.appStateStore.settings.search_settings.separate_queries[field.identifier] = {
+          this.appStateStore.settings.search.separate_queries[field.identifier] = {
             query: "",
             query_negative: "",
             must: false,
@@ -130,16 +130,16 @@ export default {
           that.appStateStore.available_number_fields.push(field.identifier)
         }
         if (that.appStateStore.available_vector_fields.length > 0) {
-          that.appStateStore.settings.search_settings.search_vector_field = that.appStateStore.available_vector_fields[0]
-          that.appStateStore.settings.vectorize_settings.map_vector_field = that.appStateStore.available_vector_fields[0]
+          that.appStateStore.settings.search.search_vector_field = that.appStateStore.available_vector_fields[0]
+          that.appStateStore.settings.vectorize.map_vector_field = that.appStateStore.available_vector_fields[0]
         } else {
-          that.appStateStore.settings.search_settings.search_vector_field = null
-          that.appStateStore.settings.vectorize_settings.map_vector_field = null
+          that.appStateStore.settings.search.search_vector_field = null
+          that.appStateStore.settings.vectorize.map_vector_field = null
         }
         if (that.appStateStore.available_number_fields.length > 0) {
-          that.appStateStore.settings.render_settings.point_size_field = that.appStateStore.available_number_fields[0]
+          that.appStateStore.settings.rendering.point_size_field = that.appStateStore.available_number_fields[0]
         } else {
-          that.appStateStore.settings.search_settings.point_size_field = null
+          that.appStateStore.settings.search.point_size_field = null
         }
       }
     },
@@ -161,7 +161,7 @@ export default {
     <!-- Search Field -->
     <div class="flex">
       <!-- note: search event is not standard -->
-      <input type="search" name="search" @search="request_search_results" v-model="appState.settings.search_settings.all_field_query"
+      <input type="search" name="search" @search="request_search_results" v-model="appState.settings.search.all_field_query"
         placeholder="Search"
         class="w-full rounded-md border-0 py-1.5 text-gray-900 ring-1
       ring-inset ring-gray-300 placeholder:text-gray-400
@@ -174,93 +174,93 @@ export default {
 
     <!-- Parameters Area -->
     <div v-show="show_settings" class="mt-3">
-      <div v-if="!appState.settings.search_settings.use_separate_queries" class="flex justify-between items-center">
+      <div v-if="!appState.settings.search.use_separate_queries" class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Search Strategy:</span>
-        <select v-model="appState.settings.search_settings.combined_search_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <select v-model="appState.settings.search.combined_search_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
             <option v-for="item in available_search_strategies" :value="item.id" selected>{{ item.title }}</option>
         </select>
       </div>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Use separate queries:</span>
-        <input v-model="appState.settings.search_settings.use_separate_queries" type="checkbox">
+        <input v-model="appState.settings.search.use_separate_queries" type="checkbox">
       </div>
-      <div v-if="appState.settings.search_settings.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
+      <div v-if="appState.settings.search.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
-        <input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].query" placeholder="positive" class="w-1/2 text-gray-500 text-sm">
-        <input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
-        Must:<input v-model="appState.settings.search_settings.separate_queries[field.identifier].must" type="checkbox">
-        T.O.<input v-model.number="appState.settings.search_settings.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <input v-model.number="appState.settings.search.separate_queries[field.identifier].query" placeholder="positive" class="w-1/2 text-gray-500 text-sm">
+        <input v-model.number="appState.settings.search.separate_queries[field.identifier].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
+        Must:<input v-model="appState.settings.search.separate_queries[field.identifier].must" type="checkbox">
+        T.O.<input v-model.number="appState.settings.search.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
       </div>
       <!-- <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Search Vector Field:</span>
-        <select v-model="appState.settings.search_settings.search_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <select v-model="appState.settings.search.search_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
             <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
         </select>
       </div> -->
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Max. items for map:</span>
-        <span class="text-gray-500 text-sm"> {{ appState.settings.search_settings.max_items_used_for_mapping }} </span>
-        <input v-model.number="appState.settings.search_settings.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <span class="text-gray-500 text-sm"> {{ appState.settings.search.max_items_used_for_mapping }} </span>
+        <input v-model.number="appState.settings.search.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
       </div>
       <hr>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Use context-trained w2v model:</span>
-        <input v-model="appState.settings.vectorize_settings.use_w2v_model" type="checkbox">
+        <input v-model="appState.settings.vectorize.use_w2v_model" type="checkbox">
       </div>
-      <div v-if="!appState.settings.vectorize_settings.use_w2v_model" class="flex justify-between items-center">
+      <div v-if="!appState.settings.vectorize.use_w2v_model" class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Map Vector Field:</span>
-        <select v-model="appState.settings.vectorize_settings.map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <select v-model="appState.settings.vectorize.map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
             <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
         </select>
       </div>
       <hr>
       <!-- <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Tokenizer:</span>
-        <select v-model="appState.settings.vectorize_settings.tokenizer" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <select v-model="appState.settings.vectorize.tokenizer" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
             <option v-for="item in available_tokenizer" :value="item.id" selected>{{ item.title }}</option>
         </select>
       </div> -->
       <!-- <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Vectorizer:</span>
-        <select v-model="appState.settings.vectorize_settings.vectorizer" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <select v-model="appState.settings.vectorize.vectorizer" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
             <option v-for="item in available_vectorizers" :value="item.id" selected>{{ item.title }}</option>
         </select>
       </div> -->
       <!-- <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Cluster Title Strategy:</span>
-        <select v-model="appState.settings.render_settings.clusterizer_parameters.cluster_title_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <select v-model="appState.settings.rendering.clusterizer_parameters.cluster_title_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
             <option v-for="item in available_cluster_title_strategies" :value="item.id" selected>{{ item.title }}</option>
         </select>
       </div> -->
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Dim. Red. Shape:</span>
-        <select v-model="appState.settings.projection_settings.shape" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <select v-model="appState.settings.projection.shape" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
             <option v-for="item in dim_reducer_parameters.shape.options" :value="item.id" selected>{{ item.title }}</option>
         </select>
       </div>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">UMAP n_neighbors:</span>
-        <span class="text-gray-500 text-sm"> {{ appState.settings.projection_settings.n_neighbors }} </span>
-        <input v-model.number="appState.settings.projection_settings.n_neighbors" type="range" min="1" max="100" step="1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <span class="text-gray-500 text-sm"> {{ appState.settings.projection.n_neighbors }} </span>
+        <input v-model.number="appState.settings.projection.n_neighbors" type="range" min="1" max="100" step="1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
       </div>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">UMAP min_dist:</span>
-        <span class="text-gray-500 text-sm"> {{ appState.settings.projection_settings.min_dist }} </span>
-        <input v-model.number="appState.settings.projection_settings.min_dist" type="range" min="0.001" max="0.2" step="0.001" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <span class="text-gray-500 text-sm"> {{ appState.settings.projection.min_dist }} </span>
+        <input v-model.number="appState.settings.projection.min_dist" type="range" min="0.001" max="0.2" step="0.001" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
       </div>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">UMAP n_epochs:</span>
-        <span class="text-gray-500 text-sm"> {{ appState.settings.projection_settings.n_epochs }} </span>
-        <input v-model.number="appState.settings.projection_settings.n_epochs" type="range" min="10" max="3000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <span class="text-gray-500 text-sm"> {{ appState.settings.projection.n_epochs }} </span>
+        <input v-model.number="appState.settings.projection.n_epochs" type="range" min="10" max="3000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
       </div>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">UMAP metric:</span>
-        <input v-model.number="appState.settings.projection_settings.metric" class="w-1/2 text-gray-500 text-sm">
+        <input v-model.number="appState.settings.projection.metric" class="w-1/2 text-gray-500 text-sm">
       </div>
       <hr>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Point Size:</span>
-        <select v-model="appState.settings.render_settings.point_size_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <select v-model="appState.settings.rendering.point_size_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
             <option :value="null" selected>---</option>
             <option v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
         </select>

@@ -21,10 +21,10 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
     #embeddings = get_openai_embedding_batch(texts)
     #save_embedding_cache()
 
-    if params.vectorize_settings.vectorizer in ["pubmedbert", "openai"]:
+    if params.vectorize.vectorizer in ["pubmedbert", "openai"]:
         query_embedding = get_embedding(query)
         absclust_schema_id = 1
-        if params.search_settings.search_strategy == "vector" or params.schema_id != absclust_schema_id:
+        if params.search.search_strategy == "vector" or params.schema_id != absclust_schema_id:
             # the vectors are already in the search results
             return
 
@@ -40,7 +40,7 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
 
         timings.log("adding vectors")
 
-    elif params.vectorize_settings.vectorizer == "gensim_w2v_tf_idf":
+    elif params.vectorize.vectorizer == "gensim_w2v_tf_idf":
         map_data["progress"]["step_title"] = "Training model"
         corpus = [" ".join([item[field] for field in descriptive_text_fields]) for item in search_results]
         vectorizer = GensimW2VVectorizer()
@@ -60,6 +60,6 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
             map_data["progress"]["current_step"] = i
         timings.log("generating embeddings")
     else:
-        logging.error("vectorizer unknown: " + params.vectorize_settings.vectorizer)
+        logging.error("vectorizer unknown: " + params.vectorize.vectorizer)
 
     save_embedding_cache()

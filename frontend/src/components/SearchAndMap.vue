@@ -95,14 +95,14 @@ export default {
 
       this.reset_search_results_and_map()
 
-      if (!this.appStateStore.settings.search_settings.all_field_query) return;
+      if (!this.appStateStore.settings.search.all_field_query) return;
 
       this.selected_tab = "results"
 
       const history_item_body = {
         user_id: 1,  // FIXME: this is hardcoded
         schema_id: this.appStateStore.settings.schema_id,
-        name: this.appStateStore.settings.search_settings.all_field_query,  // TODO: doesn't work for other types
+        name: this.appStateStore.settings.search.all_field_query,  // TODO: doesn't work for other types
         parameters: this.appStateStore.settings,
       }
 
@@ -318,7 +318,7 @@ export default {
       const store_map_body = {
         user_id: 1,  // FIXME: hardcoded
         schema_id: this.appStateStore.settings.schema_id,
-        name: this.appStateStore.settings.search_settings.query,
+        name: this.appStateStore.settings.search.query,
         map_id: this.map_id,
       }
       httpClient.post("/data_backend/map/store", store_map_body)
