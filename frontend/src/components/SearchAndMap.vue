@@ -437,7 +437,7 @@ export default {
         <div ref="left_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <!-- search card -->
-          <SearchArea :schema="selected_schema" class="flex-none rounded-md shadow-sm bg-white p-3 pointer-events-auto"></SearchArea>
+          <SearchArea :schema="selected_schema" @request_search_results="request_search_results" class="flex-none rounded-md shadow-sm bg-white p-3 pointer-events-auto"></SearchArea>
 
           <!-- tab box -->
           <div class="flex-initial flex flex-col overflow-hidden mt-3 rounded-md shadow-sm bg-white pointer-events-auto">

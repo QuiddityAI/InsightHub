@@ -36,6 +36,7 @@ const appState = useAppStateStore()
 
 export default {
   props: ["schema"],
+  emits: ['request_search_results'],
   data() {
     return {
       show_settings: false,
@@ -161,7 +162,7 @@ export default {
     <!-- Search Field -->
     <div class="flex">
       <!-- note: search event is not standard -->
-      <input type="search" name="search" @search="request_search_results" v-model="appState.settings.search.all_field_query"
+      <input type="search" name="search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query"
         placeholder="Search"
         class="w-full rounded-md border-0 py-1.5 text-gray-900 ring-1
       ring-inset ring-gray-300 placeholder:text-gray-400
