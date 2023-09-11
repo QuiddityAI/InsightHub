@@ -179,6 +179,11 @@ export default {
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Similar to item '{{ appState.settings.search.similar_to_item_id }}', X
         </button>
+        <button v-if="appState.settings.search.search_type == 'collection'"
+          @click="appState.settings.search.search_type = 'external_input'"
+          class="flex-none rounded-xl bg-blue-400 px-3 text-white">
+          Recommended for Collection '{{ appState.selected_collection_title }}', X
+        </button>
       </div>
       <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-500': !show_settings }">
         <AdjustmentsHorizontalIcon></AdjustmentsHorizontalIcon>

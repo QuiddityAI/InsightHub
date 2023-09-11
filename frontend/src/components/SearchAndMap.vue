@@ -95,7 +95,9 @@ export default {
 
       this.reset_search_results_and_map()
 
-      if (!this.appStateStore.settings.search.all_field_query) return;
+      if (this.appStateStore.settings.search_type == 'external_input' &&
+        !this.appStateStore.settings.use_separate_queries &&
+        !this.appStateStore.settings.search.all_field_query) return;
 
       this.selected_tab = "results"
 
@@ -224,6 +226,14 @@ export default {
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
       this.appStateStore.selected_cluster_title = cluster_item.title
+      this.request_search_results()
+    },
+    recommend_items_for_collection(collection) {
+      this.appStateStore.settings.search.search_type = 'collection'
+      this.appStateStore.settings.search.collection_id = collection.id
+      this.appStateStore.settings.search.all_field_query = ""
+      this.appStateStore.settings.search.all_field_query_negative = ""
+      this.appStateStore.selected_collection_title = collection.name
       this.request_search_results()
     },
     show_document_details(pointIdx) {
@@ -555,7 +565,7 @@ export default {
                       <span class="text-gray-500 font-medium">{{ collection.name }}</span>
                       <div class="flex-1"></div>
                       <button @click="delete_item_collection(collection.id)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Delete</button>
-                      <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Recommend Similar</button>
+                      <button @click="recommend_items_for_collection(collection)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Recommend Similar</button>
                       <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
                     </div>
                     <ul class="pt-2">

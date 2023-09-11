@@ -5,6 +5,7 @@ export const useAppStateStore = defineStore('appState', {
     return {
       show_timings: false,
       selected_cluster_title: null,
+      selected_collection_title: null,
       settings: {
         schema_id: null,
         search: {
@@ -17,6 +18,8 @@ export const useAppStateStore = defineStore('appState', {
 
           cluster_origin_map_id: null,
           cluster_id: null,
+
+          collection_id: null,
 
           // list results:
           result_list_items_per_page: 10,
