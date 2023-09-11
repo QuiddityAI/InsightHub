@@ -22,7 +22,8 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
     #save_embedding_cache()
 
     if params.vectorize.vectorizer in ["pubmedbert", "openai"]:
-        query_embedding = get_embedding(query)
+        if query:
+            query_embedding = get_embedding(query)
         absclust_schema_id = 1
         if params.search.search_strategy == "vector" or params.schema_id != absclust_schema_id:
             # the vectors are already in the search results
@@ -32,9 +33,12 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
 
         for i, item in enumerate(search_results):
             #item_embedding = embeddings[item["DOI"]]
-            item_embedding = get_embedding(item.get("title", "") + " " + item.get("abstract", ""), item["DOI"]).tolist()
+            if "DOI" not in item:
+                logging.warning(item)
+            item_embedding = get_embedding(" ".join([item[field] for field in descriptive_text_fields]), item["DOI"]).tolist()
             item["pubmed_vector"] = item_embedding
-            item["_score"] = np.dot(query_embedding, item_embedding)
+            if query:
+                item["_score"] = np.dot(query_embedding, item_embedding)
 
             map_data["progress"]["current_step"] = i
 

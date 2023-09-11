@@ -123,10 +123,32 @@ class VectorSearchEngineClient(object):
 
 
     def get_items_near_vector(self, schema_id: int, vector_field: str, query_vector: list, filter_criteria: dict, return_vectors: bool, limit: int) -> list:
-        # TODO: add with_payload and with_vector parameters to control what is returned
         hits = self.client.search(
             collection_name=self._get_collection_name(schema_id, vector_field),
             query_vector=NamedVector(name=vector_field, vector=query_vector),
+            # query_filter=Filter(
+            #     must=[
+            #         FieldCondition(
+            #             key='rand_number',
+            #             range=Range(
+            #                 gte=3
+            #             )
+            #         )
+            #     ]
+            # ),
+            with_payload=False,
+            with_vectors=return_vectors,
+            limit=limit,
+        )
+        return hits
+
+
+    def get_items_matching_collection(self, schema_id: int, vector_field: str, positive_ids: list[str], negative_ids: list[str], filter_criteria: dict, return_vectors: bool, limit: int) -> list:
+        hits = self.client.recommend(
+            collection_name=self._get_collection_name(schema_id, vector_field),
+            positive=positive_ids,
+            negative=negative_ids,
+            using=vector_field,
             # query_filter=Filter(
             #     must=[
             #         FieldCondition(

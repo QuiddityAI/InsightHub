@@ -2,6 +2,7 @@ import math
 import pickle
 import os
 from copy import deepcopy
+import logging
 
 import typesense
 
@@ -40,6 +41,26 @@ def get_absclust_item_by_id(item_id: str):
     collection = ts_client.collections["articles"]
     doc = collection.documents[item_id].retrieve()
     return doc
+
+
+def get_absclust_items_by_ids(item_ids: list[str]):
+    collection = ts_client.collections["articles"]
+    hits = collection.documents.search(
+        dict(
+            q = "*",
+            filter_by = f"id:[{','.join(item_ids)}]",
+            per_page=len(item_ids),
+        )
+    )["hits"]
+    items = [a["document"] for a in hits]
+    logging.warning(items)
+    for item in items:
+        if "title" not in item:
+            item["title"] = "title unknown"
+        if "abstract" not in item:
+            item["abstract"] = ""
+        item["_id"] = item["id"]
+    return items
 
 
 def get_absclust_search_results(query: str, additional_fields: list[str], limit: int):
@@ -90,11 +111,8 @@ def get_absclust_search_results(query: str, additional_fields: list[str], limit:
         item.update({
             '_score': 1.0,
             '_reciprocal_rank_score': 1.0 / (i + 1),
-            '_source_scores': [1.0],
-            '_source_types': ['absclust_db'],
-            '_source_fields': ['unknown'],
-            '_source_queries': [query],
-            '_ranks': [i + 1],
+            '_origins': [{'type': 'absclust_db', 'field': 'unknown',
+                          'query': query, 'score': 1.0, 'rank': i+1}],  #  TODO: get source score
         })
 
     search_results_cache[query + str(limit)] = results_part

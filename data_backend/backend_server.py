@@ -91,6 +91,8 @@ def get_search_list_result_endpoint():
         result = get_search_results(params_str, purpose='list')
     except ValueError as e:
         print(e)
+        import traceback
+        traceback.print_exc()
         return str(e.args), 400  # TODO: there could be other reasons, e.g. schema not found
 
     response = app.response_class(

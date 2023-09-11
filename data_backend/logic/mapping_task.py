@@ -19,18 +19,10 @@ from database_client.django_client import get_object_schema, get_stored_map_data
 from logic.add_vectors import add_vectors_to_results
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
 from logic.search import get_search_results
+from logic.local_map_cache import local_maps
 
 
 ABSCLUST_SCHEMA_ID = 1
-
-
-# global temp storage:
-local_maps = {}
-
-# old global vars:
-task_params = {}
-mapping_tasks = {}
-map_details = {}
 
 
 def get_or_create_map(params):
@@ -61,6 +53,7 @@ def get_or_create_map(params):
                 },
                 "map_rendering": None,
                 "results": {
+                    "search_result_meta_information": {},
                     "per_point_data": {
                         "item_ids": [],
                         "scores": [],
@@ -94,11 +87,29 @@ def generate_map(map_id):
     map_data = local_maps[map_id]
     params = DotDict(map_data["parameters"])
 
-    query = params.search.all_field_query
+
+    if params.search.search_type == 'cluster':
+        origin_map_id: str = params.search.cluster_origin_map_id
+
+        if origin_map_id not in local_maps:
+            # TODO: check persisted maps, too?
+            # But the map should already be local if someone clicks on a cluster
+            raise ValueError("Map ID not found")
+
+        origin_map: dict = local_maps[origin_map_id]
+
+        params['search']['all_field_query'] = origin_map['parameters']['search']['all_field_query']
+        logging.warning(origin_map['parameters']['search']['all_field_query'])
+        logging.warning(params.search.all_field_query)
+        # not working
+        map_data['results']['w2v_embeddings_file_path'] = origin_map['results']['w2v_embeddings_file_path']
+        map_data['results']['texture_atlas_path'] = origin_map['results']['texture_atlas_path']
+
+
     limit = params.search.max_items_used_for_mapping
     schema_id = params.schema_id
     map_vector_field = params.vectorize.map_vector_field
-    if not all([query, limit, schema_id, map_vector_field]):
+    if not all([limit, schema_id, map_vector_field]):
         map_data['progress']['step_title'] = "a parameter is missing"
         raise ValueError("a parameter is missing")
     schema = get_object_schema(schema_id)
@@ -108,7 +119,15 @@ def generate_map(map_id):
 
     map_data['progress']['step_title'] = "Getting search results"
     params_str = json.dumps(map_data["parameters"], indent=2)
-    search_results = get_search_results(params_str, purpose='map')['items']
+    search_results = get_search_results(params_str, purpose='map', timings=timings)['items']
+
+    search_result_meta_information = {}
+    for item in search_results:
+        search_result_meta_information[item['_id']] = {
+            field: item[field] for field in ['_id', '_origins', '_score', '_reciprocal_rank_score']
+        }
+    map_data['results']['search_result_meta_information'] = search_result_meta_information
+
     timings.log("database query")
 
     map_data["results"]["per_point_data"]["item_ids"] = [item["_id"] for item in search_results]
@@ -117,7 +136,12 @@ def generate_map(map_id):
     # but for the AbsClust database, the vectors need to be added on-demand:
     if schema.id == ABSCLUST_SCHEMA_ID:
         map_data['progress']['step_title'] = "Generating vectors"
+        query = params.search.all_field_query or "unknown"  # FIXME
+        logging.warning(query)
+        logging.warning(len(search_results))
+        logging.warning(search_results[0])
         add_vectors_to_results(search_results, query, params, schema.descriptive_text_fields, map_data, timings)
+        logging.warning(search_results[0][map_vector_field])
 
     vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
     scores = [e["_score"] for e in search_results]
@@ -184,23 +208,24 @@ def generate_map(map_id):
     # texture atlas:
     thumbnail_field = schema.thumbnail_image
     if thumbnail_field:
-        atlas = Image.new("RGBA", (2048, 2048))
-        for i, item in enumerate(search_results):
-            if item[thumbnail_field] and os.path.exists(item[thumbnail_field]):
-                image = Image.open(item[thumbnail_field])
-                image.thumbnail((32, 32))
-                image = image.resize((32, 32))
-                imagesPerLine = (2048/32)
-                posRow: int = int(i / imagesPerLine)
-                posCol: int = int(i % imagesPerLine)
-                atlas.paste(image, (posCol * 32, posRow * 32))
-                image.close()
-            else:
-                logging.warning(f"Image file doesn't exist: {item[thumbnail_field]}")
-                # FIXME: needs to be a different image each time
-                # textures.append(['thumbnail_placeholder.png', 32, 32])
-        atlas_filename = f"map_data/atlas_{query}.png"
-        atlas.save(atlas_filename)
+        atlas_filename = f"map_data/atlas_{map_id}.png"
+        if not os.path.exists(atlas_filename):
+            atlas = Image.new("RGBA", (2048, 2048))
+            for i, item in enumerate(search_results):
+                if item[thumbnail_field] and os.path.exists(item[thumbnail_field]):
+                    image = Image.open(item[thumbnail_field])
+                    image.thumbnail((32, 32))
+                    image = image.resize((32, 32))
+                    imagesPerLine = (2048/32)
+                    posRow: int = int(i / imagesPerLine)
+                    posCol: int = int(i % imagesPerLine)
+                    atlas.paste(image, (posCol * 32, posRow * 32))
+                    image.close()
+                else:
+                    logging.warning(f"Image file doesn't exist: {item[thumbnail_field]}")
+                    # FIXME: needs to be a different image each time
+                    # textures.append(['thumbnail_placeholder.png', 32, 32])
+            atlas.save(atlas_filename)
         map_data["results"]["texture_atlas_path"] = atlas_filename
 
     timings.log("generating texture atlas")

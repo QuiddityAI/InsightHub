@@ -1,4 +1,5 @@
 
+import logging
 import requests
 import os
 import json
@@ -44,3 +45,15 @@ def get_stored_map_data(map_id: str) -> dict | None:
         return map_data
     else:
         return None
+
+
+def get_collection(collection_id: str) -> DotDict | None:
+    url = backend_url + '/data_map/get_item_collection'
+    data = {
+        'collection_id': collection_id,
+    }
+    result = requests.post(url, json=data)
+    if result.status_code != 200:
+        logging.warning("Couldn't find collection: " + str(collection_id))
+        return None
+    return DotDict(result.json())
