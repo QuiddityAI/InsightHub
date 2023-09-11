@@ -159,6 +159,28 @@ def get_item_collections(request):
 
 #@login_required()
 @csrf_exempt
+def get_item_collection(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        collection_id: int = data["collection_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        item = ItemCollection.objects.get(id=collection_id)
+    except ItemCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    serialized_data = ItemCollectionSerializer(item).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+#@login_required()
+@csrf_exempt
 def delete_item_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
