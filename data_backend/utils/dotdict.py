@@ -1,4 +1,5 @@
 from typing import Any, Iterable, List
+from copy import deepcopy
 
 
 class DotDict(dict):
@@ -38,6 +39,10 @@ class DotDict(dict):
 
     def __dir__(self):
         return dir(dict) + list(self.keys())
+
+    def __deepcopy__(self, memo=None):
+        # see here: https://stackoverflow.com/a/49902096
+        return DotDict(deepcopy(dict(self), memo=memo))
 
 
 class DotDictSlow(dict):

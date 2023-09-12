@@ -1,5 +1,6 @@
 import json
 import os
+from copy import deepcopy
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -118,10 +119,20 @@ def get_or_create_map_endpoint():
 def retrive_map_results():
     params = request.json or {}
     map_id = params.get("map_id")
+    exclude_fields = params.get("exclude_fields", [])
     result = get_map_results(map_id)
-
     if result is None:
         return "map_id not found", 404
+    result = deepcopy(result)
+
+    for field in list(result['results']['per_point_data'].keys()):
+        if field in exclude_fields:
+            del result['results']['per_point_data'][field]
+
+    if 'search_result_meta_information' in exclude_fields and 'search_result_meta_information' in result['results']:
+        del result['results']['search_result_meta_information']
+    if 'parameters' in exclude_fields and 'parameters' in result:
+        del result['parameters']
 
     return result
 

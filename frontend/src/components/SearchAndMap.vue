@@ -39,6 +39,7 @@ export default {
       map_viewport_is_adjusted: false,
       progress: 0.0,
       progress_step_title: "",
+      fields_already_received: [],
 
       // selection:
       selectedDocumentIdx: -1,
@@ -75,6 +76,7 @@ export default {
       this.map_viewport_is_adjusted = false
       this.progress = 0.0
       this.progress_step_title = ""
+      this.fields_already_received = []
 
       // map:
       this.$refs.embedding_map.resetData()
@@ -142,8 +144,12 @@ export default {
 
       if (!this.map_id || !this.map_is_in_progess) return;
 
+      // note: these may be needed in the future, pay attention to remove them in this case here
+      const not_needed = ['item_ids', 'search_result_meta_information', 'parameters']
+
       const payload = {
         map_id: this.map_id,
+        exclude_fields: not_needed + this.fields_already_received,
       }
       httpClient.post("/data_backend/map/result", payload)
         .then(function (response) {
@@ -179,17 +185,33 @@ export default {
           that.progress_step_title = progress.step_title
 
           if (results) {
-            if (results["per_point_data"]["hover_label_data"]) {
-              that.map_item_details = results["per_point_data"]["hover_label_data"]
-              that.$refs.embedding_map.itemDetails = results["per_point_data"]["hover_label_data"]
+            const results_per_point = results["per_point_data"]
+            if (results_per_point["hover_label_data"] && results_per_point["hover_label_data"].length > 0) {
+              that.map_item_details = results_per_point["hover_label_data"]
+              that.$refs.embedding_map.itemDetails = results_per_point["hover_label_data"]
+              that.fields_already_received.push('hover_label_data')
             }
 
-            that.$refs.embedding_map.targetPositionsX = results["per_point_data"]["positions_x"]
-            that.$refs.embedding_map.targetPositionsY = results["per_point_data"]["positions_y"]
-            that.$refs.embedding_map.clusterIdsPerPoint = results["per_point_data"]["cluster_ids"]
-            that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results["per_point_data"]["point_sizes"])
-            that.$refs.embedding_map.saturation = normalizeArray(results["per_point_data"]["scores"], 3.0)
+            if (results_per_point["point_sizes"] && results_per_point["point_sizes"].length > 0) {
+              that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results_per_point["point_sizes"])
+              that.fields_already_received.push('point_sizes')
+            }
+            if (results_per_point["scores"] && results_per_point["scores"].length > 0) {
+              that.$refs.embedding_map.saturation = normalizeArray(results_per_point["scores"], 3.0)
+              that.fields_already_received.push('scores')
+            }
+            if (results_per_point["cluster_ids"] && results_per_point["cluster_ids"].length > 0) {
+              that.$refs.embedding_map.clusterIdsPerPoint = results_per_point["cluster_ids"]
+              that.fields_already_received.push('cluster_ids')
+            } else if (!that.fields_already_received.includes('cluster_ids')) {
+              that.$refs.embedding_map.clusterIdsPerPoint = [-1] * that.$refs.embedding_map.targetPositionsX.length
+            }
 
+            if (results_per_point["positions_x"] && results_per_point["positions_x"].length > 0) {
+              that.$refs.embedding_map.targetPositionsX = results_per_point["positions_x"]
+              that.$refs.embedding_map.targetPositionsY = results_per_point["positions_y"]
+              that.$refs.embedding_map.updateGeometry()
+            }
             that.$refs.embedding_map.clusterData = results["clusters"]
 
             if (that.map_viewport_is_adjusted) {
@@ -199,7 +221,6 @@ export default {
               that.$refs.embedding_map.centerAndFitDataToActiveAreaInstant()
               that.map_viewport_is_adjusted = true
             }
-            that.$refs.embedding_map.updateGeometry()
 
             that.map_timings = results["timings"]
           }

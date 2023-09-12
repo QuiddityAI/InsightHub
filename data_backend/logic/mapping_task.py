@@ -132,6 +132,16 @@ def generate_map(map_id):
 
     map_data["results"]["per_point_data"]["item_ids"] = [item["_id"] for item in search_results]
 
+    hover_label_data_total = []
+    for item in search_results:
+        hover_label_data = {}
+        hover_label_data['_id'] = item['_id']
+        for field in schema.hover_label_rendering.required_fields:
+            hover_label_data[field] = item.get(field, None)
+        hover_label_data_total.append(hover_label_data)
+
+    map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
+
     # eventually, the vectors should come directly from the database
     # but for the AbsClust database, the vectors need to be added on-demand:
     if schema.id == ABSCLUST_SCHEMA_ID:
@@ -148,7 +158,6 @@ def generate_map(map_id):
     map_data["results"]["per_point_data"]["scores"] = scores
     point_sizes = [e.get(params.rendering.point_size_field) for e in search_results] if params.rendering.point_size_field else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
-    map_data["results"]["per_point_data"]["cluster_ids"] = [-1] * len(scores),
     timings.log("convert to numpy")
 
     umap_parameters = params.get("projection", {})
@@ -188,16 +197,6 @@ def generate_map(map_id):
     map_data["results"]["per_point_data"]["positions_x"] = projections[:, 0].tolist()
     map_data["results"]["per_point_data"]["positions_y"] = projections[:, 1].tolist()
     map_data["results"]["per_point_data"]["cluster_ids"] = cluster_id_per_point.tolist()
-
-    hover_label_data_total = []
-    for item in search_results:
-        hover_label_data = {}
-        hover_label_data['_id'] = item['_id']
-        for field in schema.hover_label_rendering.required_fields:
-            hover_label_data[field] = item.get(field, None)
-        hover_label_data_total.append(hover_label_data)
-
-    map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
 
     map_data['progress']['step_title'] = "Find cluster titles"
     cluster_data = get_cluster_titles(cluster_id_per_point, projections, search_results, schema.descriptive_text_fields, timings)
