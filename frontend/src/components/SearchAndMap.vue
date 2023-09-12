@@ -410,6 +410,8 @@ export default {
     'appStateStore.settings.schema_id' (newValue, oldValue) {
       const that = this
 
+      this.reset_search_results_and_map()
+
       this.search_history = []
       const get_history_body = {
         user_id: 1,  // FIXME: hardcoded
