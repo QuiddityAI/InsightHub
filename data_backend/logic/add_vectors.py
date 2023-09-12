@@ -21,7 +21,7 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
     #embeddings = get_openai_embedding_batch(texts)
     #save_embedding_cache()
 
-    if params.vectorize.vectorizer in ["pubmedbert", "openai"]:
+    if params.vectorize.vectorizer in ["pubmedbert", "openai"] and not params.vectorize.use_w2v_model:
         if query:
             query_embedding = get_embedding(query)
         absclust_schema_id = 1
@@ -44,7 +44,7 @@ def add_vectors_to_results(search_results, query, params: DotDict, descriptive_t
 
         timings.log("adding vectors")
 
-    elif params.vectorize.vectorizer == "gensim_w2v_tf_idf":
+    elif params.vectorize.use_w2v_model:
         map_data["progress"]["step_title"] = "Training model"
         corpus = [" ".join([item[field] for field in descriptive_text_fields]) for item in search_results]
         vectorizer = GensimW2VVectorizer()
