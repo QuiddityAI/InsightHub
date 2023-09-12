@@ -249,8 +249,16 @@ export default {
       this.appStateStore.selected_cluster_title = cluster_item.title
       this.request_search_results()
     },
-    recommend_items_for_collection(collection) {
+    show_collection_as_map(collection) {
       this.appStateStore.settings.search.search_type = 'collection'
+      this.appStateStore.settings.search.collection_id = collection.id
+      this.appStateStore.settings.search.all_field_query = ""
+      this.appStateStore.settings.search.all_field_query_negative = ""
+      this.appStateStore.selected_collection_title = collection.name
+      this.request_search_results()
+    },
+    recommend_items_for_collection(collection) {
+      this.appStateStore.settings.search.search_type = 'recommended_for_collection'
       this.appStateStore.settings.search.collection_id = collection.id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
@@ -589,7 +597,7 @@ export default {
                       <div class="flex-1"></div>
                       <button @click="delete_item_collection(collection.id)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Delete</button>
                       <button @click="recommend_items_for_collection(collection)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Recommend Similar</button>
-                      <button class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
+                      <button @click="show_collection_as_map(collection)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
                     </div>
                     <ul class="pt-2">
                       <li v-for="(item_id, index) in collection.positive_ids" :key="item_id" class="justify-between pb-2">

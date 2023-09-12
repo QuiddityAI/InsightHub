@@ -37,6 +37,8 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
     elif params.search.search_type == "cluster":
         search_results = get_search_results_for_cluster(schema, params.search, params.vectorize, purpose, timings)
     elif params.search.search_type == "collection":
+        search_results = get_search_results_included_in_collection(schema, params.search, params.vectorize, purpose, timings)
+    elif params.search.search_type == "recommended_for_collection":
         search_results = get_search_results_matching_a_collection(schema, params.search, params.vectorize, purpose, timings)
     elif params.search.search_type == "similar_to_item":
         search_results = get_search_results_similar_to_item(schema, params.search, params.vectorize, purpose, timings)
@@ -318,6 +320,42 @@ def get_search_results_matching_a_collection(schema, search_settings: DotDict, v
     total_items = _combine_result_sets_and_calculate_scores(result_sets, timings)
     required_fields = _get_required_fields(schema, search_settings, vectorize_settings, purpose)
     return _get_complete_items_and_sort_them(schema, total_items, required_fields, vectorize_settings, purpose, timings)[:limit]
+
+
+def get_search_results_included_in_collection(schema, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> list:
+    collection_id = search_settings.collection_id
+    limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
+    page = search_settings.result_list_current_page if purpose == "list" else 0
+    if not all([collection_id is not None, limit, page is not None, schema]):
+        raise ValueError("a parameter is missing")
+
+    collection = get_collection(collection_id)
+    if not collection:
+        raise ValueError("Couldn't find the collection:" + str(collection_id))
+    timings.log("preparation")
+
+    result_sets: list[dict] = []
+    positive_set = {}
+    for item_id in collection.positive_ids:
+        positive_set[item_id] = {
+            '_id': item_id,
+            '_origins': [{'type': 'collection', 'field': 'positives',
+                          'query': '', 'score': 1.0, 'rank': 1}],
+        }
+    result_sets.append(positive_set)
+    negative_set = {}
+    for item_id in collection.negative_ids:
+        negative_set[item_id] = {
+            '_id': item_id,
+            '_origins': [{'type': 'collection', 'field': 'negatives',
+                          'query': '', 'score': 0.0, 'rank': 1}],
+        }
+    result_sets.append(negative_set)
+    timings.log("collect items")
+
+    total_items = _combine_result_sets_and_calculate_scores(result_sets, timings)
+    required_fields = _get_required_fields(schema, search_settings, vectorize_settings, purpose)
+    return _get_complete_items_and_sort_them(schema, total_items, required_fields, vectorize_settings, purpose, timings)
 
 
 @lru_cache
