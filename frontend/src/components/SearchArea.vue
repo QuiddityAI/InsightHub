@@ -137,8 +137,18 @@ export default {
           that.appStateStore.settings.search.search_vector_field = null
           that.appStateStore.settings.vectorize.map_vector_field = null
         }
+        that.appStateStore.settings.rendering.point_size_field = 'equal'
         if (that.appStateStore.available_number_fields.length > 0) {
-          that.appStateStore.settings.rendering.point_size_field = that.appStateStore.available_number_fields[0]
+          for (const field of that.appStateStore.available_number_fields) {
+            if (field === 'citedby') {
+              // prefer this field even if it is not the first one:
+              that.appStateStore.settings.rendering.point_size_field = field
+              break
+            }
+          }
+          if (that.appStateStore.settings.rendering.point_size_field == 'equal')  {
+            that.appStateStore.settings.rendering.point_size_field = that.appStateStore.available_number_fields[0]
+          }
         } else {
           that.appStateStore.settings.search.point_size_field = null
         }
@@ -279,7 +289,7 @@ export default {
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Point Size:</span>
         <select v-model="appState.settings.rendering.point_size_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option :value="null" selected>---</option>
+            <option :value="'equal'" selected>---</option>
             <option v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
         </select>
       </div>

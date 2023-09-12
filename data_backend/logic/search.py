@@ -267,6 +267,9 @@ def get_search_results_for_cluster(schema, search_settings: DotDict, vectorize_s
 
 
 def get_search_results_similar_to_item(schema, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> list:
+    if schema.id == ABSCLUST_SCHEMA_ID:
+        # similar item functionality doesn't work with AbsClust database as it doesn't contain vectors
+        return []
     similar_to_item_id = search_settings.similar_to_item_id
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0

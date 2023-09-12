@@ -121,6 +121,12 @@ def generate_map(map_id):
     params_str = json.dumps(map_data["parameters"], indent=2)
     search_results = get_search_results(params_str, purpose='map', timings=timings)['items']
 
+    if not search_results:
+        map_data['progress']['step_title'] = "No results found"
+        map_data["results"]["timings"] = timings.get_timestamps()
+        map_data["finished"] = True
+        return
+
     search_result_meta_information = {}
     for item in search_results:
         search_result_meta_information[item['_id']] = {
@@ -148,15 +154,12 @@ def generate_map(map_id):
         map_data['progress']['step_title'] = "Generating vectors"
         query = params.search.all_field_query or "unknown"  # FIXME
         logging.warning(query)
-        logging.warning(len(search_results))
-        logging.warning(search_results[0])
         add_vectors_to_results(search_results, query, params, schema.descriptive_text_fields, map_data, timings)
-        logging.warning(search_results[0][map_vector_field])
 
     vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
     scores = [e["_score"] for e in search_results]
     map_data["results"]["per_point_data"]["scores"] = scores
-    point_sizes = [e.get(params.rendering.point_size_field) for e in search_results] if params.rendering.point_size_field else [1] * len(search_results)
+    point_sizes = [e.get(params.rendering.point_size_field) for e in search_results] if params.rendering.point_size_field != 'equal' else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
     timings.log("convert to numpy")
 
