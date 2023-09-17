@@ -441,6 +441,8 @@ export default {
     },
     show_stored_map(stored_map_id) {
       const that = this
+      // TODO: instead, first get only parameters of stored map, set them,
+      // then request search and map results the normal way
       this.reset_search_results_and_map()
       that.map_id = stored_map_id
       that.map_viewport_is_adjusted = false

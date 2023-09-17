@@ -23,12 +23,14 @@ def get_object_schema(schema_id: int) -> DotDict:
 
 def add_stored_map(map_id, user_id, schema_id, name, map_data) -> dict:
     url = backend_url + '/data_map/add_stored_map'
+    encoded_map_data = base64.b64encode(json.dumps(map_data, cls=CustomJSONEncoder).encode()).decode()
+    logging.warning(f"storing map, size: {len(encoded_map_data) / 1024 / 1024} MB")
     body = {
         'user_id': user_id,
         'schema_id': schema_id,
         'name': name,
         'map_id': map_id,
-        'map_data': base64.b64encode(json.dumps(map_data, cls=CustomJSONEncoder).encode()).decode()
+        'map_data': encoded_map_data,
     }
     result = requests.post(url, json=body)
     return result.json()

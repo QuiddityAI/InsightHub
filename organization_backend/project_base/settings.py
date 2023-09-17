@@ -141,6 +141,8 @@ STATIC_ROOT = 'static_root/'  # should be changed to where the static files will
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 70000000  # 70 MB max upload of e.g. map data
+
 # Rest Framework
 
 REST_FRAMEWORK = {
