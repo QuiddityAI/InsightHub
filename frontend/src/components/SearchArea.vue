@@ -300,6 +300,10 @@ export default {
       </div>
       <hr>
       <div class="flex justify-between items-center">
+        <span class="text-gray-500 text-sm">Store search history:</span>
+        <input v-model="appState.store_search_history" type="checkbox">
+      </div>
+      <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Show timings:</span>
         <input v-model="appState.show_timings" type="checkbox">
       </div>

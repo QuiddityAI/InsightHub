@@ -4,6 +4,7 @@ export const useAppStateStore = defineStore('appState', {
   state: () => {
     return {
       show_timings: false,
+      store_search_history: true,
       selected_cluster_title: null,
       selected_collection_title: null,
       settings: {

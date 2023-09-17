@@ -87,9 +87,7 @@ export default {
       this.selectedDocumentDetails = null
     },
     run_search_from_history(history_item) {
-      // schema is already correct in this case
-      this.query = history_item.parameters.query
-      // TODO: set other search parameters
+      this.appStateStore.settings = history_item.parameters
       this.request_search_results()
     },
     request_search_results() {
@@ -103,17 +101,7 @@ export default {
 
       this.selected_tab = "results"
 
-      const history_item_body = {
-        user_id: 1,  // FIXME: this is hardcoded
-        schema_id: this.appStateStore.settings.schema_id,
-        name: this.appStateStore.settings.search.all_field_query,  // TODO: doesn't work for other types
-        parameters: this.appStateStore.settings,
-      }
-
-      httpClient.post("/organization_backend/add_search_history_item", history_item_body)
-        .then(function (response) {
-          that.search_history.push(response.data)
-        })
+      this.add_search_history_item()
 
       httpClient.post("/data_backend/search_list_result", this.appStateStore.settings)
         .then(function (response) {
@@ -126,6 +114,47 @@ export default {
           that.search_timings = response.data["timings"]
 
           that.request_map()
+        })
+    },
+    add_search_history_item() {
+      const that = this
+      if (!this.appStateStore.store_search_history) return;
+
+      if (this.search_history.length > 0 &&
+        JSON.stringify(this.search_history[this.search_history.length - 1].parameters)
+        == JSON.stringify(this.appStateStore.settings)) {
+        // -> same query as before, don't save this duplicate:
+        return;
+      }
+
+      let entry_name = ""
+      if (this.appStateStore.settings.search.search_type == 'external_input') {
+        if (this.appStateStore.settings.search.use_separate_queries) {
+          entry_name = "TODO: separate fields"
+        } else {
+          entry_name = this.appStateStore.settings.search.all_field_query
+        }
+      } else if (this.appStateStore.settings.search.search_type == 'cluster') {
+        entry_name = `<i>Cluster</i> '${this.appStateStore.selected_cluster_title}'`
+      } else if (this.appStateStore.settings.search.search_type == 'similar_to_item') {
+        entry_name = `<i>Similar to</i> '${this.appStateStore.settings.search.similar_to_item_id}'`
+      } else if (this.appStateStore.settings.search.search_type == 'collection') {
+        entry_name = `<i>Collection</i> '${this.appStateStore.selected_collection_title}'`
+      } else if (this.appStateStore.settings.search.search_type == 'recommended_for_collection') {
+        entry_name = `<i>Recommended for collection</i> '${this.appStateStore.selected_collection_title}'`
+      }
+      if (!entry_name) return;
+
+      const history_item_body = {
+        user_id: 1,  // FIXME: this is hardcoded
+        schema_id: this.appStateStore.settings.schema_id,
+        name: entry_name,
+        parameters: this.appStateStore.settings,
+      }
+
+      httpClient.post("/organization_backend/add_search_history_item", history_item_body)
+        .then(function (response) {
+          that.search_history.push(response.data)
         })
     },
     request_map() {
@@ -531,7 +560,7 @@ export default {
                 <ul v-if="Object.keys(search_history).length !== 0" role="list" class="pt-3">
                   <li v-for="history_item in search_history.slice().reverse()" :key="history_item.id" class="justify-between pb-3">
                     <div class="flex flex-row gap-3">
-                      <span class="text-gray-500 font-medium">{{ history_item.name }}</span>
+                      <span class="text-gray-500 font-medium" v-html="history_item.name"></span>
                       <div class="flex-1"></div>
                       <button @click="run_search_from_history(history_item)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Run again</button>
                     </div>
