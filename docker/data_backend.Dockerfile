@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM python:3.10 AS python_env
+FROM --platform=$BUILDPLATFORM python:3.11 AS python_env
 RUN pip install pipenv
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
