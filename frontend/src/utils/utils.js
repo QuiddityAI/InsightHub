@@ -26,3 +26,9 @@ export class FieldType {
   static INTEGER = "INTEGER"
   static FLOAT = "FLOAT"
 }
+
+export function ellipse(text, length) {
+  if (!text) return "";
+  let re = new RegExp("(.{"+length+"})..+");
+  return text.replace(re, "$1…");
+}

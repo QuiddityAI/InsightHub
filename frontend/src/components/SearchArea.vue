@@ -3,7 +3,7 @@ import { mapStores } from 'pinia'
 import { AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
 
 import httpClient from '../api/httpClient';
-import { FieldType } from '../utils/utils'
+import { FieldType, ellipse } from '../utils/utils'
 import { useAppStateStore } from '../stores/settings_store'
 
 const appState = useAppStateStore()
@@ -182,22 +182,22 @@ export default {
         <button v-if="appState.settings.search.search_type == 'cluster'"
           @click="appState.settings.search.search_type = 'external_input'"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
-          Cluster '{{ appState.selected_cluster_title }}', X
+          Cluster '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
         <button v-if="appState.settings.search.search_type == 'similar_to_item'"
           @click="appState.settings.search.search_type = 'external_input'"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
-          Similar to item '{{ appState.settings.search.similar_to_item_id }}', X
+          Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
         <button v-if="appState.settings.search.search_type == 'collection'"
           @click="appState.settings.search.search_type = 'external_input'"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
-          Collection '{{ appState.selected_collection_title }}', X
+          Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
         <button v-if="appState.settings.search.search_type == 'recommended_for_collection'"
           @click="appState.settings.search.search_type = 'external_input'"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
-          Recommended for Collection '{{ appState.selected_collection_title }}', X
+          Recommended for Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
       </div>
       <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-500': !show_settings }">

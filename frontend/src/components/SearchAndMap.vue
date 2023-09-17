@@ -116,6 +116,25 @@ export default {
           that.request_map()
         })
     },
+    get_current_map_name() {
+      let entry_name = ""
+      if (this.appStateStore.settings.search.search_type == 'external_input') {
+        if (this.appStateStore.settings.search.use_separate_queries) {
+          entry_name = "TODO: separate fields"
+        } else {
+          entry_name = this.appStateStore.settings.search.all_field_query
+        }
+      } else if (this.appStateStore.settings.search.search_type == 'cluster') {
+        entry_name = `<i>Cluster</i> '${this.appStateStore.settings.search.origin_display_name}'`
+      } else if (this.appStateStore.settings.search.search_type == 'similar_to_item') {
+        entry_name = `<i>Similar to</i> '${this.appStateStore.settings.search.origin_display_name}'`
+      } else if (this.appStateStore.settings.search.search_type == 'collection') {
+        entry_name = `<i>Collection</i> '${this.appStateStore.settings.search.origin_display_name}'`
+      } else if (this.appStateStore.settings.search.search_type == 'recommended_for_collection') {
+        entry_name = `<i>Recommended for collection</i> '${this.appStateStore.settings.search.origin_display_name}'`
+      }
+      return entry_name
+    },
     add_search_history_item() {
       const that = this
       if (!this.appStateStore.store_search_history) return;
@@ -127,22 +146,7 @@ export default {
         return;
       }
 
-      let entry_name = ""
-      if (this.appStateStore.settings.search.search_type == 'external_input') {
-        if (this.appStateStore.settings.search.use_separate_queries) {
-          entry_name = "TODO: separate fields"
-        } else {
-          entry_name = this.appStateStore.settings.search.all_field_query
-        }
-      } else if (this.appStateStore.settings.search.search_type == 'cluster') {
-        entry_name = `<i>Cluster</i> '${this.appStateStore.selected_cluster_title}'`
-      } else if (this.appStateStore.settings.search.search_type == 'similar_to_item') {
-        entry_name = `<i>Similar to</i> '${this.appStateStore.settings.search.similar_to_item_id}'`
-      } else if (this.appStateStore.settings.search.search_type == 'collection') {
-        entry_name = `<i>Collection</i> '${this.appStateStore.selected_collection_title}'`
-      } else if (this.appStateStore.settings.search.search_type == 'recommended_for_collection') {
-        entry_name = `<i>Recommended for collection</i> '${this.appStateStore.selected_collection_title}'`
-      }
+      const entry_name = this.get_current_map_name()
       if (!entry_name) return;
 
       const history_item_body = {
@@ -165,10 +169,10 @@ export default {
           that.map_id = response.data["map_id"]
           that.map_viewport_is_adjusted = false
           that.map_is_in_progess = true
-          that.request_mapping_progress()
+          that.request_mapping_progress({})
         })
     },
-    request_mapping_progress() {
+    request_mapping_progress(args={}) {
       const that = this
 
       if (!this.map_id || !this.map_is_in_progess) return;
@@ -183,6 +187,10 @@ export default {
       httpClient.post("/data_backend/map/result", payload)
         .then(function (response) {
           const mappingIsFinished = response.data["finished"]
+
+          if (response.data["parameters"] && args.update_parameters) {
+            this.appStateStore.settings = response.data["parameters"]
+          }
 
           const results = response.data["results"]
 
@@ -265,7 +273,7 @@ export default {
         })
         .finally(function() {
           setTimeout(function() {
-            that.request_mapping_progress()
+            that.request_mapping_progress(args)
           }.bind(this), 100);
         })
     },
@@ -275,7 +283,7 @@ export default {
       this.appStateStore.settings.search.cluster_id = cluster_item.id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.selected_cluster_title = cluster_item.title
+      this.appStateStore.settings.search.origin_display_name = cluster_item.title
       this.request_search_results()
     },
     show_collection_as_map(collection) {
@@ -283,7 +291,7 @@ export default {
       this.appStateStore.settings.search.collection_id = collection.id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.selected_collection_title = collection.name
+      this.appStateStore.settings.search.origin_display_name = collection.name
       this.request_search_results()
     },
     recommend_items_for_collection(collection) {
@@ -291,7 +299,7 @@ export default {
       this.appStateStore.settings.search.collection_id = collection.id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.selected_collection_title = collection.name
+      this.appStateStore.settings.search.origin_display_name = collection.name
       this.request_search_results()
     },
     show_document_details(pointIdx) {
@@ -304,6 +312,8 @@ export default {
       this.appStateStore.settings.search.similar_to_item_id = this.map_item_details[this.selectedDocumentIdx]._id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
+      const title_func = this.$refs.embedding_map.hover_label_rendering.title
+      this.appStateStore.settings.search.origin_display_name = title_func(this.map_item_details[this.selectedDocumentIdx])
       this.request_search_results()
     },
     close_document_details() {
@@ -395,10 +405,12 @@ export default {
     },
     store_current_map() {
       const that = this
+      const entry_name = this.get_current_map_name()
+      if (!entry_name) return;
       const store_map_body = {
         user_id: 1,  // FIXME: hardcoded
         schema_id: this.appStateStore.settings.schema_id,
-        name: this.appStateStore.settings.search.query,
+        name: entry_name,
         map_id: this.map_id,
       }
       httpClient.post("/data_backend/map/store", store_map_body)
@@ -433,7 +445,7 @@ export default {
       that.map_id = stored_map_id
       that.map_viewport_is_adjusted = false
       that.map_is_in_progess = true
-      that.request_mapping_progress()
+      that.request_mapping_progress({update_parameters: true})
     },
   },
   computed: {

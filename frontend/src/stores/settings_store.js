@@ -17,6 +17,7 @@ export const useAppStateStore = defineStore('appState', {
           combined_search_strategy: "hybrid",
           separate_queries: {},
 
+          origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
           cluster_origin_map_id: null,
           cluster_id: null,
 
