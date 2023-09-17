@@ -358,6 +358,29 @@ def get_search_results_included_in_collection(schema, search_settings: DotDict, 
     return _get_complete_items_and_sort_them(schema, total_items, required_fields, vectorize_settings, purpose, timings)
 
 
+def get_search_results_for_stored_map(map_data):
+    timings = Timings()
+    params = DotDict(map_data['parameters'])
+    search_settings = params.search
+    vectorize_settings = params.vectorize
+    schema = get_object_schema(params.schema_id)
+    purpose = 'list'
+    limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
+    page = search_settings.result_list_current_page if purpose == "list" else 0
+    if not all([limit, page is not None, schema]):
+        raise ValueError("a parameter is missing")
+
+    search_result_meta_info = map_data['results']['search_result_meta_information']
+
+    required_fields = _get_required_fields(schema, search_settings, vectorize_settings, purpose)
+    search_results = _get_complete_items_and_sort_them(schema, search_result_meta_info, required_fields, vectorize_settings, purpose, timings)[:limit]
+    result = {
+        "items": search_results,
+        "timings": timings.get_timestamps(),
+        "rendering": schema.result_list_rendering,
+    }
+    return result
+
 @lru_cache
 def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str]):
     if schema_id == ABSCLUST_SCHEMA_ID:

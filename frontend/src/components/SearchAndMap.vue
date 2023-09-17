@@ -105,16 +105,18 @@ export default {
 
       httpClient.post("/data_backend/search_list_result", this.appStateStore.settings)
         .then(function (response) {
-          that.search_results = response.data["items"]
-          const rendering = response.data["rendering"]
-          for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
-            rendering[field] = eval(rendering[field])
-          }
-          that.search_list_rendering = rendering
-          that.search_timings = response.data["timings"]
-
+          that.show_received_search_results(response.data)
           that.request_map()
         })
+    },
+    show_received_search_results(response_data) {
+      this.search_results = response_data["items"]
+      const rendering = response_data["rendering"]
+      for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
+        rendering[field] = eval(rendering[field])
+      }
+      this.search_list_rendering = rendering
+      this.search_timings = response_data["timings"]
     },
     get_current_map_name() {
       let entry_name = ""
@@ -169,10 +171,10 @@ export default {
           that.map_id = response.data["map_id"]
           that.map_viewport_is_adjusted = false
           that.map_is_in_progess = true
-          that.request_mapping_progress({})
+          that.request_mapping_progress()
         })
     },
-    request_mapping_progress(args={}) {
+    request_mapping_progress() {
       const that = this
 
       if (!this.map_id || !this.map_is_in_progess) return;
@@ -187,10 +189,6 @@ export default {
       httpClient.post("/data_backend/map/result", payload)
         .then(function (response) {
           const mappingIsFinished = response.data["finished"]
-
-          if (response.data["parameters"] && args.update_parameters) {
-            this.appStateStore.settings = response.data["parameters"]
-          }
 
           const results = response.data["results"]
 
@@ -273,7 +271,7 @@ export default {
         })
         .finally(function() {
           setTimeout(function() {
-            that.request_mapping_progress(args)
+            that.request_mapping_progress()
           }.bind(this), 100);
         })
     },
@@ -441,13 +439,25 @@ export default {
     },
     show_stored_map(stored_map_id) {
       const that = this
-      // TODO: instead, first get only parameters of stored map, set them,
-      // then request search and map results the normal way
-      this.reset_search_results_and_map()
+
       that.map_id = stored_map_id
+      const body = {
+        map_id: this.map_id,
+      }
+      this.reset_search_results_and_map()
+      this.selected_tab = "results"
+
+      httpClient.post("/data_backend/stored_map/parameters_and_search_results", body)
+        .then(function (response) {
+          const parameters = response.data.parameters
+          that.appStateStore.settings = parameters
+
+          that.show_received_search_results(response.data)
+        })
+
       that.map_viewport_is_adjusted = false
       that.map_is_in_progess = true
-      that.request_mapping_progress({update_parameters: true})
+      that.request_mapping_progress()
     },
   },
   computed: {

@@ -11,7 +11,7 @@ from utils.dotdict import DotDict
 
 from logic.mapping_task import get_or_create_map, get_map_results
 from logic.insert_logic import insert_many, update_database_layout
-from logic.search import get_search_results, get_document_details_by_id
+from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id
 
 from database_client.django_client import add_stored_map
 
@@ -134,6 +134,20 @@ def retrive_map_results():
     if 'parameters' in exclude_fields and 'parameters' in result:
         del result['parameters']
 
+    return result
+
+
+@app.route('/data_backend/stored_map/parameters_and_search_results', methods=['POST'])
+def retrive_parameters_and_search_results_for_stored_map():
+    # FIXME: this doesn't support paging in the future
+    params = request.json or {}
+    map_id = params.get("map_id")
+    map_data = get_map_results(map_id)
+    if map_data is None:
+        return "map_id not found", 404
+
+    result = get_search_results_for_stored_map(map_data)
+    result['parameters'] = deepcopy(map_data['parameters'])
     return result
 
 
