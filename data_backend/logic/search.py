@@ -371,15 +371,20 @@ def get_search_results_for_stored_map(map_data):
         raise ValueError("a parameter is missing")
 
     search_result_meta_info = map_data['results']['search_result_meta_information']
-
-    required_fields = _get_required_fields(schema, search_settings, vectorize_settings, purpose)
-    search_results = _get_complete_items_and_sort_them(schema, search_result_meta_info, required_fields, vectorize_settings, purpose, timings)[:limit]
+    search_results = get_full_results_from_meta_info(schema, search_settings, vectorize_settings, search_result_meta_info, purpose)
     result = {
         "items": search_results,
         "timings": timings.get_timestamps(),
         "rendering": schema.result_list_rendering,
     }
     return result
+
+
+def get_full_results_from_meta_info(schema, search_settings, vectorize_settings, search_result_meta_info, purpose: str):
+    required_fields = _get_required_fields(schema, search_settings, vectorize_settings, purpose)
+    search_results = _get_complete_items_and_sort_them(schema, search_result_meta_info, required_fields, vectorize_settings, purpose, timings)[:limit]
+    return search_results
+
 
 @lru_cache
 def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str]):
