@@ -70,26 +70,27 @@ default_map_data = {
 }
 
 
-def get_or_create_map(params):
+def get_or_create_map(params, ignore_cache):
     map_id = get_map_parameters_hash(params)
 
-    if map_id not in local_maps:
+    if map_id not in local_maps and not ignore_cache:
         map_data = get_stored_map_data(map_id)
         if map_data:
             local_maps[map_id] = map_data
-        else:
-            map_data = deepcopy(default_map_data)
-            map_data['last_accessed'] = time.time()
-            map_data['parameters'] = params
 
-            local_maps[map_id] = map_data
-            thread = Thread(target = generate_map, args = (map_id,))
-            thread.start()
+    if map_id not in local_maps or ignore_cache:
+        map_data = deepcopy(default_map_data)
+        map_data['last_accessed'] = time.time()
+        map_data['parameters'] = params
+
+        local_maps[map_id] = map_data
+        thread = Thread(target = generate_map, args = (map_id, ignore_cache))
+        thread.start()
 
     return map_id
 
 
-def generate_map(map_id):
+def generate_map(map_id, ignore_cache):
     timings = Timings()
 
     map_data = local_maps[map_id]
@@ -138,7 +139,7 @@ def generate_map(map_id):
     timings.log("preparation")
 
     texture_atlas_thread = None
-    if vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']):
+    if vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']) and not ignore_cache:
         logging.warning("reusing vectorize stage results")
         search_result_meta_information = map_data['results']['search_result_meta_information']
         search_results = get_full_results_from_meta_info(schema, params.search, params.vectorize, search_result_meta_information, 'map', timings)
@@ -219,7 +220,7 @@ def generate_map(map_id):
     point_sizes = [e.get(params.rendering.point_size_field) for e in search_results] if params.rendering.point_size_field != 'equal' else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
 
-    if projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']):
+    if projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']) and not ignore_cache:
         logging.warning("reusing projection stage results")
         projections = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
         timings.log("reusing projection stage results")

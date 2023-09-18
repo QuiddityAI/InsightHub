@@ -300,6 +300,10 @@ export default {
       </div>
       <hr>
       <div class="flex justify-between items-center">
+        <span class="text-gray-500 text-sm">Ignore cache:</span>
+        <input v-model="appState.ignore_cache" type="checkbox">
+      </div>
+      <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Store search history:</span>
         <input v-model="appState.store_search_history" type="checkbox">
       </div>

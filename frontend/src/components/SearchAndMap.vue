@@ -103,7 +103,8 @@ export default {
 
       this.add_search_history_item()
 
-      httpClient.post("/data_backend/search_list_result", this.appStateStore.settings)
+      httpClient.post(`/data_backend/search_list_result?ignore_cache=${this.appStateStore.ignore_cache}`,
+        this.appStateStore.settings)
         .then(function (response) {
           that.show_received_search_results(response.data)
           that.request_map()
@@ -166,7 +167,8 @@ export default {
     request_map() {
       const that = this
 
-      httpClient.post("/data_backend/map", this.appStateStore.settings)
+      httpClient.post(`/data_backend/map?ignore_cache=${this.appStateStore.ignore_cache}`,
+        this.appStateStore.settings)
         .then(function (response) {
           that.map_id = response.data["map_id"]
           that.map_viewport_is_adjusted = false

@@ -87,6 +87,7 @@ def insert_many_sync_route():
 def get_search_list_result_endpoint():
     # turn params into string to make it cachable (aka hashable):
     params_str = json.dumps(request.json, indent=2)
+    # ignore_cache = request.args.get('ignore_cache') == "true"
     # print(params_str)
     try:
         result = get_search_results(params_str, purpose='list')
@@ -109,8 +110,9 @@ def get_search_list_result_endpoint():
 @app.route('/data_backend/map', methods=['POST'])
 def get_or_create_map_endpoint():
     params = DotDict(request.json or {})
+    ignore_cache = request.args.get('ignore_cache') == "true"
 
-    map_id = get_or_create_map(params)
+    map_id = get_or_create_map(params, ignore_cache)
 
     return jsonify({"map_id": map_id})
 
