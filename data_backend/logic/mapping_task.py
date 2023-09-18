@@ -141,7 +141,7 @@ def generate_map(map_id):
     if vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']):
         logging.warning("reusing vectorize stage results")
         search_result_meta_information = map_data['results']['search_result_meta_information']
-        search_results = get_full_results_from_meta_info(schema, params.search, params.vectorize, search_result_meta_information, 'map')
+        search_results = get_full_results_from_meta_info(schema, params.search, params.vectorize, search_result_meta_information, 'map', timings)
     else:
         map_data['progress']['step_title'] = "Getting search results"
         params_str = json.dumps(map_data["parameters"], indent=2)

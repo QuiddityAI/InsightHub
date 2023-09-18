@@ -218,7 +218,7 @@ def get_vector_search_results_matching_collection(schema: DotDict, vector_field:
 
 def fill_in_details_from_object_storage(schema_id:int, items: dict, required_fields: list[str]):
     if schema_id == ABSCLUST_SCHEMA_ID:
-        full_items = get_absclust_items_by_ids(items.keys())
+        full_items = get_absclust_items_by_ids(list(items.keys()))
         for full_item in full_items:
             for item in items.values():
                 if item['_id'] == full_item['id']:
@@ -371,18 +371,18 @@ def get_search_results_for_stored_map(map_data):
         raise ValueError("a parameter is missing")
 
     search_result_meta_info = map_data['results']['search_result_meta_information']
-    search_results = get_full_results_from_meta_info(schema, search_settings, vectorize_settings, search_result_meta_info, purpose)
+    search_results = get_full_results_from_meta_info(schema, search_settings, vectorize_settings, search_result_meta_info, purpose, timings)
     result = {
-        "items": search_results,
+        "items": search_results[:limit],
         "timings": timings.get_timestamps(),
         "rendering": schema.result_list_rendering,
     }
     return result
 
 
-def get_full_results_from_meta_info(schema, search_settings, vectorize_settings, search_result_meta_info, purpose: str):
+def get_full_results_from_meta_info(schema, search_settings, vectorize_settings, search_result_meta_info, purpose: str, timings):
     required_fields = _get_required_fields(schema, search_settings, vectorize_settings, purpose)
-    search_results = _get_complete_items_and_sort_them(schema, search_result_meta_info, required_fields, vectorize_settings, purpose, timings)[:limit]
+    search_results = _get_complete_items_and_sort_them(schema, search_result_meta_info, required_fields, vectorize_settings, purpose, timings)
     return search_results
 
 
