@@ -17,7 +17,7 @@ def get_map_parameters_hash(parameters: dict):
 
 def get_search_stage_hash(parameters: dict):
     vectorize_stage_parameters = {
-        "search": parameters['search'],
+        "search": parameters.get('search', {}),
     }
     vectorize_stage_hash = md5(json.dumps(vectorize_stage_parameters).encode()).hexdigest()
     return vectorize_stage_hash
@@ -25,8 +25,8 @@ def get_search_stage_hash(parameters: dict):
 
 def get_vectorize_stage_hash(parameters: dict):
     vectorize_stage_parameters = {
-        "search": parameters['search'],
-        "vectorize": parameters['vectorize'],
+        "search": parameters.get('search', {}),
+        "vectorize": parameters.get('vectorize', {}),
     }
     vectorize_stage_hash = md5(json.dumps(vectorize_stage_parameters).encode()).hexdigest()
     return vectorize_stage_hash
@@ -34,9 +34,9 @@ def get_vectorize_stage_hash(parameters: dict):
 
 def get_projection_stage_hash(parameters: dict):
     projection_stage_parameters = {
-        "search": parameters['search'],
-        "vectorize": parameters['vectorize'],
-        "projection": parameters['projection'],
+        "search": parameters.get('search', {}),
+        "vectorize": parameters.get('vectorize', {}),
+        "projection": parameters.get('projection', {}),
     }
     projection_stage_hash = md5(json.dumps(projection_stage_parameters).encode()).hexdigest()
     return projection_stage_hash

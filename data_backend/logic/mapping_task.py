@@ -104,7 +104,7 @@ def generate_map(map_id):
     for similar_map_id in maps_with_same_projection:
         if similar_map_id in local_maps:
             similar_map = local_maps[similar_map_id]
-            map_data['results'] = similar_map['results']
+            map_data['results'] = deepcopy(similar_map['results'])
             map_data['last_parameters'] = similar_map['parameters']
             found_similar_map = True
             break
@@ -113,7 +113,7 @@ def generate_map(map_id):
         for similar_map_id in maps_with_same_vectorization:
             if similar_map_id in local_maps:
                 similar_map = local_maps[similar_map_id]
-                map_data['results'] = similar_map['results']
+                map_data['results'] = deepcopy(similar_map['results'])
                 map_data['last_parameters'] = similar_map['parameters']
                 found_similar_map = True
                 break
@@ -142,6 +142,7 @@ def generate_map(map_id):
         logging.warning("reusing vectorize stage results")
         search_result_meta_information = map_data['results']['search_result_meta_information']
         search_results = get_full_results_from_meta_info(schema, params.search, params.vectorize, search_result_meta_information, 'map', timings)
+        timings.log("reusing vectorize stage results")
     else:
         map_data['progress']['step_title'] = "Getting search results"
         params_str = json.dumps(map_data["parameters"], indent=2)
@@ -221,6 +222,7 @@ def generate_map(map_id):
     if projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']):
         logging.warning("reusing projection stage results")
         projections = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
+        timings.log("reusing projection stage results")
     else:
         vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
         timings.log("convert to numpy")
@@ -277,8 +279,8 @@ def generate_map(map_id):
     map_data["finished"] = True
 
     # adding this map to the partial map caches:
-    vectorize_stage_hash_to_map_id[projection_stage_params_hash].append(map_id)
-    projection_stage_hash_to_map_id[vectorize_stage_params_hash].append(map_id)
+    vectorize_stage_hash_to_map_id[vectorize_stage_params_hash].append(map_id)
+    projection_stage_hash_to_map_id[projection_stage_params_hash].append(map_id)
 
 
 def get_map_results(map_id) -> dict | None:
