@@ -35,6 +35,7 @@ opensearch-py = "*"
 django-jsonsuit = "*"
 pillow = "*"
 sentence-transformers = "*"
+django-object-actions = "*"
 
 [dev-packages]
 ipykernel = "*"

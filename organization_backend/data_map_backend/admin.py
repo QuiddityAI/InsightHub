@@ -1,3 +1,4 @@
+import logging
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.forms import Textarea
@@ -6,6 +7,7 @@ from django.db import models
 from djangoql.admin import DjangoQLSearchMixin
 from simple_history.admin import SimpleHistoryAdmin
 from jsonsuit.widgets import JSONSuit
+from django_object_actions import DjangoObjectActions, action
 
 from .models import EmbeddingSpace, Generator, Organization, ObjectSchema, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
 
@@ -57,7 +59,7 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
 class ObjectFieldInline(admin.StackedInline):
     model = ObjectField
-    readonly_fields = ('changed_at', 'created_at')
+    readonly_fields = ('changed_at', 'created_at', 'button_delete_content', 'button_generate_missing_values')
     extra = 0
 
     formfield_overrides = {
@@ -74,6 +76,14 @@ class ObjectFieldInline(admin.StackedInline):
             else:
                 kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
         return super(ObjectFieldInline, self).formfield_for_manytomany(db_field, request, **kwargs)
+
+    def button_delete_content(self, obj):
+        return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button>')
+    button_delete_content.short_description = "Delete Content"
+
+    def button_generate_missing_values(self, obj):
+        return mark_safe(f'<button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
+    button_generate_missing_values.short_description = "Generate Missing Values"
 
 
 @admin.register(ObjectSchema)
@@ -140,13 +150,26 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
 
 @admin.register(ObjectField)
-class ObjectFieldAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ('id', 'field_type', 'identifier', 'description')
     list_display_links = ('id', 'identifier')
     search_fields = ('identifier', 'description')
 
     readonly_fields = ('changed_at', 'created_at')
+
+    @action(label="Delete Content", description="Delete field data and index") # optional
+    def delete_content(self, request, obj):
+        # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
+        logging.warning("deleting field content")
+        self.message_user(request, "deleting field content")
+
+    @action(label="Generate Missing Values", description="Generate missing values") # optional
+    def generate_missing_values(self, request, obj):
+        logging.warning("generating missing values")
+        self.message_user(request, "generating missing values")
+
+    change_actions = ('delete_content', 'generate_missing_values')
 
 
 @admin.register(SearchHistoryItem)
