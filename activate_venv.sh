@@ -1,1 +1,1 @@
-source "$(python3.10 -m pipenv --venv)/bin/activate"
+source "$(python3.11 -m pipenv --venv)/bin/activate"
