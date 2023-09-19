@@ -6,15 +6,15 @@ services:
       dockerfile: ./docker/model_server.Dockerfile
     volumes:
       - ./:/source_code/
-      - model_cache:/home/appuser/.cache/huggingface/
+      - model_server_cache:/home/appuser/.cache/
     ports:
       - "55180:55180"
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
   organization-backend:
     image: visual_data_map/organization_backend
     build:
@@ -24,6 +24,8 @@ services:
       - ./:/source_code/
     ports:
       - "55125:55125"
+    environment:
+      - data_backend_host=http://data-backend:55123
   data-backend:
     image: visual_data_map/data_backend
     build:
@@ -91,7 +93,7 @@ services:
     ports:
       - 1358:1358
 volumes:
-  model_cache:
+  model_server_cache:
   qdrant_storage:
   opensearch_data:
   monogdb_data:
