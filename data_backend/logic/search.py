@@ -180,8 +180,9 @@ ABSCLUST_SCHEMA_ID = 1
 def get_vector_search_results(schema: DotDict, vector_field: str, query_str: str, query_vector: list | None, required_fields: list[str], limit: int, page: int):
     if query_vector is None:
         generator = schema.object_fields[vector_field].generator
-        generator_function = get_generator_function(generator.identifier, schema.object_fields[vector_field].generator_parameters)
-        query_vector = generator_function([query_str])[0]
+        generator_parameters = json.loads(schema.object_fields[vector_field].generator_parameters) if schema.object_fields[vector_field].generator_parameters else {}
+        generator_function = get_generator_function(generator.identifier, generator_parameters)
+        query_vector = generator_function([[query_str]])[0]
 
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria

@@ -1,6 +1,7 @@
 import json
 import os
 from copy import deepcopy
+from threading import Thread
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -12,6 +13,7 @@ from utils.dotdict import DotDict
 from logic.mapping_task import get_or_create_map, get_map_results
 from logic.insert_logic import insert_many, update_database_layout
 from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id
+from logic.generate_missing_values import delete_field_content, generate_missing_values
 
 from database_client.django_client import add_stored_map
 
@@ -80,6 +82,23 @@ def insert_many_sync_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
     insert_many(params.schema_id, params.elements)
+    return "", 204
+
+
+@app.route('/data_backend/delete_field', methods=['POST'])
+def delete_field_route():
+    # TODO: check auth
+    params = DotDict(request.json) # type: ignore
+    delete_field_content(params.schema_id, params.field_identifier)
+    return "", 204
+
+
+@app.route('/data_backend/generate_missing_values', methods=['POST'])
+def generate_missing_values_route():
+    # TODO: check auth
+    params = DotDict(request.json) # type: ignore
+    thread = Thread(target=generate_missing_values, args=(params.schema_id, params.field_identifier))
+    thread.start()
     return "", 204
 
 

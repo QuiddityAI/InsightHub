@@ -104,8 +104,8 @@ class TextSearchEngineClient(object):
 
         bulk_operations = ""
         for _id, item in zip(ids, payloads):
-            op = { "index" : { "_index" : index_name, "_id" : str(_id) } }
-            bulk_operations += json.dumps(op) + "\n" + json.dumps(item, cls=CustomJSONEncoder) + "\n"
+            op = { "update" : { "_index" : index_name, "_id" : str(_id) } }
+            bulk_operations += json.dumps(op) + "\n" + json.dumps({'doc': item, 'doc_as_upsert': True}, cls=CustomJSONEncoder) + "\n"
 
         response = self.client.bulk(body=bulk_operations)
         # print(response)
@@ -129,8 +129,20 @@ class TextSearchEngineClient(object):
         return []
 
 
-    def clear_field(self, schema_id, field):
-        return
+    def delete_field(self, schema_id, field):
+        index_name = self._get_index_name(schema_id)
+
+        body = {
+            "query": {
+                "match_all": {},
+            },
+            "script" : {
+                "source": f"ctx._source.remove('{field}')",
+            }
+        }
+
+        response = self.client.update_by_query(index=index_name, body=body)
+        logging.warning(response)
 
 
     def get_search_results(self, schema_id, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields, highlights=False):

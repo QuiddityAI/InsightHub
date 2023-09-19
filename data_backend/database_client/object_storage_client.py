@@ -94,9 +94,9 @@ class ObjectStorageEngineClient(object):
         return list(result.skip(offset).limit(limit))
 
 
-    def clear_field(self, schema_id, field):
+    def delete_field(self, schema_id, field):
         collection = self.get_collection(schema_id)
-        collection.update({}, {"$set": {field: None}})
+        collection.update_many({}, {"$set": {field: None}})
 
 
 # add support for numpy ndarrays to Mongo:

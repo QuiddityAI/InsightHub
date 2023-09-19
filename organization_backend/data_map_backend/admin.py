@@ -1,10 +1,12 @@
 import logging
+import os
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.forms import Textarea
 from django.db import models
 
 from djangoql.admin import DjangoQLSearchMixin
+import requests
 from simple_history.admin import SimpleHistoryAdmin
 from jsonsuit.widgets import JSONSuit
 from django_object_actions import DjangoObjectActions, action
@@ -149,6 +151,9 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     get_field_overview_table_html.short_description='Field Overview'
 
 
+data_backend_url = os.getenv("data_backend_host", "http://localhost:55123")
+
+
 @admin.register(ObjectField)
 class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
@@ -158,16 +163,26 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAd
 
     readonly_fields = ('changed_at', 'created_at')
 
-    @action(label="Delete Content", description="Delete field data and index") # optional
+    @action(label="Delete Content", description="Delete field data and index")
     def delete_content(self, request, obj):
         # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
-        logging.warning("deleting field content")
-        self.message_user(request, "deleting field content")
+        url = data_backend_url + '/data_backend/delete_field'
+        data = {
+            'schema_id': obj.schema_id,
+            'field_identifier': obj.identifier,
+        }
+        requests.post(url, json=data)
+        self.message_user(request, "Deleted this fields content")
 
-    @action(label="Generate Missing Values", description="Generate missing values") # optional
+    @action(label="Generate Missing Values", description="Generate missing values")
     def generate_missing_values(self, request, obj):
-        logging.warning("generating missing values")
-        self.message_user(request, "generating missing values")
+        url = data_backend_url + '/data_backend/generate_missing_values'
+        data = {
+            'schema_id': obj.schema_id,
+            'field_identifier': obj.identifier,
+        }
+        requests.post(url, json=data)
+        self.message_user(request, "Now generating missing values...")
 
     change_actions = ('delete_content', 'generate_missing_values')
 

@@ -104,8 +104,11 @@ class VectorSearchEngineClient(object):
                 field_schema=indexable_field_type_to_qdrant_type[field.field_type])
 
 
-    def remove_schema(self, schema_id: int, vector_field: str):
-        self.client.delete_collection(self._get_collection_name(schema_id, vector_field))
+    def delete_field(self, schema_id: int, vector_field: str):
+        try:
+            self.client.delete_collection(self._get_collection_name(schema_id, vector_field))
+        except Exception as e:
+            print(e)
 
 
     def upsert_items(self, schema_id: int, vector_field: str, ids: list, payloads: list[dict], vectors: list):

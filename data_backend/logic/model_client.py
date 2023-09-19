@@ -30,27 +30,19 @@ def save_embedding_cache():
 def get_embedding(text: str, text_id: str = None) -> np.ndarray:
     if embedding_model == "openai":
         return get_openai_embedding(text, text_id)
-    return get_pubmedbert_embedding(text, text_id)
+    return get_pubmedbert_embeddings([text])[0]
 
 
-def get_pubmedbert_embedding(text: str, text_id: str = None):
-
-    config_name = embedding_model + embedding_strategy
-    if text_id and text_id in embedding_cache[config_name]:
-        return embedding_cache[config_name][text_id]
-
+def get_pubmedbert_embeddings(texts: list[str]):
     url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/bert'
     data = {
-        'texts': [text],
+        'texts': texts,
         'model_name': embedding_model,
         'embedding_strategy': embedding_strategy,
     }
     result = requests.post(url, json=data)
-    embedding = np.asarray(result.json()["embeddings"])[0]  # for now, no support for batches
-
-    if text_id:
-        embedding_cache[config_name][text_id] = embedding
-    return embedding
+    embeddings = np.asarray(result.json()["embeddings"])
+    return embeddings
 
 
 def get_sentence_transformer_embeddings(texts: list[str], model_name: str, prefix: str):

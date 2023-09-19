@@ -22,11 +22,11 @@ def get_sentence_transformer_embeddings(texts, model_name, prefix: str = ""):
     assert model is not None
 
     if model_name in ['intfloat/e5-base-v2', 'intfloat/e5-large-v2', 'intfloat/multilingual-e5-base']:
-        prefix = prefix or "query: "
+        prefix = prefix or "query:"
         # alternative: "passage: " for documents meant for retrieval
-        texts = [prefix + t for t in texts]
+        texts = [prefix + " " + t for t in texts]
 
-    embeddings = model.encode(texts, normalize_embeddings=True)  # TODO: really normalize?
+    embeddings = model.encode(texts)
     return embeddings
 
 

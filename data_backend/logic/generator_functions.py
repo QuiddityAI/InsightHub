@@ -5,26 +5,23 @@ import openai
 
 from utils.dotdict import DotDict
 
-from logic.model_client import get_pubmedbert_embedding, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings
+from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings
 
 
-def get_generator_function(identifier, parameters: DotDict) -> Callable:
+def get_generator_function(identifier, parameters: dict) -> Callable:
+    parameters = DotDict(parameters)
     if identifier == 'pubmedbert':
-        return get_pubmedbert_embedding_batch
+        return lambda texts: get_pubmedbert_embeddings([" ".join(t) for t in texts])
     elif identifier == 'open_ai_text_embedding_ada_002':
-        return get_openai_embedding_batch
+        return lambda texts: get_openai_embedding_batch([" ".join(t) for t in texts])
     elif identifier == 'sentence_transformer':
-        return lambda texts: get_sentence_transformer_embeddings(texts, parameters.model_name, parameters.prefix)
+        return lambda texts: get_sentence_transformer_embeddings([" ".join(t) for t in texts], parameters.model_name, parameters.prefix)
     elif identifier == 'clip_text':
-        return lambda texts: get_clip_text_embeddings(texts, parameters.model_name)
+        return lambda texts: get_clip_text_embeddings([" ".join(t) for t in texts], parameters.model_name)
     elif identifier == 'clip_image':
-        return lambda image_paths: get_clip_image_embeddings(image_paths, parameters.model_name)
+        return lambda image_paths: get_clip_image_embeddings([x for t in image_paths for x in t], parameters.model_name)
 
     return lambda x: None
-
-
-def get_pubmedbert_embedding_batch(texts: list[str]):
-    return [get_pubmedbert_embedding(text) for text in texts]
 
 
 with open("../openai_credentials.json", "rb") as f:

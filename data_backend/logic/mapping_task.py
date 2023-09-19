@@ -188,7 +188,7 @@ def generate_map(map_id, ignore_cache):
                     map_data["results"]["texture_atlas_path"] = atlas_filename
 
                 texture_atlas_thread = Thread(target=generate_texture_atlas)
-                texture_atlas_thread.run()
+                texture_atlas_thread.start()
             else:
                 map_data["results"]["texture_atlas_path"] = atlas_filename
 

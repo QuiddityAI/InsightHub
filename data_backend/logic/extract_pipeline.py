@@ -6,7 +6,7 @@ from logic.generator_functions import get_generator_function
 
 
 # TODO: add changed_at as parameter and cache function (using changed_at as measure for dropping the cache)
-def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = []) -> list[list[dict]]:
+def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = [], only_fields: list[str] = []) -> list[list[dict]]:
     schema = DotDict(schema)
     if has_circular_dependency(schema):
         logging.warning(f"The pipeline steps have a circular dependency, object schema: {schema.name}")
@@ -23,7 +23,9 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
         for field in schema.object_fields.values():
             if field.identifier in steps_added: continue
             this_field_skipped = False
-            if ((field.should_be_generated and not field.identifier in ignored_fields)
+
+            if ((not only_fields and field.should_be_generated and not field.identifier in ignored_fields)
+                    or field.identifier in only_fields
                     or field.identifier in enabled_fields):
                 dependencies = field.source_fields
                 for dep in dependencies:
