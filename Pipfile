@@ -34,6 +34,7 @@ pymongo = "*"
 opensearch-py = "*"
 django-jsonsuit = "*"
 pillow = "*"
+sentence-transformers = "*"
 
 [dev-packages]
 ipykernel = "*"

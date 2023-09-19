@@ -3,14 +3,22 @@ import json
 
 import openai
 
-from logic.model_client import get_pubmedbert_embedding
+from utils.dotdict import DotDict
+
+from logic.model_client import get_pubmedbert_embedding, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings
 
 
-def get_generator_function(identifier, parameters) -> Callable:
+def get_generator_function(identifier, parameters: DotDict) -> Callable:
     if identifier == 'pubmedbert':
         return get_pubmedbert_embedding_batch
     elif identifier == 'open_ai_text_embedding_ada_002':
         return get_openai_embedding_batch
+    elif identifier == 'sentence_transformer':
+        return lambda texts: get_sentence_transformer_embeddings(texts, parameters.model_name, parameters.prefix)
+    elif identifier == 'clip_text':
+        return lambda texts: get_clip_text_embeddings(texts, parameters.model_name)
+    elif identifier == 'clip_image':
+        return lambda image_paths: get_clip_image_embeddings(image_paths, parameters.model_name)
 
     return lambda x: None
 

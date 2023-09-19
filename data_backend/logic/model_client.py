@@ -39,18 +39,55 @@ def get_pubmedbert_embedding(text: str, text_id: str = None):
     if text_id and text_id in embedding_cache[config_name]:
         return embedding_cache[config_name][text_id]
 
-    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding'
+    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/bert'
     data = {
-        'text': text,
-        'model': embedding_model,
+        'texts': [text],
+        'model_name': embedding_model,
         'embedding_strategy': embedding_strategy,
     }
     result = requests.post(url, json=data)
-    embedding = np.asarray(result.json()["embedding"])[0]  # for now, no support for batches
+    embedding = np.asarray(result.json()["embeddings"])[0]  # for now, no support for batches
 
     if text_id:
         embedding_cache[config_name][text_id] = embedding
     return embedding
+
+
+def get_sentence_transformer_embeddings(texts: list[str], model_name: str, prefix: str):
+    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/sentence_transformer'
+    data = {
+        'texts': texts,
+        'model_name': model_name,
+        'prefix': prefix,
+    }
+    result = requests.post(url, json=data)
+    embeddings = np.asarray(result.json()["embeddings"])
+    return embeddings
+
+
+def get_clip_text_embeddings(texts: list[str], model_name: str):
+    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/clip/text'
+    data = {
+        'texts': texts,
+        'model_name': model_name,
+    }
+    result = requests.post(url, json=data)
+    embeddings = np.asarray(result.json()["embeddings"])
+    return embeddings
+
+
+def get_clip_image_embeddings(image_paths: list[str], model_name: str):
+    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/clip/image'
+    data = {
+        'image_paths': image_paths,
+        'model_name': model_name,
+    }
+    result = requests.post(url, json=data)
+    embeddings = np.asarray(result.json()["embeddings"])
+    return embeddings
+
+
+# ------------------- OpenAI -------------------------
 
 
 with open("../openai_credentials.json", "rb") as f:
