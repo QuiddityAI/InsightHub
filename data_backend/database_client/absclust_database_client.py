@@ -6,6 +6,8 @@ import logging
 
 import typesense
 
+from utils.helpers import run_in_batches
+
 
 ts_client = typesense.Client({
     'api_key': '***REMOVED***',
@@ -45,15 +47,14 @@ def get_absclust_item_by_id(item_id: str):
 
 def get_absclust_items_by_ids(item_ids: list[str]):
     collection = ts_client.collections["articles"]
-    hits = collection.documents.search(
-        dict(
-            q = "*",
-            filter_by = f"id:[{','.join(item_ids)}]",
-            per_page=len(item_ids),
-        )
-    )["hits"]
+    hits = run_in_batches(item_ids, 100, lambda items: collection.documents.search(
+            dict(
+                q = "*",
+                filter_by = f"id:[{','.join(items)}]",
+                per_page=len(items),
+            )
+        )["hits"])
     items = [a["document"] for a in hits]
-    logging.warning(items)
     for item in items:
         if "title" not in item:
             item["title"] = "title unknown"

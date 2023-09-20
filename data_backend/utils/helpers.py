@@ -1,4 +1,6 @@
 
+import math
+from typing import Callable
 import numpy as np
 
 
@@ -23,3 +25,11 @@ def normalize_array(arr):
     arr = arr - np.min(arr)
     max_element = np.max(arr)
     return arr / max_element if max_element != 0 else arr
+
+
+def run_in_batches(items: list, batch_size: int, function: Callable) -> list:
+    results = []
+    for batch_number in range(math.ceil(len(items) / float(batch_size))):
+        partial_results = function(items[batch_number * batch_size : (batch_number + 1) * batch_size])
+        results += partial_results
+    return results
