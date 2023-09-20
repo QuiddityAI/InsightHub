@@ -83,7 +83,7 @@ def get_search_results_using_combined_query(schema, search_settings: DotDict, ve
     required_fields = _get_required_fields(schema, search_settings, vectorize_settings, purpose)
 
     or_queries = raw_query.split(" OR ")
-    timings.log("preparation")
+    timings.log("search preparation")
 
     # TODO: currently only first page is returned
     if schema.id == ABSCLUST_SCHEMA_ID:
@@ -279,7 +279,7 @@ def get_search_results_similar_to_item(schema, search_settings: DotDict, vectori
     if not all([similar_to_item_id is not None, limit, page is not None, schema]):
         raise ValueError("a parameter is missing")
 
-    timings.log("preparation")
+    timings.log("search preparation")
 
     vector_fields = [field.identifier for field in schema.object_fields.values() if field.is_available_for_search and field.field_type == FieldType.VECTOR]
 
@@ -309,7 +309,7 @@ def get_search_results_matching_a_collection(schema, search_settings: DotDict, v
     collection = get_collection(collection_id)
     if not collection:
         raise ValueError("Couldn't find the collection:" + str(collection_id))
-    timings.log("preparation")
+    timings.log("search preparation")
 
     vector_fields = [field for field in schema.object_fields.values() if field.is_available_for_search and field.field_type == FieldType.VECTOR]
     result_sets: list[dict] = []
@@ -333,7 +333,7 @@ def get_search_results_included_in_collection(schema, search_settings: DotDict, 
     collection = get_collection(collection_id)
     if not collection:
         raise ValueError("Couldn't find the collection:" + str(collection_id))
-    timings.log("preparation")
+    timings.log("search preparation")
 
     result_sets: list[dict] = []
     positive_set = {}

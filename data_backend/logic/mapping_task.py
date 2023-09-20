@@ -16,7 +16,7 @@ from utils.dotdict import DotDict
 
 from database_client.django_client import get_object_schema, get_stored_map_data
 
-from logic.add_vectors import add_vectors_to_results
+from logic.add_vectors import add_vectors_to_results_from_external_db, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
 from logic.search import get_search_results, get_full_results_from_meta_info
 from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
@@ -132,11 +132,10 @@ def generate_map(map_id, ignore_cache):
         map_data['results']['w2v_embeddings_file_path'] = origin_map['results']['w2v_embeddings_file_path']
         map_data['results']['texture_atlas_path'] = origin_map['results']['texture_atlas_path']
 
-    map_vector_field = params.vectorize.map_vector_field
     schema_id = params.schema_id
     schema = get_object_schema(schema_id)
     map_data["hover_label_rendering"] = schema.hover_label_rendering
-    timings.log("preparation")
+    timings.log("map preparation")
 
     texture_atlas_thread = None
     if vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']) and not ignore_cache:
@@ -204,15 +203,18 @@ def generate_map(map_id, ignore_cache):
 
         map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
 
-        # eventually, the vectors should come directly from the database
-        # but for the AbsClust database, the vectors need to be added on-demand:
-        if schema.id == ABSCLUST_SCHEMA_ID:
-            map_data['progress']['step_title'] = "Generating vectors"
+        if params.vectorize.use_w2v_model:
+            query = params.search.all_field_query
+            # TODO: query might be something else when using separate queries etc.
+            if params.search.search_type == 'cluster' and origin_map is not None:
+                query = origin_map['parameters']['search']['all_field_query']
+            add_w2v_vectors(search_results, query, params, schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
+
+        if schema.id == ABSCLUST_SCHEMA_ID and not params.vectorize.use_w2v_model:
             query = params.search.all_field_query
             if params.search.search_type == 'cluster' and origin_map is not None:
                 query = origin_map['parameters']['search']['all_field_query']
-            add_vectors_to_results(search_results, query, params, schema.descriptive_text_fields, map_data, timings)
-
+            add_vectors_to_results_from_external_db(search_results, query, params, schema.descriptive_text_fields, map_data, schema, timings)
 
     projection_parameters = params.get("projection", {})
     scores = [e["_score"] for e in search_results]
@@ -225,6 +227,7 @@ def generate_map(map_id, ignore_cache):
         projections = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
         timings.log("reusing projection stage results")
     else:
+        map_vector_field = params.vectorize.map_vector_field if not params.vectorize.use_w2v_model else "w2v_vector"
         vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
         timings.log("convert to numpy")
 
@@ -251,6 +254,8 @@ def generate_map(map_id, ignore_cache):
         import umap  # import it only when needed as it slows down the startup time
         umap_task = umap.UMAP(n_components=target_dimensions, random_state=99, min_dist=projection_parameters.get("min_dist", 0.05), n_epochs=projection_parameters.get("n_epochs", 500))
         projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
+        if projection_parameters.get("shape") == "1d_plus_distance_polar":
+            projections = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
         map_data["results"]["per_point_data"]["positions_x"] = projections[:, 0].tolist()
         map_data["results"]["per_point_data"]["positions_y"] = projections[:, 1].tolist()
         timings.log("UMAP fit transform")

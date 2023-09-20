@@ -24,7 +24,7 @@ def get_cluster_titles(cluster_labels, projections, results, descriptive_text_fi
 
     for result_index, cluster_index in enumerate(cluster_labels):
         if cluster_index <= -1: continue
-        text = " ".join([results[result_index][field] for field in descriptive_text_fields])
+        text = " ".join([results[result_index].get(field, "") for field in descriptive_text_fields])
         texts_per_cluster[cluster_index] += text
         points_per_cluster_x[cluster_index].append(projections[result_index][0])
         points_per_cluster_y[cluster_index].append(projections[result_index][1])
