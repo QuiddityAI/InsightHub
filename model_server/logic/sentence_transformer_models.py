@@ -9,6 +9,7 @@ sentence_transformer_models = [
     'intfloat/e5-base-v2',  # 768 dimensions
     'intfloat/e5-large-v2',  # 1024 dimensions
     'intfloat/multilingual-e5-base',  # 768 dimensions
+    'allenai/specter2',  # ? dimensions, needs different code!  # TODO
 ]
 
 

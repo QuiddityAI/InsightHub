@@ -37,7 +37,7 @@ def get_embedding_bert():
 def get_embedding_sentence_transformer():
     assert request.json is not None
     params = DotDict(request.json)
-    embeddings = run_in_batches(params.texts, 32, lambda texts: get_sentence_transformer_embeddings(texts, params.model_name, params.prefix).tolist())
+    embeddings = run_in_batches(params.texts, 8, lambda texts: get_sentence_transformer_embeddings(texts, params.model_name, params.prefix).tolist())
     return jsonify({"embeddings": embeddings})
 
 
@@ -45,7 +45,7 @@ def get_embedding_sentence_transformer():
 def get_clip_text_embedding_endpoint():
     assert request.json is not None
     params = DotDict(request.json)
-    embeddings = run_in_batches(params.texts, 16, lambda texts: get_clip_text_embeddings(texts, params.model_name).tolist())
+    embeddings = run_in_batches(params.texts, 8, lambda texts: get_clip_text_embeddings(texts, params.model_name).tolist())
     return jsonify({"embeddings": embeddings})
 
 
