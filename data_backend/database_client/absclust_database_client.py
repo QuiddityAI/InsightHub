@@ -10,9 +10,9 @@ from utils.helpers import run_in_batches
 
 
 ts_client = typesense.Client({
-    'api_key': '***REMOVED***',
+    'api_key': os.getenv("ABSCLUST_TYPESENSE_DB_API_KEY"),
     'nodes': [{
-        'host': '***REMOVED***',
+        'host': os.getenv("ABSCLUST_TYPESENSE_DB_HOST"),
         'port': '443',
         'protocol': 'https'
     }],

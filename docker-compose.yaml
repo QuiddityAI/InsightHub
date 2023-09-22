@@ -6,6 +6,7 @@ services:
       dockerfile: ./docker/model_server.Dockerfile
     volumes:
       - ./:/source_code/
+      - /data:/data
       - model_server_cache:/home/appuser/.cache/
     ports:
       - "55180:55180"

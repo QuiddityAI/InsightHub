@@ -1,0 +1,11 @@
+ABSCLUST_TYPESENSE_DB_API_KEY="?"
+ABSCLUST_TYPESENSE_DB_HOST="?"
+
+credentials.json file with the following content:
+{
+  "open_search_user": "?",
+  "open_search_password": "?"
+}
+
+openai_credentials.json file with the following content:
+{"secret_key": "?"}
