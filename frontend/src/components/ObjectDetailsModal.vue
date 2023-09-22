@@ -17,6 +17,7 @@ export default {
       selected_collection_id: null,
       rendering: null,
       item: this.initial_item,
+      loading_item: false,
       checking_for_fulltext: false,
       checked_for_fulltext: false,
       fulltext_url: null,
@@ -28,7 +29,7 @@ export default {
       const that = this
       const rendering = this.schema.detail_view_rendering
       for (const field of ['title', 'subtitle', 'body', 'image', 'url', 'doi']) {
-        rendering[field] = eval(rendering[field])
+        rendering[field] = rendering[field] ? eval(rendering[field]) : ((item) => "")
       }
       that.rendering = rendering
 
@@ -37,9 +38,13 @@ export default {
         item_id: this.item._id,
         fields: this.schema.detail_view_rendering.required_fields
       }
+      this.loading_item = true
       httpClient.post("/data_backend/document/details_by_id", payload)
         .then(function (response) {
           that.item = response.data
+        })
+        .finally(function () {
+          that.loading_item = false
         })
     },
     findFulltext() {
@@ -85,8 +90,9 @@ export default {
 <template>
   <div class="flex-initial flex flex-col overflow-hidden min-w-0 flex-auto rounded-md shadow-sm bg-white p-3">
     <p class="flex-none text-sm font-medium leading-6 text-gray-900"><div v-html="rendering ? rendering.title(item) : ''"></div></p>
-    <p class="flex-none mt-1 truncate text-xs leading-5 text-gray-500"><div v-html="rendering ? rendering.subtitle(item) : ''"></div></p>
-    <p class="flex-1 overflow-y-auto mt-2 text-xs leading-5 text-gray-700" v-html="(rendering ? rendering.body(item) : '') || 'loading...'"></p>
+    <p class="flex-none mt-1 text-xs leading-5 text-gray-500"><div v-html="rendering ? rendering.subtitle(item) : ''"></div></p>
+    <p class="flex-1 overflow-y-auto mt-2 text-xs leading-5 text-gray-700"
+      v-html="loading_item ? 'loading...' : (rendering ? rendering.body(item) : null)"></p>
     <div class="flex-none flex flex-row mt-2">
       <select v-model="selected_collection_id" class="mr-3 ring-1 ring-gray-300 text-gray-500 text-sm border-transparent rounded-md focus:ring-blue-500 focus:border-blue-500">
         <option v-for="collection in collections" :value="collection.id">{{ collection.name }}</option>

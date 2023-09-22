@@ -200,7 +200,7 @@ export default {
 
             const hover_label_rendering = response.data["hover_label_rendering"]
             for (const field of ['title', 'subtitle', 'body', 'image']) {
-              hover_label_rendering[field] = eval(hover_label_rendering[field])
+              hover_label_rendering[field] = hover_label_rendering[field] ? eval(hover_label_rendering[field]) : ((item) => "")
             }
             that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
 
