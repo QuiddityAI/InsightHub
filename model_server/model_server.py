@@ -53,7 +53,7 @@ def get_clip_text_embedding_endpoint():
 def get_clip_image_embedding_endpoint():
     assert request.json is not None
     params = DotDict(request.json)
-    embeddings = run_in_batches(params.texts, 8, lambda image_paths: get_clip_image_embeddings(image_paths, params.model_name).tolist())
+    embeddings = run_in_batches(params.image_paths, 8, lambda image_paths: get_clip_image_embeddings(image_paths, params.model_name).tolist())
     return jsonify({"embeddings": embeddings})
 
 

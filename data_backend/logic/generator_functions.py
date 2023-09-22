@@ -19,7 +19,7 @@ def get_generator_function(identifier, parameters: dict) -> Callable:
     elif identifier == 'clip_text':
         return lambda texts: get_clip_text_embeddings([" ".join(t) for t in texts], parameters.model_name)
     elif identifier == 'clip_image':
-        return lambda image_paths: get_clip_image_embeddings([x for t in image_paths for x in t], parameters.model_name)
+        return lambda image_paths: get_clip_image_embeddings([item for sublist in image_paths for item in sublist], parameters.model_name)
 
     return lambda x: None
 

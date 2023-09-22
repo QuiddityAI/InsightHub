@@ -46,7 +46,7 @@ def generate_missing_values(schema_id: int, field_identifier: str):
         items_processed += len(elements)
         logging.warning(f"Processed {items_processed} of {total_items_estimated} ({(items_processed / float(total_items_estimated)) * 100:.1f} %)")
         logging.warning(f"Time per item: {duration / len(elements) * 1000:.2f} ms")
-        logging.warning(f"Estimated remaining time: {(duration / len(elements) * total_items_estimated) / 60.0:.1f} min")
+        logging.warning(f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min")
         elements = object_storage_client.get_all_items_with_missing_field(schema_id, field_identifier, limit=batch_size, offset=0)
     logging.warning(f"Done")
 

@@ -1,3 +1,5 @@
+import logging
+import os
 import time
 from transformers import AutoTokenizer, AutoProcessor, CLIPModel
 from PIL import Image
@@ -46,14 +48,22 @@ def get_clip_image_embeddings(image_paths, model_name):
     assert model is not None and processor is not None
 
     images = []
+    missing_images = 0
     for image_path in image_paths:
-        img = Image.open(image_path)
-        img.draft('RGB', (224, 224))
-        images.append(img)
+        if os.path.exists(image_path):
+            img = Image.open(image_path)
+            img.draft('RGB', (224, 224))
+            images.append(img)
+        else:
+            missing_images += 1
+            logging.warning(f"Image file doesn't exist: {image_path} ({missing_images} missing of {len(image_paths)} in total)")
+            img = Image.new('RGB', (224, 224))
+            images.append(img)
 
     inputs = processor(images=images, return_tensors="pt")
     inputs.to('cuda')
     image_features = model.get_image_features(**inputs).to('cpu').detach()
+    logging.warning(image_features.shape)
     return image_features
 
 
