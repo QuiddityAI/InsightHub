@@ -22,8 +22,13 @@ RUN pipenv requirements > requirements.txt \
 RUN chown -R appuser /app
 RUN mkdir -p /home/appuser/.cache/huggingface
 RUN chmod -R a+rw /home/appuser/.cache
+RUN apt install -y curl
 
 FROM cuda_python_env as model_server
+
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:55180/health || exit 1
+
 EXPOSE 55180
 USER appuser
 WORKDIR /source_code/model_server

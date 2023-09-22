@@ -14,6 +14,11 @@ class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
 
+@csrf_exempt
+def get_health(request):
+    return HttpResponse("", status=200)
+
+
 #@login_required()
 @csrf_exempt
 def get_object_schema(request):

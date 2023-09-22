@@ -69,6 +69,12 @@ serving.WSGIRequestHandler.log_request = log_request
 # map might be enriched much more, clustering might be done on different aspect (only image, not title)
 # given 100 products all called "white t-shirt", search by title but map by image
 
+
+@app.route('/health', methods=['GET'])
+def health():
+    return "", 200
+
+
 @app.route('/data_backend/update_database_layout', methods=['POST'])
 def update_database_layout_route():
     # TODO: check auth

@@ -20,6 +20,9 @@ RUN unzip umap_with_progress_callback-add_progress_callback_0.5.3.zip
 RUN rm umap_with_progress_callback-add_progress_callback_0.5.3.zip
 RUN cd "umap_with_progress_callback-add_progress_callback_0.5.3" && python setup.py install && cd ..
 
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:55123/health || exit 1
+
 USER appuser
 WORKDIR /source_code/data_backend
 ENTRYPOINT ["python3"]

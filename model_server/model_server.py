@@ -13,6 +13,11 @@ from logic.sentence_transformer_models import get_sentence_transformer_embedding
 from logic.clip_models import get_clip_text_embeddings, get_clip_image_embeddings
 
 
+@app.route('/health', methods=['GET'])
+def health():
+    return "", 200
+
+
 @app.route('/api/embedding/bert/models', methods=['GET'])
 def get_models():
     return jsonify(bert_models.keys())

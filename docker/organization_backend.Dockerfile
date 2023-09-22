@@ -11,6 +11,10 @@ RUN pipenv requirements > requirements.txt \
 RUN chown -R appuser /app
 
 FROM python_env as organization_backend
+
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:55125/data_map/health || exit 1
+
 EXPOSE 55125
 USER appuser
 WORKDIR /source_code/organization_backend
