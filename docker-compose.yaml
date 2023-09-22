@@ -45,6 +45,8 @@ services:
       - vector_database_host=qdrant
       - object_storage_host=mongo
       - search_engine_host=opensearch
+      - ABSCLUST_TYPESENSE_DB_API_KEY
+      - ABSCLUST_TYPESENSE_DB_HOST
   webserver:
     image: visual_data_map/webserver
     build:
