@@ -372,9 +372,11 @@ def get_search_results_for_stored_map(map_data):
         raise ValueError("a parameter is missing")
 
     search_result_meta_info = map_data['results']['search_result_meta_information']
-    search_results = get_full_results_from_meta_info(schema, search_settings, vectorize_settings, search_result_meta_info, purpose, timings)
+    sorted_results = sorted(search_result_meta_info.values(), key=lambda item: item['_reciprocal_rank_score'], reverse=True)
+    limited_search_result_meta_info = {item['_id']: item for item in sorted_results[:limit]}
+    search_results = get_full_results_from_meta_info(schema, search_settings, vectorize_settings, limited_search_result_meta_info, purpose, timings)
     result = {
-        "items": search_results[:limit],
+        "items": search_results,
         "timings": timings.get_timestamps(),
         "rendering": schema.result_list_rendering,
     }
