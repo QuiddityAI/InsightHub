@@ -1,6 +1,6 @@
 <script setup>
 import { mapStores } from 'pinia'
-import { AdjustmentsHorizontalIcon } from '@heroicons/vue/24/outline'
+import { AdjustmentsHorizontalIcon, MinusCircleIcon } from '@heroicons/vue/24/outline'
 
 import httpClient from '../api/httpClient';
 import { FieldType, ellipse } from '../utils/utils'
@@ -39,6 +39,7 @@ export default {
   emits: ['request_search_results'],
   data() {
     return {
+      show_negative_query_field: false,
       show_settings: false,
       available_databases: [],
       database_information: {},
@@ -149,6 +150,11 @@ export default {
         }
       }
     },
+    show_negative_query_field() {
+      if (!this.show_negative_query_field) {
+        this.appStateStore.settings.search.all_field_query_negative = ""
+      }
+    }
   },
 }
 
@@ -195,9 +201,20 @@ export default {
           Recommended for Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
       </div>
+      <button title="Negative Search" @click="show_negative_query_field = !show_negative_query_field" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_negative_query_field, 'text-gray-500': !show_negative_query_field }">
+        <MinusCircleIcon></MinusCircleIcon>
+      </button>
       <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-500': !show_settings }">
         <AdjustmentsHorizontalIcon></AdjustmentsHorizontalIcon>
       </button>
+    </div>
+    <div v-if="show_negative_query_field" class="mt-2 h-9">
+      <input v-if="appState.settings.search.search_type == 'external_input'" type="search" name="negative_search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query_negative"
+          placeholder="Negative Search"
+          class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
+          ring-inset ring-gray-300 bg-red-100/50 placeholder:text-gray-400
+          focus:ring-2 focus:ring-inset focus:ring-blue-400
+          sm:text-sm sm:leading-6 shadow-sm" />
     </div>
 
     <!-- Parameters Area -->
