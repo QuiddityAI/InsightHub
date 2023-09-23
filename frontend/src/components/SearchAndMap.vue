@@ -126,6 +126,9 @@ export default {
           entry_name = "TODO: separate fields"
         } else {
           entry_name = this.appStateStore.settings.search.all_field_query
+          if (this.appStateStore.settings.search.all_field_query_negative) {
+            entry_name = entry_name + ` (-${this.appStateStore.settings.search.all_field_query_negative})`
+          }
         }
       } else if (this.appStateStore.settings.search.search_type == 'cluster') {
         entry_name = `<i>Cluster</i> '${this.appStateStore.settings.search.origin_display_name}'`

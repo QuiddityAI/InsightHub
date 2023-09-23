@@ -208,7 +208,7 @@ export default {
         <AdjustmentsHorizontalIcon></AdjustmentsHorizontalIcon>
       </button>
     </div>
-    <div v-if="show_negative_query_field" class="mt-2 h-9">
+    <div v-if="show_negative_query_field || appState.settings.search.all_field_query_negative" class="mt-2 h-9">
       <input v-if="appState.settings.search.search_type == 'external_input'" type="search" name="negative_search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query_negative"
           placeholder="Negative Search"
           class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
