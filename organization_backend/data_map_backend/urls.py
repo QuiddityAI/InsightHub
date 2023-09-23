@@ -16,4 +16,5 @@ urlpatterns=[
     path("get_stored_maps", views.get_stored_maps),
     path("stored_map_data", views.get_stored_map_data),
     path("delete_stored_map", views.delete_stored_map),
+    path("get_generators", views.get_generators),
 ]

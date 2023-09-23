@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import math
 from uuid import UUID
 from functools import lru_cache
 
@@ -9,16 +10,32 @@ from utils.collect_timings import Timings
 from utils.dotdict import DotDict
 
 from database_client.absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, get_absclust_items_by_ids, save_search_cache
-from database_client.django_client import get_object_schema, get_collection
+from database_client.django_client import get_object_schema, get_collection, get_generators
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.object_storage_client import ObjectStorageEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 
 from logic.postprocess_search_results import enrich_search_results
-from logic.generator_functions import get_generator_function_from_field
+from logic.generator_functions import get_generator_function_from_field, get_generator_function
 from logic.local_map_cache import local_maps
 
 from database_client.django_client import get_object_schema
+
+
+class QueryInput(object):
+    def __init__(self, positive_query_str: str, negative_query_str: str = "", positive_image_url: str = "", negative_image_url: str = "") -> None:
+        self.positive_query_str = positive_query_str
+        self.negative_query_str = negative_query_str
+        self.positive_image_url = positive_image_url
+        self.negative_image_url = negative_image_url
+
+    @staticmethod
+    def from_raw_query(raw_query: str, negative_query_str: str, positive_image_url: str, negative_image_url: str) -> list['QueryInput']:
+        or_queries = raw_query.split(" OR ")
+        queries = []
+        for query in or_queries:
+            queries.append(QueryInput(query, negative_query_str, positive_image_url, negative_image_url))
+        return queries
 
 
 #@lru_cache()
@@ -75,6 +92,10 @@ def _get_required_fields(schema, search_settings: DotDict, vectorize_settings: D
 
 def get_search_results_using_combined_query(schema, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> list:
     raw_query = search_settings.all_field_query
+    negative_query = search_settings.all_field_query_negative
+    image_query = ""  # TODO: search_settings.all_field_image_url
+    negative_image_query = ""  # TODO: search_settings.all_field_image_url_negative
+    enabled_fields = [field_identifier for field_identifier, field_settings in search_settings.separate_queries.items() if field_settings['use_for_combined_search']]
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
     if not all([raw_query, limit, page is not None, schema]):
@@ -82,7 +103,6 @@ def get_search_results_using_combined_query(schema, search_settings: DotDict, ve
 
     required_fields = _get_required_fields(schema, search_settings, vectorize_settings, purpose)
 
-    or_queries = raw_query.split(" OR ")
     timings.log("search preparation")
 
     # TODO: currently only first page is returned
@@ -91,17 +111,18 @@ def get_search_results_using_combined_query(schema, search_settings: DotDict, ve
         save_search_cache()
         return results
 
+    queries = QueryInput.from_raw_query(raw_query, negative_query, image_query, negative_image_query)
     result_sets: list[dict] = []
-    for query in or_queries:
+    for query in queries:
         text_fields = []
         for field in schema.object_fields.values():
-            if not field.is_available_for_search:
+            if not field.is_available_for_search or field.identifier not in enabled_fields:
                 continue
-            if field.field_type == FieldType.VECTOR and search_settings.combined_search_strategy in ["hybrid", "vector"]:
+            if field.field_type == FieldType.VECTOR:
                 results = get_vector_search_results(schema, field.identifier, query, None, required_fields=[], limit=limit, page=page)
                 result_sets.append(results)
                 timings.log("vector database query")
-            elif field.field_type == FieldType.TEXT and search_settings.combined_search_strategy in ["hybrid", "fulltext"]:
+            elif field.field_type == FieldType.TEXT:
                 text_fields.append(field.identifier)
             else:
                 continue
@@ -159,16 +180,16 @@ def _get_complete_items_and_sort_them(schema:DotDict, total_items:dict, required
     return sorted_results
 
 
-def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: str, required_fields: list[str], limit: int, page: int):
+def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: QueryInput, required_fields: list[str], limit: int, page: int):
     text_db_client = TextSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    search_result = text_db_client.get_search_results(schema.id, text_fields, criteria, query, "", page, limit, required_fields, highlights=True)
+    search_result = text_db_client.get_search_results(schema.id, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
     items = {}
     for i, item in enumerate(search_result):
         items[item['_id']] = {
             '_id': item['_id'],
             '_origins': [{'type': 'fulltext', 'field': 'unknown',
-                          'query': query, 'score': item['_score'], 'rank': i+1}],
+                          'query': query.positive_query_str, 'score': item['_score'], 'rank': i+1}],
             '_highlights': " ".join([" ".join(x) for x in item.get('highlight', {}).values()])
         }
     return items
@@ -177,13 +198,35 @@ def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: 
 ABSCLUST_SCHEMA_ID = 1
 
 
-def get_vector_search_results(schema: DotDict, vector_field: str, query_str: str, query_vector: list | None, required_fields: list[str], limit: int, page: int):
+def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryInput, query_vector: list | None, required_fields: list[str], limit: int, page: int):
     if query_vector is None:
+        generators: list[DotDict] = get_generators()
         field = schema.object_fields[vector_field]
-        if field.generator.input_type != FieldType.TEXT:
+        embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
+
+        # for text query:
+        suitable_generator = None
+        for generator in generators:
+            if generator.embedding_space and generator.embedding_space.id == embedding_space_id \
+                and generator.input_type == FieldType.TEXT:
+                suitable_generator = generator
+
+        if not suitable_generator:
             return {}
-        generator_function = get_generator_function_from_field(schema.object_fields[vector_field])
-        query_vector = generator_function([[query_str]])[0]
+
+        if field.generator and field.generator.input_type == FieldType.TEXT \
+            and not (suitable_generator and suitable_generator.is_preferred_for_search):
+            generator_function = get_generator_function_from_field(schema.object_fields[vector_field])
+        else:
+            generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters)
+
+        query_vector = generator_function([[query.positive_query_str]])[0]
+        if query.negative_query_str:
+            negative_query_vector = generator_function([[query.negative_query_str]])[0]
+            query_vector = query_vector - negative_query_vector
+
+        # for image query:
+        # TODO: same thing again, average both vectors
 
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
@@ -193,7 +236,7 @@ def get_vector_search_results(schema: DotDict, vector_field: str, query_str: str
         items[item.id] = {
             '_id': item.id,
             '_origins': [{'type': 'vector', 'field': vector_field,
-                          'query': query_str, 'score': item.score, 'rank': i+1}],
+                          'query': query.positive_query_str, 'score': item.score, 'rank': i+1}],
         }
 
     # TODO: if purpose is map, get vectors directly from vector DB:
@@ -291,7 +334,7 @@ def get_search_results_similar_to_item(schema, search_settings: DotDict, vectori
     result_sets: list[dict] = []
     for field in vector_fields:
         query_vector = item[field]
-        results = get_vector_search_results(schema, field, 'other item', query_vector, required_fields=[], limit=limit, page=page)
+        results = get_vector_search_results(schema, field, QueryInput('other item'), query_vector, required_fields=[], limit=limit, page=page)
         result_sets.append(results)
         timings.log("vector database query")
 

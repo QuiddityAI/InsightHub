@@ -6,8 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from .models import ObjectSchema, SearchHistoryItem, ItemCollection, StoredMap
-from .serializers import ObjectSchemaSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer
+from .models import ObjectSchema, SearchHistoryItem, ItemCollection, StoredMap, Generator
+from .serializers import ObjectSchemaSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer, GeneratorSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -323,6 +323,18 @@ def delete_stored_map(request):
         return HttpResponse(status=404)
 
     return HttpResponse(None, status=204)
+
+
+@csrf_exempt
+def get_generators(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    items = Generator.objects.all()
+    serialized_data = GeneratorSerializer(items, many=True).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
 
 
 """

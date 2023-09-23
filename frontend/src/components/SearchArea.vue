@@ -115,42 +115,37 @@ export default {
             query_negative: "",
             must: false,
             threshold_offset: 0.0,
+            use_for_combined_search: that.schema.default_search_fields.includes(field.identifier),
           }
         }
       }
       this.separate_search_fields = separate_search_fields
 
+      that.appStateStore.settings.vectorize.map_vector_field = null
       that.appStateStore.available_vector_fields = []
       that.appStateStore.available_number_fields = []
       for (const field_identifier in that.schema.object_fields) {
         const field = that.schema.object_fields[field_identifier]
-        //if (field.is_available_for_search && field.field_type == FieldType.VECTOR) {
         if (field.field_type == FieldType.VECTOR) {
           that.appStateStore.available_vector_fields.push(field.identifier)
+          if (field.is_available_for_search && this.schema.default_search_fields.includes(field.identifier)) {
+            that.appStateStore.settings.vectorize.map_vector_field = field.identifier
+          }
         } else if (field.field_type == FieldType.INTEGER || field.field_type == FieldType.FLOAT) {
           that.appStateStore.available_number_fields.push(field.identifier)
         }
-        if (that.appStateStore.available_vector_fields.length > 0) {
-          that.appStateStore.settings.search.search_vector_field = that.appStateStore.available_vector_fields[0]
-          that.appStateStore.settings.vectorize.map_vector_field = that.appStateStore.available_vector_fields[0]
-        } else {
-          that.appStateStore.settings.search.search_vector_field = null
-          that.appStateStore.settings.vectorize.map_vector_field = null
+      }
+      that.appStateStore.settings.rendering.point_size_field = 'equal'
+      if (that.appStateStore.available_number_fields.length > 0) {
+        for (const field of that.appStateStore.available_number_fields) {
+          if (field === 'citedby') {
+            // prefer this field even if it is not the first one:
+            that.appStateStore.settings.rendering.point_size_field = field
+            break
+          }
         }
-        that.appStateStore.settings.rendering.point_size_field = 'equal'
-        if (that.appStateStore.available_number_fields.length > 0) {
-          for (const field of that.appStateStore.available_number_fields) {
-            if (field === 'citedby') {
-              // prefer this field even if it is not the first one:
-              that.appStateStore.settings.rendering.point_size_field = field
-              break
-            }
-          }
-          if (that.appStateStore.settings.rendering.point_size_field == 'equal')  {
-            that.appStateStore.settings.rendering.point_size_field = that.appStateStore.available_number_fields[0]
-          }
-        } else {
-          that.appStateStore.settings.search.point_size_field = null
+        if (that.appStateStore.settings.rendering.point_size_field == 'equal')  {
+          that.appStateStore.settings.rendering.point_size_field = that.appStateStore.available_number_fields[0]
         }
       }
     },
@@ -207,11 +202,9 @@ export default {
 
     <!-- Parameters Area -->
     <div v-show="show_settings" class="mt-3">
-      <div v-if="!appState.settings.search.use_separate_queries" class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Search Strategy:</span>
-        <select v-model="appState.settings.search.combined_search_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option v-for="item in available_search_strategies" :value="item.id" selected>{{ item.title }}</option>
-        </select>
+      <div v-if="!appState.settings.search.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
+        <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
+        <input v-model="appState.settings.search.separate_queries[field.identifier].use_for_combined_search" type="checkbox">
       </div>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Use separate queries:</span>
@@ -230,12 +223,12 @@ export default {
             <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
         </select>
       </div> -->
+      <hr>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Max. items for map:</span>
         <span class="text-gray-500 text-sm"> {{ appState.settings.search.max_items_used_for_mapping }} </span>
         <input v-model.number="appState.settings.search.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
       </div>
-      <hr>
       <div class="flex justify-between items-center">
         <span class="text-gray-500 text-sm">Use context-trained w2v model:</span>
         <input v-model="appState.settings.vectorize.use_w2v_model" type="checkbox">

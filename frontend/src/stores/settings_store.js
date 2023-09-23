@@ -15,8 +15,14 @@ export const useAppStateStore = defineStore('appState', {
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
-          combined_search_strategy: "hybrid",
-          separate_queries: {},
+          separate_queries: {
+            // for each search field:
+            // query: "",
+            // query_negative: "",
+            // must: false,
+            // threshold_offset: 0.0,
+            // use_for_combined_search: that.schema.default_search_fields.includes(field.identifier),
+          },
 
           origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
           cluster_origin_map_id: null,

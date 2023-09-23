@@ -59,3 +59,12 @@ def get_collection(collection_id: str) -> DotDict | None:
         logging.warning("Couldn't find collection: " + str(collection_id))
         return None
     return DotDict(result.json())
+
+
+def get_generators() -> list[DotDict]:
+    url = backend_url + '/data_map/get_generators'
+    result = requests.post(url)
+    if result.status_code != 200:
+        logging.warning("Couldn't get generators")
+        return []
+    return [DotDict(generator) for generator in result.json()]
