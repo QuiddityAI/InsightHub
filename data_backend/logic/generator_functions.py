@@ -9,8 +9,9 @@ from logic.model_client import get_pubmedbert_embeddings, get_sentence_transform
 
 
 def get_generator_function_from_field(field: DotDict) -> Callable:
-    parameters = field.generator.default_parameters
-    parameters.update(field.generator_parameters)
+    parameters = field.generator.default_parameters or {}
+    if field.generator_parameters:
+        parameters.update(field.generator_parameters)
     module = field.generator.module
     return get_generator_function(module, parameters)
 

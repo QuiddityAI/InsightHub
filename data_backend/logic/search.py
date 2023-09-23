@@ -179,6 +179,9 @@ ABSCLUST_SCHEMA_ID = 1
 
 def get_vector_search_results(schema: DotDict, vector_field: str, query_str: str, query_vector: list | None, required_fields: list[str], limit: int, page: int):
     if query_vector is None:
+        field = schema.object_fields[vector_field]
+        if field.generator.input_type != FieldType.TEXT:
+            return {}
         generator_function = get_generator_function_from_field(schema.object_fields[vector_field])
         query_vector = generator_function([[query_str]])[0]
 
