@@ -27,8 +27,8 @@ export const useAppStateStore = defineStore('appState', {
           origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
           cluster_origin_map_id: null,
           cluster_id: null,
-
           collection_id: null,
+          similar_to_item_id: null,
 
           // list results:
           result_list_items_per_page: 10,

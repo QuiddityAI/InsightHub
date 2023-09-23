@@ -86,6 +86,18 @@ export default {
       this.selectedDocumentIdx = -1
       this.selectedDocumentDetails = null
     },
+    reset_search_box() {
+      this.appStateStore.settings.search.search_type = 'external_input'
+      this.appStateStore.settings.search.use_separate_queries = false
+      this.appStateStore.settings.search.all_field_query = ""
+      this.appStateStore.settings.search.all_field_query_negative = ""
+      this.appStateStore.settings.search.origin_display_name = ""
+
+      this.appStateStore.settings.search.cluster_origin_map_id = null
+      this.appStateStore.settings.search.cluster_id = null
+      this.appStateStore.settings.search.collection_id = null
+      this.appStateStore.settings.search.similar_to_item_id = null
+    },
     run_search_from_history(history_item) {
       this.appStateStore.settings = history_item.parameters
       this.request_search_results()
@@ -548,7 +560,9 @@ export default {
         <div ref="left_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <!-- search card -->
-          <SearchArea :schema="selected_schema" @request_search_results="request_search_results" class="flex-none rounded-md shadow-sm bg-white p-3 pointer-events-auto"></SearchArea>
+          <SearchArea :schema="selected_schema"
+            @request_search_results="request_search_results" @reset_search_box="reset_search_box"
+            class="flex-none rounded-md shadow-sm bg-white p-3 pointer-events-auto"></SearchArea>
 
           <!-- tab box -->
           <div class="flex-initial flex flex-col overflow-hidden mt-3 rounded-md shadow-sm bg-white pointer-events-auto">
