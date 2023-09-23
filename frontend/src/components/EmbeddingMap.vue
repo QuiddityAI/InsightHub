@@ -413,7 +413,7 @@ export default {
       const pointSizeScreenPx = (5.0 + 15.0 * pointSize) * zoomAdjustment * window.devicePixelRatio;
       const pointSizeEmbedding = this.screenToEmbeddingX(pointSizeScreenPx) - this.screenToEmbeddingX(0)
       const threshold = pointSizeEmbedding
-      if (closestIdx && closestDist < threshold) {
+      if (closestIdx !== null && closestDist < threshold) {
         this.highlightedPointIdx = closestIdx
       } else {
         this.highlightedPointIdx = -1
@@ -465,7 +465,12 @@ export default {
     'top': screenTopFromRelative(currentPositionsY[highlightedPointIdx]) + 'px',
     'max-width': '200px',
     }">
-    <div v-html="itemDetails.length > highlightedPointIdx ? hover_label_rendering.title(itemDetails[highlightedPointIdx]) : 'loading...'" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
+    <div v-if="itemDetails.length > highlightedPointIdx && hover_label_rendering" class="flex flex-col items-center px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
+      <div v-html="hover_label_rendering.title(itemDetails[highlightedPointIdx])"></div>
+      <img v-if="hover_label_rendering.image(itemDetails[highlightedPointIdx])" :src="hover_label_rendering.image(itemDetails[highlightedPointIdx])" class="h-24">
+    </div>
+    <div v-if="itemDetails.length <= highlightedPointIdx || !hover_label_rendering" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
+      loading...
     </div>
   </div>
 </div>

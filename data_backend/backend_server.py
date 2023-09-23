@@ -27,7 +27,7 @@ CORS(app) # This will enable CORS for all routes
 parent_log_request = serving.WSGIRequestHandler.log_request
 
 def log_request(self, *args, **kwargs):
-    if self.path == '/data_backend/map/result':
+    if self.path == '/data_backend/map/result' or self.path.startswith("/data_backend/local_image/"):
         return
 
     parent_log_request(self, *args, **kwargs)
@@ -201,6 +201,16 @@ def retrieve_texture_atlas(subfolder, image_path):
         return "texture atlas not found", 404
 
     return send_from_directory('.', full_path)
+
+
+@app.route('/data_backend/local_image/<path:image_path>', methods=['GET'])
+def retrieve_local_image(image_path):
+    # FIXME: this is just a hacky way to make Kaggle Fashion images stored in /data work
+    image_path = "/" + image_path
+    if image_path is None or not os.path.exists(image_path):
+        return "image not found", 404
+
+    return send_from_directory('/data/', image_path.replace("/data/", ""))
 
 
 @app.route('/data_backend/document/details_by_id', methods=['POST'])
