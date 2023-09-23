@@ -16,7 +16,7 @@ from utils.dotdict import DotDict
 
 from database_client.django_client import get_object_schema, get_stored_map_data
 
-from logic.add_vectors import add_vectors_to_results_from_external_db, add_w2v_vectors
+from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
 from logic.search import get_search_results, get_full_results_from_meta_info
 from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
@@ -209,12 +209,11 @@ def generate_map(map_id, ignore_cache):
             if params.search.search_type == 'cluster' and origin_map is not None:
                 query = origin_map['parameters']['search']['all_field_query']
             add_w2v_vectors(search_results, query, params, schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
-
-        if schema.id == ABSCLUST_SCHEMA_ID and not params.vectorize.use_w2v_model:
+        elif schema.object_fields[params.vectorize.map_vector_field].generator and not all([item.get(params.vectorize.map_vector_field) is not None for item in search_results]):
             query = params.search.all_field_query
             if params.search.search_type == 'cluster' and origin_map is not None:
                 query = origin_map['parameters']['search']['all_field_query']
-            add_vectors_to_results_from_external_db(search_results, query, params, schema.descriptive_text_fields, map_data, schema, timings)
+            add_missing_map_vectors(search_results, query, params, map_data, schema, timings)
 
     projection_parameters = params.get("projection", {})
     scores = [e["_score"] for e in search_results]

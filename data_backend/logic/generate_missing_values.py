@@ -41,17 +41,21 @@ def generate_missing_values(schema_id: int, field_identifier: str):
     elements = object_storage_client.get_all_items_with_missing_field(schema_id, field_identifier, limit=batch_size, offset=0)
     while elements:
         t1 = time.time()
-        _process_batch(schema, pipeline_steps, elements)
-        duration = time.time() - t1
+        changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements)
+        t2 = time.time()
+        generation_duration = t2 - t1
+        _update_indexes_with_generated_values(schema, elements, changed_fields)
+        index_update_duration = time.time() - t2
+        duration = generation_duration + index_update_duration
         items_processed += len(elements)
         logging.warning(f"Processed {items_processed} of {total_items_estimated} ({(items_processed / float(total_items_estimated)) * 100:.1f} %)")
-        logging.warning(f"Time per item: {duration / len(elements) * 1000:.2f} ms")
+        logging.warning(f"Time per item: generation {generation_duration / len(elements) * 1000:.2f} ms, index update {index_update_duration / len(elements) * 1000:.2f} ms, total {duration / len(elements) * 1000:.2f} ms")
         logging.warning(f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min")
         elements = object_storage_client.get_all_items_with_missing_field(schema_id, field_identifier, limit=batch_size, offset=0)
     logging.warning(f"Done")
 
 
-def _process_batch(schema, pipeline_steps, elements):
+def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict]):
     changed_fields = defaultdict(list)
     for phase in pipeline_steps:
         for pipeline_step in phase:  # TODO: this could be done in parallel
@@ -60,7 +64,7 @@ def _process_batch(schema, pipeline_steps, elements):
             source_data_total = []
 
             for i, element in enumerate(elements):
-                # for insert case: check if field is already filled in, skip it in that case:
+                # if field is already filled in, skip it:
                 if pipeline_step.target_field in element and element[pipeline_step.target_field] is not None:
                     continue
 
@@ -80,7 +84,10 @@ def _process_batch(schema, pipeline_steps, elements):
             for element_index, result in zip(element_indexes, results):
                 elements[element_index][pipeline_step.target_field] = result
                 changed_fields[element_index].append(pipeline_step.target_field)
+    return changed_fields  # elements is changed in-place
 
+
+def _update_indexes_with_generated_values(schema, elements, changed_fields):
     index_settings = get_index_settings(schema)
 
     vector_db_client = VectorSearchEngineClient.get_instance()

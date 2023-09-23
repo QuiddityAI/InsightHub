@@ -1,13 +1,19 @@
 import logging
+import math
 import os
 import pickle
+import time
 
 import numpy as np
 
 from utils.dotdict import DotDict
+from utils.field_types import FieldType
 
-from logic.model_client import get_embedding, save_embedding_cache
+from logic.model_client import save_embedding_cache, embedding_cache
 from logic.gensim_w2v_vectorizer import GensimW2VVectorizer
+from logic.generate_missing_values import generate_missing_values_for_given_elements
+from logic.extract_pipeline import get_pipeline_steps
+from logic.generator_functions import get_generator_function_from_field
 
 
 def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fields, map_data, vectorize_stage_params_hash, timings):
@@ -62,38 +68,55 @@ def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fie
     timings.log("generating w2v embeddings")
 
 
-def add_vectors_to_results_from_external_db(search_results, query, params: DotDict, descriptive_text_fields, map_data, schema, timings):
-
-    # using the code below leads to broken vectors for some reasons:
-    # texts = [item.get("title", "") + " " + item.get("abstract", "") for item in results_part]
-    # chunk_size = 30  # 30 -> 2.7GB GPU RAM (almost linear)
-    # embeddings = np.zeros((0, 768))
-    # for i in range(0, len(texts), chunk_size):
-    #     embeddings = np.append(embeddings, get_embedding(texts[i:i+chunk_size]), axis=0)
-
-    #texts = {item["DOI"]: item.get("title", "") + " " + item.get("abstract", "")[:2000] for item in results_part}
-    #embeddings = get_openai_embedding_batch(texts)
-    #save_embedding_cache()
-
-    absclust_schema_id = 1
-    if params.vectorize.vectorizer not in ["pubmedbert"] or params.schema_id != absclust_schema_id:
-        return
-
-    if query:
-        query_embedding = get_embedding(query)
-
+def add_missing_map_vectors(search_results, query, params: DotDict, map_data, schema, timings):
     map_data["progress"]["step_title"] = "Generating vectors"
     map_data["progress"]["total_steps"] = len(search_results)
     map_data["progress"]["current_step"] = 0
 
-    for i, item in enumerate(search_results):
-        item_embedding = get_embedding(" ".join([item[field] for field in descriptive_text_fields]), item[schema.primary_key]).tolist()
-        item["pubmed_vector"] = item_embedding
-        if query:
+    map_vector_field = schema.object_fields[params.vectorize.map_vector_field]
+    t1 = time.time()
+
+    # try to get embeddings from cache:
+    for item in search_results:
+        if item.get(map_vector_field.identifier) is not None:
+            continue
+        cache_key = str(schema.id) + item['_id'] + map_vector_field.identifier
+        cached_embedding = embedding_cache.get(cache_key, None)
+        if cached_embedding is not None:
+            item[map_vector_field.identifier] = cached_embedding
+
+    if not all([item.get(map_vector_field.identifier) is not None for item in search_results]):
+        # if some or all vectors are still missing, generate them:
+        batch_size = 128
+        pipeline_steps = get_pipeline_steps(schema, only_fields=[map_vector_field.identifier])
+        for batch_number in range(math.ceil(len(search_results) / batch_size)):
+            elements = search_results[batch_number*batch_size : (batch_number+1) * batch_size]
+            changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements)
+            for i, item in enumerate(elements):
+                if map_vector_field.identifier in changed_fields[i]:
+                    cache_key = str(schema.id) + item['_id'] + map_vector_field.identifier
+                    embedding_cache[cache_key] = item[map_vector_field.identifier]
+            map_data["progress"]["current_step"] = batch_number * batch_size
+        save_embedding_cache()
+
+    duration_per_item = (time.time() - t1) / len(search_results)
+    timings.log(f"adding missing vectors ({duration_per_item * 1000:.1f} ms per item)")
+
+    # check if scores need to be re-calculated:
+    scores = [item.get('_score') for item in search_results]
+    if query and map_vector_field.generator and map_vector_field.generator.input_type == FieldType.TEXT \
+        and (not all([score is not None for score in scores]) \
+            or np.min(scores) == np.max(scores)):
+        map_data["progress"]["step_title"] = "Generating scores"
+        map_data["progress"]["total_steps"] = len(search_results)
+        map_data["progress"]["current_step"] = 0
+
+        generator_function = get_generator_function_from_field(map_vector_field)
+        query_embedding = generator_function([[query]])[0]
+
+        for i, item in enumerate(search_results):
+            item_embedding = item[map_vector_field.identifier]
             item["_score"] = np.dot(query_embedding, item_embedding)
 
-        map_data["progress"]["current_step"] = i
-
-    timings.log("adding vectors")
-
-    save_embedding_cache()
+            map_data["progress"]["current_step"] = i
+        timings.log("adding scores")
