@@ -2,7 +2,7 @@ import json
 import logging
 
 from utils.dotdict import DotDict
-from logic.generator_functions import get_generator_function
+from logic.generator_functions import get_generator_function_from_field
 
 
 # TODO: add changed_at as parameter and cache function (using changed_at as measure for dropping the cache)
@@ -37,8 +37,7 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
                     any_field_skipped = True
                     continue
 
-                generator_parameters = field.generator_parameters
-                generator_function = get_generator_function(field.generator.module, generator_parameters)
+                generator_function = get_generator_function_from_field(field)
                 condition_function = eval(field.generating_condition) if field.generating_condition else None
 
                 phase_steps.append({

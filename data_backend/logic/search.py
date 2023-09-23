@@ -15,7 +15,7 @@ from database_client.object_storage_client import ObjectStorageEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 
 from logic.postprocess_search_results import enrich_search_results
-from logic.generator_functions import get_generator_function
+from logic.generator_functions import get_generator_function_from_field
 from logic.local_map_cache import local_maps
 
 from database_client.django_client import get_object_schema
@@ -179,9 +179,7 @@ ABSCLUST_SCHEMA_ID = 1
 
 def get_vector_search_results(schema: DotDict, vector_field: str, query_str: str, query_vector: list | None, required_fields: list[str], limit: int, page: int):
     if query_vector is None:
-        generator = schema.object_fields[vector_field].generator
-        generator_parameters = schema.object_fields[vector_field].generator_parameters
-        generator_function = get_generator_function(generator.module, generator_parameters)
+        generator_function = get_generator_function_from_field(schema.object_fields[vector_field])
         query_vector = generator_function([[query_str]])[0]
 
     vector_db_client = VectorSearchEngineClient.get_instance()

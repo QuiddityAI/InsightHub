@@ -8,7 +8,14 @@ from utils.dotdict import DotDict
 from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings
 
 
-def get_generator_function(module, parameters: dict) -> Callable:
+def get_generator_function_from_field(field: DotDict) -> Callable:
+    parameters = field.generator.default_parameters
+    parameters.update(field.generator_parameters)
+    module = field.generator.module
+    return get_generator_function(module, parameters)
+
+
+def get_generator_function(module: str, parameters: dict) -> Callable:
     parameters = DotDict(parameters)
     if module == 'pubmedbert':
         return lambda texts: get_pubmedbert_embeddings([" ".join(t) for t in texts])
