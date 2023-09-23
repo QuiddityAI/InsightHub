@@ -129,7 +129,7 @@ def _combine_result_sets_and_calculate_scores(result_sets: list[dict], timings: 
 
     if len(result_sets) > 1:
         for item in total_items.values():
-            item['_score'] = item['_reciprocal_rank_score']
+            item['_score'] = math.sqrt(item['_reciprocal_rank_score'])  # making the score scale linear again
     else:
         for item in total_items.values():
             item['_score'] = item['_origins'][0]['score']
