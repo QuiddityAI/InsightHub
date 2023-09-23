@@ -11,6 +11,8 @@ from simple_history.admin import SimpleHistoryAdmin
 from jsonsuit.widgets import JSONSuit
 from django_object_actions import DjangoObjectActions, action
 
+from .data_backend_client import data_backend_url
+
 from .models import EmbeddingSpace, Generator, Organization, ObjectSchema, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
 
 # admin.site.site_header = 'Site Header'
@@ -19,23 +21,30 @@ from .models import EmbeddingSpace, Generator, Organization, ObjectSchema, Objec
 @admin.register(EmbeddingSpace)
 class EmbeddingSpaceAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'dimensions')
     list_display_links = ('id', 'name')
     search_fields = ('name',)
     ordering = ['name']
 
     readonly_fields = ('changed_at', 'created_at')
+
+    fields = ["name", "dimensions", "created_at", "changed_at"]
 
 
 @admin.register(Generator)
 class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name', 'requires_context')
+    list_display = ('id', 'name', 'embedding_space', 'requires_context')
     list_display_links = ('id', 'name')
     search_fields = ('name',)
     ordering = ['name']
 
     readonly_fields = ('changed_at', 'created_at')
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit },
+    }
 
 
 class ObjectSchemaInline(admin.TabularInline):
@@ -61,11 +70,21 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
 class ObjectFieldInline(admin.StackedInline):
     model = ObjectField
-    readonly_fields = ('changed_at', 'created_at', 'button_delete_content', 'button_generate_missing_values')
+    readonly_fields = ('changed_at', 'created_at', 'action_buttons')
     extra = 0
+
+    fields = [
+        "identifier", "description",
+        "field_type", "is_array", "embedding_space", "index_parameters",
+        "is_available_for_search", "is_available_for_filtering",
+        "generator", "generator_parameters", "generating_condition",
+        "source_fields", "should_be_generated",
+        'action_buttons',
+    ]
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit },
     }
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
@@ -79,13 +98,10 @@ class ObjectFieldInline(admin.StackedInline):
                 kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
         return super(ObjectFieldInline, self).formfield_for_manytomany(db_field, request, **kwargs)
 
-    def button_delete_content(self, obj):
-        return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button>')
-    button_delete_content.short_description = "Delete Content"
-
-    def button_generate_missing_values(self, obj):
-        return mark_safe(f'<button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
-    button_generate_missing_values.short_description = "Generate Missing Values"
+    def action_buttons(self, obj):
+        return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button> \
+                         <button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
+    action_buttons.short_description = "Actions"
 
 
 @admin.register(ObjectSchema)
@@ -96,7 +112,19 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     search_fields = ('name_plural', 'organization')
     ordering = ['organization', 'name_plural']
 
-    readonly_fields = ('changed_at', 'created_at', 'get_field_overview_table_html')
+    readonly_fields = ('changed_at', 'created_at', 'get_field_overview_table_html',
+                       'item_count', 'random_item')
+
+    fields = [
+        "name", "name_plural", "short_description",
+        "organization", "primary_key", "thumbnail_image",
+        "descriptive_text_fields", "default_search_fields",
+        "item_count", "get_field_overview_table_html",
+        "result_list_rendering", "collection_list_rendering",
+        "hover_label_rendering", "detail_view_rendering",
+        "random_item",
+        "created_at", "changed_at",
+    ]
 
     inlines = [
         ObjectFieldInline,
@@ -149,9 +177,6 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         return mark_safe(html)
 
     get_field_overview_table_html.short_description='Field Overview'
-
-
-data_backend_url = os.getenv("data_backend_host", "http://localhost:55123")
 
 
 @admin.register(ObjectField)

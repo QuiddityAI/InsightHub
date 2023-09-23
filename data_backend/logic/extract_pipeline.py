@@ -37,9 +37,8 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
                     any_field_skipped = True
                     continue
 
-                generator_identifier = field.generator.identifier
-                generator_parameters = json.loads(field.generator_parameters) if field.generator_parameters else {}
-                generator_function = get_generator_function(generator_identifier, generator_parameters)
+                generator_parameters = field.generator_parameters
+                generator_function = get_generator_function(field.generator.module, generator_parameters)
                 condition_function = eval(field.generating_condition) if field.generating_condition else None
 
                 phase_steps.append({

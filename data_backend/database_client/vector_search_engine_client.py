@@ -47,11 +47,12 @@ class VectorSearchEngineClient(object):
         if not (field.is_available_for_search and field.field_type == FieldType.VECTOR and not field.is_array):
             logging.error(f"Field is not supposed to be indexed or isn't a single vector: {field.identifier}")
             raise ValueError(f"Field is not supposed to be indexed or isn't a single vector: {field.identifier}")
-        if not field.vector_size:
+        vector_size = field.generator.embedding_space.dimensions if field.generator else (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)
+        if not vector_size:
             logging.error(f"Indexed vector field doesn't have vector size: {field.identifier}")
             raise ValueError(f"Indexed vector field doesn't have vector size: {field.identifier}")
-        logging.info(f"Creating vector field {field.identifier} with size {field.vector_size}")
-        vector_configs[field.identifier] = models.VectorParams(size=field.vector_size, distance=models.Distance.COSINE)
+        logging.info(f"Creating vector field {field.identifier} with size {vector_size}")
+        vector_configs[field.identifier] = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
         vector_configs_update[field.identifier] = models.VectorParamsDiff()  # TODO: add params
         # TODO: parse and add field.index_parameters for HNSW, storage type, quantization etc.
 

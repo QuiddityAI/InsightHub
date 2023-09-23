@@ -8,17 +8,17 @@ from utils.dotdict import DotDict
 from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings
 
 
-def get_generator_function(identifier, parameters: dict) -> Callable:
+def get_generator_function(module, parameters: dict) -> Callable:
     parameters = DotDict(parameters)
-    if identifier == 'pubmedbert':
+    if module == 'pubmedbert':
         return lambda texts: get_pubmedbert_embeddings([" ".join(t) for t in texts])
-    elif identifier == 'open_ai_text_embedding_ada_002':
+    elif module == 'open_ai_text_embedding_ada_002':
         return lambda texts: get_openai_embedding_batch([" ".join(t) for t in texts])
-    elif identifier == 'sentence_transformer':
+    elif module == 'sentence_transformer':
         return lambda texts: get_sentence_transformer_embeddings([" ".join(t) for t in texts], parameters.model_name, parameters.prefix)
-    elif identifier == 'clip_text':
+    elif module == 'clip_text':
         return lambda texts: get_clip_text_embeddings([" ".join(t) for t in texts], parameters.model_name)
-    elif identifier == 'clip_image':
+    elif module == 'clip_image':
         return lambda image_paths: get_clip_image_embeddings([item for sublist in image_paths for item in sublist], parameters.model_name)
 
     return lambda x: None

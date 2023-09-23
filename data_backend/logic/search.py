@@ -180,8 +180,8 @@ ABSCLUST_SCHEMA_ID = 1
 def get_vector_search_results(schema: DotDict, vector_field: str, query_str: str, query_vector: list | None, required_fields: list[str], limit: int, page: int):
     if query_vector is None:
         generator = schema.object_fields[vector_field].generator
-        generator_parameters = json.loads(schema.object_fields[vector_field].generator_parameters) if schema.object_fields[vector_field].generator_parameters else {}
-        generator_function = get_generator_function(generator.identifier, generator_parameters)
+        generator_parameters = schema.object_fields[vector_field].generator_parameters
+        generator_function = get_generator_function(generator.module, generator_parameters)
         query_vector = generator_function([[query_str]])[0]
 
     vector_db_client = VectorSearchEngineClient.get_instance()
@@ -400,3 +400,24 @@ def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str])
         return None
 
     return items[0]
+
+
+def get_item_count(schema_id: int):
+    object_storage_client = ObjectStorageEngineClient.get_instance()
+    try:
+        count = object_storage_client.get_item_count(schema_id)
+        return count
+    except Exception as e:
+        logging.error(e)
+        return -1
+    return items[0]
+
+
+def get_random_item(schema_id: int):
+    object_storage_client = ObjectStorageEngineClient.get_instance()
+    try:
+        item = object_storage_client.get_random_item(schema_id)
+        return item
+    except Exception as e:
+        logging.error(e)
+        return {}

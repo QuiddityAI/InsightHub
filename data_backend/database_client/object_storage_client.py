@@ -55,6 +55,16 @@ class ObjectStorageEngineClient(object):
         collection.drop()
 
 
+    def get_item_count(self, schema_id: int):
+        collection = self.get_collection(schema_id)
+        return collection.count_documents({})
+
+
+    def get_random_item(self, schema_id: int):
+        collection = self.get_collection(schema_id)
+        return collection.aggregate([{"$sample": {"size": 1}}]).try_next()
+
+
     def upsert_items(self, schema_id: int, batch: list[dict]):
         collection = self.get_collection(schema_id)
         requests = []

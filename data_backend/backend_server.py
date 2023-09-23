@@ -7,12 +7,12 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug import serving
 
-from utils.custom_json_encoder import CustomJSONEncoder
+from utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
 from utils.dotdict import DotDict
 
 from logic.mapping_task import get_or_create_map, get_map_results
 from logic.insert_logic import insert_many, update_database_layout
-from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id
+from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_item
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 
 from database_client.django_client import add_stored_map
@@ -73,6 +73,22 @@ serving.WSGIRequestHandler.log_request = log_request
 @app.route('/health', methods=['GET'])
 def health():
     return "", 200
+
+
+@app.route('/data_backend/schema/<int:schema_id>/item_count', methods=['GET'])
+def get_item_count_route(schema_id: int):
+    count = get_item_count(schema_id)
+    return jsonify({"count": count})
+
+
+@app.route('/data_backend/schema/<int:schema_id>/random_item', methods=['GET'])
+def get_random_item_route(schema_id: int):
+    item = get_random_item(schema_id)
+    response = app.response_class(
+        response=json.dumps({"item": item}, cls=HumanReadableJSONEncoder),
+        mimetype='application/json'
+    )
+    return response
 
 
 @app.route('/data_backend/update_database_layout', methods=['POST'])

@@ -4,8 +4,12 @@ import json
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.utils.safestring import mark_safe
+import requests
 
 from simple_history.models import HistoricalRecords
+
+from .data_backend_client import data_backend_url
 
 
 class FieldType(models.TextChoices):
@@ -46,6 +50,11 @@ class EmbeddingSpace(models.Model):
         editable=False,
         blank=False,
         null=False)
+    dimensions = models.IntegerField(
+        verbose_name="Dimensions",
+        help_text="Vector size of the embedding",
+        blank=False,
+        null=False)
 
     history = HistoricalRecords()
 
@@ -60,11 +69,6 @@ class EmbeddingSpace(models.Model):
 class Generator(models.Model):
     name = models.CharField(
         verbose_name="Name",
-        max_length=200,
-        blank=False,
-        null=False)
-    identifier = models.CharField(
-        verbose_name="Identifier",
         max_length=200,
         blank=False,
         null=False)
@@ -88,10 +92,19 @@ class Generator(models.Model):
         default=False,
         blank=False,
         null=False)
+    module = models.CharField(
+        verbose_name="Module",
+        max_length=200,
+        blank=False,
+        null=False)
     embedding_space = models.ForeignKey(
         verbose_name="Embedding Space",
         to=EmbeddingSpace,
         on_delete=models.PROTECT,
+        blank=True,
+        null=True)
+    default_parameters = models.JSONField(
+        verbose_name="Default Parameters",
         blank=True,
         null=True)
     parameter_description = models.TextField(
@@ -255,27 +268,41 @@ class ObjectSchema(models.Model):
         blank=True,
         null=True)
     result_list_rendering = models.JSONField(
-        verbose_name="Rendering (Result List)",
+        verbose_name="Result List Rendering",
         default=get_default_result_list_rendering,
         blank=True,
         null=True)
     collection_list_rendering =  models.JSONField(
-        verbose_name="Rendering (Collection List)",
+        verbose_name="Collection List Rendering",
         default=get_default_collection_list_rendering,
         blank=True,
         null=True)
     hover_label_rendering =  models.JSONField(
-        verbose_name="Rendering (Hover Label)",
+        verbose_name="Hover Label Rendering",
         default=get_default_hover_label_rendering,
         blank=True,
         null=True)
     detail_view_rendering =  models.JSONField(
-        verbose_name="Rendering (Detail View)",
+        verbose_name="Detail View Rendering",
         default=get_default_detail_view_rendering,
         blank=True,
         null=True)
 
     history = HistoricalRecords()
+
+    @property
+    def item_count(self):
+        url = data_backend_url + f'/data_backend/schema/{self.id}/item_count'
+        result = requests.get(url)
+        return result.json()["count"]
+    item_count.fget.short_description = "Current Item Count"
+
+    @property
+    def random_item(self):
+        url = data_backend_url + f'/data_backend/schema/{self.id}/random_item'
+        result = requests.get(url)
+        return mark_safe(json.dumps(result.json()["item"], indent=2).replace(" ", "&nbsp").replace("\n", "<br>"))
+    item_count.fget.random_item = "Random Item"
 
     def __str__(self):
         return f"{self.name}"
@@ -326,12 +353,15 @@ class ObjectField(models.Model):
         default=False,
         blank=False,
         null=False)
-    vector_size = models.IntegerField(
-        verbose_name="Vector Size",
+    embedding_space = models.ForeignKey(
+        verbose_name="Embedding Space",
+        help_text="If not set, embedding space of generator will be used",
+        to=EmbeddingSpace,
+        on_delete=models.PROTECT,
         blank=True,
         null=True)
     is_available_for_search = models.BooleanField(
-        verbose_name="Available for fuzzy text or vector search",
+        verbose_name="Available for fulltext or vector search",
         default=False,
         blank=False,
         null=False)
@@ -340,7 +370,7 @@ class ObjectField(models.Model):
         default=False,
         blank=False,
         null=False)
-    index_parameters = models.TextField(
+    index_parameters = models.JSONField(
         verbose_name="Index Parameters",
         blank=True,
         null=True)
@@ -350,7 +380,7 @@ class ObjectField(models.Model):
         on_delete=models.PROTECT,
         blank=True,
         null=True)
-    generator_parameters = models.TextField(
+    generator_parameters = models.JSONField(
         verbose_name="Generator Parameters",
         blank=True,
         null=True)
@@ -364,7 +394,7 @@ class ObjectField(models.Model):
         symmetrical=False,
         blank=True)
     should_be_generated = models.BooleanField(
-        verbose_name="Should be generated",
+        verbose_name="Generate on insert / change",
         help_text="Should be generated for new elements and when "\
         "source fields are updated, not automatically generated for exisitng elements",
         default=False,

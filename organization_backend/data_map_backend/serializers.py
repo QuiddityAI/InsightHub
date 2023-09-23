@@ -20,6 +20,7 @@ class GeneratorSerializer(drf_serializers.ModelSerializer):
 class ObjectFieldSerializer(drf_serializers.ModelSerializer):
     source_fields = drf_serializers.StringRelatedField(many=True, read_only=True)
     generator = GeneratorSerializer(read_only=True)
+    embedding_space = EmbeddingSpaceSerializer(read_only=True)
 
     class Meta:
         model = ObjectField
