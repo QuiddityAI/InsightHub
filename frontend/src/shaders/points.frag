@@ -30,6 +30,22 @@ float rand(vec2 co) {
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
+vec3 get_normal_from_position_on_circle(float posX, float posY) {
+    // adapted from https://stackoverflow.com/q/53271461
+    float x = posX * 2.0 - 1.0;
+    float y = posY * 2.0 - 1.0;
+
+    float z = sqrt(1.0 - (pow(x, 2.0) + pow(y, 2.0)));
+
+    vec3 position = vec3(x, y, z);
+
+    float mag = dot(position.xy, position.xy);
+    if(mag > 1.0) discard;
+
+    vec3 normal = normalize(position);
+    return normal;
+}
+
 void main() {
     // position of this fragment within point vertex:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
@@ -68,7 +84,29 @@ void main() {
     if (useTextureAtlas) {
         FragColor.rgb = tex;
     } else {
-        FragColor.rgb = diffuseColor + 0.6 * vec3(specColor) + noise + edgeDarkness;
+        FragColor.rgb = get_normal_from_position_on_circle(vUv.x, vUv.y); //diffuseColor + 0.6 * vec3(specColor) + noise + edgeDarkness;
     }
-    FragColor.a = circleArea * 0.7;
+    FragColor.a = circleArea * 1.0;
+
+    vec3 fragPos = vec3(relativeScreenPos, -1.0);
+    vec3 N = get_normal_from_position_on_circle(vUv.x, vUv.y);
+    vec3 L = normalize(vec3(lightPosition, 0.0) - fragPos);
+    // Lambert's cosine law
+    float lambertian = max(dot(N, L), 0.0);
+    float specular = 0.0;
+    float shininessVal = 15.0;
+    if(lambertian > 0.0) {
+        vec3 R = reflect(-L, N);      // Reflected light vector
+        vec3 V = normalize(-(fragPos - vec3(0.5, 0.5, 0.0))); // Vector to viewer
+        // Compute the specular term
+        float specAngle = max(dot(R, V), 0.0);
+        specular = pow(specAngle, shininessVal);
+    }
+    float ambientLight = 0.5;
+    vec3 specularColor = vec3(1.0f);
+    float specularStrength = 0.7;
+    FragColor = vec4(diffuseColor * ambientLight +
+                lambertian * diffuseColor * (1.0 - ambientLight) +
+                specularStrength * specular * specularColor, 1.0);
+    FragColor.a = circleArea * 1.0;
 }
