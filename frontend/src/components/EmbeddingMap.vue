@@ -102,6 +102,7 @@ export default {
       this.updateGeometry()
     },
     resetPanAndZoom() {
+      // smooth reset doesn't seem to be possible because during smooth movement, the transfrom isn't updated?
       this.panzoomInstance.moveTo(0, 0);
       this.panzoomInstance.zoomAbs(0, 0, 1);
     },
@@ -145,16 +146,19 @@ export default {
       return notNormalizedY
     },
     setupPanZoom() {
+      const that = this
       this.panzoomInstance = panzoom(this.$refs.panZoomProxy, {
         zoomSpeed: 0.35, // 35% per mouse wheel event
         minZoom: 0.7,
-        bounds: true,
+        bounds: false,
+        zoomDoubleClickSpeed: 1,  // disable zoom on double click
         onTouch: function(e) {
           return e.touches.length > 1;  // don't prevent touch propagation if there is just one touch (but when there are two or more to prevent zooming the page itself instead of this area only)
+        },
+        onDoubleClick: function(e) {
+          that.resetPanAndZoom()
         }
       });
-
-      const that = this
 
       this.panzoomInstance.on('transform', function(e) {
         const transform = e.getTransform()
