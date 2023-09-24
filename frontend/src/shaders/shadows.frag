@@ -2,6 +2,7 @@
 
 precision highp float;
 
+in vec2 vUv;
 in float isHighlighted;
 
 uniform float viewportWidth;
@@ -18,7 +19,7 @@ void main() {
 
     // position of this fragment within point vertex:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
-    vec2 posFromBottomLeft = vec2(gl_PointCoord.x, 1.0 - gl_PointCoord.y);  // 0 - 1
+    vec2 posFromBottomLeft = vec2(vUv.x, 1.0 - vUv.y);  // 0 - 1
 	vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
 	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
 

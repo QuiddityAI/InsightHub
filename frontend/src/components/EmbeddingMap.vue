@@ -308,7 +308,6 @@ export default {
         }
         return x
       }
-
       const pointCount = this.targetPositionsX.length
       this.targetPositionsY = ensureLength(this.targetPositionsY, pointCount, 0.0)
 
@@ -322,7 +321,11 @@ export default {
       this.pointSizes = ensureLength(this.pointSizes, pointCount, 0.5)
 
       this.glScene = new Transform();
+      this.updateMeshesQuads();
 
+      this.renderer.render({ scene: this.glScene, camera: this.camera });
+    },
+    updateMeshesPoints() {
       const shadowGeometry = new Geometry(this.glContext, {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
@@ -366,8 +369,53 @@ export default {
 
       this.glMesh = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry: pointsGeometry, program: this.glProgram });
       this.glMesh.setParent(this.glScene)
+    },
+    updateMeshesQuads() {
+      const shadowGeometry = new Geometry(this.glContext, {
+          position: { size: 2, data: new Float32Array([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]) },
+          positionX: { instanced: 1, size: 1, data: new Float32Array(this.currentPositionsX) },
+          positionY: { instanced: 1, size: 1, data: new Float32Array(this.currentPositionsY) },
+          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes) },
+      });
 
-      this.renderer.render({ scene: this.glScene, camera: this.camera });
+      this.glProgramShadows = new Program(this.glContext, {
+          vertex: shadowsVertexShader,
+          fragment: shadowsFragmentShader,
+          uniforms: this.getUniforms(),
+          transparent: true,
+          depthTest: false,
+      });
+
+      this.glMeshShadows = new Mesh(this.glContext, { mode: this.glContext.TRIANGLE_STRIP, geometry: shadowGeometry, program: this.glProgramShadows });
+      this.glMeshShadows.setParent(this.glScene)
+
+      const pointsGeometry = new Geometry(this.glContext, {
+          position: { size: 2, data: new Float32Array([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]) },
+          positionX: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsX) },
+          positionY: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsY) },
+          clusterId: { instanced: 1,  size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
+          saturation: { instanced: 1,  size: 1, data: new Float32Array(this.saturation) },
+          pointSize: {  instanced: 1, size: 1, data: new Float32Array(this.pointSizes) },
+      });
+
+      this.glTexture = new Texture(this.glContext, {
+        generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.NEAREST
+      });
+      if (this.textureAtlas) {
+        this.glTexture.image = this.textureAtlas;
+      }
+
+      this.glProgram = new Program(this.glContext, {
+          vertex: pointsVertexShader,
+          fragment: pointsFragmentShader,
+          uniforms: this.getUniforms(),
+          transparent: true,
+          depthTest: false,
+          // depthFunc: this.glContext.NOTEQUAL,
+      });
+
+      this.glMesh = new Mesh(this.glContext, { mode: this.glContext.TRIANGLE_STRIP, geometry: pointsGeometry, program: this.glProgram });
+      this.glMesh.setParent(this.glScene)
     },
     getUniforms() {
       const ww = window.innerWidth

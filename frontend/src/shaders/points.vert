@@ -1,5 +1,6 @@
 #version 300 es
 
+in vec2 position;
 in float positionX;
 in float positionY;
 in float clusterId;
@@ -12,6 +13,7 @@ uniform mat4 projectionMatrix;
 
 uniform vec2 baseOffset;
 uniform vec2 baseScale;
+uniform vec2 viewportSize;
 uniform vec2 activeAreaSize;
 uniform float marginLeft;
 uniform float marginBottom;
@@ -21,6 +23,7 @@ uniform int highlightedPointIdx;
 uniform int selectedPointIdx;
 uniform float devicePixelRatio;
 
+out vec2 vUv;
 out vec3 diffuseColor;
 out float clusterIdVar;
 flat out int pointIdxVar;
@@ -39,9 +42,9 @@ void main() {
     // pass data to fragment shader by setting varying variables:
     clusterIdVar = clusterId;
     saturationVar = saturation;
-    pointIdxVar = gl_VertexID;
-    isHighlighted = (gl_VertexID == highlightedPointIdx) ? 1.0 : 0.0;
-    isSelected = (gl_VertexID == selectedPointIdx) ? 1.0 : 0.0;
+    pointIdxVar = gl_InstanceID;
+    isHighlighted = (gl_InstanceID == highlightedPointIdx) ? 1.0 : 0.0;
+    isSelected = (gl_InstanceID == selectedPointIdx) ? 1.0 : 0.0;
 
     // diffuse color:
     // (the diffuse color is the same for all fragments of this vertex, so it
@@ -56,7 +59,7 @@ void main() {
     diffuseColor = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (clusterIdVar < 0.0 ? unclustered_color : normalColor));
 
     // position calculation:
-    vec3 rawPos = vec3(positionX, positionY, (gl_VertexID == highlightedPointIdx) ? -0.9 : -1.0);
+    vec3 rawPos = vec3(positionX, positionY, (gl_InstanceID == highlightedPointIdx) ? -0.9 : -1.0);
     vec3 normalizedPos = (rawPos + vec3(baseOffset, 0.0)) * vec3(baseScale, 1.0);
     vec3 shiftedToActiveAreaPos = normalizedPos * vec3(activeAreaSize, 1.0) + vec3(marginLeft, marginBottom, 0.0);
 
@@ -67,13 +70,7 @@ void main() {
     vec3 pannedAndZoomedPos = zoomedPos + vec3(pan.x, -pan.y, 0);
 
     // position is now in range 0.0 - 1.0
-    vec3 pos = pannedAndZoomedPos;
-
-    // transform position:
-    // (modelMatrix is automatically set by the Mesh class)
-    vec4 mPos = modelMatrix * vec4(pos, 1.0);
-    vec4 mvPos = viewMatrix * mPos;
-    gl_Position = projectionMatrix * mvPos;
+    vec3 pointPos = pannedAndZoomedPos;
 
     // point size:
     // (By directly multiplying with zoom, the point size would be as with a real object,
@@ -83,5 +80,15 @@ void main() {
     // zoomAdjustment variable does. The same calculation is used in JS to get the pointSize
     // when checking if a point was clicked.)
     float zoomAdjustment = (zoom - 1.0) * 0.3 + 1.0;
-    gl_PointSize = (5.0 + 15.0 * pointSize) * zoomAdjustment * devicePixelRatio;
+    float pointSize = (5.0 + 15.0 * pointSize) * zoomAdjustment * devicePixelRatio;
+
+    vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);
+    vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0);
+    vUv = position;
+
+    // transform position:
+    // (modelMatrix is automatically set by the Mesh class)
+    vec4 mPos = modelMatrix * vec4(vertexPosition, 1.0);
+    vec4 mvPos = viewMatrix * mPos;
+    gl_Position = projectionMatrix * mvPos;
 }

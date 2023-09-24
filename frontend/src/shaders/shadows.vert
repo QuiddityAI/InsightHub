@@ -1,5 +1,6 @@
 #version 300 es
 
+in vec2 position;
 in float positionX;
 in float positionY;
 in float pointSize;
@@ -10,6 +11,7 @@ uniform mat4 projectionMatrix;
 
 uniform vec2 baseOffset;
 uniform vec2 baseScale;
+uniform vec2 viewportSize;
 uniform vec2 activeAreaSize;
 uniform float marginLeft;
 uniform float marginBottom;
@@ -19,6 +21,7 @@ uniform int highlightedPointIdx;
 uniform vec2 lightPosition;
 uniform float devicePixelRatio;
 
+out vec2 vUv;
 out float isHighlighted;
 
 void main() {
@@ -42,17 +45,21 @@ void main() {
     vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 200.0);
 
     // position is now in range 0.0 - 1.0
-    vec3 pos = shadowOffsetPos;
-
-    // transform position:
-    // (modelMatrix is automatically set by the Mesh class)
-    vec4 mPos = modelMatrix * vec4(pos, 1.0);
-    vec4 mvPos = viewMatrix * mPos;
-    gl_Position = projectionMatrix * mvPos;
+    vec3 pointPos = shadowOffsetPos;
 
     // point size:
     // (see points.vert shader for how zoomAdjustment works)
     float zoomAdjustment = (zoom - 1.0) * 0.3 + 1.0;
     float shadowScale = 1.5;
-    gl_PointSize = (5.0 + 15.0 * pointSize) * shadowScale * zoomAdjustment * devicePixelRatio;
+    float pointSize = (5.0 + 15.0 * pointSize) * shadowScale * zoomAdjustment * devicePixelRatio;
+
+    vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);
+    vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0);
+    vUv = position;
+
+    // transform position:
+    // (modelMatrix is automatically set by the Mesh class)
+    vec4 mPos = modelMatrix * vec4(vertexPosition, 1.0);
+    vec4 mvPos = viewMatrix * mPos;
+    gl_Position = projectionMatrix * mvPos;
 }
