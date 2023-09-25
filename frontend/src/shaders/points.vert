@@ -66,7 +66,7 @@ void main() {
     // TODO: modify camera for pan and zoom instead of vertex position (to make sure dots stay the same size)
 
     // zoom origin is at top left (0, 1), so we first need to move the points there, then zoom, and then move back
-    vec3 zoomedPos = ((shiftedToActiveAreaPos - vec3(0.0, 1.0, 0.0)) * zoom) + vec3(0.0, 1.0, 0.0);
+    vec3 zoomedPos = ((shiftedToActiveAreaPos - vec3(0.0, 1.0, 0.0)) * vec3(zoom, zoom, 1.0)) + vec3(0.0, 1.0, 0.0);
     vec3 pannedAndZoomedPos = zoomedPos + vec3(pan.x, -pan.y, 0);
 
     // position is now in range 0.0 - 1.0
