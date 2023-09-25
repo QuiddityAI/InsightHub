@@ -40,6 +40,8 @@ export default {
       currentPositionsY: [],
       currentVelocityX: [],
       currentVelocityY: [],
+      pointVisibility: [],
+      visiblePointIndexes: [],
 
       baseScale: [1.0, 1.0],
       baseOffset: [0.0, 0.0],
@@ -88,6 +90,7 @@ export default {
   mounted() {
     this.setupWebGl()
     this.setupPanZoom();
+    setInterval(this.updatePointVisibility, 500);
   },
   methods: {
     resetData() {
@@ -321,6 +324,7 @@ export default {
       this.currentPositionsY = ensureLength(this.currentPositionsY, pointCount, pointCount > 0 ? math.mean(this.targetPositionsY) : 0.0)
       this.currentVelocityX = ensureLength(this.currentVelocityX, pointCount, 0.0)
       this.currentVelocityY = ensureLength(this.currentVelocityY, pointCount, 0.0)
+      this.pointVisibility = ensureLength(this.pointVisibility, pointCount, 0)
 
       this.clusterIdsPerPoint = ensureLength(this.clusterIdsPerPoint, pointCount, 0)
       this.saturation = ensureLength(this.saturation, pointCount, 1.0)
@@ -346,6 +350,7 @@ export default {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
           pointSize: { size: 1, data: new Float32Array(this.pointSizes) },
+          pointVisibility: { size: 1, data: new Float32Array(this.pointVisibility) },
       });
 
       this.glProgramShadows = new Program(this.glContext, {
@@ -365,6 +370,7 @@ export default {
           clusterId: { size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
           saturation: { size: 1, data: new Float32Array(this.saturation) },
           pointSize: { size: 1, data: new Float32Array(this.pointSizes) },
+          pointVisibility: { size: 1, data: new Float32Array(this.pointVisibility) },
       });
 
       this.glProgram = new Program(this.glContext, {
@@ -385,6 +391,7 @@ export default {
           positionX: { instanced: 1, size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { instanced: 1, size: 1, data: new Float32Array(this.currentPositionsY) },
           pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes) },
+          pointVisibility: { instanced: 1, size: 1, data: new Float32Array(this.pointVisibility) },
       });
 
       this.glProgramShadows = new Program(this.glContext, {
@@ -404,7 +411,8 @@ export default {
           positionY: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsY) },
           clusterId: { instanced: 1,  size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
           saturation: { instanced: 1,  size: 1, data: new Float32Array(this.saturation) },
-          pointSize: {  instanced: 1, size: 1, data: new Float32Array(this.pointSizes) },
+          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes) },
+          pointVisibility: { instanced: 1, size: 1, data: new Float32Array(this.pointVisibility) },
       });
 
       this.glProgram = new Program(this.glContext, {
@@ -490,6 +498,37 @@ export default {
       if (mouseMovementDistance > 5) return;
       this.$emit('point_selected', this.highlightedPointIdx)
     },
+    updatePointVisibility() {
+      // point visibility is currently only used if there are thumbnail images:
+      if (!this.textureAtlas) return;
+      const margin = -30 * window.devicePixelRatio
+
+      const left = this.screenToEmbeddingX(this.passiveMarginsLRTB[0] + margin)
+      const right = this.screenToEmbeddingX(window.innerWidth - this.passiveMarginsLRTB[1] - margin)
+      const top = this.screenToEmbeddingY(this.passiveMarginsLRTB[2] + margin)
+      const bottom = this.screenToEmbeddingY(window.innerHeight - this.passiveMarginsLRTB[3] - margin)
+
+      const maxItems = 50
+      const pointIndexes = []
+      const pointVisibility = []
+      for (const i of Array(this.currentPositionsX.length).keys()) {
+        const x = this.currentPositionsX[i]
+        const y = this.currentPositionsY[i]
+        const xInView = x >= left && x <= right
+        const yInView = y >= bottom && y <= top
+        pointVisibility[i] = xInView && yInView ? 1 : 0
+        if (xInView && yInView) pointIndexes.push(i);
+        if (pointIndexes.length > maxItems) break;
+      }
+      if (pointIndexes.length <= maxItems) {
+        this.visiblePointIndexes = pointIndexes
+        this.pointVisibility = pointVisibility
+      } else {
+        this.visiblePointIndexes = []
+        this.pointVisibility = [1] * this.currentPositionsX.length
+      }
+      this.updateGeometry()
+    },
   },
 }
 
@@ -504,6 +543,18 @@ export default {
   <!-- this div shows a gray outline around the "active area" for debugging purposes -->
   <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
 
+
+  <div v-if="textureAtlas" v-for="pointIndex in visiblePointIndexes" :key="pointIndex" class="fixed pointer-events-none"
+  :style="{
+    'left': screenLeftFromRelative(currentPositionsX[pointIndex]) + 'px',
+    'bottom': screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
+    }" style="transform: translate(-50%, 50%);">
+    <div class="px-1 text-gray-500 text-xs">
+      <div v-if="itemDetails.length > pointIndex && hover_label_rendering" class="flex flex-col items-center bg-white/50 text-gray-500 text-xs rounded">
+        <img v-if="hover_label_rendering.image(itemDetails[pointIndex])" :src="hover_label_rendering.image(itemDetails[pointIndex])" class="h-24">
+      </div>
+    </div>
+  </div>
 
   <div v-for="cluster_label in clusterData" class="fixed"
   :style="{

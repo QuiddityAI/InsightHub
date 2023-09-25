@@ -6,6 +6,7 @@ in float positionY;
 in float clusterId;
 in float saturation;
 in float pointSize;
+in float pointVisibility;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
@@ -31,6 +32,7 @@ flat out int pointIdxVar;
 out float isHighlighted;
 out float isSelected;
 out float saturationVar;
+flat out uint pointVisibilityVar;
 
 
 vec3 hsv2rgb(vec3 c) {
@@ -46,6 +48,7 @@ void main() {
     pointIdxVar = gl_InstanceID;
     isHighlighted = (gl_InstanceID == highlightedPointIdx) ? 1.0 : 0.0;
     isSelected = (gl_InstanceID == selectedPointIdx) ? 1.0 : 0.0;
+    pointVisibilityVar = uint(pointVisibility);
 
     // albedo color:
     // (the albedo color is the same for all fragments of this vertex, so it

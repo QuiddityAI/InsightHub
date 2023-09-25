@@ -10,6 +10,7 @@ flat in int pointIdxVar;
 in float isHighlighted;
 in float isSelected;
 in float saturationVar;
+flat in uint pointVisibilityVar;
 
 uniform sampler2D textureAtlas;
 uniform float zoom;
@@ -50,6 +51,11 @@ vec3 get_normal_from_position_on_circle(float posX, float posY) {
 }
 
 void main() {
+    if (pointVisibilityVar != 0u) {
+        FragColor.a = 0.0;
+        return;
+    }
+
     // position of this fragment within point vertex / quad:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
     vec2 posFromBottomLeft = vUv;  // 0 - 1
