@@ -24,7 +24,8 @@ uniform int selectedPointIdx;
 uniform float devicePixelRatio;
 
 out vec2 vUv;
-out vec3 diffuseColor;
+out vec3 vertexPositionVar;
+out vec3 albedoColorVar;
 out float clusterIdVar;
 flat out int pointIdxVar;
 out float isHighlighted;
@@ -46,8 +47,8 @@ void main() {
     isHighlighted = (gl_InstanceID == highlightedPointIdx) ? 1.0 : 0.0;
     isSelected = (gl_InstanceID == selectedPointIdx) ? 1.0 : 0.0;
 
-    // diffuse color:
-    // (the diffuse color is the same for all fragments of this vertex, so it
+    // albedo color:
+    // (the albedo color is the same for all fragments of this vertex, so it
     // can be done in the vertex shader where its calculated only once)
     float hue = clusterIdVar / 10.0;
     float sat = 0.1 + saturationVar * 1.0;
@@ -56,7 +57,7 @@ void main() {
     vec3 highlightedColor = vec3(0.0);
     vec3 selectedColor = vec3(1.0, 0.0, 0.0);
     vec3 unclustered_color = vec3(0.7);
-    diffuseColor = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (clusterIdVar < 0.0 ? unclustered_color : normalColor));
+    albedoColorVar = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (clusterIdVar < 0.0 ? unclustered_color : normalColor));
 
     // position calculation:
     vec3 rawPos = vec3(positionX, positionY, (gl_InstanceID == highlightedPointIdx) ? -0.9 : -1.0);
@@ -85,6 +86,7 @@ void main() {
     vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);
     vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0);
     vUv = position;
+    vertexPositionVar = vertexPosition;
 
     // transform position:
     // (modelMatrix is automatically set by the Mesh class)

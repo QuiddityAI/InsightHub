@@ -3,19 +3,22 @@
 precision highp float;
 
 in vec2 vUv;
+in vec3 vertexPositionVar;
+in vec3 albedoColorVar;
 in float clusterIdVar;
 flat in int pointIdxVar;
 in float isHighlighted;
 in float isSelected;
 in float saturationVar;
-in vec3 diffuseColor;
 
 uniform sampler2D textureAtlas;
 uniform float zoom;
 uniform vec2 viewportSize;
-uniform vec2 lightPosition;
+uniform vec3 lightPosition;
 uniform float devicePixelRatio;
 uniform bool useTextureAtlas;
+uniform sampler2D pointTextureBaseColor;
+uniform sampler2D pointTextureNormalMap;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
@@ -47,66 +50,82 @@ vec3 get_normal_from_position_on_circle(float posX, float posY) {
 }
 
 void main() {
-    // position of this fragment within point vertex:
+    // position of this fragment within point vertex / quad:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
-    vec2 posFromBottomLeft = vec2(vUv.x, vUv.y);  // 0 - 1
+    vec2 posFromBottomLeft = vUv;  // 0 - 1
 	vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
 	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
     float pointRadiusPx = (5.0 * zoom * devicePixelRatio) / 2.0;
-	// FragColor = vec4(relativeScreenPos, 1.0, 1.0);
 
     // circle area:
     float antiAliasingEdgePx = 1.0;
     float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
 
-    // position of this fragment on the screen:
-	vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
-
-    // specular color:
-    // (creating a fake-3D appearance by drawing a bright specular highlight)
-	vec2 specularPosFromCenterOfCircle = (lightPosition - relativeScreenPos) * 0.5;
-    float specColor = 1.0 - length(posFromCenter - specularPosFromCenterOfCircle);
-    specColor = max(0.0, pow(specColor, 2.5));
-
-    // darker edge:
-    // (again faking 3D appearance by making the color darker near the edges)
-    float edgeDarkness = -0.2 * smoothstep(0.5, 1.0, distFromCenter);
-
-    // noise:
-    float noise = 0.1 * rand(floor(posFromCenter * 40.0)/40.0);
-
-    // texture:
-    float uvRow = float(int(pointIdxVar) / (2048 / 32) + 1) / 64.0;
-    float uvCol = float(int(pointIdxVar) % (2048 / 32)) / 64.0;
-    float uvFactor = (2048.0/32.0);
-    vec3 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + posFromBottomLeft / uvFactor).rgb;
+    FragColor.a = circleArea * 1.0;
 
     if (useTextureAtlas) {
+        float uvRow = float(int(pointIdxVar) / (2048 / 32) + 1) / 64.0;
+        float uvCol = float(int(pointIdxVar) % (2048 / 32)) / 64.0;
+        float uvFactor = (2048.0/32.0);
+        vec3 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + posFromBottomLeft / uvFactor).rgb;
         FragColor.rgb = tex;
     } else {
-        FragColor.rgb = get_normal_from_position_on_circle(vUv.x, vUv.y); //diffuseColor + 0.6 * vec3(specColor) + noise + edgeDarkness;
-    }
-    FragColor.a = circleArea * 1.0;
+        // position of this fragment on the screen:
+        vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
 
-    vec3 fragPos = vec3(relativeScreenPos, -1.0);
-    vec3 N = get_normal_from_position_on_circle(vUv.x, vUv.y);
-    vec3 L = normalize(vec3(lightPosition, 0.0) - fragPos);
-    // Lambert's cosine law
-    float lambertian = max(dot(N, L), 0.0);
-    float specular = 0.0;
-    float shininessVal = 15.0;
-    if(lambertian > 0.0) {
-        vec3 R = reflect(-L, N);      // Reflected light vector
-        vec3 V = normalize(-(fragPos - vec3(0.5, 0.5, 0.0))); // Vector to viewer
-        // Compute the specular term
-        float specAngle = max(dot(R, V), 0.0);
-        specular = pow(specAngle, shininessVal);
+        // noise:
+        float noise = 0.1 * rand(floor(posFromCenter * 40.0)/40.0);
+
+        float pi = 3.1415;
+        float yFactor = cos(atan(posFromCenter.y, sqrt(1.0 - pow(posFromCenter.y, 2.0))));
+        vec2 sphereUv = vec2(((vUv.x - 0.5) * 2.0 / max(yFactor, 0.001)) / 2.0 + 0.5, vUv.y);
+
+        vec3 tangentSpaceTextureNormal = texture(pointTextureNormalMap, sphereUv / 3.0).xyz * 2.0 - 1.0;
+
+        vec3 sphereNormal = get_normal_from_position_on_circle(vUv.x, vUv.y);  // normal from surface
+
+        // to apply normal maps, we need a tangent and a bitangent on the sphere in addition to the normal
+        // the tangent is pointing parallel to the surface, but there are any number of possible tangents
+        // the tangent should be in the same direction as used for the normal map
+        // here I tried to make up a formula to find that, it is not correct (reflections are in the wrong direction)
+        // but at least it shows the idea:
+        vec3 tangent = vec3(1.0 - sphereNormal.x, 1.0 - sphereNormal.y, 1.0 - (sphereNormal.z + sphereNormal.x));
+        vec3 bitangent = vec3(1.0 - sphereNormal.x, 1.0 - (sphereNormal.y + sphereNormal.z), 1.0 - sphereNormal.z);
+
+        // see also https://youtu.be/E4PHFnvMzFc?si=Z1nOGr4p5kJo-8DG&t=5165
+        mat3x3 mtxTangentToWorld = mat3x3(
+            tangent.x, bitangent.x, sphereNormal.x,
+            tangent.y, bitangent.y, sphereNormal.y,
+            tangent.z, bitangent.z, sphereNormal.z
+        );
+
+        vec3 N = mtxTangentToWorld * tangentSpaceTextureNormal;
+
+        // vec3 N = sphereNormal;
+
+        vec3 L = normalize(lightPosition - vertexPositionVar);  // vector to light
+
+        vec3 cameraPosition = vec3(0.5, 0.5, 1.0);
+        vec3 V = normalize(-(vertexPositionVar - cameraPosition)); // Vector to viewer
+
+        // Lambert's cosine law
+        float lambertian = max(dot(N, L), 0.0);
+        float specular = 0.0;
+        float shininessVal = 5.0;
+        if (lambertian > 0.0) {
+            vec3 R = reflect(-L, N);  // Reflected light vector
+            // Compute the specular term
+            float specAngle = max(dot(R, V), 0.0);
+            specular = pow(specAngle, shininessVal);
+        }
+        float ambientLight = 0.5;
+        vec3 specularColor = vec3(1.0f);
+        float specularStrength = 0.7;
+        // vec3 albedoColor = texture(pointTextureBaseColor, sphereUv).rgb;
+        vec3 albedoColor = albedoColorVar;
+
+        FragColor.rgb = albedoColor * ambientLight +
+                    lambertian * albedoColor * (1.0 - ambientLight) +
+                    specularStrength * specular * specularColor;
     }
-    float ambientLight = 0.5;
-    vec3 specularColor = vec3(1.0f);
-    float specularStrength = 0.7;
-    FragColor = vec4(diffuseColor * ambientLight +
-                lambertian * diffuseColor * (1.0 - ambientLight) +
-                specularStrength * specular * specularColor, 1.0);
-    FragColor.a = circleArea * 1.0;
 }

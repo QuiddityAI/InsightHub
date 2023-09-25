@@ -6,13 +6,16 @@
 
 import panzoom from 'panzoom';
 
-import { Renderer, Camera, Geometry, Program, Mesh, Transform, Texture } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
+import { Renderer, Camera, Geometry, Program, Mesh, Transform, Texture, TextureLoader } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
 import * as math from 'mathjs'
 
 import pointsVertexShader from '../shaders/points.vert?raw'
 import pointsFragmentShader from '../shaders/points.frag?raw'
 import shadowsVertexShader from '../shaders/shadows.vert?raw'
 import shadowsFragmentShader from '../shaders/shadows.frag?raw'
+
+import pointTextureBaseColorUrl from '../textures/Brick_Wall_017_basecolor.jpg'
+import pointTextureNormalMapUrl from '../textures/Crystal_001_NORM.jpg'
 
 export default {
   data() {
@@ -63,8 +66,11 @@ export default {
       glProgramShadows: null,
       glMeshShadows: null,
       glScene: null,
-      glTexture: null,
-      lightPosition: [0.5, 1.5],
+      glTextureAtlas: null,
+      lightPosition: [0.5, 0.5, -0.5],
+
+      pointTextureBaseColor: null,
+      pointTextureNormalMap: null,
     }
   },
   computed: {
@@ -320,6 +326,16 @@ export default {
       this.saturation = ensureLength(this.saturation, pointCount, 1.0)
       this.pointSizes = ensureLength(this.pointSizes, pointCount, 0.5)
 
+      this.glTextureAtlas = new Texture(this.glContext, {
+        generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.NEAREST
+      });
+      if (this.textureAtlas) {
+        this.glTextureAtlas.image = this.textureAtlas;
+      }
+
+      this.pointTextureBaseColor = TextureLoader.load(this.glContext, { src: pointTextureBaseColorUrl});
+      this.pointTextureNormalMap = TextureLoader.load(this.glContext, { src: pointTextureNormalMapUrl, minFilter: this.glContext.LINEAR });
+
       this.glScene = new Transform();
       this.updateMeshesQuads();
 
@@ -350,13 +366,6 @@ export default {
           saturation: { size: 1, data: new Float32Array(this.saturation) },
           pointSize: { size: 1, data: new Float32Array(this.pointSizes) },
       });
-
-      this.glTexture = new Texture(this.glContext, {
-        generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.NEAREST
-      });
-      if (this.textureAtlas) {
-        this.glTexture.image = this.textureAtlas;
-      }
 
       this.glProgram = new Program(this.glContext, {
           vertex: pointsVertexShader,
@@ -398,13 +407,6 @@ export default {
           pointSize: {  instanced: 1, size: 1, data: new Float32Array(this.pointSizes) },
       });
 
-      this.glTexture = new Texture(this.glContext, {
-        generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.NEAREST
-      });
-      if (this.textureAtlas) {
-        this.glTexture.image = this.textureAtlas;
-      }
-
       this.glProgram = new Program(this.glContext, {
           vertex: pointsVertexShader,
           fragment: pointsFragmentShader,
@@ -433,8 +435,10 @@ export default {
         lightPosition: { value: this.lightPosition },
         devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
         selectedPointIdx: { value: this.selectedPointIdx },
-        textureAtlas: { value: this.glTexture },
+        textureAtlas: { value: this.glTextureAtlas },
         useTextureAtlas: { value: this.textureAtlas !== null },
+        pointTextureBaseColor: { value: this.pointTextureBaseColor },
+        pointTextureNormalMap: { value: this.pointTextureNormalMap },
       }
     },
     updateUniforms() {

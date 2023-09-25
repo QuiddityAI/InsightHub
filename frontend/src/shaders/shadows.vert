@@ -18,7 +18,7 @@ uniform float marginBottom;
 uniform vec2 pan;
 uniform float zoom;
 uniform int highlightedPointIdx;
-uniform vec2 lightPosition;
+uniform vec3 lightPosition;
 uniform float devicePixelRatio;
 
 out vec2 vUv;
@@ -40,7 +40,7 @@ void main() {
     vec3 pannedAndZoomedPos = zoomedPos + vec3(pan.x, -pan.y, 0);
 
     // shadow direction:
-	vec3 lightPos = vec3(lightPosition, -2.0);
+	vec3 lightPos = vec3(lightPosition.xy, -2.0);
 	vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * vec3(zoom, zoom, 1.0);
     vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 200.0);
 
