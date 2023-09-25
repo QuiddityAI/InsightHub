@@ -61,7 +61,7 @@ void main() {
     float antiAliasingEdgePx = 1.0;
     float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
 
-    FragColor.a = circleArea * 1.0;
+    FragColor.a = circleArea * 0.7;
 
     if (useTextureAtlas) {
         float uvRow = float(int(pointIdxVar) / (2048 / 32) + 1) / 64.0;
@@ -84,24 +84,24 @@ void main() {
 
         vec3 sphereNormal = get_normal_from_position_on_circle(vUv.x, vUv.y);  // normal from surface
 
-        // to apply normal maps, we need a tangent and a bitangent on the sphere in addition to the normal
-        // the tangent is pointing parallel to the surface, but there are any number of possible tangents
-        // the tangent should be in the same direction as used for the normal map
-        // here I tried to make up a formula to find that, it is not correct (reflections are in the wrong direction)
-        // but at least it shows the idea:
-        vec3 tangent = vec3(1.0 - sphereNormal.x, 1.0 - sphereNormal.y, 1.0 - (sphereNormal.z + sphereNormal.x));
-        vec3 bitangent = vec3(1.0 - sphereNormal.x, 1.0 - (sphereNormal.y + sphereNormal.z), 1.0 - sphereNormal.z);
+        // // to apply normal maps, we need a tangent and a bitangent on the sphere in addition to the normal
+        // // the tangent is pointing parallel to the surface, but there are any number of possible tangents
+        // // the tangent should be in the same direction as used for the normal map
+        // // here I tried to make up a formula to find that, it is not correct (reflections are in the wrong direction)
+        // // but at least it shows the idea:
+        // vec3 tangent = vec3(1.0 - sphereNormal.x, 1.0 - sphereNormal.y, 1.0 - (sphereNormal.z + sphereNormal.x));
+        // vec3 bitangent = vec3(1.0 - sphereNormal.x, 1.0 - (sphereNormal.y + sphereNormal.z), 1.0 - sphereNormal.z);
 
-        // see also https://youtu.be/E4PHFnvMzFc?si=Z1nOGr4p5kJo-8DG&t=5165
-        mat3x3 mtxTangentToWorld = mat3x3(
-            tangent.x, bitangent.x, sphereNormal.x,
-            tangent.y, bitangent.y, sphereNormal.y,
-            tangent.z, bitangent.z, sphereNormal.z
-        );
+        // // see also https://youtu.be/E4PHFnvMzFc?si=Z1nOGr4p5kJo-8DG&t=5165
+        // mat3x3 mtxTangentToWorld = mat3x3(
+        //     tangent.x, bitangent.x, sphereNormal.x,
+        //     tangent.y, bitangent.y, sphereNormal.y,
+        //     tangent.z, bitangent.z, sphereNormal.z
+        // );
 
-        vec3 N = mtxTangentToWorld * tangentSpaceTextureNormal;
+        // vec3 N = mtxTangentToWorld * tangentSpaceTextureNormal;
 
-        // vec3 N = sphereNormal;
+        vec3 N = sphereNormal;
 
         vec3 L = normalize(lightPosition - vertexPositionVar);  // vector to light
 
@@ -126,6 +126,6 @@ void main() {
 
         FragColor.rgb = albedoColor * ambientLight +
                     lambertian * albedoColor * (1.0 - ambientLight) +
-                    specularStrength * specular * specularColor;
+                    specularStrength * specular * specularColor + noise;
     }
 }
