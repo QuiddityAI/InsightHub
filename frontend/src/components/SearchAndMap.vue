@@ -196,6 +196,12 @@ export default {
 
       if (!this.map_id || !this.map_is_in_progess) return;
 
+      const queryParams = new URLSearchParams(window.location.search);
+      if (queryParams.get("map_id") != this.map_id) {
+        queryParams.set("map_id", this.map_id);
+        history.pushState(null, null, "?"+queryParams.toString());
+      }
+
       // note: these may be needed in the future, pay attention to remove them in this case here
       const not_needed = ['item_ids', 'search_result_meta_information', 'parameters']
 
@@ -476,6 +482,15 @@ export default {
       that.map_is_in_progess = true
       that.request_mapping_progress()
     },
+    evaluate_url_query_parameters() {
+      const queryParams = new URLSearchParams(window.location.search);
+      if (queryParams.get("schema_id")) {
+        this.appStateStore.settings.schema_id = queryParams.get("schema_id")
+      }
+      if (queryParams.get("map_id")) {
+        this.show_stored_map(queryParams.get("map_id"))
+      }
+    },
   },
   computed: {
     ...mapStores(useAppStateStore),
@@ -483,12 +498,20 @@ export default {
   mounted() {
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
+    this.evaluate_url_query_parameters()
+    window.addEventListener("popstate", this.evaluate_url_query_parameters)
   },
   watch: {
     'appStateStore.settings.schema_id' (newValue, oldValue) {
       const that = this
 
       this.reset_search_results_and_map()
+
+      const queryParams = new URLSearchParams(window.location.search);
+      if (queryParams.get("schema_id") != this.appStateStore.settings.schema_id) {
+        queryParams.set("schema_id", this.appStateStore.settings.schema_id);
+        history.pushState(null, null, "?"+queryParams.toString());
+      }
 
       this.search_history = []
       const get_history_body = {

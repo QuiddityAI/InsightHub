@@ -97,7 +97,6 @@ export default {
         for (const database of that.available_databases) {
           that.database_information[database.id] = database.short_description
         }
-        that.appStateStore.settings.schema_id = 1
       })
   },
   computed: {

@@ -9,7 +9,7 @@ export const useAppStateStore = defineStore('appState', {
       selected_collection_title: null,
       ignore_cache: false,
       settings: {
-        schema_id: null,
+        schema_id: 1,
         search: {
           search_type: "external_input",  // or cluster, collection or similar item
           use_separate_queries: false,
