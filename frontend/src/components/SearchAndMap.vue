@@ -486,6 +486,8 @@ export default {
       const queryParams = new URLSearchParams(window.location.search);
       if (queryParams.get("schema_id")) {
         this.appStateStore.settings.schema_id = queryParams.get("schema_id")
+      } else {
+        this.appStateStore.settings.schema_id = 1
       }
       if (queryParams.get("map_id")) {
         this.show_stored_map(queryParams.get("map_id"))

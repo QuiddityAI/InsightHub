@@ -97,6 +97,7 @@ export default {
         for (const database of that.available_databases) {
           that.database_information[database.id] = database.short_description
         }
+        that.updateOnSchemaChange()
       })
   },
   computed: {
@@ -104,6 +105,17 @@ export default {
   },
   watch: {
     schema: function (newValue, oldValue) {
+      this.updateOnSchemaChange()
+    },
+    show_negative_query_field() {
+      if (!this.show_negative_query_field) {
+        this.appStateStore.settings.search.all_field_query_negative = ""
+      }
+    }
+  },
+  methods: {
+    updateOnSchemaChange() {
+      if (!this.schema.object_fields) return
       const that = this
       const separate_search_fields = []
       this.appStateStore.settings.search.separate_queries = {}
@@ -149,12 +161,7 @@ export default {
         }
       }
     },
-    show_negative_query_field() {
-      if (!this.show_negative_query_field) {
-        this.appStateStore.settings.search.all_field_query_negative = ""
-      }
-    }
-  },
+  }
 }
 
 </script>
