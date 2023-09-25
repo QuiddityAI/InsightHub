@@ -561,7 +561,7 @@ export default {
     'left': screenLeftFromRelative(cluster_label.center[0]) + 'px',
     'bottom': screenBottomFromRelative(cluster_label.center[1]) + 'px',
     }">
-    <button @click="$emit('cluster_selected', cluster_label)" class="px-1 backdrop-blur-sm bg-white/50 hover:bg-white text-gray-500 text-xs rounded">
+    <button @click="$emit('cluster_selected', cluster_label)" class="px-1 bg-white hover:bg-gray-100 text-gray-500 text-xs rounded">
       {{ cluster_label.title }}
     </button>
   </div>
@@ -572,11 +572,11 @@ export default {
     'top': screenTopFromRelative(currentPositionsY[highlightedPointIdx]) + 'px',
     'max-width': '200px',
     }">
-    <div v-if="itemDetails.length > highlightedPointIdx && hover_label_rendering" class="flex flex-col items-center px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
+    <div v-if="itemDetails.length > highlightedPointIdx && hover_label_rendering" class="flex flex-col items-center px-1 bg-white text-gray-500 text-xs rounded">
       <div v-html="hover_label_rendering.title(itemDetails[highlightedPointIdx])"></div>
       <img v-if="hover_label_rendering.image(itemDetails[highlightedPointIdx])" :src="hover_label_rendering.image(itemDetails[highlightedPointIdx])" class="h-24">
     </div>
-    <div v-if="itemDetails.length <= highlightedPointIdx || !hover_label_rendering" class="px-1 backdrop-blur-sm bg-white/50 text-gray-500 text-xs rounded">
+    <div v-if="itemDetails.length <= highlightedPointIdx || !hover_label_rendering" class="px-1 bg-white text-gray-500 text-xs rounded">
       loading...
     </div>
   </div>
