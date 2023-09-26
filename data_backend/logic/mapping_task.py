@@ -138,9 +138,12 @@ def generate_map(map_id, ignore_cache):
 
     map_vector_field = params.vectorize.map_vector_field
     texture_atlas_thread = None
-    search_phase_can_be_skipped = similar_map and vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']) and not ignore_cache
-    projection_phase_can_be_skipped = similar_map and projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']) and not ignore_cache
-    if search_phase_can_be_skipped:
+    search_results = None
+
+    search_phase_is_needed = not similar_map or vectorize_stage_params_hash != get_vectorize_stage_hash(map_data['last_parameters']) or ignore_cache
+
+    if not search_phase_is_needed:
+        assert similar_map is not None
         logging.warning("reusing vectorize stage results")
         map_data["results"]["search_result_meta_information"] = deepcopy(similar_map["results"]["search_result_meta_information"])
         map_data["results"]["texture_atlas_path"] = deepcopy(similar_map["results"].get("texture_atlas_path"))
@@ -148,12 +151,8 @@ def generate_map(map_id, ignore_cache):
         map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
         search_results = get_full_results_from_meta_info(schema, params.search, params.vectorize, search_result_meta_information, 'map', timings)
-        all_map_vectors_present = all([item.get(params.vectorize.map_vector_field) is not None for item in search_results])
-        # check again if search phase can actually be skipped:
-        search_phase_can_be_skipped = all_map_vectors_present or projection_phase_can_be_skipped
         timings.log("reusing vectorize stage results")
-
-    if not search_phase_can_be_skipped:
+    else:
         map_data['progress']['step_title'] = "Getting search results"
         params_str = json.dumps(map_data["parameters"], indent=2)
         search_results = get_search_results(params_str, purpose='map', timings=timings)['items']
@@ -175,7 +174,7 @@ def generate_map(map_id, ignore_cache):
                 def generate_texture_atlas():
                     atlas = Image.new("RGBA", (2048, 2048))
                     for i, item in enumerate(search_results):
-                        if item[thumbnail_field] and os.path.exists(item[thumbnail_field]):
+                        if item.get(thumbnail_field, None) and os.path.exists(item[thumbnail_field]):
                             image = Image.open(item[thumbnail_field])
                             image.thumbnail((32, 32))
                             image = image.resize((32, 32))
@@ -185,7 +184,7 @@ def generate_map(map_id, ignore_cache):
                             atlas.paste(image, (posCol * 32, posRow * 32))
                             image.close()
                         else:
-                            logging.warning(f"Image file doesn't exist: {item[thumbnail_field]}")
+                            logging.warning(f"Image file doesn't exist: {item.get(thumbnail_field, None)}")
                     atlas.save(atlas_filename)
                     map_data["results"]["texture_atlas_path"] = atlas_filename
 
@@ -206,6 +205,12 @@ def generate_map(map_id, ignore_cache):
 
         map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
 
+    assert search_results is not None
+    all_map_vectors_present = all([item.get(params.vectorize.map_vector_field) is not None for item in search_results])
+    projection_phase_is_needed = not similar_map or projection_stage_params_hash != get_projection_stage_hash(map_data['last_parameters']) or ignore_cache
+    adding_missing_vectors_is_needed = search_phase_is_needed or (projection_phase_is_needed and not all_map_vectors_present)
+
+    if adding_missing_vectors_is_needed:
         query = params.search.all_field_query
         # TODO: query might be something else when using separate queries etc.
         if params.search.search_type == 'cluster' and origin_map is not None:
@@ -213,7 +218,7 @@ def generate_map(map_id, ignore_cache):
         if map_vector_field == "w2v_vector":
             add_w2v_vectors(search_results, query, params, schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
         elif schema.object_fields[params.vectorize.map_vector_field].generator \
-                and not all([item.get(params.vectorize.map_vector_field) is not None for item in search_results]):
+                and not all_map_vectors_present:
             add_missing_map_vectors(search_results, query, params, map_data, schema, timings)
 
         search_result_meta_information = {}
@@ -229,7 +234,8 @@ def generate_map(map_id, ignore_cache):
     point_sizes = [e.get(params.rendering.point_size) for e in search_results] if params.rendering.point_size != 'equal' else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
 
-    if projection_phase_can_be_skipped:
+    if not projection_phase_is_needed:
+        assert similar_map is not None
         logging.warning("reusing projection stage results")
         map_data["results"]["per_point_data"]["positions_x"] = similar_map["results"]["per_point_data"]["positions_x"]
         map_data["results"]["per_point_data"]["positions_y"] = similar_map["results"]["per_point_data"]["positions_y"]
