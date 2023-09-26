@@ -22,6 +22,9 @@ from logic.local_map_cache import local_maps
 from database_client.django_client import get_object_schema
 
 
+ABSCLUST_SCHEMA_ID = 1
+
+
 class QueryInput(object):
     def __init__(self, positive_query_str: str, negative_query_str: str = "", positive_image_url: str = "", negative_image_url: str = "") -> None:
         self.positive_query_str = positive_query_str
@@ -193,9 +196,6 @@ def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: 
             '_highlights': " ".join([" ".join(x) for x in item.get('highlight', {}).values()])
         }
     return items
-
-
-ABSCLUST_SCHEMA_ID = 1
 
 
 def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryInput, query_vector: list | None, required_fields: list[str], limit: int, page: int):
@@ -435,6 +435,7 @@ def get_full_results_from_meta_info(schema, search_settings, vectorize_settings,
 
 @lru_cache
 def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str]):
+    logging.warning(type(schema_id), schema_id)
     if schema_id == ABSCLUST_SCHEMA_ID:
         return get_absclust_item_by_id(item_id)
 

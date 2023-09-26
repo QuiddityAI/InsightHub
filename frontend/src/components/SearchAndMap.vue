@@ -485,7 +485,7 @@ export default {
     evaluate_url_query_parameters() {
       const queryParams = new URLSearchParams(window.location.search);
       if (queryParams.get("schema_id")) {
-        this.appStateStore.settings.schema_id = queryParams.get("schema_id")
+        this.appStateStore.settings.schema_id = parseInt(queryParams.get("schema_id"))
       } else {
         this.appStateStore.settings.schema_id = 1
       }
