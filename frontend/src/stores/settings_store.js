@@ -40,8 +40,6 @@ export const useAppStateStore = defineStore('appState', {
         vectorize: {
           map_vector_field: null,
           tokenizer: "default",
-          use_w2v_model: false,
-          vectorizer: "pubmedbert",  // deprecated
         },
         projection: {
           shape: "2d",

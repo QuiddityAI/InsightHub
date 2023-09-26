@@ -78,7 +78,7 @@ def _get_required_fields(schema, search_settings: DotDict, vectorize_settings: D
     rendering = schema.result_list_rendering if purpose == "list" else schema.hover_label_rendering
     required_fields = rendering['required_fields']
 
-    if purpose == "map" and not vectorize_settings.use_w2v_model and vectorize_settings.map_vector_field not in required_fields:
+    if purpose == "map" and vectorize_settings.map_vector_field != "w2v_vector" and vectorize_settings.map_vector_field not in required_fields:
         required_fields.append(vectorize_settings.map_vector_field)
 
     if purpose == "map" and schema.thumbnail_image:
@@ -165,13 +165,6 @@ def _get_complete_items_and_sort_them(schema:DotDict, total_items:dict, required
     # TODO: only fill in values for results that are higher ranked than "limit" (in case of oversampling)
     fill_in_details_from_object_storage(schema.id, total_items, required_fields)
     timings.log("getting full items from object storage")
-
-    if purpose == "map" and not vectorize_settings.use_w2v_model and not schema.id == ABSCLUST_SCHEMA_ID:
-        # filter out items without the necessary map vector field:
-        logging.warning("Before filtering: " + str(len(total_items)))
-        total_items = {key: total_items[key] for key in total_items if vectorize_settings.map_vector_field in total_items[key]}
-        logging.warning("After filtering: " + str(len(total_items)))
-
 
     sorted_results = sorted(total_items.values(), key=lambda item: item['_reciprocal_rank_score'], reverse=True)
     timings.log("filtering and sorting")

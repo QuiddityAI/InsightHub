@@ -137,6 +137,7 @@ def generate_map(map_id, ignore_cache):
     map_data["hover_label_rendering"] = schema.hover_label_rendering
     timings.log("map preparation")
 
+    map_vector_field = params.vectorize.map_vector_field
     texture_atlas_thread = None
     if vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']) and not ignore_cache:
         logging.warning("reusing vectorize stage results")
@@ -203,16 +204,14 @@ def generate_map(map_id, ignore_cache):
 
         map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
 
-        if params.vectorize.use_w2v_model:
-            query = params.search.all_field_query
-            # TODO: query might be something else when using separate queries etc.
-            if params.search.search_type == 'cluster' and origin_map is not None:
-                query = origin_map['parameters']['search']['all_field_query']
+        query = params.search.all_field_query
+        # TODO: query might be something else when using separate queries etc.
+        if params.search.search_type == 'cluster' and origin_map is not None:
+            query = origin_map['parameters']['search']['all_field_query']
+        if map_vector_field == "w2v_vector":
             add_w2v_vectors(search_results, query, params, schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
-        elif schema.object_fields[params.vectorize.map_vector_field].generator and not all([item.get(params.vectorize.map_vector_field) is not None for item in search_results]):
-            query = params.search.all_field_query
-            if params.search.search_type == 'cluster' and origin_map is not None:
-                query = origin_map['parameters']['search']['all_field_query']
+        elif schema.object_fields[params.vectorize.map_vector_field].generator \
+                and not all([item.get(params.vectorize.map_vector_field) is not None for item in search_results]):
             add_missing_map_vectors(search_results, query, params, map_data, schema, timings)
 
     projection_parameters = params.get("projection", {})
@@ -226,7 +225,6 @@ def generate_map(map_id, ignore_cache):
         projections = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
         timings.log("reusing projection stage results")
     else:
-        map_vector_field = params.vectorize.map_vector_field if not params.vectorize.use_w2v_model else "w2v_vector"
         vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
         timings.log("convert to numpy")
 

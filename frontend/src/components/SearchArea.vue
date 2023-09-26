@@ -261,13 +261,10 @@ export default {
           <input v-model.number="appState.settings.search.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
         </div>
         <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Use context-trained w2v model:</span>
-          <input v-model="appState.settings.vectorize.use_w2v_model" type="checkbox">
-        </div>
-        <div v-if="!appState.settings.vectorize.use_w2v_model" class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Map Vector Field:</span>
+          <span class="text-gray-500 text-sm">Create projection using:</span>
           <select v-model="appState.settings.vectorize.map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-              <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
+            <option value="w2v_vector" selected>Context-trained W2V Model</option>
+            <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
           </select>
         </div>
       </div>
