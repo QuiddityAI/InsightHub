@@ -44,6 +44,12 @@ export default {
       available_databases: [],
       database_information: {},
 
+      show_search_settings: true,
+      show_vectorize_settings: false,
+      show_projection_settings: false,
+      show_rendering_settings: false,
+      show_other_settings: false,
+
       separate_search_fields: [],
 
       available_search_strategies: [
@@ -147,17 +153,17 @@ export default {
           that.appStateStore.available_number_fields.push(field.identifier)
         }
       }
-      that.appStateStore.settings.rendering.point_size_field = 'equal'
+      that.appStateStore.settings.rendering.point_size = 'equal'
       if (that.appStateStore.available_number_fields.length > 0) {
         for (const field of that.appStateStore.available_number_fields) {
           if (field === 'citedby') {
             // prefer this field even if it is not the first one:
-            that.appStateStore.settings.rendering.point_size_field = field
+            that.appStateStore.settings.rendering.point_size = field
             break
           }
         }
-        if (that.appStateStore.settings.rendering.point_size_field == 'equal')  {
-          that.appStateStore.settings.rendering.point_size_field = that.appStateStore.available_number_fields[0]
+        if (that.appStateStore.settings.rendering.point_size == 'equal')  {
+          that.appStateStore.settings.rendering.point_size = that.appStateStore.available_number_fields[0]
         }
       }
     },
@@ -225,107 +231,128 @@ export default {
 
     <!-- Parameters Area -->
     <div v-show="show_settings" class="mt-3">
-      <div v-if="!appState.settings.search.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
-        <input v-model="appState.settings.search.separate_queries[field.identifier].use_for_combined_search" type="checkbox">
+      <div button @click="show_search_settings = !show_search_settings" class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Search {{ show_search_settings ? 'v' : '>' }}</span> <hr class="flex-1">
       </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Use separate queries:</span>
-        <input v-model="appState.settings.search.use_separate_queries" type="checkbox">
+      <div v-show="show_search_settings">
+        <div v-if="!appState.settings.search.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
+          <input v-model="appState.settings.search.separate_queries[field.identifier].use_for_combined_search" type="checkbox">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Use separate queries:</span>
+          <input v-model="appState.settings.search.use_separate_queries" type="checkbox">
+        </div>
+        <div v-if="appState.settings.search.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
+          <input v-model.number="appState.settings.search.separate_queries[field.identifier].query" placeholder="positive" class="w-1/2 text-gray-500 text-sm">
+          <input v-model.number="appState.settings.search.separate_queries[field.identifier].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
+          Must:<input v-model="appState.settings.search.separate_queries[field.identifier].must" type="checkbox">
+          T.O.<input v-model.number="appState.settings.search.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        </div>
       </div>
-      <div v-if="appState.settings.search.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
-        <input v-model.number="appState.settings.search.separate_queries[field.identifier].query" placeholder="positive" class="w-1/2 text-gray-500 text-sm">
-        <input v-model.number="appState.settings.search.separate_queries[field.identifier].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
-        Must:<input v-model="appState.settings.search.separate_queries[field.identifier].must" type="checkbox">
-        T.O.<input v-model.number="appState.settings.search.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+      <div button @click="show_vectorize_settings = !show_vectorize_settings" class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Vectorization {{ show_vectorize_settings ? 'v' : '>' }}</span> <hr class="flex-1">
       </div>
-      <!-- <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Search Vector Field:</span>
-        <select v-model="appState.settings.search.search_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
-        </select>
-      </div> -->
-      <hr>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Max. items for map:</span>
-        <span class="text-gray-500 text-sm"> {{ appState.settings.search.max_items_used_for_mapping }} </span>
-        <input v-model.number="appState.settings.search.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+      <div v-show="show_vectorize_settings">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Max. items for map:</span>
+          <span class="text-gray-500 text-sm"> {{ appState.settings.search.max_items_used_for_mapping }} </span>
+          <input v-model.number="appState.settings.search.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Use context-trained w2v model:</span>
+          <input v-model="appState.settings.vectorize.use_w2v_model" type="checkbox">
+        </div>
+        <div v-if="!appState.settings.vectorize.use_w2v_model" class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Map Vector Field:</span>
+          <select v-model="appState.settings.vectorize.map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
+          </select>
+        </div>
       </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Use context-trained w2v model:</span>
-        <input v-model="appState.settings.vectorize.use_w2v_model" type="checkbox">
+      <div button @click="show_projection_settings = !show_projection_settings" class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Projection {{ show_projection_settings ? 'v' : '>' }}</span> <hr class="flex-1">
       </div>
-      <div v-if="!appState.settings.vectorize.use_w2v_model" class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Map Vector Field:</span>
-        <select v-model="appState.settings.vectorize.map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
-        </select>
+      <div v-show="show_projection_settings">
+        <!-- <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Tokenizer:</span>
+          <select v-model="appState.settings.vectorize.tokenizer" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option v-for="item in available_tokenizer" :value="item.id" selected>{{ item.title }}</option>
+          </select>
+        </div> -->
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Dim. Red. Shape:</span>
+          <select v-model="appState.settings.projection.shape" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option v-for="item in dim_reducer_parameters.shape.options" :value="item.id" selected>{{ item.title }}</option>
+          </select>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">UMAP n_neighbors:</span>
+          <span class="text-gray-500 text-sm"> {{ appState.settings.projection.n_neighbors }} </span>
+          <input v-model.number="appState.settings.projection.n_neighbors" type="range" min="1" max="100" step="1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">UMAP min_dist:</span>
+          <span class="text-gray-500 text-sm"> {{ appState.settings.projection.min_dist }} </span>
+          <input v-model.number="appState.settings.projection.min_dist" type="range" min="0.001" max="0.2" step="0.001" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">UMAP n_epochs:</span>
+          <span class="text-gray-500 text-sm"> {{ appState.settings.projection.n_epochs }} </span>
+          <input v-model.number="appState.settings.projection.n_epochs" type="range" min="10" max="3000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">UMAP metric:</span>
+          <input v-model.number="appState.settings.projection.metric" class="w-1/2 text-gray-500 text-sm">
+        </div>
       </div>
-      <hr>
-      <!-- <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Tokenizer:</span>
-        <select v-model="appState.settings.vectorize.tokenizer" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option v-for="item in available_tokenizer" :value="item.id" selected>{{ item.title }}</option>
-        </select>
-      </div> -->
-      <!-- <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Vectorizer:</span>
-        <select v-model="appState.settings.vectorize.vectorizer" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option v-for="item in available_vectorizers" :value="item.id" selected>{{ item.title }}</option>
-        </select>
-      </div> -->
-      <!-- <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Cluster Title Strategy:</span>
-        <select v-model="appState.settings.rendering.clusterizer_parameters.cluster_title_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option v-for="item in available_cluster_title_strategies" :value="item.id" selected>{{ item.title }}</option>
-        </select>
-      </div> -->
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Dim. Red. Shape:</span>
-        <select v-model="appState.settings.projection.shape" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option v-for="item in dim_reducer_parameters.shape.options" :value="item.id" selected>{{ item.title }}</option>
-        </select>
+      <div button @click="show_rendering_settings = !show_rendering_settings" class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Clustering & Rendering {{ show_rendering_settings ? 'v' : '>' }}</span> <hr class="flex-1">
       </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">UMAP n_neighbors:</span>
-        <span class="text-gray-500 text-sm"> {{ appState.settings.projection.n_neighbors }} </span>
-        <input v-model.number="appState.settings.projection.n_neighbors" type="range" min="1" max="100" step="1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+      <div v-show="show_rendering_settings">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Cluster min. samples:</span>
+          <input v-model.number="appState.settings.rendering.clusterizer_parameters.min_samples" class="w-1/2 text-gray-500 text-sm">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Cluster min. size: (auto: -1)</span>
+          <input v-model.number="appState.settings.rendering.clusterizer_parameters.min_cluster_size" class="w-1/2 text-gray-500 text-sm">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Cluster 'leaf' mode (smaller clusters):</span>
+          <input v-model="appState.settings.rendering.clusterizer_parameters.leaf_mode" type="checkbox">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Point Size:</span>
+          <select v-model="appState.settings.rendering.point_size" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option :value="'equal'" selected>---</option>
+              <option v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
+          </select>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Point Color:</span>
+          <select v-model="appState.settings.rendering.point_color" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option :value="'cluster'" selected>Cluster</option>
+          </select>
+        </div>
       </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">UMAP min_dist:</span>
-        <span class="text-gray-500 text-sm"> {{ appState.settings.projection.min_dist }} </span>
-        <input v-model.number="appState.settings.projection.min_dist" type="range" min="0.001" max="0.2" step="0.001" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+      <div button @click="show_other_settings = !show_other_settings" class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Other {{ show_other_settings ? 'v' : '>' }}</span> <hr class="flex-1">
       </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">UMAP n_epochs:</span>
-        <span class="text-gray-500 text-sm"> {{ appState.settings.projection.n_epochs }} </span>
-        <input v-model.number="appState.settings.projection.n_epochs" type="range" min="10" max="3000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
-      </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">UMAP metric:</span>
-        <input v-model.number="appState.settings.projection.metric" class="w-1/2 text-gray-500 text-sm">
-      </div>
-      <hr>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Point Size:</span>
-        <select v-model="appState.settings.rendering.point_size_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option :value="'equal'" selected>---</option>
-            <option v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
-        </select>
-      </div>
-      <hr>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Ignore cache:</span>
-        <input v-model="appState.ignore_cache" type="checkbox">
-      </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Store search history:</span>
-        <input v-model="appState.store_search_history" type="checkbox">
-      </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-500 text-sm">Show timings:</span>
-        <input v-model="appState.show_timings" type="checkbox">
+      <div v-show="show_other_settings">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Ignore cache:</span>
+          <input v-model="appState.ignore_cache" type="checkbox">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Store search history:</span>
+          <input v-model="appState.store_search_history" type="checkbox">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Show timings:</span>
+          <input v-model="appState.show_timings" type="checkbox">
+        </div>
       </div>
     </div>
   </div>

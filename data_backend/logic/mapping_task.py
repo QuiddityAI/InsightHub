@@ -218,7 +218,7 @@ def generate_map(map_id, ignore_cache):
     projection_parameters = params.get("projection", {})
     scores = [e["_score"] for e in search_results]
     map_data["results"]["per_point_data"]["scores"] = scores
-    point_sizes = [e.get(params.rendering.point_size_field) for e in search_results] if params.rendering.point_size_field != 'equal' else [1] * len(search_results)
+    point_sizes = [e.get(params.rendering.point_size) for e in search_results] if params.rendering.point_size != 'equal' else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
 
     if projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']) and not ignore_cache:
