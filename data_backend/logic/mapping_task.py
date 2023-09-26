@@ -138,7 +138,9 @@ def generate_map(map_id, ignore_cache):
 
     map_vector_field = params.vectorize.map_vector_field
     texture_atlas_thread = None
-    if similar_map and vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']) and not ignore_cache:
+    search_phase_can_be_skipped = similar_map and vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']) and not ignore_cache
+    projection_phase_can_be_skipped = similar_map and projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']) and not ignore_cache
+    if search_phase_can_be_skipped:
         logging.warning("reusing vectorize stage results")
         map_data["results"]["search_result_meta_information"] = deepcopy(similar_map["results"]["search_result_meta_information"])
         map_data["results"]["texture_atlas_path"] = deepcopy(similar_map["results"].get("texture_atlas_path"))
@@ -146,8 +148,12 @@ def generate_map(map_id, ignore_cache):
         map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
         search_results = get_full_results_from_meta_info(schema, params.search, params.vectorize, search_result_meta_information, 'map', timings)
+        all_map_vectors_present = all([item.get(params.vectorize.map_vector_field) is not None for item in search_results])
+        # check again if search phase can actually be skipped:
+        search_phase_can_be_skipped = all_map_vectors_present or projection_phase_can_be_skipped
         timings.log("reusing vectorize stage results")
-    else:
+
+    if not search_phase_can_be_skipped:
         map_data['progress']['step_title'] = "Getting search results"
         params_str = json.dumps(map_data["parameters"], indent=2)
         search_results = get_search_results(params_str, purpose='map', timings=timings)['items']
@@ -223,7 +229,7 @@ def generate_map(map_id, ignore_cache):
     point_sizes = [e.get(params.rendering.point_size) for e in search_results] if params.rendering.point_size != 'equal' else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
 
-    if similar_map and projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']) and not ignore_cache:
+    if projection_phase_can_be_skipped:
         logging.warning("reusing projection stage results")
         map_data["results"]["per_point_data"]["positions_x"] = similar_map["results"]["per_point_data"]["positions_x"]
         map_data["results"]["per_point_data"]["positions_y"] = similar_map["results"]["per_point_data"]["positions_y"]
