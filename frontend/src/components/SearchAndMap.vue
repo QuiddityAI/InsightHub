@@ -60,7 +60,7 @@ export default {
     }
   },
   methods: {
-    reset_search_results_and_map() {
+    reset_search_results_and_map(params={leave_map_unchanged: false}) {
       // results:
       this.search_results = []
       this.search_list_rendering = {}
@@ -79,8 +79,10 @@ export default {
       this.fields_already_received = []
 
       // map:
-      this.$refs.embedding_map.resetData()
-      this.$refs.embedding_map.resetPanAndZoom()
+      if (!params.leave_map_unchanged) {
+        this.$refs.embedding_map.resetData()
+        this.$refs.embedding_map.resetPanAndZoom()
+      }
 
       // selection:
       this.selectedDocumentIdx = -1
@@ -105,12 +107,14 @@ export default {
     request_search_results() {
       const that = this
 
-      this.reset_search_results_and_map()
+      if (this.appStateStore.settings.search.search_type == 'external_input' &&
+        !this.appStateStore.settings.search.use_separate_queries &&
+        !this.appStateStore.settings.search.all_field_query) {
+          this.reset_search_results_and_map()
+          return
+        }
 
-      if (this.appStateStore.settings.search_type == 'external_input' &&
-        !this.appStateStore.settings.use_separate_queries &&
-        !this.appStateStore.settings.search.all_field_query) return;
-
+      this.reset_search_results_and_map({leave_map_unchanged: true})
       this.selected_tab = "results"
 
       this.add_search_history_item()
