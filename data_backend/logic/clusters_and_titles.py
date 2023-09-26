@@ -5,10 +5,15 @@ import hdbscan
 
 from utils.regex_tokenizer import tokenize
 from utils.collect_timings import Timings
+from utils.dotdict import DotDict
 
 
-def clusterize_results(projections):
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=max(3, len(projections) // 50), min_samples=5)
+def clusterize_results(projections, clusterizer_parameters: DotDict):
+    min_cluster_size = max(3, len(projections) // 50) if clusterizer_parameters.get("min_cluster_size", -1) <= 0 else clusterizer_parameters.min_cluster_size
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size,
+                                min_samples=clusterizer_parameters.get("min_samples", 5),
+                                cluster_selection_method="leaf" if clusterizer_parameters.get("leaf_mode", False) else "eom",
+                                )
     clusterer.fit(projections)
     return clusterer.labels_
 

@@ -102,10 +102,10 @@ def generate_map(map_id, ignore_cache):
     projection_stage_params_hash = get_projection_stage_hash(params)
     vectorize_stage_params_hash = get_vectorize_stage_hash(params)
     maps_with_same_projection = projection_stage_hash_to_map_id.get(projection_stage_params_hash, [])
+    similar_map = None
     for similar_map_id in maps_with_same_projection:
         if similar_map_id in local_maps:
             similar_map = local_maps[similar_map_id]
-            map_data['results'] = deepcopy(similar_map['results'])
             map_data['last_parameters'] = similar_map['parameters']
             found_similar_map = True
             break
@@ -114,7 +114,6 @@ def generate_map(map_id, ignore_cache):
         for similar_map_id in maps_with_same_vectorization:
             if similar_map_id in local_maps:
                 similar_map = local_maps[similar_map_id]
-                map_data['results'] = deepcopy(similar_map['results'])
                 map_data['last_parameters'] = similar_map['parameters']
                 found_similar_map = True
                 break
@@ -139,8 +138,12 @@ def generate_map(map_id, ignore_cache):
 
     map_vector_field = params.vectorize.map_vector_field
     texture_atlas_thread = None
-    if vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']) and not ignore_cache:
+    if similar_map and vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']) and not ignore_cache:
         logging.warning("reusing vectorize stage results")
+        map_data["results"]["search_result_meta_information"] = deepcopy(similar_map["results"]["search_result_meta_information"])
+        map_data["results"]["texture_atlas_path"] = deepcopy(similar_map["results"].get("texture_atlas_path"))
+        map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
+        map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
         search_results = get_full_results_from_meta_info(schema, params.search, params.vectorize, search_result_meta_information, 'map', timings)
         timings.log("reusing vectorize stage results")
@@ -154,13 +157,6 @@ def generate_map(map_id, ignore_cache):
             map_data["results"]["timings"] = timings.get_timestamps()
             map_data["finished"] = True
             return
-
-        search_result_meta_information = {}
-        for item in search_results:
-            search_result_meta_information[item['_id']] = {
-                field: item[field] for field in ['_id', '_origins', '_score', '_reciprocal_rank_score']
-            }
-        map_data['results']['search_result_meta_information'] = search_result_meta_information
 
         timings.log("database query")
 
@@ -214,15 +210,26 @@ def generate_map(map_id, ignore_cache):
                 and not all([item.get(params.vectorize.map_vector_field) is not None for item in search_results]):
             add_missing_map_vectors(search_results, query, params, map_data, schema, timings)
 
+        search_result_meta_information = {}
+        for item in search_results:
+            search_result_meta_information[item['_id']] = {
+                field: item[field] for field in ['_id', '_origins', '_score', '_reciprocal_rank_score']
+            }
+        map_data['results']['search_result_meta_information'] = search_result_meta_information
+
     projection_parameters = params.get("projection", {})
     scores = [e["_score"] for e in search_results]
     map_data["results"]["per_point_data"]["scores"] = scores
     point_sizes = [e.get(params.rendering.point_size) for e in search_results] if params.rendering.point_size != 'equal' else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
 
-    if projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']) and not ignore_cache:
+    if similar_map and projection_stage_params_hash == get_projection_stage_hash(map_data['last_parameters']) and not ignore_cache:
         logging.warning("reusing projection stage results")
+        map_data["results"]["per_point_data"]["positions_x"] = similar_map["results"]["per_point_data"]["positions_x"]
+        map_data["results"]["per_point_data"]["positions_y"] = similar_map["results"]["per_point_data"]["positions_y"]
+        map_data["results"]["per_point_data"]["positions_y"] = similar_map["results"]["per_point_data"]["positions_y"]
         projections = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
+        map_data["progress"]["embeddings_available"] = True
         timings.log("reusing projection stage results")
     else:
         vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
@@ -249,18 +256,24 @@ def generate_map(map_id, ignore_cache):
         map_data['progress']['step_title'] = "UMAP Preparation"
         target_dimensions = 1 if projection_parameters.get("shape") == "1d_plus_distance_polar" else 2
         import umap  # import it only when needed as it slows down the startup time
-        umap_task = umap.UMAP(n_components=target_dimensions, random_state=99, min_dist=projection_parameters.get("min_dist", 0.05), n_epochs=projection_parameters.get("n_epochs", 500))
+        umap_task = umap.UMAP(n_components=target_dimensions, random_state=99,
+                              min_dist=projection_parameters.get("min_dist", 0.05),
+                              n_epochs=projection_parameters.get("n_epochs", 500),
+                              n_neighbors=projection_parameters.get("n_neighbors", 15),
+                              metric=projection_parameters.get("metric", "euclidean"),
+                              )
         projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
         if projection_parameters.get("shape") == "1d_plus_distance_polar":
             projections = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
         map_data["results"]["per_point_data"]["positions_x"] = projections[:, 0].tolist()
         map_data["results"]["per_point_data"]["positions_y"] = projections[:, 1].tolist()
+        map_data["progress"]["embeddings_available"] = True
         timings.log("UMAP fit transform")
 
     run_clusterize_and_render_stage = True  # just to label this stage
     if run_clusterize_and_render_stage:
         map_data['progress']['step_title'] = "Clusterize results"
-        cluster_id_per_point = clusterize_results(projections)
+        cluster_id_per_point = clusterize_results(projections, params.rendering.clusterizer_parameters)
         timings.log("clustering")
 
         if projection_parameters.get("shape") == "1d_plus_distance_polar":
