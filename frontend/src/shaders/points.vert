@@ -87,7 +87,7 @@ void main() {
     float pointSize = (5.0 + 15.0 * pointSize) * zoomAdjustment * devicePixelRatio;
 
     vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);
-    vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0);
+    vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0) / devicePixelRatio;
     vUv = position;
     vertexPositionVar = vertexPosition;
 
