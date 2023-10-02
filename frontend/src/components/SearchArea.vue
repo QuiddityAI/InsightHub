@@ -52,22 +52,16 @@ export default {
 
       separate_search_fields: [],
 
-      available_search_strategies: [
-        {id: "fulltext", title: "Keyword-Based", parameters: []},
-        {id: "vector", title: "Vector Similarity", parameters: []},
-        {id: "hybrid", title: "Hybrid (Vector + Keyword)",
-          parameters: [{id: "merging_strategy", options: ["alternating", "rank_fusion"], default: "rank_fusion"}]},
+
+      available_autocut_strategies: [
+        {id: "static_threshold", title: "Static Threshold"},
+        {id: "knee_point", title: "Knee Point"},
+        {id: "nearest_neighbour_distance_ration", title: "Neighbour Distance"},
       ],
       available_tokenizer: [
         {id: "default", title: "default"},
         {id: "absclust", title: "AbsClust Tokenizer"},
         {id: "simple", title: "simple"},
-      ],
-      available_vectorizers: [
-        {id: "pubmedbert", title: "PubMedBERT"},
-        {id: "gensim_w2v_tf_idf", title: "AbsClust Vectorizer"},
-        {id: "openai", title: "OpenAI"},
-        {id: "tf_idf", title: "Tf-Idf"},
       ],
       available_dim_reducers: [
         {id: "umap", title: "UMAP"},
@@ -249,6 +243,28 @@ export default {
           <input v-model.number="appState.settings.search.separate_queries[field.identifier].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
           Must:<input v-model="appState.settings.search.separate_queries[field.identifier].must" type="checkbox">
           T.O.<input v-model.number="appState.settings.search.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Use Autocut:</span>
+          <input v-model="appState.settings.search.use_autocut" type="checkbox">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Autocut Strategy:</span>
+          <select v-model="appState.settings.search.autocut_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+            <option v-for="item in available_autocut_strategies" :value="item.id" selected>{{ item.title }}</option>
+          </select>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Autocut min. results:</span>
+          <input v-model.number="appState.settings.search.autocut_min_results" class="w-1/2 text-gray-500 text-sm">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Autocut min. score:</span>
+          <input v-model.number="appState.settings.search.autocut_min_score" class="w-1/2 text-gray-500 text-sm">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Autocut max. gradient:</span>
+          <input v-model.number="appState.settings.search.autocut_max_relative_decline" class="w-1/2 text-gray-500 text-sm">
         </div>
       </div>
       <div button @click="show_vectorize_settings = !show_vectorize_settings" class="flex flex-row items-center hover:bg-blue-100">

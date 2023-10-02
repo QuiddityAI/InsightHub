@@ -1,0 +1,230 @@
+import math
+from uuid import UUID
+
+from utils.field_types import FieldType
+from utils.collect_timings import Timings
+from utils.dotdict import DotDict
+
+from database_client.absclust_database_client import get_absclust_items_by_ids
+from database_client.django_client import get_generators
+from database_client.vector_search_engine_client import VectorSearchEngineClient
+from database_client.object_storage_client import ObjectStorageEngineClient
+from database_client.text_search_engine_client import TextSearchEngineClient
+
+from logic.postprocess_search_results import enrich_search_results
+from logic.generator_functions import get_generator_function_from_field, get_generator_function
+from logic.autocut import get_number_of_useful_items
+
+
+ABSCLUST_SCHEMA_ID = 1
+
+
+class QueryInput(object):
+    def __init__(self, positive_query_str: str, negative_query_str: str = "",
+                 positive_image_url: str = "", negative_image_url: str = "") -> None:
+        self.positive_query_str = positive_query_str
+        self.negative_query_str = negative_query_str
+        self.positive_image_url = positive_image_url
+        self.negative_image_url = negative_image_url
+
+    @staticmethod
+    def from_raw_query(raw_query: str, negative_query_str: str, positive_image_url: str,
+                       negative_image_url: str) -> list['QueryInput']:
+        or_queries = raw_query.split(" OR ")
+        queries = []
+        for query in or_queries:
+            queries.append(QueryInput(query, negative_query_str, positive_image_url, negative_image_url))
+        return queries
+
+
+def combine_and_sort_result_sets(result_sets: list[dict], required_fields: list[str],
+                                 schema: DotDict, search_settings: DotDict, limit: int,
+                                 timings: Timings) -> tuple[list, dict]:
+    score_info = get_score_curves_and_cut_sets(result_sets, search_settings)
+    total_items = combine_result_sets_and_calculate_scores(result_sets, timings)
+    sorted_complete_items = sort_items_and_complete_them(schema, total_items, required_fields, limit, timings)
+    return sorted_complete_items, score_info
+
+
+def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotDict) -> dict:
+    score_info = {}
+    for result_set in result_sets:
+        sorted_items = sorted(result_set.values(), key=lambda item: item['_origin']['score'], reverse=True)
+        scores = [item['_origin']['score'] for item in sorted_items]
+        cutoff_index = len(sorted_items)  # no cutoff by default
+        example_origin = result_set[0]['_origin']
+        title = f"{example_origin['type']}, {example_origin['field']}, {example_origin['query']}"
+        positive_examples = []
+        negative_examples = []
+        if search_settings.use_autocut:
+            cutoff_index = get_number_of_useful_items(scores, search_settings.autocut_min_results,
+                                                      search_settings.autocut_strategy,
+                                                      search_settings.autocut_min_score,
+                                                      search_settings.autocut_max_relative_decline)
+            if cutoff_index != len(sorted_items):
+                # TODO: there might be a better way to remove the cut items from the dictionary
+                result_set.clear()
+                for item in sorted_items[:cutoff_index]:
+                    result_set[item['_id']] = item
+                positive_examples = [sorted_items[max(0, cutoff_index - 5)],
+                                     sorted_items[max(0, cutoff_index - 2)]]
+                negative_examples = [sorted_items[min(len(sorted_items) - 1, cutoff_index + 5)],
+                                     sorted_items[min(len(sorted_items) - 1, cutoff_index + 2)]]
+        score_info[title] = {'scores': scores, 'cutoff_index': cutoff_index,
+                             'positive_examples': positive_examples, 'negative_examples': negative_examples}
+    return score_info
+
+
+def combine_result_sets_and_calculate_scores(result_sets: list[dict], timings: Timings):
+    total_items = result_sets[0] if result_sets else {}
+    for result_set in result_sets[1:]:
+        for item in result_set.values():
+            if item['_id'] not in total_items:
+                total_items[item['_id']] = item
+            else:
+                total_items[item['_id']]['_origins'] += item['_origins']
+
+    for item in total_items.values():
+        item['_reciprocal_rank_score'] = sum([1.0 / origin['rank'] for origin in item['_origins']])
+
+    if len(result_sets) > 1:
+        for item in total_items.values():
+            item['_score'] = math.sqrt(item['_reciprocal_rank_score'])  # making the score scale linear again
+    else:
+        for item in total_items.values():
+            item['_score'] = item['_origins'][0]['score']
+    timings.log("rank fusion")
+    return total_items
+
+
+def sort_items_and_complete_them(schema:DotDict, total_items:dict, required_fields:list[str],
+                                 limit:int, timings:Timings) -> list[dict]:
+    # TODO: check how much faster it is to get partial results from search engines and only fill in missing fields
+    sorted_results = sorted(total_items.values(), key=lambda item: item['_reciprocal_rank_score'], reverse=True)
+    sorted_results = sorted_results[:limit]
+    timings.log("sort items")
+    fill_in_details_from_object_storage(schema.id, sorted_results, required_fields)
+    timings.log("getting full items from object storage")
+
+    # search_results = enrich_search_results(search_results, query)
+    # timings.log("enriching results")
+    # -> replaced by context dependent generator (for important words per abstract and highlighting of words)
+
+    return sorted_results
+
+
+def get_required_fields(schema, vectorize_settings: DotDict, purpose: str):
+    rendering = schema.result_list_rendering if purpose == "list" else schema.hover_label_rendering
+    required_fields = rendering['required_fields']
+
+    if purpose == "map" and vectorize_settings.map_vector_field != "w2v_vector" and vectorize_settings.map_vector_field not in required_fields:
+        required_fields.append(vectorize_settings.map_vector_field)
+
+    if purpose == "map" and schema.thumbnail_image:
+        required_fields.append(schema.thumbnail_image)
+
+    if purpose == "map":
+        # used for cluster titles and potentially w2v:
+        # TODO: this may be slow, maybe use only subset for cluster titles?
+        required_fields += schema.descriptive_text_fields
+
+    required_fields = list(set(required_fields))
+    return required_fields
+
+
+def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: QueryInput,
+                                required_fields: list[str], limit: int, page: int):
+    text_db_client = TextSearchEngineClient.get_instance()
+    criteria = {}  # TODO: add criteria
+    search_result = text_db_client.get_search_results(schema.id, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
+    items = {}
+    for i, item in enumerate(search_result):
+        items[item['_id']] = {
+            '_id': item['_id'],
+            '_origins': [{'type': 'fulltext', 'field': 'unknown',
+                          'query': query.positive_query_str, 'score': item['_score'], 'rank': i+1}],
+            '_highlights': " ".join([" ".join(x) for x in item.get('highlight', {}).values()])
+        }
+    return items
+
+
+def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryInput,
+                              query_vector: list | None, required_fields: list[str],
+                              limit: int, page: int):
+    if query_vector is None:
+        generators: list[DotDict] = get_generators()
+        field = schema.object_fields[vector_field]
+        embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
+
+        # for text query:
+        suitable_generator = None
+        for generator in generators:
+            if generator.embedding_space and generator.embedding_space.id == embedding_space_id \
+                and generator.input_type == FieldType.TEXT:
+                suitable_generator = generator
+
+        if not suitable_generator:
+            return {}
+
+        if field.generator and field.generator.input_type == FieldType.TEXT \
+            and not (suitable_generator and suitable_generator.is_preferred_for_search):
+            generator_function = get_generator_function_from_field(schema.object_fields[vector_field])
+        else:
+            generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters)
+
+        query_vector = generator_function([[query.positive_query_str]])[0]
+        if query.negative_query_str:
+            negative_query_vector = generator_function([[query.negative_query_str]])[0]
+            query_vector = query_vector - negative_query_vector
+
+        # for image query:
+        # TODO: same thing again, average both vectors
+
+    vector_db_client = VectorSearchEngineClient.get_instance()
+    criteria = {}  # TODO: add criteria
+    vector_search_result = vector_db_client.get_items_near_vector(schema.id, vector_field, query_vector, criteria, return_vectors=False, limit=limit) # type: ignore
+    items = {}
+    for i, item in enumerate(vector_search_result):
+        items[item.id] = {
+            '_id': item.id,
+            '_origins': [{'type': 'vector', 'field': vector_field,
+                          'query': query.positive_query_str, 'score': item.score, 'rank': i+1}],
+        }
+
+    # TODO: if purpose is map, get vectors directly from vector DB:
+    # result_item[map_vector_field] = vector_search_result.vector[search_vector_field]
+
+    return items
+
+
+def get_vector_search_results_matching_collection(schema: DotDict, vector_field: str,
+                                                  positive_ids, negative_ids,
+                                                  required_fields: list[str], limit: int, page: int):
+    vector_db_client = VectorSearchEngineClient.get_instance()
+    criteria = {}  # TODO: add criteria
+    vector_search_result = vector_db_client.get_items_matching_collection(schema.id, vector_field, positive_ids, negative_ids, criteria, return_vectors=False, limit=limit)
+    items = {}
+    for i, item in enumerate(vector_search_result):
+        items[item.id] = {
+            '_id': item.id,
+            '_origins': [{'type': 'vector', 'field': vector_field,
+                          'query': 'matching a collection', 'score': item.score, 'rank': i+1}],
+        }
+    # TODO: if purpose is map, get vectors directly from vector DB:
+    # result_item[map_vector_field] = vector_search_result.vector[search_vector_field]
+    return items
+
+
+def fill_in_details_from_object_storage(schema_id: int, items: list[dict], required_fields: list[str]):
+    ids = [item['_id'] for item in items]
+    if schema_id == ABSCLUST_SCHEMA_ID:
+        full_items = get_absclust_items_by_ids(ids)
+    else:
+        object_storage_client = ObjectStorageEngineClient.get_instance()
+        full_items = object_storage_client.get_items_by_ids(schema_id, map(UUID, ids), fields=required_fields)
+    for full_item in full_items:
+        for item in items:
+            if item['_id'] == str(full_item['_id']):
+                item.update(full_item)
+                item['_id'] = str(full_item['_id'])  # MongoDB returns IDs as UUID objects, but it should be strings here
+                break

@@ -15,6 +15,11 @@ export const useAppStateStore = defineStore('appState', {
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
+          use_autocut: true,
+          autocut_strategy: "knee_point",
+          autocut_min_results: 10,
+          autocut_min_score: 0.5,
+          autocut_max_relative_decline: 1.0,
           separate_queries: {
             // for each search field:
             // query: "",

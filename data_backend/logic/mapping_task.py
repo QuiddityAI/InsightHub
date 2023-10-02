@@ -150,7 +150,7 @@ def generate_map(map_id, ignore_cache):
         map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
         map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
-        search_results = get_full_results_from_meta_info(schema, params.search, params.vectorize, search_result_meta_information, 'map', timings)
+        search_results = get_full_results_from_meta_info(schema, params.vectorize, search_result_meta_information, 'map', timings)
         timings.log("reusing vectorize stage results")
     else:
         map_data['progress']['step_title'] = "Getting search results"
