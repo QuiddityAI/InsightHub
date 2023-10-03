@@ -1,6 +1,9 @@
 <script setup>
 import { mapStores } from 'pinia'
 
+import { Chart } from 'chart.js/auto'
+import annotationPlugin from 'chartjs-plugin-annotation';
+
 import EmbeddingMap from './EmbeddingMap.vue';
 import SearchArea from './SearchArea.vue';
 import ResultListItem from './ResultListItem.vue';
@@ -12,6 +15,8 @@ import { normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
 import { useAppStateStore } from '../stores/settings_store'
 
 const appState = useAppStateStore()
+
+Chart.register(annotationPlugin);
 
 </script>
 
@@ -28,6 +33,8 @@ export default {
       map_id: null,
       map_item_details: [],
 
+      search_result_score_info: null,
+      score_info_chart: null,
       search_timings: "",
       map_timings: "",
 
@@ -67,6 +74,9 @@ export default {
       this.map_task_id = null
       this.map_item_details = []
 
+      this.search_result_score_info = null
+      if (this.score_info_chart) this.score_info_chart.destroy()
+      this.score_info_chart = null
       this.map_timings = []
       this.search_timings = []
 
@@ -208,6 +218,9 @@ export default {
 
       // note: these may be needed in the future, pay attention to remove them in this case here
       const not_needed = ['item_ids', 'search_result_meta_information', 'parameters']
+      if (!that.appStateStore.debug_autocut) {
+        not_needed.push("search_result_score_info")
+      }
 
       const payload = {
         map_id: this.map_id,
@@ -282,6 +295,12 @@ export default {
               that.$refs.embedding_map.resetPanAndZoom()
               that.$refs.embedding_map.centerAndFitDataToActiveAreaInstant()
               that.map_viewport_is_adjusted = true
+            }
+
+            if (results["search_result_score_info"]) {
+              that.search_result_score_info = results["search_result_score_info"]
+              that.fields_already_received.push('search_result_score_info')
+              that.show_score_info_chart()
             }
 
             that.map_timings = results["timings"]
@@ -497,6 +516,54 @@ export default {
         this.show_stored_map(queryParams.get("map_id"))
       }
     },
+    show_score_info_chart() {
+      if (this.score_info_chart) this.score_info_chart.destroy()
+      const datasets = []
+      const annotations = []
+      const colors = ["red", "green", "blue", "purple", "fuchsia", "aqua", "yellow", "navy"]
+      let i = 0
+      let maxElements = 1
+      for (const score_info_title in this.search_result_score_info) {
+        maxElements = Math.max(maxElements, this.search_result_score_info[score_info_title].scores.length)
+        datasets.push({
+            label: score_info_title,
+            data: this.search_result_score_info[score_info_title].scores,
+            borderWidth: 1,
+            pointStyle: false,
+            borderColor: colors[i],
+        })
+        annotations.push({
+          type: "line",
+          mode: "vertical",
+          xMax: this.search_result_score_info[score_info_title].cutoff_index,
+          xMin: this.search_result_score_info[score_info_title].cutoff_index,
+          borderColor: colors[i],
+          label: {
+            display: false,
+            content: score_info_title,
+            position: {
+              x: 'center',
+              y: 'top'
+            },
+          }
+        })
+        i += 1
+      }
+      this.score_info_chart = new Chart(this.$refs.score_info_chart, {
+        type: 'line',
+        data: {
+          labels: [...Array(maxElements).keys()],
+          datasets: datasets,
+        },
+        options: {
+          plugins: {
+            annotation: {
+              annotations: annotations
+            }
+          }
+        }
+      });
+    },
   },
   computed: {
     ...mapStores(useAppStateStore),
@@ -616,6 +683,19 @@ export default {
 
             <div class="flex-initial overflow-y-auto px-3" style="min-height: 0;">
               <!-- result list -->
+              <div v-if="appState.debug_autocut">
+                <canvas ref="score_info_chart"></canvas>
+                <div v-if="search_result_score_info">
+                  <div v-for="score_info_title in Object.keys(search_result_score_info)" class="text-xs">
+                    {{ score_info_title }} <br>
+                    Max score: {{ search_result_score_info[score_info_title].max_score.toFixed(2) }},
+                    Min score: {{ search_result_score_info[score_info_title].min_score.toFixed(2) }},
+                    Cutoff Index: {{ search_result_score_info[score_info_title].cutoff_index }},
+                    Reason: {{ search_result_score_info[score_info_title].reason }}
+                  </div>
+                </div>
+              </div>
+
               <div v-if="selected_tab === 'results'">
                 <ul v-if="search_results.length !== 0" role="list" class="pt-3">
                   <li v-for="item in search_results" :key="item.title" class="justify-between pb-3">

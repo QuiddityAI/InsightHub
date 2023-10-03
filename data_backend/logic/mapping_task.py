@@ -144,8 +144,9 @@ def generate_map(map_id, ignore_cache):
 
     if not search_phase_is_needed:
         assert similar_map is not None
-        logging.warning("reusing vectorize stage results")
+        logging.warning("reusing search stage results")
         map_data["results"]["search_result_meta_information"] = deepcopy(similar_map["results"]["search_result_meta_information"])
+        map_data['results']['search_result_score_info'] = deepcopy(similar_map['results']['search_result_score_info'])
         map_data["results"]["texture_atlas_path"] = deepcopy(similar_map["results"].get("texture_atlas_path"))
         map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
         map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
@@ -155,7 +156,9 @@ def generate_map(map_id, ignore_cache):
     else:
         map_data['progress']['step_title'] = "Getting search results"
         params_str = json.dumps(map_data["parameters"], indent=2)
-        search_results = get_search_results(params_str, purpose='map', timings=timings)['items']
+        search_results_all = get_search_results(params_str, purpose='map', timings=timings)
+        search_results = search_results_all['items']
+        map_data['results']['search_result_score_info'] = search_results_all['score_info']
 
         if not search_results:
             map_data["errors"].append("No results found")

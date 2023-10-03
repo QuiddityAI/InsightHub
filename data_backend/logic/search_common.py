@@ -1,5 +1,8 @@
+import logging
 import math
 from uuid import UUID
+
+import numpy as np
 
 from utils.field_types import FieldType
 from utils.collect_timings import Timings
@@ -14,6 +17,8 @@ from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.postprocess_search_results import enrich_search_results
 from logic.generator_functions import get_generator_function_from_field, get_generator_function
 from logic.autocut import get_number_of_useful_items
+
+from utils.helpers import normalize_array
 
 
 ABSCLUST_SCHEMA_ID = 1
@@ -49,28 +54,33 @@ def combine_and_sort_result_sets(result_sets: list[dict], required_fields: list[
 def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotDict) -> dict:
     score_info = {}
     for result_set in result_sets:
-        sorted_items = sorted(result_set.values(), key=lambda item: item['_origin']['score'], reverse=True)
-        scores = [item['_origin']['score'] for item in sorted_items]
+        sorted_items = sorted(result_set.values(), key=lambda item: item['_origins'][0]['score'], reverse=True)
+        example_origin = sorted_items[0]['_origins'][0]
+        scores = [item['_origins'][0]['score'] for item in sorted_items]
+        normalized_scores = normalize_array(np.array(scores)).tolist()
         cutoff_index = len(sorted_items)  # no cutoff by default
-        example_origin = result_set[0]['_origin']
         title = f"{example_origin['type']}, {example_origin['field']}, {example_origin['query']}"
         positive_examples = []
         negative_examples = []
+        reason = "no cutoff"
         if search_settings.use_autocut:
-            cutoff_index = get_number_of_useful_items(scores, search_settings.autocut_min_results,
+            useful_items_info = get_number_of_useful_items(scores, search_settings.autocut_min_results,
                                                       search_settings.autocut_strategy,
                                                       search_settings.autocut_min_score,
                                                       search_settings.autocut_max_relative_decline)
+            cutoff_index = useful_items_info["count"]
+            reason = useful_items_info["reason"]
             if cutoff_index != len(sorted_items):
                 # TODO: there might be a better way to remove the cut items from the dictionary
                 result_set.clear()
                 for item in sorted_items[:cutoff_index]:
                     result_set[item['_id']] = item
-                positive_examples = [sorted_items[max(0, cutoff_index - 5)],
-                                     sorted_items[max(0, cutoff_index - 2)]]
-                negative_examples = [sorted_items[min(len(sorted_items) - 1, cutoff_index + 5)],
-                                     sorted_items[min(len(sorted_items) - 1, cutoff_index + 2)]]
-        score_info[title] = {'scores': scores, 'cutoff_index': cutoff_index,
+                positive_examples = [sorted_items[max(0, cutoff_index - 5)]['_id'],
+                                     sorted_items[max(0, cutoff_index - 2)]['_id']]
+                negative_examples = [sorted_items[min(len(sorted_items) - 1, cutoff_index + 5)]['_id'],
+                                     sorted_items[min(len(sorted_items) - 1, cutoff_index + 2)]['_id']]
+        score_info[title] = {'scores': normalized_scores, 'cutoff_index': cutoff_index, "reason": reason,
+                             'max_score': max(scores), 'min_score': min(scores),
                              'positive_examples': positive_examples, 'negative_examples': negative_examples}
     return score_info
 

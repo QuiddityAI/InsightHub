@@ -174,6 +174,8 @@ def retrive_map_results():
 
     if 'search_result_meta_information' in exclude_fields and 'search_result_meta_information' in result['results']:
         del result['results']['search_result_meta_information']
+    if 'search_result_score_info' in exclude_fields and 'search_result_score_info' in result['results']:
+        del result['results']['search_result_score_info']
     if 'parameters' in exclude_fields and 'parameters' in result:
         del result['parameters']
 

@@ -8,6 +8,7 @@ export const useAppStateStore = defineStore('appState', {
       selected_cluster_title: null,
       selected_collection_title: null,
       ignore_cache: false,
+      debug_autocut: false,
       settings: {
         schema_id: null,
         search: {
@@ -18,7 +19,7 @@ export const useAppStateStore = defineStore('appState', {
           use_autocut: true,
           autocut_strategy: "knee_point",
           autocut_min_results: 10,
-          autocut_min_score: 0.5,
+          autocut_min_score: 0.1,
           autocut_max_relative_decline: 1.0,
           separate_queries: {
             // for each search field:

@@ -45,6 +45,7 @@ export default {
       database_information: {},
 
       show_search_settings: true,
+      show_autocut_settings: false,
       show_vectorize_settings: false,
       show_projection_settings: false,
       show_rendering_settings: false,
@@ -244,9 +245,18 @@ export default {
           Must:<input v-model="appState.settings.search.separate_queries[field.identifier].must" type="checkbox">
           T.O.<input v-model.number="appState.settings.search.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
         </div>
+      </div>
+      <div button @click="show_autocut_settings = !show_autocut_settings" class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Autocut {{ show_autocut_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      </div>
+      <div v-show="show_autocut_settings">
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">Use Autocut:</span>
           <input v-model="appState.settings.search.use_autocut" type="checkbox">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Debug Autocut:</span>
+          <input v-model="appState.debug_autocut" type="checkbox">
         </div>
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">Autocut Strategy:</span>
