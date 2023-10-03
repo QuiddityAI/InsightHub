@@ -30,6 +30,7 @@ export default {
       // results:
       search_results: [],
       search_list_rendering: {},
+      collection_list_rendering: {},
       map_id: null,
       map_item_details: [],
 
@@ -619,6 +620,12 @@ export default {
       httpClient.post("/organization_backend/object_schema", {schema_id: this.appStateStore.settings.schema_id})
         .then(function (response) {
           that.selected_schema = response.data
+
+          const collection_list_rendering = that.selected_schema.collection_list_rendering
+          for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
+            collection_list_rendering[field] = eval(collection_list_rendering[field])
+          }
+          that.collection_list_rendering = collection_list_rendering
         })
     }
   },
@@ -683,20 +690,29 @@ export default {
 
             <div class="flex-initial overflow-y-auto px-3" style="min-height: 0;">
               <!-- result list -->
-              <div v-if="appState.debug_autocut">
-                <canvas ref="score_info_chart"></canvas>
-                <div v-if="search_result_score_info">
-                  <div v-for="score_info_title in Object.keys(search_result_score_info)" class="text-xs">
-                    {{ score_info_title }} <br>
-                    Max score: {{ search_result_score_info[score_info_title].max_score.toFixed(2) }},
-                    Min score: {{ search_result_score_info[score_info_title].min_score.toFixed(2) }},
-                    Cutoff Index: {{ search_result_score_info[score_info_title].cutoff_index }},
-                    Reason: {{ search_result_score_info[score_info_title].reason }}
+              <div v-if="selected_tab === 'results'">
+
+                <div v-if="appState.debug_autocut">
+                  <canvas ref="score_info_chart"></canvas>
+                  <div v-if="search_result_score_info">
+                    <div v-for="score_info_title in Object.keys(search_result_score_info)" class="text-xs">
+                      {{ score_info_title }} <br>
+                      Max score: {{ search_result_score_info[score_info_title].max_score.toFixed(2) }},
+                      Min score: {{ search_result_score_info[score_info_title].min_score.toFixed(2) }},
+                      Cutoff Index: {{ search_result_score_info[score_info_title].cutoff_index }},
+                      Reason: {{ search_result_score_info[score_info_title].reason }}
+                      <div v-for="item_id in search_result_score_info[score_info_title].positive_examples" :key="'example' + item_id" class="justify-between pb-3">
+                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="true" :rendering="collection_list_rendering">
+                        </CollectionListItem>
+                      </div>
+                      <div v-for="item_id in search_result_score_info[score_info_title].negative_examples" :key="'example' + item_id" class="justify-between pb-3">
+                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="false" :rendering="collection_list_rendering">
+                        </CollectionListItem>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div v-if="selected_tab === 'results'">
                 <ul v-if="search_results.length !== 0" role="list" class="pt-3">
                   <li v-for="item in search_results" :key="item.title" class="justify-between pb-3">
                     <ResultListItem :item="item" :rendering="search_list_rendering"></ResultListItem>
@@ -782,13 +798,15 @@ export default {
                     </div>
                     <ul class="pt-2">
                       <li v-for="(item_id, index) in collection.positive_ids" :key="item_id" class="justify-between pb-2">
-                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="true" @remove="collection.positives.splice(index, 1)">
+                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="true"
+                          @remove="collection.positives.splice(index, 1)" :rendering="collection_list_rendering">
                         </CollectionListItem>
                       </li>
                     </ul>
                     <ul class="pt-2">
                       <li v-for="(item_id, index) in collection.negative_ids" :key="item_id" class="justify-between pb-2">
-                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="false" @remove="collection.negatives.splice(index, 1)">
+                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="false"
+                          @remove="collection.negatives.splice(index, 1)" :rendering="collection_list_rendering">
                         </CollectionListItem>
                       </li>
                     </ul>
