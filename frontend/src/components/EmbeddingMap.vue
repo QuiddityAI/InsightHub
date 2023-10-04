@@ -264,7 +264,7 @@ export default {
         if (that.currentPositionsX.length === that.targetPositionsX.length) {
           const diffX = math.subtract(that.targetPositionsX, that.currentPositionsX)
           const diffY = math.subtract(that.targetPositionsY, that.currentPositionsY)
-          if (math.max(math.abs(diffX)) !== 0.0 || math.max(math.abs(diffY)) !== 0.0) {
+          if (math.max(math.abs(diffX)) > restDelta || math.max(math.abs(diffY)) > restDelta) {
             geometryChanged = true
 
             const aX = getAccelerationOfSpringArr(
@@ -273,7 +273,7 @@ export default {
             )
             that.currentVelocityX = math.add(that.currentVelocityX, math.dotMultiply(aX, timeSinceLastUpdateInSec))
             that.currentPositionsX = math.add(that.currentPositionsX, math.dotMultiply(that.currentVelocityX, timeSinceLastUpdateInSec))
-            if (math.max(math.abs(that.currentVelocityX)) < restSpeed && math.max(math.abs(diffX) < restDelta)) {
+            if (math.max(math.abs(that.currentVelocityX)) < restSpeed && math.max(math.abs(diffX)) < restDelta) {
               that.currentPositionsX = that.targetPositionsX.slice()  // using slice to copy the array
             }
 
@@ -283,7 +283,7 @@ export default {
             )
             that.currentVelocityY = math.add(that.currentVelocityY, math.dotMultiply(aY, timeSinceLastUpdateInSec))
             that.currentPositionsY = math.add(that.currentPositionsY, math.dotMultiply(that.currentVelocityY, timeSinceLastUpdateInSec))
-            if (math.max(math.abs(that.currentVelocityY)) < restSpeed && math.max(math.abs(diffY) < restDelta)) {
+            if (math.max(math.abs(that.currentVelocityY)) < restSpeed && math.max(math.abs(diffY)) < restDelta) {
               that.currentPositionsY = that.targetPositionsY.slice()  // using slice to copy the array
             }
 
@@ -329,6 +329,7 @@ export default {
       this.clusterIdsPerPoint = ensureLength(this.clusterIdsPerPoint, pointCount, 0)
       this.saturation = ensureLength(this.saturation, pointCount, 1.0)
       this.pointSizes = ensureLength(this.pointSizes, pointCount, 0.5)
+      console.log(this.pointSizes[0])
 
       this.glTextureAtlas = new Texture(this.glContext, {
         generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.NEAREST
@@ -501,6 +502,7 @@ export default {
     updatePointVisibility() {
       // point visibility is currently only used if there are thumbnail images:
       if (!this.textureAtlas) return;
+      return;
       const margin = -30 * window.devicePixelRatio
 
       const left = this.screenToEmbeddingX(this.passiveMarginsLRTB[0] + margin)
