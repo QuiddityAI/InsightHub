@@ -34,6 +34,7 @@ export default {
       clusterData: [],
       hover_label_rendering: {},
       textureAtlas: null,
+      thumbnailSpriteSize: 64,
 
       // internal:
       currentPositionsX: [],
@@ -329,7 +330,6 @@ export default {
       this.clusterIdsPerPoint = ensureLength(this.clusterIdsPerPoint, pointCount, 0)
       this.saturation = ensureLength(this.saturation, pointCount, 1.0)
       this.pointSizes = ensureLength(this.pointSizes, pointCount, 0.5)
-      console.log(this.pointSizes[0])
 
       this.glTextureAtlas = new Texture(this.glContext, {
         generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.NEAREST
@@ -448,6 +448,7 @@ export default {
         useTextureAtlas: { value: this.textureAtlas !== null },
         pointTextureBaseColor: { value: this.pointTextureBaseColor },
         pointTextureNormalMap: { value: this.pointTextureNormalMap },
+        thumbnailSpriteSize: { value: this.thumbnailSpriteSize }
       }
     },
     updateUniforms() {

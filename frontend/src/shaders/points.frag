@@ -20,6 +20,7 @@ uniform float devicePixelRatio;
 uniform bool useTextureAtlas;
 uniform sampler2D pointTextureBaseColor;
 uniform sampler2D pointTextureNormalMap;
+uniform int thumbnailSpriteSize;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
@@ -70,9 +71,11 @@ void main() {
     FragColor.a = circleArea * 0.7;
 
     if (useTextureAtlas) {
-        float uvRow = float(int(pointIdxVar) / (2048 / 32) + 1) / 64.0;
-        float uvCol = float(int(pointIdxVar) % (2048 / 32)) / 64.0;
-        float uvFactor = (2048.0/32.0);
+        int atlasTotalWidth = 4096;
+        int spritesPerLine = atlasTotalWidth / thumbnailSpriteSize;
+        float uvRow = float(int(pointIdxVar) / spritesPerLine + 1) / float(spritesPerLine);
+        float uvCol = float(int(pointIdxVar) % spritesPerLine) / float(spritesPerLine);
+        float uvFactor = (float(atlasTotalWidth) / float(thumbnailSpriteSize));
         vec3 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + posFromBottomLeft / uvFactor).rgb;
         FragColor.rgb = tex;
     } else {

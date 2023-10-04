@@ -248,6 +248,7 @@ export default {
               image.src = 'data_backend/map/texture_atlas/' + results["texture_atlas_path"]
               image.onload = () => {
                 that.$refs.embedding_map.textureAtlas = image
+                that.$refs.embedding_map.thumbnailSpriteSize = that.appStateStore.settings.search.thumbnail_sprite_size
                 that.$refs.embedding_map.updateGeometry()
               }
 

@@ -172,23 +172,26 @@ def generate_map(map_id, ignore_cache):
         thumbnail_field = schema.thumbnail_image
         if thumbnail_field:
             search_params_hash = get_search_stage_hash(params)
-            atlas_filename = f"map_data/atlas_{search_params_hash}.png"
+            atlas_filename = f"map_data/atlas_{search_params_hash}.jpg"
             if not os.path.exists(atlas_filename):
                 def generate_texture_atlas():
-                    atlas = Image.new("RGBA", (2048, 2048))
-                    for i, item in enumerate(search_results):
+                    atlas_total_width = 4096
+                    sprite_size = params.search.get("thumbnail_sprite_size", 64)
+                    max_images = pow(atlas_total_width // sprite_size, 2)
+                    atlas = Image.new("RGB", (atlas_total_width, atlas_total_width))
+                    for i, item in enumerate(search_results[:max_images]):
                         if item.get(thumbnail_field, None) and os.path.exists(item[thumbnail_field]):
                             image = Image.open(item[thumbnail_field])
-                            image.thumbnail((32, 32))
-                            image = image.resize((32, 32))
-                            imagesPerLine = (2048/32)
+                            image.thumbnail((sprite_size, sprite_size))
+                            image = image.resize((sprite_size, sprite_size))
+                            imagesPerLine = (atlas_total_width / sprite_size)
                             posRow: int = int(i / imagesPerLine)
                             posCol: int = int(i % imagesPerLine)
-                            atlas.paste(image, (posCol * 32, posRow * 32))
+                            atlas.paste(image, (posCol * sprite_size, posRow * sprite_size))
                             image.close()
                         else:
                             logging.warning(f"Image file doesn't exist: {item.get(thumbnail_field, None)}")
-                    atlas.save(atlas_filename)
+                    atlas.save(atlas_filename, quality=80)
                     map_data["results"]["texture_atlas_path"] = atlas_filename
 
                 texture_atlas_thread = Thread(target=generate_texture_atlas)
