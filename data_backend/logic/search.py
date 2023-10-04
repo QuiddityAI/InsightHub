@@ -271,7 +271,6 @@ def get_full_results_from_meta_info(schema, vectorize_settings, search_result_me
 
 @lru_cache
 def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str]):
-    logging.warning(type(schema_id), schema_id)
     if schema_id == ABSCLUST_SCHEMA_ID:
         return get_absclust_item_by_id(item_id)
 
