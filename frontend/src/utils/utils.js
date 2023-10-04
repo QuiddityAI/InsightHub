@@ -12,7 +12,7 @@ export function normalizeArrayMedianGamma(a, max_default=1.0) {
   const aMin = math.min(a);
   const aMax = math.max(a);
   if (aMin == aMax) {
-    return [1.0] * a.length;
+    return Array(a.length).fill(1.0);
   }
   a = math.subtract(a, math.min(a))
   a = math.divide(a, math.max(math.max(a), max_default))

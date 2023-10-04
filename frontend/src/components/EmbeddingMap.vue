@@ -527,7 +527,7 @@ export default {
         this.pointVisibility = pointVisibility
       } else {
         this.visiblePointIndexes = []
-        this.pointVisibility = [1] * this.currentPositionsX.length
+        this.pointVisibility = Array(this.currentPositionsX.length).fill(1)
       }
       this.updateGeometry()
     },
