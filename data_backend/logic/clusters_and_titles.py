@@ -18,7 +18,7 @@ def clusterize_results(projections, clusterizer_parameters: DotDict):
     return clusterer.labels_
 
 
-def get_cluster_titles(cluster_labels, projections, results, descriptive_text_fields, timings: Timings):
+def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fields, timings: Timings):
     num_clusters = max(cluster_labels) + 1
     if num_clusters <= 0:
         return []
@@ -31,8 +31,8 @@ def get_cluster_titles(cluster_labels, projections, results, descriptive_text_fi
         if cluster_index <= -1: continue
         text = " ".join([results[result_index].get(field, "") for field in descriptive_text_fields])
         texts_per_cluster[cluster_index] += text
-        points_per_cluster_x[cluster_index].append(projections[result_index][0])
-        points_per_cluster_y[cluster_index].append(projections[result_index][1])
+        points_per_cluster_x[cluster_index].append(positions[result_index][0])
+        points_per_cluster_y[cluster_index].append(positions[result_index][1])
         results_by_cluster[cluster_index].append(results[result_index])
     timings.log("combining abstracts from search results")
 

@@ -70,7 +70,11 @@ export default {
         {id: "pca", title: "PCA"},
       ],
       dim_reducer_parameters: {
-        "shape": {title: "shape", default: "2d", value: "2d", options: [{id: "2d", title: "2D"}, {id: "1d_plus_distance_polar", title: "1D + Distance (Polar)"}]},
+        "shape": {title: "shape", default: "2d", value: "2d", options: [
+          {id: "2d", title: "2D"},
+          {id: "1d_plus_distance_polar", title: "1D + Distance (Polar)"},
+          {id: "score_graph", title: "Score Graph"},
+        ]},
         "n_neighbors": {title: "n_neighbors", default: 15, value: 15},
         "min_dist": {title: "min_dist", default: 0.05, value: 0.05},
         "n_epochs": {title: "n_epochs", default: 500, value: 500},

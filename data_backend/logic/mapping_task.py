@@ -243,10 +243,10 @@ def generate_map(map_id, ignore_cache):
     if not projection_phase_is_needed:
         assert similar_map is not None
         logging.warning("reusing projection stage results")
+        projections = similar_map["results"]["per_point_data"]["raw_projections"]
         map_data["results"]["per_point_data"]["positions_x"] = similar_map["results"]["per_point_data"]["positions_x"]
         map_data["results"]["per_point_data"]["positions_y"] = similar_map["results"]["per_point_data"]["positions_y"]
-        map_data["results"]["per_point_data"]["positions_y"] = similar_map["results"]["per_point_data"]["positions_y"]
-        projections = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
+        positions = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
         map_data["progress"]["embeddings_available"] = True
         timings.log("reusing projection stage results")
     else:
@@ -281,10 +281,15 @@ def generate_map(map_id, ignore_cache):
                               metric=projection_parameters.get("metric", "euclidean"),
                               )
         projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
+        map_data["results"]["per_point_data"]["raw_projections"] = projections.tolist()
         if projection_parameters.get("shape") == "1d_plus_distance_polar":
-            projections = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
-        map_data["results"]["per_point_data"]["positions_x"] = projections[:, 0].tolist()
-        map_data["results"]["per_point_data"]["positions_y"] = projections[:, 1].tolist()
+            positions = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
+        elif projection_parameters.get("shape") == "score_graph":
+            positions = np.column_stack([[float(x) / len(scores) for x in range(len(scores))], normalize_array(scores)])
+        else:
+            positions = projections
+        map_data["results"]["per_point_data"]["positions_x"] = positions[:, 0].tolist()
+        map_data["results"]["per_point_data"]["positions_y"] = positions[:, 1].tolist()
         map_data["progress"]["embeddings_available"] = True
         timings.log("UMAP fit transform")
 
@@ -292,15 +297,11 @@ def generate_map(map_id, ignore_cache):
     if run_clusterize_and_render_stage:
         map_data['progress']['step_title'] = "Clusterize results"
         cluster_id_per_point = clusterize_results(projections, params.rendering.clusterizer_parameters)
+        map_data["results"]["per_point_data"]["cluster_ids"] = cluster_id_per_point.tolist()
         timings.log("clustering")
 
-        if projection_parameters.get("shape") == "1d_plus_distance_polar":
-            projections = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
-
-        map_data["results"]["per_point_data"]["cluster_ids"] = cluster_id_per_point.tolist()
-
         map_data['progress']['step_title'] = "Find cluster titles"
-        cluster_data = get_cluster_titles(cluster_id_per_point, projections, search_results, schema.descriptive_text_fields, timings)
+        cluster_data = get_cluster_titles(cluster_id_per_point, positions, search_results, schema.descriptive_text_fields, timings)
         timings.log("cluster title")
 
         map_data["results"]["clusters"] = cluster_data

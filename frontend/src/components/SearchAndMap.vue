@@ -218,7 +218,7 @@ export default {
       }
 
       // note: these may be needed in the future, pay attention to remove them in this case here
-      const not_needed = ['item_ids', 'search_result_meta_information', 'parameters']
+      const not_needed = ['item_ids', 'raw_projections', 'search_result_meta_information', 'parameters']
       if (!that.appStateStore.debug_autocut) {
         not_needed.push("search_result_score_info")
       }

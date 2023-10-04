@@ -21,7 +21,7 @@ def polar_to_cartesian(r, theta):
     return x, y
 
 
-def normalize_array(arr):
+def normalize_array(arr: np.ndarray) -> np.ndarray:
     arr = arr - np.min(arr)
     max_element = np.max(arr)
     return arr / max_element if max_element != 0 else arr
