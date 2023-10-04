@@ -54,7 +54,7 @@ void main() {
     // (the albedo color is the same for all fragments of this vertex, so it
     // can be done in the vertex shader where its calculated only once)
     float hue = clusterIdVar / 10.0;
-    float sat = 0.1 + saturationVar * 1.0;
+    float sat = 0.1 + saturationVar * 0.9;
     float val = isHighlighted > 0.5 ? 0.0 : 0.8;
     vec3 normalColor = hsv2rgb(vec3(hue, sat, val));
     vec3 highlightedColor = vec3(0.0);

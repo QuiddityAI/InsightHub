@@ -274,8 +274,13 @@ export default {
               that.fields_already_received.push('point_sizes')
             }
             if (results_per_point["scores"] && results_per_point["scores"].length > 0) {
-              that.$refs.embedding_map.saturation = normalizeArray(results_per_point["scores"], 3.0)
+              that.$refs.embedding_map.saturation = normalizeArray(results_per_point["scores"], 3.0, 0.001)
               that.fields_already_received.push('scores')
+              if (that.appStateStore.settings.projection.shape === "score_graph") {
+                // for the score graph, the score is already visible as the position
+                // -> using full saturation for the color to make it better visible
+                that.$refs.embedding_map.saturation = Array(results_per_point["scores"].length).fill(1.0)
+              }
             }
             if (results_per_point["cluster_ids"] && results_per_point["cluster_ids"].length > 0) {
               that.$refs.embedding_map.clusterIdsPerPoint = results_per_point["cluster_ids"]

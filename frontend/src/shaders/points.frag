@@ -67,6 +67,8 @@ void main() {
     // circle area:
     float antiAliasingEdgePx = 1.0;
     float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
+    float imageSize = 0.8;
+    float imageCircleArea = 1.0 - smoothstep(imageSize - (antiAliasingEdgePx / pointRadiusPx), imageSize, distFromCenter);
 
     FragColor.a = circleArea * 0.7;
 
@@ -76,8 +78,9 @@ void main() {
         float uvRow = float(int(pointIdxVar) / spritesPerLine + 1) / float(spritesPerLine);
         float uvCol = float(int(pointIdxVar) % spritesPerLine) / float(spritesPerLine);
         float uvFactor = (float(atlasTotalWidth) / float(thumbnailSpriteSize));
-        vec3 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + posFromBottomLeft / uvFactor).rgb;
-        FragColor.rgb = tex;
+        vec2 imagePos = (posFromBottomLeft - (1.0 - imageSize) / 2.0) / imageSize;
+        vec3 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + imagePos / uvFactor).rgb;
+        FragColor.rgb = mix(albedoColorVar, tex, imageCircleArea);
     } else {
         // position of this fragment on the screen:
         vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
