@@ -437,6 +437,11 @@ export default {
     getUniforms() {
       const ww = window.innerWidth
       const wh = window.innerHeight
+      let selectedClusterId = this.appStateStore.selected_cluster_id != null ? this.appStateStore.selected_cluster_id : -1
+      if (this.appStateStore.highlighted_cluster_id !== null) {
+        selectedClusterId = this.appStateStore.highlighted_cluster_id
+      }
+
       return {  // types are inferred from shader code
         baseOffset: { value: this.baseOffset },
         baseScale: { value: this.baseScale },
@@ -455,7 +460,7 @@ export default {
         pointTextureBaseColor: { value: this.pointTextureBaseColor },
         pointTextureNormalMap: { value: this.pointTextureNormalMap },
         thumbnailSpriteSize: { value: this.thumbnailSpriteSize },
-        selectedClusterId: { value: this.appStateStore.selected_cluster_id },
+        selectedClusterId: { value: selectedClusterId },
       }
     },
     updateUniforms() {
@@ -571,8 +576,11 @@ export default {
     'left': screenLeftFromRelative(cluster_label.center[0]) + 'px',
     'bottom': screenBottomFromRelative(cluster_label.center[1]) + 'px',
     }">
-    <button v-if="appStateStore.selected_cluster_id == -1 || cluster_label.id == appStateStore.selected_cluster_id"
-      @click="$emit('cluster_selected', cluster_label)" class="px-1 bg-white hover:bg-gray-100 text-gray-500 text-xs rounded">
+    <button v-if="appStateStore.selected_cluster_id === null || cluster_label.id === appStateStore.selected_cluster_id"
+      @click="$emit('cluster_selected', cluster_label)"
+      @mouseenter="console.log('foo'); appStateStore.highlighted_cluster_id = cluster_label.id"
+      @mouseleave="appStateStore.highlighted_cluster_id = null"
+      class="px-1 bg-white hover:bg-gray-100 text-gray-500 text-xs rounded">
       {{ cluster_label.title }}
     </button>
   </div>

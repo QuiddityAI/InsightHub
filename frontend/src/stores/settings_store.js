@@ -5,11 +5,17 @@ export const useAppStateStore = defineStore('appState', {
     return {
       show_timings: false,
       store_search_history: true,
-      selected_cluster_title: null,
-      selected_collection_title: null,
       ignore_cache: false,
       debug_autocut: false,
-      selected_cluster_id: -1,
+
+      highlighted_item_id: null,
+      selected_item_id: null,
+      highlighted_cluster_id: null,
+      selected_cluster_id: null,
+
+      available_vector_fields: [],
+      available_number_fields: [],
+
       settings: {
         schema_id: null,
         search: {
@@ -70,8 +76,6 @@ export const useAppStateStore = defineStore('appState', {
           cluster_title_strategy: "tf_idf_top_3",
         },
       },
-      available_vector_fields: [],
-      available_number_fields: [],
     }
   },
 })

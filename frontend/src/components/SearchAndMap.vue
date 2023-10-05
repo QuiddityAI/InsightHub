@@ -76,8 +76,11 @@ export default {
       this.map_task_id = null
       this.map_item_details = []
       this.cluster_data = []
-      this.appStateStore.selected_cluster_id = -1
       this.clusterIdsPerPoint = []
+      this.appStateStore.highlighted_item_id = null
+      this.appStateStore.selected_item_id = null
+      this.appStateStore.highlighted_cluster_id = null
+      this.appStateStore.selected_cluster_id = null
 
       this.search_result_score_info = null
       if (this.score_info_chart) this.score_info_chart.destroy()
@@ -736,13 +739,13 @@ export default {
                 <div v-if="search_results.length !== 0" class="flex flex-row items-center mt-2 ml-2">
                   <span class="flex-none mr-2 text-gray-500">Cluster:</span>
                   <select v-model="appState.selected_cluster_id" class="flex-1 text-gray-500 text-md border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-                    <option :value="-1" selected>All</option>
+                    <option :value="null" selected>All</option>
                     <option v-for="cluster in cluster_data" :value="cluster.id" selected>{{ cluster.title }}</option>
                   </select>
                 </div>
 
                 <ul v-if="search_results.length !== 0" role="list" class="pt-1">
-                  <li v-for="item in search_results.filter((result, i) => (appState.selected_cluster_id == -1 || clusterIdsPerPoint[i] == appState.selected_cluster_id)).slice(0, 10)" :key="item._id" class="justify-between pb-3">
+                  <li v-for="item in search_results.filter((result, i) => (appState.selected_cluster_id == null || clusterIdsPerPoint[i] == appState.selected_cluster_id)).slice(0, 10)" :key="item._id" class="justify-between pb-3">
                     <ResultListItem :initial_item="item" :rendering="result_list_rendering" :schema="selected_schema"></ResultListItem>
                   </li>
                 </ul>
