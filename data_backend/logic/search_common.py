@@ -45,13 +45,13 @@ class QueryInput(object):
 def combine_and_sort_result_sets(result_sets: list[dict], required_fields: list[str],
                                  schema: DotDict, search_settings: DotDict, limit: int,
                                  timings: Timings) -> tuple[list, dict]:
-    score_info = get_score_curves_and_cut_sets(result_sets, search_settings)
+    score_info = get_score_curves_and_cut_sets(result_sets, search_settings, schema)
     total_items = combine_result_sets_and_calculate_scores(result_sets, timings)
     sorted_complete_items = sort_items_and_complete_them(schema, total_items, required_fields, limit, timings)
     return sorted_complete_items, score_info
 
 
-def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotDict) -> dict:
+def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotDict, schema: DotDict) -> dict:
     score_info = {}
     for result_set in result_sets:
         sorted_items = sorted(result_set.values(), key=lambda item: item['_origins'][0]['score'], reverse=True)
@@ -72,9 +72,9 @@ def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotD
             reason = useful_items_info["reason"]
             if cutoff_index != len(sorted_items):
                 # TODO: there might be a better way to remove the cut items from the dictionary
-                result_set.clear()
-                for item in sorted_items[:cutoff_index]:
-                    result_set[item['_id']] = item
+                # result_set.clear()
+                # for item in sorted_items[:cutoff_index]:
+                #     result_set[item['_id']] = item
                 positive_examples = [sorted_items[max(0, cutoff_index - 5)]['_id'],
                                      sorted_items[max(0, cutoff_index - 2)]['_id']]
                 negative_examples = [sorted_items[min(len(sorted_items) - 1, cutoff_index + 5)]['_id'],
@@ -82,6 +82,50 @@ def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotD
         score_info[title] = {'scores': normalized_scores, 'cutoff_index': cutoff_index, "reason": reason,
                              'max_score': max(scores), 'min_score': min(scores),
                              'positive_examples': positive_examples, 'negative_examples': negative_examples}
+
+    # using new difference-to-top-results metric:
+    # for result_set in result_sets:
+    #     sorted_items = sorted(result_set.values(), key=lambda item: item['_origins'][0]['score'], reverse=True)
+    #     example_origin = sorted_items[0]['_origins'][0]
+    #     if example_origin["type"] != "vector":
+    #         # the difference-to-top-results score only makes sense for vector results
+    #         continue
+    #     vector_field = example_origin["field"]
+    #     fill_in_details_from_object_storage(schema.id, sorted_items, [vector_field])
+    #     top_n = 15
+    #     top_items = sorted_items[:top_n]
+    #     top_n_vector_average = np.mean([item[vector_field] for item in top_items], axis=0)
+    #     # TODO: does np.dot work for non-normalized vectors? better use eucledian distance?
+    #     scores = [np.dot(item[vector_field], top_n_vector_average) for item in sorted_items]
+    #     for i in range(len(scores)):
+    #         sorted_items[i]['_score'] = scores[i]
+    #     sorted_items = sorted(sorted_items, key=lambda item: item['_score'], reverse=True)
+    #     scores = [item['_score'] for item in sorted_items]
+    #     normalized_scores = normalize_array(np.array(scores)).tolist()
+    #     cutoff_index = len(sorted_items)  # no cutoff by default
+    #     title = f"diff-to-top, {example_origin['type']}, {example_origin['field']}"
+    #     positive_examples = []
+    #     negative_examples = []
+    #     reason = "no cutoff"
+    #     if search_settings.use_autocut:
+    #         useful_items_info = get_number_of_useful_items(scores, search_settings.autocut_min_results,
+    #                                                   search_settings.autocut_strategy,
+    #                                                   search_settings.autocut_min_score,
+    #                                                   search_settings.autocut_max_relative_decline)
+    #         cutoff_index = useful_items_info["count"]
+    #         reason = useful_items_info["reason"]
+    #         if cutoff_index != len(sorted_items):
+    #             # TODO: there might be a better way to remove the cut items from the dictionary
+    #             result_set.clear()
+    #             for item in sorted_items[:cutoff_index]:
+    #                 result_set[item['_id']] = item
+    #             positive_examples = [sorted_items[max(0, cutoff_index - 5)]['_id'],
+    #                                  sorted_items[max(0, cutoff_index - 2)]['_id']]
+    #             negative_examples = [sorted_items[min(len(sorted_items) - 1, cutoff_index + 5)]['_id'],
+    #                                  sorted_items[min(len(sorted_items) - 1, cutoff_index + 2)]['_id']]
+    #     score_info[title] = {'scores': normalized_scores, 'cutoff_index': cutoff_index, "reason": reason,
+    #                          'max_score': max(scores), 'min_score': min(scores),
+    #                          'positive_examples': positive_examples, 'negative_examples': negative_examples}
     return score_info
 
 
