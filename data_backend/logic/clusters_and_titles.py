@@ -6,6 +6,7 @@ import hdbscan
 from utils.regex_tokenizer import tokenize
 from utils.collect_timings import Timings
 from utils.dotdict import DotDict
+from utils.helpers import normalize_array
 
 
 def clusterize_results(projections, clusterizer_parameters: DotDict):
@@ -24,12 +25,15 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
         return []
     texts_per_cluster = [""] * num_clusters
     point_positions_per_cluster = [[] for i in range(num_clusters)]
+    scores_per_cluster = [[] for i in range(num_clusters)]
+    normalized_scores = normalize_array(np.array([result['_score'] for result in results]))
 
     for result_index, cluster_index in enumerate(cluster_labels):
         if cluster_index <= -1: continue
         text = " ".join([results[result_index].get(field, "") for field in descriptive_text_fields])
         texts_per_cluster[cluster_index] += text
         point_positions_per_cluster[cluster_index].append(positions[result_index])
+        scores_per_cluster[cluster_index].append(normalized_scores[result_index])
     timings.log("collect information for clusters")
 
     # highlight TF-IDF words:
@@ -45,8 +49,13 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
         sort_indexes_of_important_words = np.argsort(tf_idf_matrix[cluster_index].toarray()[0])  # type: ignore
         most_important_words = words[sort_indexes_of_important_words[-3:]][::-1]
         cluster_center = np.mean(point_positions_per_cluster[cluster_index], axis=0).tolist()
-        cluster_title = ", ".join(list(most_important_words)) + f" ({len(point_positions_per_cluster[cluster_index])})"
-        cluster_data.append({"id": cluster_index, "title": cluster_title, "center": cluster_center})
+        min_score = min(scores_per_cluster[cluster_index])
+        max_score = max(scores_per_cluster[cluster_index])
+        avg_score = np.mean(scores_per_cluster[cluster_index])
+        cluster_title = ", ".join(list(most_important_words)) + f" ({len(point_positions_per_cluster[cluster_index])}x, {avg_score * 100:.0f}%)"
+        cluster_data.append({"id": cluster_index, "title": cluster_title, "center": cluster_center,
+                             "min_score": min_score, "max_score": max_score, "avg_score": avg_score})
+    cluster_data = sorted(cluster_data, key=lambda cluster: cluster["avg_score"], reverse=True)
     timings.log("Tf-Idf for cluster titles")
 
     return cluster_data

@@ -29,10 +29,12 @@ export default {
     return {
       // results:
       search_results: [],
-      search_list_rendering: {},
+      result_list_rendering: {},
       collection_list_rendering: {},
       map_id: null,
       map_item_details: [],
+      cluster_data: [],
+      clusterIdsPerPoint: [],
 
       search_result_score_info: null,
       score_info_chart: null,
@@ -71,9 +73,11 @@ export default {
     reset_search_results_and_map(params={leave_map_unchanged: false}) {
       // results:
       this.search_results = []
-      this.search_list_rendering = {}
       this.map_task_id = null
       this.map_item_details = []
+      this.cluster_data = []
+      this.appStateStore.selected_cluster_id = -1
+      this.clusterIdsPerPoint = []
 
       this.search_result_score_info = null
       if (this.score_info_chart) this.score_info_chart.destroy()
@@ -139,11 +143,6 @@ export default {
     },
     show_received_search_results(response_data) {
       this.search_results = response_data["items"]
-      const rendering = response_data["rendering"]
-      for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
-        rendering[field] = eval(rendering[field])
-      }
-      this.search_list_rendering = rendering
       this.search_timings = response_data["timings"]
     },
     get_current_map_name() {
@@ -236,23 +235,6 @@ export default {
           if (mappingIsFinished) {
             // no need to get further results:
             that.map_is_in_progess = false
-
-            const hover_label_rendering = response.data["hover_label_rendering"]
-            for (const field of ['title', 'subtitle', 'body', 'image']) {
-              hover_label_rendering[field] = hover_label_rendering[field] ? eval(hover_label_rendering[field]) : ((item) => "")
-            }
-            that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
-
-            if (results["texture_atlas_path"]) {
-              const image = new Image()
-              image.src = 'data_backend/map/texture_atlas/' + results["texture_atlas_path"]
-              image.onload = () => {
-                that.$refs.embedding_map.textureAtlas = image
-                that.$refs.embedding_map.thumbnailSpriteSize = that.appStateStore.settings.search.thumbnail_sprite_size
-                that.$refs.embedding_map.updateGeometry()
-              }
-
-            }
           }
 
           const progress = response.data["progress"]
@@ -266,6 +248,7 @@ export default {
             if (results_per_point["hover_label_data"] && results_per_point["hover_label_data"].length > 0) {
               that.map_item_details = results_per_point["hover_label_data"]
               that.$refs.embedding_map.itemDetails = results_per_point["hover_label_data"]
+              that.search_results = results_per_point["hover_label_data"]
               that.fields_already_received.push('hover_label_data')
             }
 
@@ -284,6 +267,7 @@ export default {
             }
             if (results_per_point["cluster_ids"] && results_per_point["cluster_ids"].length > 0) {
               that.$refs.embedding_map.clusterIdsPerPoint = results_per_point["cluster_ids"]
+              that.clusterIdsPerPoint = results_per_point["cluster_ids"]
               that.fields_already_received.push('cluster_ids')
             } else if (!that.fields_already_received.includes('cluster_ids')) {
               that.$refs.embedding_map.clusterIdsPerPoint = [-1] * that.$refs.embedding_map.targetPositionsX.length
@@ -294,7 +278,23 @@ export default {
               that.$refs.embedding_map.targetPositionsY = results_per_point["positions_y"]
               that.$refs.embedding_map.updateGeometry()
             }
-            that.$refs.embedding_map.clusterData = results["clusters"]
+
+            if (results["texture_atlas_path"]) {
+              const image = new Image()
+              image.src = 'data_backend/map/texture_atlas/' + results["texture_atlas_path"]
+              image.onload = () => {
+                that.$refs.embedding_map.textureAtlas = image
+                that.$refs.embedding_map.thumbnailSpriteSize = that.appStateStore.settings.search.thumbnail_sprite_size
+                that.$refs.embedding_map.updateGeometry()
+              }
+              that.fields_already_received.push('texture_atlas_path')
+            }
+
+            if (results["clusters"]) {
+              that.$refs.embedding_map.clusterData = results["clusters"]
+              that.cluster_data = results["clusters"]
+              that.fields_already_received.push('clusters')
+            }
 
             if (that.map_viewport_is_adjusted) {
               that.$refs.embedding_map.centerAndFitDataToActiveAreaSmooth()
@@ -505,7 +505,8 @@ export default {
           const parameters = response.data.parameters
           that.appStateStore.settings = parameters
 
-          that.show_received_search_results(response.data)
+          // now done when map results are received
+          //that.show_received_search_results(response.data)
         })
 
       that.map_viewport_is_adjusted = false
@@ -627,11 +628,23 @@ export default {
         .then(function (response) {
           that.selected_schema = response.data
 
+          const result_list_rendering = that.selected_schema.result_list_rendering
+          for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
+            result_list_rendering[field] = eval(result_list_rendering[field])
+          }
+          that.result_list_rendering = result_list_rendering
+
           const collection_list_rendering = that.selected_schema.collection_list_rendering
           for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
             collection_list_rendering[field] = eval(collection_list_rendering[field])
           }
           that.collection_list_rendering = collection_list_rendering
+
+          const hover_label_rendering = that.selected_schema.hover_label_rendering
+          for (const field of ['title', 'subtitle', 'body', 'image']) {
+            hover_label_rendering[field] = hover_label_rendering[field] ? eval(hover_label_rendering[field]) : ((item) => "")
+          }
+          that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
         })
     }
   },
@@ -719,9 +732,17 @@ export default {
                   </div>
                 </div>
 
-                <ul v-if="search_results.length !== 0" role="list" class="pt-3">
-                  <li v-for="item in search_results" :key="item.title" class="justify-between pb-3">
-                    <ResultListItem :item="item" :rendering="search_list_rendering"></ResultListItem>
+                <div v-if="search_results.length !== 0" class="flex flex-row items-center mt-2 ml-2">
+                  <span class="flex-none mr-2 text-gray-500">Cluster:</span>
+                  <select v-model="appState.selected_cluster_id" class="flex-1 text-gray-500 text-md border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+                    <option :value="-1" selected>All</option>
+                    <option v-for="cluster in cluster_data" :value="cluster.id" selected>{{ cluster.title }}</option>
+                  </select>
+                </div>
+
+                <ul v-if="search_results.length !== 0" role="list" class="pt-1">
+                  <li v-for="item in search_results.filter((result, i) => (appState.selected_cluster_id == -1 || clusterIdsPerPoint[i] == appState.selected_cluster_id)).slice(0, 10)" :key="item._id" class="justify-between pb-3">
+                    <ResultListItem :initial_item="item" :rendering="result_list_rendering" :schema="selected_schema"></ResultListItem>
                   </li>
                 </ul>
                 <div v-if="search_results.length === 0" class="h-20 flex flex-col text-center place-content-center">

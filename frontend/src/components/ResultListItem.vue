@@ -1,11 +1,48 @@
+<script setup>
+import httpClient from '../api/httpClient';
+</script>
+
 
 <script>
 export default {
-  props: ["item", "rendering"],
+  props: ["initial_item", "rendering", "schema"],
   data() {
     return {
-
+      item: this.initial_item,
+      loading_item: false,
     }
+  },
+  watch: {
+    initial_item() {
+      this.item = this.initial_item
+      this.getFullItem()
+    },
+  },
+  methods: {
+    getFullItem() {
+      if (!this.item || !this.item._id) return;
+      const that = this
+
+      const payload = {
+        schema_id: this.schema.id,
+        item_id: this.item._id,
+        fields: this.schema.result_list_rendering.required_fields
+      }
+      this.loading_item = true
+      httpClient.post("/data_backend/document/details_by_id", payload)
+        .then(function (response) {
+          that.item = {
+            ...that.item,
+            ...response.data
+          }
+        })
+        .finally(function () {
+          that.loading_item = false
+        })
+    },
+  },
+  mounted() {
+    this.getFullItem()
   },
 }
 </script>

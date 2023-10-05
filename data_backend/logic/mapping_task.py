@@ -205,6 +205,9 @@ def generate_map(map_id, ignore_cache):
         for item in search_results:
             hover_label_data = {}
             hover_label_data['_id'] = item['_id']
+            hover_label_data['_score'] = item['_id']
+            hover_label_data['_reciprocal_rank_score'] = item['_reciprocal_rank_score']
+            hover_label_data['_origins'] = item['_origins']
             for field in schema.hover_label_rendering.required_fields:
                 hover_label_data[field] = item.get(field, None)
             hover_label_data_total.append(hover_label_data)
@@ -237,6 +240,7 @@ def generate_map(map_id, ignore_cache):
     projection_parameters = params.get("projection", {})
     scores = [e["_score"] for e in search_results]
     map_data["results"]["per_point_data"]["scores"] = scores
+    scores = np.array(scores)
     point_sizes = [e.get(params.rendering.point_size) for e in search_results] if params.rendering.point_size != 'equal' else [1] * len(search_results)
     map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
 
@@ -280,7 +284,7 @@ def generate_map(map_id, ignore_cache):
                               n_neighbors=projection_parameters.get("n_neighbors", 15),
                               metric=projection_parameters.get("metric", "euclidean"),
                               )
-        projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)
+        projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
         map_data["results"]["per_point_data"]["raw_projections"] = projections.tolist()
         if projection_parameters.get("shape") == "1d_plus_distance_polar":
             positions = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
@@ -302,7 +306,6 @@ def generate_map(map_id, ignore_cache):
 
         map_data['progress']['step_title'] = "Find cluster titles"
         cluster_data = get_cluster_titles(cluster_id_per_point, positions, search_results, schema.descriptive_text_fields, timings)
-        timings.log("cluster title")
 
         map_data["results"]["clusters"] = cluster_data
 

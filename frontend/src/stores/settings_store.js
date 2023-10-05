@@ -9,6 +9,7 @@ export const useAppStateStore = defineStore('appState', {
       selected_collection_title: null,
       ignore_cache: false,
       debug_autocut: false,
+      selected_cluster_id: -1,
       settings: {
         schema_id: null,
         search: {
