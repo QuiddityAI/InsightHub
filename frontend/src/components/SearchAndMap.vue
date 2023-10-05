@@ -357,9 +357,17 @@ export default {
       this.request_search_results()
     },
     show_document_details(pointIdx) {
-      const that = this
       this.selectedDocumentIdx = pointIdx
       this.$refs.embedding_map.selectedPointIdx = pointIdx
+    },
+    show_document_details_by_id(item_id) {
+      for (const i of Array(this.map_item_details.length).keys()) {
+        if (this.map_item_details[i]._id == item_id) {
+          this.selectedDocumentIdx = i
+          this.$refs.embedding_map.selectedPointIdx = i
+          break
+        }
+      }
     },
     showSimilarItems() {
       this.appStateStore.settings.search.search_type = 'similar_to_item'
@@ -661,7 +669,10 @@ export default {
       <EmbeddingMap ref="embedding_map" class="absolute top-0 w-screen h-screen"
         :appStateStore="appState"
         @cluster_selected="narrow_down_on_cluster"
-        @point_selected="show_document_details"/>
+        @point_selected="show_document_details"
+        @cluster_hovered="(cluster_id) => appState.highlighted_cluster_id = cluster_id"
+        @cluster_hover_end="appState.highlighted_cluster_id = null"
+        />
 
       <div v-if="appState.show_timings" class="absolute bottom-0 right-0 text-right">
         <!-- timings -->
@@ -746,7 +757,11 @@ export default {
 
                 <ul v-if="search_results.length !== 0" role="list" class="pt-1">
                   <li v-for="item in search_results.filter((result, i) => (appState.selected_cluster_id == null || clusterIdsPerPoint[i] == appState.selected_cluster_id)).slice(0, 10)" :key="item._id" class="justify-between pb-3">
-                    <ResultListItem :initial_item="item" :rendering="result_list_rendering" :schema="selected_schema"></ResultListItem>
+                    <ResultListItem :initial_item="item" :rendering="result_list_rendering" :schema="selected_schema"
+                      @mouseenter="appState.highlighted_item_id = item._id"
+                      @mouseleave="appState.highlighted_item_id = null"
+                      @mousedown="show_document_details_by_id(item._id)"
+                    ></ResultListItem>
                   </li>
                 </ul>
                 <div v-if="search_results.length === 0" class="h-20 flex flex-col text-center place-content-center">

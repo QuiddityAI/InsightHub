@@ -19,6 +19,12 @@ import pointTextureNormalMapUrl from '../textures/Crystal_001_NORM.jpg'
 
 export default {
   props: ["appStateStore"],  // for some reason, importing it doesn't work
+  emits: [
+    "cluster_selected",
+    "point_selected",
+    "cluster_hovered",
+    "cluster_hover_end",
+  ],
   data() {
     return {
       // external:
@@ -85,10 +91,6 @@ export default {
       return window.innerHeight - this.passiveMarginsLRTB[2] - this.passiveMarginsLRTB[3]
     },
   },
-  emits: [
-    "cluster_selected",
-    "point_selected",
-  ],
   mounted() {
     this.setupWebGl()
     this.setupPanZoom();
@@ -97,6 +99,25 @@ export default {
   watch: {
     "appStateStore.selected_cluster_id" () {
       this.updateUniforms()
+    },
+    "appStateStore.highlighted_cluster_id" () {
+      this.updateUniforms()
+    },
+    "appStateStore.highlighted_item_id" () {
+      if (this.appStateStore.highlighted_item_id === null) {
+        this.highlightedPointIdx = -1
+        this.$emit('cluster_hover_end')
+        return
+      }
+      for (const i of Array(this.itemDetails.length).keys()) {
+        if (this.itemDetails[i]._id == this.appStateStore.highlighted_item_id) {
+          this.highlightedPointIdx = i
+          // TODO: highlighted_cluster_id should be changed directly, but currently accessing appState breaks this component
+          this.$emit('cluster_hovered', this.clusterIdsPerPoint[i])
+          this.updateUniforms()
+          break
+        }
+      }
     },
   },
   methods: {
@@ -578,8 +599,8 @@ export default {
     }">
     <button v-if="appStateStore.selected_cluster_id === null || cluster_label.id === appStateStore.selected_cluster_id"
       @click="$emit('cluster_selected', cluster_label)"
-      @mouseenter="console.log('foo'); appStateStore.highlighted_cluster_id = cluster_label.id"
-      @mouseleave="appStateStore.highlighted_cluster_id = null"
+      @mouseenter="$emit('cluster_hovered', cluster_label.id)"
+      @mouseleave="$emit('cluster_hover_end')"
       class="px-1 bg-white hover:bg-gray-100 text-gray-500 text-xs rounded">
       {{ cluster_label.title }}
     </button>
