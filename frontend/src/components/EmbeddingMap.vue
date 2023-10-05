@@ -340,7 +340,7 @@ export default {
     },
     updateGeometry() {
       function ensureLength(x, size, fillValue) {
-        if (x.length != size) {
+        if (x.length < size) {
           return Array(size).fill(fillValue)
         }
         return x
