@@ -18,6 +18,7 @@ import pointTextureBaseColorUrl from '../textures/Brick_Wall_017_basecolor.jpg'
 import pointTextureNormalMapUrl from '../textures/Crystal_001_NORM.jpg'
 
 export default {
+  props: ["appStateStore"],  // for some reason, importing it doesn't work
   data() {
     return {
       // external:
@@ -92,6 +93,11 @@ export default {
     this.setupWebGl()
     this.setupPanZoom();
     setInterval(this.updatePointVisibility, 500);
+  },
+  watch: {
+    "appStateStore.selected_cluster_id" () {
+      this.updateUniforms()
+    },
   },
   methods: {
     resetData() {
@@ -448,7 +454,8 @@ export default {
         useTextureAtlas: { value: this.textureAtlas !== null },
         pointTextureBaseColor: { value: this.pointTextureBaseColor },
         pointTextureNormalMap: { value: this.pointTextureNormalMap },
-        thumbnailSpriteSize: { value: this.thumbnailSpriteSize }
+        thumbnailSpriteSize: { value: this.thumbnailSpriteSize },
+        selectedClusterId: { value: this.appStateStore.selected_cluster_id },
       }
     },
     updateUniforms() {
@@ -564,7 +571,8 @@ export default {
     'left': screenLeftFromRelative(cluster_label.center[0]) + 'px',
     'bottom': screenBottomFromRelative(cluster_label.center[1]) + 'px',
     }">
-    <button @click="$emit('cluster_selected', cluster_label)" class="px-1 bg-white hover:bg-gray-100 text-gray-500 text-xs rounded">
+    <button v-if="appStateStore.selected_cluster_id == -1 || cluster_label.id == appStateStore.selected_cluster_id"
+      @click="$emit('cluster_selected', cluster_label)" class="px-1 bg-white hover:bg-gray-100 text-gray-500 text-xs rounded">
       {{ cluster_label.title }}
     </button>
   </div>

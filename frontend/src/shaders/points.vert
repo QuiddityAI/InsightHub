@@ -23,6 +23,7 @@ uniform float zoom;
 uniform int highlightedPointIdx;
 uniform int selectedPointIdx;
 uniform float devicePixelRatio;
+uniform int selectedClusterId;
 
 out vec2 vUv;
 out vec3 vertexPositionVar;
@@ -60,7 +61,7 @@ void main() {
     vec3 highlightedColor = vec3(0.0);
     vec3 selectedColor = vec3(1.0, 0.0, 0.0);
     vec3 unclustered_color = vec3(0.7);
-    albedoColorVar = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (clusterIdVar < 0.0 ? unclustered_color : normalColor));
+    albedoColorVar = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (clusterIdVar < 0.0 || (selectedClusterId != -1 && selectedClusterId != int(clusterId)) ? unclustered_color : normalColor));
 
     // position calculation:
     vec3 rawPos = vec3(positionX, positionY, (gl_InstanceID == highlightedPointIdx) ? -0.9 : -1.0);

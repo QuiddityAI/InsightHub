@@ -656,6 +656,7 @@ export default {
     <main class="overflow-hidden">
 
       <EmbeddingMap ref="embedding_map" class="absolute top-0 w-screen h-screen"
+        :appStateStore="appState"
         @cluster_selected="narrow_down_on_cluster"
         @point_selected="show_document_details"/>
 
