@@ -126,7 +126,9 @@ class VectorSearchEngineClient(object):
         self.client.delete(collection_name, ids)
 
 
-    def get_items_near_vector(self, schema_id: int, vector_field: str, query_vector: list, filter_criteria: dict, return_vectors: bool, limit: int) -> list:
+    def get_items_near_vector(self, schema_id: int, vector_field: str, query_vector: list,
+                              filter_criteria: dict, return_vectors: bool, limit: int,
+                              score_threshold: float | None) -> list:
         hits = self.client.search(
             collection_name=self._get_collection_name(schema_id, vector_field),
             query_vector=NamedVector(name=vector_field, vector=query_vector),
@@ -143,11 +145,14 @@ class VectorSearchEngineClient(object):
             with_payload=False,
             with_vectors=return_vectors,
             limit=limit,
+            score_threshold=score_threshold,
         )
         return hits
 
 
-    def get_items_matching_collection(self, schema_id: int, vector_field: str, positive_ids: list[str], negative_ids: list[str], filter_criteria: dict, return_vectors: bool, limit: int) -> list:
+    def get_items_matching_collection(self, schema_id: int, vector_field: str, positive_ids: list[str],
+                                      negative_ids: list[str], filter_criteria: dict, return_vectors: bool,
+                                      limit: int, score_threshold: float | None) -> list:
         hits = self.client.recommend(
             collection_name=self._get_collection_name(schema_id, vector_field),
             positive=positive_ids,
@@ -166,6 +171,7 @@ class VectorSearchEngineClient(object):
             with_payload=False,
             with_vectors=return_vectors,
             limit=limit,
+            score_threshold=score_threshold,
         )
         return hits
 

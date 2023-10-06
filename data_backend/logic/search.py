@@ -15,7 +15,7 @@ from database_client.object_storage_client import ObjectStorageEngineClient
 from logic.local_map_cache import local_maps
 from logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
     get_vector_search_results_matching_collection, get_fulltext_search_results, \
-    combine_and_sort_result_sets, sort_items_and_complete_them
+    combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold
 
 from database_client.django_client import get_object_schema
 
@@ -87,7 +87,10 @@ def get_search_results_using_combined_query(schema, search_settings: DotDict, ve
             if not field.is_available_for_search or field.identifier not in enabled_fields:
                 continue
             if field.field_type == FieldType.VECTOR:
-                results = get_vector_search_results(schema, field.identifier, query, None, required_fields=[], limit=limit, page=page)
+                score_threshold = get_field_similarity_threshold(field, use_image_threshold=bool(query.positive_image_url or query.negative_image_url))
+                score_threshold = score_threshold if search_settings.use_similarity_thresholds else None
+                results = get_vector_search_results(schema, field.identifier, query, None, required_fields=[],
+                                                    limit=limit, page=page, score_threshold=score_threshold)
                 result_sets.append(results)
                 timings.log("vector database query")
             elif field.field_type == FieldType.TEXT:
@@ -101,21 +104,6 @@ def get_search_results_using_combined_query(schema, search_settings: DotDict, ve
 
     return combine_and_sort_result_sets(result_sets, required_fields, schema, search_settings, limit, timings)
 
-
-def get_vector_search_results_matching_collection(schema: DotDict, vector_field: str, positive_ids, negative_ids, required_fields: list[str], limit: int, page: int):
-    vector_db_client = VectorSearchEngineClient.get_instance()
-    criteria = {}  # TODO: add criteria
-    vector_search_result = vector_db_client.get_items_matching_collection(schema.id, vector_field, positive_ids, negative_ids, criteria, return_vectors=False, limit=limit)
-    items = {}
-    for i, item in enumerate(vector_search_result):
-        items[item.id] = {
-            '_id': item.id,
-            '_origins': [{'type': 'vector', 'field': vector_field,
-                          'query': 'matching a collection', 'score': item.score, 'rank': i+1}],
-        }
-    # TODO: if purpose is map, get vectors directly from vector DB:
-    # result_item[map_vector_field] = vector_search_result.vector[search_vector_field]
-    return items
 
 def get_search_results_using_separate_queries(schema, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> list:
     return []
@@ -164,16 +152,18 @@ def get_search_results_similar_to_item(schema, search_settings: DotDict, vectori
 
     timings.log("search preparation")
 
-    vector_fields = [field.identifier for field in schema.object_fields.values() if field.is_available_for_search and field.field_type == FieldType.VECTOR]
+    vector_fields = [field for field in schema.object_fields.values() if field.is_available_for_search and field.field_type == FieldType.VECTOR]
 
     object_storage_client = ObjectStorageEngineClient.get_instance()
-    item = object_storage_client.get_items_by_ids(schema.id, [UUID(similar_to_item_id)], fields=vector_fields)[0]
+    item = object_storage_client.get_items_by_ids(schema.id, [UUID(similar_to_item_id)], fields=[field.identifier for field in vector_fields])[0]
     timings.log("getting original item")
 
     result_sets: list[dict] = []
     for field in vector_fields:
-        query_vector = item[field]
-        results = get_vector_search_results(schema, field, QueryInput('other item'), query_vector, required_fields=[], limit=limit, page=page)
+        query_vector = item[field.identifier]
+        score_threshold = get_field_similarity_threshold(field) if search_settings.use_similarity_thresholds else None
+        results = get_vector_search_results(schema, field.identifier, QueryInput('other item'), query_vector, required_fields=[],
+                                            limit=limit, page=page, score_threshold=score_threshold)
         result_sets.append(results)
         timings.log("vector database query")
 
@@ -196,7 +186,10 @@ def get_search_results_matching_a_collection(schema, search_settings: DotDict, v
     vector_fields = [field for field in schema.object_fields.values() if field.is_available_for_search and field.field_type == FieldType.VECTOR]
     result_sets: list[dict] = []
     for field in vector_fields:
-        results = get_vector_search_results_matching_collection(schema, field.identifier, collection.positive_ids, collection.negative_ids, required_fields=[], limit=limit, page=page)
+        score_threshold = get_field_similarity_threshold(field) if search_settings.use_similarity_thresholds else None
+        results = get_vector_search_results_matching_collection(schema, field.identifier, collection.positive_ids,
+                                                                collection.negative_ids, required_fields=[],
+                                                                limit=limit, page=page, score_threshold=score_threshold)
         result_sets.append(results)
         timings.log("vector database query")
 

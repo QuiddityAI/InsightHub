@@ -249,6 +249,10 @@ export default {
           Must:<input v-model="appState.settings.search.separate_queries[field.identifier].must" type="checkbox">
           T.O.<input v-model.number="appState.settings.search.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
         </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Exclude items below thresholds:</span>
+          <input v-model="appState.settings.search.use_similarity_thresholds" type="checkbox">
+        </div>
       </div>
       <div button @click="show_autocut_settings = !show_autocut_settings" class="flex flex-row items-center hover:bg-blue-100">
         <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Autocut {{ show_autocut_settings ? 'v' : '>' }}</span> <hr class="flex-1">

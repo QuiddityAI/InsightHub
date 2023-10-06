@@ -204,7 +204,7 @@ def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: 
 
 def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryInput,
                               query_vector: list | None, required_fields: list[str],
-                              limit: int, page: int):
+                              limit: int, page: int, score_threshold: float | None):
     if query_vector is None:
         generators: list[DotDict] = get_generators()
         field = schema.object_fields[vector_field]
@@ -236,7 +236,10 @@ def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryIn
 
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    vector_search_result = vector_db_client.get_items_near_vector(schema.id, vector_field, query_vector, criteria, return_vectors=False, limit=limit) # type: ignore
+    assert query_vector is not None
+    vector_search_result = vector_db_client.get_items_near_vector(schema.id, vector_field, query_vector,
+                                                                  criteria, return_vectors=False, limit=limit,
+                                                                  score_threshold=score_threshold) # type: ignore
     items = {}
     for i, item in enumerate(vector_search_result):
         items[item.id] = {
@@ -253,10 +256,13 @@ def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryIn
 
 def get_vector_search_results_matching_collection(schema: DotDict, vector_field: str,
                                                   positive_ids, negative_ids,
-                                                  required_fields: list[str], limit: int, page: int):
+                                                  required_fields: list[str], limit: int, page: int,
+                                                  score_threshold: float | None):
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    vector_search_result = vector_db_client.get_items_matching_collection(schema.id, vector_field, positive_ids, negative_ids, criteria, return_vectors=False, limit=limit)
+    vector_search_result = vector_db_client.get_items_matching_collection(schema.id, vector_field, positive_ids,
+                                                                          negative_ids, criteria, return_vectors=False,
+                                                                          limit=limit, score_threshold=score_threshold)
     items = {}
     for i, item in enumerate(vector_search_result):
         items[item.id] = {
@@ -282,3 +288,11 @@ def fill_in_details_from_object_storage(schema_id: int, items: list[dict], requi
                 item.update(full_item)
                 item['_id'] = str(full_item['_id'])  # MongoDB returns IDs as UUID objects, but it should be strings here
                 break
+
+
+def get_field_similarity_threshold(field, use_image_threshold: bool | None=None):
+    if use_image_threshold is None:
+        # if not determined by other means, use same type as this field:
+        use_image_threshold = field.generator.input_type == FieldType.IMAGE if field.generator else False
+    score_threshold = field.image_similarity_threshold if use_image_threshold else field.text_similarity_threshold
+    return score_threshold
