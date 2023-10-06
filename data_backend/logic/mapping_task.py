@@ -205,7 +205,7 @@ def generate_map(map_id, ignore_cache):
         for item in search_results:
             hover_label_data = {}
             hover_label_data['_id'] = item['_id']
-            hover_label_data['_score'] = item['_id']
+            hover_label_data['_score'] = item['_score']
             hover_label_data['_reciprocal_rank_score'] = item['_reciprocal_rank_score']
             hover_label_data['_origins'] = item['_origins']
             for field in schema.hover_label_rendering.required_fields:

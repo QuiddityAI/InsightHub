@@ -273,7 +273,7 @@ export default {
               that.clusterIdsPerPoint = results_per_point["cluster_ids"]
               that.fields_already_received.push('cluster_ids')
             } else if (!that.fields_already_received.includes('cluster_ids')) {
-              that.$refs.embedding_map.clusterIdsPerPoint = [-1] * that.$refs.embedding_map.targetPositionsX.length
+              that.$refs.embedding_map.clusterIdsPerPoint = Array(that.$refs.embedding_map.targetPositionsX.length).fill(-1)
             }
 
             if (results_per_point["positions_x"] && results_per_point["positions_x"].length > 0) {
