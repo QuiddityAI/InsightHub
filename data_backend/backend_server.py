@@ -26,8 +26,12 @@ CORS(app) # This will enable CORS for all routes
 # exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
 parent_log_request = serving.WSGIRequestHandler.log_request
 
+paths_excluded_from_logging = ['/data_backend/map/result',
+                               '/data_backend/document/details_by_id',
+                               ]
+
 def log_request(self, *args, **kwargs):
-    if self.path == '/data_backend/map/result' or self.path.startswith("/data_backend/local_image/"):
+    if self.path in paths_excluded_from_logging or self.path.startswith("/data_backend/local_image/"):
         return
 
     parent_log_request(self, *args, **kwargs)
