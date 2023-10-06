@@ -76,7 +76,8 @@ class ObjectFieldInline(admin.StackedInline):
     fields = [
         "identifier", "description",
         "field_type", "is_array", "embedding_space", "index_parameters",
-        "is_available_for_search", "is_available_for_filtering",
+        "is_available_for_search", "text_similarity_threshold", "image_similarity_threshold",
+        "is_available_for_filtering",
         "generator", "generator_parameters", "generating_condition",
         "source_fields", "should_be_generated",
         'action_buttons',
@@ -168,7 +169,9 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
             html += "<tr style='border: 1px solid;'>\n"
             html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.field_type + ('[]' if field.is_array else '')}</td>\n"
             html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.identifier} {'<i>(PK)</i>' if obj.primary_key == field else ''}</td>\n"
-            attributes = f"{'s' if field.is_available_for_search else '-'} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
+            thresholds = f"{field.text_similarity_threshold if field.text_similarity_threshold is not None else ''}"
+            thresholds += f" {field.image_similarity_threshold if field.image_similarity_threshold is not None else ''}"
+            attributes = f"{'s' if field.is_available_for_search else '-'} {thresholds} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
             html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
             html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
             html += "</tr>\n"
