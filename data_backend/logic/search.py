@@ -152,7 +152,7 @@ def get_search_results_similar_to_item(schema, search_settings: DotDict, vectori
 
     timings.log("search preparation")
 
-    vector_fields = [field for field in schema.object_fields.values() if field.is_available_for_search and field.field_type == FieldType.VECTOR]
+    vector_fields = [field for field in schema.object_fields.values() if field.identifier in schema.default_search_fields and field.field_type == FieldType.VECTOR]
 
     object_storage_client = ObjectStorageEngineClient.get_instance()
     item = object_storage_client.get_items_by_ids(schema.id, [UUID(similar_to_item_id)], fields=[field.identifier for field in vector_fields])[0]
