@@ -174,6 +174,8 @@ def generate_map(map_id, ignore_cache):
             search_params_hash = get_search_stage_hash(params)
             atlas_filename = f"map_data/atlas_{search_params_hash}.jpg"
             if not os.path.exists(atlas_filename):
+                # don't leave the field empty, otherwise the last atlas is still visible
+                map_data["results"]["texture_atlas_path"] = "loading"
                 def generate_texture_atlas():
                     atlas_total_width = 4096
                     sprite_size = params.search.get("thumbnail_sprite_size", 64)

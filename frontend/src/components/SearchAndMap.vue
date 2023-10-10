@@ -276,7 +276,7 @@ export default {
               that.$refs.embedding_map.updateGeometry()
             }
 
-            if (results["texture_atlas_path"]) {
+            if (results["texture_atlas_path"] && results["texture_atlas_path"] !== "loading") {
               const image = new Image()
               image.src = 'data_backend/map/texture_atlas/' + results["texture_atlas_path"]
               image.onload = () => {
@@ -285,6 +285,8 @@ export default {
                 that.$refs.embedding_map.updateGeometry()
               }
               that.fields_already_received.push('texture_atlas_path')
+            } else if (results["texture_atlas_path"] && results["texture_atlas_path"] === "loading") {
+              that.$refs.embedding_map.textureAtlas = null
             }
 
             if (results["clusters"]) {
