@@ -11,7 +11,7 @@ from PIL import Image
 # import umap  # imported lazily when used
 
 from utils.collect_timings import Timings
-from utils.helpers import normalize_array, polar_to_cartesian
+from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions
 from utils.dotdict import DotDict
 
 from database_client.django_client import get_object_schema, get_stored_map_data
@@ -254,7 +254,10 @@ def generate_map(map_id, ignore_cache):
         map_data["progress"]["embeddings_available"] = True
         timings.log("reusing projection stage results")
     else:
-        vectors = np.asarray([e[map_vector_field] for e in search_results])  # shape result_count x 768
+        vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(schema.object_fields[map_vector_field])
+        # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
+        dummy_vector = np.zeros(vector_size)
+        vectors = np.asarray([e.get(map_vector_field, dummy_vector) for e in search_results])
         timings.log("convert to numpy")
 
         def on_umap_progress(working_in_embedding_space, current_iteration, total_iterations, projections):

@@ -3,6 +3,8 @@ import math
 from typing import Callable
 import numpy as np
 
+from utils.dotdict import DotDict
+
 
 def polar_to_cartesian(r, theta):
     '''
@@ -33,3 +35,8 @@ def run_in_batches(items: list, batch_size: int, function: Callable) -> list:
         partial_results = function(items[batch_number * batch_size : (batch_number + 1) * batch_size])
         results += partial_results
     return results
+
+
+def get_vector_field_dimensions(field: DotDict):
+    return field.generator.embedding_space.dimensions if field.generator else \
+        (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)

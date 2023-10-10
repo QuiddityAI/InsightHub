@@ -8,6 +8,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 
 from utils.dotdict import DotDict
 from utils.field_types import FieldType
+from utils.helpers import get_vector_field_dimensions
 
 
 qdrant_host = os.getenv("vector_database_host", "localhost")
@@ -47,7 +48,7 @@ class VectorSearchEngineClient(object):
         if not (field.is_available_for_search and field.field_type == FieldType.VECTOR and not field.is_array):
             logging.error(f"Field is not supposed to be indexed or isn't a single vector: {field.identifier}")
             raise ValueError(f"Field is not supposed to be indexed or isn't a single vector: {field.identifier}")
-        vector_size = field.generator.embedding_space.dimensions if field.generator else (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)
+        vector_size = get_vector_field_dimensions(field)
         if not vector_size:
             logging.error(f"Indexed vector field doesn't have vector size: {field.identifier}")
             raise ValueError(f"Indexed vector field doesn't have vector size: {field.identifier}")
