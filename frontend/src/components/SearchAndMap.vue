@@ -114,6 +114,8 @@ export default {
       this.appStateStore.settings.search.cluster_id = null
       this.appStateStore.settings.search.collection_id = null
       this.appStateStore.settings.search.similar_to_item_id = null
+
+      this.appStateStore.settings.projection.shape = "2d"
     },
     run_search_from_history(history_item) {
       this.appStateStore.settings = history_item.parameters
@@ -370,6 +372,7 @@ export default {
       this.appStateStore.settings.search.similar_to_item_id = this.map_item_details[this.selectedDocumentIdx]._id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
+      this.appStateStore.settings.projection.shape = "1d_plus_distance_polar"
       const title_func = this.$refs.embedding_map.hover_label_rendering.title
       this.appStateStore.settings.search.origin_display_name = title_func(this.map_item_details[this.selectedDocumentIdx])
       this.request_search_results()
