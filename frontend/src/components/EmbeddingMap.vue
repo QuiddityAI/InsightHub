@@ -339,19 +339,25 @@ export default {
       this.baseScaleVelocity = [0.0, 0.0]
     },
     updateGeometry() {
-      function ensureLength(x, size, fillValue) {
+      function ensureLength(x, size, fillValue, removeRest=false) {
         if (x.length < size) {
           return Array(size).fill(fillValue)
+        } else if (removeRest) {
+          // for "computed" arrays like currentPositions, the rest should be removed:
+          return x.slice(0, size)
         }
+        // for "non-computed" arrays like the saturation values, we want to keep the rest
+        // in case the saturation array was loaded before the positions were set
+        // the array length is in this case correct on-demand in the updateGeometry() method
         return x
       }
       const pointCount = this.targetPositionsX.length
       this.targetPositionsY = ensureLength(this.targetPositionsY, pointCount, 0.0)
 
-      this.currentPositionsX = ensureLength(this.currentPositionsX, pointCount, pointCount > 0 ? math.mean(this.targetPositionsX) : 0.0)
-      this.currentPositionsY = ensureLength(this.currentPositionsY, pointCount, pointCount > 0 ? math.mean(this.targetPositionsY) : 0.0)
-      this.currentVelocityX = ensureLength(this.currentVelocityX, pointCount, 0.0)
-      this.currentVelocityY = ensureLength(this.currentVelocityY, pointCount, 0.0)
+      this.currentPositionsX = ensureLength(this.currentPositionsX, pointCount, pointCount > 0 ? math.mean(this.targetPositionsX) : 0.0, true)
+      this.currentPositionsY = ensureLength(this.currentPositionsY, pointCount, pointCount > 0 ? math.mean(this.targetPositionsY) : 0.0, true)
+      this.currentVelocityX = ensureLength(this.currentVelocityX, pointCount, 0.0, true)
+      this.currentVelocityY = ensureLength(this.currentVelocityY, pointCount, 0.0, true)
       this.pointVisibility = ensureLength(this.pointVisibility, pointCount, 0)
 
       this.clusterIdsPerPoint = ensureLength(this.clusterIdsPerPoint, pointCount, 0)
@@ -414,12 +420,13 @@ export default {
       this.glMesh.setParent(this.glScene)
     },
     updateMeshesQuads() {
+      const pointCount = this.currentPositionsX.length
       const shadowGeometry = new Geometry(this.glContext, {
           position: { size: 2, data: new Float32Array([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]) },
           positionX: { instanced: 1, size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { instanced: 1, size: 1, data: new Float32Array(this.currentPositionsY) },
-          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes) },
-          pointVisibility: { instanced: 1, size: 1, data: new Float32Array(this.pointVisibility) },
+          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes.slice(0, pointCount)) },
+          pointVisibility: { instanced: 1, size: 1, data: new Float32Array(this.pointVisibility.slice(0, pointCount)) },
       });
 
       this.glProgramShadows = new Program(this.glContext, {
@@ -437,10 +444,10 @@ export default {
           position: { size: 2, data: new Float32Array([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]) },
           positionX: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsY) },
-          clusterId: { instanced: 1,  size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
-          saturation: { instanced: 1,  size: 1, data: new Float32Array(this.saturation) },
-          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes) },
-          pointVisibility: { instanced: 1, size: 1, data: new Float32Array(this.pointVisibility) },
+          clusterId: { instanced: 1,  size: 1, data: new Float32Array(this.clusterIdsPerPoint.slice(0, pointCount)) },
+          saturation: { instanced: 1,  size: 1, data: new Float32Array(this.saturation.slice(0, pointCount)) },
+          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes.slice(0, pointCount)) },
+          pointVisibility: { instanced: 1, size: 1, data: new Float32Array(this.pointVisibility.slice(0, pointCount)) },
       });
 
       this.glProgram = new Program(this.glContext, {

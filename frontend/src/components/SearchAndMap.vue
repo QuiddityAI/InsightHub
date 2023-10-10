@@ -228,11 +228,7 @@ export default {
       }
       httpClient.post("/data_backend/map/result", payload)
         .then(function (response) {
-          const mappingIsFinished = response.data["finished"]
-
-          const results = response.data["results"]
-
-          if (mappingIsFinished) {
+          if (response.data["finished"]) {
             // no need to get further results:
             that.map_is_in_progess = false
           }
@@ -243,6 +239,7 @@ export default {
           that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
           that.progress_step_title = progress.step_title
 
+          const results = response.data["results"]
           if (results) {
             const results_per_point = results["per_point_data"]
             if (results_per_point["hover_label_data"] && results_per_point["hover_label_data"].length > 0) {
@@ -499,6 +496,7 @@ export default {
         })
     },
     show_stored_map(stored_map_id) {
+      console.log("showing stored map", stored_map_id)
       const that = this
 
       that.map_id = stored_map_id
