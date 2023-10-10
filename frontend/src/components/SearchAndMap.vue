@@ -64,9 +64,6 @@ export default {
 
       // stored maps:
       stored_maps: [],
-
-      // settings:
-      selected_schema: {},
     }
   },
   methods: {
@@ -525,14 +522,25 @@ export default {
       that.request_mapping_progress()
     },
     evaluate_url_query_parameters() {
+      // this is almost the first thing that is done when the page is being loaded
+      // most importantly, it initializes the schema_id, which then triggers other stuff
       const queryParams = new URLSearchParams(window.location.search);
-      if (queryParams.get("schema_id")) {
-        this.appStateStore.settings.schema_id = parseInt(queryParams.get("schema_id"))
-      } else {
+      if (queryParams.get("schema_id") === undefined) {
         this.appStateStore.settings.schema_id = 1
-      }
-      if (queryParams.get("map_id")) {
-        this.show_stored_map(queryParams.get("map_id"))
+        const emptyQueryParams = new URLSearchParams();
+        emptyQueryParams.set("schema_id", this.appStateStore.settings.schema_id);
+        history.replaceState(null, null, "?" + emptyQueryParams.toString());
+      } else if (queryParams.get("schema_id") === String(this.appStateStore.settings.schema_id)) {
+        // If this method was called because the user pressed the back arrow in the browser and
+        // the schema is the same, the stored_map might be different.
+        // In this case, load it here:
+        // (in any other case, the stored map is loaded after the schema object is loaded)
+        if (queryParams.get("map_id")) {
+          this.show_stored_map(queryParams.get("map_id"))
+        }
+      } else {
+        // there is a new schema_id in the parameters:
+        this.appStateStore.settings.schema_id = parseInt(queryParams.get("schema_id"))
       }
     },
     show_score_info_chart() {
@@ -583,27 +591,39 @@ export default {
         }
       });
     },
-  },
-  computed: {
-    ...mapStores(useAppStateStore),
-  },
-  mounted() {
-    this.updateMapPassiveMargin()
-    window.addEventListener("resize", this.updateMapPassiveMargin)
-    this.evaluate_url_query_parameters()
-    window.addEventListener("popstate", this.evaluate_url_query_parameters)
-  },
-  watch: {
-    'appStateStore.settings.schema_id' (newValue, oldValue) {
+    on_schema_id_change() {
       const that = this
 
+      that.appStateStore.schema = null
       this.reset_search_results_and_map()
 
-      const queryParams = new URLSearchParams(window.location.search);
-      if (queryParams.get("schema_id") != this.appStateStore.settings.schema_id) {
-        queryParams.set("schema_id", this.appStateStore.settings.schema_id);
-        history.pushState(null, null, "?"+queryParams.toString());
-      }
+      httpClient.post("/organization_backend/object_schema", {schema_id: this.appStateStore.settings.schema_id})
+        .then(function (response) {
+          that.appStateStore.schema = response.data
+
+          const result_list_rendering = that.appStateStore.schema.result_list_rendering
+          for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
+            result_list_rendering[field] = eval(result_list_rendering[field])
+          }
+          that.result_list_rendering = result_list_rendering
+
+          const collection_list_rendering = that.appStateStore.schema.collection_list_rendering
+          for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
+            collection_list_rendering[field] = eval(collection_list_rendering[field])
+          }
+          that.collection_list_rendering = collection_list_rendering
+
+          const hover_label_rendering = that.appStateStore.schema.hover_label_rendering
+          for (const field of ['title', 'subtitle', 'body', 'image']) {
+            hover_label_rendering[field] = hover_label_rendering[field] ? eval(hover_label_rendering[field]) : ((item) => "")
+          }
+          that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
+
+          const queryParams = new URLSearchParams(window.location.search);
+          if (queryParams.get("schema_id") === String(that.appStateStore.settings.schema_id) && queryParams.get("map_id")) {
+            that.show_stored_map(queryParams.get("map_id"))
+          }
+        })
 
       this.search_history = []
       const get_history_body = {
@@ -634,30 +654,21 @@ export default {
         .then(function (response) {
           that.stored_maps = response.data
         })
-
-      httpClient.post("/organization_backend/object_schema", {schema_id: this.appStateStore.settings.schema_id})
-        .then(function (response) {
-          that.selected_schema = response.data
-
-          const result_list_rendering = that.selected_schema.result_list_rendering
-          for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
-            result_list_rendering[field] = eval(result_list_rendering[field])
-          }
-          that.result_list_rendering = result_list_rendering
-
-          const collection_list_rendering = that.selected_schema.collection_list_rendering
-          for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
-            collection_list_rendering[field] = eval(collection_list_rendering[field])
-          }
-          that.collection_list_rendering = collection_list_rendering
-
-          const hover_label_rendering = that.selected_schema.hover_label_rendering
-          for (const field of ['title', 'subtitle', 'body', 'image']) {
-            hover_label_rendering[field] = hover_label_rendering[field] ? eval(hover_label_rendering[field]) : ((item) => "")
-          }
-          that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
-        })
-    }
+    },
+  },
+  computed: {
+    ...mapStores(useAppStateStore),
+  },
+  mounted() {
+    this.evaluate_url_query_parameters()
+    this.updateMapPassiveMargin()
+    window.addEventListener("resize", this.updateMapPassiveMargin)
+    window.addEventListener("popstate", this.evaluate_url_query_parameters)
+  },
+  watch: {
+    "appStateStore.settings.schema_id" () {
+        this.on_schema_id_change()
+    },
   },
 }
 
@@ -697,8 +708,7 @@ export default {
         <div ref="left_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <!-- search card -->
-          <SearchArea :schema="selected_schema"
-            @request_search_results="request_search_results" @reset_search_box="reset_search_box"
+          <SearchArea @request_search_results="request_search_results" @reset_search_box="reset_search_box"
             class="flex-none rounded-md shadow-sm bg-white p-3 pointer-events-auto"></SearchArea>
 
           <!-- tab box -->
@@ -757,7 +767,7 @@ export default {
 
                 <ul v-if="search_results.length !== 0" role="list" class="pt-1">
                   <li v-for="item in search_results.filter((result, i) => (appState.selected_cluster_id == null || clusterIdsPerPoint[i] == appState.selected_cluster_id)).slice(0, 10)" :key="item._id" class="justify-between pb-3">
-                    <ResultListItem :initial_item="item" :rendering="result_list_rendering" :schema="selected_schema"
+                    <ResultListItem :initial_item="item" :rendering="result_list_rendering" :schema="appState.schema"
                       @mouseenter="appState.highlighted_item_id = item._id"
                       @mouseleave="appState.highlighted_item_id = null"
                       @mousedown="show_document_details_by_id(item._id)"
@@ -870,7 +880,7 @@ export default {
         <div ref="right_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
-            <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :schema="selected_schema"
+            <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :schema="appState.schema"
               :collections="collections" :last_used_collection_id="last_used_collection_id"
               @addToPositives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, true) }"
               @addToNegatives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, false) }"

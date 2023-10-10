@@ -35,10 +35,11 @@ const appState = useAppStateStore()
 
 
 export default {
-  props: ["schema"],
   emits: ['request_search_results', 'reset_search_box'],
   data() {
     return {
+      internal_schema_id: null,
+
       show_negative_query_field: false,
       show_settings: false,
       available_databases: [],
@@ -50,9 +51,6 @@ export default {
       show_projection_settings: false,
       show_rendering_settings: false,
       show_other_settings: false,
-
-      separate_search_fields: [],
-
 
       available_autocut_strategies: [
         {id: "static_threshold", title: "Static Threshold"},
@@ -95,6 +93,7 @@ export default {
   },
   mounted() {
     const that = this
+    this.internal_schema_id = this.appStateStore.settings.schema_id
     httpClient.post("/organization_backend/available_schemas", {organization_id: -1})
       .then(function (response) {
         that.available_databases = response.data
@@ -102,15 +101,20 @@ export default {
         for (const database of that.available_databases) {
           that.database_information[database.id] = database.short_description
         }
-        that.updateOnSchemaChange()
+        // initial schema_id is set in evaluate_url_query_parameters() in SearchAndMap
       })
   },
   computed: {
     ...mapStores(useAppStateStore),
   },
   watch: {
-    schema: function (newValue, oldValue) {
-      this.updateOnSchemaChange()
+    "appStateStore.settings.schema_id": function (newValue, oldValue) {
+      // using internal variable to be able to reset parameters before
+      // actually changing global schema_id in select-field listener below
+      this.internal_schema_id = this.appStateStore.settings.schema_id
+    },
+    "appStateStore.schema": function (newValue, oldValue) {
+      this.on_full_schema_object_loaded()
     },
     show_negative_query_field() {
       if (!this.show_negative_query_field) {
@@ -119,33 +123,44 @@ export default {
     }
   },
   methods: {
-    updateOnSchemaChange() {
-      if (!this.schema.object_fields) return
+    schema_id_changed_by_user() {
+      const clean_settings = JSON.parse(JSON.stringify(this.appStateStore.default_settings))
+      clean_settings.schema_id = this.internal_schema_id
+      this.appStateStore.settings = clean_settings
+
+      const emptyQueryParams = new URLSearchParams();
+      emptyQueryParams.set("schema_id", this.appStateStore.settings.schema_id);
+      history.pushState(null, null, "?" + emptyQueryParams.toString());
+    },
+    on_full_schema_object_loaded() {
+      if (this.appStateStore.schema === null) return;
+      if (!this.appStateStore.schema.object_fields) return
+
       const that = this
-      const separate_search_fields = []
+
+      // initialize available search fields:
       this.appStateStore.settings.search.separate_queries = {}
-      for (const field of Object.values(this.schema.object_fields)) {
+      for (const field of Object.values(this.appStateStore.schema.object_fields)) {
         if (field.is_available_for_search) {
-          separate_search_fields.push(field)
           this.appStateStore.settings.search.separate_queries[field.identifier] = {
             query: "",
             query_negative: "",
             must: false,
             threshold_offset: 0.0,
-            use_for_combined_search: that.schema.default_search_fields.includes(field.identifier),
+            use_for_combined_search: that.appStateStore.schema.default_search_fields.includes(field.identifier),
           }
         }
       }
-      this.separate_search_fields = separate_search_fields
 
+      // initialize available number and vector fields:
       that.appStateStore.settings.vectorize.map_vector_field = null
       that.appStateStore.available_vector_fields = []
       that.appStateStore.available_number_fields = []
-      for (const field_identifier in that.schema.object_fields) {
-        const field = that.schema.object_fields[field_identifier]
+      for (const field_identifier in that.appStateStore.schema.object_fields) {
+        const field = that.appStateStore.schema.object_fields[field_identifier]
         if (field.field_type == FieldType.VECTOR) {
           that.appStateStore.available_vector_fields.push(field.identifier)
-          if (field.is_available_for_search && this.schema.default_search_fields.includes(field.identifier)) {
+          if (field.is_available_for_search && this.appStateStore.schema.default_search_fields.includes(field.identifier)) {
             that.appStateStore.settings.vectorize.map_vector_field = field.identifier
           }
         } else if (field.field_type == FieldType.INTEGER || field.field_type == FieldType.FLOAT) {
@@ -175,7 +190,7 @@ export default {
   <div>
     <!-- Database Selection -->
     <div class="flex justify-between">
-      <select v-model="appState.settings.schema_id" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+      <select v-model="internal_schema_id" @change="schema_id_changed_by_user" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
         <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
       </select>
       <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[appState.settings.schema_id] }}</span>
@@ -234,20 +249,20 @@ export default {
         <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Search {{ show_search_settings ? 'v' : '>' }}</span> <hr class="flex-1">
       </div>
       <div v-show="show_search_settings">
-        <div v-if="!appState.settings.search.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
-          <input v-model="appState.settings.search.separate_queries[field.identifier].use_for_combined_search" type="checkbox">
+        <div v-if="!appState.settings.search.use_separate_queries" v-for="field in Object.keys(appState.settings.search.separate_queries)" class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">{{ field }}:</span>
+          <input v-model="appState.settings.search.separate_queries[field].use_for_combined_search" type="checkbox">
         </div>
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">Use separate queries:</span>
           <input v-model="appState.settings.search.use_separate_queries" type="checkbox">
         </div>
-        <div v-if="appState.settings.search.use_separate_queries" v-for="field in separate_search_fields" class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">{{ field.identifier }}:</span>
-          <input v-model.number="appState.settings.search.separate_queries[field.identifier].query" placeholder="positive" class="w-1/2 text-gray-500 text-sm">
-          <input v-model.number="appState.settings.search.separate_queries[field.identifier].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
-          Must:<input v-model="appState.settings.search.separate_queries[field.identifier].must" type="checkbox">
-          T.O.<input v-model.number="appState.settings.search.separate_queries[field.identifier].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <div v-if="appState.settings.search.use_separate_queries" v-for="field in Object.keys(appState.settings.search.separate_queries)" class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">{{ field }}:</span>
+          <input v-model.number="appState.settings.search.separate_queries[field].query" placeholder="positive" class="w-1/2 text-gray-500 text-sm">
+          <input v-model.number="appState.settings.search.separate_queries[field].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
+          Must:<input v-model="appState.settings.search.separate_queries[field].must" type="checkbox">
+          T.O.<input v-model.number="appState.settings.search.separate_queries[field].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
         </div>
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">Exclude items below thresholds:</span>
