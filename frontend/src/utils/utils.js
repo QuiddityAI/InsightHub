@@ -7,7 +7,7 @@ export function normalizeArray(a, gamma=1.0, max_default=1.0) {
   return math.dotPow(math.divide(a, math.max(math.max(a), max_default)), gamma)
 }
 
-export function normalizeArrayMedianGamma(a, max_default=1.0) {
+export function normalizeArrayMedianGamma(a, gamma_factor, max_default=1.0) {
   if (a.length === 0) return a;
   const aMin = math.min(a);
   const aMax = math.max(a);
@@ -17,7 +17,7 @@ export function normalizeArrayMedianGamma(a, max_default=1.0) {
   a = math.subtract(a, math.min(a))
   a = math.divide(a, math.max(math.max(a), max_default))
   // using the median as gamma should provide a good, balanced distribution:
-  const gamma = math.max(0.1, math.median(a) * 0.6)
+  const gamma = math.max(0.1, math.median(a) * 2.0 * gamma_factor)
   return math.dotPow(a, gamma)
 }
 

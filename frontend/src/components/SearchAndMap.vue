@@ -260,11 +260,11 @@ export default {
             }
 
             if (results_per_point["point_sizes"] && results_per_point["point_sizes"].length > 0) {
-              that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results_per_point["point_sizes"])
+              that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results_per_point["point_sizes"], 0.3)
               that.fields_already_received.push('point_sizes')
             }
             if (results_per_point["scores"] && results_per_point["scores"].length > 0) {
-              that.$refs.embedding_map.saturation = normalizeArray(results_per_point["scores"], 3.0, 0.001)
+              that.$refs.embedding_map.saturation = normalizeArrayMedianGamma(results_per_point["scores"], 3.0, 0.001)
               that.fields_already_received.push('scores')
               if (that.appStateStore.settings.projection.shape === "score_graph") {
                 // for the score graph, the score is already visible as the position

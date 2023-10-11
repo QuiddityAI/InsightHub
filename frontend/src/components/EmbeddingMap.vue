@@ -346,7 +346,7 @@ export default {
       function ensureLength(x, size, fillValue, removeRest=false) {
         if (x.length < size) {
           return Array(size).fill(fillValue)
-        } else if (removeRest) {
+        } else if (x.length > size && removeRest) {
           // for "computed" arrays like currentPositions, the rest should be removed:
           return x.slice(0, size)
         }
