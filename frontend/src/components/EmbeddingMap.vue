@@ -369,7 +369,7 @@ export default {
       this.pointSizes = ensureLength(this.pointSizes, pointCount, 0.5)
 
       this.glTextureAtlas = new Texture(this.glContext, {
-        generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.NEAREST
+        generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.LINEAR
       });
       if (this.textureAtlas) {
         this.glTextureAtlas.image = this.textureAtlas;
