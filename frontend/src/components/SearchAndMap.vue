@@ -528,7 +528,7 @@ export default {
       // this is almost the first thing that is done when the page is being loaded
       // most importantly, it initializes the schema_id, which then triggers other stuff
       const queryParams = new URLSearchParams(window.location.search);
-      if (queryParams.get("schema_id") === undefined) {
+      if (queryParams.get("schema_id") === null) {
         this.appStateStore.settings.schema_id = 1
         const emptyQueryParams = new URLSearchParams();
         emptyQueryParams.set("schema_id", this.appStateStore.settings.schema_id);
