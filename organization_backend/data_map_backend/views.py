@@ -109,7 +109,7 @@ def get_search_history(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = SearchHistoryItem.objects.filter(user_id=user_id, schema_id=schema_id).order_by('created_at')[:25]
+    items = SearchHistoryItem.objects.filter(user_id=user_id, schema_id=schema_id).order_by('-created_at')[:25:-1]
     serialized_data = SearchHistoryItemSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
