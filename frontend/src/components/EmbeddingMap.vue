@@ -32,9 +32,11 @@ export default {
 
       targetPositionsX: [],
       targetPositionsY: [],
+      maxOpacity: 0.7,
       saturation: [],
       colors: [],
       pointSizes: [],
+      pointSizeFactor: 1.0,
       clusterIdsPerPoint: [],
 
       itemDetails: [],
@@ -124,9 +126,11 @@ export default {
     resetData() {
       this.targetPositionsX = []
       this.targetPositionsY = []
+      this.maxOpacity = 0.7,
       this.saturation = [],
       this.colors = [],
       this.pointSizes = [],
+      this.pointSizeFactor = 1.0,
       this.clusterIdsPerPoint = [],
 
       this.itemDetails = []
@@ -489,6 +493,8 @@ export default {
         pointTextureNormalMap: { value: this.pointTextureNormalMap },
         thumbnailSpriteSize: { value: this.thumbnailSpriteSize },
         selectedClusterId: { value: selectedClusterId },
+        maxOpacity: { value: this.maxOpacity },
+        pointSizeFactor: { value: this.pointSizeFactor },
       }
     },
     updateUniforms() {
@@ -515,8 +521,8 @@ export default {
         }
       }
       const pointSize = this.pointSizes[closestIdx]
-      const zoomAdjustment = (this.currentZoom - 1.0) * 0.3 + 1.0;
-      const pointSizeScreenPx = (5.0 + 15.0 * pointSize) * zoomAdjustment * window.devicePixelRatio;
+      const zoomAdjustment = (this.currentZoom - 1.0) * 0.05 + 1.0;
+      const pointSizeScreenPx = (5.0 + 15.0 * pointSize) * zoomAdjustment * this.pointSizeFactor * window.devicePixelRatio;
       const pointSizeEmbedding = this.screenToEmbeddingX(pointSizeScreenPx) - this.screenToEmbeddingX(0)
       const threshold = pointSizeEmbedding
       if (closestIdx !== null && closestDist < threshold) {

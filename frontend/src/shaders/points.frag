@@ -11,6 +11,7 @@ in float isHighlighted;
 in float isSelected;
 in float saturationVar;
 flat in uint pointVisibilityVar;
+flat in float pointRadiusPxVar;
 
 uniform sampler2D textureAtlas;
 uniform float zoom;
@@ -21,6 +22,7 @@ uniform bool useTextureAtlas;
 uniform sampler2D pointTextureBaseColor;
 uniform sampler2D pointTextureNormalMap;
 uniform int thumbnailSpriteSize;
+uniform float maxOpacity;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
@@ -62,7 +64,7 @@ void main() {
     vec2 posFromBottomLeft = vUv;  // 0 - 1
 	vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
 	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
-    float pointRadiusPx = (5.0 * zoom * devicePixelRatio) / 2.0;
+    float pointRadiusPx = pointRadiusPxVar;
 
     // circle area:
     float antiAliasingEdgePx = 1.0;
@@ -70,7 +72,7 @@ void main() {
     float imageSize = 0.8;
     float imageCircleArea = 1.0 - smoothstep(imageSize - (antiAliasingEdgePx / pointRadiusPx), imageSize, distFromCenter);
 
-    FragColor.a = circleArea * 0.7;
+    FragColor.a = circleArea * maxOpacity;
 
     if (useTextureAtlas) {
         int atlasTotalWidth = 4096;

@@ -24,6 +24,7 @@ uniform int highlightedPointIdx;
 uniform int selectedPointIdx;
 uniform float devicePixelRatio;
 uniform int selectedClusterId;
+uniform float pointSizeFactor;
 
 out vec2 vUv;
 out vec3 vertexPositionVar;
@@ -34,6 +35,7 @@ out float isHighlighted;
 out float isSelected;
 out float saturationVar;
 flat out uint pointVisibilityVar;
+flat out float pointRadiusPxVar;
 
 
 vec3 hsv2rgb(vec3 c) {
@@ -84,8 +86,9 @@ void main() {
     // to be able to separate closing packet points by zooming in. This is what the
     // zoomAdjustment variable does. The same calculation is used in JS to get the pointSize
     // when checking if a point was clicked.)
-    float zoomAdjustment = (zoom - 1.0) * 0.3 + 1.0;
-    float pointSize = (5.0 + 15.0 * pointSize) * zoomAdjustment * devicePixelRatio;
+    float zoomAdjustment = (zoom - 1.0) * 0.05 + 1.0;
+    float pointSize = (5.0 + 15.0 * pointSize) * zoomAdjustment * pointSizeFactor * devicePixelRatio;
+    pointRadiusPxVar = pointSize / 2.0;
 
     vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);
     vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0) / devicePixelRatio;

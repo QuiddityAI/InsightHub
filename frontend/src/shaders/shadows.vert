@@ -20,6 +20,7 @@ uniform float zoom;
 uniform int highlightedPointIdx;
 uniform vec3 lightPosition;
 uniform float devicePixelRatio;
+uniform float pointSizeFactor;
 
 out vec2 vUv;
 out float isHighlighted;
@@ -49,9 +50,9 @@ void main() {
 
     // point size:
     // (see points.vert shader for how zoomAdjustment works)
-    float zoomAdjustment = (zoom - 1.0) * 0.3 + 1.0;
+    float zoomAdjustment = (zoom - 1.0) * 0.05 + 1.0;
     float shadowScale = 1.5;
-    float pointSize = (5.0 + 15.0 * pointSize) * shadowScale * zoomAdjustment * devicePixelRatio;
+    float pointSize = (5.0 + 15.0 * pointSize) * shadowScale * zoomAdjustment * pointSizeFactor * devicePixelRatio;
 
     vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);
     vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0) / devicePixelRatio;

@@ -241,6 +241,14 @@ export default {
           that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
           that.progress_step_title = progress.step_title
 
+          if (that.appStateStore.schema.thumbnail_image) {
+            that.$refs.embedding_map.pointSizeFactor = 2.0
+            that.$refs.embedding_map.maxOpacity = 1.0
+          } else {
+            that.$refs.embedding_map.pointSizeFactor = 1.0
+            that.$refs.embedding_map.maxOpacity = 0.7
+          }
+
           const results = response.data["results"]
           if (results) {
             const results_per_point = results["per_point_data"]
