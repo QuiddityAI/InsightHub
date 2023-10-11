@@ -167,7 +167,7 @@ export default {
           that.appStateStore.available_number_fields.push(field.identifier)
         }
       }
-      that.appStateStore.settings.rendering.point_size = 'equal'
+      that.appStateStore.settings.rendering.point_size = '_score'
       if (that.appStateStore.available_number_fields.length > 0) {
         for (const field of that.appStateStore.available_number_fields) {
           if (field === 'citedby') {
@@ -175,9 +175,6 @@ export default {
             that.appStateStore.settings.rendering.point_size = field
             break
           }
-        }
-        if (that.appStateStore.settings.rendering.point_size == 'equal')  {
-          that.appStateStore.settings.rendering.point_size = that.appStateStore.available_number_fields[0]
         }
       }
     },
@@ -373,6 +370,7 @@ export default {
           <span class="text-gray-500 text-sm">Point Size:</span>
           <select v-model="appState.settings.rendering.point_size" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
               <option :value="'equal'" selected>---</option>
+              <option :value="'_score'" selected>Score</option>
               <option v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
           </select>
         </div>

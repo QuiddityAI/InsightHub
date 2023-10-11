@@ -242,7 +242,7 @@ export default {
           that.progress_step_title = progress.step_title
 
           if (that.appStateStore.schema.thumbnail_image) {
-            that.$refs.embedding_map.pointSizeFactor = 2.0
+            that.$refs.embedding_map.pointSizeFactor = 3.0
             that.$refs.embedding_map.maxOpacity = 1.0
           } else {
             that.$refs.embedding_map.pointSizeFactor = 1.0
@@ -260,7 +260,7 @@ export default {
             }
 
             if (results_per_point["point_sizes"] && results_per_point["point_sizes"].length > 0) {
-              that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results_per_point["point_sizes"], 0.3)
+              that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results_per_point["point_sizes"], 2.0)
               that.fields_already_received.push('point_sizes')
             }
             if (results_per_point["scores"] && results_per_point["scores"].length > 0) {
