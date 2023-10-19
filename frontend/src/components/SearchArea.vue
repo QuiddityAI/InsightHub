@@ -71,6 +71,7 @@ export default {
         "shape": {title: "shape", default: "2d", value: "2d", options: [
           {id: "2d", title: "2D"},
           {id: "1d_plus_distance_polar", title: "1D + Distance (Polar)"},
+          {id: "1d_plus_year", title: "1D + Year"},
           {id: "score_graph", title: "Score Graph"},
         ]},
         "n_neighbors": {title: "n_neighbors", default: 15, value: 15},

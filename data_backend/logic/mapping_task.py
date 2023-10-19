@@ -272,16 +272,22 @@ def generate_map(map_id, ignore_cache):
 
             if working_in_embedding_space and projections is not None:
                 if projection_parameters.get("shape") == "1d_plus_distance_polar":
-                    projections = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
+                    positions = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
+                elif projection_parameters.get("shape") == "1d_plus_year":
+                    assert search_results is not None
+                    years = np.asarray([e.get("issued_year", 2010) for e in search_results])
+                    positions = np.column_stack([normalize_array(years), normalize_array(projections[:, 0])])
+                else:
+                    positions = projections
 
-                map_data["results"]["per_point_data"]["positions_x"] = projections[:, 0].tolist()
-                map_data["results"]["per_point_data"]["positions_y"] = projections[:, 1].tolist()
+                map_data["results"]["per_point_data"]["positions_x"] = positions[:, 0].tolist()
+                map_data["results"]["per_point_data"]["positions_y"] = positions[:, 1].tolist()
 
         # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
         # Progress might only be available below 4096
 
         map_data['progress']['step_title'] = "UMAP Preparation"
-        target_dimensions = 1 if projection_parameters.get("shape") == "1d_plus_distance_polar" else 2
+        target_dimensions = 1 if projection_parameters.get("shape") in ("1d_plus_distance_polar", "1d_plus_year") else 2
         import umap  # import it only when needed as it slows down the startup time
         umap_task = umap.UMAP(n_components=target_dimensions, random_state=99,
                               min_dist=projection_parameters.get("min_dist", 0.05),
@@ -293,6 +299,12 @@ def generate_map(map_id, ignore_cache):
         map_data["results"]["per_point_data"]["raw_projections"] = projections.tolist()
         if projection_parameters.get("shape") == "1d_plus_distance_polar":
             positions = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
+        elif projection_parameters.get("shape") == "1d_plus_year":
+            years = np.asarray([e.get("issued_year", 2010) for e in search_results])
+            rng = np.random.default_rng()
+            small_offsets = rng.triangular(-0.5, 0.0, 0.5, len(years))
+            years = years + small_offsets
+            positions = np.column_stack([normalize_array(years), normalize_array(projections[:, 0])])
         elif projection_parameters.get("shape") == "score_graph":
             positions = np.column_stack([[float(x) / len(scores) for x in range(len(scores))], normalize_array(scores)])
         else:
