@@ -96,7 +96,8 @@ def insert_many(schema_id: int, elements: list[dict]):
                 filtering_attributes[filtering_field] = element.get(filtering_field)
             payloads.append(filtering_attributes)
 
-        vector_db_client.upsert_items(schema.id, vector_field, ids, payloads, vectors)
+        if vectors:
+            vector_db_client.upsert_items(schema.id, vector_field, ids, payloads, vectors)
 
     text_search_engine_ids = []
     text_search_engine_items = []
