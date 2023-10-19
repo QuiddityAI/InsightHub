@@ -1,0 +1,154 @@
+Parameters Area
+x from UI state:
+- available vector fields etc.
+
+x from schema:
+- available fields
+
+x from parameters:
+- everything read and write
+
+x from results: -
+
+x emits:
+- get search results /w current params
+- get map results /w current params
+- (get both)
+- clear params and results
+
+
+Search Results
+x from UI state:
+
+x from schema:
+- search list rendering
+
+x from parameters: -
+
+x from search / map results:
+(search endpoint should return map result format just with search results)
+(search is basically synchronous map endpoint with just search)
+- results with item ids + "details" per item
+- available clusters and cluster id per item
+
+x emits:
+- item hovered
+- item selected
+- cluster selected / hovered?
+
+
+Map
+x from UI state:
+- selected hovered item
+- selected hovered cluster
+
+x from schema:
+- (see hover label)
+
+x from parameters:
+- map rendering (size, saturation field, shape?)
+  - maybe change those settings directly? -> change params and emit getting map results
+- if thumbnails are expected
+
+x from results:
+- per point: positions, cluster ids, size saturation etc.
+- thumbnail atlas image (+size)
+- cluster details
+
+x emits:
+- item hovered / selected
+- cluster hovered / selected
+- (getting map results after changing params?)
+
+x slots:
+- results were updated?
+- reset map (or just check if results are empty?)
+
+
+--- Hover Labels
+x from UI state:
+- selected / hovered item
+
+x from schema:
+- hover label rendering
+
+x from parameters: -
+
+x from results:
+- item details
+
+x emits: -
+
+
+Detail View
+x from UI state:
+- last used collection
+- selected item
+
+x other:
+- available collections
+
+x from schema:
+- detail view rendering
+
+x from parameters: -
+
+x from results:
+- item details (for initial content)
+
+x emits:
+- add to / remove from collection
+- (specials: get fulltext)
+
+
+History
+x from UI state: -
+
+x other:
+- search history
+
+x from schema: -
+
+x from parameters: -
+
+x from results: -
+
+x emits:
+- load history item
+
+
+Stored Maps
+x from UI state: -
+
+x other:
+- stored maps
+
+x from schema: -
+
+x from parameters: -
+
+x from results: -
+
+x emits:
+- load stored map
+
+
+Collections
+x from UI state: -
+
+x other:
+- collections
+
+x from schema:
+- collection item rendering
+
+x from parameters: -
+
+x from results: -
+
+x emits:
+- show map for collection
+- show recommended items for collection
+- item hovered / selected
+- remove item from collection
+- add / remove collection
