@@ -1,21 +1,30 @@
+<script setup>
+import { mapStores } from 'pinia'
+import { useAppStateStore } from '../stores/settings_store'
+
+const appState = useAppStateStore()
+</script>
 
 <script>
 import httpClient from '../api/httpClient';
 
 export default {
-  props: ["item_id", "schema_id", "isPositive", "rendering"],
+  props: ["item_id", "is_positive"],
   emits: ["remove"],
   data() {
     return {
       item: {},
     }
   },
+  computed: {
+    ...mapStores(useAppStateStore),
+  },
   mounted() {
     const that = this
     const payload = {
-      schema_id: this.schema_id,
+      schema_id: this.appStateStore.settings.schema_id,
       item_id: this.item_id,
-      fields: this.rendering.required_fields,
+      fields: this.appStateStore.collection_list_rendering.required_fields,
     }
     httpClient.post("/data_backend/document/details_by_id", payload)
       .then(function (response) {
@@ -27,10 +36,10 @@ export default {
 
 
 <template>
-<div class="rounded px-3 py-2" :class="{'bg-green-100/50': isPositive, 'bg-red-100/50': !isPositive}">
-  <p class="text-sm font-medium leading-6 text-gray-900" v-html="rendering.title(item)"></p>
-  <p class="truncate text-xs leading-5 text-gray-500" v-html="rendering.subtitle(item)"></p>
-  <img v-if="rendering.image(item)" class="h-24" :src="rendering.image(item)">
+<div class="rounded px-3 py-2" :class="{'bg-green-100/50': is_positive, 'bg-red-100/50': !is_positive}">
+  <p class="text-sm font-medium leading-6 text-gray-900" v-html="appState.collection_list_rendering.title(item)"></p>
+  <p class="truncate text-xs leading-5 text-gray-500" v-html="appState.collection_list_rendering.subtitle(item)"></p>
+  <img v-if="appState.collection_list_rendering.image(item)" class="h-24" :src="appState.collection_list_rendering.image(item)">
   <button @click="$emit('remove')" class="text-sm text-gray-500">Remove</button>
 </div>
 </template>

@@ -9,6 +9,7 @@ import SearchArea from './SearchArea.vue';
 import ResultListItem from './ResultListItem.vue';
 import ObjectDetailsModal from './ObjectDetailsModal.vue';
 import Collection from './Collection.vue';
+import CollectionListItem from './CollectionListItem.vue';
 
 import httpClient from '../api/httpClient';
 import { normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
@@ -30,7 +31,6 @@ export default {
       // results:
       search_results: [],
       result_list_rendering: {},
-      collection_list_rendering: {},
       map_id: null,
       map_item_details: [],
       cluster_data: [],
@@ -416,7 +416,7 @@ export default {
       }
       httpClient.post("/organization_backend/add_item_collection", create_collection_body)
         .then(function (response) {
-          that.collections.push(response.data)
+          that.appStateStore.collections.push(response.data)
         })
     },
     delete_item_collection(collection_id) {
@@ -428,7 +428,7 @@ export default {
         .then(function (response) {
           let index_to_be_removed = null
           let i = 0
-          for (const collection of that.collections) {
+          for (const collection of that.appStateStore.collections) {
             if (collection.id == collection_id) {
               index_to_be_removed = i
               break
@@ -436,7 +436,7 @@ export default {
             i += 1
           }
           if (index_to_be_removed !== null) {
-            that.collections.splice(index_to_be_removed, 1)
+            that.appStateStore.collections.splice(index_to_be_removed, 1)
           }
         })
     },
@@ -622,7 +622,7 @@ export default {
           for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
             collection_list_rendering[field] = eval(collection_list_rendering[field])
           }
-          that.collection_list_rendering = collection_list_rendering
+          that.appStateStore.collection_list_rendering = collection_list_rendering
 
           const hover_label_rendering = that.appStateStore.schema.hover_label_rendering
           for (const field of ['title', 'subtitle', 'body', 'image']) {
@@ -646,14 +646,14 @@ export default {
           that.search_history = response.data
         })
 
-      this.collections = []
+      this.appStateStore.collections = []
       const get_collections_body = {
         user_id: 1,  // FIXME: hardcoded
         schema_id: this.appStateStore.settings.schema_id,
       }
       httpClient.post("/organization_backend/get_item_collections", get_collections_body)
         .then(function (response) {
-          that.collections = response.data
+          that.appStateStore.collections = response.data
         })
 
       this.stored_maps = []
@@ -757,11 +757,11 @@ export default {
                       Cutoff Index: {{ search_result_score_info[score_info_title].cutoff_index }},
                       Reason: {{ search_result_score_info[score_info_title].reason }}
                       <div v-for="item_id in search_result_score_info[score_info_title].positive_examples" :key="'example' + item_id" class="justify-between pb-3">
-                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="true" :rendering="collection_list_rendering">
+                        <CollectionListItem :item_id="item_id" :is_positive="true">
                         </CollectionListItem>
                       </div>
                       <div v-for="item_id in search_result_score_info[score_info_title].negative_examples" :key="'example' + item_id" class="justify-between pb-3">
-                        <CollectionListItem :item_id="item_id" :schema_id="appState.settings.schema_id" :is-positive="false" :rendering="collection_list_rendering">
+                        <CollectionListItem :item_id="item_id" :is_positive="false">
                         </CollectionListItem>
                       </div>
                     </div>
@@ -854,12 +854,15 @@ export default {
                   </button>
                 </div>
 
-                <ul v-if="Object.keys(collections).length !== 0" role="list" class="pt-3">
-                  <Collection v-for="collection in collections" :collection="collection" :key="collection.id"
+                <ul v-if="Object.keys(appState.collections).length !== 0" role="list" class="pt-3">
+                  <Collection v-for="collection in appState.collections" :collection="collection" :key="collection.id"
+                    @delete_item_collection="delete_item_collection"
+                    @recommend_items_for_collection="recommend_items_for_collection"
+                    @show_collection_as_map="show_collection_as_map"
                     class="justify-between pb-3">
                   </Collection>
                 </ul>
-                <div v-if="Object.keys(collections).length === 0" class="h-20 flex flex-col text-center place-content-center">
+                <div v-if="Object.keys(appState.collections).length === 0" class="h-20 flex flex-col text-center place-content-center">
                   <p class="flex-none text-gray-400">No Results Yet</p>
                 </div>
               </div>
@@ -872,7 +875,7 @@ export default {
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
             <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :schema="appState.schema"
-              :collections="collections" :last_used_collection_id="last_used_collection_id"
+              :collections="appState.collections" :last_used_collection_id="last_used_collection_id"
               @addToPositives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, true) }"
               @addToNegatives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, false) }"
               @showSimilarItems="showSimilarItems"

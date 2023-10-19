@@ -12,6 +12,7 @@ urlpatterns=[
     path("get_item_collection", views.get_item_collection),
     path("delete_item_collection", views.delete_item_collection),
     path("add_item_to_collection", views.add_item_to_collection),
+    path("remove_item_from_collection", views.remove_item_from_collection),
     path("add_stored_map", views.add_stored_map),
     path("get_stored_maps", views.get_stored_maps),
     path("stored_map_data", views.get_stored_map_data),

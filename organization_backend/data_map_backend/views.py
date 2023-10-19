@@ -238,6 +238,34 @@ def add_item_to_collection(request):
 
 #@login_required()
 @csrf_exempt
+def remove_item_from_collection(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        collection_id: int = data["collection_id"]
+        item_id: str = data["item_id"]
+        is_positive: bool = data["is_positive"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        collection = ItemCollection.objects.get(id=collection_id)
+    except ItemCollection.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if is_positive:
+        collection.positive_ids.remove(item_id)
+    else:
+        collection.negative_ids.remove(item_id)
+    collection.save()
+
+    return HttpResponse(None, status=204)
+
+
+#@login_required()
+@csrf_exempt
 def add_stored_map(request):
     if request.method != 'POST':
         return HttpResponse(status=405)

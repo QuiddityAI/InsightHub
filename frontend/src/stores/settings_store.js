@@ -18,6 +18,11 @@ export const useAppStateStore = defineStore('appState', {
 
       schema: null,
 
+      // collections:
+      collections: [],
+      last_used_collection_id: null,
+      collection_list_rendering: {},
+
       settings: {
         schema_id: null,
         search: {
