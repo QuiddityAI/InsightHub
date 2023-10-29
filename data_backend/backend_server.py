@@ -28,6 +28,7 @@ parent_log_request = serving.WSGIRequestHandler.log_request
 
 paths_excluded_from_logging = ['/data_backend/map/result',
                                '/data_backend/document/details_by_id',
+                               '/health',
                                ]
 
 def log_request(self, *args, **kwargs):
