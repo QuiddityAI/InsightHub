@@ -32,7 +32,9 @@ of the MXene ${\mathrm{Sc}}_{2}\mathrm{C}$, which has
 a novel CdS/MoO2@Mo2C-MXene photocatalyst
 """
 
-ignore_words = ["abstract", "figure", "cm", "mm", "kg", "μm", "kg-1", "g-1", "wt%", "db", "kpa", "mah"]
+academic_ignore_words = ["abstract", "figure", "cm", "mm", "kg", "μm", "kg-1", "g-1", "wt%", "db", "kpa", "mah"]
+english_ignore_words = ["with", "is", "were", "in", "the", "a", "an", "of", "this", "and", "for", "we"]
+ignore_words = academic_ignore_words + english_ignore_words
 html_tag_regex = re.compile(r"<.{1,8}?>(.{1,100}?)</.{1,8}?>", re.IGNORECASE)
 latex_math_env_regex = re.compile(r"\$.{1,100}?\$", re.IGNORECASE)
 
@@ -52,7 +54,7 @@ def correct_first_letter(s):
         return s.lower()
     return s
 
-def tokenize(text):
+def tokenize(text, context_specific_ignore_words=[]):
     words = []
     text = text.replace("−", "-")
     text = text.replace("–", "-")
@@ -74,10 +76,15 @@ def tokenize(text):
         if '"' in word:  # for artifacts like 'xmlns:mml="http:'
             continue
         # TODO: strip accents?
+        if word.lower() in ignore_words:
+            continue
+        if word.lower() in context_specific_ignore_words:
+            continue
+        if len(words) > 1 and words[-1] == word:
+            continue
         word = correct_plural_abbreviation(word)
         word = correct_first_letter(word)
-        if word.lower() not in ignore_words:
-            words.append(word)
+        words.append(word)
 
     return words
 

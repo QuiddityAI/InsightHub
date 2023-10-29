@@ -614,8 +614,9 @@ export default {
       @click="$emit('cluster_selected', cluster_label)"
       @mouseenter="$emit('cluster_hovered', cluster_label.id)"
       @mouseleave="$emit('cluster_hover_end')"
-      class="px-1 bg-white hover:bg-gray-100 text-gray-500 text-xs rounded">
-      {{ cluster_label.title }}
+      class="px-1 bg-white hover:bg-gray-100 text-gray-500 text-xs rounded"
+      v-html="cluster_label.title_html"
+      >
     </button>
   </div>
 
