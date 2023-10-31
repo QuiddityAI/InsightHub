@@ -249,7 +249,7 @@ class ObjectSchema(models.Model):
         verbose_name="Primary Key",
         to='ObjectField',
         related_name='+',
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True)
     thumbnail_image = models.ForeignKey(
@@ -305,7 +305,11 @@ class ObjectSchema(models.Model):
     def random_item(self):
         url = data_backend_url + f'/data_backend/schema/{self.id}/random_item'
         result = requests.get(url)
-        return mark_safe(json.dumps(result.json()["item"], indent=2).replace(" ", "&nbsp").replace("\n", "<br>"))
+        item = result.json()["item"]
+        for key in item.get("_source", {}).keys():
+            if isinstance(item["_source"][key], list) and len(item["_source"][key]) > 50:
+                item["_source"][key] = f"&lt;Array of length {len(item['_source'][key])}&gt;"
+        return mark_safe(json.dumps(item, indent=2).replace(" ", "&nbsp").replace("\n", "<br>"))
     item_count.fget.random_item = "Random Item"
 
     def __str__(self):
