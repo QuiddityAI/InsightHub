@@ -313,7 +313,7 @@ class ObjectSchema(models.Model):
             for key in item.get("_source", {}).keys():
                 if isinstance(item["_source"][key], list) and len(item["_source"][key]) > 50:
                     item["_source"][key] = f"&lt;Array of length {len(item['_source'][key])}&gt;"
-            return mark_safe(json.dumps(item, indent=2).replace(" ", "&nbsp").replace("\n", "<br>"))
+            return mark_safe(json.dumps(item, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
         except Exception as e:
             return repr(e)
     item_count.fget.random_item = "Random Item"
