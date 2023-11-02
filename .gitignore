@@ -25,6 +25,7 @@ __pycache__/
 absclust_search_cache.pkl
 embedding_cache.pkl
 data_backend/map_data/
+data_backend/openalex_completed_files.txt
 
 credentials.json
 openai_credentials.json

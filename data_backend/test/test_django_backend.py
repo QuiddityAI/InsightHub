@@ -26,9 +26,9 @@ def test_schema_serialization():
 
     print(json.dumps(schema, indent=4, cls=CustomJSONEncoder))
 
-    steps = get_pipeline_steps(schema)
+    steps_and_fields = get_pipeline_steps(schema)
 
-    print(json.dumps(steps, indent=4, cls=CustomJSONEncoder))
+    print(json.dumps(steps_and_fields, indent=4, cls=CustomJSONEncoder))
 
     return schema
 
@@ -90,7 +90,7 @@ def test_insert_many_fashion():
     update_database_layout(schema_id)
 
     elements = []
-    max_elements = 10000
+    max_elements = 45000
     counter = 0
 
     # see here: https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-dataset
@@ -100,20 +100,21 @@ def test_insert_many_fashion():
             row['image'] = f'/data/kaggle_fashion_44k/images/{row["id"]}.jpg'
             elements.append(row)
             counter += 1
-            if counter >= max_elements:
-                break
 
-            if counter % 512 == 0:
+            if counter % min(max_elements, 512) == 0:
                 t1 = time.time()
                 insert_many(schema_id, elements)
                 t2 = time.time()
                 print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(elements))*1000:.2f} ms")
                 elements = []
 
+            if counter >= max_elements:
+                break
+
 
 if __name__ == "__main__":
     # schema = test_schema_serialization()
     # test_vector_db_client(schema)
-    # test_insert_many_books()
-    test_insert_many_fashion()
+    test_insert_many_books()
+    # test_insert_many_fashion()
 
