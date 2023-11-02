@@ -1,6 +1,5 @@
 import logging
 import math
-from uuid import UUID
 
 import numpy as np
 
@@ -11,7 +10,6 @@ from utils.dotdict import DotDict
 from database_client.absclust_database_client import get_absclust_items_by_ids
 from database_client.django_client import get_generators
 from database_client.vector_search_engine_client import VectorSearchEngineClient
-from database_client.object_storage_client import ObjectStorageEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 
 from logic.postprocess_search_results import enrich_search_results
@@ -54,6 +52,8 @@ def combine_and_sort_result_sets(result_sets: list[dict], required_fields: list[
 def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotDict, schema: DotDict) -> dict:
     score_info = {}
     for result_set in result_sets:
+        if not result_set:
+            continue
         sorted_items = sorted(result_set.values(), key=lambda item: item['_origins'][0]['score'], reverse=True)
         example_origin = sorted_items[0]['_origins'][0]
         scores = [item['_origins'][0]['score'] for item in sorted_items]
@@ -171,7 +171,9 @@ def get_required_fields(schema, vectorize_settings: DotDict, purpose: str):
     rendering = schema.result_list_rendering if purpose == "list" else schema.hover_label_rendering
     required_fields = rendering['required_fields']
 
-    if purpose == "map" and vectorize_settings.map_vector_field != "w2v_vector" and vectorize_settings.map_vector_field not in required_fields:
+    if purpose == "map" and vectorize_settings.map_vector_field \
+        and vectorize_settings.map_vector_field != "w2v_vector" \
+        and vectorize_settings.map_vector_field not in required_fields:
         required_fields.append(vectorize_settings.map_vector_field)
 
     if purpose == "map" and schema.thumbnail_image:
@@ -192,6 +194,7 @@ def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: 
     criteria = {}  # TODO: add criteria
     search_result = text_db_client.get_search_results(schema.id, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
     items = {}
+    # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     for i, item in enumerate(search_result):
         items[item['_id']] = {
             '_id': item['_id'],
@@ -276,17 +279,18 @@ def get_vector_search_results_matching_collection(schema: DotDict, vector_field:
 
 
 def fill_in_details_from_object_storage(schema_id: int, items: list[dict], required_fields: list[str]):
+    if not items:
+        return
     ids = [item['_id'] for item in items]
     if schema_id == ABSCLUST_SCHEMA_ID:
         full_items = get_absclust_items_by_ids(ids)
     else:
-        object_storage_client = ObjectStorageEngineClient.get_instance()
-        full_items = object_storage_client.get_items_by_ids(schema_id, map(UUID, ids), fields=required_fields)
+        search_engine_client = TextSearchEngineClient.get_instance()
+        full_items = search_engine_client.get_items_by_ids(schema_id, ids, fields=required_fields)
     for full_item in full_items:
         for item in items:
-            if item['_id'] == str(full_item['_id']):
+            if item['_id'] == full_item['_id']:
                 item.update(full_item)
-                item['_id'] = str(full_item['_id'])  # MongoDB returns IDs as UUID objects, but it should be strings here
                 break
 
 

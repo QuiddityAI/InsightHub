@@ -296,20 +296,26 @@ class ObjectSchema(models.Model):
 
     @property
     def item_count(self):
-        url = data_backend_url + f'/data_backend/schema/{self.id}/item_count'
-        result = requests.get(url)
-        return result.json()["count"]
+        try:
+            url = data_backend_url + f'/data_backend/schema/{self.id}/item_count'
+            result = requests.get(url)
+            return result.json()["count"]
+        except Exception as e:
+            return repr(e)
     item_count.fget.short_description = "Current Item Count"
 
     @property
     def random_item(self):
-        url = data_backend_url + f'/data_backend/schema/{self.id}/random_item'
-        result = requests.get(url)
-        item = result.json()["item"]
-        for key in item.get("_source", {}).keys():
-            if isinstance(item["_source"][key], list) and len(item["_source"][key]) > 50:
-                item["_source"][key] = f"&lt;Array of length {len(item['_source'][key])}&gt;"
-        return mark_safe(json.dumps(item, indent=2).replace(" ", "&nbsp").replace("\n", "<br>"))
+        try:
+            url = data_backend_url + f'/data_backend/schema/{self.id}/random_item'
+            result = requests.get(url)
+            item = result.json()["item"]
+            for key in item.get("_source", {}).keys():
+                if isinstance(item["_source"][key], list) and len(item["_source"][key]) > 50:
+                    item["_source"][key] = f"&lt;Array of length {len(item['_source'][key])}&gt;"
+            return mark_safe(json.dumps(item, indent=2).replace(" ", "&nbsp").replace("\n", "<br>"))
+        except Exception as e:
+            return repr(e)
     item_count.fget.random_item = "Random Item"
 
     def __str__(self):

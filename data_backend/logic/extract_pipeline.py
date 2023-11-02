@@ -6,13 +6,14 @@ from logic.generator_functions import get_generator_function_from_field
 
 
 # TODO: add changed_at as parameter and cache function (using changed_at as measure for dropping the cache)
-def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = [], only_fields: list[str] = []) -> list[list[dict]]:
+def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = [], only_fields: list[str] = []) -> tuple[list[list[dict]], list[str]]:
     schema = DotDict(schema)
     if has_circular_dependency(schema):
-        logging.warning(f"The pipeline steps have a circular dependency, object schema: {schema.name}")
-        logging.warning(f"No pipeline steps will be executed at all for this schema until this is fixed.")
-        return []
+        logging.error(f"The pipeline steps have a circular dependency, object schema: {schema.name}")
+        logging.error(f"No pipeline steps will be executed at all for this schema until this is fixed.")
+        return [], []
 
+    required_fields = set()
     pipeline_steps = []
     steps_added = []
     any_field_skipped = True
@@ -40,6 +41,7 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
                 generator_function = get_generator_function_from_field(field)
                 condition_function = eval(field.generating_condition) if field.generating_condition else None
 
+                required_fields |= set(field.source_fields)
                 phase_steps.append({
                     'source_fields': field.source_fields,
                     'generator_function': generator_function,
@@ -51,7 +53,7 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
             pipeline_steps.append(phase_steps)
             steps_added += steps_added_this_phase
 
-    return pipeline_steps
+    return pipeline_steps, list(required_fields)
 
 
 def has_circular_dependency(schema: dict) -> bool:

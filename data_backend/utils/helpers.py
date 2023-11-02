@@ -37,6 +37,11 @@ def run_in_batches(items: list, batch_size: int, function: Callable) -> list:
     return results
 
 
+def run_in_batches_without_result(items: list, batch_size: int, function: Callable):
+    for batch_number in range(math.ceil(len(items) / float(batch_size))):
+        function(items[batch_number * batch_size : (batch_number + 1) * batch_size])
+
+
 def get_vector_field_dimensions(field: DotDict):
     return field.generator.embedding_space.dimensions if field.generator else \
         (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)

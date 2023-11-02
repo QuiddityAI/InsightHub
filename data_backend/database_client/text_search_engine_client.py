@@ -1,13 +1,15 @@
 import os
 import json
 import logging
-from uuid import UUID
+from typing import Generator, Iterable
 
 from opensearchpy import OpenSearch
+import opensearchpy.helpers
 
 from utils.dotdict import DotDict
 from utils.field_types import FieldType
 from utils.custom_json_encoder import CustomJSONEncoder
+from utils.helpers import run_in_batches_without_result
 
 
 with open("../credentials.json", "rb") as f:
@@ -27,7 +29,7 @@ class TextSearchEngineClient(object):
     def __init__(self):
         self.client = OpenSearch(
             hosts = [{'host': open_search_host, 'port': open_search_port}],
-            http_compress = True, # enables gzip compression for request bodies
+            http_compress = False, # gzip compression for request bodies
             http_auth = open_search_auth,
             use_ssl = True,
             verify_certs = False,
@@ -70,18 +72,39 @@ class TextSearchEngineClient(object):
             FieldType.TAG: "keyword",
             FieldType.INTEGER: "integer",
             FieldType.FLOAT: "float",
-            FieldType.CLASS_PROBABILITY: "rank_feature",
+            FieldType.CLASS_PROBABILITY: "rank_feature",  # NOTE: no "s" at the end, singular class probability
             FieldType.BOOL: "boolean",
+            FieldType.DATE: "date",
+            FieldType.DATETIME: "date",
+            FieldType.IDENTIFIER: "text",
+            FieldType.URL: "text",
+            FieldType.VECTOR: "dense_vector",
+        }
+
+        # almost all field types can be arrays in OpenSearch, except for a few which need a different type (e.g. rank_features)
+        array_field_type_to_open_search_type = {
+            FieldType.TEXT: "text",
+            FieldType.TAG: "keyword",
+            FieldType.INTEGER: "integer",
+            FieldType.FLOAT: "float",
+            FieldType.CLASS_PROBABILITY: "rank_features",  # NOTE: "s" for multiple class probabilities (without creating new fields for each)
+            FieldType.BOOL: "boolean",
+            FieldType.DATE: "date",
+            FieldType.DATETIME: "date",
+            FieldType.IDENTIFIER: "text",
+            FieldType.URL: "text",
+            FieldType.VECTOR: "dense_vector",
         }
 
         for field in schema.object_fields.values():
-            if field.is_available_for_search and field.field_type == FieldType.TEXT:
-                properties[field.identifier] = {"type": "text"}
-            elif field.is_available_for_filtering:
-                if field.field_type not in field_type_to_open_search_type:
-                    logging.error(f"Field type not yet supported for filtering: {field.identifier}, {field.field_type}")
-                    continue
-                properties[field.identifier] = {"type": field_type_to_open_search_type[field.field_type]}
+            if field.identifier == "_id":
+                continue
+            if field.field_type not in field_type_to_open_search_type:
+                logging.error(f"Field type not yet supported for filtering: {field.identifier}, {field.field_type}")
+                continue
+            indexed = (field.is_available_for_search or field.is_available_for_filtering) and field.field_type != FieldType.VECTOR
+            open_search_type = array_field_type_to_open_search_type[field.field_type] if field.is_array else field_type_to_open_search_type[field.field_type]
+            properties[field.identifier] = {"type": open_search_type, "index": indexed}
 
         mappings = {
             'properties': properties,
@@ -89,44 +112,119 @@ class TextSearchEngineClient(object):
         try:
             response = self.client.indices.put_mapping(index=self._get_index_name(schema.id), body=mappings)
         except Exception as e:
-            print(type(e), e)
+            logging.error(f"Error during updating text search engine mapping: type {type(e)}, error: {e}")
             raise e
         else:
-            print(response)
+            logging.info(f"Successfully changed text search engine mapping: {response}")
 
 
     def remove_schema(self, schema_id: str):
         pass
 
 
-    def upsert_items(self, schema_id: int, ids: list[UUID], payloads: list[dict]):
+    def get_item_count(self, schema_id: int):
+        index_name = self._get_index_name(schema_id)
+        response = self.client.count(index=index_name)
+        return response["count"]
+
+
+    def get_random_items(self, schema_id: int):
+        query = {
+            "size": 1,
+            "query": {
+                "function_score": {
+                    "functions": [{
+                        "random_score": {}
+                    }]
+                }
+            }
+        }
+        response = self.client.search(
+            body = query,
+            index = self._get_index_name(schema_id)
+        )
+        return response.get("hits", {}).get("hits", [])
+
+
+    def upsert_items(self, schema_id: int, ids: list[str], payloads: list[dict]):
         index_name = self._get_index_name(schema_id)
 
-        bulk_operations = ""
-        for _id, item in zip(ids, payloads):
-            op = { "update" : { "_index" : index_name, "_id" : str(_id) } }
-            bulk_operations += json.dumps(op) + "\n" + json.dumps({'doc': item, 'doc_as_upsert': True}, cls=CustomJSONEncoder) + "\n"
+        def upsert_batch(ids_and_payloads):
+            bulk_operations = ""
+            for _id, item in ids_and_payloads:
+                op = { "update" : { "_index" : index_name, "_id" : _id } }
+                item = item.copy()
+                item.pop("_id")
+                bulk_operations += json.dumps(op) + "\n" + json.dumps({'doc': item, 'doc_as_upsert': True}, cls=CustomJSONEncoder) + "\n"
 
-        response = self.client.bulk(body=bulk_operations)
-        # print(response)
+            response = self.client.bulk(body=bulk_operations)
+            if response.get("errors"):
+                logging.error(repr(response))
+                raise ValueError(response)
+
+        run_in_batches_without_result(list(zip(ids, payloads)), 512, upsert_batch)
 
 
     def remove_items(self, schema_id: str, primary_key_field: str, item_pks: list[str]):
         pass
 
 
-    def get_items_by_primary_keys(self, schema_id: str, primary_key_field: str,
-                                  item_pks: list[str], fields: list[str]) -> list[dict]:
-        # mongo.get(schema=schema_id, where primary_key_field in primary_key)
-        return []
+    def get_items_by_ids(self, schema_id: int, ids: Iterable[str], fields: Iterable[str]) -> list:
+        index_name = self._get_index_name(schema_id)
+        body = {
+            "ids": ids,
+        }
+        response = self.client.mget(body=body, index=index_name, params={"_source_includes": ",".join(fields)})
+        items = []
+        for doc in response['docs']:
+            item = doc["_source"]
+            item["_id"] = doc["_id"]
+            items.append(item)
+        return items
 
 
-    def get_all_items_with_missing_field_count(self, schema_id, missing_field) -> int:
-        return 0
+    def get_all_items_with_missing_field_count(self, schema_id: int, missing_field: str) -> int:
+        index_name = self._get_index_name(schema_id)
+        query = {
+            "query": {
+                "bool": {
+                    "must_not": {
+                        "exists": {
+                            "field": missing_field
+                        }
+                    }
+                }
+            }
+        }
+        response = self.client.count(index=index_name, body=query)
+        return response["count"]
 
 
-    def get_all_items_with_missing_field(self, schema_id, missing_field, per_page, offset) -> list[dict]:
-        return []
+    def get_all_items_with_missing_field(self, schema_id: int, missing_field: str, required_fields: list[str], internal_batch_size: int = 1000) -> Generator:
+        index_name = self._get_index_name(schema_id)
+        query = {
+            '_source': required_fields,
+            "query": {
+                "bool": {
+                    "must_not": {
+                        "exists": {
+                            "field": missing_field
+                        }
+                    }
+                }
+            }
+        }
+        generator = opensearchpy.helpers.scan(
+            self.client,
+            index=index_name,
+            query=query,
+            size=internal_batch_size,
+            scroll="10m",  # time to keep the search context alive to get the next batch of results
+        )
+        for doc in generator:
+            item = doc["_source"]
+            item["_id"] = doc["_id"]
+            yield item
 
 
     def delete_field(self, schema_id, field):
@@ -142,7 +240,7 @@ class TextSearchEngineClient(object):
         }
 
         response = self.client.update_by_query(index=index_name, body=body)
-        logging.warning(response)
+        logging.warning(f"Deleted field {field} from text search engine: {response}")
 
 
     def get_search_results(self, schema_id, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields, highlights=False):

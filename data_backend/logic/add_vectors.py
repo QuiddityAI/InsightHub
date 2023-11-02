@@ -14,6 +14,7 @@ from logic.gensim_w2v_vectorizer import GensimW2VVectorizer
 from logic.generate_missing_values import generate_missing_values_for_given_elements
 from logic.extract_pipeline import get_pipeline_steps
 from logic.generator_functions import get_generator_function_from_field
+from logic.search_common import get_required_fields
 
 
 def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fields, map_data, vectorize_stage_params_hash, timings):
@@ -88,7 +89,11 @@ def add_missing_map_vectors(search_results, query, params: DotDict, map_data, sc
     if not all([item.get(map_vector_field.identifier) is not None for item in search_results]):
         # if some or all vectors are still missing, generate them:
         batch_size = 128
-        pipeline_steps = get_pipeline_steps(schema, only_fields=[map_vector_field.identifier])
+        pipeline_steps, required_fields = get_pipeline_steps(schema, only_fields=[map_vector_field.identifier])
+        available_fields = get_required_fields(schema, params.vectorize_settings, "map")
+        missing_fields = set(required_fields) - set(available_fields)
+        if missing_fields:
+            logging.warning(f"Some fields are missing in the search result data to generate missing vectors: {missing_fields}")
         for batch_number in range(math.ceil(len(search_results) / batch_size)):
             elements = search_results[batch_number*batch_size : (batch_number+1) * batch_size]
             changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements)

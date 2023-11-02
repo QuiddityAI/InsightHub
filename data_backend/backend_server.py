@@ -12,7 +12,7 @@ from utils.dotdict import DotDict
 
 from logic.mapping_task import get_or_create_map, get_map_results
 from logic.insert_logic import insert_many, update_database_layout
-from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_item
+from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_items
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 
 from database_client.django_client import add_stored_map
@@ -88,7 +88,8 @@ def get_item_count_route(schema_id: int):
 
 @app.route('/data_backend/schema/<int:schema_id>/random_item', methods=['GET'])
 def get_random_item_route(schema_id: int):
-    item = get_random_item(schema_id)
+    items = get_random_items(schema_id)
+    item = items[0] if len(items) else {}
     response = app.response_class(
         response=json.dumps({"item": item}, cls=HumanReadableJSONEncoder),
         mimetype='application/json'

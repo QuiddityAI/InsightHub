@@ -43,7 +43,7 @@ services:
       - model_server_host=http://model-server:55180
       - organization_backend_host=http://organization-backend:55125
       - vector_database_host=qdrant
-      - object_storage_host=mongo
+      # - object_storage_host=mongo
       - search_engine_host=opensearch
       - ABSCLUST_TYPESENSE_DB_API_KEY
       - ABSCLUST_TYPESENSE_DB_HOST
@@ -79,22 +79,22 @@ services:
       - http.cors.enabled=true
       - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
       - http.cors.allow-credentials=true
-  mongo:
-    image: "mongodb/mongodb-community-server:latest"
-    volumes:
-      - monogdb_data:/data/db
-    ports:
-      - "27017:27017"
+  # mongo:
+  #   image: "mongodb/mongodb-community-server:latest"
+  #   volumes:
+  #     - monogdb_data:/data/db
+  #   ports:
+  #     - "27017:27017"
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:latest
     ports:
       - 5601:5601
     environment:
       OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
-  dejavu:
-    image: appbaseio/dejavu
-    ports:
-      - 1358:1358
+  # dejavu:
+  #   image: appbaseio/dejavu
+  #   ports:
+  #     - 1358:1358
 volumes:
   model_server_cache:
   qdrant_storage:

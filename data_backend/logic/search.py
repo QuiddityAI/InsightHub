@@ -1,7 +1,6 @@
 import copy
 import json
 import logging
-from uuid import UUID
 from functools import lru_cache
 
 from utils.field_types import FieldType
@@ -11,7 +10,7 @@ from utils.dotdict import DotDict
 from database_client.absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
 from database_client.django_client import get_object_schema, get_collection
 from database_client.vector_search_engine_client import VectorSearchEngineClient
-from database_client.object_storage_client import ObjectStorageEngineClient
+from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.local_map_cache import local_maps
 from logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
     get_vector_search_results_matching_collection, get_fulltext_search_results, \
@@ -102,6 +101,8 @@ def get_search_results_using_combined_query(schema, search_settings: DotDict, ve
             result_sets.append(results)
             timings.log("fulltext database query")
 
+    # TODO: boost fulltext search the more words with low document frequency appear in query?
+
     return combine_and_sort_result_sets(result_sets, required_fields, schema, search_settings, limit, timings)
 
 
@@ -154,8 +155,8 @@ def get_search_results_similar_to_item(schema, search_settings: DotDict, vectori
 
     vector_fields = [field for field in schema.object_fields.values() if field.identifier in schema.default_search_fields and field.field_type == FieldType.VECTOR]
 
-    object_storage_client = ObjectStorageEngineClient.get_instance()
-    item = object_storage_client.get_items_by_ids(schema.id, [UUID(similar_to_item_id)], fields=[field.identifier for field in vector_fields])[0]
+    search_engine_client = TextSearchEngineClient.get_instance()
+    item = search_engine_client.get_items_by_ids(schema.id, [similar_to_item_id], fields=[field.identifier for field in vector_fields])[0]
     timings.log("getting original item")
 
     result_sets: list[dict] = []
@@ -267,29 +268,29 @@ def get_document_details_by_id(schema_id: int, item_id: str, fields: tuple[str])
     if schema_id == ABSCLUST_SCHEMA_ID:
         return get_absclust_item_by_id(item_id)
 
-    object_storage_client = ObjectStorageEngineClient.get_instance()
-    items = object_storage_client.get_items_by_ids(schema_id, [UUID(item_id)], fields=fields)
+    search_engine_client = TextSearchEngineClient.get_instance()
+    items = search_engine_client.get_items_by_ids(schema_id, [item_id], fields=fields)
     if not items:
         return None
 
     return items[0]
 
 
-def get_item_count(schema_id: int):
-    object_storage_client = ObjectStorageEngineClient.get_instance()
+def get_item_count(schema_id: int) -> int:
+    search_engine_client = TextSearchEngineClient.get_instance()
     try:
-        count = object_storage_client.get_item_count(schema_id)
+        count = search_engine_client.get_item_count(schema_id)
         return count
     except Exception as e:
         logging.error(e)
-        return -1
+        return 0
 
 
-def get_random_item(schema_id: int):
-    object_storage_client = ObjectStorageEngineClient.get_instance()
+def get_random_items(schema_id: int) -> list[dict]:
+    search_engine_client = TextSearchEngineClient.get_instance()
     try:
-        item = object_storage_client.get_random_item(schema_id)
-        return item
+        items = search_engine_client.get_random_items(schema_id)
+        return items
     except Exception as e:
         logging.error(e)
-        return {}
+        return []
