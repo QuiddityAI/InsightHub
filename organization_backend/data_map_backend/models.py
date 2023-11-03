@@ -31,6 +31,8 @@ class FieldType(models.TextChoices):
     VIDEO = "VIDEO", "Video"
     FOREIGN_KEY = "FOREIGN_KEY", "Reference to other element"
     BOOL = "BOOL", "Bool"
+    ATTRIBUTES = "ATTRIBUTES", "Attributes (dict)"
+    ARBITRARY_OBJECT = "ARBITRARY_OBJECT", "Non-indexed object"
 
 
 class EmbeddingSpace(models.Model):

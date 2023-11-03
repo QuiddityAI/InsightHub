@@ -1,3 +1,4 @@
+from collections import defaultdict
 import os
 import json
 import logging
@@ -60,14 +61,15 @@ class TextSearchEngineClient(object):
         try:
             response = self.client.indices.create(index_name, body=index_body)
         except Exception as e:
-            print(type(e), e)
+            logging.error(f"Error during creating index: type {type(e)}, error: {e}")
             # opensearchpy.exceptions.RequestError: RequestError(400, 'resource_already_exists_exception', 'index [schema_4/1kYO7nOKQm2LMbosdiPeXw] already exists')
         else:
-            print(response)
+            logging.info(response)
 
         properties = {}
 
-        field_type_to_open_search_type = {
+        field_type_to_open_search_type = defaultdict(lambda: "text")
+        field_type_to_open_search_type.update({
             FieldType.TEXT: "text",
             FieldType.TAG: "keyword",
             FieldType.INTEGER: "integer",
@@ -79,32 +81,25 @@ class TextSearchEngineClient(object):
             FieldType.IDENTIFIER: "text",
             FieldType.URL: "text",
             FieldType.VECTOR: "dense_vector",
-        }
+            FieldType.ATTRIBUTES: "object",
+            FieldType.ARBITRARY_OBJECT: "flat_object",
+        })
 
         # almost all field types can be arrays in OpenSearch, except for a few which need a different type (e.g. rank_features)
-        array_field_type_to_open_search_type = {
-            FieldType.TEXT: "text",
-            FieldType.TAG: "keyword",
-            FieldType.INTEGER: "integer",
-            FieldType.FLOAT: "float",
+        array_field_type_to_open_search_type = field_type_to_open_search_type.copy()
+        array_field_type_to_open_search_type.update({
             FieldType.CLASS_PROBABILITY: "rank_features",  # NOTE: "s" for multiple class probabilities (without creating new fields for each)
-            FieldType.BOOL: "boolean",
-            FieldType.DATE: "date",
-            FieldType.DATETIME: "date",
-            FieldType.IDENTIFIER: "text",
-            FieldType.URL: "text",
-            FieldType.VECTOR: "dense_vector",
-        }
+        })
 
         for field in schema.object_fields.values():
             if field.identifier == "_id":
                 continue
-            if field.field_type not in field_type_to_open_search_type:
-                logging.error(f"Field type not yet supported for filtering: {field.identifier}, {field.field_type}")
-                continue
-            indexed = (field.is_available_for_search or field.is_available_for_filtering) and field.field_type != FieldType.VECTOR
             open_search_type = array_field_type_to_open_search_type[field.field_type] if field.is_array else field_type_to_open_search_type[field.field_type]
-            properties[field.identifier] = {"type": open_search_type, "index": indexed}
+            properties[field.identifier] = {"type": open_search_type}
+            # all field types except for object and flat_object support the "index" parameter
+            if field.field_type not in (FieldType.ATTRIBUTES, FieldType.ARBITRARY_OBJECT):
+                indexed = (field.is_available_for_search or field.is_available_for_filtering) and field.field_type != FieldType.VECTOR
+                properties[field.identifier]["index"] = indexed
 
         mappings = {
             'properties': properties,
