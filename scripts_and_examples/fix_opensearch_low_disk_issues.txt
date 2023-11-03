@@ -1,0 +1,16 @@
+GET _cluster/settings
+
+PUT _cluster/settings
+{
+  "persistent": {
+    "cluster.routing.allocation.disk.watermark.low": "15GB",
+    "cluster.routing.allocation.disk.watermark.high": "10GB",
+    "cluster.routing.allocation.disk.watermark.flood_stage": "5GB",
+    "cluster.blocks.create_index": null
+  }
+}
+
+PUT */_settings?expand_wildcards=all
+{
+  "index.blocks.read_only_allow_delete": null
+}
