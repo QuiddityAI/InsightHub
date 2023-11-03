@@ -537,7 +537,7 @@ export default {
       // most importantly, it initializes the schema_id, which then triggers other stuff
       const queryParams = new URLSearchParams(window.location.search);
       if (queryParams.get("schema_id") === null) {
-        this.appStateStore.settings.schema_id = 1
+        this.appStateStore.settings.schema_id = 6
         const emptyQueryParams = new URLSearchParams();
         emptyQueryParams.set("schema_id", this.appStateStore.settings.schema_id);
         history.replaceState(null, null, "?" + emptyQueryParams.toString());
