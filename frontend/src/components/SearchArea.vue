@@ -154,7 +154,7 @@ export default {
       }
 
       // initialize available number and vector fields:
-      that.appStateStore.settings.vectorize.map_vector_field = null
+      that.appStateStore.settings.vectorize.map_vector_field = "w2v_vector"
       that.appStateStore.available_vector_fields = []
       that.appStateStore.available_number_fields = []
       for (const field_identifier in that.appStateStore.schema.object_fields) {
