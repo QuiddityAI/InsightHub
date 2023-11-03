@@ -8,6 +8,7 @@ import numpy as np
 
 from utils.dotdict import DotDict
 from utils.field_types import FieldType
+from utils.helpers import join_text_source_fields
 
 from logic.model_client import save_embedding_cache, embedding_cache
 from logic.gensim_w2v_vectorizer import GensimW2VVectorizer
@@ -40,7 +41,7 @@ def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fie
             return
 
     map_data["progress"]["step_title"] = "Training model"
-    corpus = [" ".join([item.get(field, "") for field in descriptive_text_fields]) for item in search_results]
+    corpus = [join_text_source_fields(item, descriptive_text_fields) for item in search_results]
     vectorizer = GensimW2VVectorizer()
     vectorizer.prepare(corpus)
     timings.log("training w2v model")
@@ -53,7 +54,7 @@ def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fie
     query_embedding = vectorizer.get_embedding(query)
     embeddings["query"] = query_embedding
     for i, item in enumerate(search_results):
-        text = " ".join([item.get(field, "") for field in descriptive_text_fields])
+        text = join_text_source_fields(item, descriptive_text_fields)
         item_embedding = vectorizer.get_embedding(text).tolist()
         item["w2v_vector"] = item_embedding
         item["_score"] = np.dot(query_embedding, item_embedding)

@@ -7,7 +7,7 @@ import hdbscan
 from utils.regex_tokenizer import tokenize
 from utils.collect_timings import Timings
 from utils.dotdict import DotDict
-from utils.helpers import normalize_array
+from utils.helpers import normalize_array, join_text_source_fields
 
 
 def clusterize_results(projections, clusterizer_parameters: DotDict):
@@ -32,7 +32,7 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
 
     for result_index, cluster_index in enumerate(cluster_labels):
         if cluster_index <= -1: continue
-        text = " ".join([results[result_index].get(field, "") for field in descriptive_text_fields])
+        text = join_text_source_fields(results[result_index], descriptive_text_fields)
         texts_per_cluster[cluster_index] += text[:max_text_length]
         point_positions_per_cluster[cluster_index].append(positions[result_index])
         scores_per_cluster[cluster_index].append(normalized_scores[result_index])
