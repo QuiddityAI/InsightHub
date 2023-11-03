@@ -110,6 +110,10 @@ export default {
         Show Similar Items
       </button>
 
+      <button v-if="(rendering ? rendering.url(item) : false)" class="px-3 mr-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100 rounded-md">
+        <a :href="rendering.url(item)" target="_blank">Link</a>
+      </button>
+
       <button v-if="(rendering ? rendering.doi(item) : false) && !checking_for_fulltext && !checked_for_fulltext" @click="findFulltext" class="px-3 mr-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100 rounded-md">
         Find Fulltext
       </button>
