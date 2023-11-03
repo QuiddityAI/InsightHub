@@ -1,6 +1,7 @@
 
+from concurrent.futures import ThreadPoolExecutor
 import math
-from typing import Callable
+from typing import Callable, Iterable
 import numpy as np
 
 from utils.dotdict import DotDict
@@ -37,6 +38,12 @@ def run_in_batches(items: list, batch_size: int, function: Callable) -> list:
     return results
 
 
+def do_in_parallel(action:Callable, data:Iterable, max_workers:int=20) -> Iterable:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        results = list(executor.map(action, data))
+    return results
+
+
 def run_in_batches_without_result(items: list, batch_size: int, function: Callable):
     for batch_number in range(math.ceil(len(items) / float(batch_size))):
         function(items[batch_number * batch_size : (batch_number + 1) * batch_size])
@@ -45,3 +52,14 @@ def run_in_batches_without_result(items: list, batch_size: int, function: Callab
 def get_vector_field_dimensions(field: DotDict):
     return field.generator.embedding_space.dimensions if field.generator else \
         (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)
+
+
+def join_text_source_fields(item: dict, descriptive_text_fields: list[str]) -> str:
+    text = ""
+    for field in descriptive_text_fields:
+        content = item.get(field, "")
+        if isinstance(content, list):
+            text += " ".join(content)
+        else:
+            text += " " + content
+    return text

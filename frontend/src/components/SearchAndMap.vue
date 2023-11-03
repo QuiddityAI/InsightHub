@@ -226,7 +226,7 @@ export default {
 
       const payload = {
         map_id: this.map_id,
-        exclude_fields: not_needed + this.fields_already_received,
+        exclude_fields: not_needed.concat(this.fields_already_received),
       }
       httpClient.post("/data_backend/map/result", payload)
         .then(function (response) {
@@ -286,16 +286,16 @@ export default {
               that.$refs.embedding_map.updateGeometry()
             }
 
-            if (results["texture_atlas_path"] && results["texture_atlas_path"] !== "loading") {
+            if (results["thumbnail_atlas_filename"] && results["thumbnail_atlas_filename"] !== "loading") {
               const image = new Image()
-              image.src = 'data_backend/map/texture_atlas/' + results["texture_atlas_path"]
+              image.src = 'data_backend/map/thumbnail_atlas/' + results["thumbnail_atlas_filename"]
               image.onload = () => {
                 that.$refs.embedding_map.textureAtlas = image
-                that.$refs.embedding_map.thumbnailSpriteSize = that.appStateStore.settings.search.thumbnail_sprite_size
+                that.$refs.embedding_map.thumbnailSpriteSize = results["thumbnail_sprite_size"]
                 that.$refs.embedding_map.updateGeometry()
               }
-              that.fields_already_received.push('texture_atlas_path')
-            } else if (results["texture_atlas_path"] && results["texture_atlas_path"] === "loading") {
+              that.fields_already_received.push('thumbnail_atlas_filename')
+            } else if (results["thumbnail_atlas_filename"] && results["thumbnail_atlas_filename"] === "loading") {
               that.$refs.embedding_map.textureAtlas = null
             }
 

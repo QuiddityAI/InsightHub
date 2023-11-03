@@ -522,9 +522,10 @@ export default {
       }
       const pointSize = this.pointSizes[closestIdx]
       const zoomAdjustment = (this.currentZoom - 1.0) * 0.05 + 1.0;
-      const pointSizeScreenPx = (5.0 + 15.0 * pointSize) * zoomAdjustment * this.pointSizeFactor * window.devicePixelRatio;
-      const pointSizeEmbedding = this.screenToEmbeddingX(pointSizeScreenPx) - this.screenToEmbeddingX(0)
-      const threshold = pointSizeEmbedding
+      const pointSizeScreenPx = (5.0 + 15.0 * pointSize) * zoomAdjustment * this.pointSizeFactor;
+      const pointRadiusScreenPx = pointSizeScreenPx / 2
+      const pointRadiusEmbedding = this.screenToEmbeddingX(pointRadiusScreenPx) - this.screenToEmbeddingX(0)
+      const threshold = pointRadiusEmbedding
       if (closestIdx !== null && closestDist < threshold) {
         this.highlightedPointIdx = closestIdx
       } else {

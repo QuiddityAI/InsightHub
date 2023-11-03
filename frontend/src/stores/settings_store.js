@@ -57,7 +57,7 @@ export const useAppStateStore = defineStore('appState', {
 
           // map results:
           max_items_used_for_mapping: 2000,
-          thumbnail_sprite_size: 64,
+          thumbnail_sprite_size: "auto",
         },
         vectorize: {
           map_vector_field: null,

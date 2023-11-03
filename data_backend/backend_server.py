@@ -14,6 +14,7 @@ from logic.mapping_task import get_or_create_map, get_map_results
 from logic.insert_logic import insert_many, update_database_layout
 from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_items
 from logic.generate_missing_values import delete_field_content, generate_missing_values
+from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 
 from database_client.django_client import add_stored_map
 
@@ -182,6 +183,8 @@ def retrive_map_results():
         del result['results']['search_result_meta_information']
     if 'search_result_score_info' in exclude_fields and 'search_result_score_info' in result['results']:
         del result['results']['search_result_score_info']
+    if 'clusters' in exclude_fields and 'clusters' in result['results']:
+        del result['results']['clusters']
     if 'parameters' in exclude_fields and 'parameters' in result:
         del result['parameters']
 
@@ -202,13 +205,13 @@ def retrive_parameters_and_search_results_for_stored_map():
     return result
 
 
-@app.route('/data_backend/map/texture_atlas/<subfolder>/<image_path>', methods=['GET'])
-def retrieve_texture_atlas(subfolder, image_path):
-    full_path = os.path.join(subfolder, image_path)
-    if image_path is None or not os.path.exists(full_path):
+@app.route('/data_backend/map/thumbnail_atlas/<filename>', methods=['GET'])
+def retrieve_thumbnail_atlas(filename):
+    full_path = os.path.join(THUMBNAIL_ATLAS_DIR, filename)
+    if filename is None or not os.path.exists(full_path):
         return "texture atlas not found", 404
 
-    return send_from_directory('.', full_path)
+    return send_from_directory(THUMBNAIL_ATLAS_DIR, filename)
 
 
 @app.route('/data_backend/local_image/<path:image_path>', methods=['GET'])

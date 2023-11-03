@@ -22,6 +22,7 @@ from logic.search import get_search_results, get_full_results_from_meta_info
 from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
     projection_stage_hash_to_map_id, get_map_parameters_hash, get_search_stage_hash, \
     get_vectorize_stage_hash, get_projection_stage_hash
+from logic.thumbnail_atlas import generate_thumbnail_atlas, THUMBNAIL_ATLAS_DIR
 
 
 ABSCLUST_SCHEMA_ID = 1
@@ -64,7 +65,7 @@ default_map_data = {
         "clusters": {
             # x: { id: x, title: foo, centerX, centerY }, for each cluster
         },
-        "texture_atlas_path": None,
+        "thumbnail_atlas_filename": None,
         "w2v_embeddings_file_path": None,
     },
 }
@@ -129,7 +130,7 @@ def generate_map(map_id, ignore_cache):
         origin_map = local_maps[origin_map_id]
         assert origin_map is not None  # to tell pylance that this is definitely not None
         map_data['results']['w2v_embeddings_file_path'] = origin_map['results']['w2v_embeddings_file_path']
-        map_data['results']['texture_atlas_path'] = origin_map['results']['texture_atlas_path']
+        map_data['results']['thumbnail_atlas_filename'] = origin_map['results']['thumbnail_atlas_filename']
 
     schema_id = params.schema_id
     schema = get_object_schema(schema_id)
@@ -137,7 +138,7 @@ def generate_map(map_id, ignore_cache):
     timings.log("map preparation")
 
     map_vector_field = params.vectorize.map_vector_field
-    texture_atlas_thread = None
+    thumbnail_atlas_thread = None
     search_results = None
 
     search_phase_is_needed = not similar_map or vectorize_stage_params_hash != get_vectorize_stage_hash(map_data['last_parameters']) or ignore_cache
@@ -147,7 +148,7 @@ def generate_map(map_id, ignore_cache):
         logging.warning("reusing search stage results")
         map_data["results"]["search_result_meta_information"] = deepcopy(similar_map["results"]["search_result_meta_information"])
         map_data['results']['search_result_score_info'] = deepcopy(similar_map['results']['search_result_score_info'])
-        map_data["results"]["texture_atlas_path"] = deepcopy(similar_map["results"].get("texture_atlas_path"))
+        map_data["results"]["thumbnail_atlas_filename"] = deepcopy(similar_map["results"].get("thumbnail_atlas_filename"))
         map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
         map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
@@ -168,38 +169,37 @@ def generate_map(map_id, ignore_cache):
 
         timings.log("database query")
 
-        # texture atlas:
+        # thumbnail atlas:
         thumbnail_field = schema.thumbnail_image
         if thumbnail_field:
             search_params_hash = get_search_stage_hash(params)
-            atlas_filename = f"map_data/atlas_{search_params_hash}.jpg"
-            if not os.path.exists(atlas_filename):
-                # don't leave the field empty, otherwise the last atlas is still visible
-                map_data["results"]["texture_atlas_path"] = "loading"
-                def generate_texture_atlas():
-                    atlas_total_width = 4096
-                    sprite_size = params.search.get("thumbnail_sprite_size", 64)
-                    max_images = pow(atlas_total_width // sprite_size, 2)
-                    atlas = Image.new("RGB", (atlas_total_width, atlas_total_width))
-                    for i, item in enumerate(search_results[:max_images]):
-                        if item.get(thumbnail_field, None) and os.path.exists(item[thumbnail_field]):
-                            image = Image.open(item[thumbnail_field])
-                            image.thumbnail((sprite_size, sprite_size))
-                            image = image.resize((sprite_size, sprite_size))
-                            imagesPerLine = (atlas_total_width / sprite_size)
-                            posRow: int = int(i / imagesPerLine)
-                            posCol: int = int(i % imagesPerLine)
-                            atlas.paste(image, (posCol * sprite_size, posRow * sprite_size))
-                            image.close()
-                        else:
-                            logging.warning(f"Image file doesn't exist: {item.get(thumbnail_field, None)}")
-                    atlas.save(atlas_filename, quality=80)
-                    map_data["results"]["texture_atlas_path"] = atlas_filename
-
-                texture_atlas_thread = Thread(target=generate_texture_atlas)
-                texture_atlas_thread.start()
+            atlas_filename = f"atlas_{search_params_hash}.jpg"
+            atlas_path = os.path.join(THUMBNAIL_ATLAS_DIR, atlas_filename)
+            if os.path.exists(atlas_path):
+                map_data["results"]["thumbnail_atlas_filename"] = atlas_filename
             else:
-                map_data["results"]["texture_atlas_path"] = atlas_filename
+                # don't leave the field empty, otherwise the last atlas is still visible
+                map_data["results"]["thumbnail_atlas_filename"] = "loading"
+                sprite_size = params.search.get("thumbnail_sprite_size", "auto")
+                if sprite_size == "auto":
+                    if len(search_results) <= pow(4096 / 256, 2):
+                        sprite_size = 256
+                    elif len(search_results) <= pow(4096 / 128, 2):
+                        sprite_size = 128
+                    else:
+                        sprite_size = 64
+                map_data["results"]["thumbnail_sprite_size"] = sprite_size
+                thumbnail_uris = [item.get(thumbnail_field, None) for item in search_results]
+                def _generate_thumbnail_atlas():
+                    t1 = time.time()
+                    def _on_success():
+                        map_data["results"]["thumbnail_atlas_filename"] = atlas_filename
+                    generate_thumbnail_atlas(atlas_path, thumbnail_uris, sprite_size, _on_success)
+                    time_to_generate_atlas = time.time() - t1
+                    timings.timings.append({"part": "thumbnail atlas generation", "duration": time_to_generate_atlas})
+
+                thumbnail_atlas_thread = Thread(target=_generate_thumbnail_atlas)
+                thumbnail_atlas_thread.start()
 
         map_data["results"]["per_point_data"]["item_ids"] = [item["_id"] for item in search_results]
 
@@ -326,9 +326,9 @@ def generate_map(map_id, ignore_cache):
 
         map_data["results"]["clusters"] = cluster_data
 
-    if texture_atlas_thread:
-        texture_atlas_thread.join()
-        timings.log("generating texture atlas")
+    if thumbnail_atlas_thread:
+        thumbnail_atlas_thread.join()
+        timings.log("waiting for thumbnail atlas")
 
     map_data["results"]["timings"] = timings.get_timestamps()
     map_data["finished"] = True
