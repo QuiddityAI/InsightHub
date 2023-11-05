@@ -49,7 +49,7 @@ export default {
       map_viewport_is_adjusted: false,
       progress: 0.0,
       progress_step_title: "",
-      fields_already_received: [],
+      fields_already_received: new Set(),
 
       // selection:
       selectedDocumentIdx: -1,
@@ -91,7 +91,7 @@ export default {
       this.map_viewport_is_adjusted = false
       this.progress = 0.0
       this.progress_step_title = ""
-      this.fields_already_received = []
+      this.fields_already_received = new Set()
 
       // map:
       if (!params.leave_map_unchanged) {
@@ -226,7 +226,7 @@ export default {
 
       const payload = {
         map_id: this.map_id,
-        exclude_fields: not_needed.concat(this.fields_already_received),
+        exclude_fields: not_needed.concat(Array.from(this.fields_already_received)),
       }
       httpClient.post("/data_backend/map/result", payload)
         .then(function (response) {
@@ -256,16 +256,16 @@ export default {
               that.map_item_details = results_per_point["hover_label_data"]
               that.$refs.embedding_map.itemDetails = results_per_point["hover_label_data"]
               that.search_results = results_per_point["hover_label_data"]
-              that.fields_already_received.push('hover_label_data')
+              that.fields_already_received.add('hover_label_data')
             }
 
             if (results_per_point["point_sizes"] && results_per_point["point_sizes"].length > 0) {
               that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results_per_point["point_sizes"], 2.0)
-              that.fields_already_received.push('point_sizes')
+              that.fields_already_received.add('point_sizes')
             }
             if (results_per_point["scores"] && results_per_point["scores"].length > 0) {
               that.$refs.embedding_map.saturation = normalizeArrayMedianGamma(results_per_point["scores"], 3.0, 0.001)
-              that.fields_already_received.push('scores')
+              that.fields_already_received.add('scores')
               if (that.appStateStore.settings.projection.shape === "score_graph") {
                 // for the score graph, the score is already visible as the position
                 // -> using full saturation for the color to make it better visible
@@ -275,8 +275,8 @@ export default {
             if (results_per_point["cluster_ids"] && results_per_point["cluster_ids"].length > 0) {
               that.$refs.embedding_map.clusterIdsPerPoint = results_per_point["cluster_ids"]
               that.clusterIdsPerPoint = results_per_point["cluster_ids"]
-              that.fields_already_received.push('cluster_ids')
-            } else if (!that.fields_already_received.includes('cluster_ids')) {
+              that.fields_already_received.add('cluster_ids')
+            } else if (!that.fields_already_received.has('cluster_ids')) {
               that.$refs.embedding_map.clusterIdsPerPoint = Array(that.$refs.embedding_map.targetPositionsX.length).fill(-1)
             }
 
@@ -294,15 +294,15 @@ export default {
                 that.$refs.embedding_map.thumbnailSpriteSize = results["thumbnail_sprite_size"]
                 that.$refs.embedding_map.updateGeometry()
               }
-              that.fields_already_received.push('thumbnail_atlas_filename')
+              that.fields_already_received.add('thumbnail_atlas_filename')
             } else if (results["thumbnail_atlas_filename"] && results["thumbnail_atlas_filename"] === "loading") {
               that.$refs.embedding_map.textureAtlas = null
             }
 
-            if (results["clusters"]) {
+            if (results["clusters"] && Object.keys(results["clusters"]).length > 0) {
               that.$refs.embedding_map.clusterData = results["clusters"]
               that.cluster_data = results["clusters"]
-              that.fields_already_received.push('clusters')
+              that.fields_already_received.add('clusters')
             }
 
             if (that.map_viewport_is_adjusted) {
@@ -315,7 +315,7 @@ export default {
 
             if (results["search_result_score_info"]) {
               that.search_result_score_info = results["search_result_score_info"]
-              that.fields_already_received.push('search_result_score_info')
+              that.fields_already_received.add('search_result_score_info')
               that.show_score_info_chart()
             }
 

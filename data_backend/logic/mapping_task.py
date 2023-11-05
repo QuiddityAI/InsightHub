@@ -66,6 +66,7 @@ default_map_data = {
             # x: { id: x, title: foo, centerX, centerY }, for each cluster
         },
         "thumbnail_atlas_filename": None,
+        "thumbnail_sprite_size": None,
         "w2v_embeddings_file_path": None,
     },
 }
@@ -131,6 +132,7 @@ def generate_map(map_id, ignore_cache):
         assert origin_map is not None  # to tell pylance that this is definitely not None
         map_data['results']['w2v_embeddings_file_path'] = origin_map['results']['w2v_embeddings_file_path']
         map_data['results']['thumbnail_atlas_filename'] = origin_map['results']['thumbnail_atlas_filename']
+        map_data['results']['thumbnail_sprite_size'] = origin_map['results']['thumbnail_sprite_size']
 
     schema_id = params.schema_id
     schema = get_object_schema(schema_id)
@@ -149,6 +151,7 @@ def generate_map(map_id, ignore_cache):
         map_data["results"]["search_result_meta_information"] = deepcopy(similar_map["results"]["search_result_meta_information"])
         map_data['results']['search_result_score_info'] = deepcopy(similar_map['results']['search_result_score_info'])
         map_data["results"]["thumbnail_atlas_filename"] = deepcopy(similar_map["results"].get("thumbnail_atlas_filename"))
+        map_data["results"]["thumbnail_sprite_size"] = deepcopy(similar_map["results"].get("thumbnail_sprite_size"))
         map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
         map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
@@ -173,6 +176,15 @@ def generate_map(map_id, ignore_cache):
         thumbnail_field = schema.thumbnail_image
         if thumbnail_field:
             search_params_hash = get_search_stage_hash(params)
+            sprite_size = params.search.get("thumbnail_sprite_size", "auto")
+            if sprite_size == "auto":
+                if len(search_results) <= pow(4096 / 256, 2):
+                    sprite_size = 256
+                elif len(search_results) <= pow(4096 / 128, 2):
+                    sprite_size = 128
+                else:
+                    sprite_size = 64
+            map_data["results"]["thumbnail_sprite_size"] = sprite_size
             atlas_filename = f"atlas_{search_params_hash}.jpg"
             atlas_path = os.path.join(THUMBNAIL_ATLAS_DIR, atlas_filename)
             if os.path.exists(atlas_path):
@@ -180,15 +192,6 @@ def generate_map(map_id, ignore_cache):
             else:
                 # don't leave the field empty, otherwise the last atlas is still visible
                 map_data["results"]["thumbnail_atlas_filename"] = "loading"
-                sprite_size = params.search.get("thumbnail_sprite_size", "auto")
-                if sprite_size == "auto":
-                    if len(search_results) <= pow(4096 / 256, 2):
-                        sprite_size = 256
-                    elif len(search_results) <= pow(4096 / 128, 2):
-                        sprite_size = 128
-                    else:
-                        sprite_size = 64
-                map_data["results"]["thumbnail_sprite_size"] = sprite_size
                 thumbnail_uris = [item.get(thumbnail_field, None) for item in search_results]
                 def _generate_thumbnail_atlas():
                     t1 = time.time()
