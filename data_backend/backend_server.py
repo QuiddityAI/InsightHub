@@ -89,7 +89,7 @@ def get_item_count_route(schema_id: int):
 
 @app.route('/data_backend/schema/<int:schema_id>/random_item', methods=['GET'])
 def get_random_item_route(schema_id: int):
-    items = get_random_items(schema_id)
+    items = get_random_items(schema_id, 1)
     item = items[0] if len(items) else {}
     response = app.response_class(
         response=json.dumps({"item": item}, cls=HumanReadableJSONEncoder),

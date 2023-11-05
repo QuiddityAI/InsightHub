@@ -44,6 +44,8 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         search_results, score_info = get_search_results_matching_a_collection(schema, params.search, params.vectorize, purpose, timings)
     elif params.search.search_type == "similar_to_item":
         search_results, score_info = get_search_results_similar_to_item(schema, params.search, params.vectorize, purpose, timings)
+    elif params.search.search_type == "global_map":
+        search_results, score_info = get_search_results_for_global_map(schema, params.search, params.vectorize, purpose, timings)
     else:
         logging.error("Unsupported search type: " + params.search.search_type)
         search_results = []
@@ -257,6 +259,29 @@ def get_search_results_for_stored_map(map_data):
     return result
 
 
+def get_search_results_for_global_map(schema, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
+    limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
+    page = search_settings.result_list_current_page if purpose == "list" else 0
+    if not all([limit, page is not None, schema]):
+        raise ValueError("a parameter is missing")
+
+    timings.log("search preparation")
+
+    search_engine_client = TextSearchEngineClient.get_instance()
+    search_result = search_engine_client.get_random_items(schema.id, limit, [])
+    items = {}
+    for i, item in enumerate(search_result):
+        items[item['_id']] = {
+            '_id': item['_id'],
+            '_origins': [{'type': 'random_sample', 'field': 'unknown',
+                          'query': 'random sample', 'score': item['_score'], 'rank': i+1}],
+        }
+    result_sets: list[dict] = [items]
+
+    required_fields = get_required_fields(schema, vectorize_settings, purpose)
+    return combine_and_sort_result_sets(result_sets, required_fields, schema, search_settings, limit, timings)
+
+
 def get_full_results_from_meta_info(schema, vectorize_settings, search_result_meta_info, purpose: str, timings):
     required_fields = get_required_fields(schema, vectorize_settings, purpose)
     search_results = sort_items_and_complete_them(schema, search_result_meta_info, required_fields, len(search_result_meta_info), timings)
@@ -286,10 +311,10 @@ def get_item_count(schema_id: int) -> int:
         return 0
 
 
-def get_random_items(schema_id: int) -> list[dict]:
+def get_random_items(schema_id: int, count: int) -> list[dict]:
     search_engine_client = TextSearchEngineClient.get_instance()
     try:
-        items = search_engine_client.get_random_items(schema_id)
+        items = search_engine_client.get_random_items(schema_id, count)
         return items
     except Exception as e:
         logging.error(e)

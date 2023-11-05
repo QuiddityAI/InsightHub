@@ -362,6 +362,12 @@ export default {
       this.appStateStore.settings.search.origin_display_name = collection.name
       this.request_search_results()
     },
+    show_global_map() {
+      this.appStateStore.settings.search.search_type = 'global_map'
+      this.appStateStore.settings.search.all_field_query = ""
+      this.appStateStore.settings.search.all_field_query_negative = ""
+      this.request_search_results()
+    },
     show_document_details(pointIdx) {
       this.selectedDocumentIdx = pointIdx
       this.$refs.embedding_map.selectedPointIdx = pointIdx
@@ -720,6 +726,7 @@ export default {
 
           <!-- search card -->
           <SearchArea @request_search_results="request_search_results" @reset_search_box="reset_search_box"
+            @show_global_map="show_global_map"
             class="flex-none rounded-md shadow-sm bg-white p-3 pointer-events-auto"></SearchArea>
 
           <!-- tab box -->

@@ -35,7 +35,7 @@ const appState = useAppStateStore()
 
 
 export default {
-  emits: ['request_search_results', 'reset_search_box'],
+  emits: ['request_search_results', 'reset_search_box', 'show_global_map'],
   data() {
     return {
       internal_schema_id: null,
@@ -398,6 +398,17 @@ export default {
           <span class="text-gray-500 text-sm">Show timings:</span>
           <input v-model="appState.show_timings" type="checkbox">
         </div>
+      </div>
+      <div class="flex flex-row gap-2">
+        <input type="button" button @click="$emit('request_search_results')"
+        class="px-1 rounded shadow-sm hover:bg-blue-100 active:bg-blue-200 text-sm text-gray-500"
+        value="Rerun">
+        <input type="button" button @click="$emit('reset_search_box')"
+        class="px-1 rounded shadow-sm hover:bg-blue-100 active:bg-blue-200 text-sm text-gray-500"
+        value="Reset">
+        <input type="button" button @click="$emit('show_global_map')"
+        class="px-1 rounded shadow-sm hover:bg-blue-100 active:bg-blue-200 text-sm text-gray-500"
+        value="Show Global Map">
       </div>
     </div>
   </div>

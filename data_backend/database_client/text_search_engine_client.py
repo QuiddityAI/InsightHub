@@ -2,7 +2,7 @@ from collections import defaultdict
 import os
 import json
 import logging
-from typing import Generator, Iterable
+from typing import Generator, Iterable, Optional
 
 from opensearchpy import OpenSearch
 import opensearchpy.helpers
@@ -123,9 +123,9 @@ class TextSearchEngineClient(object):
         return response["count"]
 
 
-    def get_random_items(self, schema_id: int):
+    def get_random_items(self, schema_id: int, count: int, required_fields: Optional[list[str]] = None):
         query = {
-            "size": 1,
+            "size": count,
             "query": {
                 "function_score": {
                     "functions": [{
@@ -134,6 +134,8 @@ class TextSearchEngineClient(object):
                 }
             }
         }
+        if required_fields is not None:
+            query["_source"] = required_fields
         response = self.client.search(
             body = query,
             index = self._get_index_name(schema_id)
