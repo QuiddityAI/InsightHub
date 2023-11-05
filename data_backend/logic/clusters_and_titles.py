@@ -38,6 +38,9 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
         scores_per_cluster[cluster_index].append(normalized_scores[result_index])
     timings.log("collect information for clusters")
 
+    # IDEA: get top words from all clusters, then subtract all other vectors from vector from current
+    # cluster, then take word closest to that vector
+
     # highlight TF-IDF words:
     # vectorizer = TfidfVectorizer(stop_words="english")
 

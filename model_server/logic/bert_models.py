@@ -13,6 +13,8 @@ bert_models = {
     "matscibert": "m3rg-iitd/matscibert",  # https://github.com/M3RG-IITD/MatSciBERT
 }
 
+# TODO: test S-PubMedBERT (PubMedBERT fine tuned on MSMARCO for sentence similarity)
+
 bert_embedding_strategies = ["cls_token", "sep_token", "average_all_tokens"]
 
 
