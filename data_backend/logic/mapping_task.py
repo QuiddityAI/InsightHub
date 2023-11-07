@@ -185,7 +185,7 @@ def generate_map(map_id, ignore_cache):
                 else:
                     sprite_size = 64
             map_data["results"]["thumbnail_sprite_size"] = sprite_size
-            atlas_filename = f"atlas_{search_params_hash}.jpg"
+            atlas_filename = f"atlas_{search_params_hash}.webp"
             atlas_path = os.path.join(THUMBNAIL_ATLAS_DIR, atlas_filename)
             if os.path.exists(atlas_path):
                 map_data["results"]["thumbnail_atlas_filename"] = atlas_filename

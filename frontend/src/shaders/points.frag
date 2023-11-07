@@ -74,6 +74,64 @@ void main() {
 
     FragColor.a = circleArea * maxOpacity;
 
+    // position of this fragment on the screen:
+    vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
+
+    // noise:
+    float noise = 0.1 * rand(floor(posFromCenter * 40.0)/40.0);
+
+    float pi = 3.1415;
+    float yFactor = cos(atan(posFromCenter.y, sqrt(1.0 - pow(posFromCenter.y, 2.0))));
+    vec2 sphereUv = vec2(((vUv.x - 0.5) * 2.0 / max(yFactor, 0.001)) / 2.0 + 0.5, vUv.y);
+
+    vec3 tangentSpaceTextureNormal = texture(pointTextureNormalMap, sphereUv / 3.0).xyz * 2.0 - 1.0;
+
+    vec3 sphereNormal = get_normal_from_position_on_circle(vUv.x, vUv.y);  // normal from surface
+
+    // // to apply normal maps, we need a tangent and a bitangent on the sphere in addition to the normal
+    // // the tangent is pointing parallel to the surface, but there are any number of possible tangents
+    // // the tangent should be in the same direction as used for the normal map
+    // // here I tried to make up a formula to find that, it is not correct (reflections are in the wrong direction)
+    // // but at least it shows the idea:
+    // vec3 tangent = vec3(1.0 - sphereNormal.x, 1.0 - sphereNormal.y, 1.0 - (sphereNormal.z + sphereNormal.x));
+    // vec3 bitangent = vec3(1.0 - sphereNormal.x, 1.0 - (sphereNormal.y + sphereNormal.z), 1.0 - sphereNormal.z);
+
+    // // see also https://youtu.be/E4PHFnvMzFc?si=Z1nOGr4p5kJo-8DG&t=5165
+    // mat3x3 mtxTangentToWorld = mat3x3(
+    //     tangent.x, bitangent.x, sphereNormal.x,
+    //     tangent.y, bitangent.y, sphereNormal.y,
+    //     tangent.z, bitangent.z, sphereNormal.z
+    // );
+
+    // vec3 N = mtxTangentToWorld * tangentSpaceTextureNormal;
+
+    vec3 N = sphereNormal;
+
+    vec3 L = normalize(lightPosition - vertexPositionVar);  // vector to light
+
+    vec3 cameraPosition = vec3(0.5, 0.5, 1.0);
+    vec3 V = normalize(-(vertexPositionVar - cameraPosition)); // Vector to viewer
+
+    // Lambert's cosine law
+    float lambertian = max(dot(N, L), 0.0);
+    float specular = 0.0;
+    float shininessVal = 5.0;
+    if (lambertian > 0.0) {
+        vec3 R = reflect(-L, N);  // Reflected light vector
+        // Compute the specular term
+        float specAngle = max(dot(R, V), 0.0);
+        specular = pow(specAngle, shininessVal);
+    }
+    float ambientLight = 0.5;
+    vec3 specularColor = vec3(1.0f);
+    float specularStrength = 0.7;
+    // vec3 albedoColor = texture(pointTextureBaseColor, sphereUv).rgb;
+    vec3 albedoColor = albedoColorVar;
+
+    FragColor.rgb = albedoColor * ambientLight +
+                lambertian * albedoColor * (1.0 - ambientLight) +
+                specularStrength * specular * specularColor + noise;
+
     if (useTextureAtlas) {
         int atlasTotalWidth = 4096;
         int spritesPerLine = atlasTotalWidth / thumbnailSpriteSize;
@@ -81,65 +139,7 @@ void main() {
         float uvCol = float(int(pointIdxVar) % spritesPerLine) / float(spritesPerLine);
         float uvFactor = (float(atlasTotalWidth) / float(thumbnailSpriteSize));
         vec2 imagePos = (posFromBottomLeft - (1.0 - imageSize) / 2.0) / imageSize;
-        vec3 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + imagePos / uvFactor).rgb;
-        FragColor.rgb = mix(albedoColorVar, tex, imageCircleArea);
-    } else {
-        // position of this fragment on the screen:
-        vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
-
-        // noise:
-        float noise = 0.1 * rand(floor(posFromCenter * 40.0)/40.0);
-
-        float pi = 3.1415;
-        float yFactor = cos(atan(posFromCenter.y, sqrt(1.0 - pow(posFromCenter.y, 2.0))));
-        vec2 sphereUv = vec2(((vUv.x - 0.5) * 2.0 / max(yFactor, 0.001)) / 2.0 + 0.5, vUv.y);
-
-        vec3 tangentSpaceTextureNormal = texture(pointTextureNormalMap, sphereUv / 3.0).xyz * 2.0 - 1.0;
-
-        vec3 sphereNormal = get_normal_from_position_on_circle(vUv.x, vUv.y);  // normal from surface
-
-        // // to apply normal maps, we need a tangent and a bitangent on the sphere in addition to the normal
-        // // the tangent is pointing parallel to the surface, but there are any number of possible tangents
-        // // the tangent should be in the same direction as used for the normal map
-        // // here I tried to make up a formula to find that, it is not correct (reflections are in the wrong direction)
-        // // but at least it shows the idea:
-        // vec3 tangent = vec3(1.0 - sphereNormal.x, 1.0 - sphereNormal.y, 1.0 - (sphereNormal.z + sphereNormal.x));
-        // vec3 bitangent = vec3(1.0 - sphereNormal.x, 1.0 - (sphereNormal.y + sphereNormal.z), 1.0 - sphereNormal.z);
-
-        // // see also https://youtu.be/E4PHFnvMzFc?si=Z1nOGr4p5kJo-8DG&t=5165
-        // mat3x3 mtxTangentToWorld = mat3x3(
-        //     tangent.x, bitangent.x, sphereNormal.x,
-        //     tangent.y, bitangent.y, sphereNormal.y,
-        //     tangent.z, bitangent.z, sphereNormal.z
-        // );
-
-        // vec3 N = mtxTangentToWorld * tangentSpaceTextureNormal;
-
-        vec3 N = sphereNormal;
-
-        vec3 L = normalize(lightPosition - vertexPositionVar);  // vector to light
-
-        vec3 cameraPosition = vec3(0.5, 0.5, 1.0);
-        vec3 V = normalize(-(vertexPositionVar - cameraPosition)); // Vector to viewer
-
-        // Lambert's cosine law
-        float lambertian = max(dot(N, L), 0.0);
-        float specular = 0.0;
-        float shininessVal = 5.0;
-        if (lambertian > 0.0) {
-            vec3 R = reflect(-L, N);  // Reflected light vector
-            // Compute the specular term
-            float specAngle = max(dot(R, V), 0.0);
-            specular = pow(specAngle, shininessVal);
-        }
-        float ambientLight = 0.5;
-        vec3 specularColor = vec3(1.0f);
-        float specularStrength = 0.7;
-        // vec3 albedoColor = texture(pointTextureBaseColor, sphereUv).rgb;
-        vec3 albedoColor = albedoColorVar;
-
-        FragColor.rgb = albedoColor * ambientLight +
-                    lambertian * albedoColor * (1.0 - ambientLight) +
-                    specularStrength * specular * specularColor + noise;
+        vec4 tex = texture(textureAtlas, vec2(uvCol, 1.0 - uvRow) + imagePos / uvFactor);
+        FragColor.rgb = mix(FragColor.rgb, tex.rgb, FragColor.a * tex.a * imageCircleArea);
     }
 }

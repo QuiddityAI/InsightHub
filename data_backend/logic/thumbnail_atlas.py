@@ -24,7 +24,7 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str],
         os.makedirs(THUMBNAIL_ATLAS_DIR, exist_ok=True)
     max_images = pow(atlas_total_width // sprite_size, 2)
     imagesPerLine = (atlas_total_width / sprite_size)
-    atlas = Image.new("RGB", (atlas_total_width, atlas_total_width), color="white")
+    atlas = Image.new("RGBA", (atlas_total_width, atlas_total_width), color=(0, 0, 0, 0))
 
     def _load_image(thumbnail_uri):
         if not thumbnail_uri:
@@ -64,7 +64,8 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str],
             continue
         posRow: int = int(i / imagesPerLine)
         posCol: int = int(i % imagesPerLine)
-        atlas.paste(image, (posCol * sprite_size + ((sprite_size - image.width) // 2), posRow * sprite_size))
+        atlas.paste(image, (posCol * sprite_size + ((sprite_size - image.width) // 2),
+                            posRow * sprite_size + ((sprite_size - image.height) // 2)))
         image.close()
     atlas.save(atlas_filename, quality=80)
     logging.warning(f"Thumbnail atlas sucessfully created: {atlas_filename}")
