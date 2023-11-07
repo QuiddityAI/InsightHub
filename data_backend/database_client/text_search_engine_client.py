@@ -100,6 +100,8 @@ class TextSearchEngineClient(object):
             if field.field_type not in (FieldType.ATTRIBUTES, FieldType.ARBITRARY_OBJECT):
                 indexed = (field.is_available_for_search or field.is_available_for_filtering) and field.field_type != FieldType.VECTOR
                 properties[field.identifier]["index"] = indexed
+            if field.field_type == FieldType.TEXT and field.language_analysis:
+                properties[field.identifier]["analyzer"] = field.language_analysis
 
         mappings = {
             'properties': properties,

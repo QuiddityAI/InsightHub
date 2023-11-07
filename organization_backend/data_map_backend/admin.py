@@ -76,7 +76,7 @@ class ObjectFieldInline(admin.StackedInline):
 
     fields = [
         "identifier", "description",
-        "field_type", "is_array", "embedding_space", "index_parameters",
+        "field_type", "is_array", "language_analysis", "embedding_space", "index_parameters",
         "is_available_for_search", "text_similarity_threshold", "image_similarity_threshold",
         "is_available_for_filtering",
         "generator", "generator_parameters", "generating_condition",
@@ -169,7 +169,7 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
             for field in obj.object_fields.all():
                 html += "<tr style='border: 1px solid;'>\n"
-                html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.field_type + ('[]' if field.is_array else '')}</td>\n"
+                html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.field_type + ('[]' if field.is_array else '') + (' ' + field.language_analysis if field.language_analysis else '')}</td>\n"
                 html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.identifier} {'<i>(PK)</i>' if obj.primary_key == field else ''}</td>\n"
                 thresholds = f"{field.text_similarity_threshold if field.text_similarity_threshold is not None else ''}"
                 thresholds += f" {field.image_similarity_threshold if field.image_similarity_threshold is not None else ''}"

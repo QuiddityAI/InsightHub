@@ -35,6 +35,16 @@ class FieldType(models.TextChoices):
     ARBITRARY_OBJECT = "ARBITRARY_OBJECT", "Non-indexed object"
 
 
+class LanguageAnalysis(models.TextChoices):
+    ENGLISH = "english", "English"
+    GERMAN = "german", "German"
+    FRENCH = "french", "French"
+    SPANISH = "spanish", "Spanish"
+    CZECH = "czech", "Czech"
+    RUSSIAN = "russian", "Russian"
+    HINDI = "hindi", "Hindi"
+
+
 class EmbeddingSpace(models.Model):
     name = models.CharField(
         verbose_name="Name",
@@ -369,6 +379,13 @@ class ObjectField(models.Model):
         default=False,
         blank=False,
         null=False)
+    language_analysis = models.CharField(
+        verbose_name="Language Processing",
+        help_text="Only applicable for 'Text' fields",
+        max_length=50,
+        choices=LanguageAnalysis.choices,
+        blank=True,
+        null=True)
     embedding_space = models.ForeignKey(
         verbose_name="Embedding Space",
         help_text="If not set, embedding space of generator will be used",
