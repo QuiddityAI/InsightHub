@@ -102,7 +102,10 @@ def get_random_item_route(schema_id: int):
 def update_database_layout_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
-    update_database_layout(params.schema_id)
+    try:
+        update_database_layout(params.schema_id)
+    except Exception as e:
+        return repr(e), 500
     return "", 204
 
 
@@ -110,7 +113,10 @@ def update_database_layout_route():
 def insert_many_sync_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
-    insert_many(params.schema_id, params.elements)
+    try:
+        insert_many(params.schema_id, params.elements)
+    except Exception as e:
+        return repr(e), 500
     return "", 204
 
 
