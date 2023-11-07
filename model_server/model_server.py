@@ -2,6 +2,7 @@ import logging
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from werkzeug import serving
 app = Flask(__name__)
 CORS(app) # This will enable CORS for all routes
 
@@ -11,6 +12,20 @@ from utils.batching import run_in_batches
 from logic.bert_models import bert_models, bert_embedding_strategies, get_bert_embeddings
 from logic.sentence_transformer_models import get_sentence_transformer_embeddings
 from logic.clip_models import get_clip_text_embeddings, get_clip_image_embeddings
+
+
+# exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
+parent_log_request = serving.WSGIRequestHandler.log_request
+
+paths_excluded_from_logging = ['/health']
+
+def log_request(self, *args, **kwargs):
+    if self.path in paths_excluded_from_logging or self.path.startswith("/data_backend/local_image/"):
+        return
+
+    parent_log_request(self, *args, **kwargs)
+
+serving.WSGIRequestHandler.log_request = log_request
 
 
 @app.route('/health', methods=['GET'])
