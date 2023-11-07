@@ -13,7 +13,8 @@ from django_object_actions import DjangoObjectActions, action
 
 from .data_backend_client import data_backend_url
 
-from .models import EmbeddingSpace, Generator, Organization, ObjectSchema, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
+from .models import EmbeddingSpace, FieldType, Generator, Organization, ObjectSchema, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
+from .utils import get_vector_field_dimensions
 
 # admin.site.site_header = 'Site Header'
 
@@ -159,24 +160,39 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         return super(ObjectSchemaAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_field_overview_table_html(self, obj):
-        header = ["Type", "Identifier", "Search / Filter / Generated", "Generator"]
-        html = """<table style='border: 1px solid; border-collapse: collapse;'>\n<tr>"""
-        for item in header:
-            html += f"<th style='border: 1px solid;'>{item}</th>\n"
-        html += "</tr>\n"
-
-        for field in obj.object_fields.all():
-            html += "<tr style='border: 1px solid;'>\n"
-            html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.field_type + ('[]' if field.is_array else '')}</td>\n"
-            html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.identifier} {'<i>(PK)</i>' if obj.primary_key == field else ''}</td>\n"
-            thresholds = f"{field.text_similarity_threshold if field.text_similarity_threshold is not None else ''}"
-            thresholds += f" {field.image_similarity_threshold if field.image_similarity_threshold is not None else ''}"
-            attributes = f"{'s' if field.is_available_for_search else '-'} {thresholds} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
-            html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
-            html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
+        try:
+            header = ["Type", "Identifier", "Search / Filter / Generated", "Generator"]
+            html = """<table style='border: 1px solid; border-collapse: collapse;'>\n<tr>"""
+            for item in header:
+                html += f"<th style='border: 1px solid;'>{item}</th>\n"
             html += "</tr>\n"
 
-        html += "</table>"
+            for field in obj.object_fields.all():
+                html += "<tr style='border: 1px solid;'>\n"
+                html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.field_type + ('[]' if field.is_array else '')}</td>\n"
+                html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.identifier} {'<i>(PK)</i>' if obj.primary_key == field else ''}</td>\n"
+                thresholds = f"{field.text_similarity_threshold if field.text_similarity_threshold is not None else ''}"
+                thresholds += f" {field.image_similarity_threshold if field.image_similarity_threshold is not None else ''}"
+                attributes = f"{'s' if field.is_available_for_search else '-'} {thresholds} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
+                html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
+                html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
+                html += "</tr>\n"
+
+            html += "</table>"
+
+            total_items = obj.item_count
+            if total_items:
+                for field in obj.object_fields.all():
+                    if field.field_type != FieldType.VECTOR:
+                        continue
+                    dimensions = get_vector_field_dimensions(field)
+                    if not dimensions:
+                        continue
+                    bytes_per_vector = 4
+                    space_needed_gb = (dimensions * bytes_per_vector * total_items) / 1024 / 1024 / 1024
+                    html += f"<br>Space needed for field '{field.identifier}': {space_needed_gb:.1f} GB"
+        except Exception as e:
+            return repr(e)
         return mark_safe(html)
 
     get_field_overview_table_html.short_description='Field Overview'
