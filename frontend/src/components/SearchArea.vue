@@ -75,7 +75,7 @@ export default {
           {id: "score_graph", title: "Score Graph"},
         ]},
         "n_neighbors": {title: "n_neighbors", default: 15, value: 15},
-        "min_dist": {title: "min_dist", default: 0.05, value: 0.05},
+        "min_dist": {title: "min_dist", default: 0.17, value: 0.17},
         "n_epochs": {title: "n_epochs", default: 500, value: 500},
         "metric": {title: "metric", default: "euclidean", value: "euclidean"},
       },
@@ -339,7 +339,7 @@ export default {
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">UMAP min_dist:</span>
           <span class="text-gray-500 text-sm"> {{ appState.settings.projection.min_dist }} </span>
-          <input v-model.number="appState.settings.projection.min_dist" type="range" min="0.001" max="0.2" step="0.001" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+          <input v-model.number="appState.settings.projection.min_dist" type="range" min="0.01" max="0.99" step="0.01" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
         </div>
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">UMAP n_epochs:</span>

@@ -293,7 +293,7 @@ def generate_map(map_id, ignore_cache):
         target_dimensions = 1 if projection_parameters.get("shape") in ("1d_plus_distance_polar", "1d_plus_year") else 2
         import umap  # import it only when needed as it slows down the startup time
         umap_task = umap.UMAP(n_components=target_dimensions, random_state=99,
-                              min_dist=projection_parameters.get("min_dist", 0.05),
+                              min_dist=projection_parameters.get("min_dist", 0.17),
                               n_epochs=projection_parameters.get("n_epochs", 500),
                               n_neighbors=projection_parameters.get("n_neighbors", 15),
                               metric=projection_parameters.get("metric", "euclidean"),

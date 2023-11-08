@@ -66,7 +66,7 @@ export const useAppStateStore = defineStore('appState', {
         projection: {
           shape: "2d",
           n_neighbors: 15,
-          min_dist: 0.05,
+          min_dist: 0.17,
           n_epochs: 500,
           metric: "euclidean",
           dim_reducer: "umap",
@@ -130,7 +130,7 @@ export const useAppStateStore = defineStore('appState', {
         projection: {
           shape: "2d",
           n_neighbors: 15,
-          min_dist: 0.05,
+          min_dist: 0.17,
           n_epochs: 500,
           metric: "euclidean",
           dim_reducer: "umap",
