@@ -25,15 +25,18 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
     if num_clusters <= 0:
         return []
     texts_per_cluster = [""] * num_clusters
+    texts_per_item = []
     point_positions_per_cluster = [[] for i in range(num_clusters)]
     scores_per_cluster = [[] for i in range(num_clusters)]
     normalized_scores = normalize_array(np.array([result['_score'] for result in results]))
     max_text_length = 512
+    field_boundary_indicator = "_stop_"
 
     for result_index, cluster_index in enumerate(cluster_labels):
         if cluster_index <= -1: continue
         text = join_text_source_fields(results[result_index], descriptive_text_fields)
-        texts_per_cluster[cluster_index] += text[:max_text_length]
+        texts_per_item.append(text)
+        texts_per_cluster[cluster_index] += f" {field_boundary_indicator} {text[:max_text_length]}"
         point_positions_per_cluster[cluster_index].append(positions[result_index])
         scores_per_cluster[cluster_index].append(normalized_scores[result_index])
     timings.log("collect information for clusters")
@@ -44,15 +47,28 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
     # highlight TF-IDF words:
     # vectorizer = TfidfVectorizer(stop_words="english")
 
-    # getting all words that appear in more than 80% of the clusters:
-    count_vectorizer = CountVectorizer(tokenizer=tokenize, lowercase=False, strip_accents=None, min_df=0.8)
-    count_vectorizer.fit_transform(texts_per_cluster)
-    context_specific_ignore_words = count_vectorizer.get_feature_names_out()
+    # getting all words that appear in more than 50% of the items:
+    count_vectorizer = CountVectorizer(tokenizer=tokenize, lowercase=False, strip_accents=None, min_df=0.5)
+    count_vectorizer.fit_transform(texts_per_item)
+    context_specific_ignore_words = list(count_vectorizer.get_feature_names_out())
+
+    if field_boundary_indicator in context_specific_ignore_words:
+        context_specific_ignore_words.remove(field_boundary_indicator)
+    context_specific_ignore_words = [x.lower() for x in context_specific_ignore_words]
 
     # using "tokenizer" instead of "analyzer" keeps the default preprocessor but also enables generation of ngrams
     # the default preprocessor only does lowercase conversion and accent stripping, so we can just disable those:
     context_specific_tokenize = partial(tokenize, context_specific_ignore_words=context_specific_ignore_words)
     vectorizer = TfidfVectorizer(tokenizer=context_specific_tokenize, lowercase=False, strip_accents=None, ngram_range=(1, 2), max_df=0.7)
+    vectorizer.fit(texts_per_cluster)
+    # To prevent the generation of n-grams across different source fields, a specific token
+    # is inserted between the fields ("_stop_", see join_text_source_fields() ).
+    # We now remove any 2-grams from the vocabulary that contain the field boundary indicator "_stop_":
+    for voc in list(vectorizer.vocabulary_.keys()):
+        if field_boundary_indicator in voc:
+            del vectorizer.vocabulary_[voc]
+    # recreate the TfidfVectorizer object with the cleaned-up vocabulary:
+    vectorizer = TfidfVectorizer(tokenizer=context_specific_tokenize, lowercase=False, strip_accents=None, ngram_range=(1, 2), max_df=0.7, vocabulary=vectorizer.vocabulary_.keys())
     tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
     words = vectorizer.get_feature_names_out()
 

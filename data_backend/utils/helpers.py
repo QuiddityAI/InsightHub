@@ -55,13 +55,14 @@ def get_vector_field_dimensions(field: DotDict):
 
 
 def join_text_source_fields(item: dict, descriptive_text_fields: list[str]) -> str:
-    text = ""
+    texts = []
+    field_boundary_indicator = " _stop_ "
     for field in descriptive_text_fields:
         content = item.get(field, "")
         if not content:
             continue
         if isinstance(content, list):
-            text += " ".join(content)
+            texts.append(field_boundary_indicator.join(content))
         else:
-            text += " " + content
-    return text
+            texts.append(content)
+    return field_boundary_indicator.join(texts)
