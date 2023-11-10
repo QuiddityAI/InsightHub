@@ -95,7 +95,7 @@ def import_gz_file(filename, dataset_id):
                     continue
                 primary_location_source = work.get("primary_location", {}).get("source", {}) if work.get("primary_location", {}) else None
                 item = {
-                    "_id": work["id"].split("/")[-1],
+                    "openalex_id": work["id"].split("/")[-1],
                     "doi": work["doi"],
                     "type": work["type"],
                     "title": work["title"],
