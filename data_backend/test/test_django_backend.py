@@ -83,6 +83,11 @@ def test_insert_many_books():
                 t2 = time.time()
                 print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(elements))*1000:.2f} ms")
                 elements = []
+        if elements:
+            t1 = time.time()
+            insert_many(dataset_id, elements)
+            t2 = time.time()
+            print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(elements))*1000:.2f} ms")
 
 
 def test_insert_many_fashion():
@@ -110,11 +115,16 @@ def test_insert_many_fashion():
 
             if counter >= max_elements:
                 break
+        if elements:
+            t1 = time.time()
+            insert_many(dataset_id, elements)
+            t2 = time.time()
+            print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(elements))*1000:.2f} ms")
 
 
 if __name__ == "__main__":
     # dataset = test_dataset_serialization()
     # test_vector_db_client(dataset)
-    test_insert_many_books()
-    # test_insert_many_fashion()
+    # test_insert_many_books()
+    test_insert_many_fashion()
 
