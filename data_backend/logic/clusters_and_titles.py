@@ -31,10 +31,11 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
     normalized_scores = normalize_array(np.array([result['_score'] for result in results]))
     max_text_length = 512
     field_boundary_indicator = "_stop_"
+    field_boundary_indicator_padded = " _stop_ "
 
     for result_index, cluster_index in enumerate(cluster_labels):
         if cluster_index <= -1: continue
-        text = join_text_source_fields(results[result_index], descriptive_text_fields)
+        text = join_text_source_fields(results[result_index], descriptive_text_fields, field_boundary_indicator_padded)
         texts_per_item.append(text)
         texts_per_cluster[cluster_index] += f" {field_boundary_indicator} {text[:max_text_length]}"
         point_positions_per_cluster[cluster_index].append(positions[result_index])

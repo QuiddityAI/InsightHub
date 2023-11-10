@@ -54,15 +54,26 @@ def get_vector_field_dimensions(field: DotDict):
         (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)
 
 
-def join_text_source_fields(item: dict, descriptive_text_fields: list[str]) -> str:
+def join_text_source_fields(item: dict, descriptive_text_fields: list[str], field_boundary: str = " ") -> str:
     texts = []
-    field_boundary_indicator = " _stop_ "
     for field in descriptive_text_fields:
         content = item.get(field, "")
         if not content:
             continue
         if isinstance(content, list):
-            texts.append(field_boundary_indicator.join(content))
+            texts.append(field_boundary.join(content))
         else:
             texts.append(content)
-    return field_boundary_indicator.join(texts)
+    return field_boundary.join(texts)
+
+
+def join_extracted_text_sources(source_texts: list[str | list]) -> str:
+    texts = []
+    for content in source_texts:
+        if not content:
+            continue
+        if isinstance(content, list):
+            texts.append(" ".join(content))
+        else:
+            texts.append(content)
+    return " ".join(texts)
