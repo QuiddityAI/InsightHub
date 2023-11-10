@@ -63,20 +63,20 @@ def import_openalex():
     completed_files = get_completed_files()
     total_elements_added = 0
 
-    schema_id = 6
-    update_database_layout(schema_id)
+    dataset_id = 6
+    update_database_layout(dataset_id)
 
     for filename in tqdm.tqdm(gz_files):
         if filename in completed_files:
             continue
         logging.warning(f"Processing {filename}...")
-        total_elements_added += import_gz_file(filename, schema_id)
+        total_elements_added += import_gz_file(filename, dataset_id)
         add_filename_to_completed_file(filename)
         logging.warning(f"Total elements added: {total_elements_added}")
     return
 
 
-def import_gz_file(filename, schema_id):
+def import_gz_file(filename, dataset_id):
     counter = 0
     max_elements = 1000000000
     elements = []
@@ -117,7 +117,7 @@ def import_gz_file(filename, schema_id):
             if counter % min(max_elements, 2048) == 0:
                 t1 = time.time()
                 try:
-                    insert_many(schema_id, elements)
+                    insert_many(dataset_id, elements)
                 except (Exception, KeyboardInterrupt) as e:
                     logging.error(e)
                     logging.warning(f"Currently processed file: {filename}, items added from this file: {counter}")
@@ -133,7 +133,7 @@ def import_gz_file(filename, schema_id):
         if elements:
             t1 = time.time()
             try:
-                insert_many(schema_id, elements)
+                insert_many(dataset_id, elements)
             except (Exception, KeyboardInterrupt) as e:
                 logging.error(e)
                 logging.warning(f"Currently processed file: {filename}, items added from this file: {counter}")

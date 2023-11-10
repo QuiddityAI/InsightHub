@@ -46,23 +46,23 @@ class TextSearchEngineClient(object):
         return TextSearchEngineClient._instance
 
 
-    def _get_index_name(self, schema_id: int):
-        return f'schema_{schema_id}'
+    def _get_index_name(self, dataset_id: int):
+        return f'dataset_{dataset_id}'
 
 
-    def ensure_schema_exists(self, schema: dict):
-        # create schema
+    def ensure_dataset_exists(self, dataset: dict):
+        # create dataset
         # create indexes
-        # check if schema is still valid, update if necessary
-        schema = DotDict(schema)
+        # check if dataset is still valid, update if necessary
+        dataset = DotDict(dataset)
 
-        index_name = self._get_index_name(schema.id)
+        index_name = self._get_index_name(dataset.id)
         index_body = {}
         try:
             response = self.client.indices.create(index_name, body=index_body)
         except Exception as e:
             logging.error(f"Error during creating index: type {type(e)}, error: {e}")
-            # opensearchpy.exceptions.RequestError: RequestError(400, 'resource_already_exists_exception', 'index [schema_4/1kYO7nOKQm2LMbosdiPeXw] already exists')
+            # opensearchpy.exceptions.RequestError: RequestError(400, 'resource_already_exists_exception', 'index [dataset_4/1kYO7nOKQm2LMbosdiPeXw] already exists')
         else:
             logging.info(response)
 
@@ -91,7 +91,7 @@ class TextSearchEngineClient(object):
             FieldType.CLASS_PROBABILITY: "rank_features",  # NOTE: "s" for multiple class probabilities (without creating new fields for each)
         })
 
-        for field in schema.object_fields.values():
+        for field in dataset.object_fields.values():
             if field.identifier == "_id":
                 continue
             if field.field_type == FieldType.VECTOR:
@@ -109,7 +109,7 @@ class TextSearchEngineClient(object):
             'properties': properties,
         }
         try:
-            response = self.client.indices.put_mapping(index=self._get_index_name(schema.id), body=mappings)
+            response = self.client.indices.put_mapping(index=self._get_index_name(dataset.id), body=mappings)
         except Exception as e:
             logging.error(f"Error during updating text search engine mapping: type {type(e)}, error: {e}")
             raise e
@@ -117,17 +117,17 @@ class TextSearchEngineClient(object):
             logging.info(f"Successfully changed text search engine mapping: {response}")
 
 
-    def remove_schema(self, schema_id: str):
+    def remove_dataset(self, dataset_id: str):
         pass
 
 
-    def get_item_count(self, schema_id: int):
-        index_name = self._get_index_name(schema_id)
+    def get_item_count(self, dataset_id: int):
+        index_name = self._get_index_name(dataset_id)
         response = self.client.count(index=index_name)
         return response["count"]
 
 
-    def get_random_items(self, schema_id: int, count: int, required_fields: Optional[list[str]] = None):
+    def get_random_items(self, dataset_id: int, count: int, required_fields: Optional[list[str]] = None):
         query = {
             "size": count,
             "query": {
@@ -142,13 +142,13 @@ class TextSearchEngineClient(object):
             query["_source"] = required_fields
         response = self.client.search(
             body = query,
-            index = self._get_index_name(schema_id)
+            index = self._get_index_name(dataset_id)
         )
         return response.get("hits", {}).get("hits", [])
 
 
-    def upsert_items(self, schema_id: int, ids: list[str], payloads: list[dict]):
-        index_name = self._get_index_name(schema_id)
+    def upsert_items(self, dataset_id: int, ids: list[str], payloads: list[dict]):
+        index_name = self._get_index_name(dataset_id)
 
         def upsert_batch(ids_and_payloads):
             bulk_operations = ""
@@ -166,12 +166,12 @@ class TextSearchEngineClient(object):
         run_in_batches_without_result(list(zip(ids, payloads)), 512, upsert_batch)
 
 
-    def remove_items(self, schema_id: str, primary_key_field: str, item_pks: list[str]):
+    def remove_items(self, dataset_id: str, primary_key_field: str, item_pks: list[str]):
         pass
 
 
-    def get_items_by_ids(self, schema_id: int, ids: Iterable[str], fields: Iterable[str]) -> list:
-        index_name = self._get_index_name(schema_id)
+    def get_items_by_ids(self, dataset_id: int, ids: Iterable[str], fields: Iterable[str]) -> list:
+        index_name = self._get_index_name(dataset_id)
         body = {
             "ids": ids,
         }
@@ -184,8 +184,8 @@ class TextSearchEngineClient(object):
         return items
 
 
-    def get_all_items_with_missing_field_count(self, schema_id: int, missing_field: str) -> int:
-        index_name = self._get_index_name(schema_id)
+    def get_all_items_with_missing_field_count(self, dataset_id: int, missing_field: str) -> int:
+        index_name = self._get_index_name(dataset_id)
         query = {
             "query": {
                 "bool": {
@@ -201,8 +201,8 @@ class TextSearchEngineClient(object):
         return response["count"]
 
 
-    def get_all_items_with_missing_field(self, schema_id: int, missing_field: str, required_fields: list[str], internal_batch_size: int = 1000) -> Generator:
-        index_name = self._get_index_name(schema_id)
+    def get_all_items_with_missing_field(self, dataset_id: int, missing_field: str, required_fields: list[str], internal_batch_size: int = 1000) -> Generator:
+        index_name = self._get_index_name(dataset_id)
         query = {
             '_source': required_fields,
             "query": {
@@ -228,8 +228,8 @@ class TextSearchEngineClient(object):
             yield item
 
 
-    def delete_field(self, schema_id, field):
-        index_name = self._get_index_name(schema_id)
+    def delete_field(self, dataset_id, field):
+        index_name = self._get_index_name(dataset_id)
 
         body = {
             "query": {
@@ -244,7 +244,7 @@ class TextSearchEngineClient(object):
         logging.warning(f"Deleted field {field} from text search engine: {response}")
 
 
-    def get_search_results(self, schema_id, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields, highlights=False):
+    def get_search_results(self, dataset_id, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields, highlights=False):
         query = {
             'size': limit,
             'query': {
@@ -262,6 +262,6 @@ class TextSearchEngineClient(object):
 
         response = self.client.search(
             body = query,
-            index = self._get_index_name(schema_id)
+            index = self._get_index_name(dataset_id)
         )
         return response.get("hits", {}).get("hits", [])

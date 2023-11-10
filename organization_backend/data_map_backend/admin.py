@@ -13,7 +13,7 @@ from django_object_actions import DjangoObjectActions, action
 
 from .data_backend_client import data_backend_url
 
-from .models import EmbeddingSpace, FieldType, Generator, Organization, ObjectSchema, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
+from .models import EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
 from .utils import get_vector_field_dimensions
 
 # admin.site.site_header = 'Site Header'
@@ -48,8 +48,8 @@ class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     }
 
 
-class ObjectSchemaInline(admin.TabularInline):
-    model = ObjectSchema
+class DatasetInline(admin.TabularInline):
+    model = Dataset
     list_display_links = ('id', 'name_plural')
     readonly_fields = ('changed_at', 'created_at', 'name_plural')
     show_change_link = True
@@ -66,7 +66,7 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     ordering = ['name']
 
     readonly_fields = ('changed_at', 'created_at')
-    inlines = [ObjectSchemaInline]
+    inlines = [DatasetInline]
 
 
 class ObjectFieldInline(admin.StackedInline):
@@ -90,14 +90,14 @@ class ObjectFieldInline(admin.StackedInline):
     }
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
-        # only show fields of same schema for source fields:
+        # only show fields of same dataset for source fields:
         if db_field.name == "source_fields":
             try:
-                schema_id = int(request.path.split("/")[-3])
+                dataset_id = int(request.path.split("/")[-3])
             except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(schema = -1)
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
-                kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
         return super(ObjectFieldInline, self).formfield_for_manytomany(db_field, request, **kwargs)
 
     def action_buttons(self, obj):
@@ -106,19 +106,19 @@ class ObjectFieldInline(admin.StackedInline):
     action_buttons.short_description = "Actions"
 
 
-@admin.register(ObjectSchema)
-class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+@admin.register(Dataset)
+class DatasetAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ('id', 'organization', 'name_plural')
     list_display_links = ('id', 'name_plural')
     search_fields = ('name_plural', 'organization')
     ordering = ['organization', 'name_plural']
 
-    readonly_fields = ('changed_at', 'created_at', 'get_field_overview_table_html',
+    readonly_fields = ('id', 'changed_at', 'created_at', 'get_field_overview_table_html',
                        'item_count', 'random_item')
 
     fields = [
-        "name", "name_plural", "short_description",
+        "id", "name", "name_plural", "short_description",
         "organization", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields",
         "item_count", "get_field_overview_table_html",
@@ -138,26 +138,26 @@ class ObjectSchemaAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     }
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # only show fields of same schema for source fields:
+        # only show fields of same dataset for source fields:
         if db_field.name in ["primary_key", "thumbnail_image"]:
             try:
-                schema_id = int(request.path.split("/")[-3])
+                dataset_id = int(request.path.split("/")[-3])
             except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(schema = -1)
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
-                kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
-        return super(ObjectSchemaAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
+        return super(DatasetAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
-        # only show fields of same schema for source fields:
+        # only show fields of same dataset for source fields:
         if db_field.name in ["descriptive_text_fields", "default_search_fields"]:
             try:
-                schema_id = int(request.path.split("/")[-3])
+                dataset_id = int(request.path.split("/")[-3])
             except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(schema = -1)
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
-                kwargs["queryset"] = ObjectField.objects.filter(schema = schema_id)
-        return super(ObjectSchemaAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
+        return super(DatasetAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_field_overview_table_html(self, obj):
         try:
@@ -212,7 +212,7 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAd
         # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
         url = data_backend_url + '/data_backend/delete_field'
         data = {
-            'schema_id': obj.schema_id,
+            'dataset_id': obj.dataset_id,
             'field_identifier': obj.identifier,
         }
         requests.post(url, json=data)
@@ -222,7 +222,7 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAd
     def generate_missing_values(self, request, obj):
         url = data_backend_url + '/data_backend/generate_missing_values'
         data = {
-            'schema_id': obj.schema_id,
+            'dataset_id': obj.dataset_id,
             'field_identifier': obj.identifier,
         }
         requests.post(url, json=data)

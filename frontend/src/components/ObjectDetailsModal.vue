@@ -10,7 +10,7 @@ import httpClient from '../api/httpClient';
 <script>
 
 export default {
-  props: ["schema", "initial_item", "collections", "last_used_collection_id"],
+  props: ["dataset", "initial_item", "collections", "last_used_collection_id"],
   emits: ["addToPositives", "addToNegatives", "showSimilarItems", "close"],
   data() {
     return {
@@ -27,16 +27,16 @@ export default {
     updateItemAndRendering() {
       if (!this.item || !this.item._id) return;
       const that = this
-      const rendering = this.schema.detail_view_rendering
+      const rendering = this.dataset.detail_view_rendering
       for (const field of ['title', 'subtitle', 'body', 'image', 'url', 'doi']) {
         rendering[field] = rendering[field] ? eval(rendering[field]) : ((item) => "")
       }
       that.rendering = rendering
 
       const payload = {
-        schema_id: this.schema.id,
+        dataset_id: this.dataset.id,
         item_id: this.item._id,
-        fields: this.schema.detail_view_rendering.required_fields
+        fields: this.dataset.detail_view_rendering.required_fields
       }
       this.loading_item = true
       httpClient.post("/data_backend/document/details_by_id", payload)

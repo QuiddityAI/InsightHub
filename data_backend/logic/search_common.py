@@ -20,7 +20,7 @@ from logic.autocut import get_number_of_useful_items
 from utils.helpers import normalize_array
 
 
-ABSCLUST_SCHEMA_ID = 1
+ABSCLUST_DATASET_ID = 1
 
 
 class QueryInput(object):
@@ -42,15 +42,15 @@ class QueryInput(object):
 
 
 def combine_and_sort_result_sets(result_sets: list[dict], required_fields: list[str],
-                                 schema: DotDict, search_settings: DotDict, limit: int,
+                                 dataset: DotDict, search_settings: DotDict, limit: int,
                                  timings: Timings) -> tuple[list, dict]:
-    score_info = get_score_curves_and_cut_sets(result_sets, search_settings, schema)
+    score_info = get_score_curves_and_cut_sets(result_sets, search_settings, dataset)
     total_items = combine_result_sets_and_calculate_scores(result_sets, timings)
-    sorted_complete_items = sort_items_and_complete_them(schema, total_items, required_fields, limit, timings)
+    sorted_complete_items = sort_items_and_complete_them(dataset, total_items, required_fields, limit, timings)
     return sorted_complete_items, score_info
 
 
-def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotDict, schema: DotDict) -> dict:
+def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotDict, dataset: DotDict) -> dict:
     score_info = {}
     for result_set in result_sets:
         if not result_set:
@@ -92,7 +92,7 @@ def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotD
     #         # the difference-to-top-results score only makes sense for vector results
     #         continue
     #     vector_field = example_origin["field"]
-    #     fill_in_details_from_object_storage(schema.id, sorted_items, [vector_field])
+    #     fill_in_details_from_object_storage(dataset.id, sorted_items, [vector_field])
     #     top_n = 15
     #     top_items = sorted_items[:top_n]
     #     top_n_vector_average = np.mean([item[vector_field] for item in top_items], axis=0)
@@ -152,17 +152,17 @@ def combine_result_sets_and_calculate_scores(result_sets: list[dict], timings: T
     return total_items
 
 
-def sort_items_and_complete_them(schema:DotDict, total_items:dict, required_fields:list[str],
+def sort_items_and_complete_them(dataset:DotDict, total_items:dict, required_fields:list[str],
                                  limit:int, timings:Timings) -> list[dict]:
     # TODO: check how much faster it is to get partial results from search engines and only fill in missing fields
     sorted_results = sorted(total_items.values(), key=lambda item: item['_reciprocal_rank_score'], reverse=True)
     sorted_results = sorted_results[:limit]
     timings.log("sort items")
-    required_text_fields, required_vector_fields = separate_text_and_vector_fields(schema, required_fields)
-    fill_in_details_from_text_storage(schema.id, sorted_results, required_text_fields)
+    required_text_fields, required_vector_fields = separate_text_and_vector_fields(dataset, required_fields)
+    fill_in_details_from_text_storage(dataset.id, sorted_results, required_text_fields)
     timings.log("getting actual data from text storage")
     if required_vector_fields:
-        fill_in_vector_data(schema.id, sorted_results, required_vector_fields)
+        fill_in_vector_data(dataset.id, sorted_results, required_vector_fields)
         timings.log("getting vector data from vector DB")
 
     # search_results = enrich_search_results(search_results, query)
@@ -172,8 +172,8 @@ def sort_items_and_complete_them(schema:DotDict, total_items:dict, required_fiel
     return sorted_results
 
 
-def get_required_fields(schema, vectorize_settings: DotDict, purpose: str):
-    rendering = schema.result_list_rendering if purpose == "list" else schema.hover_label_rendering
+def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
+    rendering = dataset.result_list_rendering if purpose == "list" else dataset.hover_label_rendering
     required_fields = rendering['required_fields']
 
     if purpose == "map" and vectorize_settings.map_vector_field \
@@ -181,34 +181,34 @@ def get_required_fields(schema, vectorize_settings: DotDict, purpose: str):
         and vectorize_settings.map_vector_field not in required_fields:
         required_fields.append(vectorize_settings.map_vector_field)
 
-    if purpose == "map" and schema.thumbnail_image:
-        required_fields.append(schema.thumbnail_image)
+    if purpose == "map" and dataset.thumbnail_image:
+        required_fields.append(dataset.thumbnail_image)
 
     if purpose == "map":
         # used for cluster titles and potentially w2v:
         # TODO: this may be slow, maybe use only subset for cluster titles?
-        required_fields += schema.descriptive_text_fields
+        required_fields += dataset.descriptive_text_fields
 
     required_fields = list(set(required_fields))
     return required_fields
 
 
-def separate_text_and_vector_fields(schema: DotDict, fields: Iterable[str]):
+def separate_text_and_vector_fields(dataset: DotDict, fields: Iterable[str]):
     vector_fields = []
     text_felds = []
     for field in fields:
-        if schema.object_fields[field].field_type == FieldType.VECTOR:
+        if dataset.object_fields[field].field_type == FieldType.VECTOR:
             vector_fields.append(field)
         else:
             text_felds.append(field)
     return text_felds, vector_fields
 
 
-def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: QueryInput,
+def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query: QueryInput,
                                 required_fields: list[str], limit: int, page: int):
     text_db_client = TextSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    search_result = text_db_client.get_search_results(schema.id, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
+    search_result = text_db_client.get_search_results(dataset.id, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     for i, item in enumerate(search_result):
@@ -221,12 +221,12 @@ def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: 
     return items
 
 
-def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryInput,
+def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryInput,
                               query_vector: list | None, required_fields: list[str],
                               limit: int, page: int, score_threshold: float | None):
     if query_vector is None:
         generators: list[DotDict] = get_generators()
-        field = schema.object_fields[vector_field]
+        field = dataset.object_fields[vector_field]
         embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
 
         # for text query:
@@ -241,7 +241,7 @@ def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryIn
 
         if field.generator and field.generator.input_type == FieldType.TEXT \
             and not (suitable_generator and suitable_generator.is_preferred_for_search):
-            generator_function = get_generator_function_from_field(schema.object_fields[vector_field])
+            generator_function = get_generator_function_from_field(dataset.object_fields[vector_field])
         else:
             generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters)
 
@@ -256,7 +256,7 @@ def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryIn
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
     assert query_vector is not None
-    vector_search_result = vector_db_client.get_items_near_vector(schema.id, vector_field, query_vector,
+    vector_search_result = vector_db_client.get_items_near_vector(dataset.id, vector_field, query_vector,
                                                                   criteria, return_vectors=False, limit=limit,
                                                                   score_threshold=score_threshold) # type: ignore
     items = {}
@@ -273,13 +273,13 @@ def get_vector_search_results(schema: DotDict, vector_field: str, query: QueryIn
     return items
 
 
-def get_vector_search_results_matching_collection(schema: DotDict, vector_field: str,
+def get_vector_search_results_matching_collection(dataset: DotDict, vector_field: str,
                                                   positive_ids, negative_ids,
                                                   required_fields: list[str], limit: int, page: int,
                                                   score_threshold: float | None):
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    vector_search_result = vector_db_client.get_items_matching_collection(schema.id, vector_field, positive_ids,
+    vector_search_result = vector_db_client.get_items_matching_collection(dataset.id, vector_field, positive_ids,
                                                                           negative_ids, criteria, return_vectors=False,
                                                                           limit=limit, score_threshold=score_threshold)
     items = {}
@@ -294,15 +294,15 @@ def get_vector_search_results_matching_collection(schema: DotDict, vector_field:
     return items
 
 
-def fill_in_details_from_text_storage(schema_id: int, items: list[dict], required_fields: list[str]):
+def fill_in_details_from_text_storage(dataset_id: int, items: list[dict], required_fields: list[str]):
     if not items:
         return
     ids = [item['_id'] for item in items]
-    if schema_id == ABSCLUST_SCHEMA_ID:
+    if dataset_id == ABSCLUST_DATASET_ID:
         full_items = get_absclust_items_by_ids(ids)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
-        full_items = search_engine_client.get_items_by_ids(schema_id, ids, fields=required_fields)
+        full_items = search_engine_client.get_items_by_ids(dataset_id, ids, fields=required_fields)
     for full_item in full_items:
         for item in items:
             if item['_id'] == full_item['_id']:
@@ -310,15 +310,15 @@ def fill_in_details_from_text_storage(schema_id: int, items: list[dict], require
                 break
 
 
-def fill_in_vector_data(schema_id: int, items: list[dict], required_vector_fields: list[str]):
+def fill_in_vector_data(dataset_id: int, items: list[dict], required_vector_fields: list[str]):
     if not items or not required_vector_fields:
         return
-    if schema_id == ABSCLUST_SCHEMA_ID:
+    if dataset_id == ABSCLUST_DATASET_ID:
         return
     ids = [item['_id'] for item in items]
     vector_db_client = VectorSearchEngineClient.get_instance()
     for vector_field in required_vector_fields:
-        results = vector_db_client.get_items_by_ids(schema_id, ids, vector_field, return_vectors=True, return_payloads=False)
+        results = vector_db_client.get_items_by_ids(dataset_id, ids, vector_field, return_vectors=True, return_payloads=False)
         for result in results:
             for item in items:
                 if item['_id'] == result.id:

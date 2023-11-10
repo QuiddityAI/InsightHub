@@ -224,7 +224,7 @@ def get_default_detail_view_rendering():
     return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
 
 
-class ObjectSchema(models.Model):
+class Dataset(models.Model):
     name = models.CharField(
         verbose_name="Name",
         max_length=200,
@@ -309,7 +309,7 @@ class ObjectSchema(models.Model):
     @property
     def item_count(self):
         try:
-            url = data_backend_url + f'/data_backend/schema/{self.id}/item_count'
+            url = data_backend_url + f'/data_backend/dataset/{self.id}/item_count'
             result = requests.get(url)
             return result.json()["count"]
         except Exception as e:
@@ -319,7 +319,7 @@ class ObjectSchema(models.Model):
     @property
     def random_item(self):
         try:
-            url = data_backend_url + f'/data_backend/schema/{self.id}/random_item'
+            url = data_backend_url + f'/data_backend/dataset/{self.id}/random_item'
             result = requests.get(url)
             item = result.json()["item"]
             for key in item.get("_source", {}).keys():
@@ -334,8 +334,8 @@ class ObjectSchema(models.Model):
         return f"{self.name}"
 
     class Meta:
-        verbose_name = "Object Schema"
-        verbose_name_plural = "Object Schemas"
+        verbose_name = "Dataset"
+        verbose_name_plural = "Datasets"
 
 
 class ObjectField(models.Model):
@@ -355,9 +355,9 @@ class ObjectField(models.Model):
         editable=False,
         blank=False,
         null=False)
-    schema = models.ForeignKey(
-        verbose_name="Schema",
-        to=ObjectSchema,
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
         on_delete=models.CASCADE,
         related_name='object_fields',
         blank=False,
@@ -452,7 +452,7 @@ class ObjectField(models.Model):
     class Meta:
         verbose_name = "Object Field"
         verbose_name_plural = "Object Fields"
-        order_with_respect_to = "schema"
+        order_with_respect_to = "dataset"
 
 
 class SearchHistoryItem(models.Model):
@@ -478,9 +478,9 @@ class SearchHistoryItem(models.Model):
         on_delete=models.CASCADE,
         blank=False,
         null=False)
-    schema = models.ForeignKey(
-        verbose_name="Schema",
-        to=ObjectSchema,
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
         on_delete=models.CASCADE,
         blank=False,
         null=False)
@@ -522,9 +522,9 @@ class ItemCollection(models.Model):
         on_delete=models.CASCADE,
         blank=False,
         null=False)
-    schema = models.ForeignKey(
-        verbose_name="Schema",
-        to=ObjectSchema,
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
         on_delete=models.CASCADE,
         blank=False,
         null=False)
@@ -579,9 +579,9 @@ class StoredMap(models.Model):
         on_delete=models.CASCADE,
         blank=False,
         null=False)
-    schema = models.ForeignKey(
-        verbose_name="Schema",
-        to=ObjectSchema,
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
         on_delete=models.CASCADE,
         blank=False,
         null=False)

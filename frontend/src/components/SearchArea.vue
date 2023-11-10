@@ -38,7 +38,7 @@ export default {
   emits: ['request_search_results', 'reset_search_box', 'show_global_map'],
   data() {
     return {
-      internal_schema_id: null,
+      internal_dataset_id: null,
 
       show_negative_query_field: false,
       show_settings: false,
@@ -94,28 +94,28 @@ export default {
   },
   mounted() {
     const that = this
-    this.internal_schema_id = this.appStateStore.settings.schema_id
-    httpClient.post("/organization_backend/available_schemas", {organization_id: -1})
+    this.internal_dataset_id = this.appStateStore.settings.dataset_id
+    httpClient.post("/organization_backend/available_datasets", {organization_id: -1})
       .then(function (response) {
         that.available_databases = response.data
         that.database_information = {}
         for (const database of that.available_databases) {
           that.database_information[database.id] = database.short_description
         }
-        // initial schema_id is set in evaluate_url_query_parameters() in SearchAndMap
+        // initial dataset_id is set in evaluate_url_query_parameters() in SearchAndMap
       })
   },
   computed: {
     ...mapStores(useAppStateStore),
   },
   watch: {
-    "appStateStore.settings.schema_id": function (newValue, oldValue) {
+    "appStateStore.settings.dataset_id": function (newValue, oldValue) {
       // using internal variable to be able to reset parameters before
-      // actually changing global schema_id in select-field listener below
-      this.internal_schema_id = this.appStateStore.settings.schema_id
+      // actually changing global dataset_id in select-field listener below
+      this.internal_dataset_id = this.appStateStore.settings.dataset_id
     },
-    "appStateStore.schema": function (newValue, oldValue) {
-      this.on_full_schema_object_loaded()
+    "appStateStore.dataset": function (newValue, oldValue) {
+      this.on_full_dataset_object_loaded()
     },
     show_negative_query_field() {
       if (!this.show_negative_query_field) {
@@ -124,31 +124,31 @@ export default {
     }
   },
   methods: {
-    schema_id_changed_by_user() {
+    dataset_id_changed_by_user() {
       const clean_settings = JSON.parse(JSON.stringify(this.appStateStore.default_settings))
-      clean_settings.schema_id = this.internal_schema_id
+      clean_settings.dataset_id = this.internal_dataset_id
       this.appStateStore.settings = clean_settings
 
       const emptyQueryParams = new URLSearchParams();
-      emptyQueryParams.set("schema_id", this.appStateStore.settings.schema_id);
+      emptyQueryParams.set("dataset_id", this.appStateStore.settings.dataset_id);
       history.pushState(null, null, "?" + emptyQueryParams.toString());
     },
-    on_full_schema_object_loaded() {
-      if (this.appStateStore.schema === null) return;
-      if (!this.appStateStore.schema.object_fields) return
+    on_full_dataset_object_loaded() {
+      if (this.appStateStore.dataset === null) return;
+      if (!this.appStateStore.dataset.object_fields) return
 
       const that = this
 
       // initialize available search fields:
       this.appStateStore.settings.search.separate_queries = {}
-      for (const field of Object.values(this.appStateStore.schema.object_fields)) {
+      for (const field of Object.values(this.appStateStore.dataset.object_fields)) {
         if (field.is_available_for_search) {
           this.appStateStore.settings.search.separate_queries[field.identifier] = {
             query: "",
             query_negative: "",
             must: false,
             threshold_offset: 0.0,
-            use_for_combined_search: that.appStateStore.schema.default_search_fields.includes(field.identifier),
+            use_for_combined_search: that.appStateStore.dataset.default_search_fields.includes(field.identifier),
           }
         }
       }
@@ -157,11 +157,11 @@ export default {
       that.appStateStore.settings.vectorize.map_vector_field = "w2v_vector"
       that.appStateStore.available_vector_fields = []
       that.appStateStore.available_number_fields = []
-      for (const field_identifier in that.appStateStore.schema.object_fields) {
-        const field = that.appStateStore.schema.object_fields[field_identifier]
+      for (const field_identifier in that.appStateStore.dataset.object_fields) {
+        const field = that.appStateStore.dataset.object_fields[field_identifier]
         if (field.field_type == FieldType.VECTOR) {
           that.appStateStore.available_vector_fields.push(field.identifier)
-          if (field.is_available_for_search && this.appStateStore.schema.default_search_fields.includes(field.identifier)) {
+          if (field.is_available_for_search && this.appStateStore.dataset.default_search_fields.includes(field.identifier)) {
             that.appStateStore.settings.vectorize.map_vector_field = field.identifier
           }
         } else if (field.field_type == FieldType.INTEGER || field.field_type == FieldType.FLOAT) {
@@ -188,10 +188,10 @@ export default {
   <div>
     <!-- Database Selection -->
     <div class="flex justify-between">
-      <select v-model="internal_schema_id" @change="schema_id_changed_by_user" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+      <select v-model="internal_dataset_id" @change="dataset_id_changed_by_user" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
         <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
       </select>
-      <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[appState.settings.schema_id] }}</span>
+      <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[appState.settings.dataset_id] }}</span>
     </div>
 
     <!-- Search Field -->

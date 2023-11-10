@@ -2,7 +2,7 @@ Parameters Area
 x from UI state:
 - available vector fields etc.
 
-x from schema:
+x from dataset:
 - available fields
 
 x from parameters:
@@ -20,7 +20,7 @@ x emits:
 Search Results
 x from UI state:
 
-x from schema:
+x from dataset:
 - search list rendering
 
 x from parameters: -
@@ -42,7 +42,7 @@ x from UI state:
 - selected hovered item
 - selected hovered cluster
 
-x from schema:
+x from dataset:
 - (see hover label)
 
 x from parameters:
@@ -69,7 +69,7 @@ x slots:
 x from UI state:
 - selected / hovered item
 
-x from schema:
+x from dataset:
 - hover label rendering
 
 x from parameters: -
@@ -88,7 +88,7 @@ x from UI state:
 x other:
 - available collections
 
-x from schema:
+x from dataset:
 - detail view rendering
 
 x from parameters: -
@@ -107,7 +107,7 @@ x from UI state: -
 x other:
 - search history
 
-x from schema: -
+x from dataset: -
 
 x from parameters: -
 
@@ -123,7 +123,7 @@ x from UI state: -
 x other:
 - stored maps
 
-x from schema: -
+x from dataset: -
 
 x from parameters: -
 
@@ -139,7 +139,7 @@ x from UI state: -
 x other:
 - collections
 
-x from schema:
+x from dataset:
 - collection item rendering
 
 x from parameters: -

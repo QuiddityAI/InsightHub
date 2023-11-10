@@ -6,8 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from .models import ObjectSchema, SearchHistoryItem, ItemCollection, StoredMap, Generator
-from .serializers import ObjectSchemaSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer, GeneratorSerializer
+from .models import Dataset, SearchHistoryItem, ItemCollection, StoredMap, Generator
+from .serializers import DatasetSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer, GeneratorSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -21,30 +21,30 @@ def get_health(request):
 
 #@login_required()
 @csrf_exempt
-def get_object_schema(request):
+def get_dataset(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
     try:
         data = json.loads(request.body)
-        schema_id: int = data["schema_id"]
+        dataset_id: int = data["dataset_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    schema: ObjectSchema = ObjectSchema.objects.get(id=schema_id)
+    dataset: Dataset = Dataset.objects.get(id=dataset_id)
     # TODO: check permission to read this object
 
-    schema_dict = ObjectSchemaSerializer(instance=schema).data
-    schema_dict["object_fields"] = {item['identifier']: item for item in schema_dict["object_fields"]}
+    dataset_dict = DatasetSerializer(instance=dataset).data
+    dataset_dict["object_fields"] = {item['identifier']: item for item in dataset_dict["object_fields"]}
 
-    result = json.dumps(schema_dict)
+    result = json.dumps(dataset_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
 #@login_required()
 @csrf_exempt
-def get_available_schemas(request):
+def get_available_datasets(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
@@ -54,14 +54,14 @@ def get_available_schemas(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    #schemas = ObjectSchema.objects.get(organization=organization_id)
-    schemas = ObjectSchema.objects.all()  # FIXME: returning all for now for testing
+    #datasets = Dataset.objects.get(organization=organization_id)
+    datasets = Dataset.objects.all()  # FIXME: returning all for now for testing
     # TODO: check permission to read this object
 
     result = []
-    for schema in schemas:
-        result.append({"id": schema.id, "name": schema.name,  # type: ignore
-                       "name_plural": schema.name_plural, "short_description": schema.short_description})
+    for dataset in datasets:
+        result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
+                       "name_plural": dataset.name_plural, "short_description": dataset.short_description})
 
     result = json.dumps(result)
 
@@ -77,7 +77,7 @@ def add_search_history_item(request):
     try:
         data = json.loads(request.body)
         user_id: int = data["user_id"]
-        schema_id: int = data["schema_id"]
+        dataset_id: int = data["dataset_id"]
         name: str = data["name"]
         parameters: dict = data["parameters"]
     except (KeyError, ValueError):
@@ -85,7 +85,7 @@ def add_search_history_item(request):
 
     item = SearchHistoryItem()
     item.user_id = user_id  # type: ignore
-    item.schema_id = schema_id  # type: ignore
+    item.dataset_id = dataset_id  # type: ignore
     item.name = name
     item.parameters = parameters  # type: ignore
     item.save()
@@ -105,11 +105,11 @@ def get_search_history(request):
     try:
         data = json.loads(request.body)
         user_id: int = data["user_id"]
-        schema_id: int = data["schema_id"]
+        dataset_id: int = data["dataset_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = SearchHistoryItem.objects.filter(user_id=user_id, schema_id=schema_id).order_by('-created_at')[:25:-1]
+    items = SearchHistoryItem.objects.filter(user_id=user_id, dataset_id=dataset_id).order_by('-created_at')[:25:-1]
     serialized_data = SearchHistoryItemSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
@@ -125,19 +125,19 @@ def add_item_collection(request):
     try:
         data = json.loads(request.body)
         user_id: int = data["user_id"]
-        schema_id: int = data["schema_id"]
+        dataset_id: int = data["dataset_id"]
         name: str = data["name"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     item = ItemCollection()
     item.user_id = user_id  # type: ignore
-    item.schema_id = schema_id  # type: ignore
+    item.dataset_id = dataset_id  # type: ignore
     item.name = name
     item.save()
 
-    schema_dict = ItemCollectionSerializer(instance=item).data
-    result = json.dumps(schema_dict)
+    dataset_dict = ItemCollectionSerializer(instance=item).data
+    result = json.dumps(dataset_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
@@ -151,11 +151,11 @@ def get_item_collections(request):
     try:
         data = json.loads(request.body)
         user_id: int = data["user_id"]
-        schema_id: int = data["schema_id"]
+        dataset_id: int = data["dataset_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = ItemCollection.objects.filter(user_id=user_id, schema_id=schema_id).order_by('created_at')[:25]
+    items = ItemCollection.objects.filter(user_id=user_id, dataset_id=dataset_id).order_by('created_at')[:25]
     serialized_data = ItemCollectionSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
@@ -273,7 +273,7 @@ def add_stored_map(request):
     try:
         data = json.loads(request.body)
         user_id: int = data["user_id"]
-        schema_id: int = data["schema_id"]
+        dataset_id: int = data["dataset_id"]
         name: str = data["name"]
         map_id: str = data["map_id"]
         map_data: str = data["map_data"]
@@ -282,7 +282,7 @@ def add_stored_map(request):
 
     item = StoredMap(id=map_id)
     item.user_id = user_id  # type: ignore
-    item.schema_id = schema_id  # type: ignore
+    item.dataset_id = dataset_id  # type: ignore
     item.name = name
     item.map_data = map_data.encode()  # type: ignore  # FIXME: base64 str needs to be decoded
     item.save()
@@ -302,11 +302,11 @@ def get_stored_maps(request):
     try:
         data = json.loads(request.body)
         user_id: int = data["user_id"]
-        schema_id: int = data["schema_id"]
+        dataset_id: int = data["dataset_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = StoredMap.objects.filter(user_id=user_id, schema_id=schema_id).order_by('created_at')[:25]
+    items = StoredMap.objects.filter(user_id=user_id, dataset_id=dataset_id).order_by('created_at')[:25]
     serialized_data = StoredMapSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
@@ -370,7 +370,7 @@ def get_generator_function(name, parameters) -> function:
     pass
 
 
-def get_changed_fields(primary_key_field, batch, schema):
+def get_changed_fields(primary_key_field, batch, dataset):
     # getting internal id from mongo using primary_key_field needs that field to be indexed
     # in Mongo, which it might not be
     primary_keys = []
@@ -378,7 +378,7 @@ def get_changed_fields(primary_key_field, batch, schema):
     for element in batch:
         primary_keys.append(element[primary_key_field])
 
-    current_versions = []  # TODO: mongo.get(schema=schema_id, where primary_key_field in primary_key)
+    current_versions = []  # TODO: mongo.get(dataset=dataset_id, where primary_key_field in primary_key)
     # alternatively: rely on changed_fields parameter (provided by sender, same for all elements)
     # alternatively: rely on only fields being present that changed -> changed_fields = new_element.keys()
 
@@ -393,17 +393,17 @@ def get_changed_fields(primary_key_field, batch, schema):
     return changed_fields_total
 
 
-def get_index_settings(schema):
+def get_index_settings(dataset):
     vector_db_fields = []
     text_db_fields = []
     filtering_fields = []
 
-    for field in schema.object_fields:
+    for field in dataset.object_fields:
         if field.is_available_for_search and field.field_type == FieldType.VECTOR:
-            vector_db_table_name = f'{schema.id}_{field.identifier}'
+            vector_db_table_name = f'{dataset.id}_{field.identifier}'
             vector_db_fields.append([field.identifier, vector_db_table_name])
         elif field.is_available_for_search and field.field_type == FieldType.TEXT:
-            text_db_table_name = f'{schema.id}_{field.identifier}'
+            text_db_table_name = f'{dataset.id}_{field.identifier}'
             text_db_fields.append([field.identifier, text_db_table_name])
 
         if field.is_available_for_filtering:
@@ -428,15 +428,15 @@ def update_elements(request):
     except ValueError:
         return HttpResponse(status=400)
 
-    schema_id: str = data["schema_id"]  # TODO: catch error
-    schema: ObjectSchema = get_object_schema(schema_id)
+    dataset_id: str = data["dataset_id"]  # TODO: catch error
+    dataset: Dataset = get_dataset(dataset_id)
 
     # TODO: check generate_if_not_exits and skip_generators settings
     pipeline_steps = get_pipeline_steps()
 
     batch = data["elements"]
 
-    changed_fields_total = get_changed_fields(primary_key_field, batch, schema)
+    changed_fields_total = get_changed_fields(primary_key_field, batch, dataset)
 
     for phase in pipeline_steps:
         for pipeline_step in phase:  # TODO: this can be done in parallel
@@ -464,7 +464,7 @@ def update_elements(request):
         # TODO: upsert in MongoDB
         pass
 
-    index_settings = get_index_settings(schema)
+    index_settings = get_index_settings(dataset)
 
     # TODO: ensure the tables exist
     # TODO: skip if no indexed fields
@@ -486,19 +486,19 @@ def update_elements(request):
     return HttpResponse(status=204, content_type='application/json')
 
 
-def generate_field_for_existing_elements(schema_id, field_name, force_recreation):
+def generate_field_for_existing_elements(dataset_id, field_name, force_recreation):
 
     # TODO: create Task object for this
     # TODO: get all ids once (to handle that new items may come in during the processing time, but those are handled there)
     # TODO: split up in batches, store current batch number in Task, show progress
     # TODO: do in background thread
 
-    schema: ObjectSchema = ObjectSchema.objects.get(id=schema_id)  # TODO: catch error
-    # TODO: check if sender is allowed to change data on this schema / organization
-    fields: list[ObjectField] = ObjectField.objects.filter(schema=schema_id)
+    dataset: Dataset = Dataset.objects.get(id=dataset_id)  # TODO: catch error
+    # TODO: check if sender is allowed to change data on this dataset / organization
+    fields: list[ObjectField] = ObjectField.objects.filter(dataset=dataset_id)
     pipeline_steps = None  # get_pipeline_steps(fields, restrict_to=[field_name])
 
-    all_elements = None  # mongo.get(where schema_id is schema_id)
+    all_elements = None  # mongo.get(where dataset_id is dataset_id)
 
     for step in pipeline_steps:
         # do same as above, but instead of changed_fields for source fields, check if field is empty or force_recreation
@@ -506,11 +506,11 @@ def generate_field_for_existing_elements(schema_id, field_name, force_recreation
         pass
 
 
-def get_elements(ids, schema_id, generate_if_not_exist_fields=[]):
+def get_elements(ids, dataset_id, generate_if_not_exist_fields=[]):
     results = []  # mongo.get(where id in ids)
-    schema: ObjectSchema = ObjectSchema.objects.get(id=schema_id)  # TODO: catch error
-    # TODO: check if sender is allowed to get data from this schema / organization
-    fields: list[ObjectField] = ObjectField.objects.filter(schema=schema_id)
+    dataset: Dataset = Dataset.objects.get(id=dataset_id)  # TODO: catch error
+    # TODO: check if sender is allowed to get data from this dataset / organization
+    fields: list[ObjectField] = ObjectField.objects.filter(dataset=dataset_id)
 
     pipeline_steps = None  # get_pipeline_steps(fields, restrict_to=generate_if_not_exist_fields)
 
@@ -524,15 +524,15 @@ def get_elements(ids, schema_id, generate_if_not_exist_fields=[]):
     return results
 
 
-def search_by_text_vectorized(schema_id, field_name, query_text):
+def search_by_text_vectorized(dataset_id, field_name, query_text):
     results = []  # mongo.get(where id in ids)
-    schema: ObjectSchema = ObjectSchema.objects.get(id=schema_id)  # TODO: catch error
-    # TODO: check if sender is allowed to get data from this schema / organization
-    field: ObjectField = ObjectField.objects.filter(schema=schema_id, name=field_name)
+    dataset: Dataset = Dataset.objects.get(id=dataset_id)  # TODO: catch error
+    # TODO: check if sender is allowed to get data from this dataset / organization
+    field: ObjectField = ObjectField.objects.filter(dataset=dataset_id, name=field_name)
 
     generator_func = get_generator_function(field.generator.name, field.generator_parameters)
     vector = generator_func([query_text])[0]
-    vector_db_table_name = f'{schema.id}_{field.identifier}'
+    vector_db_table_name = f'{dataset.id}_{field.identifier}'
 
     # TODO: add filter criteria
 
@@ -546,7 +546,7 @@ def search_by_text_vectorized(schema_id, field_name, query_text):
     return objects
 
 
-def get_map_by_text_query_vectorized(schema_id, field_name, query_text):
+def get_map_by_text_query_vectorized(dataset_id, field_name, query_text):
     objects = search_by_text_vectorized()
 
     mapping_vectors = objects[field_name]

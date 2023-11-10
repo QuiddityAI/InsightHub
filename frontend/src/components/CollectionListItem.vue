@@ -22,7 +22,7 @@ export default {
   mounted() {
     const that = this
     const payload = {
-      schema_id: this.appStateStore.settings.schema_id,
+      dataset_id: this.appStateStore.settings.dataset_id,
       item_id: this.item_id,
       fields: this.appStateStore.collection_list_rendering.required_fields,
     }

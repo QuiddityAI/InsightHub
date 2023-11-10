@@ -37,36 +37,36 @@ class ObjectStorageEngineClient(object):
         return ObjectStorageEngineClient._instance
 
 
-    def get_collection(self, schema_id: int):
-        return get_collection_with_numpy_support(f'schema_{schema_id}', self.db)
+    def get_collection(self, dataset_id: int):
+        return get_collection_with_numpy_support(f'dataset_{dataset_id}', self.db)
 
 
-    def ensure_schema_exists(self, schema: dict):
-        schema = DotDict(schema)
-        collection = self.get_collection(schema.id)
+    def ensure_dataset_exists(self, dataset: dict):
+        dataset = DotDict(dataset)
+        collection = self.get_collection(dataset.id)
         # TODO: create indexes
         # collection.create_index(fieldname)
         # but are indexes for object storage beside id actually necessary?
         pass
 
 
-    def remove_schema(self, schema_id: int):
-        collection = self.get_collection(schema_id)
+    def remove_dataset(self, dataset_id: int):
+        collection = self.get_collection(dataset_id)
         collection.drop()
 
 
-    def get_item_count(self, schema_id: int):
-        collection = self.get_collection(schema_id)
+    def get_item_count(self, dataset_id: int):
+        collection = self.get_collection(dataset_id)
         return collection.count_documents({})
 
 
-    def get_random_item(self, schema_id: int):
-        collection = self.get_collection(schema_id)
+    def get_random_item(self, dataset_id: int):
+        collection = self.get_collection(dataset_id)
         return collection.aggregate([{"$sample": {"size": 1}}]).try_next()
 
 
-    def upsert_items(self, schema_id: int, batch: list[dict]):
-        collection = self.get_collection(schema_id)
+    def upsert_items(self, dataset_id: int, batch: list[dict]):
+        collection = self.get_collection(dataset_id)
         requests = []
         for item in batch:
             # TODO: check if UUID hex string should be converted to BSON UUID value for better performance
@@ -81,31 +81,31 @@ class ObjectStorageEngineClient(object):
             logging.error(error.args)
 
 
-    def remove_items(self, schema_id: int, ids: list[UUID]):
-        collection = self.get_collection(schema_id)
+    def remove_items(self, dataset_id: int, ids: list[UUID]):
+        collection = self.get_collection(dataset_id)
         collection.delete_many({"_id": {"$in": ids}})
 
 
-    def get_items_by_ids(self, schema_id: int, ids: Iterable[UUID], fields: Iterable[str]) -> list:
-        collection = self.get_collection(schema_id)
+    def get_items_by_ids(self, dataset_id: int, ids: Iterable[UUID], fields: Iterable[str]) -> list:
+        collection = self.get_collection(dataset_id)
         result = collection.find(filter={"_id": {"$in": list(ids)}}, projection=fields)
         return list(result)
 
 
-    def get_all_items_with_missing_field_count(self, schema_id, missing_field) -> int:
-        collection = self.get_collection(schema_id)
+    def get_all_items_with_missing_field_count(self, dataset_id, missing_field) -> int:
+        collection = self.get_collection(dataset_id)
         result = collection.count_documents(filter={missing_field: None})
         return result
 
 
-    def get_all_items_with_missing_field(self, schema_id, missing_field, limit, offset) -> list[dict]:
-        collection = self.get_collection(schema_id)
+    def get_all_items_with_missing_field(self, dataset_id, missing_field, limit, offset) -> list[dict]:
+        collection = self.get_collection(dataset_id)
         result = collection.find(filter={missing_field: None})
         return list(result.skip(offset).limit(limit))
 
 
-    def delete_field(self, schema_id, field):
-        collection = self.get_collection(schema_id)
+    def delete_field(self, dataset_id, field):
+        collection = self.get_collection(dataset_id)
         collection.update_many({}, {"$set": {field: None}})
 
 

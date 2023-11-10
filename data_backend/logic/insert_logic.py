@@ -1,7 +1,7 @@
 import uuid
 from uuid import uuid4, uuid5
 
-from database_client.django_client import get_object_schema
+from database_client.django_client import get_dataset
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.extract_pipeline import get_pipeline_steps
@@ -10,33 +10,33 @@ from utils.dotdict import DotDict
 from utils.field_types import FieldType
 
 
-def update_database_layout(schema_id: int):
-    schema = get_object_schema(schema_id)
+def update_database_layout(dataset_id: int):
+    dataset = get_dataset(dataset_id)
     vector_db_client = VectorSearchEngineClient.get_instance()
-    index_settings = get_index_settings(schema)
+    index_settings = get_index_settings(dataset)
     for field in index_settings.all_vector_fields:
-        vector_db_client.ensure_schema_exists(schema, field, update_params=True, delete_if_params_changed=False)
+        vector_db_client.ensure_dataset_exists(dataset, field, update_params=True, delete_if_params_changed=False)
     search_engine_client = TextSearchEngineClient.get_instance()
-    search_engine_client.ensure_schema_exists(schema)
+    search_engine_client.ensure_dataset_exists(dataset)
 
 
-def insert_many(schema_id: int, elements: list[dict]):
-    schema = get_object_schema(schema_id)
+def insert_many(dataset_id: int, elements: list[dict]):
+    dataset = get_dataset(dataset_id)
 
     for element in elements:
         # make sure primary key exists, if not, generate it
         if not "_id" in element:
-            if schema.primary_key in element and element[schema.primary_key] != "":
-                element["_id"] = str(uuid5(uuid.NAMESPACE_URL, element[schema.primary_key]))
+            if dataset.primary_key in element and element[dataset.primary_key] != "":
+                element["_id"] = str(uuid5(uuid.NAMESPACE_URL, element[dataset.primary_key]))
             else:
                 element["_id"] = str(uuid4())
         elif isinstance("_id", int):
             element["_id"] = str(element["_id"])
 
     # for upsert / update case: get changed fields:
-    # changed_fields_total = get_changed_fields(primary_key_field, elements, schema)
+    # changed_fields_total = get_changed_fields(primary_key_field, elements, dataset)
 
-    pipeline_steps, _, _ = get_pipeline_steps(schema)
+    pipeline_steps, _, _ = get_pipeline_steps(dataset)
 
     for phase in pipeline_steps:
         for pipeline_step in phase:  # TODO: this could be done in parallel
@@ -71,7 +71,7 @@ def insert_many(schema_id: int, elements: list[dict]):
                 # for update case: add that field to changed fields:
                 # changed_fields_total[element_index].insert(pipeline_step.target_field)
 
-    for field in schema.object_fields.values():
+    for field in dataset.object_fields.values():
         if field.field_type == FieldType.CLASS_PROBABILITY and not field.is_array:
             for element  in elements:
                 if field.identifier not in element:
@@ -85,7 +85,7 @@ def insert_many(schema_id: int, elements: list[dict]):
                 # values less or equal zero are not supported by OpenSearch
                 element[field.identifier] = {k: max(v, 0.00001) for k, v in element[field.identifier].items()}
 
-    index_settings = get_index_settings(schema)
+    index_settings = get_index_settings(dataset)
 
     vector_db_client = VectorSearchEngineClient.get_instance()
 
@@ -107,7 +107,7 @@ def insert_many(schema_id: int, elements: list[dict]):
             payloads.append(filtering_attributes)
 
         if vectors:
-            vector_db_client.upsert_items(schema.id, vector_field, ids, payloads, vectors)
+            vector_db_client.upsert_items(dataset.id, vector_field, ids, payloads, vectors)
 
     for element in elements:
         for vector_field in index_settings.all_vector_fields:
@@ -115,14 +115,14 @@ def insert_many(schema_id: int, elements: list[dict]):
                 del element[vector_field]
 
     search_engine_client = TextSearchEngineClient.get_instance()
-    search_engine_client.upsert_items(schema.id, [item["_id"] for item in elements], elements)
+    search_engine_client.upsert_items(dataset.id, [item["_id"] for item in elements], elements)
 
 
-def get_index_settings(schema: DotDict):
+def get_index_settings(dataset: DotDict):
     all_vector_fields = []
     filtering_fields = []
 
-    for field in schema.object_fields.values():
+    for field in dataset.object_fields.values():
         if field.field_type == FieldType.VECTOR:
             all_vector_fields.append(field.identifier)
 

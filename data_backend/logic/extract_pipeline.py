@@ -6,11 +6,11 @@ from logic.generator_functions import get_generator_function_from_field
 
 
 # TODO: add changed_at as parameter and cache function (using changed_at as measure for dropping the cache)
-def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = [], only_fields: list[str] = []) -> tuple[list[list[dict]], set[str], set[str]]:
-    schema = DotDict(schema)
-    if has_circular_dependency(schema):
-        logging.error(f"The pipeline steps have a circular dependency, object schema: {schema.name}")
-        logging.error(f"No pipeline steps will be executed at all for this schema until this is fixed.")
+def get_pipeline_steps(dataset: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = [], only_fields: list[str] = []) -> tuple[list[list[dict]], set[str], set[str]]:
+    dataset = DotDict(dataset)
+    if has_circular_dependency(dataset):
+        logging.error(f"The pipeline steps have a circular dependency, object dataset: {dataset.name}")
+        logging.error(f"No pipeline steps will be executed at all for this dataset until this is fixed.")
         return [], set(), set()
 
     required_fields = set()
@@ -22,7 +22,7 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
         phase_steps = []
         steps_added_this_phase = []
         any_field_skipped = False
-        for field in schema.object_fields.values():
+        for field in dataset.object_fields.values():
             if field.identifier in steps_added: continue
             this_field_skipped = False
 
@@ -31,7 +31,7 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
                     or field.identifier in enabled_fields):
                 dependencies = field.source_fields
                 for dep in dependencies:
-                    if schema.object_fields[dep].generator and dep not in steps_added:
+                    if dataset.object_fields[dep].generator and dep not in steps_added:
                         this_field_skipped = True
                         enabled_fields.append(dep)
                         break
@@ -58,8 +58,8 @@ def get_pipeline_steps(schema: dict, ignored_fields: list[str] = [], enabled_fie
     return pipeline_steps, required_fields, potentially_changed_fields
 
 
-def has_circular_dependency(schema: dict) -> bool:
-    schema = DotDict(schema)
+def has_circular_dependency(dataset: dict) -> bool:
+    dataset = DotDict(dataset)
     steps_added = []
     any_field_skipped = True
     any_field_added = True  # used to prevent endless loop with circular dependencies
@@ -67,7 +67,7 @@ def has_circular_dependency(schema: dict) -> bool:
         steps_added_this_phase = []
         any_field_skipped = False
         any_field_added = False
-        for field in schema.object_fields.values():
+        for field in dataset.object_fields.values():
             if field.identifier in steps_added: continue
             this_field_skipped = False
             dependencies = field.source_fields

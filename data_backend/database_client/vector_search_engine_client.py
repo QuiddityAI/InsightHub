@@ -37,15 +37,15 @@ class VectorSearchEngineClient(object):
         return VectorSearchEngineClient._instance
 
 
-    def _get_collection_name(self, schema_id: int, vector_field: str):
-        return f'schema_{schema_id}_field_{vector_field}'
+    def _get_collection_name(self, dataset_id: int, vector_field: str):
+        return f'dataset_{dataset_id}_field_{vector_field}'
 
 
-    def ensure_schema_exists(self, schema: dict, vector_field: str, update_params: bool = False, delete_if_params_changed: bool = False):
-        schema = DotDict(schema)
+    def ensure_dataset_exists(self, dataset: dict, vector_field: str, update_params: bool = False, delete_if_params_changed: bool = False):
+        dataset = DotDict(dataset)
         vector_configs = {}
         vector_configs_update = {}
-        field = schema.object_fields[vector_field]
+        field = dataset.object_fields[vector_field]
         if not (field.is_available_for_search and field.field_type == FieldType.VECTOR and not field.is_array):
             logging.error(f"Field is not supposed to be indexed or isn't a single vector: {field.identifier}")
             raise ValueError(f"Field is not supposed to be indexed or isn't a single vector: {field.identifier}")
@@ -59,7 +59,7 @@ class VectorSearchEngineClient(object):
         vector_configs_update[field.identifier] = models.VectorParamsDiff(on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))  # TODO: add params
         # TODO: parse and add field.index_parameters for HNSW, storage type, quantization etc.
 
-        collection_name = self._get_collection_name(schema.id, vector_field)
+        collection_name = self._get_collection_name(dataset.id, vector_field)
 
         try:
             self.client.get_collection(collection_name)
@@ -95,7 +95,7 @@ class VectorSearchEngineClient(object):
         }
 
         # create payload indexes:
-        for field in schema.object_fields.values():
+        for field in dataset.object_fields.values():
             if not field.is_available_for_filtering:
                 continue
             if field.field_type not in indexable_field_type_to_qdrant_type:
@@ -110,23 +110,23 @@ class VectorSearchEngineClient(object):
                 field_schema=indexable_field_type_to_qdrant_type[field.field_type])
 
 
-    def delete_field(self, schema_id: int, vector_field: str):
+    def delete_field(self, dataset_id: int, vector_field: str):
         try:
-            self.client.delete_collection(self._get_collection_name(schema_id, vector_field))
+            self.client.delete_collection(self._get_collection_name(dataset_id, vector_field))
         except Exception as e:
             print(e)
 
 
-    def get_item_count(self, schema_id: int, vector_field: str) -> int:
+    def get_item_count(self, dataset_id: int, vector_field: str) -> int:
         try:
-            return self.client.count(self._get_collection_name(schema_id, vector_field)).count
+            return self.client.count(self._get_collection_name(dataset_id, vector_field)).count
         except Exception as e:
             logging.warning(e)
             return 0
 
 
-    def upsert_items(self, schema_id: int, vector_field: str, ids: list, payloads: list[dict], vectors: list):
-        collection_name = self._get_collection_name(schema_id, vector_field)
+    def upsert_items(self, dataset_id: int, vector_field: str, ids: list, payloads: list[dict], vectors: list):
+        collection_name = self._get_collection_name(dataset_id, vector_field)
 
         self.client.upsert(
             collection_name=collection_name,
@@ -134,16 +134,16 @@ class VectorSearchEngineClient(object):
         )
 
 
-    def remove_items(self, schema_id: int, vector_field: str, ids: list):
-        collection_name = self._get_collection_name(schema_id, vector_field)
+    def remove_items(self, dataset_id: int, vector_field: str, ids: list):
+        collection_name = self._get_collection_name(dataset_id, vector_field)
         self.client.delete(collection_name, ids)
 
 
-    def get_items_near_vector(self, schema_id: int, vector_field: str, query_vector: list,
+    def get_items_near_vector(self, dataset_id: int, vector_field: str, query_vector: list,
                               filter_criteria: dict, return_vectors: bool, limit: int,
                               score_threshold: float | None) -> list:
         hits = self.client.search(
-            collection_name=self._get_collection_name(schema_id, vector_field),
+            collection_name=self._get_collection_name(dataset_id, vector_field),
             query_vector=NamedVector(name=vector_field, vector=query_vector),
             # query_filter=Filter(
             #     must=[
@@ -163,11 +163,11 @@ class VectorSearchEngineClient(object):
         return hits
 
 
-    def get_items_matching_collection(self, schema_id: int, vector_field: str, positive_ids: list[str],
+    def get_items_matching_collection(self, dataset_id: int, vector_field: str, positive_ids: list[str],
                                       negative_ids: list[str], filter_criteria: dict, return_vectors: bool,
                                       limit: int, score_threshold: float | None) -> list:
         hits = self.client.recommend(
-            collection_name=self._get_collection_name(schema_id, vector_field),
+            collection_name=self._get_collection_name(dataset_id, vector_field),
             positive=positive_ids,
             negative=negative_ids,
             using=vector_field,
@@ -189,10 +189,10 @@ class VectorSearchEngineClient(object):
         return hits
 
 
-    def get_items_by_ids(self, schema_id: int, ids: Iterable[str], vector_field: str,
+    def get_items_by_ids(self, dataset_id: int, ids: Iterable[str], vector_field: str,
                          return_vectors: bool = False, return_payloads: bool = False) -> list:
         hits = self.client.retrieve(
-            collection_name=self._get_collection_name(schema_id, vector_field),
+            collection_name=self._get_collection_name(dataset_id, vector_field),
             ids=ids, # type: ignore
             with_payload=return_payloads,
             with_vectors=return_vectors

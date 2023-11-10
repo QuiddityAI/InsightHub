@@ -186,7 +186,7 @@ JAZZMIN_SETTINGS = {
 
     # List of apps (and/or models) to base side menu ordering off of (does not need to contain all apps/models)
     "order_with_respect_to": ["auth", "auth.user", "auth.group", "data_map_backend", "data_map_backend.organization",
-                              "data_map_backend.objectschema", "data_map_backend.objectfield", "data_map_backend.generator",
+                              "data_map_backend.dataset", "data_map_backend.objectfield", "data_map_backend.generator",
                               "data_map_backend.embeddingspace", "data_map_backend.searchhistoryitem", "data_map_backend.itemcollection",
                               "data_map_backend.storedmap"],
 
@@ -197,7 +197,7 @@ JAZZMIN_SETTINGS = {
         "auth.user": "fas fa-user",
         "auth.group": "fas fa-users",
         "data_map_backend.organization": "fas fa-building",
-        "data_map_backend.objectschema": "fas fa-database",
+        "data_map_backend.dataset": "fas fa-database",
         "data_map_backend.objectfield": "fas fa-grip-lines",
         "data_map_backend.generator": "fas fa-microchip",
         "data_map_backend.embeddingspace": "fas fa-globe",

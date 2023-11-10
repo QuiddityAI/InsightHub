@@ -65,11 +65,11 @@ serving.WSGIRequestHandler.log_request = log_request
 
 # user settings: fields to search, enrich?, map field(s), cluster size
 
-# How to make it customizable and still offer default search and map for schemas?
-# -> as currently, offer all settings in UI and select basic defaults based on schema
-# How to apply search and map settings to different schemas (with different field names etc.)?
-# Schema could have default set of vector and text search / map fields, but
-# what if there should be two search / map settings for the same schema?
+# How to make it customizable and still offer default search and map for datasets?
+# -> as currently, offer all settings in UI and select basic defaults based on dataset
+# How to apply search and map settings to different datasets (with different field names etc.)?
+# Dataset could have default set of vector and text search / map fields, but
+# what if there should be two search / map settings for the same dataset?
 # E.g. for products, search in title only or in reviews, map based on image or on reviews
 # Should search and map settings be separated? Would map always use same search settings as list?
 # map might be enriched much more, clustering might be done on different aspect (only image, not title)
@@ -81,15 +81,15 @@ def health():
     return "", 200
 
 
-@app.route('/data_backend/schema/<int:schema_id>/item_count', methods=['GET'])
-def get_item_count_route(schema_id: int):
-    count = get_item_count(schema_id)
+@app.route('/data_backend/dataset/<int:dataset_id>/item_count', methods=['GET'])
+def get_item_count_route(dataset_id: int):
+    count = get_item_count(dataset_id)
     return jsonify({"count": count})
 
 
-@app.route('/data_backend/schema/<int:schema_id>/random_item', methods=['GET'])
-def get_random_item_route(schema_id: int):
-    items = get_random_items(schema_id, 1)
+@app.route('/data_backend/dataset/<int:dataset_id>/random_item', methods=['GET'])
+def get_random_item_route(dataset_id: int):
+    items = get_random_items(dataset_id, 1)
     item = items[0] if len(items) else {}
     response = app.response_class(
         response=json.dumps({"item": item}, cls=HumanReadableJSONEncoder),
@@ -103,7 +103,7 @@ def update_database_layout_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
     try:
-        update_database_layout(params.schema_id)
+        update_database_layout(params.dataset_id)
     except Exception as e:
         return repr(e), 500
     return "", 204
@@ -114,7 +114,7 @@ def insert_many_sync_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
     try:
-        insert_many(params.schema_id, params.elements)
+        insert_many(params.dataset_id, params.elements)
     except Exception as e:
         return repr(e), 500
     return "", 204
@@ -124,7 +124,7 @@ def insert_many_sync_route():
 def delete_field_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
-    delete_field_content(params.schema_id, params.field_identifier)
+    delete_field_content(params.dataset_id, params.field_identifier)
     return "", 204
 
 
@@ -132,7 +132,7 @@ def delete_field_route():
 def generate_missing_values_route():
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
-    thread = Thread(target=generate_missing_values, args=(params.schema_id, params.field_identifier))
+    thread = Thread(target=generate_missing_values, args=(params.dataset_id, params.field_identifier))
     thread.start()
     return "", 204
 
@@ -149,7 +149,7 @@ def get_search_list_result_endpoint():
         print(e)
         import traceback
         traceback.print_exc()
-        return str(e.args), 400  # TODO: there could be other reasons, e.g. schema not found
+        return str(e.args), 400  # TODO: there could be other reasons, e.g. dataset not found
 
     response = app.response_class(
         response=json.dumps(result, cls=CustomJSONEncoder),
@@ -233,13 +233,13 @@ def retrieve_local_image(image_path):
 @app.route('/data_backend/document/details_by_id', methods=['POST'])
 def retrieve_document_details_by_id():
     params = request.json or {}
-    schema_id = params.get("schema_id")
+    dataset_id = params.get("dataset_id")
     item_id = params.get("item_id")
     fields: list[str] = params.get("fields") # type: ignore
-    if not all([schema_id is not None, item_id is not None, fields is not None]):
+    if not all([dataset_id is not None, item_id is not None, fields is not None]):
         return "a parameter is missing", 400
 
-    result = get_document_details_by_id(schema_id, item_id, tuple(fields))
+    result = get_document_details_by_id(dataset_id, item_id, tuple(fields))
 
     if result is None:
         return "document not found", 404
@@ -251,18 +251,18 @@ def retrieve_document_details_by_id():
 def store_map():
     params = request.json or {}
     user_id = params.get("user_id")
-    schema_id = params.get("schema_id")
+    dataset_id = params.get("dataset_id")
     name = params.get("name")
     map_id = params.get("map_id")
 
-    if not all([user_id is not None, schema_id is not None, name, map_id is not None]):
+    if not all([user_id is not None, dataset_id is not None, name, map_id is not None]):
         return "a parameter is missing", 400
 
     map_data = get_map_results(map_id)
     if map_data is None:
         return "map not found", 404
 
-    result = add_stored_map(map_id, user_id, schema_id, name, map_data)
+    result = add_stored_map(map_id, user_id, dataset_id, name, map_data)
 
     return result
 

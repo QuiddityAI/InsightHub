@@ -185,7 +185,7 @@ export default {
 
       const history_item_body = {
         user_id: 1,  // FIXME: this is hardcoded
-        schema_id: this.appStateStore.settings.schema_id,
+        dataset_id: this.appStateStore.settings.dataset_id,
         name: entry_name,
         parameters: this.appStateStore.settings,
       }
@@ -241,7 +241,7 @@ export default {
           that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
           that.progress_step_title = progress.step_title
 
-          if (that.appStateStore.schema.thumbnail_image) {
+          if (that.appStateStore.dataset.thumbnail_image) {
             that.$refs.embedding_map.pointSizeFactor = 3.0
             that.$refs.embedding_map.maxOpacity = 1.0
           } else {
@@ -417,7 +417,7 @@ export default {
       const that = this
       const create_collection_body = {
         user_id: 1,  // FIXME: hardcoded
-        schema_id: this.appStateStore.settings.schema_id,
+        dataset_id: this.appStateStore.settings.dataset_id,
         name: name,
       }
       httpClient.post("/organization_backend/add_item_collection", create_collection_body)
@@ -484,7 +484,7 @@ export default {
       if (!entry_name) return;
       const store_map_body = {
         user_id: 1,  // FIXME: hardcoded
-        schema_id: this.appStateStore.settings.schema_id,
+        dataset_id: this.appStateStore.settings.dataset_id,
         name: entry_name,
         map_id: this.map_id,
       }
@@ -540,24 +540,24 @@ export default {
     },
     evaluate_url_query_parameters() {
       // this is almost the first thing that is done when the page is being loaded
-      // most importantly, it initializes the schema_id, which then triggers other stuff
+      // most importantly, it initializes the dataset_id, which then triggers other stuff
       const queryParams = new URLSearchParams(window.location.search);
-      if (queryParams.get("schema_id") === null) {
-        this.appStateStore.settings.schema_id = 6
+      if (queryParams.get("dataset_id") === null) {
+        this.appStateStore.settings.dataset_id = 6
         const emptyQueryParams = new URLSearchParams();
-        emptyQueryParams.set("schema_id", this.appStateStore.settings.schema_id);
+        emptyQueryParams.set("dataset_id", this.appStateStore.settings.dataset_id);
         history.replaceState(null, null, "?" + emptyQueryParams.toString());
-      } else if (queryParams.get("schema_id") === String(this.appStateStore.settings.schema_id)) {
+      } else if (queryParams.get("dataset_id") === String(this.appStateStore.settings.dataset_id)) {
         // If this method was called because the user pressed the back arrow in the browser and
-        // the schema is the same, the stored_map might be different.
+        // the dataset is the same, the stored_map might be different.
         // In this case, load it here:
-        // (in any other case, the stored map is loaded after the schema object is loaded)
+        // (in any other case, the stored map is loaded after the dataset object is loaded)
         if (queryParams.get("map_id")) {
           this.show_stored_map(queryParams.get("map_id"))
         }
       } else {
-        // there is a new schema_id in the parameters:
-        this.appStateStore.settings.schema_id = parseInt(queryParams.get("schema_id"))
+        // there is a new dataset_id in the parameters:
+        this.appStateStore.settings.dataset_id = parseInt(queryParams.get("dataset_id"))
       }
     },
     show_score_info_chart() {
@@ -608,36 +608,36 @@ export default {
         }
       });
     },
-    on_schema_id_change() {
+    on_dataset_id_change() {
       const that = this
 
-      that.appStateStore.schema = null
+      that.appStateStore.dataset = null
       this.reset_search_results_and_map()
 
-      httpClient.post("/organization_backend/object_schema", {schema_id: this.appStateStore.settings.schema_id})
+      httpClient.post("/organization_backend/dataset", {dataset_id: this.appStateStore.settings.dataset_id})
         .then(function (response) {
-          that.appStateStore.schema = response.data
+          that.appStateStore.dataset = response.data
 
-          const result_list_rendering = that.appStateStore.schema.result_list_rendering
+          const result_list_rendering = that.appStateStore.dataset.result_list_rendering
           for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
             result_list_rendering[field] = eval(result_list_rendering[field])
           }
           that.result_list_rendering = result_list_rendering
 
-          const collection_list_rendering = that.appStateStore.schema.collection_list_rendering
+          const collection_list_rendering = that.appStateStore.dataset.collection_list_rendering
           for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
             collection_list_rendering[field] = eval(collection_list_rendering[field])
           }
           that.appStateStore.collection_list_rendering = collection_list_rendering
 
-          const hover_label_rendering = that.appStateStore.schema.hover_label_rendering
+          const hover_label_rendering = that.appStateStore.dataset.hover_label_rendering
           for (const field of ['title', 'subtitle', 'body', 'image']) {
             hover_label_rendering[field] = hover_label_rendering[field] ? eval(hover_label_rendering[field]) : ((item) => "")
           }
           that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
 
           const queryParams = new URLSearchParams(window.location.search);
-          if (queryParams.get("schema_id") === String(that.appStateStore.settings.schema_id) && queryParams.get("map_id")) {
+          if (queryParams.get("dataset_id") === String(that.appStateStore.settings.dataset_id) && queryParams.get("map_id")) {
             that.show_stored_map(queryParams.get("map_id"))
           }
         })
@@ -645,7 +645,7 @@ export default {
       this.search_history = []
       const get_history_body = {
         user_id: 1,  // FIXME: hardcoded
-        schema_id: this.appStateStore.settings.schema_id,
+        dataset_id: this.appStateStore.settings.dataset_id,
       }
       httpClient.post("/organization_backend/get_search_history", get_history_body)
         .then(function (response) {
@@ -655,7 +655,7 @@ export default {
       this.appStateStore.collections = []
       const get_collections_body = {
         user_id: 1,  // FIXME: hardcoded
-        schema_id: this.appStateStore.settings.schema_id,
+        dataset_id: this.appStateStore.settings.dataset_id,
       }
       httpClient.post("/organization_backend/get_item_collections", get_collections_body)
         .then(function (response) {
@@ -665,7 +665,7 @@ export default {
       this.stored_maps = []
       const get_stored_maps_body = {
         user_id: 1,  // FIXME: hardcoded
-        schema_id: this.appStateStore.settings.schema_id,
+        dataset_id: this.appStateStore.settings.dataset_id,
       }
       httpClient.post("/organization_backend/get_stored_maps", get_stored_maps_body)
         .then(function (response) {
@@ -683,8 +683,8 @@ export default {
     window.addEventListener("popstate", this.evaluate_url_query_parameters)
   },
   watch: {
-    "appStateStore.settings.schema_id" () {
-        this.on_schema_id_change()
+    "appStateStore.settings.dataset_id" () {
+        this.on_dataset_id_change()
     },
   },
 }
@@ -785,7 +785,7 @@ export default {
 
                 <ul v-if="search_results.length !== 0" role="list" class="pt-1">
                   <li v-for="item in search_results.filter((result, i) => (appState.selected_cluster_id == null || clusterIdsPerPoint[i] == appState.selected_cluster_id)).slice(0, 10)" :key="item._id" class="justify-between pb-3">
-                    <ResultListItem :initial_item="item" :rendering="result_list_rendering" :schema="appState.schema"
+                    <ResultListItem :initial_item="item" :rendering="result_list_rendering" :dataset="appState.dataset"
                       @mouseenter="appState.highlighted_item_id = item._id"
                       @mouseleave="appState.highlighted_item_id = null"
                       @mousedown="show_document_details_by_id(item._id)"
@@ -881,7 +881,7 @@ export default {
         <div ref="right_column" class="flex flex-col overflow-hidden pointer-events-none">
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
-            <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :schema="appState.schema"
+            <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :dataset="appState.dataset"
               :collections="appState.collections" :last_used_collection_id="last_used_collection_id"
               @addToPositives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, true) }"
               @addToNegatives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, false) }"

@@ -5,7 +5,7 @@ import httpClient from '../api/httpClient';
 
 <script>
 export default {
-  props: ["initial_item", "rendering", "schema"],
+  props: ["initial_item", "rendering", "dataset"],
   data() {
     return {
       item: this.initial_item,
@@ -24,9 +24,9 @@ export default {
       const that = this
 
       const payload = {
-        schema_id: this.schema.id,
+        dataset_id: this.dataset.id,
         item_id: this.item._id,
-        fields: this.schema.result_list_rendering.required_fields
+        fields: this.dataset.result_list_rendering.required_fields
       }
       this.loading_item = true
       httpClient.post("/data_backend/document/details_by_id", payload)

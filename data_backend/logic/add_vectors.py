@@ -70,19 +70,19 @@ def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fie
     timings.log("generating w2v embeddings")
 
 
-def add_missing_map_vectors(search_results, query, params: DotDict, map_data, schema, timings):
+def add_missing_map_vectors(search_results, query, params: DotDict, map_data, dataset, timings):
     map_data["progress"]["step_title"] = "Generating vectors"
     map_data["progress"]["total_steps"] = len(search_results)
     map_data["progress"]["current_step"] = 0
 
-    map_vector_field = schema.object_fields[params.vectorize.map_vector_field]
+    map_vector_field = dataset.object_fields[params.vectorize.map_vector_field]
     t1 = time.time()
 
     # try to get embeddings from cache:
     for item in search_results:
         if item.get(map_vector_field.identifier) is not None:
             continue
-        cache_key = str(schema.id) + item['_id'] + map_vector_field.identifier
+        cache_key = str(dataset.id) + item['_id'] + map_vector_field.identifier
         cached_embedding = embedding_cache.get(cache_key, None)
         if cached_embedding is not None:
             item[map_vector_field.identifier] = cached_embedding
@@ -90,8 +90,8 @@ def add_missing_map_vectors(search_results, query, params: DotDict, map_data, sc
     if not all([item.get(map_vector_field.identifier) is not None for item in search_results]):
         # if some or all vectors are still missing, generate them:
         batch_size = 128
-        pipeline_steps, required_fields, _ = get_pipeline_steps(schema, only_fields=[map_vector_field.identifier])
-        available_fields = get_required_fields(schema, params.vectorize_settings, "map")
+        pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[map_vector_field.identifier])
+        available_fields = get_required_fields(dataset, params.vectorize_settings, "map")
         missing_fields = required_fields - set(available_fields)
         if missing_fields:
             logging.warning(f"Some fields are missing in the search result data to generate missing vectors: {missing_fields}")
@@ -100,7 +100,7 @@ def add_missing_map_vectors(search_results, query, params: DotDict, map_data, sc
             changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements)
             for i, item in enumerate(elements):
                 if map_vector_field.identifier in changed_fields[i]:
-                    cache_key = str(schema.id) + item['_id'] + map_vector_field.identifier
+                    cache_key = str(dataset.id) + item['_id'] + map_vector_field.identifier
                     embedding_cache[cache_key] = item[map_vector_field.identifier]
             map_data["progress"]["current_step"] = batch_number * batch_size
         save_embedding_cache()

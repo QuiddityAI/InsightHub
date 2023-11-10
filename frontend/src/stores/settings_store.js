@@ -16,7 +16,7 @@ export const useAppStateStore = defineStore('appState', {
       available_vector_fields: [],
       available_number_fields: [],
 
-      schema: null,
+      dataset: null,
 
       // collections:
       collections: [],
@@ -24,7 +24,7 @@ export const useAppStateStore = defineStore('appState', {
       collection_list_rendering: {},
 
       settings: {
-        schema_id: null,
+        dataset_id: null,
         search: {
           search_type: "external_input",  // or cluster, collection or similar item
           use_separate_queries: false,
@@ -42,7 +42,7 @@ export const useAppStateStore = defineStore('appState', {
             // query_negative: "",
             // must: false,
             // threshold_offset: 0.0,
-            // use_for_combined_search: that.schema.default_search_fields.includes(field.identifier),
+            // use_for_combined_search: that.dataset.default_search_fields.includes(field.identifier),
           },
 
           origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
@@ -88,7 +88,7 @@ export const useAppStateStore = defineStore('appState', {
       // exactly the same settings again to be able to restore them later on:
       // (not initializing the actual settings from this because of autocomplete)
       default_settings: {
-        schema_id: null,
+        dataset_id: null,
         search: {
           search_type: "external_input",  // or cluster, collection or similar item
           use_separate_queries: false,
@@ -106,7 +106,7 @@ export const useAppStateStore = defineStore('appState', {
             // query_negative: "",
             // must: false,
             // threshold_offset: 0.0,
-            // use_for_combined_search: that.schema.default_search_fields.includes(field.identifier),
+            // use_for_combined_search: that.dataset.default_search_fields.includes(field.identifier),
           },
 
           origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it

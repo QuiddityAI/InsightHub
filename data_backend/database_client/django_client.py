@@ -12,22 +12,22 @@ from utils.custom_json_encoder import CustomJSONEncoder
 backend_url = os.getenv("organization_backend_host", "http://localhost:55125")
 
 
-def get_object_schema(schema_id: int) -> DotDict:
-    url = backend_url + '/data_map/object_schema'
+def get_dataset(dataset_id: int) -> DotDict:
+    url = backend_url + '/data_map/dataset'
     data = {
-        'schema_id': schema_id,
+        'dataset_id': dataset_id,
     }
     result = requests.post(url, json=data)
     return DotDict(result.json())
 
 
-def add_stored_map(map_id, user_id, schema_id, name, map_data) -> dict:
+def add_stored_map(map_id, user_id, dataset_id, name, map_data) -> dict:
     url = backend_url + '/data_map/add_stored_map'
     encoded_map_data = base64.b64encode(json.dumps(map_data, cls=CustomJSONEncoder).encode()).decode()
     logging.warning(f"storing map, size: {len(encoded_map_data) / 1024 / 1024} MB")
     body = {
         'user_id': user_id,
-        'schema_id': schema_id,
+        'dataset_id': dataset_id,
         'name': name,
         'map_id': map_id,
         'map_data': encoded_map_data,

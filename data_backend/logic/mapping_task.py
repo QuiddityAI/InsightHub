@@ -14,7 +14,7 @@ from utils.collect_timings import Timings
 from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions
 from utils.dotdict import DotDict
 
-from database_client.django_client import get_object_schema, get_stored_map_data
+from database_client.django_client import get_dataset, get_stored_map_data
 
 from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
@@ -25,7 +25,7 @@ from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
 from logic.thumbnail_atlas import generate_thumbnail_atlas, THUMBNAIL_ATLAS_DIR
 
 
-ABSCLUST_SCHEMA_ID = 1
+ABSCLUST_DATASET_ID = 1
 
 default_map_data = {
     "last_accessed": None,
@@ -33,7 +33,7 @@ default_map_data = {
     "errors": [],
     "is_stored": False,
     "parameters": {
-            # schema_id
+            # dataset_id
             # search settings
             # vectorize settings
             # projection settings
@@ -134,9 +134,9 @@ def generate_map(map_id, ignore_cache):
         map_data['results']['thumbnail_atlas_filename'] = origin_map['results']['thumbnail_atlas_filename']
         map_data['results']['thumbnail_sprite_size'] = origin_map['results']['thumbnail_sprite_size']
 
-    schema_id = params.schema_id
-    schema = get_object_schema(schema_id)
-    map_data["hover_label_rendering"] = schema.hover_label_rendering
+    dataset_id = params.dataset_id
+    dataset = get_dataset(dataset_id)
+    map_data["hover_label_rendering"] = dataset.hover_label_rendering
     timings.log("map preparation")
 
     map_vector_field = params.vectorize.map_vector_field
@@ -155,7 +155,7 @@ def generate_map(map_id, ignore_cache):
         map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
         map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
-        search_results = get_full_results_from_meta_info(schema, params.vectorize, search_result_meta_information, 'map', timings)
+        search_results = get_full_results_from_meta_info(dataset, params.vectorize, search_result_meta_information, 'map', timings)
         timings.log("reusing vectorize stage results")
     else:
         map_data['progress']['step_title'] = "Getting search results"
@@ -173,7 +173,7 @@ def generate_map(map_id, ignore_cache):
         timings.log("database query")
 
         # thumbnail atlas:
-        thumbnail_field = schema.thumbnail_image
+        thumbnail_field = dataset.thumbnail_image
         if thumbnail_field:
             search_params_hash = get_search_stage_hash(params)
             sprite_size = params.search.get("thumbnail_sprite_size", "auto")
@@ -213,7 +213,7 @@ def generate_map(map_id, ignore_cache):
             hover_label_data['_score'] = item['_score']
             hover_label_data['_reciprocal_rank_score'] = item['_reciprocal_rank_score']
             hover_label_data['_origins'] = item['_origins']
-            for field in schema.hover_label_rendering.required_fields:
+            for field in dataset.hover_label_rendering.required_fields:
                 hover_label_data[field] = item.get(field, None)
             hover_label_data_total.append(hover_label_data)
 
@@ -230,10 +230,10 @@ def generate_map(map_id, ignore_cache):
         if params.search.search_type == 'cluster' and origin_map is not None:
             query = origin_map['parameters']['search']['all_field_query']
         if map_vector_field == "w2v_vector":
-            add_w2v_vectors(search_results, query, params, schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
-        elif schema.object_fields[params.vectorize.map_vector_field].generator \
+            add_w2v_vectors(search_results, query, params, dataset.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
+        elif dataset.object_fields[params.vectorize.map_vector_field].generator \
                 and not all_map_vectors_present:
-            add_missing_map_vectors(search_results, query, params, map_data, schema, timings)
+            add_missing_map_vectors(search_results, query, params, map_data, dataset, timings)
 
         search_result_meta_information = {}
         for item in search_results:
@@ -259,7 +259,7 @@ def generate_map(map_id, ignore_cache):
         map_data["progress"]["embeddings_available"] = True
         timings.log("reusing projection stage results")
     else:
-        vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(schema.object_fields[map_vector_field])
+        vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(dataset.object_fields[map_vector_field])
         # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
         dummy_vector = np.zeros(vector_size)
         vectors = np.asarray([e.get(map_vector_field, dummy_vector) for e in search_results])
@@ -325,7 +325,7 @@ def generate_map(map_id, ignore_cache):
         timings.log("clustering")
 
         map_data['progress']['step_title'] = "Find cluster titles"
-        cluster_data = get_cluster_titles(cluster_id_per_point, positions, search_results, schema.descriptive_text_fields, timings)
+        cluster_data = get_cluster_titles(cluster_id_per_point, positions, search_results, dataset.descriptive_text_fields, timings)
 
         map_data["results"]["clusters"] = cluster_data
 
