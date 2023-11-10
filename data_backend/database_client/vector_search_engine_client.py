@@ -3,7 +3,7 @@ import os
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from qdrant_client.models import Filter, FieldCondition, Range, PayloadSchemaType, NamedVector
+from qdrant_client.models import Filter, FieldCondition, Range, PayloadSchemaType, NamedVector, HnswConfigDiff
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 from utils.dotdict import DotDict
@@ -53,8 +53,9 @@ class VectorSearchEngineClient(object):
             logging.error(f"Indexed vector field doesn't have vector size: {field.identifier}")
             raise ValueError(f"Indexed vector field doesn't have vector size: {field.identifier}")
         logging.info(f"Creating vector field {field.identifier} with size {vector_size}")
-        vector_configs[field.identifier] = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
-        vector_configs_update[field.identifier] = models.VectorParamsDiff()  # TODO: add params
+        vector_configs[field.identifier] = models.VectorParams(size=vector_size, distance=models.Distance.COSINE,
+                                                               on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))
+        vector_configs_update[field.identifier] = models.VectorParamsDiff(on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))  # TODO: add params
         # TODO: parse and add field.index_parameters for HNSW, storage type, quantization etc.
 
         collection_name = self._get_collection_name(schema.id, vector_field)
@@ -68,12 +69,14 @@ class VectorSearchEngineClient(object):
             self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config=vector_configs,
+                on_disk_payload=True,  # TODO: this might make filtering slow
             )
         else:
             if delete_if_params_changed:
                 self.client.recreate_collection(
                     collection_name=collection_name,
                     vectors_config=vector_configs,
+                    on_disk_payload=True,  # TODO: this might make filtering slow
                 )
             elif update_params:
                 self.client.update_collection(
