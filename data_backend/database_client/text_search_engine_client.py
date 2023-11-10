@@ -80,7 +80,7 @@ class TextSearchEngineClient(object):
             FieldType.DATETIME: "date",
             FieldType.IDENTIFIER: "text",
             FieldType.URL: "text",
-            FieldType.VECTOR: "dense_vector",
+            FieldType.VECTOR: "knn_vector",  # in ElasticSearch, its called "dense_vector"
             FieldType.ATTRIBUTES: "object",
             FieldType.ARBITRARY_OBJECT: "flat_object",
         })
@@ -93,6 +93,8 @@ class TextSearchEngineClient(object):
 
         for field in schema.object_fields.values():
             if field.identifier == "_id":
+                continue
+            if field.field_type == FieldType.VECTOR:
                 continue
             open_search_type = array_field_type_to_open_search_type[field.field_type] if field.is_array else field_type_to_open_search_type[field.field_type]
             properties[field.identifier] = {"type": open_search_type}

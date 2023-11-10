@@ -7,17 +7,22 @@ from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 
 from logic.extract_pipeline import get_pipeline_steps
-from logic.insert_logic import get_index_settings
-from logic.insert_logic import update_database_layout
+from logic.insert_logic import get_index_settings, update_database_layout
+from logic.search_common import separate_text_and_vector_fields, fill_in_vector_data
 
 from utils.dotdict import DotDict
+from utils.field_types import FieldType
 
 
 def delete_field_content(schema_id: int, field_identifier: str):
-    vector_db_client = VectorSearchEngineClient.get_instance()
-    vector_db_client.delete_field(schema_id, field_identifier)
-    search_engine_client = TextSearchEngineClient.get_instance()
-    search_engine_client.delete_field(schema_id, field_identifier)
+    schema = get_object_schema(schema_id)
+    is_vector_field = schema.object_fields[field_identifier].field_type == FieldType.VECTOR
+    if is_vector_field:
+        vector_db_client = VectorSearchEngineClient.get_instance()
+        vector_db_client.delete_field(schema_id, field_identifier)
+    else:
+        search_engine_client = TextSearchEngineClient.get_instance()
+        search_engine_client.delete_field(schema_id, field_identifier)
 
 
 def generate_missing_values(schema_id: int, field_identifier: str):
@@ -27,12 +32,28 @@ def generate_missing_values(schema_id: int, field_identifier: str):
     # the field to be filled in might not have the necessary database columns yet:
     update_database_layout(schema_id)
 
-    pipeline_steps, required_fields = get_pipeline_steps(schema, only_fields=[field_identifier])
+    pipeline_steps, required_fields, potentially_changed_fields = get_pipeline_steps(schema, only_fields=[field_identifier])
+    potentially_changed_text_fields, potentially_changed_vector_fields = separate_text_and_vector_fields(schema, potentially_changed_fields)
+    logging.warning(f"The following fields will potentially be changed: text fields {potentially_changed_text_fields}, vector fields {potentially_changed_vector_fields}")
+    index_settings = get_index_settings(schema)
+    if potentially_changed_vector_fields or (potentially_changed_fields & index_settings.filtering_fields):
+        # if vector fields change, all filtering fields are required during the update:
+        # (same if a filtering field changes, then the other fields might be required for a full update of the payload in qdrant)
+        required_fields |= index_settings.filtering_fields
+    required_text_fields, required_vector_fields = separate_text_and_vector_fields(schema, required_fields)
+    logging.warning(f"The following fields will be retrieved: text fields {required_text_fields}, vector fields {required_vector_fields}")
 
     search_engine_client = TextSearchEngineClient.get_instance()
+    vector_db_client = VectorSearchEngineClient.get_instance()
     items_processed = 0
     total_items_estimated = search_engine_client.get_all_items_with_missing_field_count(schema_id, field_identifier)
+    is_vector_field = schema.object_fields[field_identifier].field_type == FieldType.VECTOR
+    if is_vector_field:
+        total_items_estimated -= vector_db_client.get_item_count(schema_id, field_identifier)
     logging.warning(f"Total items with missing value: {total_items_estimated}")
+    if total_items_estimated == 0:
+        logging.warning(f"Nothing to do")
+        return
 
     def _process(elements):
         nonlocal items_processed
@@ -49,12 +70,23 @@ def generate_missing_values(schema_id: int, field_identifier: str):
         logging.warning(f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min")
 
     batch_size = 512
-    generator = search_engine_client.get_all_items_with_missing_field(schema_id, field_identifier, required_fields, internal_batch_size=batch_size)
+
+    generator = search_engine_client.get_all_items_with_missing_field(schema_id, field_identifier, required_text_fields, internal_batch_size=batch_size)
     elements = []
     last_batch_time = time.time()
     for element in generator:
         elements.append(element)
         if len(elements) % batch_size == 0:
+            if is_vector_field:
+                items_where_vector_already_exists = vector_db_client.get_items_by_ids(
+                    schema_id, [x["_id"] for x in elements], field_identifier, return_payloads=False, return_vectors=False)
+                for item in items_where_vector_already_exists:
+                    # TODO: there might be a faster way to do this
+                    for i, element in reversed(list(enumerate(elements))):
+                        if element["_id"] == item.id:
+                            del elements[i]
+            if required_vector_fields:
+                fill_in_vector_data(schema.id, elements, required_vector_fields)
             element_retrieval_time = time.time() - last_batch_time
             logging.warning(f"Time to retrieve {len(elements)} items: {element_retrieval_time * 1000:.2f} ms")
             _process(elements)
@@ -62,6 +94,8 @@ def generate_missing_values(schema_id: int, field_identifier: str):
             last_batch_time = time.time()
     if elements:
         # process remaining elements
+        if required_vector_fields:
+            fill_in_vector_data(schema.id, elements, required_vector_fields)
         element_retrieval_time = time.time() - last_batch_time
         logging.warning(f"Time to retrieve {len(elements)} items: {element_retrieval_time * 1000:.2f} ms")
         _process(elements)
@@ -69,7 +103,7 @@ def generate_missing_values(schema_id: int, field_identifier: str):
 
 
 def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict]):
-    changed_fields = defaultdict(list)
+    changed_fields = defaultdict(set)
     for phase in pipeline_steps:
         for pipeline_step in phase:  # TODO: this could be done in parallel
             pipeline_step = DotDict(pipeline_step)
@@ -96,21 +130,25 @@ def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]],
 
             for element_index, result in zip(element_indexes, results):
                 elements[element_index][pipeline_step.target_field] = result
-                changed_fields[element_index].append(pipeline_step.target_field)
+                changed_fields[element_index].add(pipeline_step.target_field)
     return changed_fields  # elements is changed in-place
 
 
 def _update_indexes_with_generated_values(schema, elements, changed_fields):
+    # Attention: this method may delete content of 'elements'!
     index_settings = get_index_settings(schema)
 
     vector_db_client = VectorSearchEngineClient.get_instance()
 
-    for vector_field in index_settings.indexed_vector_fields:
+    for vector_field in index_settings.all_vector_fields:
         ids = []
         vectors = []
         payloads = []
         for element_index, element in enumerate(elements):
-            if vector_field not in changed_fields[element_index]:
+            if vector_field not in changed_fields[element_index] \
+                and len(changed_fields[element_index] & index_settings.filtering_fields) == 0:
+                # TODO: if only a filtering field changed, the other filtering fields might not be present (currently they are)
+                # Does qdrant support a partial update on the payload? Or does it replace the payload? If it can, then other fields are not required
                 continue
             if vector_field not in element or element[vector_field] is None:
                 continue
@@ -125,7 +163,15 @@ def _update_indexes_with_generated_values(schema, elements, changed_fields):
         if vectors:
             vector_db_client.upsert_items(schema.id, vector_field, ids, payloads, vectors)
 
-    # add it to the textsearch storage as the last step because if the process is interrupted, this is the ground of truth
-    search_engine_client = TextSearchEngineClient.get_instance()
-    # TODO: exclude vectors that are stored in vector DB (what if that setting changes?)
-    search_engine_client.upsert_items(schema.id, [item["_id"] for item in elements], elements)
+    # FIXME: Does OpenSearch upsert actually only update provided fields or does it delete the other fields?
+    text_search_updates = []
+    for element_index, element in enumerate(elements):
+        changed_non_vector_fields = changed_fields[element_index] - index_settings.all_vector_fields
+        if not changed_non_vector_fields:
+            continue
+        updated_element = {field: v for field, v in element.items() if field in changed_non_vector_fields}
+        text_search_updates.append(updated_element)
+
+    if text_search_updates:
+        search_engine_client = TextSearchEngineClient.get_instance()
+        search_engine_client.upsert_items(schema.id, [item["_id"] for item in text_search_updates], text_search_updates)

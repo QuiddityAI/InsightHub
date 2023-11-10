@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Iterable
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -116,6 +117,14 @@ class VectorSearchEngineClient(object):
             print(e)
 
 
+    def get_item_count(self, schema_id: int, vector_field: str) -> int:
+        try:
+            return self.client.count(self._get_collection_name(schema_id, vector_field)).count
+        except Exception as e:
+            logging.warning(e)
+            return 0
+
+
     def upsert_items(self, schema_id: int, vector_field: str, ids: list, payloads: list[dict], vectors: list):
         collection_name = self._get_collection_name(schema_id, vector_field)
 
@@ -180,9 +189,14 @@ class VectorSearchEngineClient(object):
         return hits
 
 
-    def get_items_by_primary_keys(self, schema_id: str, primary_key_field: str,
-                                  item_pks: list[str], fields: list[str]) -> list[dict]:
-        # is this needed?
-        return []
+    def get_items_by_ids(self, schema_id: int, ids: Iterable[str], vector_field: str,
+                         return_vectors: bool = False, return_payloads: bool = False) -> list:
+        hits = self.client.retrieve(
+            collection_name=self._get_collection_name(schema_id, vector_field),
+            ids=ids, # type: ignore
+            with_payload=return_payloads,
+            with_vectors=return_vectors
+        )
+        return hits
 
 

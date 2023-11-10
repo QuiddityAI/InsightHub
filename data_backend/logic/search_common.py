@@ -1,5 +1,6 @@
 import logging
 import math
+from typing import Iterable
 
 import numpy as np
 
@@ -157,8 +158,12 @@ def sort_items_and_complete_them(schema:DotDict, total_items:dict, required_fiel
     sorted_results = sorted(total_items.values(), key=lambda item: item['_reciprocal_rank_score'], reverse=True)
     sorted_results = sorted_results[:limit]
     timings.log("sort items")
-    fill_in_details_from_object_storage(schema.id, sorted_results, required_fields)
-    timings.log("getting full items from object storage")
+    required_text_fields, required_vector_fields = separate_text_and_vector_fields(schema, required_fields)
+    fill_in_details_from_text_storage(schema.id, sorted_results, required_text_fields)
+    timings.log("getting actual data from text storage")
+    if required_vector_fields:
+        fill_in_vector_data(schema.id, sorted_results, required_vector_fields)
+        timings.log("getting vector data from vector DB")
 
     # search_results = enrich_search_results(search_results, query)
     # timings.log("enriching results")
@@ -186,6 +191,17 @@ def get_required_fields(schema, vectorize_settings: DotDict, purpose: str):
 
     required_fields = list(set(required_fields))
     return required_fields
+
+
+def separate_text_and_vector_fields(schema: DotDict, fields: Iterable[str]):
+    vector_fields = []
+    text_felds = []
+    for field in fields:
+        if schema.object_fields[field].field_type == FieldType.VECTOR:
+            vector_fields.append(field)
+        else:
+            text_felds.append(field)
+    return text_felds, vector_fields
 
 
 def get_fulltext_search_results(schema: DotDict, text_fields: list[str], query: QueryInput,
@@ -278,7 +294,7 @@ def get_vector_search_results_matching_collection(schema: DotDict, vector_field:
     return items
 
 
-def fill_in_details_from_object_storage(schema_id: int, items: list[dict], required_fields: list[str]):
+def fill_in_details_from_text_storage(schema_id: int, items: list[dict], required_fields: list[str]):
     if not items:
         return
     ids = [item['_id'] for item in items]
@@ -292,6 +308,22 @@ def fill_in_details_from_object_storage(schema_id: int, items: list[dict], requi
             if item['_id'] == full_item['_id']:
                 item.update(full_item)
                 break
+
+
+def fill_in_vector_data(schema_id: int, items: list[dict], required_vector_fields: list[str]):
+    if not items or not required_vector_fields:
+        return
+    if schema_id == ABSCLUST_SCHEMA_ID:
+        return
+    ids = [item['_id'] for item in items]
+    vector_db_client = VectorSearchEngineClient.get_instance()
+    for vector_field in required_vector_fields:
+        results = vector_db_client.get_items_by_ids(schema_id, ids, vector_field, return_vectors=True, return_payloads=False)
+        for result in results:
+            for item in items:
+                if item['_id'] == result.id:
+                    item[vector_field] = result.vector[vector_field]
+                    break
 
 
 def get_field_similarity_threshold(field, use_image_threshold: bool | None=None):

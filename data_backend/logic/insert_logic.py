@@ -14,7 +14,7 @@ def update_database_layout(schema_id: int):
     schema = get_object_schema(schema_id)
     vector_db_client = VectorSearchEngineClient.get_instance()
     index_settings = get_index_settings(schema)
-    for field in index_settings.indexed_vector_fields:
+    for field in index_settings.all_vector_fields:
         vector_db_client.ensure_schema_exists(schema, field, update_params=True, delete_if_params_changed=False)
     search_engine_client = TextSearchEngineClient.get_instance()
     search_engine_client.ensure_schema_exists(schema)
@@ -36,7 +36,7 @@ def insert_many(schema_id: int, elements: list[dict]):
     # for upsert / update case: get changed fields:
     # changed_fields_total = get_changed_fields(primary_key_field, elements, schema)
 
-    pipeline_steps, _ = get_pipeline_steps(schema)
+    pipeline_steps, _, _ = get_pipeline_steps(schema)
 
     for phase in pipeline_steps:
         for pipeline_step in phase:  # TODO: this could be done in parallel
@@ -85,15 +85,13 @@ def insert_many(schema_id: int, elements: list[dict]):
                 # values less or equal zero are not supported by OpenSearch
                 element[field.identifier] = {k: max(v, 0.00001) for k, v in element[field.identifier].items()}
 
-    search_engine_client = TextSearchEngineClient.get_instance()
-    # TODO: exclude vectors that are stored in vector DB (what if that setting changes?)
-    search_engine_client.upsert_items(schema.id, [item["_id"] for item in elements], elements)
-
     index_settings = get_index_settings(schema)
 
     vector_db_client = VectorSearchEngineClient.get_instance()
 
-    for vector_field in index_settings.indexed_vector_fields:
+    # first store all vectors in vector DB, so that we can then delete them from the elements
+    # and pass the rest to OpenSearch:
+    for vector_field in index_settings.all_vector_fields:
         ids = []
         vectors = []
         payloads = []
@@ -111,25 +109,29 @@ def insert_many(schema_id: int, elements: list[dict]):
         if vectors:
             vector_db_client.upsert_items(schema.id, vector_field, ids, payloads, vectors)
 
+    for element in elements:
+        for vector_field in index_settings.all_vector_fields:
+            if vector_field in element:
+                del element[vector_field]
+
+    search_engine_client = TextSearchEngineClient.get_instance()
+    search_engine_client.upsert_items(schema.id, [item["_id"] for item in elements], elements)
+
 
 def get_index_settings(schema: DotDict):
-    indexed_vector_fields = []
-    indexed_text_fields = []
+    all_vector_fields = []
     filtering_fields = []
 
     for field in schema.object_fields.values():
-        if field.is_available_for_search and field.field_type == FieldType.VECTOR:
-            indexed_vector_fields.append(field.identifier)
-        elif field.is_available_for_search and field.field_type == FieldType.TEXT:
-            indexed_text_fields.append(field.identifier)
+        if field.field_type == FieldType.VECTOR:
+            all_vector_fields.append(field.identifier)
 
         if field.is_available_for_filtering:
             filtering_fields.append(field.identifier)
 
     result = {
-        'indexed_vector_fields': indexed_vector_fields,
-        'indexed_text_fields': indexed_text_fields,
-        'filtering_fields': filtering_fields
+        'all_vector_fields': set(all_vector_fields),
+        'filtering_fields': set(filtering_fields)
         }
 
     return DotDict(result)
