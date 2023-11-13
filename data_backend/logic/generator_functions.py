@@ -6,7 +6,7 @@ import openai
 from utils.dotdict import DotDict
 from utils.helpers import join_extracted_text_sources
 
-from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings
+from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings, get_infinity_embeddings
 
 
 def get_generator_function_from_field(field: DotDict) -> Callable:
@@ -24,6 +24,8 @@ def get_generator_function(module: str, parameters: dict) -> Callable:
     elif module == 'open_ai_text_embedding_ada_002':
         return lambda texts: get_openai_embedding_batch([join_extracted_text_sources(t) for t in texts])
     elif module == 'sentence_transformer':
+        if parameters.model_name == 'intfloat/e5-base-v2':
+            return lambda texts: get_infinity_embeddings([join_extracted_text_sources(t) for t in texts], parameters.model_name, parameters.prefix)
         return lambda texts: get_sentence_transformer_embeddings([join_extracted_text_sources(t) for t in texts], parameters.model_name, parameters.prefix)
     elif module == 'clip_text':
         return lambda texts: get_clip_text_embeddings([join_extracted_text_sources(t) for t in texts], parameters.model_name)

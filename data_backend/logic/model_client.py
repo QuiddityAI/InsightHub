@@ -1,4 +1,5 @@
 from collections import defaultdict
+import logging
 import pickle
 import os
 import json
@@ -141,3 +142,18 @@ def get_openai_embedding_batch(texts: dict):
                 results[text_id] = embedding
 
     return results
+
+
+def get_infinity_embeddings(texts: list[str], model_name: str, prefix: str):
+    url = os.getenv('infinity_server_host', 'http://infinity-model-server:55181') + '/v1/embeddings'
+    if model_name in ['intfloat/e5-base-v2', 'intfloat/e5-large-v2', 'intfloat/multilingual-e5-base']:
+        prefix = prefix or "query:"
+        # alternative: "passage: " for documents meant for retrieval
+        texts = [prefix + " " + t[:1000] for t in texts]
+    data = {
+        "input": texts,
+        "model": model_name
+    }
+    result = requests.post(url, json=data)
+    embeddings = np.asarray([x["embedding"] for x in result.json()["data"]])
+    return embeddings
