@@ -74,16 +74,24 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
     generator = search_engine_client.get_all_items_with_missing_field(dataset_id, field_identifier, required_text_fields, internal_batch_size=batch_size)
     elements = []
     last_batch_time = time.time()
+    skipped_items = 0
     for element in generator:
         elements.append(element)
         if len(elements) % batch_size == 0:
             if is_vector_field:
                 items_where_vector_already_exists = vector_db_client.get_items_by_ids(
                     dataset_id, [x["_id"] for x in elements], field_identifier, return_payloads=False, return_vectors=False)
+                if len(items_where_vector_already_exists) == len(elements):
+                    skipped_items += len(elements)
+                    elements = []
+                    last_batch_time = time.time()
+                    logging.warning(f"Skipping batch, skipped {skipped_items}")
+                    continue
                 for item in items_where_vector_already_exists:
                     # TODO: there might be a faster way to do this
                     for i, element in reversed(list(enumerate(elements))):
                         if element["_id"] == item.id:
+                            skipped_items += 1
                             del elements[i]
             if required_vector_fields:
                 fill_in_vector_data(dataset.id, elements, required_vector_fields)
