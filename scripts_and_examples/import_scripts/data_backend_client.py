@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import Tuple
 
 import requests
 
@@ -28,3 +29,8 @@ def insert_many(dataset_id: int, elements: list[dict]):
     if response.status_code != 204:
         logging.error(f"Error during insert_many_sync: {repr(response)}, {response.text}")
         raise Exception(response)
+
+
+def files_in_folder(path, extensions:Tuple[str]=(".gz",)):
+    return sorted([os.path.join(path, name) for path, subdirs, files in os.walk(path)
+            for name in files if name.lower().endswith(extensions)])
