@@ -17,6 +17,8 @@ import shadowsFragmentShader from '../shaders/shadows.frag?raw'
 import pointTextureBaseColorUrl from '../textures/Brick_Wall_017_basecolor.jpg'
 import pointTextureNormalMapUrl from '../textures/Crystal_001_NORM.jpg'
 
+import { ensureLength } from '../utils/utils.js'
+
 export default {
   props: ["appStateStore"],  // for some reason, importing it doesn't work
   emits: [
@@ -30,17 +32,39 @@ export default {
       // external:
       passiveMarginsLRTB: [0, 0, 0, 0],
 
+      // per point:
       targetPositionsX: [],
       targetPositionsY: [],
-      maxOpacity: 0.7,
-      saturation: [],
-      colors: [],
-      pointSizes: [],
-      pointSizeFactor: 1.0,
+      per_point: {
+        size: [],
+        hue: [],
+        sat: [],
+        val: [],
+        opacity: [],
+        secondary_hue: [],
+        secondary_sat: [],
+        secondary_val: [],
+        secondary_opacity: [],
+      },
       clusterIdsPerPoint: [],
+      itemDetails: [],  // text data per point
 
-      itemDetails: [],
-      clusterData: [],
+      // for all points:
+      maxOpacity: 0.7,
+      pointSizeFactor: 1.0,
+      attribute_fallback: {
+        size: 0.5,
+        hue: 0.0,
+        sat: 0.7,
+        val: 0.7,
+        opacity: 1.0,
+        secondary_hue: 0.0,
+        secondary_sat: 1.0,
+        secondary_val: 1.0,
+        secondary_opacity: 1.0,
+      },
+
+      clusterData: [],  // array of cluster description objects
       hover_label_rendering: {},
       textureAtlas: null,
       thumbnailSpriteSize: 64,
@@ -126,16 +150,37 @@ export default {
     resetData() {
       this.targetPositionsX = []
       this.targetPositionsY = []
-      this.maxOpacity = 0.7,
-      this.saturation = [],
-      this.colors = [],
-      this.pointSizes = [],
-      this.pointSizeFactor = 1.0,
-      this.clusterIdsPerPoint = [],
-
+      this.per_point = {
+        size: [],
+        hue: [],
+        sat: [],
+        val: [],
+        opacity: [],
+        secondary_hue: [],
+        secondary_sat: [],
+        secondary_val: [],
+        secondary_opacity: [],
+      }
+      this.clusterIdsPerPoint = []
       this.itemDetails = []
+
+      this.maxOpacity = 0.7
+      this.pointSizeFactor = 1.0
+      this.attribute_fallback = {
+        size: 0.5,
+        hue: 0.0,
+        sat: 0.7,
+        val: 0.7,
+        opacity: 1.0,
+        secondary_hue: 0.0,
+        secondary_sat: 1.0,
+        secondary_val: 1.0,
+        secondary_opacity: 1.0,
+      }
+
       this.clusterData = []
       this.textureAtlas = null
+      this.thumbnailSpriteSize = 64
 
       this.selectedPointIdx = -1
       this.highlightedPointIdx = -1
@@ -342,19 +387,14 @@ export default {
       this.baseOffsetVelocity = [0.0, 0.0]
       this.baseScaleVelocity = [0.0, 0.0]
     },
-    updateGeometry() {
-      function ensureLength(x, size, fillValue, removeRest=false) {
-        if (x.length < size) {
-          return Array(size).fill(fillValue)
-        } else if (x.length > size && removeRest) {
-          // for "computed" arrays like currentPositions, the rest should be removed:
-          return x.slice(0, size)
-        }
-        // for "non-computed" arrays like the saturation values, we want to keep the rest
-        // in case the saturation array was loaded before the positions were set
-        // the array length is in this case correct on-demand in the updateGeometry() method
-        return x
+    regenerateAttributeArraysFromFallbacks() {
+      const pointCount = this.targetPositionsX.length
+      for (const attr of ["size", "hue", "sat", "val", "opacity", "secondary_hue", "secondary_sat", "secondary_val", "secondary_opacity"]) {
+        this.per_point[attr] = []
+        this.per_point[attr] = ensureLength(this.per_point[attr], pointCount, this.attribute_fallback[attr])
       }
+    },
+    updateGeometry() {
       const pointCount = this.targetPositionsX.length
       this.targetPositionsY = ensureLength(this.targetPositionsY, pointCount, 0.0)
 
@@ -365,8 +405,9 @@ export default {
       this.pointVisibility = ensureLength(this.pointVisibility, pointCount, 0)
 
       this.clusterIdsPerPoint = ensureLength(this.clusterIdsPerPoint, pointCount, 0)
-      this.saturation = ensureLength(this.saturation, pointCount, 1.0)
-      this.pointSizes = ensureLength(this.pointSizes, pointCount, 0.5)
+      for (const attr of ["size", "hue", "sat", "val", "opacity", "secondary_hue", "secondary_sat", "secondary_val", "secondary_opacity"]) {
+        this.per_point[attr] = ensureLength(this.per_point[attr], pointCount, this.attribute_fallback[attr])
+      }
 
       this.glTextureAtlas = new Texture(this.glContext, {
         generateMipmaps: false, minFilter: this.glContext.NEAREST, magFilter: this.glContext.LINEAR
@@ -387,7 +428,7 @@ export default {
       const shadowGeometry = new Geometry(this.glContext, {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
-          pointSize: { size: 1, data: new Float32Array(this.pointSizes) },
+          pointSize: { size: 1, data: new Float32Array(this.per_point.size) },
           pointVisibility: { size: 1, data: new Float32Array(this.pointVisibility) },
       });
 
@@ -406,8 +447,15 @@ export default {
           positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
           clusterId: { size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
-          saturation: { size: 1, data: new Float32Array(this.saturation) },
-          pointSize: { size: 1, data: new Float32Array(this.pointSizes) },
+          pointSize: { size: 1, data: new Float32Array(this.per_point.size) },
+          hue: { size: 1, data: new Float32Array(this.per_point.hue) },
+          sat: { size: 1, data: new Float32Array(this.per_point.sat) },
+          val: { size: 1, data: new Float32Array(this.per_point.val) },
+          opacity: { size: 1, data: new Float32Array(this.per_point.opacity) },
+          secondary_hue: { size: 1, data: new Float32Array(this.per_point.secondary_hue) },
+          secondary_sat: { size: 1, data: new Float32Array(this.per_point.secondary_sat) },
+          secondary_val: { size: 1, data: new Float32Array(this.per_point.secondary_val) },
+          secondary_opacity: { size: 1, data: new Float32Array(this.per_point.secondary_opacity) },
           pointVisibility: { size: 1, data: new Float32Array(this.pointVisibility) },
       });
 
@@ -429,7 +477,7 @@ export default {
           position: { size: 2, data: new Float32Array([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]) },
           positionX: { instanced: 1, size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { instanced: 1, size: 1, data: new Float32Array(this.currentPositionsY) },
-          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes.slice(0, pointCount)) },
+          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.per_point.size.slice(0, pointCount)) },
           pointVisibility: { instanced: 1, size: 1, data: new Float32Array(this.pointVisibility.slice(0, pointCount)) },
       });
 
@@ -449,8 +497,15 @@ export default {
           positionX: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsY) },
           clusterId: { instanced: 1,  size: 1, data: new Float32Array(this.clusterIdsPerPoint.slice(0, pointCount)) },
-          saturation: { instanced: 1,  size: 1, data: new Float32Array(this.saturation.slice(0, pointCount)) },
-          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.pointSizes.slice(0, pointCount)) },
+          pointSize: { instanced: 1, size: 1, data: new Float32Array(this.per_point.size.slice(0, pointCount)) },
+          hue: { instanced: 1, size: 1, data: new Float32Array(this.per_point.hue.slice(0, pointCount)) },
+          sat: { instanced: 1, size: 1, data: new Float32Array(this.per_point.sat.slice(0, pointCount)) },
+          val: { instanced: 1, size: 1, data: new Float32Array(this.per_point.val.slice(0, pointCount)) },
+          opacity: { instanced: 1, size: 1, data: new Float32Array(this.per_point.opacity.slice(0, pointCount)) },
+          secondary_hue: { instanced: 1, size: 1, data: new Float32Array(this.per_point.secondary_hue.slice(0, pointCount)) },
+          secondary_sat: { instanced: 1, size: 1, data: new Float32Array(this.per_point.secondary_sat.slice(0, pointCount)) },
+          secondary_val: { instanced: 1, size: 1, data: new Float32Array(this.per_point.secondary_val.slice(0, pointCount)) },
+          secondary_opacity: { instanced: 1, size: 1, data: new Float32Array(this.per_point.secondary_opacity.slice(0, pointCount)) },
           pointVisibility: { instanced: 1, size: 1, data: new Float32Array(this.pointVisibility.slice(0, pointCount)) },
       });
 
@@ -520,7 +575,7 @@ export default {
           closestIdx = i
         }
       }
-      const pointSize = this.pointSizes[closestIdx]
+      const pointSize = this.per_point.size[closestIdx]
       const zoomAdjustment = (this.currentZoom - 1.0) * 0.05 + 1.0;
       const pointSizeScreenPx = (5.0 + 15.0 * pointSize) * zoomAdjustment * this.pointSizeFactor;
       const pointRadiusScreenPx = pointSizeScreenPx / 2

@@ -45,11 +45,12 @@ export default {
       available_databases: [],
       database_information: {},
 
-      show_search_settings: true,
+      show_search_settings: false,
       show_autocut_settings: false,
       show_vectorize_settings: false,
       show_projection_settings: false,
       show_rendering_settings: false,
+      show_frontend_settings: false,
       show_other_settings: false,
 
       available_autocut_strategies: [
@@ -62,23 +63,30 @@ export default {
         {id: "absclust", title: "AbsClust Tokenizer"},
         {id: "simple", title: "simple"},
       ],
-      available_dim_reducers: [
+      axis_type_options: [
         {id: "umap", title: "UMAP"},
-        {id: "t_sne", title: "T-SNE"},
-        {id: "pca", title: "PCA"},
+        {id: "number_field", title: "Number Field"},
+        {id: "count", title: "Array / Word Count"},
+        {id: "classifier", title: "Classifier"},
+        {id: "rank", title: "Rank"},
+        {id: "score", title: "Score"},
+        {id: "fulltext_score", title: "Score (Fulltext)"},
       ],
-      dim_reducer_parameters: {
-        "shape": {title: "shape", default: "2d", value: "2d", options: [
-          {id: "2d", title: "2D"},
-          {id: "1d_plus_distance_polar", title: "1D + Distance (Polar)"},
-          {id: "1d_plus_year", title: "1D + Year"},
-          {id: "score_graph", title: "Score Graph"},
-        ]},
-        "n_neighbors": {title: "n_neighbors", default: 15, value: 15},
-        "min_dist": {title: "min_dist", default: 0.17, value: 0.17},
-        "n_epochs": {title: "n_epochs", default: 500, value: 500},
-        "metric": {title: "metric", default: "euclidean", value: "euclidean"},
-      },
+      rendering_type_options: [
+        {id: "fixed", title: "Fixed"},
+        {id: "umap", title: "UMAP"},
+        {id: "umap_perplexity", title: "UMAP Perplexity"},
+        {id: "number_field", title: "Number Field"},
+        {id: "count", title: "Array / Word Count"},
+        {id: "classifier", title: "Classifier"},
+        {id: "rank", title: "Rank"},
+        {id: "score", title: "Score"},
+        {id: "fulltext_score", title: "Score (Fulltext)"},
+        {id: "cluster_idx", title: "Cluster Id"},
+        {id: "origin_query_idx", title: "Origin Query"},
+        {id: "contains", title: "Contains"},
+        {id: "is_empty", title: "Is empty"},
+      ],
       available_clusterizer: [
         {id: "hdbscan", title: "HDBSCAN"},
       ],
@@ -89,6 +97,17 @@ export default {
       available_cluster_title_strategies: [
         {id: "tf_idf_top_3", title: "tf_idf_top_3"},
         {id: "generative_ai", title: "generative_ai"},
+      ],
+      rendering_parameters: [
+        ['size', 'Size'],
+        ['hue', 'Hue'],
+        ['sat', 'Saturation'],
+        ['val', 'Value'],
+        ['opacity', 'Opacity'],
+        ['secondary_hue', '2nd Hue'],
+        ['secondary_sat', '2nd Saturation'],
+        ['secondary_val', '2nd Value'],
+        ['secondary_opacity', '2nd Opacity'],
       ],
     }
   },
@@ -168,12 +187,14 @@ export default {
           that.appStateStore.available_number_fields.push(field.identifier)
         }
       }
-      that.appStateStore.settings.rendering.point_size = '_score'
+      that.appStateStore.settings.rendering.size.type = 'score'
+      that.appStateStore.settings.rendering.size.parameter = ''
       if (that.appStateStore.available_number_fields.length > 0) {
         for (const field of that.appStateStore.available_number_fields) {
-          if (field === 'citedby') {
+          if (field === 'cited_by_count') {
             // prefer this field even if it is not the first one:
-            that.appStateStore.settings.rendering.point_size = field
+            that.appStateStore.settings.rendering.size.type = 'number_field'
+            that.appStateStore.settings.rendering.size.parameter = field
             break
           }
         }
@@ -314,22 +335,44 @@ export default {
             <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
           </select>
         </div>
-      </div>
-      <div button @click="show_projection_settings = !show_projection_settings" class="flex flex-row items-center hover:bg-blue-100">
-        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Projection {{ show_projection_settings ? 'v' : '>' }}</span> <hr class="flex-1">
-      </div>
-      <div v-show="show_projection_settings">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Secondary map vector:</span>
+          <select v-model="appState.settings.vectorize.secondary_map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+            <option value=null selected>None</option>
+            <option value="w2v_vector" selected>Context-trained W2V Model</option>
+            <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
+          </select>
+        </div>
         <!-- <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">Tokenizer:</span>
           <select v-model="appState.settings.vectorize.tokenizer" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
               <option v-for="item in available_tokenizer" :value="item.id" selected>{{ item.title }}</option>
           </select>
         </div> -->
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Dim. Red. Shape:</span>
-          <select v-model="appState.settings.projection.shape" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-              <option v-for="item in dim_reducer_parameters.shape.options" :value="item.id" selected>{{ item.title }}</option>
+      </div>
+      <div button @click="show_projection_settings = !show_projection_settings" class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Projection {{ show_projection_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      </div>
+      <div v-show="show_projection_settings">
+        <div v-for="axis in [['x_axis', 'X-Axis'], ['y_axis', 'Y-Axis']]" class="flex flex-row justify-between items-center">
+          <span class="text-gray-500 text-sm">{{ axis[1] }}</span>
+          <select v-model="appState.settings.projection[axis[0]].type" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option v-for="item in axis_type_options" :value="item.id" selected>{{ item.title }}</option>
           </select>
+          <select v-model="appState.settings.projection[axis[0]].parameter" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option v-if="['rank', 'score'].includes(appState.settings.projection[axis[0]])" value="">(no parameters)</option>
+              <option v-if="appState.settings.projection[axis[0]].type === 'umap'" value="primary">Primary</option>
+              <option v-if="appState.settings.projection[axis[0]].type === 'umap'" value="secondary">Secondary</option>
+              <option v-if="appState.settings.projection[axis[0]].type === 'number_field'" v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
+          </select>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Polar Coordinates</span>
+          <input v-model="appState.settings.projection.use_polar_coordinates" type="checkbox">
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500 text-sm">Invert X-Axis:</span>
+          <input v-model="appState.settings.projection.invert_x_axis" type="checkbox">
         </div>
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">UMAP n_neighbors:</span>
@@ -355,6 +398,18 @@ export default {
         <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Clustering & Rendering {{ show_rendering_settings ? 'v' : '>' }}</span> <hr class="flex-1">
       </div>
       <div v-show="show_rendering_settings">
+        <div v-for="param in rendering_parameters" class="flex flex-row justify-between items-center">
+          <span class="w-1/4 text-gray-500 text-sm">{{ param[1] }}</span>
+          <select v-model="appState.settings.rendering[param[0]].type" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option v-for="item in rendering_type_options" :value="item.id" selected>{{ item.title }}</option>
+          </select>
+          <select v-model="appState.settings.rendering[param[0]].parameter" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+              <option v-if="['score', 'fixed', 'rank', 'cluster_idx', 'origin_query_idx'].includes(appState.settings.rendering[param[0]].type)" value="">(no parameters)</option>
+              <option v-if="['umap', 'umap_perplexity'].includes(appState.settings.rendering[param[0]].type)" value="primary">Primary</option>
+              <option v-if="['umap', 'umap_perplexity'].includes(appState.settings.rendering[param[0]].type)">Secondary</option>
+              <option v-if="['number_field'].includes(appState.settings.rendering[param[0]].type)" v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
+          </select>
+        </div>
         <div class="flex justify-between items-center">
           <span class="text-gray-500 text-sm">Cluster min. samples:</span>
           <input v-model.number="appState.settings.rendering.clusterizer_parameters.min_samples" class="w-1/2 text-gray-500 text-sm">
@@ -367,19 +422,17 @@ export default {
           <span class="text-gray-500 text-sm">Cluster 'leaf' mode (smaller clusters):</span>
           <input v-model="appState.settings.rendering.clusterizer_parameters.leaf_mode" type="checkbox">
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Point Size:</span>
-          <select v-model="appState.settings.rendering.point_size" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-              <option :value="'equal'" selected>---</option>
-              <option :value="'_score'" selected>Score</option>
-              <option v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
-          </select>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Point Color:</span>
-          <select v-model="appState.settings.rendering.point_color" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-              <option :value="'cluster'" selected>Cluster</option>
-          </select>
+      </div>
+      <div button @click="show_frontend_settings = !show_frontend_settings" class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Frontend {{ show_other_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      </div>
+      <div v-show="show_frontend_settings">
+        <div v-for="param in rendering_parameters" class="flex flex-row justify-between items-center">
+          <span class="w-1/4 text-gray-500 text-sm">{{ param[1] }}</span>
+          <input v-model.number="appState.settings.frontend.rendering[param[0]].min" class="w-1/2 text-gray-500 text-sm">
+          <input v-model.number="appState.settings.frontend.rendering[param[0]].max" class="w-1/2 text-gray-500 text-sm">
+          <input v-model.number="appState.settings.frontend.rendering[param[0]].fallback" class="w-1/2 text-gray-500 text-sm">
+          <input v-model="appState.settings.frontend.rendering[param[0]].gamma" class="w-1/2 text-gray-500 text-sm">
         </div>
       </div>
       <div button @click="show_other_settings = !show_other_settings" class="flex flex-row items-center hover:bg-blue-100">

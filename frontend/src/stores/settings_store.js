@@ -60,21 +60,32 @@ export const useAppStateStore = defineStore('appState', {
           thumbnail_sprite_size: "auto",
         },
         vectorize: {
-          map_vector_field: null,
+          map_vector_field: "w2v_vector",
+          secondary_map_vector_field: null,
           tokenizer: "default",
         },
         projection: {
-          shape: "2d",
+          x_axis: { type: "umap", parameter: "primary" },  // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
+          y_axis: { type: "umap", parameter: "primary" },  // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
           n_neighbors: 15,
           min_dist: 0.17,
           n_epochs: 500,
           metric: "euclidean",
           dim_reducer: "umap",
+          use_polar_projection: false,
+          invert_x_axis: false,
         },
         rendering: {
-          point_size: null,
-          point_color: 'cluster',
-          show_thumbnails: true,
+          size: { type: "score", parameter: "" },  // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
+          hue: { type: "cluster_idx", parameter: "" },
+          sat: { type: "fixed", parameter: "" },
+          val: { type: "fixed", parameter: "" },
+          opacity: { type: "fixed", parameter: "" },
+          secondary_hue: { type: "fixed", parameter: "" },
+          secondary_sat: { type: "fixed", parameter: "" },
+          secondary_val: { type: "fixed", parameter: "" },
+          secondary_opacity: { type: "fixed", parameter: "" },
+          enable_clustering: true,
           clusterizer_parameters: {
             min_cluster_size: -1,
             min_samples: 5,
@@ -83,6 +94,21 @@ export const useAppStateStore = defineStore('appState', {
           },
           cluster_title_strategy: "tf_idf_top_3",
         },
+        frontend: {  // included here to be able to be restored using map_id (stored in backend)
+          rendering: {
+            show_thumbnails: true,
+            show_cluster_titles: true,
+            size: { min: 0.0, max: 1.0, fallback: 0.5, gamma: "auto", threshold: null },  // TODO: store debounced after change
+            hue: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
+            sat: { min: 0.0, max: 1.0, fallback: 0.7, gamma: "auto", threshold: null },
+            val: { min: 0.0, max: 1.0, fallback: 0.7, gamma: "auto", threshold: null },
+            opacity: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
+            secondary_hue: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
+            secondary_sat: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
+            secondary_val: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
+            secondary_opacity: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
+          }
+        }
       },
 
       // exactly the same settings again to be able to restore them later on:
@@ -124,21 +150,32 @@ export const useAppStateStore = defineStore('appState', {
           thumbnail_sprite_size: 64,
         },
         vectorize: {
-          map_vector_field: null,
+          map_vector_field: "w2v_vector",
+          secondary_map_vector_field: null,
           tokenizer: "default",
         },
         projection: {
-          shape: "2d",
+          x_axis: { type: "umap", parameter: "primary" },  // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
+          y_axis: { type: "umap", parameter: "primary" },  // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
           n_neighbors: 15,
           min_dist: 0.17,
           n_epochs: 500,
           metric: "euclidean",
           dim_reducer: "umap",
+          use_polar_projection: false,
+          invert_x_axis: false,
         },
         rendering: {
-          point_size: null,
-          point_color: 'cluster',
-          show_thumbnails: true,
+          size: { type: "score", parameter: "" },  // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
+          hue: { type: "cluster_idx", parameter: "" },
+          sat: { type: "fixed", parameter: "" },
+          val: { type: "fixed", parameter: "" },
+          opacity: { type: "fixed", parameter: "" },
+          secondary_hue: { type: "fixed", parameter: "" },
+          secondary_sat: { type: "fixed", parameter: "" },
+          secondary_val: { type: "fixed", parameter: "" },
+          secondary_opacity: { type: "fixed", parameter: "" },
+          enable_clustering: true,
           clusterizer_parameters: {
             min_cluster_size: -1,
             min_samples: 5,
@@ -147,6 +184,21 @@ export const useAppStateStore = defineStore('appState', {
           },
           cluster_title_strategy: "tf_idf_top_3",
         },
+        frontend: {  // included here to be able to be restored using map_id (stored in backend)
+          rendering: {
+            show_thumbnails: true,
+            show_cluster_titles: true,
+            size: { min: 0.0, max: 1.0, fallback: 0.5, gamma: "auto", threshold: null },  // TODO: store debounced after change
+            hue: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
+            sat: { min: 0.0, max: 1.0, fallback: 0.7, gamma: "auto", threshold: null },
+            val: { min: 0.0, max: 1.0, fallback: 0.7, gamma: "auto", threshold: null },
+            opacity: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
+            secondary_hue: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
+            secondary_sat: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
+            secondary_val: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
+            secondary_opacity: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
+          }
+        }
       },
     }
   },

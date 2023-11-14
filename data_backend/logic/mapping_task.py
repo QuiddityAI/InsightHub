@@ -19,6 +19,7 @@ from database_client.django_client import get_dataset, get_stored_map_data
 from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
 from logic.search import get_search_results, get_full_results_from_meta_info
+from logic.search_common import fill_in_details_from_text_storage
 from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
     projection_stage_hash_to_map_id, get_map_parameters_hash, get_search_stage_hash, \
     get_vectorize_stage_hash, get_projection_stage_hash
@@ -56,11 +57,7 @@ default_map_data = {
             "positions_x": [],
             "positions_y": [],
             "cluster_ids": [],
-            "point_sizes": [],
-
-            "point_colors": [],
-            "point_roughness": [],
-            "point_shape": [],
+            "size": [],  # same for hue, sat, val, opacity and secondary values
         },
         "clusters": {
             # x: { id: x, title: foo, centerX, centerY }, for each cluster
@@ -223,6 +220,7 @@ def generate_map(map_id, ignore_cache):
     all_map_vectors_present = all([item.get(params.vectorize.map_vector_field) is not None for item in search_results])
     projection_phase_is_needed = not similar_map or projection_stage_params_hash != get_projection_stage_hash(map_data['last_parameters']) or ignore_cache
     adding_missing_vectors_is_needed = search_phase_is_needed or (projection_phase_is_needed and not all_map_vectors_present)
+    # TODO: decide what to do with secondary_map_vector
 
     if adding_missing_vectors_is_needed:
         query = params.search.all_field_query
@@ -242,92 +240,146 @@ def generate_map(map_id, ignore_cache):
             }
         map_data['results']['search_result_meta_information'] = search_result_meta_information
 
-    projection_parameters = params.get("projection", {})
+    projection_parameters = params.projection
     scores = [e["_score"] for e in search_results]
     map_data["results"]["per_point_data"]["scores"] = scores
     scores = np.array(scores)
-    point_sizes = [e.get(params.rendering.point_size) for e in search_results] if params.rendering.point_size != 'equal' else [1] * len(search_results)
-    map_data["results"]["per_point_data"]["point_sizes"] = point_sizes
 
     if not projection_phase_is_needed:
         assert similar_map is not None
         logging.warning("reusing projection stage results")
-        projections = similar_map["results"]["per_point_data"]["raw_projections"]
+        raw_projections = similar_map["results"]["per_point_data"]["raw_projections"]
         map_data["results"]["per_point_data"]["positions_x"] = similar_map["results"]["per_point_data"]["positions_x"]
         map_data["results"]["per_point_data"]["positions_y"] = similar_map["results"]["per_point_data"]["positions_y"]
-        positions = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
+        final_positions = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
         map_data["progress"]["embeddings_available"] = True
         timings.log("reusing projection stage results")
     else:
-        vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(dataset.object_fields[map_vector_field])
-        # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
-        dummy_vector = np.zeros(vector_size)
-        vectors = np.asarray([e.get(map_vector_field, dummy_vector) for e in search_results])
-        timings.log("convert to numpy")
+        cartesian_positions = np.zeros([len(search_results), 2])
+        final_positions = np.zeros([len(search_results), 2])
+        if projection_parameters.x_axis.type == "number_field":
+            field = projection_parameters.x_axis.parameter
+            fill_in_details_from_text_storage(dataset.id, search_results, [field])
+            cartesian_positions[:, 0] = [e.get(field, -1) for e in search_results]
+        elif projection_parameters.x_axis.type == "count":
+            cartesian_positions[:, 0] = [len(e.get(projection_parameters.x_axis.parameter, [])) for e in search_results]
+        elif projection_parameters.x_axis.type == "rank":
+            cartesian_positions[:, 0] = list(range(len(search_results)))
+        elif projection_parameters.x_axis.type == "score":
+            cartesian_positions[:, 0] = [e.get("_score", 0.0) for e in search_results]
+            # TODO: fulltext score
+        elif projection_parameters.x_axis.type == "classifier":
+            # TODO
+            pass
+        if projection_parameters.y_axis.type == "number_field":
+            field = projection_parameters.y_axis.parameter
+            fill_in_details_from_text_storage(dataset.id, search_results, [field])
+            cartesian_positions[:, 1] = [e.get(field, -1) for e in search_results]
+        elif projection_parameters.y_axis.type == "count":
+            cartesian_positions[:, 1] = [len(e.get(projection_parameters.y_axis.parameter, [])) for e in search_results]
+        elif projection_parameters.y_axis.type == "rank":
+            cartesian_positions[:, 1] = list(range(len(search_results)))
+        elif projection_parameters.y_axis.type == "score":
+            cartesian_positions[:, 1] = [e.get("_score", 0.0) for e in search_results]
+            # TODO: fulltext score
+        elif projection_parameters.y_axis.type == "classifier":
+            # TODO
+            pass
 
-        def on_umap_progress(working_in_embedding_space, current_iteration, total_iterations, projections):
-            map_data["progress"] = {
-                "total_steps": total_iterations,
-                "current_step": current_iteration,
-                "step_title": "UMAP 2/2: finetuning" if working_in_embedding_space else "UMAP 1/2: pair-wise distances",
-                "embeddings_available": working_in_embedding_space,
-            }
+        umap_dimensions_required = 0
+        if projection_parameters.x_axis.type == "umap" and projection_parameters.y_axis.type == "umap":
+            umap_dimensions_required = 2
+        elif projection_parameters.x_axis.type == "umap" or projection_parameters.y_axis.type == "umap":
+            umap_dimensions_required = 1
 
-            if working_in_embedding_space and projections is not None:
-                if projection_parameters.get("shape") == "1d_plus_distance_polar":
-                    positions = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
-                elif projection_parameters.get("shape") == "1d_plus_year":
-                    assert search_results is not None
-                    years = np.asarray([e.get("issued_year", 2010) for e in search_results])
-                    positions = np.column_stack([normalize_array(years), normalize_array(projections[:, 0])])
-                else:
-                    positions = projections
+        def transform_coordinate_system_and_write_to_map():
+            nonlocal cartesian_positions, final_positions
+            final_positions = cartesian_positions[:]
+            if projection_parameters.invert_x_axis:
+                final_positions[:, 0] = 1 - normalize_array(final_positions[:, 0])
+            if projection_parameters.use_polar_coordinates:
+                final_positions = polar_to_cartesian(1 - normalize_array(final_positions[:, 0]), normalize_array(final_positions[:, 1]) * np.pi * 2)
+            map_data["results"]["per_point_data"]["positions_x"] = final_positions[:, 0].tolist()
+            map_data["results"]["per_point_data"]["positions_y"] = final_positions[:, 1].tolist()
 
-                map_data["results"]["per_point_data"]["positions_x"] = positions[:, 0].tolist()
-                map_data["results"]["per_point_data"]["positions_y"] = positions[:, 1].tolist()
+        if umap_dimensions_required:
+            vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(dataset.object_fields[map_vector_field])
+            # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
+            dummy_vector = np.zeros(vector_size)
+            vectors = np.asarray([e.get(map_vector_field, dummy_vector) for e in search_results])
+            timings.log("convert to numpy")
 
-        # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
-        # Progress might only be available below 4096
+            def apply_projections_to_positions(raw_projections):
+                nonlocal cartesian_positions, final_positions
+                if projection_parameters.x_axis.type == "umap" and projection_parameters.y_axis.type == "umap":
+                    cartesian_positions = raw_projections
+                elif projection_parameters.x_axis.type == "umap":
+                    cartesian_positions[:, 0] = raw_projections[:, 0]
+                else:  # projection_parameters.y_axis.type == "umap"
+                    cartesian_positions[:, 1] = raw_projections[:, 0]
 
-        map_data['progress']['step_title'] = "UMAP Preparation"
-        target_dimensions = 1 if projection_parameters.get("shape") in ("1d_plus_distance_polar", "1d_plus_year") else 2
-        import umap  # import it only when needed as it slows down the startup time
-        umap_task = umap.UMAP(n_components=target_dimensions, random_state=99,
-                              min_dist=projection_parameters.get("min_dist", 0.17),
-                              n_epochs=projection_parameters.get("n_epochs", 500),
-                              n_neighbors=projection_parameters.get("n_neighbors", 15),
-                              metric=projection_parameters.get("metric", "euclidean"),
-                              )
-        projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
-        map_data["results"]["per_point_data"]["raw_projections"] = projections.tolist()
-        if projection_parameters.get("shape") == "1d_plus_distance_polar":
-            positions = np.column_stack(polar_to_cartesian(1 - normalize_array(scores), normalize_array(projections[:, 0]) * np.pi * 2))
-        elif projection_parameters.get("shape") == "1d_plus_year":
-            years = np.asarray([e.get("issued_year", 2010) for e in search_results])
-            rng = np.random.default_rng()
-            small_offsets = rng.triangular(-0.5, 0.0, 0.5, len(years))
-            years = years + small_offsets
-            positions = np.column_stack([normalize_array(years), normalize_array(projections[:, 0])])
-        elif projection_parameters.get("shape") == "score_graph":
-            positions = np.column_stack([[float(x) / len(scores) for x in range(len(scores))], normalize_array(scores)])
+            def on_umap_progress(working_in_embedding_space, current_iteration, total_iterations, projections):
+                map_data["progress"] = {
+                    "total_steps": total_iterations,
+                    "current_step": current_iteration,
+                    "step_title": "UMAP 2/2: finetuning" if working_in_embedding_space else "UMAP 1/2: pair-wise distances",
+                    "embeddings_available": working_in_embedding_space,
+                }
+
+                if working_in_embedding_space and projections is not None:
+                    apply_projections_to_positions(projections)
+                    transform_coordinate_system_and_write_to_map()
+
+            # Note: UMAP computes all distance pairs when less than 4096 points and uses approximation above
+            # Progress might only be available below 4096
+
+            map_data['progress']['step_title'] = "UMAP Preparation"
+            import umap  # import it only when needed as it slows down the startup time
+            umap_task = umap.UMAP(n_components=umap_dimensions_required, random_state=99,
+                                min_dist=projection_parameters.get("min_dist", 0.17),
+                                n_epochs=projection_parameters.get("n_epochs", 500),
+                                n_neighbors=projection_parameters.get("n_neighbors", 15),
+                                metric=projection_parameters.get("metric", "euclidean"),
+                                )
+            raw_projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
+            map_data["results"]["per_point_data"]["raw_projections"] = raw_projections.tolist()
+            apply_projections_to_positions(raw_projections)
+            timings.log("UMAP fit transform")
         else:
-            positions = projections
-        map_data["results"]["per_point_data"]["positions_x"] = positions[:, 0].tolist()
-        map_data["results"]["per_point_data"]["positions_y"] = positions[:, 1].tolist()
+            # no umap required:
+            raw_projections = cartesian_positions
+
+        transform_coordinate_system_and_write_to_map()
         map_data["progress"]["embeddings_available"] = True
-        timings.log("UMAP fit transform")
 
     run_clusterize_and_render_stage = True  # just to label this stage
     if run_clusterize_and_render_stage:
         map_data['progress']['step_title'] = "Clusterize results"
-        cluster_id_per_point = clusterize_results(projections, params.rendering.clusterizer_parameters)
+        cluster_id_per_point = clusterize_results(raw_projections, params.rendering.clusterizer_parameters)
         map_data["results"]["per_point_data"]["cluster_ids"] = cluster_id_per_point.tolist()
         timings.log("clustering")
 
         map_data['progress']['step_title'] = "Find cluster titles"
-        cluster_data = get_cluster_titles(cluster_id_per_point, positions, search_results, dataset.descriptive_text_fields, timings)
+        cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, search_results, dataset.descriptive_text_fields, timings)
 
         map_data["results"]["clusters"] = cluster_data
+        for attr in ["size", "hue", "val", "sat", "opacity", "secondary_hue", "secondary_val", "secondary_sat", "secondary_opacity"]:
+            attr_type = params.rendering[attr].type
+            attr_parameter = params.rendering[attr].parameter
+            if attr_type == "number_field":
+                field = attr_parameter
+                fill_in_details_from_text_storage(dataset.id, search_results, [field])
+                values = [e.get(field) or 0.0 for e in search_results]
+                map_data["results"]["per_point_data"][attr] = values
+            elif attr_type == "count":
+                map_data["results"]["per_point_data"][attr] = [len(e.get(attr_parameter, [])) for e in search_results]
+            elif attr_type == "rank":
+                map_data["results"]["per_point_data"][attr] = list(range(len(search_results)))
+            elif attr_type == "score":
+                values = [e.get("_score") for e in search_results]
+                map_data["results"]["per_point_data"][attr] = values
+            elif attr_type == "cluster_idx":
+                map_data["results"]["per_point_data"][attr] = cluster_id_per_point.tolist()
 
     if thumbnail_atlas_thread:
         thumbnail_atlas_thread.join()

@@ -21,7 +21,7 @@ def polar_to_cartesian(r, theta):
     z = r * np.exp(1j * theta)
     x, y = z.real, z.imag
 
-    return x, y
+    return np.column_stack([x, y])
 
 
 def normalize_array(arr: np.ndarray) -> np.ndarray:

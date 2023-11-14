@@ -4,8 +4,15 @@ in vec2 position;
 in float positionX;
 in float positionY;
 in float clusterId;
-in float saturation;
 in float pointSize;
+in float hue;
+in float sat;
+in float val;
+in float opacity;
+in float secondary_hue;
+in float secondary_sat;
+in float secondary_val;
+in float secondary_opacity;
 in float pointVisibility;
 
 uniform mat4 modelMatrix;
@@ -33,7 +40,6 @@ out float clusterIdVar;
 flat out int pointIdxVar;
 out float isHighlighted;
 out float isSelected;
-out float saturationVar;
 flat out uint pointVisibilityVar;
 flat out float pointRadiusPxVar;
 
@@ -47,7 +53,6 @@ vec3 hsv2rgb(vec3 c) {
 void main() {
     // pass data to fragment shader by setting varying variables:
     clusterIdVar = clusterId;
-    saturationVar = saturation;
     pointIdxVar = gl_InstanceID;
     isHighlighted = (gl_InstanceID == highlightedPointIdx) ? 1.0 : 0.0;
     isSelected = (gl_InstanceID == selectedPointIdx) ? 1.0 : 0.0;
@@ -56,10 +61,8 @@ void main() {
     // albedo color:
     // (the albedo color is the same for all fragments of this vertex, so it
     // can be done in the vertex shader where its calculated only once)
-    float hue = clusterIdVar / 10.0;
-    float sat = 0.1 + saturationVar * 0.9;
-    float val = isHighlighted > 0.5 ? 0.0 : 0.8;
-    vec3 normalColor = hsv2rgb(vec3(hue, sat, val));
+    float newVal = isHighlighted > 0.5 ? 0.0 : val;
+    vec3 normalColor = hsv2rgb(vec3(hue, sat, newVal));
     vec3 highlightedColor = vec3(0.0);
     vec3 selectedColor = vec3(1.0, 0.0, 0.0);
     vec3 unclustered_color = vec3(0.7);

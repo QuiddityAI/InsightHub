@@ -115,7 +115,8 @@ export default {
       this.appStateStore.settings.search.collection_id = null
       this.appStateStore.settings.search.similar_to_item_id = null
 
-      this.appStateStore.settings.projection.shape = "2d"
+      this.appStateStore.settings.projection = JSON.parse(JSON.stringify(this.appStateStore.default_settings.projection))
+      this.appStateStore.settings.rendering = JSON.parse(JSON.stringify(this.appStateStore.default_settings.rendering))
     },
     run_search_from_history(history_item) {
       this.appStateStore.settings = history_item.parameters
@@ -132,6 +133,10 @@ export default {
         }
 
       this.reset_search_results_and_map({leave_map_unchanged: true})
+      for (const attr of ["size", "hue", "sat", "val", "opacity", "secondary_hue", "secondary_sat", "secondary_val", "secondary_opacity"]) {
+        that.$refs.embedding_map.attribute_fallback[attr] = that.appStateStore.settings.frontend.rendering[attr].fallback
+      }
+      that.$refs.embedding_map.regenerateAttributeArraysFromFallbacks()
       this.selected_tab = "results"
 
       this.add_search_history_item()
@@ -259,19 +264,17 @@ export default {
               that.fields_already_received.add('hover_label_data')
             }
 
-            if (results_per_point["point_sizes"] && results_per_point["point_sizes"].length > 0) {
-              that.$refs.embedding_map.pointSizes = normalizeArrayMedianGamma(results_per_point["point_sizes"], 2.0)
-              that.fields_already_received.add('point_sizes')
-            }
-            if (results_per_point["scores"] && results_per_point["scores"].length > 0) {
-              that.$refs.embedding_map.saturation = normalizeArrayMedianGamma(results_per_point["scores"], 3.0, 0.001)
-              that.fields_already_received.add('scores')
-              if (that.appStateStore.settings.projection.shape === "score_graph") {
-                // for the score graph, the score is already visible as the position
-                // -> using full saturation for the color to make it better visible
-                that.$refs.embedding_map.saturation = Array(results_per_point["scores"].length).fill(1.0)
+            // TODO: restore good gamma corrections:
+            // that.$refs.embedding_map.per_point.size = normalizeArrayMedianGamma(results_per_point["size"], 2.0)
+            // that.$refs.embedding_map.saturation = normalizeArrayMedianGamma(results_per_point["sat"], 3.0, 0.001)
+
+            for (const attr of ["size", "hue", "sat", "val", "opacity", "secondary_hue", "secondary_sat", "secondary_val", "secondary_opacity"]) {
+              if (results_per_point[attr] && results_per_point[attr].length > 0) {
+                that.$refs.embedding_map.per_point[attr] = normalizeArrayMedianGamma(results_per_point[attr], 2.0)
+                that.fields_already_received.add(attr)
               }
             }
+
             if (results_per_point["cluster_ids"] && results_per_point["cluster_ids"].length > 0) {
               that.$refs.embedding_map.clusterIdsPerPoint = results_per_point["cluster_ids"]
               that.clusterIdsPerPoint = results_per_point["cluster_ids"]
@@ -280,9 +283,16 @@ export default {
               that.$refs.embedding_map.clusterIdsPerPoint = Array(that.$refs.embedding_map.targetPositionsX.length).fill(-1)
             }
 
+            let should_update_geometry = false
             if (results_per_point["positions_x"] && results_per_point["positions_x"].length > 0) {
               that.$refs.embedding_map.targetPositionsX = results_per_point["positions_x"]
+              should_update_geometry = true
+            }
+            if (results_per_point["positions_y"] && results_per_point["positions_y"].length > 0) {
               that.$refs.embedding_map.targetPositionsY = results_per_point["positions_y"]
+              should_update_geometry = true
+            }
+            if (should_update_geometry) {
               that.$refs.embedding_map.updateGeometry()
             }
 
@@ -386,7 +396,9 @@ export default {
       this.appStateStore.settings.search.similar_to_item_id = this.map_item_details[this.selectedDocumentIdx]._id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.settings.projection.shape = "1d_plus_distance_polar"
+      this.appStateStore.settings.projection.use_polar_coordinates = true
+      this.appStateStore.settings.projection.x_axis = {type: "score", parameter: ""}
+      this.appStateStore.settings.projection.y_axis = {type: "umap", parameter: "primary"}
       const title_func = this.$refs.embedding_map.hover_label_rendering.title
       this.appStateStore.settings.search.origin_display_name = title_func(this.map_item_details[this.selectedDocumentIdx])
       this.request_search_results()
@@ -529,6 +541,10 @@ export default {
         .then(function (response) {
           const parameters = response.data.parameters
           that.appStateStore.settings = parameters
+          for (const attr of ["size", "hue", "sat", "val", "opacity", "secondary_hue", "secondary_sat", "secondary_val", "secondary_opacity"]) {
+            that.$refs.embedding_map.attribute_fallback[attr] = that.appStateStore.settings.frontend.rendering[attr].fallback
+          }
+          that.$refs.embedding_map.regenerateAttributeArraysFromFallbacks()
 
           // now done when map results are received
           //that.show_received_search_results(response.data)

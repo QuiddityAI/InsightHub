@@ -9,7 +9,6 @@ in float clusterIdVar;
 flat in int pointIdxVar;
 in float isHighlighted;
 in float isSelected;
-in float saturationVar;
 flat in uint pointVisibilityVar;
 flat in float pointRadiusPxVar;
 
