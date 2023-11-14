@@ -91,7 +91,7 @@ def add_missing_map_vectors(search_results, query, params: DotDict, map_data, da
         # if some or all vectors are still missing, generate them:
         batch_size = 128
         pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[map_vector_field.identifier])
-        available_fields = get_required_fields(dataset, params.vectorize_settings, "map")
+        available_fields = get_required_fields(dataset, params.vectorize, "map")
         missing_fields = required_fields - set(available_fields)
         if missing_fields:
             logging.warning(f"Some fields are missing in the search result data to generate missing vectors: {missing_fields}")
