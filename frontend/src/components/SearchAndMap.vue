@@ -12,7 +12,7 @@ import Collection from './Collection.vue';
 import CollectionListItem from './CollectionListItem.vue';
 
 import httpClient from '../api/httpClient';
-import { normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
+import { FieldType, normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
 import { useAppStateStore } from '../stores/settings_store'
 
 const appState = useAppStateStore()
@@ -270,7 +270,17 @@ export default {
 
             for (const attr of ["size", "hue", "sat", "val", "opacity", "secondary_hue", "secondary_sat", "secondary_val", "secondary_opacity"]) {
               if (results_per_point[attr] && results_per_point[attr].length > 0) {
-                that.$refs.embedding_map.per_point[attr] = normalizeArrayMedianGamma(results_per_point[attr], 2.0)
+                const attr_params = that.appStateStore.settings.rendering[attr]
+                if (["hue", "secondary_hue"].includes(attr) && (["cluster_idx", "origin_query_idx"].includes(attr_params.type)
+                  || (attr_params.type == "number_field"
+                  && that.appStateStore.dataset.object_fields[attr_params.parameter].field_type == FieldType.INTEGER))) {
+                  // if an integer value is assigned to a hue value, we need to make sure that the last value doesn't have
+                  // the same hue as the first value:
+                  results_per_point[attr].push(Math.max(...results_per_point[attr]) + 1)
+                  that.$refs.embedding_map.per_point[attr] = normalizeArrayMedianGamma(results_per_point[attr], 2.0).slice(0, results_per_point[attr].length - 1)
+                } else {
+                  that.$refs.embedding_map.per_point[attr] = normalizeArrayMedianGamma(results_per_point[attr], 2.0)
+                }
                 that.fields_already_received.add(attr)
               }
             }
@@ -548,11 +558,13 @@ export default {
 
           // now done when map results are received
           //that.show_received_search_results(response.data)
+
+          that.map_viewport_is_adjusted = false
+          that.map_is_in_progess = true
+          that.request_mapping_progress()
         })
 
-      that.map_viewport_is_adjusted = false
-      that.map_is_in_progess = true
-      that.request_mapping_progress()
+
     },
     evaluate_url_query_parameters() {
       // this is almost the first thing that is done when the page is being loaded
