@@ -78,7 +78,7 @@ export const useAppStateStore = defineStore('appState', {
         rendering: {
           size: { type: "score", parameter: "" },  // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
           hue: { type: "cluster_idx", parameter: "" },
-          sat: { type: "fixed", parameter: "" },
+          sat: { type: "score", parameter: "" },
           val: { type: "fixed", parameter: "" },
           opacity: { type: "fixed", parameter: "" },
           secondary_hue: { type: "fixed", parameter: "" },
@@ -168,7 +168,7 @@ export const useAppStateStore = defineStore('appState', {
         rendering: {
           size: { type: "score", parameter: "" },  // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
           hue: { type: "cluster_idx", parameter: "" },
-          sat: { type: "fixed", parameter: "" },
+          sat: { type: "score", parameter: "" },
           val: { type: "fixed", parameter: "" },
           opacity: { type: "fixed", parameter: "" },
           secondary_hue: { type: "fixed", parameter: "" },
