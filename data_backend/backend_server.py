@@ -12,7 +12,7 @@ from utils.dotdict import DotDict
 
 from logic.mapping_task import get_or_create_map, get_map_results
 from logic.insert_logic import insert_many, update_database_layout
-from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_items
+from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_items, get_items_having_value_count
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 
@@ -84,6 +84,12 @@ def health():
 @app.route('/data_backend/dataset/<int:dataset_id>/item_count', methods=['GET'])
 def get_item_count_route(dataset_id: int):
     count = get_item_count(dataset_id)
+    return jsonify({"count": count})
+
+
+@app.route('/data_backend/dataset/<int:dataset_id>/<field>/items_having_value_count', methods=['GET'])
+def get_items_having_value_count_route(dataset_id: int, field: str):
+    count = get_items_having_value_count(dataset_id, field)
     return jsonify({"count": count})
 
 

@@ -314,6 +314,21 @@ def get_item_count(dataset_id: int) -> int:
         return 0
 
 
+def get_items_having_value_count(dataset_id: int, field: str) -> int:
+    dataset = get_dataset(dataset_id)
+    if dataset.object_fields[field].field_type == FieldType.VECTOR:
+        vector_db_client = VectorSearchEngineClient.get_instance()
+        return vector_db_client.get_item_count(dataset_id, field)
+    else:
+        search_engine_client = TextSearchEngineClient.get_instance()
+        try:
+            count = search_engine_client.get_item_count(dataset_id)
+            return count - search_engine_client.get_all_items_with_missing_field_count(dataset_id, field)
+        except Exception as e:
+            logging.error(e)
+            return 0
+
+
 def get_random_items(dataset_id: int, count: int) -> list[dict]:
     search_engine_client = TextSearchEngineClient.get_instance()
     try:

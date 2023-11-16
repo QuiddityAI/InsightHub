@@ -446,6 +446,16 @@ class ObjectField(models.Model):
 
     history = HistoricalRecords()
 
+    @property
+    def items_having_value_count(self):
+        try:
+            url = data_backend_url + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/items_having_value_count'
+            result = requests.get(url)
+            return result.json()["count"]
+        except Exception as e:
+            return repr(e)
+    items_having_value_count.fget.short_description = "Items having this value"
+
     def __str__(self):
         return f"{self.identifier}"
 

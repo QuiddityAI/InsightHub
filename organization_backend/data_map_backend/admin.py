@@ -71,7 +71,7 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
 class ObjectFieldInline(admin.StackedInline):
     model = ObjectField
-    readonly_fields = ('changed_at', 'created_at', 'action_buttons')
+    readonly_fields = ('changed_at', 'created_at', 'action_buttons', 'items_having_value_count')
     extra = 0
 
     fields = [
@@ -81,6 +81,7 @@ class ObjectFieldInline(admin.StackedInline):
         "is_available_for_filtering",
         "generator", "generator_parameters", "generating_condition",
         "source_fields", "should_be_generated",
+        'items_having_value_count',
         'action_buttons',
     ]
 
@@ -162,7 +163,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     def get_field_overview_table_html(self, obj):
         try:
-            header = ["Type", "Identifier", "Search / Filter / Generated", "Generator"]
+            header = ["Type", "Identifier", "Search / Filter / Generated", "Generator", "#"]
             html = """<table style='border: 1px solid; border-collapse: collapse;'>\n<tr>"""
             for item in header:
                 html += f"<th style='border: 1px solid;'>{item}</th>\n"
@@ -177,6 +178,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
                 attributes = f"{'s' if field.is_available_for_search else '-'} {thresholds} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
                 html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
                 html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
+                html += f"<td style='border: 1px solid;'>{field.items_having_value_count}</td>\n"
                 html += "</tr>\n"
 
             html += "</table>"
@@ -221,7 +223,7 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAd
     list_display_links = ('id', 'identifier')
     search_fields = ('identifier', 'description')
 
-    readonly_fields = ('changed_at', 'created_at')
+    readonly_fields = ('changed_at', 'created_at', 'items_having_value_count')
 
     @action(label="Delete Content", description="Delete field data and index")
     def delete_content(self, request, obj):
