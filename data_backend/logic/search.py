@@ -14,7 +14,8 @@ from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.local_map_cache import local_maps
 from logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
     get_vector_search_results_matching_collection, get_fulltext_search_results, \
-    combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold
+    combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold, \
+    fill_in_vector_data
 
 from database_client.django_client import get_dataset
 
@@ -158,7 +159,9 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
     vector_fields = [field for field in dataset.object_fields.values() if field.identifier in dataset.default_search_fields and field.field_type == FieldType.VECTOR]
 
     search_engine_client = TextSearchEngineClient.get_instance()
-    item = search_engine_client.get_items_by_ids(dataset.id, [similar_to_item_id], fields=[field.identifier for field in vector_fields])[0]
+    items = search_engine_client.get_items_by_ids(dataset.id, [similar_to_item_id], fields=[field.identifier for field in vector_fields])
+    fill_in_vector_data(dataset.id, items, [field.identifier for field in vector_fields])
+    item = items[0]
     timings.log("getting original item")
 
     result_sets: list[dict] = []
