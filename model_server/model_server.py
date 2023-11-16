@@ -13,6 +13,9 @@ from logic.bert_models import bert_models, bert_embedding_strategies, get_bert_e
 from logic.sentence_transformer_models import get_sentence_transformer_embeddings
 from logic.clip_models import get_clip_text_embeddings, get_clip_image_embeddings
 
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 
 # exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
 parent_log_request = serving.WSGIRequestHandler.log_request

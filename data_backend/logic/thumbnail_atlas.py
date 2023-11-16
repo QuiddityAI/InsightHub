@@ -5,10 +5,12 @@ from typing import Callable
 
 import PIL
 from PIL import Image
+from PIL import ImageFile
 import requests
 
 from utils.helpers import do_in_parallel
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 THUMBNAIL_CACHE_DIR = "/data/quiddity_data/thumbnails/"
 THUMBNAIL_ATLAS_DIR = "/data/quiddity_data/thumbnail_atlas/"
