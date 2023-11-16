@@ -215,6 +215,9 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     change_actions = ('update_database_layout',)
 
+    class Media:
+        js = ('hide_objectfield_parameters.js',)
+
 
 @admin.register(ObjectField)
 class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
