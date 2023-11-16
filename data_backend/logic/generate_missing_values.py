@@ -127,12 +127,13 @@ def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]],
                     and not pipeline_step.condition_function(element)):
                     continue
 
-                element_indexes.append(i)
                 source_data = []
                 for source_field in pipeline_step.source_fields:
-                    if source_field in element:
+                    if source_field in element and element[source_field] is not None:
                         source_data.append(element[source_field])
-                source_data_total.append(source_data)
+                if source_data:
+                    element_indexes.append(i)
+                    source_data_total.append(source_data)
 
             results = pipeline_step.generator_function(source_data_total)
 
