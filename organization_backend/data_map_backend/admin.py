@@ -107,7 +107,7 @@ class ObjectFieldInline(admin.StackedInline):
 
 
 @admin.register(Dataset)
-class DatasetAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ('id', 'organization', 'name_plural')
     list_display_links = ('id', 'name_plural')
@@ -115,7 +115,7 @@ class DatasetAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     ordering = ['organization', 'name_plural']
 
     readonly_fields = ('id', 'changed_at', 'created_at', 'get_field_overview_table_html',
-                       'item_count', 'random_item')
+                       'item_count', 'random_item', 'action_buttons')
 
     fields = [
         "id", "name", "name_plural", "short_description",
@@ -126,6 +126,7 @@ class DatasetAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         "hover_label_rendering", "detail_view_rendering",
         "random_item",
         "created_at", "changed_at",
+        'action_buttons',
     ]
 
     inlines = [
@@ -196,6 +197,21 @@ class DatasetAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         return mark_safe(html)
 
     get_field_overview_table_html.short_description='Field Overview'
+
+    def action_buttons(self, obj):
+        return mark_safe(f'<button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/dataset/{obj.id}/actions/update_database_layout/\';">Update Database Layout</button>')
+    action_buttons.short_description = "Actions"
+
+    @action(label="Update Database Layout", description="Update Database Layout")
+    def update_database_layout(self, request, obj):
+        url = data_backend_url + '/data_backend/update_database_layout'
+        data = {
+            'dataset_id': obj.id,
+        }
+        requests.post(url, json=data)
+        self.message_user(request, "Updated the database layout")
+
+    change_actions = ('update_database_layout',)
 
 
 @admin.register(ObjectField)
