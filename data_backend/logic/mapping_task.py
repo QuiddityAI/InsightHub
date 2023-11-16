@@ -360,9 +360,12 @@ def generate_map(map_id, ignore_cache):
         timings.log("clustering")
 
         map_data['progress']['step_title'] = "Find cluster titles"
-        cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, search_results, dataset.descriptive_text_fields, timings)
+        if dataset.descriptive_text_fields:
+            cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, search_results, dataset.descriptive_text_fields, timings)
+            map_data["results"]["clusters"] = cluster_data
+        else:
+            map_data["results"]["clusters"] = {}
 
-        map_data["results"]["clusters"] = cluster_data
         for attr in ["size", "hue", "val", "sat", "opacity", "secondary_hue", "secondary_val", "secondary_sat", "secondary_opacity"]:
             attr_type = params.rendering[attr].type
             attr_parameter = params.rendering[attr].parameter
