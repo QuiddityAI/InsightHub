@@ -40,8 +40,8 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str],
                     image.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE))
                     if image.mode != 'RGB':
                         image = image.convert('RGB')
-                except PIL.UnidentifiedImageError:
-                    #logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}")
+                except (PIL.UnidentifiedImageError, OSError) as e:
+                    #logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
                     return None
                 try:
                     image.save(thumbnail_path, quality=80)

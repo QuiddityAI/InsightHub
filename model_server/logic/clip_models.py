@@ -2,7 +2,7 @@ import logging
 import os
 import time
 from transformers import AutoTokenizer, AutoProcessor, CLIPModel
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 
 clip_models = [
@@ -50,20 +50,22 @@ def get_clip_image_embeddings(image_paths, model_name):
     images = []
     missing_images = 0
     for image_path in image_paths:
+        img = None
         if os.path.exists(image_path):
-            img = Image.open(image_path)
-            img.draft('RGB', (224, 224))
-            images.append(img)
-        else:
+            try:
+                img = Image.open(image_path)
+                img.draft('RGB', (224, 224))
+            except (UnidentifiedImageError, OSError) as e:
+                logging.warning(f"Error with image {image_path}: {e}")
+        if not img:
             missing_images += 1
-            logging.warning(f"Image file doesn't exist: {image_path} ({missing_images} missing of {len(image_paths)} in total)")
+            logging.warning(f"Couldn't load image: {image_path} ({missing_images} missing of {len(image_paths)} in total)")
             img = Image.new('RGB', (224, 224))
-            images.append(img)
+        images.append(img)
 
     inputs = processor(images=images, return_tensors="pt")
     inputs.to('cuda')
     image_features = model.get_image_features(**inputs).to('cpu').detach()
-    logging.warning(image_features.shape)
     return image_features
 
 
