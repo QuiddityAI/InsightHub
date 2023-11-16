@@ -376,9 +376,20 @@ export default {
     },
     centerAndFitDataToActiveAreaSmooth() {
       if (this.targetPositionsX.length === 0) return;
-      this.baseOffsetTarget = [-math.min(this.targetPositionsX), -math.min(this.targetPositionsY)]
-      this.baseScaleTarget[0] = 1.0 / (math.max(this.targetPositionsX) + this.baseOffsetTarget[0])
-      this.baseScaleTarget[1] = 1.0 / (math.max(this.targetPositionsY) + this.baseOffsetTarget[1])
+      const newBaseOffsetTarget = [-math.min(this.targetPositionsX), -math.min(this.targetPositionsY)]
+      const newBaseScaleTarget = [1.0, 1.0]
+      newBaseScaleTarget[0] = 1.0 / (math.max(this.targetPositionsX) + newBaseOffsetTarget[0])
+      newBaseScaleTarget[1] = 1.0 / (math.max(this.targetPositionsY) + newBaseOffsetTarget[1])
+      const offsetChange = math.max(math.max(newBaseOffsetTarget[0], this.baseOffsetTarget[0]) / math.min(newBaseOffsetTarget[0], this.baseOffsetTarget[0]), math.max(newBaseOffsetTarget[1], this.baseOffsetTarget[1]) / math.min(newBaseOffsetTarget[1], this.baseOffsetTarget[1]))
+      const scaleChange = math.max(math.max(newBaseScaleTarget[0], this.baseScaleTarget[0]) / math.min(newBaseScaleTarget[0], this.baseScaleTarget[0]), math.max(newBaseScaleTarget[1], this.baseScaleTarget[1]) / math.min(newBaseScaleTarget[1], this.baseScaleTarget[1]))
+      this.baseOffsetTarget = newBaseOffsetTarget
+      this.baseScaleTarget = newBaseScaleTarget
+      if (offsetChange > 1.5 || scaleChange > 1.5) {
+        this.baseOffset = this.baseOffsetTarget.slice()  // using slice to copy the array
+        this.baseScale = this.baseScaleTarget.slice()  // using slice to copy the array
+        this.baseOffsetVelocity = [0.0, 0.0]
+        this.baseScaleVelocity = [0.0, 0.0]
+      }
     },
     centerAndFitDataToActiveAreaInstant() {
       this.centerAndFitDataToActiveAreaSmooth()
