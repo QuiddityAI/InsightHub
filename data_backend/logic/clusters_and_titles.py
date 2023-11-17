@@ -1,4 +1,5 @@
 from functools import partial
+import logging
 import numpy as np
 
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -50,8 +51,14 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
 
     # getting all words that appear in more than 50% of the items:
     count_vectorizer = CountVectorizer(tokenizer=tokenize, lowercase=False, strip_accents=None, min_df=0.5)
-    count_vectorizer.fit_transform(texts_per_item)
-    context_specific_ignore_words = list(count_vectorizer.get_feature_names_out())
+    try:
+        count_vectorizer.fit_transform(texts_per_item)
+    except ValueError as e:
+        # this might happen when there are no terms appearing in more than 50% of the items
+        logging.warning(f"Error in CountVectorizer: {e}")
+        context_specific_ignore_words = []
+    else:
+        context_specific_ignore_words = list(count_vectorizer.get_feature_names_out())
 
     if field_boundary_indicator in context_specific_ignore_words:
         context_specific_ignore_words.remove(field_boundary_indicator)
