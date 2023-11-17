@@ -49,9 +49,17 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str],
                     logging.warning(f"Downloaded image can't be saved, error: {e}, URI: {thumbnail_uri}")
                     return None
             else:
-                image = Image.open(thumbnail_path)
+                try:
+                    image = Image.open(thumbnail_path)
+                except (PIL.UnidentifiedImageError, OSError) as e:
+                    #logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
+                    return None
         elif os.path.exists(thumbnail_uri):
-            image = Image.open(thumbnail_uri)
+            try:
+                image = Image.open(thumbnail_uri)
+            except (PIL.UnidentifiedImageError, OSError) as e:
+                #logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
+                return None
         else:
             # image URI exists but can't be found
             logging.warning(f"Image can't be loaded: {thumbnail_uri}")
