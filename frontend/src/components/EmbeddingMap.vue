@@ -10,7 +10,7 @@ import { Renderer, Camera, Geometry, Program, Mesh, Transform, Texture, TextureL
 import * as math from 'mathjs'
 
 import pointsVertexShader from '../shaders/points.vert?raw'
-import pointsFragmentShader from '../shaders/points.frag?raw'
+import pointsFragmentShader from '../shaders/points_rectangular_thumbnail.frag?raw'
 import shadowsVertexShader from '../shaders/shadows.vert?raw'
 import shadowsFragmentShader from '../shaders/shadows.frag?raw'
 
@@ -590,6 +590,8 @@ export default {
       const zoomAdjustment = (this.currentZoom - 1.0) * 0.05 + 1.0;
       const pointSizeScreenPx = (5.0 + 15.0 * pointSize) * zoomAdjustment * this.pointSizeFactor;
       const pointRadiusScreenPx = pointSizeScreenPx / 2
+      // FIXME: as x and y may have different scale factors, the "closestDist" might be squashed in one direction
+      // this should be fixed by unsqueezing it by the scale factor of the respective axis before
       const pointRadiusEmbedding = this.screenToEmbeddingX(pointRadiusScreenPx) - this.screenToEmbeddingX(0)
       const threshold = pointRadiusEmbedding
       if (closestIdx !== null && closestDist < threshold) {
