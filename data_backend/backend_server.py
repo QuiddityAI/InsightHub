@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 from copy import deepcopy
@@ -6,6 +7,7 @@ from threading import Thread
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug import serving
+import cbor2
 
 from utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
 from utils.dotdict import DotDict
@@ -200,6 +202,11 @@ def retrive_map_results():
     if 'parameters' in exclude_fields and 'parameters' in result:
         del result['parameters']
 
+    use_cbor = request.headers.get('Accept') == "application/cbor"
+    if use_cbor:
+        resp = app.make_response(cbor2.dumps(result))
+        resp.mimetype = "application/cbor"
+        return resp
     return result
 
 

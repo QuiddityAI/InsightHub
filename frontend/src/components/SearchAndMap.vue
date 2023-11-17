@@ -1,4 +1,6 @@
 <script setup>
+import cborJs from 'https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/+esm'
+
 import { mapStores } from 'pinia'
 
 import { Chart } from 'chart.js/auto'
@@ -233,14 +235,24 @@ export default {
         map_id: this.map_id,
         exclude_fields: not_needed.concat(Array.from(this.fields_already_received)),
       }
-      httpClient.post("/data_backend/map/result", payload)
+      const cborConfig = {
+        headers: { 'Accept': 'application/cbor' },
+        responseType: 'arraybuffer',
+      };
+      const jsonConfig = {
+        headers: { 'Accept': 'application/json' },
+      };
+      httpClient.post("/data_backend/map/result", payload, cborConfig)
         .then(function (response) {
-          if (response.data["finished"]) {
+          const content_type = response.headers['content-type'];
+          const data = content_type == 'application/cbor' ? cborJs.decode(response.data) : response.data
+
+          if (data["finished"]) {
             // no need to get further results:
             that.map_is_in_progess = false
           }
 
-          const progress = response.data["progress"]
+          const progress = data["progress"]
 
           that.show_loading_bar = !progress.embeddings_available
           that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
@@ -254,7 +266,7 @@ export default {
             that.$refs.embedding_map.maxOpacity = 0.7
           }
 
-          const results = response.data["results"]
+          const results = data["results"]
           if (results) {
             const results_per_point = results["per_point_data"]
             if (results_per_point["hover_label_data"] && results_per_point["hover_label_data"].length > 0) {

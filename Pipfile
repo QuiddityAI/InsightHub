@@ -35,6 +35,7 @@ django-jsonsuit = "*"
 pillow = "*"
 sentence-transformers = "*"
 django-object-actions = "*"
+cbor2 = "*"
 
 [dev-packages]
 ipykernel = "*"
