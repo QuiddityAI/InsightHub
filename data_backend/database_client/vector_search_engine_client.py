@@ -141,7 +141,7 @@ class VectorSearchEngineClient(object):
 
     def get_items_near_vector(self, dataset_id: int, vector_field: str, query_vector: list,
                               filter_criteria: dict, return_vectors: bool, limit: int,
-                              score_threshold: float | None) -> list:
+                              score_threshold: float | None, min_results: int = 10) -> list:
         hits = self.client.search(
             collection_name=self._get_collection_name(dataset_id, vector_field),
             query_vector=NamedVector(name=vector_field, vector=query_vector),
@@ -160,12 +160,14 @@ class VectorSearchEngineClient(object):
             limit=limit,
             score_threshold=score_threshold,
         )
+        if len(hits) == 0 and score_threshold and min_results > 0:
+            return self.get_items_near_vector(dataset_id, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results)
         return hits
 
 
     def get_items_matching_collection(self, dataset_id: int, vector_field: str, positive_ids: list[str],
                                       negative_ids: list[str], filter_criteria: dict, return_vectors: bool,
-                                      limit: int, score_threshold: float | None) -> list:
+                                      limit: int, score_threshold: float | None, min_results: int = 10) -> list:
         hits = self.client.recommend(
             collection_name=self._get_collection_name(dataset_id, vector_field),
             positive=positive_ids,
@@ -186,6 +188,8 @@ class VectorSearchEngineClient(object):
             limit=limit,
             score_threshold=score_threshold,
         )
+        if len(hits) == 0 and score_threshold and min_results > 0:
+            return self.get_items_matching_collection(dataset_id, vector_field, positive_ids, negative_ids, filter_criteria, return_vectors, min(min_results, limit), None, min_results)
         return hits
 
 

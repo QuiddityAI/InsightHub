@@ -161,6 +161,16 @@ class Generator(models.Model):
         verbose_name="Output Description",
         blank=True,
         null=True)
+    text_similarity_threshold = models.FloatField(
+        verbose_name="Text Similarity Threshold",
+        help_text="The minimum score / similarity a text query must have compared to this field to be considered relevant / similar",
+        blank=True,
+        null=True)
+    image_similarity_threshold = models.FloatField(
+        verbose_name="Image Similarity Threshold",
+        help_text="The minimum score / similarity an image query must have compared to this field to be considered relevant / similar",
+        blank=True,
+        null=True)
 
     history = HistoricalRecords()
 
@@ -400,12 +410,12 @@ class ObjectField(models.Model):
         null=False)
     text_similarity_threshold = models.FloatField(
         verbose_name="Text Similarity Threshold",
-        help_text="The minimum score / similarity a text must have compared to this field to be considered relevant / similar",
+        help_text="The minimum score / similarity a text query must have compared to this field to be considered relevant / similar (overriding the generators value)",
         blank=True,
         null=True)
     image_similarity_threshold = models.FloatField(
         verbose_name="Image Similarity Threshold",
-        help_text="The minimum score / similarity an image must have compared to this field to be considered relevant / similar",
+        help_text="The minimum score / similarity an image query must have compared to this field to be considered relevant / similar (overriding the generators value)",
         blank=True,
         null=True)
     is_available_for_filtering = models.BooleanField(

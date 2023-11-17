@@ -326,9 +326,11 @@ def fill_in_vector_data(dataset_id: int, items: list[dict], required_vector_fiel
                     break
 
 
-def get_field_similarity_threshold(field, use_image_threshold: bool | None=None):
-    if use_image_threshold is None:
+def get_field_similarity_threshold(field, input_is_image: bool | None=None):
+    if input_is_image is None:
         # if not determined by other means, use same type as this field:
-        use_image_threshold = field.generator.input_type == FieldType.IMAGE if field.generator else False
-    score_threshold = field.image_similarity_threshold if use_image_threshold else field.text_similarity_threshold
+        input_is_image = field.generator.input_type == FieldType.IMAGE if field.generator else False
+    score_threshold = field.image_similarity_threshold if input_is_image else field.text_similarity_threshold
+    if score_threshold is None and field.generator:
+        score_threshold = field.generator.image_similarity_threshold if input_is_image else field.generator.text_similarity_threshold
     return score_threshold

@@ -89,7 +89,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
             if not field.is_available_for_search or field.identifier not in enabled_fields:
                 continue
             if field.field_type == FieldType.VECTOR:
-                score_threshold = get_field_similarity_threshold(field, use_image_threshold=bool(query.positive_image_url or query.negative_image_url))
+                score_threshold = get_field_similarity_threshold(field, input_is_image=bool(query.positive_image_url or query.negative_image_url))
                 score_threshold = score_threshold if search_settings.use_similarity_thresholds else None
                 results = get_vector_search_results(dataset, field.identifier, query, None, required_fields=[],
                                                     limit=limit, page=page, score_threshold=score_threshold)
