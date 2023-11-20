@@ -184,7 +184,7 @@ def generate_map(map_id, ignore_cache):
             map_data["results"]["thumbnail_sprite_size"] = sprite_size
             atlas_filename = f"atlas_{search_params_hash}.webp"
             atlas_path = os.path.join(THUMBNAIL_ATLAS_DIR, atlas_filename)
-            if os.path.exists(atlas_path):
+            if os.path.exists(atlas_path) and not ignore_cache:
                 map_data["results"]["thumbnail_atlas_filename"] = atlas_filename
             else:
                 # don't leave the field empty, otherwise the last atlas is still visible
