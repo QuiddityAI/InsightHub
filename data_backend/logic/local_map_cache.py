@@ -16,11 +16,11 @@ def get_map_parameters_hash(parameters: dict):
 
 
 def get_search_stage_hash(parameters: dict):
-    vectorize_stage_parameters = {
+    relevant_parameters = {
         "search": parameters.get('search', {}),
     }
-    vectorize_stage_hash = md5(json.dumps(vectorize_stage_parameters).encode()).hexdigest()
-    return vectorize_stage_hash
+    hash = md5(json.dumps(relevant_parameters).encode()).hexdigest()
+    return hash
 
 
 def get_vectorize_stage_hash(parameters: dict):
