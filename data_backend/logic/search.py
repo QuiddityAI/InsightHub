@@ -92,6 +92,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
                 score_threshold = get_field_similarity_threshold(field, input_is_image=bool(query.positive_image_url or query.negative_image_url))
                 score_threshold = score_threshold if search_settings.use_similarity_thresholds else None
                 results = get_vector_search_results(dataset, field.identifier, query, None, required_fields=[],
+                                                    internal_input_weight=search_settings.internal_input_weight,
                                                     limit=limit, page=page, score_threshold=score_threshold)
                 result_sets.append(results)
                 timings.log("vector database query")
@@ -168,7 +169,8 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
     for field in vector_fields:
         query_vector = item[field.identifier]
         score_threshold = get_field_similarity_threshold(field) if search_settings.use_similarity_thresholds else None
-        results = get_vector_search_results(dataset, field.identifier, QueryInput('other item'), query_vector, required_fields=[],
+        results = get_vector_search_results(dataset, field.identifier, QueryInput(search_settings.all_field_query, search_settings.all_field_query_negative), query_vector, required_fields=[],
+                                            internal_input_weight=search_settings.internal_input_weight,
                                             limit=limit, page=page, score_threshold=score_threshold)
         result_sets.append(results)
         timings.log("vector database query")

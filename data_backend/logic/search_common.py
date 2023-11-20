@@ -223,8 +223,9 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
 
 def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryInput,
                               query_vector: list | None, required_fields: list[str],
+                              internal_input_weight: float,
                               limit: int, page: int, score_threshold: float | None):
-    if query_vector is None:
+    def get_suitable_generator():
         generators: list[DotDict] = get_generators()
         field = dataset.object_fields[vector_field]
         embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
@@ -237,21 +238,39 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
                 suitable_generator = generator
 
         if not suitable_generator:
-            return {}
+            return None
 
         if field.generator and field.generator.input_type == FieldType.TEXT \
             and not (suitable_generator and suitable_generator.is_preferred_for_search):
             generator_function = get_generator_function_from_field(dataset.object_fields[vector_field])
         else:
             generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters)
+        return generator_function
 
-        query_vector = generator_function([[query.positive_query_str]])[0]
+    positive_query_vector = None
+    negative_query_vector = None
+    if query.positive_query_str or query.negative_query_str:
+        generator_function = get_suitable_generator()
+        if not generator_function:
+            return {}
+        if query.positive_query_str:
+            positive_query_vector = generator_function([[query.positive_query_str]])[0]
         if query.negative_query_str:
             negative_query_vector = generator_function([[query.negative_query_str]])[0]
-            query_vector = query_vector - negative_query_vector
 
         # for image query:
         # TODO: same thing again, average both vectors
+
+    if query_vector is None and positive_query_vector is None:
+        # search using only negative query isn't supported at the moment
+        return {}
+    if query_vector is None:
+        query_vector = positive_query_vector
+    elif positive_query_vector is not None:
+        assert query_vector is not None
+        query_vector = internal_input_weight * np.array(query_vector) + (1.0 - internal_input_weight) * positive_query_vector
+    if negative_query_vector is not None:
+        query_vector = query_vector - negative_query_vector * (1.0 - internal_input_weight)
 
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria

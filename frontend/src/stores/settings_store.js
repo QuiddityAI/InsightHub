@@ -30,6 +30,7 @@ export const useAppStateStore = defineStore('appState', {
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
+          internal_input_weight: 0.7,
           use_similarity_thresholds: true,
           use_autocut: true,
           autocut_strategy: "knee_point",
