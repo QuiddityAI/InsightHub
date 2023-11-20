@@ -212,7 +212,7 @@ export default {
       <select v-model="internal_dataset_id" @change="dataset_id_changed_by_user" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
         <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
       </select>
-      <span class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[appState.settings.dataset_id] }}</span>
+      <a :href="`?dataset_id=${appState.settings.dataset_id}`" class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[appState.settings.dataset_id] }}</a>
     </div>
 
     <!-- Search Field -->
