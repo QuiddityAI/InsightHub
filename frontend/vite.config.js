@@ -12,11 +12,16 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      "/organization_backend": {
+      "/org": {
         target: (process.env.organization_backend_host || "http://127.0.0.1:55125"),
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/organization_backend/, '/data_map'),
+        //rewrite: (path) => path.replace(/^\/org/, '/'),
+      },
+      "/static": {
+        target: (process.env.organization_backend_host || "http://127.0.0.1:55125"),
+        changeOrigin: true,
+        secure: false,
       },
     },
   },

@@ -197,7 +197,7 @@ export default {
         parameters: this.appStateStore.settings,
       }
 
-      httpClient.post("/organization_backend/add_search_history_item", history_item_body)
+      httpClient.post("/org/data_map/add_search_history_item", history_item_body)
         .then(function (response) {
           that.search_history.push(response.data)
         })
@@ -454,7 +454,7 @@ export default {
         dataset_id: this.appStateStore.settings.dataset_id,
         name: name,
       }
-      httpClient.post("/organization_backend/add_item_collection", create_collection_body)
+      httpClient.post("/org/data_map/add_item_collection", create_collection_body)
         .then(function (response) {
           that.appStateStore.collections.push(response.data)
         })
@@ -464,7 +464,7 @@ export default {
       const delete_collection_body = {
         collection_id: collection_id,
       }
-      httpClient.post("/organization_backend/delete_item_collection", delete_collection_body)
+      httpClient.post("/org/data_map/delete_item_collection", delete_collection_body)
         .then(function (response) {
           let index_to_be_removed = null
           let i = 0
@@ -503,7 +503,7 @@ export default {
         item_id: item_id,
         is_positive: is_positive,
       }
-      httpClient.post("/organization_backend/add_item_to_collection", add_item_to_collection_body)
+      httpClient.post("/org/data_map/add_item_to_collection", add_item_to_collection_body)
         .then(function (response) {
           if (is_positive) {
             collection.positive_ids.push(item_id)
@@ -532,7 +532,7 @@ export default {
       const delete_stored_map_body = {
         stored_map_id: stored_map_id,
       }
-      httpClient.post("/organization_backend/delete_stored_map", delete_stored_map_body)
+      httpClient.post("/org/data_map/delete_stored_map", delete_stored_map_body)
         .then(function (response) {
           let index_to_be_removed = null
           let i = 0
@@ -654,7 +654,7 @@ export default {
       that.appStateStore.dataset = null
       this.reset_search_results_and_map()
 
-      httpClient.post("/organization_backend/dataset", {dataset_id: this.appStateStore.settings.dataset_id})
+      httpClient.post("/org/data_map/dataset", {dataset_id: this.appStateStore.settings.dataset_id})
         .then(function (response) {
           that.appStateStore.dataset = response.data
 
@@ -687,7 +687,7 @@ export default {
         user_id: 1,  // FIXME: hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
       }
-      httpClient.post("/organization_backend/get_search_history", get_history_body)
+      httpClient.post("/org/data_map/get_search_history", get_history_body)
         .then(function (response) {
           that.search_history = response.data
         })
@@ -697,7 +697,7 @@ export default {
         user_id: 1,  // FIXME: hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
       }
-      httpClient.post("/organization_backend/get_item_collections", get_collections_body)
+      httpClient.post("/org/data_map/get_item_collections", get_collections_body)
         .then(function (response) {
           that.appStateStore.collections = response.data
         })
@@ -707,7 +707,7 @@ export default {
         user_id: 1,  // FIXME: hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
       }
-      httpClient.post("/organization_backend/get_stored_maps", get_stored_maps_body)
+      httpClient.post("/org/data_map/get_stored_maps", get_stored_maps_body)
         .then(function (response) {
           that.stored_maps = response.data
         })

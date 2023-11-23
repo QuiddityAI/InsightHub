@@ -19,9 +19,19 @@ def get_health(request):
     return HttpResponse("", status=200)
 
 
-#@login_required()
+@csrf_exempt
+def get_current_user(request):
+    user = request.user
+    response_json = json.dumps({
+        'logged_in': user.is_authenticated,
+        'username': user.username,
+    })
+    return HttpResponse(response_json, status=200, content_type='application/json')
+
 @csrf_exempt
 def get_dataset(request):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
     if request.method != 'POST':
         return HttpResponse(status=405)
 

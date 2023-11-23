@@ -28,18 +28,18 @@ def redirect_to_admin(request):
 
 
 urlpatterns = [
-    path('', include('social_django.urls', namespace='social')),
+    path('org/', include('social_django.urls', namespace='social')),
     # path('', redirect_to_admin),  # we only use the admin interface for now
-    path('admin/', admin.site.urls),
-    path("data_map/", include('data_map_backend.urls')),
-    path('api-auth/', include('rest_framework.urls')),
-    re_path(r'^auth/', include('drf_social_oauth2.urls', namespace='drf')),
-    path('', data_map_backend.views.HomeView.as_view(), name='home'),
+    path('org/admin/', admin.site.urls),
+    path("org/data_map/", include('data_map_backend.urls')),
+    path('org/api-auth/', include('rest_framework.urls')),
+    re_path(r'^org/auth/', include('drf_social_oauth2.urls', namespace='drf')),
+    path('org/', data_map_backend.views.HomeView.as_view(), name='home'),
 
     # Login and Logout
-    path('login/', auth_views.LoginView.as_view(), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
+    path('org/login/', auth_views.LoginView.as_view(), name='login'),
+    path('org/logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
 
     # OAuth toolkit
-    path("o/", include('oauth2_provider.urls', namespace='oauth2_provider')),
+    path("org/o/", include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]

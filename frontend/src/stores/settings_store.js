@@ -18,6 +18,9 @@ export const useAppStateStore = defineStore('appState', {
 
       dataset: null,
 
+      logged_in: false,
+      username: null,
+
       // collections:
       collections: [],
       last_used_collection_id: null,

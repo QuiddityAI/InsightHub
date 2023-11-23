@@ -179,6 +179,8 @@ LOGIN_REDIRECT_URL = 'home'
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+CSRF_TRUSTED_ORIGINS = ['http://localhost:55140', 'http://home-server:55140']
+
 
 JAZZMIN_SETTINGS = {
     # Hide these models when generating side menu (e.g auth.user)

@@ -1,6 +1,6 @@
 <script setup>
 import { mapStores } from 'pinia'
-import { AdjustmentsHorizontalIcon, MinusCircleIcon } from '@heroicons/vue/24/outline'
+import { AdjustmentsHorizontalIcon, MinusCircleIcon, HomeIcon, ArrowRightOnRectangleIcon, UserCircleIcon, CircleStackIcon } from '@heroicons/vue/24/outline'
 
 import httpClient from '../api/httpClient';
 import { FieldType, ellipse } from '../utils/utils'
@@ -114,7 +114,7 @@ export default {
   mounted() {
     const that = this
     this.internal_dataset_id = this.appStateStore.settings.dataset_id
-    httpClient.post("/organization_backend/available_datasets", {organization_id: -1})
+    httpClient.post("/org/data_map/available_datasets", {organization_id: -1})
       .then(function (response) {
         that.available_databases = response.data
         that.database_information = {}
@@ -122,6 +122,13 @@ export default {
           that.database_information[database.id] = database.short_description
         }
         // initial dataset_id is set in evaluate_url_query_parameters() in SearchAndMap
+      })
+
+      httpClient.get("/org/data_map/get_current_user")
+      .then(function (response) {
+        console.log(response.data)
+        that.appStateStore.logged_in = response.data.logged_in
+        that.appStateStore.username = response.data.username
       })
   },
   computed: {
@@ -208,11 +215,32 @@ export default {
 <template>
   <div>
     <!-- Database Selection -->
-    <div class="flex justify-between">
-      <select v-model="internal_dataset_id" @change="dataset_id_changed_by_user" class="pl-2 pr-8 pt-1 pb-1 mb-2 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+    <div class="flex justify-between items-center mb-1">
+      <a :href="`?dataset_id=${appState.settings.dataset_id}`" class="w-8 p-2 text-gray-500 hover:bg-gray-100 rounded">
+        <HomeIcon></HomeIcon>
+      </a>
+      <select v-model="internal_dataset_id" @change="dataset_id_changed_by_user" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
         <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
       </select>
-      <a :href="`?dataset_id=${appState.settings.dataset_id}`" class="pl-2 pr-2 pt-1 pb-1 mb-2 text-gray-500 text-sm text-right">{{ database_information[appState.settings.dataset_id] }}</a>
+      <div class="flex-1"></div>
+      <a v-if="!appState.logged_in" :href="`org/login/?next=/?dataset_id=${appState.settings.dataset_id}`"
+        class="p-2 text-sm text-gray-500 hover:bg-gray-100 rounded">
+        Login
+      </a>
+      <span v-if="appState.logged_in" class="mr-2 text-sm text-gray-500">
+        <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
+        {{ appState.username }}
+      </span>
+      <a v-if="appState.logged_in" :href="`org/admin/`"
+        title="Manage Datasets"
+        class="w-8 p-2 text-sm text-gray-500 hover:bg-gray-100 rounded">
+        <CircleStackIcon></CircleStackIcon>
+      </a>
+      <a v-if="appState.logged_in" :href="`org/logout/?next=/?dataset_id=${appState.settings.dataset_id}`"
+        title="Logout"
+        class="w-8 p-2 text-sm text-gray-500 hover:bg-gray-100 rounded">
+        <ArrowRightOnRectangleIcon></ArrowRightOnRectangleIcon>
+      </a>
     </div>
 
     <!-- Search Field -->
