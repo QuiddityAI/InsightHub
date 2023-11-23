@@ -623,3 +623,155 @@ class StoredMap(models.Model):
     class Meta:
         verbose_name = "Stored Map"
         verbose_name_plural = "Stored Maps"
+
+
+class Classifier(models.Model):  # aka DataCollection / DataClassification
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=True,
+        null=True)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+    created_by = models.ForeignKey(
+        verbose_name="User",
+        to=User,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    is_public = models.BooleanField(
+        verbose_name="Is public",
+        default=False,
+        blank=False,
+        null=False)
+    parent_classifiers = models.ManyToManyField(  # only their text or image sources are extracted, or vectors if embedding space matches target space
+        verbose_name="Parent Classifiers",
+        to='self',
+        symmetrical=False,
+        blank=True)
+    is_binary = models.BooleanField(  # needed? or deduct from class count? but storing is different
+        verbose_name="Is binary",
+        default=False,
+        blank=False,
+        null=False)
+    allow_multi_class = models.BooleanField(
+        verbose_name="Allow multi class",
+        default=False,
+        blank=False,
+        null=False)
+    class_names = models.JSONField(
+        verbose_name="Class Names",
+        help_text="If empty, either deducted from classes or if data doesn't have classed, converted classifier name is used",
+        blank=True,
+        null=True)
+    default_threshold = models.FloatField(
+        verbose_name="Default Threshold",
+        default=0.5,
+        blank=False,
+        null=False)
+    per_class_thresholds = models.JSONField(
+        verbose_name="Per Class Thresholds",
+        help_text="block classes e.g. from parents, using weight of -1",
+        blank=True,
+        null=True)
+    relevant_object_fields = models.ManyToManyField(  # the "source" of the classifier, e.g. text or image
+        verbose_name="Relevant Object Fields",
+        help_text="For given examples from this dataset, either texts or images",
+        to='ObjectField',
+        related_name='+',
+        blank=True)
+    positive_annotation_field = models.ForeignKey(
+        verbose_name="Positive Annotation Field",
+        help_text="binary: bool field, exclusive: single tag, non-exclusive: tag array field",  # or class probability field (not yet, only makes sense if regression is supported)
+        to='ObjectField',
+        related_name='+',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+    negative_annotation_field = models.ForeignKey(
+        verbose_name="Negative Annotation Field",
+        help_text="binary: bool field, exclusive: single tag, non-exclusive: tag array field",
+        to='ObjectField',
+        related_name='+',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+    trained_classifiers = models.JSONField(
+        verbose_name="Trained Classifiers",
+        help_text="For each embedding space, and there for each class, a 'decision' vector to be applied with dotproduct (plus time_updated)",
+        blank=True,
+        null=True)
+
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name = "Classifier"
+        verbose_name_plural = "Classifiers"
+
+
+class ClassifierExample(models.Model):  # aka DataCollection / DataClassification Entry
+    classifier = models.ForeignKey(
+        verbose_name="Classifier",
+        to=Classifier,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    date_added = models.DateTimeField(
+        verbose_name="Date added",
+        default=timezone.now,
+        blank=True,
+        null=True)
+    is_positive = models.BooleanField(
+        verbose_name="Is positive",
+        default=True,
+        blank=False,
+        null=False)
+    classes = models.JSONField(
+        verbose_name="Classes",
+        blank=True,
+        null=True)
+    field_type = models.CharField(
+        verbose_name="Type",
+        help_text="Either IDENTIFIER, TEXT, IMAGE",
+        # if you want to store a vector, use a parent classifier connected to a dataset with only those vectors
+        max_length=50,
+        choices=FieldType.choices,
+        default=FieldType.TEXT,
+        blank=False,
+        null=False)
+    value = models.TextField(
+        verbose_name="Value",
+        help_text="Item ID, Text, Image URL",
+        blank=True,
+        null=True)
+    weight = models.FloatField(
+        verbose_name="Weight",
+        help_text="Weight for this example (e.g. small if just a product page view, high if product was bought)",
+        default=1.0,
+        blank=False,
+        null=False)
+
+    # def __str__(self):
+    #     return f"{self.name}"
+
+    class Meta:
+        verbose_name = "Classifier Example"
+        verbose_name_plural = "Classifier Examples"

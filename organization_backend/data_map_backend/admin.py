@@ -13,7 +13,7 @@ from django_object_actions import DjangoObjectActions, action
 
 from .data_backend_client import data_backend_url
 
-from .models import EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, ItemCollection, StoredMap
+from .models import EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, ItemCollection, StoredMap, Classifier, ClassifierExample
 from .utils import get_vector_field_dimensions
 
 # admin.site.site_header = 'Site Header'
@@ -280,3 +280,52 @@ class StoredMapAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     search_fields = ('name',)
     ordering = ['name']
     readonly_fields = ('changed_at', 'created_at')
+
+
+class ClassifierExampleInline(admin.TabularInline):
+    model = ClassifierExample
+    readonly_fields = tuple()
+    extra = 0
+
+
+@admin.register(Classifier)
+class ClassifierAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'dataset', 'name', 'created_by', 'is_public')
+    list_display_links = ('id', 'name')
+    search_fields = ('name',)
+    ordering = ['dataset', 'name']
+    readonly_fields = ('changed_at', 'created_at')
+
+    inlines = [
+        ClassifierExampleInline,
+    ]
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit }
+    }
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # only show fields of same dataset for source fields:
+        if db_field.name in ["positive_annotation_field", "negative_annotation_field"]:
+            try:
+                classifier_id = int(request.path.split("/")[-3])
+            except ValueError:
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
+            else:
+                dataset_id = Classifier.objects.get(id = classifier_id).dataset_id
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
+        return super(ClassifierAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        # only show fields of same dataset for source fields:
+        if db_field.name in ["relevant_object_fields"]:
+            try:
+                classifier_id = int(request.path.split("/")[-3])
+            except ValueError:
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
+            else:
+                dataset_id = Classifier.objects.get(id = classifier_id).dataset_id
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
+        return super(ClassifierAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)

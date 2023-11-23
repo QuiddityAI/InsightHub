@@ -206,5 +206,6 @@ JAZZMIN_SETTINGS = {
         "data_map_backend.searchhistoryitem": "fas fa-clock",
         "data_map_backend.itemcollection": "fas fa-list",
         "data_map_backend.storedmap": "fas fa-map",
+        "data_map_backend.classifier": "fas fa-filter",
     },
 }
