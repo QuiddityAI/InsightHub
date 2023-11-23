@@ -30,8 +30,6 @@ def get_current_user(request):
 
 @csrf_exempt
 def get_dataset(request):
-    if not request.user.is_authenticated:
-        return HttpResponse(status=401)
     if request.method != 'POST':
         return HttpResponse(status=405)
 
@@ -42,7 +40,11 @@ def get_dataset(request):
         return HttpResponse(status=400)
 
     dataset: Dataset = Dataset.objects.get(id=dataset_id)
-    # TODO: check permission to read this object
+
+    if not dataset.is_public and not request.user.is_authenticated:
+        return HttpResponse(status=401)
+    elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
+        return HttpResponse(status=401)
 
     dataset_dict = DatasetSerializer(instance=dataset).data
     dataset_dict["object_fields"] = {item['identifier']: item for item in dataset_dict["object_fields"]}
@@ -70,6 +72,10 @@ def get_available_datasets(request):
 
     result = []
     for dataset in datasets:
+        if not dataset.is_public and not request.user.is_authenticated:
+            continue
+        elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
+            continue
         result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
                        "name_plural": dataset.name_plural, "short_description": dataset.short_description})
 

@@ -267,6 +267,11 @@ class Dataset(models.Model):
         on_delete=models.PROTECT,
         blank=False,
         null=False)
+    is_public = models.BooleanField(
+        verbose_name="Is public",
+        default=False,
+        blank=False,
+        null=False)
     primary_key = models.ForeignKey(
         verbose_name="Primary Key",
         to='ObjectField',

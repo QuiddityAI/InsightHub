@@ -110,7 +110,7 @@ class ObjectFieldInline(admin.StackedInline):
 @admin.register(Dataset)
 class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'organization', 'name_plural')
+    list_display = ('id', 'organization', 'name_plural', 'is_public')
     list_display_links = ('id', 'name_plural')
     search_fields = ('name_plural', 'organization')
     ordering = ['organization', 'name_plural']
@@ -120,7 +120,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     fields = [
         "id", "name", "name_plural", "short_description",
-        "organization", "primary_key", "thumbnail_image",
+        "organization", "is_public", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields",
         "item_count", "get_field_overview_table_html",
         "result_list_rendering", "collection_list_rendering",
