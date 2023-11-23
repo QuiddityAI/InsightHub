@@ -40,7 +40,7 @@ export default {
     return {
       internal_dataset_id: null,
 
-      show_negative_query_field: false,
+      show_negative_query_field: true,
       show_settings: false,
       available_databases: [],
       database_information: {},
@@ -248,7 +248,7 @@ export default {
       <!-- note: search event is not standard -->
       <div class="flex-1 h-9 flex flex-row items-center">
         <input type="search" name="search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query"
-        placeholder="Search"
+        :placeholder="appState.settings.search.search_type == 'external_input' ? 'Describe what you want to find' : 'But more like this:'"
         class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
       ring-inset ring-gray-300 placeholder:text-gray-400
       focus:ring-2 focus:ring-inset focus:ring-blue-400
@@ -264,7 +264,7 @@ export default {
 
     <div v-if="show_negative_query_field || appState.settings.search.all_field_query_negative" class="mt-2 h-9">
       <input type="search" name="negative_search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query_negative"
-          placeholder="Negative Search"
+      :placeholder="appState.settings.search.search_type == 'external_input' ? 'And optionally what should be excluded' : 'And less like this:'"
           class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
           ring-inset ring-gray-300 bg-red-100/50 placeholder:text-gray-400
           focus:ring-2 focus:ring-inset focus:ring-blue-400
