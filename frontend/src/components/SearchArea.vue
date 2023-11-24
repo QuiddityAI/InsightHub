@@ -126,7 +126,6 @@ export default {
 
       httpClient.get("/org/data_map/get_current_user")
       .then(function (response) {
-        console.log(response.data)
         that.appStateStore.logged_in = response.data.logged_in
         that.appStateStore.username = response.data.username
       })
