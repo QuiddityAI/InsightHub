@@ -208,4 +208,33 @@ JAZZMIN_SETTINGS = {
         "data_map_backend.storedmap": "fas fa-map",
     },
 }
+
+# configure Django logging to exclude /org/data_map/health from logging:
+# see https://stackoverflow.com/a/41620949
+
+def skip_health_requests(record):
+    return '/org/data_map/health' not in str(record.args[0])
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'exclude_health': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': skip_health_requests
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'filters': ['exclude_health'],
+            'class': 'logging.StreamHandler',
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        }
+    }
 }
