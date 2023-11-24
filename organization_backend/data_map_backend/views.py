@@ -50,11 +50,9 @@ def get_dataset(request):
     dataset_dict["object_fields"] = {item['identifier']: item for item in dataset_dict["object_fields"]}
 
     result = json.dumps(dataset_dict)
-
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def get_available_datasets(request):
     if request.method != 'POST':
@@ -62,13 +60,10 @@ def get_available_datasets(request):
 
     try:
         data = json.loads(request.body)
-        organization_id: int = data["organization_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    #datasets = Dataset.objects.get(organization=organization_id)
-    datasets = Dataset.objects.all()  # FIXME: returning all for now for testing
-    # TODO: check permission to read this object
+    datasets = Dataset.objects.all()
 
     result = []
     for dataset in datasets:
@@ -80,19 +75,18 @@ def get_available_datasets(request):
                        "name_plural": dataset.name_plural, "short_description": dataset.short_description})
 
     result = json.dumps(result)
-
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def add_search_history_item(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]
         dataset_id: int = data["dataset_id"]
         name: str = data["name"]
         parameters: dict = data["parameters"]
@@ -100,7 +94,7 @@ def add_search_history_item(request):
         return HttpResponse(status=400)
 
     item = SearchHistoryItem()
-    item.user_id = user_id  # type: ignore
+    item.user_id = request.user.id  # type: ignore
     item.dataset_id = dataset_id  # type: ignore
     item.name = name
     item.parameters = parameters  # type: ignore
@@ -112,42 +106,42 @@ def add_search_history_item(request):
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def get_search_history(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]
         dataset_id: int = data["dataset_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = SearchHistoryItem.objects.filter(user_id=user_id, dataset_id=dataset_id).order_by('-created_at')[:25:-1]
+    items = SearchHistoryItem.objects.filter(user_id=request.user.id, dataset_id=dataset_id).order_by('-created_at')[:25:-1]
     serialized_data = SearchHistoryItemSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def add_item_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]
         dataset_id: int = data["dataset_id"]
         name: str = data["name"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     item = ItemCollection()
-    item.user_id = user_id  # type: ignore
+    item.user_id = request.user.id  # type: ignore
     item.dataset_id = dataset_id  # type: ignore
     item.name = name
     item.save()
@@ -158,31 +152,33 @@ def add_item_collection(request):
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def get_item_collections(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]
         dataset_id: int = data["dataset_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = ItemCollection.objects.filter(user_id=user_id, dataset_id=dataset_id).order_by('created_at')[:25]
+    items = ItemCollection.objects.filter(user_id=request.user.id, dataset_id=dataset_id).order_by('created_at')[:25]
+    # TODO: also show public ones
     serialized_data = ItemCollectionSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def get_item_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
@@ -194,17 +190,20 @@ def get_item_collection(request):
         item = ItemCollection.objects.get(id=collection_id)
     except ItemCollection.DoesNotExist:
         return HttpResponse(status=404)
+    if item.user != request.user:  # TODO: also allow public ones
+        return HttpResponse(status=401)
     serialized_data = ItemCollectionSerializer(item).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def delete_item_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
@@ -213,18 +212,22 @@ def delete_item_collection(request):
         return HttpResponse(status=400)
 
     try:
-        ItemCollection.objects.get(id=collection_id).delete()
+        item = ItemCollection.objects.get(id=collection_id)
     except ItemCollection.DoesNotExist:
         return HttpResponse(status=404)
+    if item.user != request.user:
+        return HttpResponse(status=401)
+    item.delete()
 
     return HttpResponse(None, status=204)
 
 
-#@login_required()
 @csrf_exempt
 def add_item_to_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
@@ -238,6 +241,8 @@ def add_item_to_collection(request):
         collection = ItemCollection.objects.get(id=collection_id)
     except ItemCollection.DoesNotExist:
         return HttpResponse(status=404)
+    if collection.user != request.user:
+        return HttpResponse(status=401)
 
     if is_positive:
         if collection.positive_ids is None:
@@ -252,11 +257,12 @@ def add_item_to_collection(request):
     return HttpResponse(None, status=204)
 
 
-#@login_required()
 @csrf_exempt
 def remove_item_from_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
@@ -270,6 +276,8 @@ def remove_item_from_collection(request):
         collection = ItemCollection.objects.get(id=collection_id)
     except ItemCollection.DoesNotExist:
         return HttpResponse(status=404)
+    if collection.user != request.user:
+        return HttpResponse(status=401)
 
     if is_positive:
         collection.positive_ids.remove(item_id)
@@ -280,15 +288,15 @@ def remove_item_from_collection(request):
     return HttpResponse(None, status=204)
 
 
-#@login_required()
 @csrf_exempt
 def add_stored_map(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]
         dataset_id: int = data["dataset_id"]
         name: str = data["name"]
         map_id: str = data["map_id"]
@@ -297,7 +305,7 @@ def add_stored_map(request):
         return HttpResponse(status=400)
 
     item = StoredMap(id=map_id)
-    item.user_id = user_id  # type: ignore
+    item.user_id = request.user.id  # type: ignore
     item.dataset_id = dataset_id  # type: ignore
     item.name = name
     item.map_data = map_data.encode()  # type: ignore  # FIXME: base64 str needs to be decoded
@@ -309,31 +317,33 @@ def add_stored_map(request):
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def get_stored_maps(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
-        user_id: int = data["user_id"]
         dataset_id: int = data["dataset_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = StoredMap.objects.filter(user_id=user_id, dataset_id=dataset_id).order_by('created_at')[:25]
+    # TODO: also show public ones
+    items = StoredMap.objects.filter(user_id=request.user.id, dataset_id=dataset_id).order_by('created_at')[:25]
     serialized_data = StoredMapSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
-#@login_required()
 @csrf_exempt
 def get_stored_map_data(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
@@ -344,16 +354,19 @@ def get_stored_map_data(request):
         map_item = StoredMap.objects.get(id=map_id)
     except StoredMap.DoesNotExist:
         return HttpResponse(status=404)
+    if map_item.user != request.user:  # TODO: also allow public ones
+        return HttpResponse(status=401)
     result = map_item.map_data
 
     return HttpResponse(result, status=200, content_type='application/octet-stream')
 
 
-#@login_required()
 @csrf_exempt
 def delete_stored_map(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
 
     try:
         data = json.loads(request.body)
@@ -362,9 +375,11 @@ def delete_stored_map(request):
         return HttpResponse(status=400)
 
     try:
-        StoredMap.objects.get(id=stored_map_id).delete()
+        map = StoredMap.objects.get(id=stored_map_id)
     except StoredMap.DoesNotExist:
         return HttpResponse(status=404)
+    if map.user != request.user:
+        return HttpResponse(status=401)
 
     return HttpResponse(None, status=204)
 

@@ -191,7 +191,6 @@ export default {
       if (!entry_name) return;
 
       const history_item_body = {
-        user_id: 1,  // FIXME: this is hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
         name: entry_name,
         parameters: this.appStateStore.settings,
@@ -450,7 +449,6 @@ export default {
     create_item_collection(name) {
       const that = this
       const create_collection_body = {
-        user_id: 1,  // FIXME: hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
         name: name,
       }
@@ -517,7 +515,6 @@ export default {
       const entry_name = this.get_current_map_name()
       if (!entry_name) return;
       const store_map_body = {
-        user_id: 1,  // FIXME: hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
         name: entry_name,
         map_id: this.map_id,
@@ -684,7 +681,6 @@ export default {
 
       this.search_history = []
       const get_history_body = {
-        user_id: 1,  // FIXME: hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
       }
       httpClient.post("/org/data_map/get_search_history", get_history_body)
@@ -694,7 +690,6 @@ export default {
 
       this.appStateStore.collections = []
       const get_collections_body = {
-        user_id: 1,  // FIXME: hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
       }
       httpClient.post("/org/data_map/get_item_collections", get_collections_body)
@@ -704,7 +699,6 @@ export default {
 
       this.stored_maps = []
       const get_stored_maps_body = {
-        user_id: 1,  // FIXME: hardcoded
         dataset_id: this.appStateStore.settings.dataset_id,
       }
       httpClient.post("/org/data_map/get_stored_maps", get_stored_maps_body)
