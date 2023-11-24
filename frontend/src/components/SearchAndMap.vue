@@ -10,8 +10,8 @@ import EmbeddingMap from './EmbeddingMap.vue';
 import SearchArea from './SearchArea.vue';
 import ResultListItem from './ResultListItem.vue';
 import ObjectDetailsModal from './ObjectDetailsModal.vue';
-import Collection from './Collection.vue';
-import CollectionListItem from './CollectionListItem.vue';
+import Classifier from './Classifier.vue';
+import ClassifierExample from './ClassifierExample.vue';
 
 import httpClient from '../api/httpClient';
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
@@ -60,9 +60,8 @@ export default {
       // tabs:
       selected_tab: "map",
 
-      // collections:
-      collections: [],
-      last_used_collection_id: null,
+      // classifiers:
+      last_used_classifier_id: null,
 
       // stored maps:
       stored_maps: [],
@@ -114,7 +113,7 @@ export default {
 
       this.appStateStore.settings.search.cluster_origin_map_id = null
       this.appStateStore.settings.search.cluster_id = null
-      this.appStateStore.settings.search.collection_id = null
+      this.appStateStore.settings.search.classifier_id = null
       this.appStateStore.settings.search.similar_to_item_id = null
 
       this.appStateStore.settings.projection = JSON.parse(JSON.stringify(this.appStateStore.default_settings.projection))
@@ -169,10 +168,10 @@ export default {
         entry_name = `<i>Cluster</i> '${this.appStateStore.settings.search.origin_display_name}'`
       } else if (this.appStateStore.settings.search.search_type == 'similar_to_item') {
         entry_name = `<i>Similar to</i> '${this.appStateStore.settings.search.origin_display_name}'`
-      } else if (this.appStateStore.settings.search.search_type == 'collection') {
-        entry_name = `<i>Collection</i> '${this.appStateStore.settings.search.origin_display_name}'`
-      } else if (this.appStateStore.settings.search.search_type == 'recommended_for_collection') {
-        entry_name = `<i>Recommended for collection</i> '${this.appStateStore.settings.search.origin_display_name}'`
+      } else if (this.appStateStore.settings.search.search_type == 'classifier') {
+        entry_name = `<i>Classifier</i> '${this.appStateStore.settings.search.origin_display_name}'`
+      } else if (this.appStateStore.settings.search.search_type == 'recommended_for_classifier') {
+        entry_name = `<i>Recommended for classifier</i> '${this.appStateStore.settings.search.origin_display_name}'`
       }
       return entry_name
     },
@@ -377,20 +376,20 @@ export default {
       this.appStateStore.settings.search.origin_display_name = cluster_item.title
       this.request_search_results()
     },
-    show_collection_as_map(collection) {
-      this.appStateStore.settings.search.search_type = 'collection'
-      this.appStateStore.settings.search.collection_id = collection.id
+    show_classifier_as_map(classifier) {
+      this.appStateStore.settings.search.search_type = 'classifier'
+      this.appStateStore.settings.search.classifier_id = classifier.id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.settings.search.origin_display_name = collection.name
+      this.appStateStore.settings.search.origin_display_name = classifier.name
       this.request_search_results()
     },
-    recommend_items_for_collection(collection) {
-      this.appStateStore.settings.search.search_type = 'recommended_for_collection'
-      this.appStateStore.settings.search.collection_id = collection.id
+    recommend_items_for_classifier(classifier) {
+      this.appStateStore.settings.search.search_type = 'recommended_for_classifier'
+      this.appStateStore.settings.search.classifier_id = classifier.id
       this.appStateStore.settings.search.all_field_query = ""
       this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.settings.search.origin_display_name = collection.name
+      this.appStateStore.settings.search.origin_display_name = classifier.name
       this.request_search_results()
     },
     show_global_map() {
@@ -446,68 +445,61 @@ export default {
         ]
       }
     },
-    create_item_collection(name) {
+    create_classifier(name) {
       const that = this
-      const create_collection_body = {
+      const create_classifier_body = {
         dataset_id: this.appStateStore.settings.dataset_id,
         name: name,
       }
-      httpClient.post("/org/data_map/add_item_collection", create_collection_body)
+      httpClient.post("/org/data_map/add_classifier", create_classifier_body)
         .then(function (response) {
-          that.appStateStore.collections.push(response.data)
+          that.appStateStore.classifiers.push(response.data)
         })
     },
-    delete_item_collection(collection_id) {
+    delete_classifier(classifier_id) {
       const that = this
-      const delete_collection_body = {
-        collection_id: collection_id,
+      const delete_classifier_body = {
+        classifier_id: classifier_id,
       }
-      httpClient.post("/org/data_map/delete_item_collection", delete_collection_body)
+      httpClient.post("/org/data_map/delete_classifier", delete_classifier_body)
         .then(function (response) {
           let index_to_be_removed = null
           let i = 0
-          for (const collection of that.appStateStore.collections) {
-            if (collection.id == collection_id) {
+          for (const classifier of that.appStateStore.classifiers) {
+            if (classifier.id == classifier_id) {
               index_to_be_removed = i
               break
             }
             i += 1
           }
           if (index_to_be_removed !== null) {
-            that.appStateStore.collections.splice(index_to_be_removed, 1)
+            that.appStateStore.classifiers.splice(index_to_be_removed, 1)
           }
         })
     },
-    add_item_to_collection(item_index, collection_id, is_positive) {
+    add_item_to_classifier(item_index, classifier_id, class_name, is_positive) {
       const that = this
-      let collection = null
-      for (const col of this.collections) {
-        if (col.id === collection_id) {
-          collection = col
-          break
-        }
-      }
-      if (!collection) return;
+      const classifier = this.appStateStore.classifiers[this.appStateStore.classifiers.findIndex((e) => e.id == classifier_id)]
+      if (!classifier) return;
 
-      this.last_used_collection_id = collection.id
+      this.last_used_classifier_id = classifier.id
       const item_id = this.map_item_details[item_index]._id
-      if (is_positive) {
-        if (collection.positive_ids.includes(item_id)) return;
-      } else {
-        if (collection.negative_ids.includes(item_id)) return;
-      }
-      const add_item_to_collection_body = {
-        collection_id: collection.id,
-        item_id: item_id,
+      const add_item_to_classifier_body = {
+        classifier_id: classifier.id,
         is_positive: is_positive,
+        class_name: class_name,
+        field_type: FieldType.IDENTIFIER,
+        value: item_id,
+        weight: 1.0,
       }
-      httpClient.post("/org/data_map/add_item_to_collection", add_item_to_collection_body)
+      httpClient.post("/org/data_map/add_item_to_classifier", add_item_to_classifier_body)
         .then(function (response) {
-          if (is_positive) {
-            collection.positive_ids.push(item_id)
-          } else {
-            collection.negative_ids.push(item_id)
-          }
+          // TODO: refresh list of examples if open
+          // if (is_positive) {
+          //   classifier.positive_ids.push(item_id)
+          // } else {
+          //   classifier.negative_ids.push(item_id)
+          // }
         })
     },
     store_current_map() {
@@ -661,11 +653,11 @@ export default {
           }
           that.result_list_rendering = result_list_rendering
 
-          const collection_list_rendering = that.appStateStore.dataset.collection_list_rendering
+          const classifier_example_rendering = that.appStateStore.dataset.classifier_example_rendering
           for (const field of ['title', 'subtitle', 'body', 'image', 'url']) {
-            collection_list_rendering[field] = eval(collection_list_rendering[field])
+            classifier_example_rendering[field] = eval(classifier_example_rendering[field])
           }
-          that.appStateStore.collection_list_rendering = collection_list_rendering
+          that.appStateStore.classifier_example_rendering = classifier_example_rendering
 
           const hover_label_rendering = that.appStateStore.dataset.hover_label_rendering
           for (const field of ['title', 'subtitle', 'body', 'image']) {
@@ -688,13 +680,13 @@ export default {
           that.search_history = response.data
         })
 
-      this.appStateStore.collections = []
-      const get_collections_body = {
+      this.appStateStore.classifiers = []
+      const get_classifiers_body = {
         dataset_id: this.appStateStore.settings.dataset_id,
       }
-      httpClient.post("/org/data_map/get_item_collections", get_collections_body)
+      httpClient.post("/org/data_map/get_classifiers", get_classifiers_body)
         .then(function (response) {
-          that.appStateStore.collections = response.data
+          that.appStateStore.classifiers = response.data
         })
 
       this.stored_maps = []
@@ -778,7 +770,7 @@ export default {
               <button @click="selected_tab = 'maps'" :class="{'text-blue-500': selected_tab === 'maps'}" class="flex-1">
                 Maps
               </button>
-              <button @click="selected_tab = 'collections'" :class="{'text-blue-500': selected_tab === 'collections'}" class="flex-1">
+              <button @click="selected_tab = 'classifiers'" :class="{'text-blue-500': selected_tab === 'classifiers'}" class="flex-1">
                 Collections
               </button>
             </div>
@@ -798,12 +790,12 @@ export default {
                       Cutoff Index: {{ search_result_score_info[score_info_title].cutoff_index }},
                       Reason: {{ search_result_score_info[score_info_title].reason }}
                       <div v-for="item_id in search_result_score_info[score_info_title].positive_examples" :key="'example' + item_id" class="justify-between pb-3">
-                        <CollectionListItem :item_id="item_id" :is_positive="true">
-                        </CollectionListItem>
+                        <ClassifierExample :item_id="item_id" :is_positive="true">
+                        </ClassifierExample>
                       </div>
                       <div v-for="item_id in search_result_score_info[score_info_title].negative_examples" :key="'example' + item_id" class="justify-between pb-3">
-                        <CollectionListItem :item_id="item_id" :is_positive="false">
-                        </CollectionListItem>
+                        <ClassifierExample :item_id="item_id" :is_positive="false">
+                        </ClassifierExample>
                       </div>
                     </div>
                   </div>
@@ -875,10 +867,10 @@ export default {
                 </div>
               </div>
 
-              <!-- collections -->
-              <div v-if="selected_tab === 'collections'">
+              <!-- classifiers -->
+              <div v-if="selected_tab === 'classifiers'">
                 <div class="my-2 flex items-stretch">
-                  <input ref="new_collection_name"
+                  <input ref="new_classifier_name"
                     type="text"
                     class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 ring-1
                       ring-inset ring-gray-300 placeholder:text-gray-400
@@ -890,21 +882,21 @@ export default {
                       ring-inset ring-gray-300 placeholder:text-gray-400
                       focus:ring-2 focus:ring-inset focus:ring-blue-400
                       sm:text-sm sm:leading-6 shadow-sm"
-                    type="button" @click="create_item_collection($refs.new_collection_name.value); $refs.new_collection_name.value = ''">
+                    type="button" @click="create_classifier($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''">
                     Create
                   </button>
                 </div>
 
-                <ul v-if="Object.keys(appState.collections).length !== 0" role="list" class="pt-3">
-                  <Collection v-for="collection in appState.collections" :collection="collection" :key="collection.id"
-                    @delete_item_collection="delete_item_collection"
-                    @recommend_items_for_collection="recommend_items_for_collection"
-                    @show_collection_as_map="show_collection_as_map"
+                <ul v-if="Object.keys(appState.classifiers).length !== 0" role="list" class="pt-3">
+                  <Classifier v-for="classifier in appState.classifiers" :classifier="classifier" :key="classifier.id"
+                    @delete_classifier="delete_classifier"
+                    @recommend_items_for_classifier="recommend_items_for_classifier"
+                    @show_classifier_as_map="show_classifier_as_map"
                     class="justify-between pb-3">
-                  </Collection>
+                  </Classifier>
                 </ul>
-                <div v-if="Object.keys(appState.collections).length === 0" class="h-20 flex flex-col text-center place-content-center">
-                  <p class="flex-none text-gray-400">No Results Yet</p>
+                <div v-if="Object.keys(appState.classifiers).length === 0" class="h-20 flex flex-col text-center place-content-center">
+                  <p class="flex-none text-gray-400">No Collections Yet</p>
                 </div>
               </div>
             </div>
@@ -916,9 +908,9 @@ export default {
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
             <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :dataset="appState.dataset"
-              :collections="appState.collections" :last_used_collection_id="last_used_collection_id"
-              @addToPositives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, true) }"
-              @addToNegatives="(selected_collection_id) => { add_item_to_collection(selectedDocumentIdx, selected_collection_id, false) }"
+              :classifiers="appState.classifiers" :last_used_classifier_id="last_used_classifier_id"
+              @addToPositives="(classifier_id, class_name) => { add_item_to_classifier(selectedDocumentIdx, classifier_id, class_name, true) }"
+              @addToNegatives="(classifier_id, class_name) => { add_item_to_classifier(selectedDocumentIdx, classifier_id, class_name, false) }"
               @showSimilarItems="showSimilarItems"
               @close="close_document_details"
             ></ObjectDetailsModal>

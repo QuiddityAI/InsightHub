@@ -25,6 +25,7 @@ export class FieldType {
   static VECTOR = "VECTOR"
   static INTEGER = "INTEGER"
   static FLOAT = "FLOAT"
+  static IDENTIFIER = "IDENTIFIER"
 }
 
 export function ellipse(text, length) {

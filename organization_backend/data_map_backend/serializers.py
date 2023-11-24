@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import Dataset, ObjectField, Generator, EmbeddingSpace, SearchHistoryItem, ItemCollection, StoredMap
+from .models import Classifier, ClassifierExample, Dataset, ObjectField, Generator, EmbeddingSpace, SearchHistoryItem, ItemCollection, StoredMap
 
 
 class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
@@ -54,6 +54,28 @@ class ItemCollectionSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = ItemCollection
+        exclude = []
+
+
+class ClassifierSerializer(drf_serializers.ModelSerializer):
+    user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+    dataset = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+    parent_classifiers = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    relevant_object_fields = drf_serializers.StringRelatedField(many=True, read_only=True)
+    positive_annotation_field = drf_serializers.StringRelatedField(many=False, read_only=True)
+    negative_annotation_field = drf_serializers.StringRelatedField(many=False, read_only=True)
+    actual_classes = drf_serializers.ReadOnlyField()
+
+    class Meta:
+        model = Classifier
+        exclude = []
+
+
+class ClassifierExampleSerializer(drf_serializers.ModelSerializer):
+    classifier = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+
+    class Meta:
+        model = ClassifierExample
         exclude = []
 
 

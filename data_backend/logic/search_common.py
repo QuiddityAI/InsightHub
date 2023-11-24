@@ -292,13 +292,13 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
     return items
 
 
-def get_vector_search_results_matching_collection(dataset: DotDict, vector_field: str,
+def get_vector_search_results_matching_classifier(dataset: DotDict, vector_field: str,
                                                   positive_ids, negative_ids,
                                                   required_fields: list[str], limit: int, page: int,
                                                   score_threshold: float | None):
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    vector_search_result = vector_db_client.get_items_matching_collection(dataset.id, vector_field, positive_ids,
+    vector_search_result = vector_db_client.get_items_matching_classifier(dataset.id, vector_field, positive_ids,
                                                                           negative_ids, criteria, return_vectors=False,
                                                                           limit=limit, score_threshold=score_threshold)
     items = {}
@@ -306,7 +306,7 @@ def get_vector_search_results_matching_collection(dataset: DotDict, vector_field
         items[item.id] = {
             '_id': item.id,
             '_origins': [{'type': 'vector', 'field': vector_field,
-                          'query': 'matching a collection', 'score': item.score, 'rank': i+1}],
+                          'query': 'matching a classifier', 'score': item.score, 'rank': i+1}],
         }
     # TODO: if purpose is map, get vectors directly from vector DB:
     # result_item[map_vector_field] = vector_search_result.vector[search_vector_field]

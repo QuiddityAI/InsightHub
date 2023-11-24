@@ -123,7 +123,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         "organization", "is_public", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields",
         "item_count", "get_field_overview_table_html",
-        "result_list_rendering", "collection_list_rendering",
+        "result_list_rendering", "classifier_example_rendering",
         "hover_label_rendering", "detail_view_rendering",
         "random_item",
         "created_at", "changed_at",
@@ -295,7 +295,7 @@ class ClassifierAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     list_display_links = ('id', 'name')
     search_fields = ('name',)
     ordering = ['dataset', 'name']
-    readonly_fields = ('changed_at', 'created_at')
+    readonly_fields = ('changed_at', 'created_at', 'actual_classes')
 
     inlines = [
         ClassifierExampleInline,

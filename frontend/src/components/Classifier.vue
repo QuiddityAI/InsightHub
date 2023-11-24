@@ -3,7 +3,7 @@ import httpClient from '../api/httpClient';
 
 import { EllipsisVerticalIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
-import CollectionListItem from './CollectionListItem.vue';
+import ClassifierClass from './ClassifierClass.vue';
 import { mapStores } from 'pinia'
 import { useAppStateStore } from '../stores/settings_store'
 
@@ -12,8 +12,8 @@ const appState = useAppStateStore()
 
 <script>
 export default {
-  props: ["collection"],
-  emits: ["delete_item_collection", "recommend_items_for_collection", "show_collection_as_map"],
+  props: ["classifier"],
+  emits: ["delete_classifier", "recommend_items_for_classifier", "show_classifier_as_map"],
   data() {
     return {
       settings_visible: false,
@@ -25,25 +25,25 @@ export default {
   mounted() {
   },
   methods: {
-    remove_item_from_collection(item_id, is_positive) {
+    remove_item_from_classifier(item_id, is_positive) {
       const that = this
       const body = {
-        collection_id: this.collection.id,
+        classifier_id: this.classifier.id,
         item_id: item_id,
         is_positive: is_positive,
       }
-      httpClient.post("/org/data_map/remove_item_from_collection", body)
+      httpClient.post("/org/data_map/remove_item_from_classifier", body)
         .then(function (response) {
-          // 'collection' prop is read-only, so get writable reference:
-          const collection_index = that.appStateStore.collections.findIndex((col) => col.id === that.collection.id)
-          const collection = that.appStateStore.collections[collection_index]
+          // 'classifier' prop is read-only, so get writable reference:
+          const classifier_index = that.appStateStore.classifiers.findIndex((col) => col.id === that.classifier.id)
+          const classifier = that.appStateStore.classifiers[classifier_index]
 
           if (is_positive) {
-            const item_index = collection.positive_ids.indexOf(item_id)
-            collection.positive_ids.splice(item_index, 1)
+            const item_index = classifier.positive_ids.indexOf(item_id)
+            classifier.positive_ids.splice(item_index, 1)
           } else {
-            const item_index = collection.negative_ids.indexOf(item_id)
-            collection.negative_ids.splice(item_index, 1)
+            const item_index = classifier.negative_ids.indexOf(item_id)
+            classifier.negative_ids.splice(item_index, 1)
           }
         })
     },
@@ -58,10 +58,10 @@ export default {
 
 <li>
   <div class="flex flex-row gap-3">
-    <span class="text-gray-500 font-medium">{{ collection.name }}</span>
+    <span class="text-gray-500 font-medium">{{ classifier.name }}</span>
     <div class="flex-1"></div>
-    <button @click="$emit('recommend_items_for_collection', collection)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Recommend Similar</button>
-    <button @click="$emit('show_collection_as_map', collection)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
+    <button @click="$emit('recommend_items_for_classifier', classifier)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Recommend Similar</button>
+    <button @click="$emit('show_classifier_as_map', classifier)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
     <button @click="settings_visible = !settings_visible" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': settings_visible, 'text-gray-500': !settings_visible }">
       <EllipsisVerticalIcon></EllipsisVerticalIcon>
     </button>
@@ -261,25 +261,12 @@ D Collections always stored as examples, feedback adds or removes from examples
     <!-- for high aesthetic: sort result list with this: X -->
     <!-- for landscape tag: somewhere else: apply this classifier to all items (where to store?) -->
     <div class="flex-1"></div>
-    <button @click="$emit('delete_item_collection', collection.id)" class="w-6 px-1 ml-1 hover:bg-red-100 rounded text-gray-500">
+    <button @click="$emit('delete_classifier', classifier.id)" class="w-6 px-1 ml-1 hover:bg-red-100 rounded text-gray-500">
       <TrashIcon></TrashIcon>
     </button>
   </div>
-
-  <ul class="pt-2">
-    <li v-for="(item_id, index) in collection.positive_ids" :key="item_id" class="justify-between pb-2">
-      <CollectionListItem :item_id="item_id" :is_positive="true"
-        @remove="remove_item_from_collection(item_id, true)">
-      </CollectionListItem>
-    </li>
-  </ul>
-  <ul class="pt-2">
-    <li v-for="(item_id, index) in collection.negative_ids" :key="item_id" class="justify-between pb-2">
-      <CollectionListItem :item_id="item_id" :is_positive="false"
-        @remove="remove_item_from_collection(item_id, false)">
-      </CollectionListItem>
-    </li>
-  </ul>
+  <ClassifierClass v-for="class_name in classifier.actual_classes" :key="class_name" :classifier="classifier" :class_name="class_name">
+  </ClassifierClass>
 </li>
 
 </template>

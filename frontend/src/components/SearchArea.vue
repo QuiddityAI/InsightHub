@@ -30,7 +30,7 @@ const appState = useAppStateStore()
 // external input: combined (pos, neg, text),
 //     separate fields (pos, neg with text or image (if supported)),
 // similar to item (list of fields, e.g. descr. or image, fields are OR),
-// matching to collection (collection id),
+// matching to classifier (classifier id),
 // cluster id of map id
 
 
@@ -255,12 +255,12 @@ export default {
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
-        <button v-if="appState.settings.search.search_type == 'collection'"
+        <button v-if="appState.settings.search.search_type == 'classifier'"
           @click="$emit('reset_search_box')"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
-        <button v-if="appState.settings.search.search_type == 'recommended_for_collection'"
+        <button v-if="appState.settings.search.search_type == 'recommended_for_classifier'"
           @click="$emit('reset_search_box')"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Recommended for Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X

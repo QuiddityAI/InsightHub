@@ -10,11 +10,12 @@ import httpClient from '../api/httpClient';
 <script>
 
 export default {
-  props: ["dataset", "initial_item", "collections", "last_used_collection_id"],
+  props: ["dataset", "initial_item", "classifiers", "last_used_classifier_id"],
   emits: ["addToPositives", "addToNegatives", "showSimilarItems", "close"],
   data() {
     return {
-      selected_collection_id: null,
+      selected_classifier_id: null,
+      selected_classifier_class: '_default',
       rendering: null,
       item: this.initial_item,
       loading_item: false,
@@ -77,10 +78,10 @@ export default {
   },
   mounted() {
     this.updateItemAndRendering()
-    if (this.last_used_collection_id === null) {
-      this.selected_collection_id = this.collections.length ? this.collections[0].id : null
+    if (this.last_used_classifier_id === null) {
+      this.selected_classifier_id = this.classifiers.length ? this.classifiers[0].id : null
     } else {
-      this.selected_collection_id = this.last_used_collection_id
+      this.selected_classifier_id = this.last_used_classifier_id
     }
   },
 }
@@ -97,13 +98,16 @@ export default {
       <img v-if="rendering ? rendering.image(item) : false" class="flex-none h-52" :src="rendering ? rendering.image(item) : null">
     </div>
     <div class="flex-none flex flex-row mt-2">
-      <select v-model="selected_collection_id" class="mr-3 ring-1 ring-gray-300 text-gray-500 text-sm border-transparent rounded-md focus:ring-blue-500 focus:border-blue-500">
-        <option v-for="collection in collections" :value="collection.id">{{ collection.name }}</option>
+      <select v-model="selected_classifier_id" class="mr-3 ring-1 ring-gray-300 text-gray-500 text-sm border-transparent rounded-md focus:ring-blue-500 focus:border-blue-500">
+        <option v-for="classifier in classifiers" :value="classifier.id">{{ classifier.name }}</option>
       </select>
-      <button @click="$emit('addToPositives', selected_collection_id)" class="w-10 px-3 mr-3 text-green-600/50 ring-1 ring-gray-300 hover:bg-green-100 rounded-md">
+      <select v-if="selected_classifier_id !== null" v-model="selected_classifier_class" class="mr-3 ring-1 ring-gray-300 text-gray-500 text-sm border-transparent rounded-md focus:ring-blue-500 focus:border-blue-500">
+        <option v-for="class_name in classifiers[classifiers.findIndex((e) => e.id == selected_classifier_id)].actual_classes" :value="class_name">{{ class_name == '_default' ? 'Items' : class_name }}</option>
+      </select>
+      <button @click="$emit('addToPositives', selected_classifier_id, selected_classifier_class)" class="w-10 px-3 mr-3 text-green-600/50 ring-1 ring-gray-300 hover:bg-green-100 rounded-md">
         <HandThumbUpIcon></HandThumbUpIcon>
       </button>
-      <button @click="$emit('addToNegatives', selected_collection_id)" class="w-10 px-3 mr-3 text-red-600/50 ring-1 ring-gray-300 hover:bg-red-100 rounded-md">
+      <button @click="$emit('addToNegatives', selected_classifier_id, selected_classifier_class)" class="w-10 px-3 mr-3 text-red-600/50 ring-1 ring-gray-300 hover:bg-red-100 rounded-md">
         <HandThumbDownIcon></HandThumbDownIcon>
       </button>
       <button @click="$emit('showSimilarItems')" class="px-3 mr-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100 rounded-md">

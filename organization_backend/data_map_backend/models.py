@@ -224,7 +224,11 @@ def get_rendering_json_field_default(fields: list):
 def get_default_result_list_rendering():
     return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
 
+# deprecated, but needed for old migrations
 def get_default_collection_list_rendering():
+    return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
+
+def get_default_classifier_example_rendering():
     return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
 
 def get_default_hover_label_rendering():
@@ -303,9 +307,9 @@ class Dataset(models.Model):
         default=get_default_result_list_rendering,
         blank=True,
         null=True)
-    collection_list_rendering =  models.JSONField(
+    classifier_example_rendering =  models.JSONField(
         verbose_name="Collection List Rendering",
-        default=get_default_collection_list_rendering,
+        default=get_default_classifier_example_rendering,
         blank=True,
         null=True)
     hover_label_rendering =  models.JSONField(
@@ -677,6 +681,7 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
     class_names = models.JSONField(
         verbose_name="Class Names",
         help_text="If empty, either deducted from classes or if data doesn't have classed, converted classifier name is used",
+        default=list,
         blank=True,
         null=True)
     default_threshold = models.FloatField(
@@ -691,7 +696,7 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         null=True)
     relevant_object_fields = models.ManyToManyField(  # the "source" of the classifier, e.g. text or image
         verbose_name="Relevant Object Fields",
-        help_text="For given examples from this dataset, either texts or images",
+        help_text="The 'source' fields (text or image) for items from this dataset, using default search fields (or their sources for vectors) if empty",
         to='ObjectField',
         related_name='+',
         blank=True)
@@ -718,6 +723,13 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         null=True)
 
     history = HistoricalRecords()
+
+    @property
+    def actual_classes(self) -> list:
+        classes = set(self.class_names or [])
+        for example in ClassifierExample.objects.filter(classifier=self):
+            classes.update(example.classes or ['_default'])
+        return sorted(list(classes))
 
     def __str__(self):
         return f"{self.name}"
@@ -746,6 +758,7 @@ class ClassifierExample(models.Model):  # aka DataCollection / DataClassificatio
         null=False)
     classes = models.JSONField(
         verbose_name="Classes",
+        default=list,
         blank=True,
         null=True)
     field_type = models.CharField(

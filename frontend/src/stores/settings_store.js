@@ -21,15 +21,15 @@ export const useAppStateStore = defineStore('appState', {
       logged_in: false,
       username: null,
 
-      // collections:
-      collections: [],
-      last_used_collection_id: null,
-      collection_list_rendering: {},
+      // classifiers:
+      classifiers: [],
+      last_used_classifier_id: null,
+      classifier_example_rendering: {},
 
       settings: {
         dataset_id: null,
         search: {
-          search_type: "external_input",  // or cluster, collection or similar item
+          search_type: "external_input",  // or cluster, classifier or similar item
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
@@ -49,10 +49,10 @@ export const useAppStateStore = defineStore('appState', {
             // use_for_combined_search: that.dataset.default_search_fields.includes(field.identifier),
           },
 
-          origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
+          origin_display_name: "", // classifier or cluster name, that this map refers to, just for displaying it
           cluster_origin_map_id: null,
           cluster_id: null,
-          collection_id: null,
+          classifier_id: null,
           similar_to_item_id: null,
 
           // list results:
@@ -120,7 +120,7 @@ export const useAppStateStore = defineStore('appState', {
       default_settings: {
         dataset_id: null,
         search: {
-          search_type: "external_input",  // or cluster, collection or similar item
+          search_type: "external_input",  // or cluster, classifier or similar item
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
@@ -139,10 +139,10 @@ export const useAppStateStore = defineStore('appState', {
             // use_for_combined_search: that.dataset.default_search_fields.includes(field.identifier),
           },
 
-          origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
+          origin_display_name: "", // classifier or cluster name, that this map refers to, just for displaying it
           cluster_origin_map_id: null,
           cluster_id: null,
-          collection_id: null,
+          classifier_id: null,
           similar_to_item_id: null,
 
           // list results:

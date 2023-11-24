@@ -5,13 +5,19 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 
-from .models import Dataset, SearchHistoryItem, ItemCollection, StoredMap, Generator
-from .serializers import DatasetSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer, GeneratorSerializer
+from .models import Classifier, ClassifierExample, Dataset, SearchHistoryItem, ItemCollection, StoredMap, Generator
+from .serializers import ClassifierExampleSerializer, ClassifierSerializer, DatasetSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer, GeneratorSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
+
+
+def is_from_backend(request):
+    # FIXME: this is not secure
+    return request.META.get('HTTP_ORIGIN') == 'http://localhost:55125'
 
 
 @csrf_exempt
@@ -41,9 +47,9 @@ def get_dataset(request):
 
     dataset: Dataset = Dataset.objects.get(id=dataset_id)
 
-    if not dataset.is_public and not request.user.is_authenticated:
+    if not dataset.is_public and not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
-    elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
+    elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists() and not is_from_backend(request):
         return HttpResponse(status=401)
 
     dataset_dict = DatasetSerializer(instance=dataset).data
@@ -127,7 +133,7 @@ def get_search_history(request):
 
 
 @csrf_exempt
-def add_item_collection(request):
+def add_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
@@ -153,7 +159,7 @@ def add_item_collection(request):
 
 
 @csrf_exempt
-def get_item_collections(request):
+def get_classifiers(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
@@ -165,16 +171,15 @@ def get_item_collections(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = ItemCollection.objects.filter(user_id=request.user.id, dataset_id=dataset_id).order_by('created_at')[:25]
-    # TODO: also show public ones
-    serialized_data = ItemCollectionSerializer(items, many=True).data
+    items = Classifier.objects.filter(Q(dataset_id=dataset_id) & (Q(created_by=request.user.id) | Q(is_public=True))).order_by('created_at')
+    serialized_data = ClassifierSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
 @csrf_exempt
-def get_item_collection(request):
+def get_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
@@ -182,12 +187,12 @@ def get_item_collection(request):
 
     try:
         data = json.loads(request.body)
-        collection_id: int = data["collection_id"]
+        classifier_id: int = data["classifier_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        item = ItemCollection.objects.get(id=collection_id)
+        item = ItemCollection.objects.get(id=classifier_id)
     except ItemCollection.DoesNotExist:
         return HttpResponse(status=404)
     if item.user != request.user:  # TODO: also allow public ones
@@ -199,7 +204,7 @@ def get_item_collection(request):
 
 
 @csrf_exempt
-def delete_item_collection(request):
+def get_classifier_examples(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
@@ -207,12 +212,39 @@ def delete_item_collection(request):
 
     try:
         data = json.loads(request.body)
-        collection_id: int = data["collection_id"]
+        classifier_id: int = data["classifier_id"]
+        class_name = data["class_name"]
+        field_type = data["type"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    items = []
+    all_items = ClassifierExample.objects.filter(classifier_id=classifier_id, field_type=field_type).order_by('-is_positive', '-date_added')
+    for item in all_items:
+        if (class_name == "_default" and not item.classes) or class_name in item.classes:  # type: ignore
+            items.append(item)
+    serialized_data = ClassifierExampleSerializer(items, many=True).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+
+@csrf_exempt
+def delete_classifier(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        classifier_id: int = data["classifier_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        item = ItemCollection.objects.get(id=collection_id)
+        item = ItemCollection.objects.get(id=classifier_id)
     except ItemCollection.DoesNotExist:
         return HttpResponse(status=404)
     if item.user != request.user:
@@ -223,7 +255,7 @@ def delete_item_collection(request):
 
 
 @csrf_exempt
-def add_item_to_collection(request):
+def add_item_to_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
@@ -231,34 +263,43 @@ def add_item_to_collection(request):
 
     try:
         data = json.loads(request.body)
-        collection_id: int = data["collection_id"]
-        item_id: str = data["item_id"]
+        classifier_id: int = data["classifier_id"]
         is_positive: bool = data["is_positive"]
+        class_name: str = data["class_name"]
+        field_type: str = data["field_type"]
+        value: str = data["value"]
+        weight: float = data["weight"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        collection = ItemCollection.objects.get(id=collection_id)
-    except ItemCollection.DoesNotExist:
+        classifier = Classifier.objects.get(id=classifier_id)
+    except Classifier.DoesNotExist:
         return HttpResponse(status=404)
-    if collection.user != request.user:
+    if classifier.created_by != request.user:
         return HttpResponse(status=401)
 
-    if is_positive:
-        if collection.positive_ids is None:
-            collection.positive_ids = []
-        collection.positive_ids.append(item_id)
-    else:
-        if collection.negative_ids is None:
-            collection.negative_ids = []
-        collection.negative_ids.append(item_id)
-    collection.save()
+    items = ClassifierExample.objects.filter(classifier_id=classifier_id, is_positive=is_positive, field_type=field_type, value=value)
+    for item in items:
+        if class_name in item.classes:  # type: ignore
+            item.weight = weight
+            item.save()
+            return HttpResponse(None, status=204)
+
+    item = ClassifierExample()
+    item.classifier_id = classifier_id  # type: ignore
+    item.is_positive = is_positive
+    item.classes = [class_name] if class_name != "_default" else []  # type: ignore
+    item.field_type = field_type
+    item.value = value
+    item.weight = weight
+    item.save()
 
     return HttpResponse(None, status=204)
 
 
 @csrf_exempt
-def remove_item_from_collection(request):
+def remove_item_from_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
@@ -266,24 +307,24 @@ def remove_item_from_collection(request):
 
     try:
         data = json.loads(request.body)
-        collection_id: int = data["collection_id"]
+        classifier_id: int = data["classifier_id"]
         item_id: str = data["item_id"]
         is_positive: bool = data["is_positive"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        collection = ItemCollection.objects.get(id=collection_id)
+        classifier = ItemCollection.objects.get(id=classifier_id)
     except ItemCollection.DoesNotExist:
         return HttpResponse(status=404)
-    if collection.user != request.user:
+    if classifier.user != request.user:
         return HttpResponse(status=401)
 
     if is_positive:
-        collection.positive_ids.remove(item_id)
+        classifier.positive_ids.remove(item_id)
     else:
-        collection.negative_ids.remove(item_id)
-    collection.save()
+        classifier.negative_ids.remove(item_id)
+    classifier.save()
 
     return HttpResponse(None, status=204)
 
