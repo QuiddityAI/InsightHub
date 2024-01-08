@@ -207,6 +207,16 @@ JAZZMIN_SETTINGS = {
         "data_map_backend.classifier": "fas fa-filter",
         "data_map_backend.storedmap": "fas fa-map",
     },
+
+    "show_ui_builder": True,
+
+    "site_logo": "icon.png",
+
+    "topmenu_links": [
+
+        # Url that gets reversed (Permissions can be added)
+        {"name": "Map / Classification Workspace →",  "url": "/"},
+    ],
 }
 
 # configure Django logging to exclude /org/data_map/health from logging:
