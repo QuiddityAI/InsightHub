@@ -51,11 +51,11 @@ class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
 class DatasetInline(admin.TabularInline):
     model = Dataset
-    list_display_links = ('id', 'name_plural')
-    readonly_fields = ('changed_at', 'created_at', 'name_plural')
+    list_display_links = ('id', 'name')
+    readonly_fields = ('changed_at', 'created_at', 'name')
     show_change_link = True
     extra = 0
-    fields = ('id', 'name_plural')
+    fields = ('id', 'name')
 
 
 @admin.register(Organization)
@@ -111,16 +111,16 @@ class ObjectFieldInline(admin.StackedInline):
 @admin.register(Dataset)
 class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'organization', 'name_plural', 'is_public')
-    list_display_links = ('id', 'name_plural')
-    search_fields = ('name_plural', 'organization')
-    ordering = ['organization', 'name_plural']
+    list_display = ('id', 'organization', 'name', 'is_public')
+    list_display_links = ('id', 'name')
+    search_fields = ('name', 'organization')
+    ordering = ['organization', 'name']
 
     readonly_fields = ('id', 'changed_at', 'created_at', 'get_field_overview_table_html',
                        'item_count', 'random_item', 'action_buttons')
 
     fields = [
-        "id", "name", "name_plural", "short_description",
+        "id", "name", "entity_name", "entity_name_plural", "short_description",
         "organization", "is_public", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields",
         "item_count", "get_field_overview_table_html",

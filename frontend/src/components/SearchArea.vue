@@ -43,7 +43,7 @@ export default {
       show_negative_query_field: false,
       show_settings: false,
       available_databases: [],
-      database_information: {},
+      dataset_information: {},
 
       show_search_settings: false,
       show_autocut_settings: false,
@@ -117,14 +117,14 @@ export default {
     httpClient.post("/org/data_map/available_datasets", {organization_id: -1})
       .then(function (response) {
         that.available_databases = response.data
-        that.database_information = {}
+        that.dataset_information = {}
         for (const database of that.available_databases) {
-          that.database_information[database.id] = database.short_description
+          that.dataset_information[database.id] = database
         }
         // initial dataset_id is set in evaluate_url_query_parameters() in SearchAndMap
       })
 
-      httpClient.get("/org/data_map/get_current_user")
+    httpClient.get("/org/data_map/get_current_user")
       .then(function (response) {
         that.appStateStore.logged_in = response.data.logged_in
         that.appStateStore.username = response.data.username
@@ -215,12 +215,15 @@ export default {
   <div>
     <!-- Database Selection -->
     <div class="flex justify-between items-center mb-2">
-      <span class="ml-1 text-black font-bold font-['Lexend']">Quiddity</span>
+      <a :href="`?dataset_id=${appState.settings.dataset_id}`" class="w-8 p-2 text-gray-500 hover:bg-gray-100 rounded">
+        <HomeIcon></HomeIcon>
+      </a>
+      <span class="ml-1 text-black font-bold font-['Lexend']">{{ appState.dataset ? appState.dataset.workspace_tool_title || "Quiddity" : '' }}</span>
       <div class="flex-1"></div>
 
       <select v-model="internal_dataset_id" @change="dataset_id_changed_by_user"
         class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500">
-        <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
+        <option v-for="item in available_databases" :value="item.id" selected>{{ item.name }}</option>
       </select>
       <div class="flex-1"></div>
       <a v-if="!appState.logged_in" :href="`org/login/?next=/?dataset_id=${appState.settings.dataset_id}`"
@@ -231,9 +234,6 @@ export default {
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
         {{ appState.username }}
       </span>
-      <a :href="`?dataset_id=${appState.settings.dataset_id}`" class="w-8 p-2 text-gray-500 hover:bg-gray-100 rounded">
-        <HomeIcon></HomeIcon>
-      </a>
       <a v-if="appState.logged_in" :href="`org/admin/`"
         title="Manage Datasets"
         class="w-8 p-2 text-sm text-gray-500 hover:bg-gray-100 rounded">
@@ -279,7 +279,7 @@ export default {
       <!-- note: search event is not standard -->
       <div class="flex-1 h-9 flex flex-row items-center">
         <input type="search" name="search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query"
-        :placeholder="appState.settings.search.search_type == 'external_input' ? 'Describe what you want to find' : 'But more like this:'"
+        :placeholder="appState.settings.search.search_type == 'external_input' ? `Describe what ${dataset_information[appState.settings.dataset_id] ? dataset_information[appState.settings.dataset_id].entity_name || '' : ''} you want to find` : 'But more like this:'"
         class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
       ring-inset ring-gray-300 placeholder:text-gray-400
       focus:ring-2 focus:ring-inset focus:ring-blue-400

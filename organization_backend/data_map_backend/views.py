@@ -54,6 +54,9 @@ def get_dataset(request):
 
     dataset_dict = DatasetSerializer(instance=dataset).data
     dataset_dict["object_fields"] = {item['identifier']: item for item in dataset_dict["object_fields"]}
+    dataset_dict["workspace_tool_title"] = dataset.organization.workspace_tool_title
+    dataset_dict["workspace_tool_logo_url"] = dataset.organization.workspace_tool_logo_url
+    dataset_dict["workspace_tool_intro_text"] = dataset.organization.workspace_tool_intro_text
 
     result = json.dumps(dataset_dict)
     return HttpResponse(result, status=200, content_type='application/json')
@@ -78,7 +81,9 @@ def get_available_datasets(request):
         elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
             continue
         result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
-                       "name_plural": dataset.name_plural, "short_description": dataset.short_description})
+                       "entity_name": dataset.entity_name, "entity_name_plural": dataset.entity_name_plural,
+                       "short_description": dataset.short_description,
+                       })
 
     result = json.dumps(result)
     return HttpResponse(result, status=200, content_type='application/json')

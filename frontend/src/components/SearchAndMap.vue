@@ -904,7 +904,7 @@ export default {
         </div>
 
         <!-- right column (e.g. for showing box with details for selected result) -->
-        <div ref="right_column" class="flex flex-col overflow-hidden pointer-events-none">
+        <div ref="right_column" class="flex flex-col overflow-hidden md:h-screen pointer-events-none">
 
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
             <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :dataset="appState.dataset"
@@ -920,6 +920,17 @@ export default {
             <span class="self-center text-gray-400 font-bold">{{ progress_step_title }}</span>
             <div class="self-center w-1/5 mt-2 bg-gray-400/50 rounded-full h-2.5">
               <div class="bg-blue-400 h-2.5 rounded-full" :style="{'width': (progress * 100).toFixed(0) + '%'}"></div>
+            </div>
+          </div>
+
+          <div v-if="!show_loading_bar && !search_results.length"
+            class="flex-1 flex flex-col justify-center align-center pointer-events-auto">
+            <div class="flex flex-row justify-center mb-6">
+              <img class="h-12"
+                :src="appState.dataset ? appState.dataset.workspace_tool_logo_url : ''">
+            </div>
+            <div class="flex-none text-center text-gray-400 font-bold mb-2"
+              v-html="appState.dataset ? appState.dataset.workspace_tool_intro_text : ''">
             </div>
           </div>
         </div>

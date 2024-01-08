@@ -203,6 +203,23 @@ class Organization(models.Model):
         verbose_name="Members",
         to=User,
         blank=True)
+    workspace_tool_title = models.CharField(
+        verbose_name="Workspace Tool Title",
+        help_text="Title of the workspace tool in the frontend",
+        max_length=40,
+        blank=True,
+        null=True)
+    workspace_tool_logo_url = models.CharField(
+        verbose_name="Workspace Tool Logo URL",
+        help_text="URL of the workspace tool logo in the frontend",
+        max_length=200,
+        blank=True,
+        null=True)
+    workspace_tool_intro_text = models.TextField(
+        verbose_name="Workspace Tool Intro Text",
+        help_text="Intro text of the workspace tool, HTML is allowed",
+        blank=True,
+        null=True)
 
     history = HistoricalRecords()
 
@@ -244,11 +261,17 @@ class Dataset(models.Model):
         max_length=200,
         blank=False,
         null=False)
-    name_plural = models.CharField(
-        verbose_name="Name (Plural)",
-        max_length=200,
-        blank=False,
-        null=False)
+    entity_name = models.CharField(
+        verbose_name="Entity Name",
+        help_text="The type of the entity, e.g. 'Product' or 'Article'",
+        max_length=40,
+        blank=True,
+        null=True)
+    entity_name_plural = models.CharField(
+        verbose_name="Entity Name (Plural)",
+        max_length=40,
+        blank=True,
+        null=True)
     short_description = models.CharField(
         verbose_name="Short Description",
         max_length=200,
