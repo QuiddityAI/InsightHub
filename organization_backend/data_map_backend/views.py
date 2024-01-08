@@ -17,7 +17,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
 def is_from_backend(request):
     # FIXME: this is not secure
-    return request.META.get('HTTP_ORIGIN') == 'http://localhost:55125'
+    return request.META.get('HTTP_ORIGIN') in ('http://localhost:55125', 'http://home-server:55125', None)
 
 
 @csrf_exempt
@@ -88,7 +88,7 @@ def get_available_datasets(request):
 def add_search_history_item(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -116,7 +116,7 @@ def add_search_history_item(request):
 def get_search_history(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -136,7 +136,7 @@ def get_search_history(request):
 def add_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -162,7 +162,7 @@ def add_classifier(request):
 def get_classifiers(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -182,7 +182,7 @@ def get_classifiers(request):
 def get_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -207,7 +207,7 @@ def get_classifier(request):
 def get_classifier_examples(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -234,7 +234,7 @@ def get_classifier_examples(request):
 def delete_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -258,7 +258,7 @@ def delete_classifier(request):
 def add_item_to_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -302,7 +302,7 @@ def add_item_to_classifier(request):
 def remove_item_from_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -333,7 +333,7 @@ def remove_item_from_classifier(request):
 def add_stored_map(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -362,7 +362,7 @@ def add_stored_map(request):
 def get_stored_maps(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -383,7 +383,7 @@ def get_stored_maps(request):
 def get_stored_map_data(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
@@ -406,7 +406,7 @@ def get_stored_map_data(request):
 def delete_stored_map(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
