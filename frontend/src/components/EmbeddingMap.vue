@@ -384,7 +384,7 @@ export default {
       const scaleChange = math.max(math.max(newBaseScaleTarget[0], this.baseScaleTarget[0]) / math.min(newBaseScaleTarget[0], this.baseScaleTarget[0]), math.max(newBaseScaleTarget[1], this.baseScaleTarget[1]) / math.min(newBaseScaleTarget[1], this.baseScaleTarget[1]))
       this.baseOffsetTarget = newBaseOffsetTarget
       this.baseScaleTarget = newBaseScaleTarget
-      if (offsetChange > 1.5 || scaleChange > 1.5) {
+      if (offsetChange > 30.5 || scaleChange > 3.5) {
         this.baseOffset = this.baseOffsetTarget.slice()  // using slice to copy the array
         this.baseScale = this.baseScaleTarget.slice()  // using slice to copy the array
         this.baseOffsetVelocity = [0.0, 0.0]
