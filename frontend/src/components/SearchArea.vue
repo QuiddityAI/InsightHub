@@ -214,11 +214,12 @@ export default {
 <template>
   <div>
     <!-- Database Selection -->
-    <div class="flex justify-between items-center mb-1">
-      <a :href="`?dataset_id=${appState.settings.dataset_id}`" class="w-8 p-2 text-gray-500 hover:bg-gray-100 rounded">
-        <HomeIcon></HomeIcon>
-      </a>
-      <select v-model="internal_dataset_id" @change="dataset_id_changed_by_user" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+    <div class="flex justify-between items-center mb-2">
+      <span class="ml-1 text-black font-bold font-['Lexend']">Quiddity</span>
+      <div class="flex-1"></div>
+
+      <select v-model="internal_dataset_id" @change="dataset_id_changed_by_user"
+        class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500">
         <option v-for="item in available_databases" :value="item.id" selected>{{ item.name_plural }}</option>
       </select>
       <div class="flex-1"></div>
@@ -230,6 +231,9 @@ export default {
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
         {{ appState.username }}
       </span>
+      <a :href="`?dataset_id=${appState.settings.dataset_id}`" class="w-8 p-2 text-gray-500 hover:bg-gray-100 rounded">
+        <HomeIcon></HomeIcon>
+      </a>
       <a v-if="appState.logged_in" :href="`org/admin/`"
         title="Manage Datasets"
         class="w-8 p-2 text-sm text-gray-500 hover:bg-gray-100 rounded">
