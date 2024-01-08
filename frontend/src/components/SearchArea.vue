@@ -40,7 +40,7 @@ export default {
     return {
       internal_dataset_id: null,
 
-      show_negative_query_field: true,
+      show_negative_query_field: false,
       show_settings: false,
       available_databases: [],
       database_information: {},
@@ -285,10 +285,10 @@ export default {
       focus:ring-2 focus:ring-inset focus:ring-blue-400
       sm:text-sm sm:leading-6 shadow-sm" />
       </div>
-      <button title="Negative Search" @click="show_negative_query_field = !show_negative_query_field" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_negative_query_field, 'text-gray-500': !show_negative_query_field }">
+      <button title="Negative Search" @click="show_negative_query_field = !show_negative_query_field" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_negative_query_field, 'text-gray-400': !show_negative_query_field }">
         <MinusCircleIcon></MinusCircleIcon>
       </button>
-      <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-500': !show_settings }">
+      <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-400': !show_settings }">
         <AdjustmentsHorizontalIcon></AdjustmentsHorizontalIcon>
       </button>
     </div>
