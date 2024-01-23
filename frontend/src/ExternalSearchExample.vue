@@ -54,7 +54,7 @@ export default {
 
         <iframe
           allowfullscreen="true"
-          src="index.html?dataset_id=6&map_id=72fb88b3e8159ad275364753fe7a4b00"
+          src="embed.html?dataset_id=6&map_id=72fb88b3e8159ad275364753fe7a4b00"
           width="100%"
           style="max-width: 1200px; min-height: 500px"
         >
