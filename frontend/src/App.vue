@@ -1,5 +1,5 @@
 <script setup>
-import MainNavigation from './components/MainNavigation.vue';
+import SearchAndMap from './screens/SearchAndMap.vue';
 </script>
 
 <script>
@@ -14,7 +14,7 @@ export default {
 </script>
 
 <template>
-  <MainNavigation/>
+  <SearchAndMap/>
 </template>
 
 <style scoped>

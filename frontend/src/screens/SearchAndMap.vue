@@ -6,12 +6,12 @@ import { mapStores } from 'pinia'
 import { Chart } from 'chart.js/auto'
 import annotationPlugin from 'chartjs-plugin-annotation';
 
-import EmbeddingMap from './EmbeddingMap.vue';
-import SearchArea from './SearchArea.vue';
-import ResultListItem from './ResultListItem.vue';
-import ObjectDetailsModal from './ObjectDetailsModal.vue';
-import Classifier from './Classifier.vue';
-import ClassifierExample from './ClassifierExample.vue';
+import EmbeddingMap from '../components/EmbeddingMap.vue';
+import SearchArea from '../components/SearchArea.vue';
+import ResultListItem from '../components/ResultListItem.vue';
+import ObjectDetailsModal from '../components/ObjectDetailsModal.vue';
+import Classifier from '../components/Classifier.vue';
+import ClassifierExample from '../components/ClassifierExample.vue';
 
 import httpClient from '../api/httpClient';
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
@@ -935,6 +935,10 @@ export default {
           </div>
         </div>
 
+      </div>
+
+      <div v-if="appState.dataset ? !appState.dataset.workspace_tool_title : true" class="absolute bottom-4 -right-3 pl-3 pr-5 py-1 bg-black rounded-xl shadow-sm font-['Lexend']">
+        <span class="text-white font-bold">Quiddity</span> <span class="text-gray-200 font-light">Workspace</span>
       </div>
 
       <!--  -->
