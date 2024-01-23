@@ -429,21 +429,12 @@ export default {
       this.selectedDocumentDetails = null
     },
     updateMapPassiveMargin() {
-      if (window.innerWidth > 768) {
-        this.$refs.embedding_map.passiveMarginsLRTB = [
-          this.$refs.left_column.getBoundingClientRect().right + 50,
-          50,
-          50,
-          150
-        ]
-      } else {
-        this.$refs.embedding_map.passiveMarginsLRTB = [
-          50,
-          50,
-          250,
-          50
-        ]
-      }
+      this.$refs.embedding_map.passiveMarginsLRTB = [
+        50,
+        50,
+        50,
+        50
+      ]
     },
     create_classifier(name) {
       const that = this
@@ -746,162 +737,6 @@ export default {
       <!-- content area -->
       <div class="relative h-screen mr-auto max-w-7xl px-3 pt-6 pb-20 md:pt-6 md:pb-6 xl:px-12 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0 min-w-0 overflow-hidden pointer-events-none"
         style="grid-auto-rows: minmax(auto, min-content);">
-
-        <!-- left column -->
-        <div ref="left_column" class="flex flex-col overflow-hidden pointer-events-none">
-
-          <!-- search card -->
-          <SearchArea @request_search_results="request_search_results" @reset_search_box="reset_search_box"
-            @show_global_map="show_global_map"
-            class="flex-none rounded-md shadow-sm bg-white p-3 pointer-events-auto"></SearchArea>
-
-          <!-- tab box -->
-          <div class="flex-initial flex flex-col overflow-hidden mt-3 rounded-md shadow-sm bg-white pointer-events-auto">
-            <div class="flex-none flex flex-row gap-1 py-3 mx-3 text-gray-500">
-              <button @click="selected_tab = 'map'" :class="{'text-blue-500': selected_tab === 'map'}" class="flex-none px-5">
-                ◯
-              </button>
-              <button @click="selected_tab = 'results'" :class="{'text-blue-500': selected_tab === 'results'}" class="flex-1">
-                Results
-              </button>
-              <button @click="selected_tab = 'history'" :class="{'text-blue-500': selected_tab === 'history'}" class="flex-1">
-                History
-              </button>
-              <button @click="selected_tab = 'maps'" :class="{'text-blue-500': selected_tab === 'maps'}" class="flex-1">
-                Maps
-              </button>
-              <button @click="selected_tab = 'classifiers'" :class="{'text-blue-500': selected_tab === 'classifiers'}" class="flex-1">
-                Collections
-              </button>
-            </div>
-            <hr v-if="selected_tab !== 'map'" class="h-px bg-gray-200 border-0">
-
-            <div class="flex-initial overflow-y-auto px-3" style="min-height: 0;">
-              <!-- result list -->
-              <div v-if="selected_tab === 'results'">
-
-                <div v-if="appState.debug_autocut">
-                  <canvas ref="score_info_chart"></canvas>
-                  <div v-if="search_result_score_info">
-                    <div v-for="score_info_title in Object.keys(search_result_score_info)" class="text-xs">
-                      {{ score_info_title }} <br>
-                      Max score: {{ search_result_score_info[score_info_title].max_score.toFixed(2) }},
-                      Min score: {{ search_result_score_info[score_info_title].min_score.toFixed(2) }},
-                      Cutoff Index: {{ search_result_score_info[score_info_title].cutoff_index }},
-                      Reason: {{ search_result_score_info[score_info_title].reason }}
-                      <div v-for="item_id in search_result_score_info[score_info_title].positive_examples" :key="'example' + item_id" class="justify-between pb-3">
-                        <ClassifierExample :item_id="item_id" :is_positive="true">
-                        </ClassifierExample>
-                      </div>
-                      <div v-for="item_id in search_result_score_info[score_info_title].negative_examples" :key="'example' + item_id" class="justify-between pb-3">
-                        <ClassifierExample :item_id="item_id" :is_positive="false">
-                        </ClassifierExample>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div v-if="search_results.length !== 0" class="flex flex-row items-center mt-2 ml-2">
-                  <span class="flex-none mr-2 text-gray-500">Cluster:</span>
-                  <select v-model="appState.selected_cluster_id" class="flex-1 text-gray-500 text-md border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-                    <option :value="null" selected>All</option>
-                    <option v-for="cluster in cluster_data" :value="cluster.id" selected>{{ cluster.title }}</option>
-                  </select>
-                </div>
-
-                <ul v-if="search_results.length !== 0" role="list" class="pt-1">
-                  <li v-for="item in search_results.filter((result, i) => (appState.selected_cluster_id == null || clusterIdsPerPoint[i] == appState.selected_cluster_id)).slice(0, 10)" :key="item._id" class="justify-between pb-3">
-                    <ResultListItem :initial_item="item" :rendering="result_list_rendering" :dataset="appState.dataset"
-                      @mouseenter="appState.highlighted_item_id = item._id"
-                      @mouseleave="appState.highlighted_item_id = null"
-                      @mousedown="show_document_details_by_id(item._id)"
-                    ></ResultListItem>
-                  </li>
-                </ul>
-                <div v-if="search_results.length === 0" class="h-20 flex flex-col text-center place-content-center">
-                  <p class="flex-none text-gray-400">No Results Yet</p>
-                </div>
-              </div>
-
-              <!-- history -->
-              <div v-if="selected_tab === 'history'">
-                <ul v-if="Object.keys(search_history).length !== 0" role="list" class="pt-3">
-                  <li v-for="history_item in search_history.slice().reverse()" :key="history_item.id" class="justify-between pb-3">
-                    <div class="flex flex-row gap-3">
-                      <span class="text-gray-500 font-medium" v-html="history_item.name"></span>
-                      <div class="flex-1"></div>
-                      <button @click="run_search_from_history(history_item)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Run again</button>
-                    </div>
-                  </li>
-                </ul>
-                <div v-if="Object.keys(search_history).length === 0" class="h-20 flex flex-col text-center place-content-center">
-                  <p class="flex-none text-gray-400">No History Yet</p>
-                </div>
-              </div>
-
-              <!-- maps -->
-              <div v-if="selected_tab === 'maps'">
-                <div class="my-2 flex items-stretch">
-                  <button
-                    class="flex-auto px-2 rounded-md border-0 py-1.5 text-gray-900 ring-1
-                      ring-inset ring-gray-300 placeholder:text-gray-400
-                      focus:ring-2 focus:ring-inset focus:ring-blue-400
-                      sm:text-sm sm:leading-6 shadow-sm"
-                    type="button" @click="store_current_map">
-                    Add Current Map
-                  </button>
-                </div>
-
-                <ul v-if="Object.keys(stored_maps).length !== 0" role="list" class="pt-3">
-                  <li v-for="stored_map in stored_maps" :key="stored_map.name" class="justify-between pb-3">
-                    <div class="flex flex-row gap-3">
-                      <span class="text-gray-500 font-medium">{{ stored_map.name }}</span>
-                      <div class="flex-1"></div>
-                      <button @click="delete_stored_map(stored_map.id)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Delete</button>
-                      <button @click="show_stored_map(stored_map.id)" class="text-sm text-gray-500 font-light hover:text-blue-500/50">Show Map</button>
-                    </div>
-                  </li>
-                </ul>
-                <div v-if="Object.keys(stored_maps).length === 0" class="h-20 flex flex-col text-center place-content-center">
-                  <p class="flex-none text-gray-400">No Stored Maps Yet</p>
-                </div>
-              </div>
-
-              <!-- classifiers -->
-              <div v-if="selected_tab === 'classifiers'">
-                <div class="my-2 flex items-stretch">
-                  <input ref="new_classifier_name"
-                    type="text"
-                    class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 ring-1
-                      ring-inset ring-gray-300 placeholder:text-gray-400
-                      focus:ring-2 focus:ring-inset focus:ring-blue-400
-                      sm:text-sm sm:leading-6 shadow-sm"
-                    placeholder="Collection Name"/>
-                  <button
-                    class="px-2 rounded-r-md border-0 py-1.5 text-gray-900 ring-1
-                      ring-inset ring-gray-300 placeholder:text-gray-400
-                      focus:ring-2 focus:ring-inset focus:ring-blue-400
-                      sm:text-sm sm:leading-6 shadow-sm"
-                    type="button" @click="create_classifier($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''">
-                    Create
-                  </button>
-                </div>
-
-                <ul v-if="Object.keys(appState.classifiers).length !== 0" role="list" class="pt-3">
-                  <Classifier v-for="classifier in appState.classifiers" :classifier="classifier" :key="classifier.id"
-                    @delete_classifier="delete_classifier"
-                    @recommend_items_for_classifier="recommend_items_for_classifier"
-                    @show_classifier_as_map="show_classifier_as_map"
-                    class="justify-between pb-3">
-                  </Classifier>
-                </ul>
-                <div v-if="Object.keys(appState.classifiers).length === 0" class="h-20 flex flex-col text-center place-content-center">
-                  <p class="flex-none text-gray-400">No Collections Yet</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- right column (e.g. for showing box with details for selected result) -->
         <div ref="right_column" class="flex flex-col overflow-hidden md:h-screen pointer-events-none">
