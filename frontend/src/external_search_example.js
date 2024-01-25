@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import './style.css'
-import ExternalSearchExample from './ExternalSearchExample.vue'
+import ExternalSearchExample from './apps/ExternalSearchExample.vue'
 
 const app = createApp(ExternalSearchExample)
 

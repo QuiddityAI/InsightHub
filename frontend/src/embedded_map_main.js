@@ -1,10 +1,10 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import './style.css'
-import EmbeddedMapMain from './EmbeddedMapMain.vue'
+import EmbeddedMap from './apps/EmbeddedMap.vue'
 
 const pinia = createPinia()
-const app = createApp(EmbeddedMapMain)
+const app = createApp(EmbeddedMap)
 
 app.use(pinia)
 app.mount('#app')
