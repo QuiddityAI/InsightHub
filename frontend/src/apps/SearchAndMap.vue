@@ -6,7 +6,7 @@ import { mapStores } from 'pinia'
 import { Chart } from 'chart.js/auto'
 import annotationPlugin from 'chartjs-plugin-annotation';
 
-import EmbeddingMap from '../components/EmbeddingMap.vue';
+import InteractiveMap from '../components/map/InteractiveMap.vue';
 import SearchArea from '../components/SearchArea.vue';
 import ResultListItem from '../components/ResultListItem.vue';
 import ObjectDetailsModal from '../components/ObjectDetailsModal.vue';
@@ -720,7 +720,7 @@ export default {
 <template>
     <main class="overflow-hidden">
 
-      <EmbeddingMap ref="embedding_map" class="absolute top-0 w-screen h-screen"
+      <InteractiveMap ref="embedding_map" class="absolute top-0 w-screen h-screen"
         :appStateStore="appState"
         @cluster_selected="narrow_down_on_cluster"
         @point_selected="show_document_details"

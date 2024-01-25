@@ -9,15 +9,15 @@ import panzoom from 'panzoom';
 import { Renderer, Camera, Geometry, Program, Mesh, Transform, Texture, TextureLoader } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
 import * as math from 'mathjs'
 
-import pointsVertexShader from '../shaders/points.vert?raw'
-import pointsFragmentShader from '../shaders/points_rectangular_thumbnail.frag?raw'
-import shadowsVertexShader from '../shaders/shadows.vert?raw'
-import shadowsFragmentShader from '../shaders/shadows.frag?raw'
+import pointsVertexShader from '../../shaders/points.vert?raw'
+import pointsFragmentShader from '../../shaders/points_rectangular_thumbnail.frag?raw'
+import shadowsVertexShader from '../../shaders/shadows.vert?raw'
+import shadowsFragmentShader from '../../shaders/shadows.frag?raw'
 
-import pointTextureBaseColorUrl from '../textures/Brick_Wall_017_basecolor.jpg'
-import pointTextureNormalMapUrl from '../textures/Crystal_001_NORM.jpg'
+import pointTextureBaseColorUrl from '../../textures/Brick_Wall_017_basecolor.jpg'
+import pointTextureNormalMapUrl from '../../textures/Crystal_001_NORM.jpg'
 
-import { ensureLength } from '../utils/utils.js'
+import { ensureLength } from '../../utils/utils.js'
 
 export default {
   props: ["appStateStore"],  // for some reason, importing it doesn't work
