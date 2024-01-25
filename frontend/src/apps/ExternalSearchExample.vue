@@ -6,6 +6,17 @@
 export default {
   data() {
     return {
+      search_query: "",
+      embedded_map_url: "embedded_map.html?dataset_id=6",
+    }
+  },
+  methods: {
+    execute_search() {
+      if (this.search_query == "") {
+        this.embedded_map_url = "embedded_map.html?dataset_id=6"
+      } else {
+        this.embedded_map_url = "embedded_map.html?dataset_id=6&query=" + encodeURIComponent(this.search_query)
+      }
     }
   }
 }
@@ -44,7 +55,7 @@ export default {
         <!-- search bar with rounded corners, full width -->
         <div class="flex-1 h-9 flex flex-row items-center mb-4">
           <span class="mr-4">Search:</span>
-          <input type="search" name="search" @search=""
+          <input type="search" name="search" @search="execute_search" v-model="search_query"
           :placeholder="`Describe what you want to find`"
           class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
         ring-inset ring-gray-300 placeholder:text-gray-400
@@ -54,7 +65,7 @@ export default {
 
         <iframe
           allowfullscreen="true"
-          src="embedded_map.html?dataset_id=6&map_id=72fb88b3e8159ad275364753fe7a4b00"
+          :src="embedded_map_url"
 
           _option_without_access_to_their_db_src="absclust.com/embed.html?item_set=www.xyz_tool.com/result_set_1234.json"
 

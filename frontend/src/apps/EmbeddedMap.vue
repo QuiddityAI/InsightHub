@@ -657,8 +657,13 @@ export default {
           that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
 
           const queryParams = new URLSearchParams(window.location.search);
-          if (queryParams.get("dataset_id") === String(that.appStateStore.settings.dataset_id) && queryParams.get("map_id")) {
+          if (queryParams.get("dataset_id") === String(that.appStateStore.settings.dataset_id)
+              && queryParams.get("map_id")) {
             that.show_stored_map(queryParams.get("map_id"))
+          } else if (queryParams.get("dataset_id") === String(that.appStateStore.settings.dataset_id)
+              && queryParams.get("query")) {
+            that.appStateStore.settings.search.all_field_query = queryParams.get("query")
+            that.request_search_results()
           }
         })
 
