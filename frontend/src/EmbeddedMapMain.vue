@@ -1,5 +1,5 @@
 <script setup>
-import Embedded from './screens/Embedded.vue';
+import EmbeddedMap from './screens/EmbeddedMap.vue';
 </script>
 
 <script>
@@ -14,7 +14,7 @@ export default {
 </script>
 
 <template>
-  <Embedded/>
+  <EmbeddedMap/>
 </template>
 
 <style scoped>

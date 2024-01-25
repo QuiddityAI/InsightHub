@@ -54,7 +54,7 @@ export default {
 
         <iframe
           allowfullscreen="true"
-          src="embed.html?dataset_id=6&map_id=72fb88b3e8159ad275364753fe7a4b00"
+          src="embedded_map.html?dataset_id=6&map_id=72fb88b3e8159ad275364753fe7a4b00"
 
           _option_without_access_to_their_db_src="absclust.com/embed.html?item_set=www.xyz_tool.com/result_set_1234.json"
 
