@@ -269,7 +269,7 @@ export default {
             const results_per_point = results["per_point_data"]
             if (results_per_point["hover_label_data"] && results_per_point["hover_label_data"].length > 0) {
               that.map_item_details = results_per_point["hover_label_data"]
-              that.$refs.embedding_map.itemDetails = results_per_point["hover_label_data"]
+              that.$refs.embedding_map.per_point.text_data = results_per_point["hover_label_data"]
               that.search_results = results_per_point["hover_label_data"]
               that.fields_already_received.add('hover_label_data')
             }
@@ -296,20 +296,20 @@ export default {
             }
 
             if (results_per_point["cluster_ids"] && results_per_point["cluster_ids"].length > 0) {
-              that.$refs.embedding_map.clusterIdsPerPoint = results_per_point["cluster_ids"]
+              that.$refs.embedding_map.per_point.cluster_id = results_per_point["cluster_ids"]
               that.clusterIdsPerPoint = results_per_point["cluster_ids"]
               that.fields_already_received.add('cluster_ids')
             } else if (!that.fields_already_received.has('cluster_ids')) {
-              that.$refs.embedding_map.clusterIdsPerPoint = Array(that.$refs.embedding_map.targetPositionsX.length).fill(-1)
+              that.$refs.embedding_map.per_point.cluster_id = Array(that.$refs.embedding_map.per_point.x.length).fill(-1)
             }
 
             let should_update_geometry = false
             if (results_per_point["positions_x"] && results_per_point["positions_x"].length > 0) {
-              that.$refs.embedding_map.targetPositionsX = results_per_point["positions_x"]
+              that.$refs.embedding_map.per_point.x = results_per_point["positions_x"]
               should_update_geometry = true
             }
             if (results_per_point["positions_y"] && results_per_point["positions_y"].length > 0) {
-              that.$refs.embedding_map.targetPositionsY = results_per_point["positions_y"]
+              that.$refs.embedding_map.per_point.y = results_per_point["positions_y"]
               should_update_geometry = true
             }
             if (should_update_geometry) {

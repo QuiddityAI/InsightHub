@@ -32,10 +32,11 @@ export default {
       // external:
       passiveMarginsLRTB: [0, 0, 0, 0],
 
-      // per point:
-      targetPositionsX: [],
-      targetPositionsY: [],
       per_point: {
+        cluster_id: [],
+        text_data: [],
+        x: [],
+        y: [],
         size: [],
         hue: [],
         sat: [],
@@ -46,8 +47,6 @@ export default {
         secondary_val: [],
         secondary_opacity: [],
       },
-      clusterIdsPerPoint: [],
-      itemDetails: [],  // text data per point
 
       // for all points:
       maxOpacity: 0.7,
@@ -135,11 +134,11 @@ export default {
         this.$emit('cluster_hover_end')
         return
       }
-      for (const i of Array(this.itemDetails.length).keys()) {
-        if (this.itemDetails[i]._id == this.appStateStore.highlighted_item_id) {
+      for (const i of Array(this.per_point.text_data.length).keys()) {
+        if (this.per_point.text_data[i]._id == this.appStateStore.highlighted_item_id) {
           this.highlightedPointIdx = i
           // TODO: highlighted_cluster_id should be changed directly, but currently accessing appState breaks this component
-          this.$emit('cluster_hovered', this.clusterIdsPerPoint[i])
+          this.$emit('cluster_hovered', this.per_point.cluster_id[i])
           this.updateUniforms()
           break
         }
@@ -148,9 +147,11 @@ export default {
   },
   methods: {
     resetData() {
-      this.targetPositionsX = []
-      this.targetPositionsY = []
       this.per_point = {
+        cluster_id: [],
+        text_data: [],
+        x: [],
+        y: [],
         size: [],
         hue: [],
         sat: [],
@@ -161,8 +162,6 @@ export default {
         secondary_val: [],
         secondary_opacity: [],
       }
-      this.clusterIdsPerPoint = []
-      this.itemDetails = []
 
       this.maxOpacity = 0.7
       this.pointSizeFactor = 1.0
@@ -292,12 +291,12 @@ export default {
         const timeSinceLastUpdateInSec = (currentTimeInMs - lastUpdateTimeInMs) / 1000.0
         lastUpdateTimeInMs = currentTimeInMs
 
-        if (that.currentPositionsX.length == 0 || that.currentPositionsX.length != that.targetPositionsX.length) return;
+        if (that.currentPositionsX.length == 0 || that.currentPositionsX.length != that.per_point.x.length) return;
 
         // restDelta means at which distance from the target position the movement stops and they
         // jump to the target (otherwise the motion could go on forever)
         // here we assume that the plot is about 700px wide and if the delta is less than a pixel, it should stop
-        const restDelta = (math.max(that.targetPositionsX) - math.min(that.targetPositionsX)) / 700.0
+        const restDelta = (math.max(that.per_point.x) - math.min(that.per_point.x)) / 700.0
         // to make sure overshoots still work, we don't stop the motion if the speed is still
         // greater than restSpeed, here defined as restDelta per 1/5th second
         const restSpeed = restDelta / 0.2  // in restDelta units per sec
@@ -338,30 +337,30 @@ export default {
           }
         }
 
-        if (that.currentPositionsX.length === that.targetPositionsX.length) {
-          const diffX = math.subtract(that.targetPositionsX, that.currentPositionsX)
-          const diffY = math.subtract(that.targetPositionsY, that.currentPositionsY)
+        if (that.currentPositionsX.length === that.per_point.x.length) {
+          const diffX = math.subtract(that.per_point.x, that.currentPositionsX)
+          const diffY = math.subtract(that.per_point.y, that.currentPositionsY)
           if (math.max(math.abs(diffX)) > restDelta || math.max(math.abs(diffY)) > restDelta) {
             geometryChanged = true
 
             const aX = getAccelerationOfSpringArr(
-              that.currentPositionsX, that.currentVelocityX, that.targetPositionsX,
+              that.currentPositionsX, that.currentVelocityX, that.per_point.x,
               /* stiffness */ 20.0, /* mass */ 1.0, /* damping */ 6.0
             )
             that.currentVelocityX = math.add(that.currentVelocityX, math.dotMultiply(aX, timeSinceLastUpdateInSec))
             that.currentPositionsX = math.add(that.currentPositionsX, math.dotMultiply(that.currentVelocityX, timeSinceLastUpdateInSec))
             if (math.max(math.abs(that.currentVelocityX)) < restSpeed && math.max(math.abs(diffX)) < restDelta) {
-              that.currentPositionsX = that.targetPositionsX.slice()  // using slice to copy the array
+              that.currentPositionsX = that.per_point.x.slice()  // using slice to copy the array
             }
 
             const aY = getAccelerationOfSpringArr(
-              that.currentPositionsY, that.currentVelocityY, that.targetPositionsY,
+              that.currentPositionsY, that.currentVelocityY, that.per_point.y,
               /* stiffness */ 20.0, /* mass */ 1.0, /* damping */ 6.0
             )
             that.currentVelocityY = math.add(that.currentVelocityY, math.dotMultiply(aY, timeSinceLastUpdateInSec))
             that.currentPositionsY = math.add(that.currentPositionsY, math.dotMultiply(that.currentVelocityY, timeSinceLastUpdateInSec))
             if (math.max(math.abs(that.currentVelocityY)) < restSpeed && math.max(math.abs(diffY)) < restDelta) {
-              that.currentPositionsY = that.targetPositionsY.slice()  // using slice to copy the array
+              that.currentPositionsY = that.per_point.y.slice()  // using slice to copy the array
             }
 
           }
@@ -375,11 +374,11 @@ export default {
       }
     },
     centerAndFitDataToActiveAreaSmooth() {
-      if (this.targetPositionsX.length === 0) return;
-      const newBaseOffsetTarget = [-math.min(this.targetPositionsX), -math.min(this.targetPositionsY)]
+      if (this.per_point.x.length === 0) return;
+      const newBaseOffsetTarget = [-math.min(this.per_point.x), -math.min(this.per_point.y)]
       const newBaseScaleTarget = [1.0, 1.0]
-      newBaseScaleTarget[0] = 1.0 / (math.max(this.targetPositionsX) + newBaseOffsetTarget[0])
-      newBaseScaleTarget[1] = 1.0 / (math.max(this.targetPositionsY) + newBaseOffsetTarget[1])
+      newBaseScaleTarget[0] = 1.0 / (math.max(this.per_point.x) + newBaseOffsetTarget[0])
+      newBaseScaleTarget[1] = 1.0 / (math.max(this.per_point.y) + newBaseOffsetTarget[1])
       const offsetChange = math.max(math.max(newBaseOffsetTarget[0], this.baseOffsetTarget[0]) / math.min(newBaseOffsetTarget[0], this.baseOffsetTarget[0]), math.max(newBaseOffsetTarget[1], this.baseOffsetTarget[1]) / math.min(newBaseOffsetTarget[1], this.baseOffsetTarget[1]))
       const scaleChange = math.max(math.max(newBaseScaleTarget[0], this.baseScaleTarget[0]) / math.min(newBaseScaleTarget[0], this.baseScaleTarget[0]), math.max(newBaseScaleTarget[1], this.baseScaleTarget[1]) / math.min(newBaseScaleTarget[1], this.baseScaleTarget[1]))
       this.baseOffsetTarget = newBaseOffsetTarget
@@ -399,23 +398,23 @@ export default {
       this.baseScaleVelocity = [0.0, 0.0]
     },
     regenerateAttributeArraysFromFallbacks() {
-      const pointCount = this.targetPositionsX.length
+      const pointCount = this.per_point.x.length
       for (const attr of ["size", "hue", "sat", "val", "opacity", "secondary_hue", "secondary_sat", "secondary_val", "secondary_opacity"]) {
         this.per_point[attr] = []
         this.per_point[attr] = ensureLength(this.per_point[attr], pointCount, this.attribute_fallback[attr])
       }
     },
     updateGeometry() {
-      const pointCount = this.targetPositionsX.length
-      this.targetPositionsY = ensureLength(this.targetPositionsY, pointCount, 0.0)
+      const pointCount = this.per_point.x.length
+      this.per_point.y = ensureLength(this.per_point.y, pointCount, 0.0)
 
-      this.currentPositionsX = ensureLength(this.currentPositionsX, pointCount, pointCount > 0 ? math.mean(this.targetPositionsX) : 0.0, true)
-      this.currentPositionsY = ensureLength(this.currentPositionsY, pointCount, pointCount > 0 ? math.mean(this.targetPositionsY) : 0.0, true)
+      this.currentPositionsX = ensureLength(this.currentPositionsX, pointCount, pointCount > 0 ? math.mean(this.per_point.x) : 0.0, true)
+      this.currentPositionsY = ensureLength(this.currentPositionsY, pointCount, pointCount > 0 ? math.mean(this.per_point.y) : 0.0, true)
       this.currentVelocityX = ensureLength(this.currentVelocityX, pointCount, 0.0, true)
       this.currentVelocityY = ensureLength(this.currentVelocityY, pointCount, 0.0, true)
       this.pointVisibility = ensureLength(this.pointVisibility, pointCount, 0)
 
-      this.clusterIdsPerPoint = ensureLength(this.clusterIdsPerPoint, pointCount, 0)
+      this.per_point.cluster_id = ensureLength(this.per_point.cluster_id, pointCount, 0)
       for (const attr of ["size", "hue", "sat", "val", "opacity", "secondary_hue", "secondary_sat", "secondary_val", "secondary_opacity"]) {
         this.per_point[attr] = ensureLength(this.per_point[attr], pointCount, this.attribute_fallback[attr])
       }
@@ -436,51 +435,53 @@ export default {
       this.renderer.render({ scene: this.glScene, camera: this.camera });
     },
     updateMeshesPoints() {
-      const shadowGeometry = new Geometry(this.glContext, {
-          positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
-          positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
-          pointSize: { size: 1, data: new Float32Array(this.per_point.size) },
-          pointVisibility: { size: 1, data: new Float32Array(this.pointVisibility) },
-      });
+      // not used at the moment
 
-      this.glProgramShadows = new Program(this.glContext, {
-          vertex: shadowsVertexShader,
-          fragment: shadowsFragmentShader,
-          uniforms: this.getUniforms(),
-          transparent: true,
-          depthTest: false,
-      });
+      // const shadowGeometry = new Geometry(this.glContext, {
+      //     positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
+      //     positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
+      //     pointSize: { size: 1, data: new Float32Array(this.per_point.size) },
+      //     pointVisibility: { size: 1, data: new Float32Array(this.pointVisibility) },
+      // });
 
-      this.glMeshShadows = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry: shadowGeometry, program: this.glProgramShadows });
-      this.glMeshShadows.setParent(this.glScene)
+      // this.glProgramShadows = new Program(this.glContext, {
+      //     vertex: shadowsVertexShader,
+      //     fragment: shadowsFragmentShader,
+      //     uniforms: this.getUniforms(),
+      //     transparent: true,
+      //     depthTest: false,
+      // });
 
-      const pointsGeometry = new Geometry(this.glContext, {
-          positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
-          positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
-          clusterId: { size: 1, data: new Float32Array(this.clusterIdsPerPoint) },
-          pointSize: { size: 1, data: new Float32Array(this.per_point.size) },
-          hue: { size: 1, data: new Float32Array(this.per_point.hue) },
-          sat: { size: 1, data: new Float32Array(this.per_point.sat) },
-          val: { size: 1, data: new Float32Array(this.per_point.val) },
-          opacity: { size: 1, data: new Float32Array(this.per_point.opacity) },
-          secondary_hue: { size: 1, data: new Float32Array(this.per_point.secondary_hue) },
-          secondary_sat: { size: 1, data: new Float32Array(this.per_point.secondary_sat) },
-          secondary_val: { size: 1, data: new Float32Array(this.per_point.secondary_val) },
-          secondary_opacity: { size: 1, data: new Float32Array(this.per_point.secondary_opacity) },
-          pointVisibility: { size: 1, data: new Float32Array(this.pointVisibility) },
-      });
+      // this.glMeshShadows = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry: shadowGeometry, program: this.glProgramShadows });
+      // this.glMeshShadows.setParent(this.glScene)
 
-      this.glProgram = new Program(this.glContext, {
-          vertex: pointsVertexShader,
-          fragment: pointsFragmentShader,
-          uniforms: this.getUniforms(),
-          transparent: true,
-          depthTest: false,
-          // depthFunc: this.glContext.NOTEQUAL,
-      });
+      // const pointsGeometry = new Geometry(this.glContext, {
+      //     positionX: { size: 1, data: new Float32Array(this.currentPositionsX) },
+      //     positionY: { size: 1, data: new Float32Array(this.currentPositionsY) },
+      //     clusterId: { size: 1, data: new Float32Array(this.per_point.cluster_id) },
+      //     pointSize: { size: 1, data: new Float32Array(this.per_point.size) },
+      //     hue: { size: 1, data: new Float32Array(this.per_point.hue) },
+      //     sat: { size: 1, data: new Float32Array(this.per_point.sat) },
+      //     val: { size: 1, data: new Float32Array(this.per_point.val) },
+      //     opacity: { size: 1, data: new Float32Array(this.per_point.opacity) },
+      //     secondary_hue: { size: 1, data: new Float32Array(this.per_point.secondary_hue) },
+      //     secondary_sat: { size: 1, data: new Float32Array(this.per_point.secondary_sat) },
+      //     secondary_val: { size: 1, data: new Float32Array(this.per_point.secondary_val) },
+      //     secondary_opacity: { size: 1, data: new Float32Array(this.per_point.secondary_opacity) },
+      //     pointVisibility: { size: 1, data: new Float32Array(this.pointVisibility) },
+      // });
 
-      this.glMesh = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry: pointsGeometry, program: this.glProgram });
-      this.glMesh.setParent(this.glScene)
+      // this.glProgram = new Program(this.glContext, {
+      //     vertex: pointsVertexShader,
+      //     fragment: pointsFragmentShader,
+      //     uniforms: this.getUniforms(),
+      //     transparent: true,
+      //     depthTest: false,
+      //     // depthFunc: this.glContext.NOTEQUAL,
+      // });
+
+      // this.glMesh = new Mesh(this.glContext, { mode: this.glContext.POINTS, geometry: pointsGeometry, program: this.glProgram });
+      // this.glMesh.setParent(this.glScene)
     },
     updateMeshesQuads() {
       const pointCount = this.currentPositionsX.length
@@ -507,7 +508,7 @@ export default {
           position: { size: 2, data: new Float32Array([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]) },
           positionX: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsY) },
-          clusterId: { instanced: 1,  size: 1, data: new Float32Array(this.clusterIdsPerPoint.slice(0, pointCount)) },
+          clusterId: { instanced: 1,  size: 1, data: new Float32Array(this.per_point.cluster_id.slice(0, pointCount)) },
           pointSize: { instanced: 1, size: 1, data: new Float32Array(this.per_point.size.slice(0, pointCount)) },
           hue: { instanced: 1, size: 1, data: new Float32Array(this.per_point.hue.slice(0, pointCount)) },
           sat: { instanced: 1, size: 1, data: new Float32Array(this.per_point.sat.slice(0, pointCount)) },
@@ -668,8 +669,8 @@ export default {
     'bottom': screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
     }" style="transform: translate(-50%, 50%);">
     <div class="px-1 text-gray-500 text-xs">
-      <div v-if="itemDetails.length > pointIndex && hover_label_rendering" class="flex flex-col items-center bg-white/50 text-gray-500 text-xs rounded">
-        <img v-if="hover_label_rendering.image(itemDetails[pointIndex])" :src="hover_label_rendering.image(itemDetails[pointIndex])" class="h-24">
+      <div v-if="per_point.text_data.length > pointIndex && hover_label_rendering" class="flex flex-col items-center bg-white/50 text-gray-500 text-xs rounded">
+        <img v-if="hover_label_rendering.image(per_point.text_data[pointIndex])" :src="hover_label_rendering.image(per_point.text_data[pointIndex])" class="h-24">
       </div>
     </div>
   </div>
@@ -695,11 +696,11 @@ export default {
     'top': screenTopFromRelative(currentPositionsY[highlightedPointIdx]) + 'px',
     'max-width': '200px',
     }">
-    <div v-if="itemDetails.length > highlightedPointIdx && hover_label_rendering" class="flex flex-col items-center px-1 bg-white text-gray-500 text-xs rounded">
-      <div v-html="hover_label_rendering.title(itemDetails[highlightedPointIdx])"></div>
-      <img v-if="hover_label_rendering.image(itemDetails[highlightedPointIdx])" :src="hover_label_rendering.image(itemDetails[highlightedPointIdx])" class="h-24">
+    <div v-if="per_point.text_data.length > highlightedPointIdx && hover_label_rendering" class="flex flex-col items-center px-1 bg-white text-gray-500 text-xs rounded">
+      <div v-html="hover_label_rendering.title(per_point.text_data[highlightedPointIdx])"></div>
+      <img v-if="hover_label_rendering.image(per_point.text_data[highlightedPointIdx])" :src="hover_label_rendering.image(per_point.text_data[highlightedPointIdx])" class="h-24">
     </div>
-    <div v-if="itemDetails.length <= highlightedPointIdx || !hover_label_rendering" class="px-1 bg-white text-gray-500 text-xs rounded">
+    <div v-if="per_point.text_data.length <= highlightedPointIdx || !hover_label_rendering" class="px-1 bg-white text-gray-500 text-xs rounded">
       loading...
     </div>
   </div>
