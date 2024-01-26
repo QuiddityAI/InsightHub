@@ -5,7 +5,7 @@ import { mapStores } from 'pinia'
 
 import { Chart } from 'chart.js/auto'
 import annotationPlugin from 'chartjs-plugin-annotation';
-import { CursorArrowRaysIcon, RectangleGroupIcon, PlusIcon, MinusIcon, ViewfinderCircleIcon } from '@heroicons/vue/24/outline'
+import { CursorArrowRaysIcon, RectangleGroupIcon, PlusIcon, MinusIcon, ViewfinderCircleIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 import InteractiveMap from '../components/map/InteractiveMap.vue';
 import SearchArea from '../components/SearchArea.vue';
@@ -13,6 +13,7 @@ import ResultListItem from '../components/ResultListItem.vue';
 import ObjectDetailsModal from '../components/ObjectDetailsModal.vue';
 import Classifier from '../components/Classifier.vue';
 import ClassifierExample from '../components/ClassifierExample.vue';
+import AddToClassifierButtons from '../components/AddToClassifierButtons.vue';
 
 import httpClient from '../api/httpClient';
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from '../utils/utils'
@@ -245,6 +246,7 @@ export default {
         .then(function (response) {
           const content_type = response.headers['content-type'];
           const data = content_type == 'application/cbor' ? cborJs.decode(response.data) : response.data
+          that.appStateStore.map_data = data
 
           if (data["finished"]) {
             // no need to get further results:
@@ -476,31 +478,6 @@ export default {
           if (index_to_be_removed !== null) {
             that.appStateStore.classifiers.splice(index_to_be_removed, 1)
           }
-        })
-    },
-    add_item_to_classifier(item_index, classifier_id, class_name, is_positive) {
-      const that = this
-      const classifier = this.appStateStore.classifiers[this.appStateStore.classifiers.findIndex((e) => e.id == classifier_id)]
-      if (!classifier) return;
-
-      this.last_used_classifier_id = classifier.id
-      const item_id = this.map_item_details[item_index]._id
-      const add_item_to_classifier_body = {
-        classifier_id: classifier.id,
-        is_positive: is_positive,
-        class_name: class_name,
-        field_type: FieldType.IDENTIFIER,
-        value: item_id,
-        weight: 1.0,
-      }
-      httpClient.post("/org/data_map/add_item_to_classifier", add_item_to_classifier_body)
-        .then(function (response) {
-          // TODO: refresh list of examples if open
-          // if (is_positive) {
-          //   classifier.positive_ids.push(item_id)
-          // } else {
-          //   classifier.negative_ids.push(item_id)
-          // }
         })
     },
     store_current_map() {
@@ -738,7 +715,7 @@ export default {
           :class="{ 'text-blue-600': appState.selection_merging_mode === 'add', 'text-gray-400': appState.selection_merging_mode !== 'add' }">
           <PlusIcon></PlusIcon>
         </button>
-        <button @click="appState.selection_merging_mode = 'remove'" class="h-6 w-6 hover:bg-gray-100 rounded"
+        <button @click="appState.selection_merging_mode = 'remove'" class="h-6 w-6 mr-2 hover:bg-gray-100 rounded"
           :class="{ 'text-blue-600': appState.selection_merging_mode === 'remove', 'text-gray-400': appState.selection_merging_mode !== 'remove' }">
           <MinusIcon></MinusIcon>
         </button>
@@ -750,6 +727,16 @@ export default {
         </button>
         <button @click="appState.selected_map_tool = 'lasso'" class="h-6 w-6 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': appState.selected_map_tool === 'lasso', 'text-gray-400': appState.selected_map_tool !== 'lasso' }">
           <RectangleGroupIcon></RectangleGroupIcon>
+        </button>
+      </div>
+
+      <div v-if="appState.selected_point_indexes.length" class="absolute bottom-6 right-48 flex flex-row justify-center items-center bg-white rounded-md shadow-sm p-2 gap-2">
+        <span class="text-sm text-gray-400 mr-2">Selection:</span>
+        <AddToClassifierButtons :classifiers="appState.classifiers" :last_used_classifier_id="last_used_classifier_id"
+          @addToClassifier="this.appStateStore.add_selected_points_to_classifier">
+        </AddToClassifierButtons>
+        <button @click="appState.selected_point_indexes = []" class="h-6 w-6 hover:bg-red-100 rounded text-gray-400">
+          <XMarkIcon></XMarkIcon>
         </button>
       </div>
 
@@ -934,8 +921,7 @@ export default {
           <div v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx" class="flex-initial flex overflow-hidden pointer-events-auto w-full">
             <ObjectDetailsModal :initial_item="map_item_details[selectedDocumentIdx]" :dataset="appState.dataset"
               :classifiers="appState.classifiers" :last_used_classifier_id="last_used_classifier_id"
-              @addToPositives="(classifier_id, class_name) => { add_item_to_classifier(selectedDocumentIdx, classifier_id, class_name, true) }"
-              @addToNegatives="(classifier_id, class_name) => { add_item_to_classifier(selectedDocumentIdx, classifier_id, class_name, false) }"
+              @addToClassifier="(classifier_id, class_name, is_positive) => { appState.add_item_to_classifier(selectedDocumentIdx, classifier_id, class_name, is_positive) }"
               @showSimilarItems="showSimilarItems"
               @close="close_document_details"
             ></ObjectDetailsModal>

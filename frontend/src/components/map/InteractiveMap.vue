@@ -92,7 +92,6 @@ export default {
       // mouseover highlight and selection:
       markedPointIdx: -1,  // set externally
       hoveredPointIdx: -1,  // set internally by mouseover
-      selectedPointIndexes: [],  // used when multiple points are selected using the lasso tool
       mouseDownPosition: [-1, -1],
 
       // rendering:
@@ -128,6 +127,9 @@ export default {
     setInterval(this.updatePointVisibility, 500);
   },
   watch: {
+    "appStateStore.selected_point_indexes"() {
+      this.updateGeometry()
+    },
     "appStateStore.selected_cluster_id" () {
       this.updateUniforms()
     },
@@ -521,7 +523,7 @@ export default {
           per_point_sat[i] = 0.0
         }
       }
-      for (const i of this.selectedPointIndexes) {
+      for (const i of this.appStateStore.selected_point_indexes) {
         per_point_hue[i] = 0.0
         per_point_sat[i] = 1.0
       }
@@ -662,12 +664,11 @@ export default {
       const mouseMovementDistance = math.distance(this.mouseDownPosition, [event.clientX, event.clientY])
       if (mouseMovementDistance > 5) return;
       if (event.shiftKey) {
-        if (this.selectedPointIndexes.includes(this.hoveredPointIdx)) {
-          this.selectedPointIndexes = this.selectedPointIndexes.filter(x => x !== this.hoveredPointIdx)
+        if (this.appStateStore.selected_point_indexes.includes(this.hoveredPointIdx)) {
+          this.appStateStore.selected_point_indexes = this.appStateStore.selected_point_indexes.filter(x => x !== this.hoveredPointIdx)
         } else {
-          this.selectedPointIndexes.push(this.hoveredPointIdx)
+          this.appStateStore.selected_point_indexes.push(this.hoveredPointIdx)
         }
-        this.updateGeometry()
       } else {
         this.$emit('point_selected', this.hoveredPointIdx)
       }
@@ -715,11 +716,11 @@ export default {
         }
       }
       if (mode == 'replace') {
-        this.selectedPointIndexes = selectedPointIndexes
+        this.appStateStore.selected_point_indexes = selectedPointIndexes
       } else if (mode == 'add') {
-        this.selectedPointIndexes = [...new Set([...this.selectedPointIndexes, ...selectedPointIndexes])]
+        this.appStateStore.selected_point_indexes = [...new Set([...this.appStateStore.selected_point_indexes, ...selectedPointIndexes])]
       } else if (mode == 'remove') {
-        this.selectedPointIndexes = this.selectedPointIndexes.filter(x => !selectedPointIndexes.includes(x))
+        this.appStateStore.selected_point_indexes = this.appStateStore.selected_point_indexes.filter(x => !selectedPointIndexes.includes(x))
       }
       this.lasso_points = []
       this.updateGeometry()

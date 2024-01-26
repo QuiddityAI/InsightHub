@@ -1,4 +1,7 @@
 import { defineStore } from 'pinia'
+import httpClient from '../api/httpClient';
+
+import { FieldType } from '../utils/utils'
 
 export const useAppStateStore = defineStore('appState', {
   state: () => {
@@ -14,11 +17,13 @@ export const useAppStateStore = defineStore('appState', {
       selected_cluster_id: null,
       selected_map_tool: 'drag',  // one of 'drag' or 'lasso'
       selection_merging_mode: 'replace',  // one of 'replace', 'add', 'remove'
+      selected_point_indexes: [],
 
       available_vector_fields: [],
       available_number_fields: [],
 
       dataset: null,
+      map_data: null,
 
       logged_in: false,
       username: null,
@@ -208,5 +213,38 @@ export const useAppStateStore = defineStore('appState', {
         }
       },
     }
+  },
+  actions: {
+    add_selected_points_to_classifier(classifier_id, class_name, is_positive) {
+      // TODO: implement more efficient way
+      for (const point_index of this.selected_point_indexes) {
+        this.add_item_to_classifier(point_index, classifier_id, class_name, is_positive)
+      }
+    },
+    add_item_to_classifier(item_index, classifier_id, class_name, is_positive) {
+      const that = this
+      const classifier = this.classifiers[this.classifiers.findIndex((e) => e.id == classifier_id)]
+      if (!classifier) return;
+
+      this.last_used_classifier_id = classifier.id
+      const item_id = this.map_data.results.per_point_data.hover_label_data[item_index]._id
+      const add_item_to_classifier_body = {
+        classifier_id: classifier.id,
+        is_positive: is_positive,
+        class_name: class_name,
+        field_type: FieldType.IDENTIFIER,
+        value: item_id,
+        weight: 1.0,
+      }
+      httpClient.post("/org/data_map/add_item_to_classifier", add_item_to_classifier_body)
+        .then(function (response) {
+          // TODO: refresh list of examples if open
+          // if (is_positive) {
+          //   classifier.positive_ids.push(item_id)
+          // } else {
+          //   classifier.negative_ids.push(item_id)
+          // }
+        })
+    },
   },
 })
