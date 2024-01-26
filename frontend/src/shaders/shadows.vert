@@ -17,7 +17,7 @@ uniform float marginLeft;
 uniform float marginBottom;
 uniform vec2 pan;
 uniform float zoom;
-uniform int highlightedPointIdx;
+uniform int hoveredPointIdx;
 uniform vec3 lightPosition;
 uniform float devicePixelRatio;
 uniform float pointSizeFactor;
@@ -27,7 +27,7 @@ out float isHighlighted;
 
 void main() {
     // pass data to fragment shader by setting varying variables:
-    isHighlighted = (gl_VertexID == highlightedPointIdx) ? 1.0 : 0.0;
+    isHighlighted = (gl_VertexID == hoveredPointIdx) ? 1.0 : 0.0;
 
     // position calculation:
     vec3 rawPos = vec3(positionX, positionY, -2.0);

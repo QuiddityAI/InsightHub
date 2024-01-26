@@ -8,6 +8,7 @@ import panzoom from 'panzoom';
 
 import { Renderer, Camera, Geometry, Program, Mesh, Transform, Texture, TextureLoader } from 'https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm';
 import * as math from 'mathjs'
+import pointInPolygon from 'point-in-polygon'
 
 import pointsVertexShader from '../../shaders/points.vert?raw'
 import pointsFragmentShader from '../../shaders/points_rectangular_thumbnail.frag?raw'
@@ -89,8 +90,9 @@ export default {
       currentPan: [0.0, 0.0],
 
       // mouseover highlight and selection:
-      selectedPointIdx: -1,  // set externally
-      highlightedPointIdx: -1,  // set internally by mouseover
+      markedPointIdx: -1,  // set externally
+      hoveredPointIdx: -1,  // set internally by mouseover
+      selectedPointIndexes: [],  // used when multiple points are selected using the lasso tool
       mouseDownPosition: [-1, -1],
 
       // rendering:
@@ -134,13 +136,13 @@ export default {
     },
     "appStateStore.highlighted_item_id" () {
       if (this.appStateStore.highlighted_item_id === null) {
-        this.highlightedPointIdx = -1
+        this.hoveredPointIdx = -1
         this.$emit('cluster_hover_end')
         return
       }
       for (const i of Array(this.per_point.text_data.length).keys()) {
         if (this.per_point.text_data[i]._id == this.appStateStore.highlighted_item_id) {
-          this.highlightedPointIdx = i
+          this.hoveredPointIdx = i
           // TODO: highlighted_cluster_id should be changed directly, but currently accessing appState breaks this component
           this.$emit('cluster_hovered', this.per_point.cluster_id[i])
           this.updateUniforms()
@@ -185,8 +187,8 @@ export default {
       this.textureAtlas = null
       this.thumbnailSpriteSize = 64
 
-      this.selectedPointIdx = -1
-      this.highlightedPointIdx = -1
+      this.markedPointIdx = -1
+      this.hoveredPointIdx = -1
 
       this.updateGeometry()
     },
@@ -512,14 +514,26 @@ export default {
       this.glMeshShadows = new Mesh(this.glContext, { mode: this.glContext.TRIANGLE_STRIP, geometry: shadowGeometry, program: this.glProgramShadows });
       this.glMeshShadows.setParent(this.glScene)
 
+      const per_point_hue = [...this.per_point.hue.slice(0, pointCount)]
+      const per_point_sat = [...this.per_point.sat.slice(0, pointCount)]
+      for (const i of Array(pointCount).keys()) {
+        if (this.per_point.cluster_id[i] === -1) {
+          per_point_sat[i] = 0.0
+        }
+      }
+      for (const i of this.selectedPointIndexes) {
+        per_point_hue[i] = 0.0
+        per_point_sat[i] = 1.0
+      }
+
       const pointsGeometry = new Geometry(this.glContext, {
           position: { size: 2, data: new Float32Array([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0]) },
           positionX: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsX) },
           positionY: { instanced: 1,  size: 1, data: new Float32Array(this.currentPositionsY) },
           clusterId: { instanced: 1,  size: 1, data: new Float32Array(this.per_point.cluster_id.slice(0, pointCount)) },
           pointSize: { instanced: 1, size: 1, data: new Float32Array(this.per_point.size.slice(0, pointCount)) },
-          hue: { instanced: 1, size: 1, data: new Float32Array(this.per_point.hue.slice(0, pointCount)) },
-          sat: { instanced: 1, size: 1, data: new Float32Array(this.per_point.sat.slice(0, pointCount)) },
+          hue: { instanced: 1, size: 1, data: new Float32Array(per_point_hue) },
+          sat: { instanced: 1, size: 1, data: new Float32Array(per_point_sat) },
           val: { instanced: 1, size: 1, data: new Float32Array(this.per_point.val.slice(0, pointCount)) },
           opacity: { instanced: 1, size: 1, data: new Float32Array(this.per_point.opacity.slice(0, pointCount)) },
           secondary_hue: { instanced: 1, size: 1, data: new Float32Array(this.per_point.secondary_hue.slice(0, pointCount)) },
@@ -558,10 +572,10 @@ export default {
         marginBottom: { value: this.passiveMarginsLRTB[3] / wh },
         pan: { value: math.dotDivide(this.currentPan, [ww, wh]) },
         zoom: { value: this.currentZoom },
-        highlightedPointIdx: { value: this.highlightedPointIdx },
+        hoveredPointIdx: { value: this.hoveredPointIdx },
         lightPosition: { value: this.lightPosition },
         devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
-        selectedPointIdx: { value: this.selectedPointIdx },
+        markedPointIdx: { value: this.markedPointIdx },
         textureAtlas: { value: this.glTextureAtlas },
         useTextureAtlas: { value: this.textureAtlas !== null },
         pointTextureBaseColor: { value: this.pointTextureBaseColor },
@@ -612,36 +626,51 @@ export default {
       const pointRadiusEmbedding = this.screenToEmbeddingX(pointRadiusScreenPx) - this.screenToEmbeddingX(0)
       const threshold = pointRadiusEmbedding
       if (closestIdx !== null && closestDist < threshold) {
-        this.highlightedPointIdx = closestIdx
+        this.hoveredPointIdx = closestIdx
       } else {
-        this.highlightedPointIdx = -1
+        this.hoveredPointIdx = -1
       }
       this.updateUniforms()
     },
     onMouseLeave() {
-      this.highlightedPointIdx = -1
+      this.hoveredPointIdx = -1
     },
     onMouseDown(event) {
       if (event.pointerType === "mouse" && event.button != 0) return;
-      this.mouseDownPosition = [event.clientX, event.clientY]
       if (this.appStateStore.selected_map_tool === 'lasso') {
+        if (event.shiftKey) {
+          this.appStateStore.selection_merging_mode = 'add'
+        } else if (event.ctrlKey) {
+          this.appStateStore.selection_merging_mode = 'remove'
+        }
         this.lasso_points = []
         this.lasso_points.push([this.screenToEmbeddingX(event.clientX), this.screenToEmbeddingY(event.clientY)])
-        //this.$emit('lasso_points_changed', this.lasso_points)
       }
+      this.mouseDownPosition = [event.clientX, event.clientY]
     },
     onMouseUp(event) {
       if (event.pointerType === "mouse" && event.button != 0) return;
       if (this.appStateStore.selected_map_tool === 'lasso') {
         this.lasso_points.push([this.screenToEmbeddingX(event.clientX), this.screenToEmbeddingY(event.clientY)])
         //this.$emit('lasso_points_changed', this.lasso_points)
-        this.appStateStore.selected_map_tool = 'drag'
+        this.executeLassoSelection(this.appStateStore.selection_merging_mode)
+        if (this.appStateStore.selection_merging_mode === 'replace') {
+          this.appStateStore.selected_map_tool = 'drag'
+        }
       }
-      if (this.highlightedPointIdx === -1) return;
+      if (this.hoveredPointIdx === -1) return;
       const mouseMovementDistance = math.distance(this.mouseDownPosition, [event.clientX, event.clientY])
       if (mouseMovementDistance > 5) return;
-      this.$emit('point_selected', this.highlightedPointIdx)
-
+      if (event.shiftKey) {
+        if (this.selectedPointIndexes.includes(this.hoveredPointIdx)) {
+          this.selectedPointIndexes = this.selectedPointIndexes.filter(x => x !== this.hoveredPointIdx)
+        } else {
+          this.selectedPointIndexes.push(this.hoveredPointIdx)
+        }
+        this.updateGeometry()
+      } else {
+        this.$emit('point_selected', this.hoveredPointIdx)
+      }
     },
     updatePointVisibility() {
       // point visibility is currently only used if there are thumbnail images:
@@ -675,6 +704,26 @@ export default {
       }
       this.updateGeometry()
     },
+    executeLassoSelection(mode='replace') {
+      const polygonPoints = this.lasso_points
+      const pointPositions = this.per_point.x.map((x, i) => [x, this.per_point.y[i]])
+      const selectedPointIndexes = []
+      for (const i of Array(pointPositions.length).keys()) {
+        const point = pointPositions[i]
+        if (pointInPolygon(point, polygonPoints)) {
+          selectedPointIndexes.push(i)
+        }
+      }
+      if (mode == 'replace') {
+        this.selectedPointIndexes = selectedPointIndexes
+      } else if (mode == 'add') {
+        this.selectedPointIndexes = [...new Set([...this.selectedPointIndexes, ...selectedPointIndexes])]
+      } else if (mode == 'remove') {
+        this.selectedPointIndexes = this.selectedPointIndexes.filter(x => !selectedPointIndexes.includes(x))
+      }
+      this.lasso_points = []
+      this.updateGeometry()
+    },
   },
 }
 
@@ -688,7 +737,7 @@ export default {
     @mousedown="onMouseDown" @mouseup="onMouseUp" @touchstart="onMouseDown" @touchend="onMouseUp"
     @mouseleave="onMouseLeave" class="fixed w-full h-full"
     :class="{'cursor-crosshair': appStateStore.selected_map_tool === 'lasso',
-             'cursor-pointer': highlightedPointIdx !== -1}"
+             'cursor-pointer': hoveredPointIdx !== -1}"
     ></div>
 
   <!-- this div shows a gray outline around the "active area" for debugging purposes -->
@@ -726,17 +775,17 @@ export default {
     <polygon :points="lasso_points_str" style="fill: rgba(150, 178, 224, 0.329); stroke: rgba(103, 103, 103, 0.478); stroke-width: 3; stroke-dasharray: 3, 7; stroke-linecap: round;" />
   </svg>
 
-  <div v-if="highlightedPointIdx !== -1" class="fixed pointer-events-none"
+  <div v-if="hoveredPointIdx !== -1" class="fixed pointer-events-none"
   :style="{
-    'right': screenRightFromRelative(currentPositionsX[highlightedPointIdx]) + 'px',
-    'top': screenTopFromRelative(currentPositionsY[highlightedPointIdx]) + 'px',
+    'right': screenRightFromRelative(currentPositionsX[hoveredPointIdx]) + 'px',
+    'top': screenTopFromRelative(currentPositionsY[hoveredPointIdx]) + 'px',
     'max-width': '200px',
     }">
-    <div v-if="per_point.text_data.length > highlightedPointIdx && hover_label_rendering" class="flex flex-col items-center px-1 bg-white text-gray-500 text-xs rounded">
-      <div v-html="hover_label_rendering.title(per_point.text_data[highlightedPointIdx])"></div>
-      <img v-if="hover_label_rendering.image(per_point.text_data[highlightedPointIdx])" :src="hover_label_rendering.image(per_point.text_data[highlightedPointIdx])" class="h-24">
+    <div v-if="per_point.text_data.length > hoveredPointIdx && hover_label_rendering" class="flex flex-col items-center px-1 bg-white text-gray-500 text-xs rounded">
+      <div v-html="hover_label_rendering.title(per_point.text_data[hoveredPointIdx])"></div>
+      <img v-if="hover_label_rendering.image(per_point.text_data[hoveredPointIdx])" :src="hover_label_rendering.image(per_point.text_data[hoveredPointIdx])" class="h-24">
     </div>
-    <div v-if="per_point.text_data.length <= highlightedPointIdx || !hover_label_rendering" class="px-1 bg-white text-gray-500 text-xs rounded">
+    <div v-if="per_point.text_data.length <= hoveredPointIdx || !hover_label_rendering" class="px-1 bg-white text-gray-500 text-xs rounded">
       loading...
     </div>
   </div>

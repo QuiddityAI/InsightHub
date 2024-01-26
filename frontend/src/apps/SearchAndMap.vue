@@ -5,7 +5,7 @@ import { mapStores } from 'pinia'
 
 import { Chart } from 'chart.js/auto'
 import annotationPlugin from 'chartjs-plugin-annotation';
-import { CursorArrowRaysIcon, RectangleGroupIcon } from '@heroicons/vue/24/outline'
+import { CursorArrowRaysIcon, RectangleGroupIcon, PlusIcon, MinusIcon, ViewfinderCircleIcon } from '@heroicons/vue/24/outline'
 
 import InteractiveMap from '../components/map/InteractiveMap.vue';
 import SearchArea from '../components/SearchArea.vue';
@@ -401,13 +401,13 @@ export default {
     },
     show_document_details(pointIdx) {
       this.selectedDocumentIdx = pointIdx
-      this.$refs.embedding_map.selectedPointIdx = pointIdx
+      this.$refs.embedding_map.markedPointIdx = pointIdx
     },
     show_document_details_by_id(item_id) {
       for (const i of Array(this.map_item_details.length).keys()) {
         if (this.map_item_details[i]._id == item_id) {
           this.selectedDocumentIdx = i
-          this.$refs.embedding_map.selectedPointIdx = i
+          this.$refs.embedding_map.markedPointIdx = i
           break
         }
       }
@@ -426,7 +426,7 @@ export default {
     },
     close_document_details() {
       this.selectedDocumentIdx = -1
-      this.$refs.embedding_map.selectedPointIdx = -1
+      this.$refs.embedding_map.markedPointIdx = -1
       this.selectedDocumentDetails = null
     },
     updateMapPassiveMargin() {
@@ -729,8 +729,23 @@ export default {
         @cluster_hover_end="appState.highlighted_cluster_id = null"
         />
 
+      <div v-if="appState.selected_map_tool === 'lasso'" class="absolute bottom-6 right-4 flex flex-row justify-center bg-white rounded-md shadow-sm p-2 gap-2">
+        <button @click="appState.selection_merging_mode = 'replace'" class="h-6 w-6 hover:bg-gray-100 rounded"
+          :class="{ 'text-blue-600': appState.selection_merging_mode === 'replace', 'text-gray-400': appState.selection_merging_mode !== 'replace' }">
+          <ViewfinderCircleIcon></ViewfinderCircleIcon>
+        </button>
+        <button @click="appState.selection_merging_mode = 'add'" class="h-6 w-6 hover:bg-gray-100 rounded"
+          :class="{ 'text-blue-600': appState.selection_merging_mode === 'add', 'text-gray-400': appState.selection_merging_mode !== 'add' }">
+          <PlusIcon></PlusIcon>
+        </button>
+        <button @click="appState.selection_merging_mode = 'remove'" class="h-6 w-6 hover:bg-gray-100 rounded"
+          :class="{ 'text-blue-600': appState.selection_merging_mode === 'remove', 'text-gray-400': appState.selection_merging_mode !== 'remove' }">
+          <MinusIcon></MinusIcon>
+        </button>
+        <div class="h-6 w-6"></div>
+      </div>
       <div class="absolute bottom-6 right-4 flex flex-col justify-center bg-white rounded-md shadow-sm p-2 gap-2">
-        <button @click="appState.selected_map_tool = 'drag'" class="h-6 w-6 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': appState.selected_map_tool === 'drag', 'text-gray-400': appState.selected_map_tool !== 'drag' }">
+        <button @click="appState.selected_map_tool = 'drag'; appState.selection_merging_mode = 'replace'" class="h-6 w-6 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': appState.selected_map_tool === 'drag', 'text-gray-400': appState.selected_map_tool !== 'drag' }">
           <CursorArrowRaysIcon></CursorArrowRaysIcon>
         </button>
         <button @click="appState.selected_map_tool = 'lasso'" class="h-6 w-6 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': appState.selected_map_tool === 'lasso', 'text-gray-400': appState.selected_map_tool !== 'lasso' }">

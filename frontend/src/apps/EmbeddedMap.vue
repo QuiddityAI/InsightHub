@@ -400,13 +400,13 @@ export default {
     },
     show_document_details(pointIdx) {
       this.selectedDocumentIdx = pointIdx
-      this.$refs.embedding_map.selectedPointIdx = pointIdx
+      this.$refs.embedding_map.markedPointIdx = pointIdx
     },
     show_document_details_by_id(item_id) {
       for (const i of Array(this.map_item_details.length).keys()) {
         if (this.map_item_details[i]._id == item_id) {
           this.selectedDocumentIdx = i
-          this.$refs.embedding_map.selectedPointIdx = i
+          this.$refs.embedding_map.markedPointIdx = i
           break
         }
       }
@@ -425,7 +425,7 @@ export default {
     },
     close_document_details() {
       this.selectedDocumentIdx = -1
-      this.$refs.embedding_map.selectedPointIdx = -1
+      this.$refs.embedding_map.markedPointIdx = -1
       this.selectedDocumentDetails = null
     },
     updateMapPassiveMargin() {

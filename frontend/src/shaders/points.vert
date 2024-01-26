@@ -27,8 +27,8 @@ uniform float marginLeft;
 uniform float marginBottom;
 uniform vec2 pan;
 uniform float zoom;
-uniform int highlightedPointIdx;
-uniform int selectedPointIdx;
+uniform int hoveredPointIdx;
+uniform int markedPointIdx;
 uniform float devicePixelRatio;
 uniform int selectedClusterId;
 uniform float pointSizeFactor;
@@ -54,8 +54,8 @@ void main() {
     // pass data to fragment shader by setting varying variables:
     clusterIdVar = clusterId;
     pointIdxVar = gl_InstanceID;
-    isHighlighted = (gl_InstanceID == highlightedPointIdx) ? 1.0 : 0.0;
-    isSelected = (gl_InstanceID == selectedPointIdx) ? 1.0 : 0.0;
+    isHighlighted = (gl_InstanceID == hoveredPointIdx) ? 1.0 : 0.0;
+    isSelected = (gl_InstanceID == markedPointIdx) ? 1.0 : 0.0;
     pointVisibilityVar = uint(pointVisibility);
 
     // albedo color:
@@ -66,10 +66,10 @@ void main() {
     vec3 highlightedColor = vec3(0.0);
     vec3 selectedColor = vec3(1.0, 0.0, 0.0);
     vec3 unclustered_color = vec3(0.7);
-    albedoColorVar = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (clusterIdVar < 0.0 || (selectedClusterId != -1 && selectedClusterId != int(clusterId)) ? unclustered_color : normalColor));
+    albedoColorVar = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (selectedClusterId != -1 && selectedClusterId != int(clusterId) ? unclustered_color : normalColor));
 
     // position calculation:
-    vec3 rawPos = vec3(positionX, positionY, (gl_InstanceID == highlightedPointIdx) ? -0.9 : -1.0);
+    vec3 rawPos = vec3(positionX, positionY, (gl_InstanceID == hoveredPointIdx) ? -0.9 : -1.0);
     vec3 normalizedPos = (rawPos + vec3(baseOffset, 0.0)) * vec3(baseScale, 1.0);
     vec3 shiftedToActiveAreaPos = normalizedPos * vec3(activeAreaSize, 1.0) + vec3(marginLeft, marginBottom, 0.0);
 
