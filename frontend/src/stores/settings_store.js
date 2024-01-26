@@ -12,6 +12,7 @@ export const useAppStateStore = defineStore('appState', {
       selected_item_id: null,
       highlighted_cluster_id: null,
       selected_cluster_id: null,
+      selected_map_tool: 'drag',  // one of 'drag' or 'lasso'
 
       available_vector_fields: [],
       available_number_fields: [],

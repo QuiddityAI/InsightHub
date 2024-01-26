@@ -5,6 +5,7 @@ import { mapStores } from 'pinia'
 
 import { Chart } from 'chart.js/auto'
 import annotationPlugin from 'chartjs-plugin-annotation';
+import { CursorArrowRaysIcon, RectangleGroupIcon } from '@heroicons/vue/24/outline'
 
 import InteractiveMap from '../components/map/InteractiveMap.vue';
 import SearchArea from '../components/SearchArea.vue';
@@ -727,6 +728,15 @@ export default {
         @cluster_hovered="(cluster_id) => appState.highlighted_cluster_id = cluster_id"
         @cluster_hover_end="appState.highlighted_cluster_id = null"
         />
+
+      <div class="absolute bottom-6 right-4 flex flex-col justify-center bg-white rounded-md shadow-sm p-2 gap-2">
+        <button @click="appState.selected_map_tool = 'drag'" class="h-6 w-6 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': appState.selected_map_tool === 'drag', 'text-gray-400': appState.selected_map_tool !== 'drag' }">
+          <CursorArrowRaysIcon></CursorArrowRaysIcon>
+        </button>
+        <button @click="appState.selected_map_tool = 'lasso'" class="h-6 w-6 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': appState.selected_map_tool === 'lasso', 'text-gray-400': appState.selected_map_tool !== 'lasso' }">
+          <RectangleGroupIcon></RectangleGroupIcon>
+        </button>
+      </div>
 
       <div v-if="appState.show_timings" class="absolute bottom-0 right-0 text-right">
         <!-- timings -->

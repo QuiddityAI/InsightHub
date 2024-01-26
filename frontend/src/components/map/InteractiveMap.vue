@@ -67,6 +67,7 @@ export default {
       hover_label_rendering: {},
       textureAtlas: null,
       thumbnailSpriteSize: 64,
+      lasso_points: [],
 
       // internal:
       currentPositionsX: [],
@@ -114,6 +115,9 @@ export default {
     },
     activeAreaHeight() {
       return window.innerHeight - this.passiveMarginsLRTB[2] - this.passiveMarginsLRTB[3]
+    },
+    lasso_points_str() {
+      return this.lasso_points.map(p => `${ this.screenLeftFromRelative(p[0])},${ this.screenTopFromRelative(p[1])}`).join(" ")
     },
   },
   mounted() {
@@ -242,7 +246,11 @@ export default {
         },
         onDoubleClick: function(e) {
           that.resetPanAndZoom()
-        }
+        },
+        beforeMouseDown: function(e) {
+          var shouldIgnore = that.appStateStore.selected_map_tool === 'lasso';
+          return shouldIgnore;
+        },
       });
 
       this.panzoomInstance.on('transform', function(e) {
@@ -570,7 +578,15 @@ export default {
       this.renderer.render({ scene: this.glScene, camera: this.camera });
     },
     updateOnHover(event) {
-      if (event.buttons) return;
+      if (event.buttons) {
+        if (this.appStateStore.selected_map_tool === 'lasso') {
+          const x = this.screenToEmbeddingX(event.clientX)
+          const y = this.screenToEmbeddingY(event.clientY)
+          this.lasso_points.push([x, y])
+          //this.$emit('lasso_points_changed', this.lasso_points)
+        }
+        return
+      }
       const mousePosInEmbeddingSpaceX = this.screenToEmbeddingX(event.clientX)
       const mousePosInEmbeddingSpaceY = this.screenToEmbeddingY(event.clientY)
 
@@ -608,13 +624,24 @@ export default {
     onMouseDown(event) {
       if (event.pointerType === "mouse" && event.button != 0) return;
       this.mouseDownPosition = [event.clientX, event.clientY]
+      if (this.appStateStore.selected_map_tool === 'lasso') {
+        this.lasso_points = []
+        this.lasso_points.push([this.screenToEmbeddingX(event.clientX), this.screenToEmbeddingY(event.clientY)])
+        //this.$emit('lasso_points_changed', this.lasso_points)
+      }
     },
     onMouseUp(event) {
       if (event.pointerType === "mouse" && event.button != 0) return;
+      if (this.appStateStore.selected_map_tool === 'lasso') {
+        this.lasso_points.push([this.screenToEmbeddingX(event.clientX), this.screenToEmbeddingY(event.clientY)])
+        //this.$emit('lasso_points_changed', this.lasso_points)
+        this.appStateStore.selected_map_tool = 'drag'
+      }
       if (this.highlightedPointIdx === -1) return;
       const mouseMovementDistance = math.distance(this.mouseDownPosition, [event.clientX, event.clientY])
       if (mouseMovementDistance > 5) return;
       this.$emit('point_selected', this.highlightedPointIdx)
+
     },
     updatePointVisibility() {
       // point visibility is currently only used if there are thumbnail images:
@@ -657,7 +684,12 @@ export default {
 <div>
   <div class="fixed w-full h-full" ref="panZoomProxy"></div>
 
-  <div ref="webGlArea" @mousemove="this.updateOnHover" @mousedown="onMouseDown" @mouseup="onMouseUp" @touchstart="onMouseDown" @touchend="onMouseUp" @mouseleave="onMouseLeave" class="fixed w-full h-full"></div>
+  <div ref="webGlArea" @mousemove="updateOnHover" @touchmove="updateOnHover"
+    @mousedown="onMouseDown" @mouseup="onMouseUp" @touchstart="onMouseDown" @touchend="onMouseUp"
+    @mouseleave="onMouseLeave" class="fixed w-full h-full"
+    :class="{'cursor-crosshair': appStateStore.selected_map_tool === 'lasso',
+             'cursor-pointer': highlightedPointIdx !== -1}"
+    ></div>
 
   <!-- this div shows a gray outline around the "active area" for debugging purposes -->
   <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
@@ -689,6 +721,10 @@ export default {
       >
     </button>
   </div>
+
+  <svg v-if="lasso_points_str" id="lasso_area" class="fixed w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+    <polygon :points="lasso_points_str" style="fill: rgba(150, 178, 224, 0.329); stroke: rgba(103, 103, 103, 0.478); stroke-width: 3; stroke-dasharray: 3, 7; stroke-linecap: round;" />
+  </svg>
 
   <div v-if="highlightedPointIdx !== -1" class="fixed pointer-events-none"
   :style="{
