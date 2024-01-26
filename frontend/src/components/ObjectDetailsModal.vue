@@ -92,11 +92,12 @@ export default {
       <img v-if="rendering ? rendering.image(item) : false" class="flex-none h-52" :src="rendering ? rendering.image(item) : null">
     </div>
     <div class="flex-none flex flex-row mt-2">
-      <AddToClassifierButtons :classifiers="classifiers" :last_used_classifier_id="last_used_classifier_id"
+      <AddToClassifierButtons class="mr-3"
+        :classifiers="classifiers" :last_used_classifier_id="last_used_classifier_id"
         @addToClassifier="(classifier_id, class_name, is_positive) => $emit('addToClassifier', classifier_id, class_name, is_positive)">
       </AddToClassifierButtons>
       <button @click="$emit('showSimilarItems')" class="px-3 mr-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100 rounded-md">
-        Show Similar Items
+        Similar Items
       </button>
 
       <button v-if="(rendering ? rendering.url(item) : false)" class="px-3 mr-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100 rounded-md">
@@ -117,7 +118,7 @@ export default {
       </button>
 
       <div class="flex-1"></div>
-      <button @click="$emit('close')" class="w-12 px-3 text-gray-500 hover:bg-gray-100 rounded-md">
+      <button @click="$emit('close')" class="w-10 px-2 text-gray-500 hover:bg-gray-100 rounded-md">
         <XMarkIcon></XMarkIcon>
       </button>
     </div>

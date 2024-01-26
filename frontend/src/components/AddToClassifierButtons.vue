@@ -42,11 +42,11 @@ export default {
 
   <div class="flex flex-row">
     <select v-model="selected_classifier_id"
-      class="mr-3 pl-2 pr-8 py-0 h-8 ring-1 ring-gray-300 text-gray-500 text-sm border-transparent rounded-md focus:ring-blue-500 focus:border-blue-500">
+      class="mr-3 pl-2 pr-8 py-0 h-8 w-32 ring-1 ring-gray-300 text-gray-500 text-sm border-transparent rounded-md focus:ring-blue-500 focus:border-blue-500">
       <option v-for="classifier in classifiers" :value="classifier.id">{{ classifier.name }}</option>
     </select>
     <select v-if="selected_classifier_id !== null" v-model="selected_classifier_class"
-      class="mr-3 pl-2 pr-8 py-0 h-8 ring-1 ring-gray-300 text-gray-500 text-sm border-transparent rounded-md focus:ring-blue-500 focus:border-blue-500">
+      class="mr-3 pl-2 pr-8 py-0 h-8 w-32 ring-1 ring-gray-300 text-gray-500 text-sm border-transparent rounded-md focus:ring-blue-500 focus:border-blue-500">
       <option v-for="class_name in classifiers[classifiers.findIndex((e) => e.id == selected_classifier_id)].actual_classes"
         :value="class_name">{{ class_name == '_default' ? 'Items' : class_name }}</option>
     </select>

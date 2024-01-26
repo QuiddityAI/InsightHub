@@ -668,6 +668,8 @@ export default {
           this.appStateStore.selected_point_indexes = this.appStateStore.selected_point_indexes.filter(x => x !== this.hoveredPointIdx)
         } else {
           this.appStateStore.selected_point_indexes.push(this.hoveredPointIdx)
+          // the array object is still the same, so we need to trigger a change event manually:
+          this.updateGeometry()
         }
       } else {
         this.$emit('point_selected', this.hoveredPointIdx)
