@@ -47,26 +47,26 @@ export default {
           that.examples = response.data
         })
     },
-    remove_item_from_classifier(item_id, is_positive) {
+    remove_classifier_example(classifier_example_id) {
       const that = this
       const body = {
-        classifier_id: this.classifier.id,
-        item_id: item_id,
-        is_positive: is_positive,
+        classifier_example_id: classifier_example_id,
       }
-      httpClient.post("/org/data_map/remove_item_from_classifier", body)
+      httpClient.post("/org/data_map/remove_classifier_example", body)
         .then(function (response) {
-          // 'classifier' prop is read-only, so get writable reference:
-          const classifier_index = that.appStateStore.classifiers.findIndex((col) => col.id === that.classifier.id)
-          const classifier = that.appStateStore.classifiers[classifier_index]
+          // TODO: remove from examples
 
-          if (is_positive) {
-            const item_index = classifier.positive_ids.indexOf(item_id)
-            classifier.positive_ids.splice(item_index, 1)
-          } else {
-            const item_index = classifier.negative_ids.indexOf(item_id)
-            classifier.negative_ids.splice(item_index, 1)
-          }
+          // 'classifier' prop is read-only, so get writable reference:
+          // const classifier_index = that.appStateStore.classifiers.findIndex((col) => col.id === that.classifier.id)
+          // const classifier = that.appStateStore.classifiers[classifier_index]
+
+          // if (is_positive) {
+          //   const item_index = classifier.positive_ids.indexOf(item_id)
+          //   classifier.positive_ids.splice(item_index, 1)
+          // } else {
+          //   const item_index = classifier.negative_ids.indexOf(item_id)
+          //   classifier.negative_ids.splice(item_index, 1)
+          // }
         })
     },
   },
@@ -105,7 +105,7 @@ export default {
   <ul v-if="examples_visible" class="pt-2">
     <li v-for="example in examples" :key="example.id" class="justify-between pb-2">
       <ClassifierExample :item_id="example.value" :is_positive="example.is_positive"
-        @remove="remove_item_from_classifier(example.id, true)">
+        @remove="remove_classifier_example(example.id)">
       </ClassifierExample>
     </li>
   </ul>

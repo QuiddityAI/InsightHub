@@ -14,7 +14,7 @@ urlpatterns=[
     path("get_classifier_examples", views.get_classifier_examples),
     path("delete_classifier", views.delete_classifier),
     path("add_item_to_classifier", views.add_item_to_classifier),
-    path("remove_item_from_classifier", views.remove_item_from_classifier),
+    path("remove_classifier_example", views.remove_classifier_example),
     path("add_stored_map", views.add_stored_map),
     path("get_stored_maps", views.get_stored_maps),
     path("stored_map_data", views.get_stored_map_data),

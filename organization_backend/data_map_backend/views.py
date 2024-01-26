@@ -304,7 +304,7 @@ def add_item_to_classifier(request):
 
 
 @csrf_exempt
-def remove_item_from_classifier(request):
+def remove_classifier_example(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -312,24 +312,18 @@ def remove_item_from_classifier(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
-        item_id: str = data["item_id"]
-        is_positive: bool = data["is_positive"]
+        classifier_example_id: int = data["classifier_example_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        classifier = ItemCollection.objects.get(id=classifier_id)
-    except ItemCollection.DoesNotExist:
+        classifier_example = ClassifierExample.objects.get(id=classifier_example_id)
+    except ClassifierExample.DoesNotExist:
         return HttpResponse(status=404)
-    if classifier.user != request.user:
+    if classifier_example.classifier.created_by != request.user:
         return HttpResponse(status=401)
 
-    if is_positive:
-        classifier.positive_ids.remove(item_id)
-    else:
-        classifier.negative_ids.remove(item_id)
-    classifier.save()
+    classifier_example.delete()
 
     return HttpResponse(None, status=204)
 
