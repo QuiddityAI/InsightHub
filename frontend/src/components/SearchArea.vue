@@ -1,17 +1,22 @@
 <script setup>
-import { mapStores } from 'pinia'
-import { AdjustmentsHorizontalIcon, MinusCircleIcon, HomeIcon, ArrowRightOnRectangleIcon, UserCircleIcon, CircleStackIcon } from '@heroicons/vue/24/outline'
+import { mapStores } from "pinia"
+import {
+  AdjustmentsHorizontalIcon,
+  MinusCircleIcon,
+  HomeIcon,
+  ArrowRightOnRectangleIcon,
+  UserCircleIcon,
+  CircleStackIcon,
+} from "@heroicons/vue/24/outline"
 
-import httpClient from '../api/httpClient';
-import { FieldType, ellipse } from '../utils/utils'
-import { useAppStateStore } from '../stores/settings_store'
+import httpClient from "../api/httpClient"
+import { FieldType, ellipse } from "../utils/utils"
+import { useAppStateStore } from "../stores/settings_store"
 
 const appState = useAppStateStore()
-
 </script>
 
 <script>
-
 // combined: all fields in "default search fields" with same query (+negatives), as OR, reciprocal rank fusion
 
 // fulltext: opensearch, all text fields, opensearch dql language for negatives
@@ -33,9 +38,8 @@ const appState = useAppStateStore()
 // matching to classifier (classifier id),
 // cluster id of map id
 
-
 export default {
-  emits: ['request_search_results', 'reset_search_box', 'show_global_map'],
+  emits: ["request_search_results", "reset_search_box", "show_global_map"],
   data() {
     return {
       internal_dataset_id: null,
@@ -54,67 +58,66 @@ export default {
       show_other_settings: false,
 
       available_autocut_strategies: [
-        {id: "static_threshold", title: "Static Threshold"},
-        {id: "knee_point", title: "Knee Point"},
-        {id: "nearest_neighbour_distance_ration", title: "Neighbour Distance"},
+        { id: "static_threshold", title: "Static Threshold" },
+        { id: "knee_point", title: "Knee Point" },
+        { id: "nearest_neighbour_distance_ration", title: "Neighbour Distance" },
       ],
       available_tokenizer: [
-        {id: "default", title: "default"},
-        {id: "absclust", title: "AbsClust Tokenizer"},
-        {id: "simple", title: "simple"},
+        { id: "default", title: "default" },
+        { id: "absclust", title: "AbsClust Tokenizer" },
+        { id: "simple", title: "simple" },
       ],
       axis_type_options: [
-        {id: "umap", title: "UMAP"},
-        {id: "number_field", title: "Number Field"},
-        {id: "count", title: "Array / Word Count"},
-        {id: "classifier", title: "Classifier"},
-        {id: "rank", title: "Rank"},
-        {id: "score", title: "Score"},
-        {id: "fulltext_score", title: "Score (Fulltext)"},
+        { id: "umap", title: "UMAP" },
+        { id: "number_field", title: "Number Field" },
+        { id: "count", title: "Array / Word Count" },
+        { id: "classifier", title: "Classifier" },
+        { id: "rank", title: "Rank" },
+        { id: "score", title: "Score" },
+        { id: "fulltext_score", title: "Score (Fulltext)" },
       ],
       rendering_type_options: [
-        {id: "fixed", title: "Fixed"},
-        {id: "umap", title: "UMAP"},
-        {id: "umap_perplexity", title: "UMAP Perplexity"},
-        {id: "number_field", title: "Number Field"},
-        {id: "count", title: "Array / Word Count"},
-        {id: "classifier", title: "Classifier"},
-        {id: "rank", title: "Rank"},
-        {id: "score", title: "Score"},
-        {id: "fulltext_score", title: "Score (Fulltext)"},
-        {id: "cluster_idx", title: "Cluster Id"},
-        {id: "origin_query_idx", title: "Origin Query"},
-        {id: "contains", title: "Contains"},
-        {id: "is_empty", title: "Is empty"},
+        { id: "fixed", title: "Fixed" },
+        { id: "umap", title: "UMAP" },
+        { id: "umap_perplexity", title: "UMAP Perplexity" },
+        { id: "number_field", title: "Number Field" },
+        { id: "count", title: "Array / Word Count" },
+        { id: "classifier", title: "Classifier" },
+        { id: "rank", title: "Rank" },
+        { id: "score", title: "Score" },
+        { id: "fulltext_score", title: "Score (Fulltext)" },
+        { id: "cluster_idx", title: "Cluster Id" },
+        { id: "origin_query_idx", title: "Origin Query" },
+        { id: "contains", title: "Contains" },
+        { id: "is_empty", title: "Is empty" },
       ],
-      available_clusterizer: [
-        {id: "hdbscan", title: "HDBSCAN"},
-      ],
+      available_clusterizer: [{ id: "hdbscan", title: "HDBSCAN" }],
       clusterizer_parameters: {
-        "min_cluster_size": {title: "min_cluster_size", default: "auto", value: "auto"},
-        "min_samples": {title: "min_samples", default: 5, value: 5},
+        min_cluster_size: { title: "min_cluster_size", default: "auto", value: "auto" },
+        min_samples: { title: "min_samples", default: 5, value: 5 },
       },
       available_cluster_title_strategies: [
-        {id: "tf_idf_top_3", title: "tf_idf_top_3"},
-        {id: "generative_ai", title: "generative_ai"},
+        { id: "tf_idf_top_3", title: "tf_idf_top_3" },
+        { id: "generative_ai", title: "generative_ai" },
       ],
       rendering_parameters: [
-        ['size', 'Size'],
-        ['hue', 'Hue'],
-        ['sat', 'Saturation'],
-        ['val', 'Value'],
-        ['opacity', 'Opacity'],
-        ['secondary_hue', '2nd Hue'],
-        ['secondary_sat', '2nd Saturation'],
-        ['secondary_val', '2nd Value'],
-        ['secondary_opacity', '2nd Opacity'],
+        ["size", "Size"],
+        ["hue", "Hue"],
+        ["sat", "Saturation"],
+        ["val", "Value"],
+        ["opacity", "Opacity"],
+        ["secondary_hue", "2nd Hue"],
+        ["secondary_sat", "2nd Saturation"],
+        ["secondary_val", "2nd Value"],
+        ["secondary_opacity", "2nd Opacity"],
       ],
     }
   },
   mounted() {
     const that = this
     this.internal_dataset_id = this.appStateStore.settings.dataset_id
-    httpClient.post("/org/data_map/available_datasets", {organization_id: -1})
+    httpClient
+      .post("/org/data_map/available_datasets", { organization_id: -1 })
       .then(function (response) {
         that.available_databases = response.data
         that.dataset_information = {}
@@ -124,11 +127,10 @@ export default {
         // initial dataset_id is set in evaluate_url_query_parameters() in SearchAndMap
       })
 
-    httpClient.get("/org/data_map/get_current_user")
-      .then(function (response) {
-        that.appStateStore.logged_in = response.data.logged_in
-        that.appStateStore.username = response.data.username
-      })
+    httpClient.get("/org/data_map/get_current_user").then(function (response) {
+      that.appStateStore.logged_in = response.data.logged_in
+      that.appStateStore.username = response.data.username
+    })
   },
   computed: {
     ...mapStores(useAppStateStore),
@@ -146,7 +148,7 @@ export default {
       if (!this.show_negative_query_field) {
         this.appStateStore.settings.search.all_field_query_negative = ""
       }
-    }
+    },
   },
   methods: {
     dataset_id_changed_by_user() {
@@ -154,12 +156,12 @@ export default {
       clean_settings.dataset_id = this.internal_dataset_id
       this.appStateStore.settings = clean_settings
 
-      const emptyQueryParams = new URLSearchParams();
-      emptyQueryParams.set("dataset_id", this.appStateStore.settings.dataset_id);
-      history.pushState(null, null, "?" + emptyQueryParams.toString());
+      const emptyQueryParams = new URLSearchParams()
+      emptyQueryParams.set("dataset_id", this.appStateStore.settings.dataset_id)
+      history.pushState(null, null, "?" + emptyQueryParams.toString())
     },
     on_full_dataset_object_loaded() {
-      if (this.appStateStore.dataset === null) return;
+      if (this.appStateStore.dataset === null) return
       if (!this.appStateStore.dataset.object_fields) return
 
       const that = this
@@ -173,7 +175,9 @@ export default {
             query_negative: "",
             must: false,
             threshold_offset: 0.0,
-            use_for_combined_search: that.appStateStore.dataset.default_search_fields.includes(field.identifier),
+            use_for_combined_search: that.appStateStore.dataset.default_search_fields.includes(
+              field.identifier
+            ),
           }
         }
       }
@@ -186,201 +190,324 @@ export default {
         const field = that.appStateStore.dataset.object_fields[field_identifier]
         if (field.field_type == FieldType.VECTOR) {
           that.appStateStore.available_vector_fields.push(field.identifier)
-          if (field.is_available_for_search && this.appStateStore.dataset.default_search_fields.includes(field.identifier)) {
+          if (
+            field.is_available_for_search &&
+            this.appStateStore.dataset.default_search_fields.includes(field.identifier)
+          ) {
             that.appStateStore.settings.vectorize.map_vector_field = field.identifier
           }
-        } else if (field.field_type == FieldType.INTEGER || field.field_type == FieldType.FLOAT) {
+        } else if (
+          field.field_type == FieldType.INTEGER ||
+          field.field_type == FieldType.FLOAT
+        ) {
           that.appStateStore.available_number_fields.push(field.identifier)
         }
       }
-      that.appStateStore.settings.rendering.size.type = 'score'
-      that.appStateStore.settings.rendering.size.parameter = ''
+      that.appStateStore.settings.rendering.size.type = "score"
+      that.appStateStore.settings.rendering.size.parameter = ""
       if (that.appStateStore.available_number_fields.length > 0) {
         for (const field of that.appStateStore.available_number_fields) {
-          if (field === 'cited_by_count') {
+          if (field === "cited_by_count") {
             // prefer this field even if it is not the first one:
-            that.appStateStore.settings.rendering.size.type = 'number_field'
+            that.appStateStore.settings.rendering.size.type = "number_field"
             that.appStateStore.settings.rendering.size.parameter = field
             break
           }
         }
       }
     },
-  }
+  },
 }
-
 </script>
 
 <template>
   <div>
     <!-- Database Selection -->
-    <div class="flex justify-between items-center mb-2">
-      <a :href="`?dataset_id=${appState.settings.dataset_id}`" class="w-8 p-2 text-gray-500 hover:bg-gray-100 rounded">
+    <div class="mb-2 flex items-center justify-between">
+      <a
+        :href="`?dataset_id=${appState.settings.dataset_id}`"
+        class="w-8 rounded p-2 text-gray-500 hover:bg-gray-100">
         <HomeIcon></HomeIcon>
       </a>
-      <span class="ml-1 text-black font-bold font-['Lexend']">{{ appState.dataset ? appState.dataset.workspace_tool_title || "Quiddity" : '' }}</span>
+      <span class="ml-1 font-['Lexend'] font-bold text-black">{{
+        appState.dataset ? appState.dataset.workspace_tool_title || "Quiddity" : ""
+      }}</span>
       <div class="flex-1"></div>
 
-      <select v-model="internal_dataset_id" @change="dataset_id_changed_by_user"
-        class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500">
-        <option v-for="item in available_databases" :value="item.id" selected>{{ item.name }}</option>
+      <select
+        v-model="internal_dataset_id"
+        @change="dataset_id_changed_by_user"
+        class="rounded-md border-gray-300 pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+        <option v-for="item in available_databases" :value="item.id" selected>
+          {{ item.name }}
+        </option>
       </select>
       <div class="flex-1"></div>
-      <a v-if="!appState.logged_in" :href="`org/login/?next=/?dataset_id=${appState.settings.dataset_id}`"
-        class="p-2 text-sm text-gray-500 hover:bg-gray-100 rounded">
+      <a
+        v-if="!appState.logged_in"
+        :href="`org/login/?next=/?dataset_id=${appState.settings.dataset_id}`"
+        class="rounded p-2 text-sm text-gray-500 hover:bg-gray-100">
         Login
       </a>
       <span v-if="appState.logged_in" class="mr-2 text-sm text-gray-500">
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
         {{ appState.username }}
       </span>
-      <a v-if="appState.logged_in" :href="`org/admin/`"
+      <a
+        v-if="appState.logged_in"
+        :href="`org/admin/`"
         title="Manage Datasets"
-        class="w-8 p-2 text-sm text-gray-500 hover:bg-gray-100 rounded">
+        class="w-8 rounded p-2 text-sm text-gray-500 hover:bg-gray-100">
         <CircleStackIcon></CircleStackIcon>
       </a>
-      <a v-if="appState.logged_in" :href="`org/logout/?next=/?dataset_id=${appState.settings.dataset_id}`"
+      <a
+        v-if="appState.logged_in"
+        :href="`org/logout/?next=/?dataset_id=${appState.settings.dataset_id}`"
         title="Logout"
-        class="w-8 p-2 text-sm text-gray-500 hover:bg-gray-100 rounded">
+        class="w-8 rounded p-2 text-sm text-gray-500 hover:bg-gray-100">
         <ArrowRightOnRectangleIcon></ArrowRightOnRectangleIcon>
       </a>
     </div>
 
     <!-- Search Field -->
     <div class="flex">
-      <div v-if="appState.settings.search.search_type != 'external_input'" class="flex-1 h-9 flex flex-row items-center">
-        <button v-if="appState.settings.search.search_type == 'cluster'"
+      <div
+        v-if="appState.settings.search.search_type != 'external_input'"
+        class="flex h-9 flex-1 flex-row items-center">
+        <button
+          v-if="appState.settings.search.search_type == 'cluster'"
           @click="$emit('reset_search_box')"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Cluster '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
-        <button v-if="appState.settings.search.search_type == 'similar_to_item'"
+        <button
+          v-if="appState.settings.search.search_type == 'similar_to_item'"
           @click="$emit('reset_search_box')"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
-        <button v-if="appState.settings.search.search_type == 'classifier'"
+        <button
+          v-if="appState.settings.search.search_type == 'classifier'"
           @click="$emit('reset_search_box')"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
-        <button v-if="appState.settings.search.search_type == 'recommended_for_classifier'"
+        <button
+          v-if="appState.settings.search.search_type == 'recommended_for_classifier'"
           @click="$emit('reset_search_box')"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
-          Recommended for Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
+          Recommended for Collection '{{
+            ellipse(appState.settings.search.origin_display_name, 15)
+          }}', X
         </button>
         <div class="flex-1"></div>
-        <span class="pr-2 text-gray-500 text-sm">Weight:</span>
-        <input v-model.number="appState.settings.search.internal_input_weight" class="w-10 text-gray-500 text-sm"
-          @keyup.enter="$emit('request_search_results')" @submit="$emit('request_search_results')">
+        <span class="pr-2 text-sm text-gray-500">Weight:</span>
+        <input
+          v-model.number="appState.settings.search.internal_input_weight"
+          class="w-10 text-sm text-gray-500"
+          @keyup.enter="$emit('request_search_results')"
+          @submit="$emit('request_search_results')" />
       </div>
     </div>
     <div class="flex">
       <!-- note: search event is not standard -->
-      <div class="flex-1 h-9 flex flex-row items-center">
-        <input type="search" name="search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query"
-        :placeholder="appState.settings.search.search_type == 'external_input' ? `Describe what ${dataset_information[appState.settings.dataset_id] ? dataset_information[appState.settings.dataset_id].entity_name || '' : ''} you want to find` : 'But more like this:'"
-        class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
-      ring-inset ring-gray-300 placeholder:text-gray-400
-      focus:ring-2 focus:ring-inset focus:ring-blue-400
-      sm:text-sm sm:leading-6 shadow-sm" />
+      <div class="flex h-9 flex-1 flex-row items-center">
+        <input
+          type="search"
+          name="search"
+          @search="$emit('request_search_results')"
+          v-model="appState.settings.search.all_field_query"
+          :placeholder="
+            appState.settings.search.search_type == 'external_input'
+              ? `Describe what ${dataset_information[appState.settings.dataset_id] ? dataset_information[appState.settings.dataset_id].entity_name || '' : ''} you want to find`
+              : 'But more like this:'
+          "
+          class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
       </div>
-      <button title="Negative Search" @click="show_negative_query_field = !show_negative_query_field" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_negative_query_field, 'text-gray-400': !show_negative_query_field }">
+      <button
+        title="Negative Search"
+        @click="show_negative_query_field = !show_negative_query_field"
+        class="ml-1 w-8 rounded px-1 hover:bg-gray-100"
+        :class="{
+          'text-blue-600': show_negative_query_field,
+          'text-gray-400': !show_negative_query_field,
+        }">
         <MinusCircleIcon></MinusCircleIcon>
       </button>
-      <button @click="show_settings = !show_settings" class="w-8 px-1 ml-1 hover:bg-gray-100 rounded" :class="{ 'text-blue-600': show_settings, 'text-gray-400': !show_settings }">
+      <button
+        @click="show_settings = !show_settings"
+        class="ml-1 w-8 rounded px-1 hover:bg-gray-100"
+        :class="{ 'text-blue-600': show_settings, 'text-gray-400': !show_settings }">
         <AdjustmentsHorizontalIcon></AdjustmentsHorizontalIcon>
       </button>
     </div>
 
-    <div v-if="show_negative_query_field || appState.settings.search.all_field_query_negative" class="mt-2 h-9">
-      <input type="search" name="negative_search" @search="$emit('request_search_results')" v-model="appState.settings.search.all_field_query_negative"
-      :placeholder="appState.settings.search.search_type == 'external_input' ? 'And optionally what should be excluded' : 'And less like this:'"
-          class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 ring-1
-          ring-inset ring-gray-300 bg-red-100/50 placeholder:text-gray-400
-          focus:ring-2 focus:ring-inset focus:ring-blue-400
-          sm:text-sm sm:leading-6 shadow-sm" />
+    <div
+      v-if="show_negative_query_field || appState.settings.search.all_field_query_negative"
+      class="mt-2 h-9">
+      <input
+        type="search"
+        name="negative_search"
+        @search="$emit('request_search_results')"
+        v-model="appState.settings.search.all_field_query_negative"
+        :placeholder="
+          appState.settings.search.search_type == 'external_input'
+            ? 'And optionally what should be excluded'
+            : 'And less like this:'
+        "
+        class="h-full w-full rounded-md border-0 bg-red-100/50 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
     </div>
 
     <!-- Parameters Area -->
     <div v-show="show_settings" class="mt-3">
-      <div button @click="show_search_settings = !show_search_settings" class="flex flex-row items-center hover:bg-blue-100">
-        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Search {{ show_search_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      <div
+        button
+        @click="show_search_settings = !show_search_settings"
+        class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1" />
+        <span class="mx-2 flex-none text-sm text-gray-500"
+          >Search {{ show_search_settings ? "v" : ">" }}</span
+        >
+        <hr class="flex-1" />
       </div>
       <div v-show="show_search_settings">
-        <div v-if="!appState.settings.search.use_separate_queries" v-for="field in Object.keys(appState.settings.search.separate_queries)" class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">{{ field }}:</span>
-          <input v-model="appState.settings.search.separate_queries[field].use_for_combined_search" type="checkbox">
+        <div
+          v-if="!appState.settings.search.use_separate_queries"
+          v-for="field in Object.keys(appState.settings.search.separate_queries)"
+          class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">{{ field }}:</span>
+          <input
+            v-model="appState.settings.search.separate_queries[field].use_for_combined_search"
+            type="checkbox" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Use separate queries:</span>
-          <input v-model="appState.settings.search.use_separate_queries" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Use separate queries:</span>
+          <input v-model="appState.settings.search.use_separate_queries" type="checkbox" />
         </div>
-        <div v-if="appState.settings.search.use_separate_queries" v-for="field in Object.keys(appState.settings.search.separate_queries)" class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">{{ field }}:</span>
-          <input v-model.number="appState.settings.search.separate_queries[field].query" placeholder="positive" class="w-1/2 text-gray-500 text-sm">
-          <input v-model.number="appState.settings.search.separate_queries[field].query_negative" placeholder="negative" class="w-1/2 text-gray-500 text-sm">
-          Must:<input v-model="appState.settings.search.separate_queries[field].must" type="checkbox">
-          T.O.<input v-model.number="appState.settings.search.separate_queries[field].threshold_offset" type="range" min="-1.0" max="1.0" step="0.1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <div
+          v-if="appState.settings.search.use_separate_queries"
+          v-for="field in Object.keys(appState.settings.search.separate_queries)"
+          class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">{{ field }}:</span>
+          <input
+            v-model.number="appState.settings.search.separate_queries[field].query"
+            placeholder="positive"
+            class="w-1/2 text-sm text-gray-500" />
+          <input
+            v-model.number="appState.settings.search.separate_queries[field].query_negative"
+            placeholder="negative"
+            class="w-1/2 text-sm text-gray-500" />
+          Must:<input
+            v-model="appState.settings.search.separate_queries[field].must"
+            type="checkbox" />
+          T.O.<input
+            v-model.number="appState.settings.search.separate_queries[field].threshold_offset"
+            type="range"
+            min="-1.0"
+            max="1.0"
+            step="0.1"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Exclude items below thresholds:</span>
-          <input v-model="appState.settings.search.use_similarity_thresholds" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Exclude items below thresholds:</span>
+          <input
+            v-model="appState.settings.search.use_similarity_thresholds"
+            type="checkbox" />
         </div>
       </div>
-      <div button @click="show_autocut_settings = !show_autocut_settings" class="flex flex-row items-center hover:bg-blue-100">
-        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Autocut {{ show_autocut_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      <div
+        button
+        @click="show_autocut_settings = !show_autocut_settings"
+        class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1" />
+        <span class="mx-2 flex-none text-sm text-gray-500"
+          >Autocut {{ show_autocut_settings ? "v" : ">" }}</span
+        >
+        <hr class="flex-1" />
       </div>
       <div v-show="show_autocut_settings">
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Use Autocut:</span>
-          <input v-model="appState.settings.search.use_autocut" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Use Autocut:</span>
+          <input v-model="appState.settings.search.use_autocut" type="checkbox" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Debug Autocut:</span>
-          <input v-model="appState.debug_autocut" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Debug Autocut:</span>
+          <input v-model="appState.debug_autocut" type="checkbox" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Autocut Strategy:</span>
-          <select v-model="appState.settings.search.autocut_strategy" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option v-for="item in available_autocut_strategies" :value="item.id" selected>{{ item.title }}</option>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Autocut Strategy:</span>
+          <select
+            v-model="appState.settings.search.autocut_strategy"
+            class="w-1/2 rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <option v-for="item in available_autocut_strategies" :value="item.id" selected>
+              {{ item.title }}
+            </option>
           </select>
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Autocut min. results:</span>
-          <input v-model.number="appState.settings.search.autocut_min_results" class="w-1/2 text-gray-500 text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Autocut min. results:</span>
+          <input
+            v-model.number="appState.settings.search.autocut_min_results"
+            class="w-1/2 text-sm text-gray-500" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Autocut min. score:</span>
-          <input v-model.number="appState.settings.search.autocut_min_score" class="w-1/2 text-gray-500 text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Autocut min. score:</span>
+          <input
+            v-model.number="appState.settings.search.autocut_min_score"
+            class="w-1/2 text-sm text-gray-500" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Autocut max. gradient:</span>
-          <input v-model.number="appState.settings.search.autocut_max_relative_decline" class="w-1/2 text-gray-500 text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Autocut max. gradient:</span>
+          <input
+            v-model.number="appState.settings.search.autocut_max_relative_decline"
+            class="w-1/2 text-sm text-gray-500" />
         </div>
       </div>
-      <div button @click="show_vectorize_settings = !show_vectorize_settings" class="flex flex-row items-center hover:bg-blue-100">
-        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Vectorization {{ show_vectorize_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      <div
+        button
+        @click="show_vectorize_settings = !show_vectorize_settings"
+        class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1" />
+        <span class="mx-2 flex-none text-sm text-gray-500"
+          >Vectorization {{ show_vectorize_settings ? "v" : ">" }}</span
+        >
+        <hr class="flex-1" />
       </div>
       <div v-show="show_vectorize_settings">
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Max. items for map:</span>
-          <span class="text-gray-500 text-sm"> {{ appState.settings.search.max_items_used_for_mapping }} </span>
-          <input v-model.number="appState.settings.search.max_items_used_for_mapping" type="range" min="10" max="10000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Max. items for map:</span>
+          <span class="text-sm text-gray-500">
+            {{ appState.settings.search.max_items_used_for_mapping }}
+          </span>
+          <input
+            v-model.number="appState.settings.search.max_items_used_for_mapping"
+            type="range"
+            min="10"
+            max="10000"
+            step="10"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Create projection using:</span>
-          <select v-model="appState.settings.vectorize.map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Create projection using:</span>
+          <select
+            v-model="appState.settings.vectorize.map_vector_field"
+            class="w-1/2 rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
             <option value="w2v_vector" selected>Context-trained W2V Model</option>
-            <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
+            <option v-for="item in appState.available_vector_fields" :value="item" selected>
+              {{ item }}
+            </option>
           </select>
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Secondary map vector:</span>
-          <select v-model="appState.settings.vectorize.secondary_map_vector_field" class="w-1/2 pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-            <option value=null selected>None</option>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Secondary map vector:</span>
+          <select
+            v-model="appState.settings.vectorize.secondary_map_vector_field"
+            class="w-1/2 rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <option value="null" selected>None</option>
             <option value="w2v_vector" selected>Context-trained W2V Model</option>
-            <option v-for="item in appState.available_vector_fields" :value="item" selected>{{ item }}</option>
+            <option v-for="item in appState.available_vector_fields" :value="item" selected>
+              {{ item }}
+            </option>
           </select>
         </div>
         <!-- <div class="flex justify-between items-center">
@@ -390,118 +517,265 @@ export default {
           </select>
         </div> -->
       </div>
-      <div button @click="show_projection_settings = !show_projection_settings" class="flex flex-row items-center hover:bg-blue-100">
-        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Projection {{ show_projection_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      <div
+        button
+        @click="show_projection_settings = !show_projection_settings"
+        class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1" />
+        <span class="mx-2 flex-none text-sm text-gray-500"
+          >Projection {{ show_projection_settings ? "v" : ">" }}</span
+        >
+        <hr class="flex-1" />
       </div>
       <div v-show="show_projection_settings">
-        <div v-for="axis in [['x_axis', 'X-Axis'], ['y_axis', 'Y-Axis']]" class="flex flex-row justify-between items-center">
-          <span class="text-gray-500 text-sm">{{ axis[1] }}</span>
-          <select v-model="appState.settings.projection[axis[0]].type" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-              <option v-for="item in axis_type_options" :value="item.id" selected>{{ item.title }}</option>
+        <div
+          v-for="axis in [
+            ['x_axis', 'X-Axis'],
+            ['y_axis', 'Y-Axis'],
+          ]"
+          class="flex flex-row items-center justify-between">
+          <span class="text-sm text-gray-500">{{ axis[1] }}</span>
+          <select
+            v-model="appState.settings.projection[axis[0]].type"
+            class="rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <option v-for="item in axis_type_options" :value="item.id" selected>
+              {{ item.title }}
+            </option>
           </select>
-          <select v-model="appState.settings.projection[axis[0]].parameter" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-              <option v-if="['rank', 'score'].includes(appState.settings.projection[axis[0]])" value="">(no parameters)</option>
-              <option v-if="appState.settings.projection[axis[0]].type === 'umap'" value="primary">Primary</option>
-              <option v-if="appState.settings.projection[axis[0]].type === 'umap'" value="secondary">Secondary</option>
-              <option v-if="appState.settings.projection[axis[0]].type === 'number_field'" v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
+          <select
+            v-model="appState.settings.projection[axis[0]].parameter"
+            class="rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <option
+              v-if="['rank', 'score'].includes(appState.settings.projection[axis[0]])"
+              value="">
+              (no parameters)
+            </option>
+            <option
+              v-if="appState.settings.projection[axis[0]].type === 'umap'"
+              value="primary">
+              Primary
+            </option>
+            <option
+              v-if="appState.settings.projection[axis[0]].type === 'umap'"
+              value="secondary">
+              Secondary
+            </option>
+            <option
+              v-if="appState.settings.projection[axis[0]].type === 'number_field'"
+              v-for="item in appState.available_number_fields"
+              :value="item">
+              {{ item }}
+            </option>
           </select>
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Polar Coordinates</span>
-          <input v-model="appState.settings.projection.use_polar_coordinates" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Polar Coordinates</span>
+          <input
+            v-model="appState.settings.projection.use_polar_coordinates"
+            type="checkbox" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Invert X-Axis:</span>
-          <input v-model="appState.settings.projection.invert_x_axis" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Invert X-Axis:</span>
+          <input v-model="appState.settings.projection.invert_x_axis" type="checkbox" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">UMAP n_neighbors:</span>
-          <span class="text-gray-500 text-sm"> {{ appState.settings.projection.n_neighbors }} </span>
-          <input v-model.number="appState.settings.projection.n_neighbors" type="range" min="1" max="100" step="1" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">UMAP n_neighbors:</span>
+          <span class="text-sm text-gray-500">
+            {{ appState.settings.projection.n_neighbors }}
+          </span>
+          <input
+            v-model.number="appState.settings.projection.n_neighbors"
+            type="range"
+            min="1"
+            max="100"
+            step="1"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">UMAP min_dist:</span>
-          <span class="text-gray-500 text-sm"> {{ appState.settings.projection.min_dist }} </span>
-          <input v-model.number="appState.settings.projection.min_dist" type="range" min="0.01" max="0.99" step="0.01" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">UMAP min_dist:</span>
+          <span class="text-sm text-gray-500">
+            {{ appState.settings.projection.min_dist }}
+          </span>
+          <input
+            v-model.number="appState.settings.projection.min_dist"
+            type="range"
+            min="0.01"
+            max="0.99"
+            step="0.01"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">UMAP n_epochs:</span>
-          <span class="text-gray-500 text-sm"> {{ appState.settings.projection.n_epochs }} </span>
-          <input v-model.number="appState.settings.projection.n_epochs" type="range" min="10" max="3000" step="10" class="w-1/2 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">UMAP n_epochs:</span>
+          <span class="text-sm text-gray-500">
+            {{ appState.settings.projection.n_epochs }}
+          </span>
+          <input
+            v-model.number="appState.settings.projection.n_epochs"
+            type="range"
+            min="10"
+            max="3000"
+            step="10"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">UMAP metric:</span>
-          <input v-model.number="appState.settings.projection.metric" class="w-1/2 text-gray-500 text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">UMAP metric:</span>
+          <input
+            v-model.number="appState.settings.projection.metric"
+            class="w-1/2 text-sm text-gray-500" />
         </div>
       </div>
-      <div button @click="show_rendering_settings = !show_rendering_settings" class="flex flex-row items-center hover:bg-blue-100">
-        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Clustering & Rendering {{ show_rendering_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      <div
+        button
+        @click="show_rendering_settings = !show_rendering_settings"
+        class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1" />
+        <span class="mx-2 flex-none text-sm text-gray-500"
+          >Clustering & Rendering {{ show_rendering_settings ? "v" : ">" }}</span
+        >
+        <hr class="flex-1" />
       </div>
       <div v-show="show_rendering_settings">
-        <div v-for="param in rendering_parameters" class="flex flex-row justify-between items-center">
-          <span class="w-1/4 text-gray-500 text-sm">{{ param[1] }}</span>
-          <select v-model="appState.settings.rendering[param[0]].type" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-              <option v-for="item in rendering_type_options" :value="item.id" selected>{{ item.title }}</option>
+        <div
+          v-for="param in rendering_parameters"
+          class="flex flex-row items-center justify-between">
+          <span class="w-1/4 text-sm text-gray-500">{{ param[1] }}</span>
+          <select
+            v-model="appState.settings.rendering[param[0]].type"
+            class="rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <option v-for="item in rendering_type_options" :value="item.id" selected>
+              {{ item.title }}
+            </option>
           </select>
-          <select v-model="appState.settings.rendering[param[0]].parameter" class="pl-2 pr-8 pt-1 pb-1 text-gray-500 text-sm border-transparent rounded focus:ring-blue-500 focus:border-blue-500">
-              <option v-if="['score', 'fixed', 'rank', 'cluster_idx', 'origin_query_idx'].includes(appState.settings.rendering[param[0]].type)" value="">(no parameters)</option>
-              <option v-if="['umap', 'umap_perplexity'].includes(appState.settings.rendering[param[0]].type)" value="primary">Primary</option>
-              <option v-if="['umap', 'umap_perplexity'].includes(appState.settings.rendering[param[0]].type)">Secondary</option>
-              <option v-if="['number_field'].includes(appState.settings.rendering[param[0]].type)" v-for="item in appState.available_number_fields" :value="item">{{ item }}</option>
+          <select
+            v-model="appState.settings.rendering[param[0]].parameter"
+            class="rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <option
+              v-if="
+                ['score', 'fixed', 'rank', 'cluster_idx', 'origin_query_idx'].includes(
+                  appState.settings.rendering[param[0]].type
+                )
+              "
+              value="">
+              (no parameters)
+            </option>
+            <option
+              v-if="
+                ['umap', 'umap_perplexity'].includes(
+                  appState.settings.rendering[param[0]].type
+                )
+              "
+              value="primary">
+              Primary
+            </option>
+            <option
+              v-if="
+                ['umap', 'umap_perplexity'].includes(
+                  appState.settings.rendering[param[0]].type
+                )
+              ">
+              Secondary
+            </option>
+            <option
+              v-if="['number_field'].includes(appState.settings.rendering[param[0]].type)"
+              v-for="item in appState.available_number_fields"
+              :value="item">
+              {{ item }}
+            </option>
           </select>
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Cluster min. samples:</span>
-          <input v-model.number="appState.settings.rendering.clusterizer_parameters.min_samples" class="w-1/2 text-gray-500 text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Cluster min. samples:</span>
+          <input
+            v-model.number="appState.settings.rendering.clusterizer_parameters.min_samples"
+            class="w-1/2 text-sm text-gray-500" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Cluster min. size: (auto: -1)</span>
-          <input v-model.number="appState.settings.rendering.clusterizer_parameters.min_cluster_size" class="w-1/2 text-gray-500 text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Cluster min. size: (auto: -1)</span>
+          <input
+            v-model.number="
+              appState.settings.rendering.clusterizer_parameters.min_cluster_size
+            "
+            class="w-1/2 text-sm text-gray-500" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Cluster 'leaf' mode (smaller clusters):</span>
-          <input v-model="appState.settings.rendering.clusterizer_parameters.leaf_mode" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Cluster 'leaf' mode (smaller clusters):</span>
+          <input
+            v-model="appState.settings.rendering.clusterizer_parameters.leaf_mode"
+            type="checkbox" />
         </div>
       </div>
-      <div button @click="show_frontend_settings = !show_frontend_settings" class="flex flex-row items-center hover:bg-blue-100">
-        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Frontend {{ show_other_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      <div
+        button
+        @click="show_frontend_settings = !show_frontend_settings"
+        class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1" />
+        <span class="mx-2 flex-none text-sm text-gray-500"
+          >Frontend {{ show_other_settings ? "v" : ">" }}</span
+        >
+        <hr class="flex-1" />
       </div>
       <div v-show="show_frontend_settings">
-        <div v-for="param in rendering_parameters" class="flex flex-row justify-between items-center">
-          <span class="w-1/4 text-gray-500 text-sm">{{ param[1] }}</span>
-          <input v-model.number="appState.settings.frontend.rendering[param[0]].min" class="w-1/2 text-gray-500 text-sm">
-          <input v-model.number="appState.settings.frontend.rendering[param[0]].max" class="w-1/2 text-gray-500 text-sm">
-          <input v-model.number="appState.settings.frontend.rendering[param[0]].fallback" class="w-1/2 text-gray-500 text-sm">
-          <input v-model="appState.settings.frontend.rendering[param[0]].gamma" class="w-1/2 text-gray-500 text-sm">
+        <div
+          v-for="param in rendering_parameters"
+          class="flex flex-row items-center justify-between">
+          <span class="w-1/4 text-sm text-gray-500">{{ param[1] }}</span>
+          <input
+            v-model.number="appState.settings.frontend.rendering[param[0]].min"
+            class="w-1/2 text-sm text-gray-500" />
+          <input
+            v-model.number="appState.settings.frontend.rendering[param[0]].max"
+            class="w-1/2 text-sm text-gray-500" />
+          <input
+            v-model.number="appState.settings.frontend.rendering[param[0]].fallback"
+            class="w-1/2 text-sm text-gray-500" />
+          <input
+            v-model="appState.settings.frontend.rendering[param[0]].gamma"
+            class="w-1/2 text-sm text-gray-500" />
         </div>
       </div>
-      <div button @click="show_other_settings = !show_other_settings" class="flex flex-row items-center hover:bg-blue-100">
-        <hr class="flex-1"> <span class="flex-none mx-2 text-sm text-gray-500">Other {{ show_other_settings ? 'v' : '>' }}</span> <hr class="flex-1">
+      <div
+        button
+        @click="show_other_settings = !show_other_settings"
+        class="flex flex-row items-center hover:bg-blue-100">
+        <hr class="flex-1" />
+        <span class="mx-2 flex-none text-sm text-gray-500"
+          >Other {{ show_other_settings ? "v" : ">" }}</span
+        >
+        <hr class="flex-1" />
       </div>
       <div v-show="show_other_settings">
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Ignore cache:</span>
-          <input v-model="appState.ignore_cache" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Ignore cache:</span>
+          <input v-model="appState.ignore_cache" type="checkbox" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Store search history:</span>
-          <input v-model="appState.store_search_history" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Store search history:</span>
+          <input v-model="appState.store_search_history" type="checkbox" />
         </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 text-sm">Show timings:</span>
-          <input v-model="appState.show_timings" type="checkbox">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Show timings:</span>
+          <input v-model="appState.show_timings" type="checkbox" />
         </div>
       </div>
       <div class="flex flex-row gap-2">
-        <input type="button" button @click="$emit('request_search_results')"
-        class="px-1 rounded shadow-sm hover:bg-blue-100 active:bg-blue-200 text-sm text-gray-500"
-        value="Rerun">
-        <input type="button" button @click="$emit('reset_search_box')"
-        class="px-1 rounded shadow-sm hover:bg-blue-100 active:bg-blue-200 text-sm text-gray-500"
-        value="Reset">
-        <input type="button" button @click="$emit('show_global_map')"
-        class="px-1 rounded shadow-sm hover:bg-blue-100 active:bg-blue-200 text-sm text-gray-500"
-        value="Show Global Map">
+        <input
+          type="button"
+          button
+          @click="$emit('request_search_results')"
+          class="rounded px-1 text-sm text-gray-500 shadow-sm hover:bg-blue-100 active:bg-blue-200"
+          value="Rerun" />
+        <input
+          type="button"
+          button
+          @click="$emit('reset_search_box')"
+          class="rounded px-1 text-sm text-gray-500 shadow-sm hover:bg-blue-100 active:bg-blue-200"
+          value="Reset" />
+        <input
+          type="button"
+          button
+          @click="$emit('show_global_map')"
+          class="rounded px-1 text-sm text-gray-500 shadow-sm hover:bg-blue-100 active:bg-blue-200"
+          value="Show Global Map" />
       </div>
     </div>
   </div>

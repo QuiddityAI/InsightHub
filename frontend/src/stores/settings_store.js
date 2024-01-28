@@ -1,9 +1,9 @@
-import { defineStore } from 'pinia'
-import httpClient from '../api/httpClient';
+import { defineStore } from "pinia"
+import httpClient from "../api/httpClient"
 
-import { FieldType } from '../utils/utils'
+import { FieldType } from "../utils/utils"
 
-export const useAppStateStore = defineStore('appState', {
+export const useAppStateStore = defineStore("appState", {
   state: () => {
     return {
       show_timings: false,
@@ -15,8 +15,8 @@ export const useAppStateStore = defineStore('appState', {
       selected_item_id: null,
       highlighted_cluster_id: null,
       selected_cluster_id: null,
-      selected_map_tool: 'drag',  // one of 'drag' or 'lasso'
-      selection_merging_mode: 'replace',  // one of 'replace', 'add', 'remove'
+      selected_map_tool: "drag", // one of 'drag' or 'lasso'
+      selection_merging_mode: "replace", // one of 'replace', 'add', 'remove'
       selected_point_indexes: [],
 
       available_vector_fields: [],
@@ -36,7 +36,7 @@ export const useAppStateStore = defineStore('appState', {
       settings: {
         dataset_id: null,
         search: {
-          search_type: "external_input",  // or cluster, classifier or similar item
+          search_type: "external_input", // or cluster, classifier or similar item
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
@@ -76,8 +76,8 @@ export const useAppStateStore = defineStore('appState', {
           tokenizer: "default",
         },
         projection: {
-          x_axis: { type: "umap", parameter: "primary" },  // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
-          y_axis: { type: "umap", parameter: "primary" },  // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
+          x_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
+          y_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
           n_neighbors: 15,
           min_dist: 0.17,
           n_epochs: 500,
@@ -87,7 +87,7 @@ export const useAppStateStore = defineStore('appState', {
           invert_x_axis: false,
         },
         rendering: {
-          size: { type: "score", parameter: "" },  // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
+          size: { type: "score", parameter: "" }, // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
           hue: { type: "cluster_idx", parameter: "" },
           sat: { type: "score", parameter: "" },
           val: { type: "fixed", parameter: "" },
@@ -105,21 +105,46 @@ export const useAppStateStore = defineStore('appState', {
           },
           cluster_title_strategy: "tf_idf_top_3",
         },
-        frontend: {  // included here to be able to be restored using map_id (stored in backend)
+        frontend: {
+          // included here to be able to be restored using map_id (stored in backend)
           rendering: {
             show_thumbnails: true,
             show_cluster_titles: true,
-            size: { min: 0.0, max: 1.0, fallback: 0.5, gamma: "auto", threshold: null },  // TODO: store debounced after change
+            size: { min: 0.0, max: 1.0, fallback: 0.5, gamma: "auto", threshold: null }, // TODO: store debounced after change
             hue: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
             sat: { min: 0.0, max: 1.0, fallback: 0.7, gamma: "auto", threshold: null },
             val: { min: 0.0, max: 1.0, fallback: 0.7, gamma: "auto", threshold: null },
             opacity: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
-            secondary_hue: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
-            secondary_sat: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
-            secondary_val: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
-            secondary_opacity: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
-          }
-        }
+            secondary_hue: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 0.0,
+              gamma: "auto",
+              threshold: null,
+            },
+            secondary_sat: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 1.0,
+              gamma: "auto",
+              threshold: null,
+            },
+            secondary_val: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 1.0,
+              gamma: "auto",
+              threshold: null,
+            },
+            secondary_opacity: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 0.0,
+              gamma: "auto",
+              threshold: null,
+            },
+          },
+        },
       },
 
       // exactly the same settings again to be able to restore them later on:
@@ -127,7 +152,7 @@ export const useAppStateStore = defineStore('appState', {
       default_settings: {
         dataset_id: null,
         search: {
-          search_type: "external_input",  // or cluster, classifier or similar item
+          search_type: "external_input", // or cluster, classifier or similar item
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
@@ -167,8 +192,8 @@ export const useAppStateStore = defineStore('appState', {
           tokenizer: "default",
         },
         projection: {
-          x_axis: { type: "umap", parameter: "primary" },  // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
-          y_axis: { type: "umap", parameter: "primary" },  // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
+          x_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
+          y_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
           n_neighbors: 15,
           min_dist: 0.17,
           n_epochs: 500,
@@ -178,7 +203,7 @@ export const useAppStateStore = defineStore('appState', {
           invert_x_axis: false,
         },
         rendering: {
-          size: { type: "score", parameter: "" },  // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
+          size: { type: "score", parameter: "" }, // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
           hue: { type: "cluster_idx", parameter: "" },
           sat: { type: "score", parameter: "" },
           val: { type: "fixed", parameter: "" },
@@ -196,21 +221,46 @@ export const useAppStateStore = defineStore('appState', {
           },
           cluster_title_strategy: "tf_idf_top_3",
         },
-        frontend: {  // included here to be able to be restored using map_id (stored in backend)
+        frontend: {
+          // included here to be able to be restored using map_id (stored in backend)
           rendering: {
             show_thumbnails: true,
             show_cluster_titles: true,
-            size: { min: 0.0, max: 1.0, fallback: 0.5, gamma: "auto", threshold: null },  // TODO: store debounced after change
+            size: { min: 0.0, max: 1.0, fallback: 0.5, gamma: "auto", threshold: null }, // TODO: store debounced after change
             hue: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
             sat: { min: 0.0, max: 1.0, fallback: 0.7, gamma: "auto", threshold: null },
             val: { min: 0.0, max: 1.0, fallback: 0.7, gamma: "auto", threshold: null },
             opacity: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
-            secondary_hue: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
-            secondary_sat: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
-            secondary_val: { min: 0.0, max: 1.0, fallback: 1.0, gamma: "auto", threshold: null },
-            secondary_opacity: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
-          }
-        }
+            secondary_hue: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 0.0,
+              gamma: "auto",
+              threshold: null,
+            },
+            secondary_sat: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 1.0,
+              gamma: "auto",
+              threshold: null,
+            },
+            secondary_val: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 1.0,
+              gamma: "auto",
+              threshold: null,
+            },
+            secondary_opacity: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 0.0,
+              gamma: "auto",
+              threshold: null,
+            },
+          },
+        },
       },
     }
   },
@@ -223,8 +273,9 @@ export const useAppStateStore = defineStore('appState', {
     },
     add_item_to_classifier(item_index, classifier_id, class_name, is_positive) {
       const that = this
-      const classifier = this.classifiers[this.classifiers.findIndex((e) => e.id == classifier_id)]
-      if (!classifier) return;
+      const classifier =
+        this.classifiers[this.classifiers.findIndex((e) => e.id == classifier_id)]
+      if (!classifier) return
 
       this.last_used_classifier_id = classifier.id
       const item_id = this.map_data.results.per_point_data.hover_label_data[item_index]._id
@@ -236,7 +287,8 @@ export const useAppStateStore = defineStore('appState', {
         value: item_id,
         weight: 1.0,
       }
-      httpClient.post("/org/data_map/add_item_to_classifier", add_item_to_classifier_body)
+      httpClient
+        .post("/org/data_map/add_item_to_classifier", add_item_to_classifier_body)
         .then(function (response) {
           // TODO: refresh list of examples if open
           // if (is_positive) {

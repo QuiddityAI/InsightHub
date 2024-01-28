@@ -1,18 +1,17 @@
+import * as math from "mathjs"
 
-import * as math from 'mathjs'
-
-export function normalizeArray(a, gamma=1.0, max_default=1.0) {
-  if (a.length === 0) return a;
+export function normalizeArray(a, gamma = 1.0, max_default = 1.0) {
+  if (a.length === 0) return a
   a = math.subtract(a, math.min(a))
   return math.dotPow(math.divide(a, math.max(math.max(a), max_default)), gamma)
 }
 
-export function normalizeArrayMedianGamma(a, gamma_factor, max_default=1.0) {
-  if (a.length === 0) return a;
-  const aMin = math.min(a);
-  const aMax = math.max(a);
+export function normalizeArrayMedianGamma(a, gamma_factor, max_default = 1.0) {
+  if (a.length === 0) return a
+  const aMin = math.min(a)
+  const aMax = math.max(a)
   if (aMin == aMax) {
-    return Array(a.length).fill(1.0);
+    return Array(a.length).fill(1.0)
   }
   a = math.subtract(a, math.min(a))
   a = math.divide(a, math.max(math.max(a), max_default))
@@ -29,12 +28,12 @@ export class FieldType {
 }
 
 export function ellipse(text, length) {
-  if (!text) return "";
-  let re = new RegExp("(.{"+length+"})..+");
-  return text.replace(re, "$1…");
+  if (!text) return ""
+  let re = new RegExp("(.{" + length + "})..+")
+  return text.replace(re, "$1…")
 }
 
-export function ensureLength(x, size, fillValue, removeRest=false) {
+export function ensureLength(x, size, fillValue, removeRest = false) {
   if (x.length < size) {
     return Array(size).fill(fillValue)
   } else if (x.length > size && removeRest) {
