@@ -25,7 +25,6 @@ uniform float maxOpacity;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
-
 vec3 hsv2rgb(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
@@ -72,7 +71,6 @@ void main() {
         FragColor = tex;
     }
 
-
     vec2 circleCenter = useTextureAtlas ? vec2(0.15, 0.85) : vec2(0.5, 0.5);
     float circleRadius = useTextureAtlas ? 0.15 : 0.5;
     vec2 posFromCenter = (posFromBottomLeft - circleCenter) / circleRadius;
@@ -89,7 +87,7 @@ void main() {
     vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
 
     // noise:
-    float noise = 0.1 * rand(floor(posFromCenter * 40.0)/40.0);
+    float noise = 0.1 * rand(floor(posFromCenter * 40.0) / 40.0);
 
     float pi = 3.1415;
     float yFactor = cos(atan(posFromCenter.y, sqrt(1.0 - pow(posFromCenter.y, 2.0))));
@@ -134,14 +132,14 @@ void main() {
         specular = pow(specAngle, shininessVal);
     }
     float ambientLight = 0.5;
-    vec3 specularColor = vec3(1.0f);
+    vec3 specularColor = vec3(1.0);
     float specularStrength = 0.7;
     // vec3 albedoColor = texture(pointTextureBaseColor, sphereUv).rgb;
     vec3 albedoColor = albedoColorVar;
 
     vec3 pointColorAtThisPixel = albedoColor * ambientLight +
-                lambertian * albedoColor * (1.0 - ambientLight) +
-                specularStrength * specular * specularColor + noise;
+        lambertian * albedoColor * (1.0 - ambientLight) +
+        specularStrength * specular * specularColor + noise;
 
     FragColor.rgb = mix(FragColor.rgb, pointColorAtThisPixel, circleArea);
 }

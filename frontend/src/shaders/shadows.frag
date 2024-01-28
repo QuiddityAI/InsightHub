@@ -20,8 +20,8 @@ void main() {
     // position of this fragment within point vertex:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
     vec2 posFromBottomLeft = vec2(vUv.x, 1.0 - vUv.y);  // 0 - 1
-	vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
-	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
+    vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
+    float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
 
     float smoothShadowDarkness = pow(1.0 - smoothstep(0.0, 1.0, distFromCenter), 1.3);
 

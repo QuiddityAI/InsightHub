@@ -41,8 +41,8 @@ void main() {
     vec3 pannedAndZoomedPos = zoomedPos + vec3(pan.x, -pan.y, 0);
 
     // shadow direction:
-	vec3 lightPos = vec3(lightPosition.xy, -2.0);
-	vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * vec3(zoom, zoom, 1.0);
+    vec3 lightPos = vec3(lightPosition.xy, -2.0);
+    vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * vec3(zoom, zoom, 1.0);
     vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 200.0);
 
     // position is now in range 0.0 - 1.0

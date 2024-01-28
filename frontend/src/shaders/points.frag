@@ -25,7 +25,6 @@ uniform float maxOpacity;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
-
 vec3 hsv2rgb(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
@@ -46,7 +45,8 @@ vec3 get_normal_from_position_on_circle(float posX, float posY) {
     vec3 position = vec3(x, y, z);
 
     float mag = dot(position.xy, position.xy);
-    if(mag > 1.0) discard;
+    if (mag > 1.0)
+        discard;
 
     vec3 normal = normalize(position);
     return normal;
@@ -61,8 +61,8 @@ void main() {
     // position of this fragment within point vertex / quad:
     // note: posFromBottomLeft is similar to UV coordinate, but UV is from top left
     vec2 posFromBottomLeft = vUv;  // 0 - 1
-	vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
-	float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
+    vec2 posFromCenter = (posFromBottomLeft - 0.5) * 2.0;
+    float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
     float pointRadiusPx = pointRadiusPxVar;
 
     // circle area:
@@ -77,7 +77,7 @@ void main() {
     vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
 
     // noise:
-    float noise = 0.1 * rand(floor(posFromCenter * 40.0)/40.0);
+    float noise = 0.1 * rand(floor(posFromCenter * 40.0) / 40.0);
 
     float pi = 3.1415;
     float yFactor = cos(atan(posFromCenter.y, sqrt(1.0 - pow(posFromCenter.y, 2.0))));
@@ -122,14 +122,14 @@ void main() {
         specular = pow(specAngle, shininessVal);
     }
     float ambientLight = 0.5;
-    vec3 specularColor = vec3(1.0f);
+    vec3 specularColor = vec3(1.0);
     float specularStrength = 0.7;
     // vec3 albedoColor = texture(pointTextureBaseColor, sphereUv).rgb;
     vec3 albedoColor = albedoColorVar;
 
     FragColor.rgb = albedoColor * ambientLight +
-                lambertian * albedoColor * (1.0 - ambientLight) +
-                specularStrength * specular * specularColor + noise;
+        lambertian * albedoColor * (1.0 - ambientLight) +
+        specularStrength * specular * specularColor + noise;
 
     if (useTextureAtlas) {
         int atlasTotalWidth = 4096;
