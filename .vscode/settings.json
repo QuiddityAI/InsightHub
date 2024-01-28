@@ -6,5 +6,11 @@
         "editor.detectIndentation" : false,
         "editor.insertSpaces": true,
         "editor.tabSize": 4
+    },
+    "[javascript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[vue]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
     }
 }
