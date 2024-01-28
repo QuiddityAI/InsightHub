@@ -10,9 +10,6 @@
     "[javascript]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-    "[vue]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
     "webgl-glsl-editor.format.favorFloatingSuffix": false,
     "webgl-glsl-editor.format.placeSpaceAfterKeywords": true
 }
