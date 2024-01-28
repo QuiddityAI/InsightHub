@@ -86,7 +86,7 @@ export default {
 
 <template>
   <div
-    class="flex min-w-0 flex-auto flex-initial flex-col overflow-hidden rounded-md bg-white p-3 shadow-sm">
+    class="flex min-w-0 flex-initial flex-col overflow-hidden rounded-md bg-white p-3 shadow-sm">
     <p
       class="flex-none text-sm font-medium leading-6 text-gray-900"
       v-html="rendering ? rendering.title(item) : ''"></p>
