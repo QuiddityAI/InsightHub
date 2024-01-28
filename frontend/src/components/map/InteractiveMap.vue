@@ -78,6 +78,7 @@ export default {
       currentVelocityY: [],
       pointVisibility: [],
       visiblePointIndexes: [],
+      show_html_points: false,
 
       baseScale: [1.0, 1.0],
       baseOffset: [0.0, 0.0],
@@ -897,20 +898,29 @@ export default {
     },
     updatePointVisibility() {
       // point visibility is currently only used if there are thumbnail images:
-      if (!this.textureAtlas) return
-      return
+      // if (!this.textureAtlas) return
+      // return
       const margin = -30 * window.devicePixelRatio
 
-      const left = this.screenToEmbeddingX(this.passiveMarginsLRTB[0] + margin)
+      // const left = this.screenToEmbeddingX(this.passiveMarginsLRTB[0] + margin)
+      // const right = this.screenToEmbeddingX(
+      //   window.innerWidth - this.passiveMarginsLRTB[1] - margin
+      // )
+      // const top = this.screenToEmbeddingY(this.passiveMarginsLRTB[2] + margin)
+      // const bottom = this.screenToEmbeddingY(
+      //   window.innerHeight - this.passiveMarginsLRTB[3] - margin
+      // )
+
+      const left = this.screenToEmbeddingX(margin)
       const right = this.screenToEmbeddingX(
-        window.innerWidth - this.passiveMarginsLRTB[1] - margin
+        window.innerWidth - margin
       )
-      const top = this.screenToEmbeddingY(this.passiveMarginsLRTB[2] + margin)
+      const top = this.screenToEmbeddingY(margin)
       const bottom = this.screenToEmbeddingY(
-        window.innerHeight - this.passiveMarginsLRTB[3] - margin
+        window.innerHeight - margin
       )
 
-      const maxItems = 50
+      const maxItems = 10
       const pointIndexes = []
       const pointVisibility = []
       for (const i of Array(this.currentPositionsX.length).keys()) {
@@ -924,10 +934,12 @@ export default {
       }
       if (pointIndexes.length <= maxItems) {
         this.visiblePointIndexes = pointIndexes
-        this.pointVisibility = pointVisibility
+        //this.pointVisibility = pointVisibility
+        this.show_html_points = true
       } else {
-        this.visiblePointIndexes = []
-        this.pointVisibility = Array(this.currentPositionsX.length).fill(1)
+        //this.visiblePointIndexes = []
+        //this.pointVisibility = Array(this.currentPositionsX.length).fill(0)
+        this.show_html_points = false
       }
       this.updateGeometry()
     },
@@ -996,6 +1008,31 @@ export default {
         <div
           v-if="per_point.text_data.length > pointIndex && hover_label_rendering"
           class="flex flex-col items-center rounded bg-white/50 text-xs text-gray-500">
+          <img
+            v-if="hover_label_rendering.image(per_point.text_data[pointIndex])"
+            :src="hover_label_rendering.image(per_point.text_data[pointIndex])"
+            class="h-24" />
+        </div>
+      </div>
+    </div>
+
+    <div
+        class="pointer-events-none fixed transition-opacity duration-300"
+      :class="{'opacity-0': !show_html_points, 'opacity-100': show_html_points}"
+      >
+      <div
+        v-for="pointIndex in visiblePointIndexes"
+        :key="pointIndex"
+        class="pointer-events-none fixed"
+        :style="{
+          left: screenLeftFromRelative(currentPositionsX[pointIndex]) + 'px',
+          bottom: screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
+        }"
+        style="transform: translate(-50%, 50%)">
+        <div
+          v-if="per_point.text_data.length > pointIndex && hover_label_rendering"
+          class="flex flex-col items-center rounded bg-white px-1 text-gray-500 text-[10px] max-w-[140px]">
+          <div v-html="hover_label_rendering.title(per_point.text_data[pointIndex])"></div>
           <img
             v-if="hover_label_rendering.image(per_point.text_data[pointIndex])"
             :src="hover_label_rendering.image(per_point.text_data[pointIndex])"

@@ -12,6 +12,15 @@ export default {
       fontFamily: {
         sans: ['Inter var', ...defaultTheme.fontFamily.sans],
       },
+      animation: {
+				fade: 'fadeIn .3s ease-in',
+			},
+      keyframes: {
+        fadeIn: {
+					from: { opacity: 0 },
+					to: { opacity: 1 },
+        },
+      },
     },
   },
   plugins: [
