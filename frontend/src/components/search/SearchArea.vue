@@ -9,9 +9,9 @@ import {
   CircleStackIcon,
 } from "@heroicons/vue/24/outline"
 
-import httpClient from "../api/httpClient"
-import { FieldType, ellipse } from "../utils/utils"
-import { useAppStateStore } from "../stores/settings_store"
+import httpClient from "../../api/httpClient"
+import { FieldType, ellipse } from "../../utils/utils"
+import { useAppStateStore } from "../../stores/settings_store"
 
 const appState = useAppStateStore()
 </script>

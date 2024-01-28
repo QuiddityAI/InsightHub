@@ -3,9 +3,9 @@ import { XMarkIcon } from "@heroicons/vue/24/outline"
 import axios from "axios"
 
 import LoadingDotAnimation from "./LoadingDotAnimation.vue"
-import AddToClassifierButtons from "./AddToClassifierButtons.vue"
+import AddToClassifierButtons from "../classifier/AddToClassifierButtons.vue"
 
-import httpClient from "../api/httpClient"
+import httpClient from "../../api/httpClient"
 </script>
 
 <script>

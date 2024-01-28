@@ -15,12 +15,12 @@ import {
 } from "@heroicons/vue/24/outline"
 
 import InteractiveMap from "../components/map/InteractiveMap.vue"
-import SearchArea from "../components/SearchArea.vue"
-import ResultListItem from "../components/ResultListItem.vue"
-import ObjectDetailsModal from "../components/ObjectDetailsModal.vue"
-import Classifier from "../components/Classifier.vue"
-import ClassifierExample from "../components/ClassifierExample.vue"
-import AddToClassifierButtons from "../components/AddToClassifierButtons.vue"
+import SearchArea from "../components/search/SearchArea.vue"
+import ResultListItem from "../components/search/ResultListItem.vue"
+import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
+import Classifier from "../components/classifier/Classifier.vue"
+import ClassifierExample from "../components/classifier/ClassifierExample.vue"
+import AddToClassifierButtons from "../components/classifier/AddToClassifierButtons.vue"
 
 import httpClient from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
@@ -854,10 +854,7 @@ export default {
     <div
       class="absolute bottom-6 right-4 flex flex-col justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <button
-        @click="
-          appState.selected_map_tool = 'drag'
-          appState.selection_merging_mode = 'replace'
-        "
+        @click="appState.selected_map_tool = 'drag'; appState.selection_merging_mode = 'replace'"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
           'text-blue-600': appState.selected_map_tool === 'drag',
@@ -1110,10 +1107,7 @@ export default {
                 <button
                   class="rounded-r-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
                   type="button"
-                  @click="
-                    create_classifier($refs.new_classifier_name.value)
-                    $refs.new_classifier_name.value = ''
-                  ">
+                  @click="create_classifier($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''">
                   Create
                 </button>
               </div>

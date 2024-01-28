@@ -2,7 +2,7 @@
 import { mapStores } from "pinia"
 
 import { HandThumbUpIcon, HandThumbDownIcon } from "@heroicons/vue/24/outline"
-import { useAppStateStore } from "../stores/settings_store"
+import { useAppStateStore } from "../../stores/settings_store"
 
 const appState = useAppStateStore()
 </script>

@@ -1,12 +1,12 @@
 <script setup>
-import httpClient from "../api/httpClient"
+import httpClient from "../../api/httpClient"
 
 import { EllipsisVerticalIcon, TrashIcon, BookOpenIcon } from "@heroicons/vue/24/outline"
 
 import ClassifierExample from "./ClassifierExample.vue"
 import { mapStores } from "pinia"
-import { useAppStateStore } from "../stores/settings_store"
-import { FieldType } from "../utils/utils"
+import { useAppStateStore } from "../../stores/settings_store"
+import { FieldType } from "../../utils/utils"
 
 const appState = useAppStateStore()
 </script>
