@@ -22,7 +22,7 @@ export default {
       this.selected_classifier_class =
         this.classifiers[
           this.classifiers.findIndex((e) => e.id == this.selected_classifier_id)
-        ].actual_classes[0]
+        ].actual_classes[0].name
     },
   },
   computed: {},
@@ -51,11 +51,11 @@ export default {
       v-model="selected_classifier_class"
       class="mr-3 h-8 w-32 rounded-md border-transparent py-0 pl-2 pr-8 text-sm text-gray-500 ring-1 ring-gray-300 focus:border-blue-500 focus:ring-blue-500">
       <option
-        v-for="class_name in classifiers[
+        v-for="class_details in classifiers[
           classifiers.findIndex((e) => e.id == selected_classifier_id)
         ].actual_classes"
-        :value="class_name">
-        {{ class_name == "_default" ? "Items" : class_name }}
+        :value="class_details.name">
+        {{ class_details.name == "_default" ? "Items" : class_details.name }}
       </option>
     </select>
     <button

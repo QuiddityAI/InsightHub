@@ -15,6 +15,7 @@
     "chart.js": "^4.4.0",
     "chartjs-plugin-annotation": "^3.0.1",
     "mathjs": "^11.9.1",
+    "mitt": "^3.0.1",
     "panzoom": "^9.4.3",
     "pinia": "^2.1.6",
     "point-in-polygon": "^1.1.0",

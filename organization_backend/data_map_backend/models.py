@@ -1,3 +1,4 @@
+from collections import defaultdict
 import copy
 import json
 
@@ -749,10 +750,20 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
 
     @property
     def actual_classes(self) -> list:
-        classes = set(self.class_names or [])
+        classes = defaultdict(lambda: [0, 0])
+        for class_name in self.class_names or []:
+            classes[class_name] = [0, 0]
         for example in ClassifierExample.objects.filter(classifier=self):
-            classes.update(example.classes or ['_default'])
-        return sorted(list(classes))
+            for c in example.classes or ['_default']:
+                classes[c][0 if example.is_positive else 1] += 1
+        classes_list_of_dicts = []
+        for c, v in classes.items():
+            classes_list_of_dicts.append({
+                "name": c,
+                "positive_count": v[0],
+                "negative_count": v[1]
+            })
+        return sorted(classes_list_of_dicts, key=lambda x: x["name"])
 
     def __str__(self):
         return f"{self.name}"

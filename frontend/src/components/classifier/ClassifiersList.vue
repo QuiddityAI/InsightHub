@@ -1,0 +1,126 @@
+<script setup>
+import httpClient from "../../api/httpClient"
+
+import { EllipsisVerticalIcon, TrashIcon } from "@heroicons/vue/24/outline"
+
+import ClassifierClassListItem from "./ClassifierClassListItem.vue"
+
+import { mapStores } from "pinia"
+import { useAppStateStore } from "../../stores/settings_store"
+const appState = useAppStateStore()
+
+</script>
+
+<script>
+export default {
+  props: [],
+  emits: ["classifier_selected", "class_selected"],
+  data() {
+    return {}
+  },
+  computed: {
+    ...mapStores(useAppStateStore),
+  },
+  mounted() {},
+  methods: {},
+}
+</script>
+
+<template>
+  <div>
+
+    <div class="my-2 flex items-stretch">
+      <input
+        ref="new_classifier_name"
+        type="text"
+        class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+        placeholder="Collection Name" />
+      <button
+        class="rounded-r-md border-0 px-2 py-1.5 text-gray-400 hover:text-blue-500 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+        type="button"
+        @click="create_classifier($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''">
+        Create
+      </button>
+    </div>
+
+    <ul v-if="Object.keys(appState.classifiers).length !== 0" role="list" class="mb-4 mt-5">
+      <li
+        v-for="classifier in appState.classifiers"
+        :key="classifier.id"
+        class="mb-4 rounded-md bg-gray-100 pb-1 pl-3 pr-2 pt-2">
+
+        <div class="flex flex-row gap-3">
+          <span class="font-bold text-gray-600">{{ classifier.name }}</span>
+          <div class="flex-1"></div>
+          <!-- <button
+            @click="$emit('recommend_items_for_classifier', classifier)"
+            class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+            Recommend Similar
+          </button>
+          <button
+            @click="$emit('show_classifier_as_map', classifier)"
+            class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+            Show Map
+          </button> -->
+          <button
+            @click="settings_visible = !settings_visible"
+            class="ml-1 w-8 rounded px-1 hover:bg-gray-100"
+            :class="{
+              'text-blue-600': settings_visible,
+              'text-gray-500': !settings_visible,
+            }">
+            <EllipsisVerticalIcon></EllipsisVerticalIcon>
+          </button>
+        </div>
+
+        <div v-if="settings_visible" class="mt-2 flex flex-row gap-3">
+          <button
+            @click="train_classifier"
+            class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+            Train Classifier
+          </button>
+          <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+            X: highlight similar in map
+          </button>
+          <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+            Color: xxx
+          </button>
+          <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+            Symbol: xxx
+          </button>
+
+          <div class="flex-1"></div>
+          <button
+            @click="$emit('delete_classifier', classifier.id)"
+            class="ml-1 w-6 rounded px-1 text-gray-500 hover:bg-red-100">
+            <TrashIcon></TrashIcon>
+          </button>
+        </div>
+
+        <ul class="mt-3">
+          <ClassifierClassListItem
+            v-for="class_details in classifier.actual_classes.slice(0, 3)"
+            :key="class_details.name"
+            :class_details="class_details"
+            @click="$emit('class_selected', class_details.name); $emit('classifier_selected', classifier.id)">
+          </ClassifierClassListItem>
+        </ul>
+
+        <button
+          v-if="classifier.actual_classes.length > 3"
+          class="mb-2 flex flex-row gap-3 py-[1px] pr-2"
+          @click="$emit('classifier_selected', classifier.id)">
+          <span class="text-sm pl-2 text-gray-500 hover:text-blue-500">
+            Show all {{ classifier.actual_classes.length }} classes
+          </span>
+        </button>
+      </li>
+    </ul>
+
+    <div
+      v-if="Object.keys(appState.classifiers).length === 0"
+      class="flex h-20 flex-col place-content-center text-center">
+      <p class="flex-none text-gray-400">No Collections Yet</p>
+    </div>
+  </div>
+</template>

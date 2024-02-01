@@ -18,7 +18,7 @@ import InteractiveMap from "../components/map/InteractiveMap.vue"
 import SearchArea from "../components/search/SearchArea.vue"
 import ResultListItem from "../components/search/ResultListItem.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
-import Classifier from "../components/classifier/Classifier.vue"
+import ClassifierArea from "../components/classifier/ClassifierArea.vue"
 import ClassifierExample from "../components/classifier/ClassifierExample.vue"
 import AddToClassifierButtons from "../components/classifier/AddToClassifierButtons.vue"
 
@@ -33,6 +33,7 @@ Chart.register(annotationPlugin)
 
 <script>
 export default {
+  inject: ["eventBus"],
   data() {
     return {
       // results:
@@ -946,7 +947,7 @@ export default {
               Maps
             </button>
             <button
-              @click="selected_tab = 'classifiers'"
+              @click="selected_tab = 'classifiers'; eventBus.emit('classifier_tab_is_clicked')"
               :class="{ 'text-blue-500': selected_tab === 'classifiers' }"
               class="flex-1">
               Collections
@@ -1097,41 +1098,7 @@ export default {
             </div>
 
             <!-- classifiers -->
-            <div v-if="selected_tab === 'classifiers'">
-              <div class="my-2 flex items-stretch">
-                <input
-                  ref="new_classifier_name"
-                  type="text"
-                  class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                  placeholder="Collection Name" />
-                <button
-                  class="rounded-r-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                  type="button"
-                  @click="create_classifier($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''">
-                  Create
-                </button>
-              </div>
-
-              <ul
-                v-if="Object.keys(appState.classifiers).length !== 0"
-                role="list"
-                class="pt-3">
-                <Classifier
-                  v-for="classifier in appState.classifiers"
-                  :classifier="classifier"
-                  :key="classifier.id"
-                  @delete_classifier="delete_classifier"
-                  @recommend_items_for_classifier="recommend_items_for_classifier"
-                  @show_classifier_as_map="show_classifier_as_map"
-                  class="justify-between pb-3">
-                </Classifier>
-              </ul>
-              <div
-                v-if="Object.keys(appState.classifiers).length === 0"
-                class="flex h-20 flex-col place-content-center text-center">
-                <p class="flex-none text-gray-400">No Collections Yet</p>
-              </div>
-            </div>
+            <ClassifierArea v-if="selected_tab === 'classifiers'"> </ClassifierArea>
           </div>
         </div>
       </div>

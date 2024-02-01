@@ -220,11 +220,12 @@ def get_classifier_examples(request):
         classifier_id: int = data["classifier_id"]
         class_name = data["class_name"]
         field_type = data["type"]
+        is_positive = data["is_positive"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     items = []
-    all_items = ClassifierExample.objects.filter(classifier_id=classifier_id, field_type=field_type).order_by('-is_positive', '-date_added')
+    all_items = ClassifierExample.objects.filter(classifier_id=classifier_id, field_type=field_type, is_positive=is_positive).order_by('-date_added')
     for item in all_items:
         if (class_name == "_default" and not item.classes) or class_name in item.classes:  # type: ignore
             items.append(item)
