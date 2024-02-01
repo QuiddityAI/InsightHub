@@ -751,7 +751,7 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
     @property
     def actual_classes(self) -> list:
         classes = defaultdict(lambda: [0, 0])
-        for class_name in self.class_names or []:
+        for class_name in self.class_names or ['_default']:
             classes[class_name] = [0, 0]
         for example in ClassifierExample.objects.filter(classifier=self):
             for c in example.classes or ['_default']:

@@ -3,6 +3,7 @@ import httpClient from "../../api/httpClient"
 
 import {
   ChevronLeftIcon,
+  TrashIcon
 } from "@heroicons/vue/24/outline"
 
 import ClassifierClassListItem from "./ClassifierClassListItem.vue"
@@ -25,21 +26,57 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {},
-  methods: {},
+  methods: {
+    delete_classifier() {
+      const that = this
+      const delete_classifier_body = {
+        classifier_id: this.classifier_id,
+      }
+      httpClient
+        .post("/org/data_map/delete_classifier", delete_classifier_body)
+        .then(function (response) {
+          const index = that.appStateStore.classifiers.findIndex((classifier) => classifier.id === that.classifier_id)
+          that.appStateStore.classifiers.splice(index, 1)
+        })
+      this.$emit("close")
+    },
+  },
 }
 </script>
 
 <template>
   <div>
     <div class="mb-3 ml-1 mt-3 flex flex-row gap-3">
-      <button
-        @click="$emit('close')"
-        class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
+      <button @click="$emit('close')" class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
         <ChevronLeftIcon></ChevronLeftIcon>
       </button>
       <span class="font-bold text-gray-600">{{ classifier.name }}</span>
+
       <div class="flex-1"></div>
+
+      <button
+        @click="delete_classifier"
+        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+        <TrashIcon class="h-4 w-4"></TrashIcon>
+      </button>
     </div>
+
+    <!-- <div v-if="settings_visible" class="mt-2 flex flex-row gap-3">
+      <button
+        @click="train_classifier"
+        class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+        Train Classifier
+      </button>
+      <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+        X: highlight similar in map
+      </button>
+      <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+        Color: xxx
+      </button>
+      <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
+        Symbol: xxx
+      </button>
+    </div> -->
 
     <div class="my-2 flex items-stretch">
       <input

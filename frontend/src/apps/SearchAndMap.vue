@@ -534,40 +534,6 @@ export default {
         this.$refs.embedding_map.passiveMarginsLRTB = [50, 50, 250, 50]
       }
     },
-    create_classifier(name) {
-      const that = this
-      const create_classifier_body = {
-        dataset_id: this.appStateStore.settings.dataset_id,
-        name: name,
-      }
-      httpClient
-        .post("/org/data_map/add_classifier", create_classifier_body)
-        .then(function (response) {
-          that.appStateStore.classifiers.push(response.data)
-        })
-    },
-    delete_classifier(classifier_id) {
-      const that = this
-      const delete_classifier_body = {
-        classifier_id: classifier_id,
-      }
-      httpClient
-        .post("/org/data_map/delete_classifier", delete_classifier_body)
-        .then(function (response) {
-          let index_to_be_removed = null
-          let i = 0
-          for (const classifier of that.appStateStore.classifiers) {
-            if (classifier.id == classifier_id) {
-              index_to_be_removed = i
-              break
-            }
-            i += 1
-          }
-          if (index_to_be_removed !== null) {
-            that.appStateStore.classifiers.splice(index_to_be_removed, 1)
-          }
-        })
-    },
     store_current_map() {
       const that = this
       const entry_name = this.get_current_map_name()

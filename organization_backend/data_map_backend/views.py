@@ -151,13 +151,13 @@ def add_classifier(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    item = ItemCollection()
-    item.user_id = request.user.id  # type: ignore
+    item = Classifier()
+    item.created_by = request.user  # type: ignore
     item.dataset_id = dataset_id  # type: ignore
     item.name = name
     item.save()
 
-    dataset_dict = ItemCollectionSerializer(instance=item).data
+    dataset_dict = ClassifierSerializer(instance=item).data
     result = json.dumps(dataset_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
@@ -250,10 +250,10 @@ def delete_classifier(request):
         return HttpResponse(status=400)
 
     try:
-        item = ItemCollection.objects.get(id=classifier_id)
-    except ItemCollection.DoesNotExist:
+        item = Classifier.objects.get(id=classifier_id)
+    except Classifier.DoesNotExist:
         return HttpResponse(status=404)
-    if item.user != request.user:
+    if item.created_by != request.user:
         return HttpResponse(status=401)
     item.delete()
 

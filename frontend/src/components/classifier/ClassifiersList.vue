@@ -22,7 +22,23 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {},
-  methods: {},
+  methods: {
+    create_classifier(name) {
+      if (!name) {
+        return
+      }
+      const that = this
+      const create_classifier_body = {
+        dataset_id: this.appStateStore.settings.dataset_id,
+        name: name,
+      }
+      httpClient
+        .post("/org/data_map/add_classifier", create_classifier_body)
+        .then(function (response) {
+          that.appStateStore.classifiers.push(response.data)
+        })
+    },
+  },
 }
 </script>
 
@@ -34,7 +50,8 @@ export default {
         ref="new_classifier_name"
         type="text"
         class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-        placeholder="Collection Name" />
+        placeholder="Collection Name"
+        @keyup.enter="create_classifier($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''" />
       <button
         class="rounded-r-md border-0 px-2 py-1.5 text-gray-400 hover:text-blue-500 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
@@ -63,37 +80,9 @@ export default {
             Show Map
           </button> -->
           <button
-            @click="settings_visible = !settings_visible"
-            class="ml-1 w-8 rounded px-1 hover:bg-gray-100"
-            :class="{
-              'text-blue-600': settings_visible,
-              'text-gray-500': !settings_visible,
-            }">
+            @click="$emit('classifier_selected', classifier.id)"
+            class="ml-1 w-8 rounded px-1 hover:bg-gray-100">
             <EllipsisVerticalIcon></EllipsisVerticalIcon>
-          </button>
-        </div>
-
-        <div v-if="settings_visible" class="mt-2 flex flex-row gap-3">
-          <button
-            @click="train_classifier"
-            class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-            Train Classifier
-          </button>
-          <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-            X: highlight similar in map
-          </button>
-          <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-            Color: xxx
-          </button>
-          <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-            Symbol: xxx
-          </button>
-
-          <div class="flex-1"></div>
-          <button
-            @click="$emit('delete_classifier', classifier.id)"
-            class="ml-1 w-6 rounded px-1 text-gray-500 hover:bg-red-100">
-            <TrashIcon></TrashIcon>
           </button>
         </div>
 
