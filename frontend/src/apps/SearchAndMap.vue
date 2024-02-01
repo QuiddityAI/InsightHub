@@ -847,7 +847,8 @@ export default {
       <AddToClassifierButtons
         :classifiers="appState.classifiers"
         :last_used_classifier_id="last_used_classifier_id"
-        @addToClassifier="this.appStateStore.add_selected_points_to_classifier">
+        @addToClassifier="this.appStateStore.add_selected_points_to_classifier"
+        @removeFromClassifier="this.appStateStore.remove_selected_points_from_classifier">
       </AddToClassifierButtons>
       <button
         @click="appState.selected_point_indexes = []"
@@ -1088,6 +1089,15 @@ export default {
                   classifier_id,
                   class_name,
                   is_positive
+                )
+              }
+            "
+            @removeFromClassifier="
+              (classifier_id, class_name) => {
+                appState.remove_item_from_classifier(
+                  selectedDocumentIdx,
+                  classifier_id,
+                  class_name
                 )
               }
             "

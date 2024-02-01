@@ -11,7 +11,7 @@ import httpClient from "../../api/httpClient"
 <script>
 export default {
   props: ["dataset", "initial_item", "classifiers", "last_used_classifier_id"],
-  emits: ["addToClassifier", "showSimilarItems", "close"],
+  emits: ["addToClassifier", "removeFromClassifier", "showSimilarItems", "close"],
   data() {
     return {
       rendering: null,
@@ -110,6 +110,10 @@ export default {
         @addToClassifier="
           (classifier_id, class_name, is_positive) =>
             $emit('addToClassifier', classifier_id, class_name, is_positive)
+        "
+        @removeFromClassifier="
+          (classifier_id, class_name) =>
+            $emit('removeFromClassifier', classifier_id, class_name)
         ">
       </AddToClassifierButtons>
       <button

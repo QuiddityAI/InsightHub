@@ -393,6 +393,43 @@ def remove_classifier_example(request):
 
     return HttpResponse(None, status=204)
 
+import logging
+
+@csrf_exempt
+def remove_classifier_example_by_value(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        classifier_id: int = data["classifier_id"]
+        class_name: str = data["class_name"]
+        value: str = data["value"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    classifier_examples = ClassifierExample.objects.filter(classifier_id=classifier_id, value=value)
+    if not classifier_examples:
+        return HttpResponse(status=404)
+
+    removed_items = []
+    for example in classifier_examples:
+        if example.classifier.created_by != request.user:
+            return HttpResponse(status=401)
+        logging.warning(example.classes)
+        logging.warning(class_name)
+        if class_name not in example.classes and not (class_name == '_default' and not example.classes):  # type: ignore
+            continue
+        item_dict = ClassifierExampleSerializer(instance=example).data
+        removed_items.append(item_dict)
+        example.delete()
+
+    serialized_data = json.dumps(removed_items)
+
+    return HttpResponse(serialized_data, status=200, content_type='application/json')
+
 
 @csrf_exempt
 def add_stored_map(request):

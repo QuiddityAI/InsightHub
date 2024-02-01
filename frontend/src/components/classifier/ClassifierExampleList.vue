@@ -27,10 +27,17 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
+    const that = this
     this.load_examples(this.is_positive)
     this.eventBus.on("classifier_example_added", ({classifier_id, class_name, is_positive, created_item}) => {
       if (classifier_id === this.classifier_id && class_name === this.class_name && is_positive === this.is_positive) {
         this.examples.unshift(created_item)
+      }
+    })
+    this.eventBus.on("classifier_example_removed", ({classifier_id, class_name, classifier_example_id}) => {
+      if (classifier_id === this.classifier_id && class_name === this.class_name) {
+        const item_index = that.examples.findIndex((item) => item.id === classifier_example_id)
+        that.examples.splice(item_index, 1)
       }
     })
   },

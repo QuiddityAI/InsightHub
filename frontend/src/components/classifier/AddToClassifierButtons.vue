@@ -1,7 +1,11 @@
 <script setup>
 import { mapStores } from "pinia"
 
-import { HandThumbUpIcon, HandThumbDownIcon } from "@heroicons/vue/24/outline"
+import {
+  HandThumbUpIcon,
+  HandThumbDownIcon,
+  NoSymbolIcon,
+} from "@heroicons/vue/24/outline"
 import { useAppStateStore } from "../../stores/settings_store"
 
 const appState = useAppStateStore()
@@ -10,7 +14,7 @@ const appState = useAppStateStore()
 <script>
 export default {
   props: ["classifiers", "last_used_classifier_id"],
-  emits: ["addToClassifier"],
+  emits: ["addToClassifier", "removeFromClassifier"],
   data() {
     return {
       selected_classifier_id: null,
@@ -69,8 +73,16 @@ export default {
       @click="
         $emit('addToClassifier', selected_classifier_id, selected_classifier_class, false)
       "
-      class="w-10 rounded-md px-3 text-red-600/50 ring-1 ring-gray-300 hover:bg-red-100">
+      class="mr-3 w-10 rounded-md px-3 text-red-600/50 ring-1 ring-gray-300 hover:bg-red-100">
       <HandThumbDownIcon></HandThumbDownIcon>
+    </button>
+    <button
+      @click="
+        $emit('removeFromClassifier', selected_classifier_id, selected_classifier_class)
+      "
+      class="w-10 rounded-md px-3 text-gray-400 ring-1 ring-gray-300 hover:bg-red-100"
+      title="Remove items from this class">
+      <NoSymbolIcon></NoSymbolIcon>
     </button>
   </div>
 </template>

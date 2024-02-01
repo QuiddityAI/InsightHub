@@ -301,5 +301,31 @@ export const useAppStateStore = defineStore("appState", {
           that.eventBus.emit("classifier_example_added", {classifier_id: classifier.id, class_name, is_positive, created_item: created_item.data})
         })
     },
+    remove_selected_points_from_classifier(classifier_id, class_name) {
+      // TODO: implement more efficient way
+      for (const point_index of this.selected_point_indexes) {
+        this.remove_item_from_classifier(point_index, classifier_id, class_name)
+      }
+    },
+    remove_item_from_classifier(item_index, classifier_id, class_name) {
+      const that = this
+      const item_id = this.map_data.results.per_point_data.hover_label_data[item_index]._id
+      const body = {
+        classifier_id: classifier_id,
+        class_name: class_name,
+        value: item_id,
+      }
+      httpClient
+        .post("/org/data_map/remove_classifier_example_by_value", body)
+        .then(function (response) {
+          for (const item of response.data) {
+            const classifier_example_id = item.id
+            that.eventBus.emit("classifier_example_removed", {classifier_id, class_name, classifier_example_id})
+            const classifier = that.classifiers.find((classifier) => classifier.id === classifier_id)
+            const class_details = classifier.actual_classes.find((actual_class) => actual_class.name === class_name)
+            class_details[item.is_positive ? "positive_count" : "negative_count"] -= 1
+          }
+        })
+    },
   },
 })
