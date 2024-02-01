@@ -164,6 +164,69 @@ def add_classifier(request):
 
 
 @csrf_exempt
+def add_classifier_class(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        classifier_id: int = data["classifier_id"]
+        class_name: str = data["class_name"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        item = Classifier.objects.get(id=classifier_id)
+    except Classifier.DoesNotExist:
+        return HttpResponse(status=404)
+    if item.created_by != request.user:
+        return HttpResponse(status=401)
+
+    if item.class_names == None:
+        item.class_names = [class_name] # type: ignore
+    elif class_name not in item.class_names:
+        item.class_names.append(class_name)  # type: ignore
+    item.save()
+
+    return HttpResponse(None, status=204)
+
+
+@csrf_exempt
+def delete_classifier_class(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        classifier_id: int = data["classifier_id"]
+        class_name: str = data["class_name"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    all_items = ClassifierExample.objects.filter(classifier_id=classifier_id)
+    for item in all_items:
+        if (class_name == "_default" and not item.classes) or class_name in item.classes:  # type: ignore
+            item.delete()
+
+    try:
+        item = Classifier.objects.get(id=classifier_id)
+    except Classifier.DoesNotExist:
+        return HttpResponse(status=404)
+    if item.created_by != request.user:
+        return HttpResponse(status=401)
+
+    if item.class_names != None and class_name in item.class_names:
+        item.class_names.remove(class_name)
+    item.save()
+
+    return HttpResponse(None, status=204)
+
+
+@csrf_exempt
 def get_classifiers(request):
     if request.method != 'POST':
         return HttpResponse(status=405)

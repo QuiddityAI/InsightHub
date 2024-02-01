@@ -3,6 +3,7 @@ import httpClient from "../../api/httpClient"
 
 import {
   ChevronLeftIcon,
+  TrashIcon,
 } from "@heroicons/vue/24/outline"
 
 import ClassifierExampleList from "./ClassifierExampleList.vue"
@@ -55,6 +56,30 @@ export default {
         }
       })
     },
+    delete_classifier_class() {
+      if (!confirm("Are you sure you want to delete this class and the list of examples?")) {
+        return
+      }
+      const that = this
+      const body = {
+        classifier_id: this.classifier_id,
+        class_name: this.class_name,
+      }
+      httpClient
+        .post("/org/data_map/delete_classifier_class", body)
+        .then(function (response) {
+          const index = that.classifier.actual_classes.findIndex((classifier_class) => classifier_class.name === that.class_name)
+          that.classifier.actual_classes.splice(index, 1)
+          if (that.classifier.actual_classes.length === 0) {
+            that.classifier.actual_classes.push({
+              name: "_default",
+              positive_count: 0,
+              negative_count: 0,
+            })
+          }
+        })
+      this.$emit("close")
+    },
   },
 }
 </script>
@@ -70,7 +95,14 @@ export default {
       <span class="font-bold text-gray-600">{{ classifier.name }}:</span>
       <span class="text-medium text-gray-500">
         {{ class_name === '_default' ? 'Items' : class_name }} </span>
+
       <div class="flex-1"></div>
+
+      <button
+        @click="delete_classifier_class"
+        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+        <TrashIcon class="h-4 w-4"></TrashIcon>
+      </button>
     </div>
 
     <div

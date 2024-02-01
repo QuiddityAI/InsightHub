@@ -28,6 +28,9 @@ export default {
   mounted() {},
   methods: {
     delete_classifier() {
+      if (!confirm("Are you sure you want to delete this classifier?")) {
+        return
+      }
       const that = this
       const delete_classifier_body = {
         classifier_id: this.classifier_id,
@@ -39,6 +42,25 @@ export default {
           that.appStateStore.classifiers.splice(index, 1)
         })
       this.$emit("close")
+    },
+    create_classifier_class(class_name) {
+      if (!class_name) {
+        return
+      }
+      const that = this
+      const body = {
+        classifier_id: this.classifier_id,
+        class_name: class_name,
+      }
+      httpClient
+        .post("/org/data_map/add_classifier_class", body)
+        .then(function (response) {
+          that.classifier.actual_classes.push({
+            name: class_name,
+            positive_count: 0,
+            negative_count: 0,
+          })
+        })
     },
   },
 }
@@ -83,7 +105,8 @@ export default {
         ref="new_classifier_name"
         type="text"
         class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-        placeholder="Class Name" />
+        placeholder="Class Name"
+        @keyup.enter="create_classifier_class($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''"/>
       <button
         class="rounded-r-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"

@@ -29,7 +29,6 @@ export default {
   mounted() {
     this.load_examples(this.is_positive)
     this.eventBus.on("classifier_example_added", ({classifier_id, class_name, is_positive, created_item}) => {
-      console.log("classifier_example_added", classifier_id, class_name, is_positive, created_item)
       if (classifier_id === this.classifier_id && class_name === this.class_name && is_positive === this.is_positive) {
         this.examples.unshift(created_item)
       }
