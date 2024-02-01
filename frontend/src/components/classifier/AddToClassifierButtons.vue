@@ -45,7 +45,7 @@ export default {
   <div class="flex flex-row">
     <select
       v-model="selected_classifier_id"
-      class="mr-3 h-8 w-32 rounded-md border-transparent py-0 pl-2 pr-8 text-sm text-gray-500 ring-1 ring-gray-300 focus:border-blue-500 focus:ring-blue-500">
+      class="mr-2 h-8 w-32 rounded-md border-transparent py-0 pl-2 pr-8 text-sm text-gray-500 ring-1 ring-gray-300 focus:border-blue-500 focus:ring-blue-500">
       <option v-for="classifier in classifiers" :value="classifier.id">
         {{ classifier.name }}
       </option>
@@ -53,7 +53,7 @@ export default {
     <select
       v-if="selected_classifier_id !== null"
       v-model="selected_classifier_class"
-      class="mr-3 h-8 w-32 rounded-md border-transparent py-0 pl-2 pr-8 text-sm text-gray-500 ring-1 ring-gray-300 focus:border-blue-500 focus:ring-blue-500">
+      class="mr-2 h-8 w-32 rounded-md border-transparent py-0 pl-2 pr-8 text-sm text-gray-500 ring-1 ring-gray-300 focus:border-blue-500 focus:ring-blue-500">
       <option
         v-for="class_details in classifiers[
           classifiers.findIndex((e) => e.id == selected_classifier_id)
@@ -66,21 +66,21 @@ export default {
       @click="
         $emit('addToClassifier', selected_classifier_id, selected_classifier_class, true)
       "
-      class="mr-3 w-10 rounded-md px-3 text-green-600/50 ring-1 ring-gray-300 hover:bg-green-100">
+      class="mr-1 w-8 rounded-md px-2 text-green-600/50 ring-1 ring-gray-300 hover:bg-green-100">
       <HandThumbUpIcon></HandThumbUpIcon>
     </button>
     <button
       @click="
         $emit('addToClassifier', selected_classifier_id, selected_classifier_class, false)
       "
-      class="mr-3 w-10 rounded-md px-3 text-red-600/50 ring-1 ring-gray-300 hover:bg-red-100">
+      class="mr-1 w-8 rounded-md px-2 text-red-600/50 ring-1 ring-gray-300 hover:bg-red-100">
       <HandThumbDownIcon></HandThumbDownIcon>
     </button>
     <button
       @click="
         $emit('removeFromClassifier', selected_classifier_id, selected_classifier_class)
       "
-      class="w-10 rounded-md px-3 text-gray-400 ring-1 ring-gray-300 hover:bg-red-100"
+      class="w-8 rounded-md px-2 text-gray-400 ring-1 ring-gray-300 hover:bg-red-100"
       title="Remove items from this class">
       <NoSymbolIcon></NoSymbolIcon>
     </button>
