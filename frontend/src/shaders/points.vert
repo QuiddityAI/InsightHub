@@ -14,6 +14,7 @@ in float secondary_sat;
 in float secondary_val;
 in float secondary_opacity;
 in float pointVisibility;
+in float flatness;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
@@ -41,6 +42,7 @@ flat out int pointIdxVar;
 out float isHighlighted;
 out float isSelected;
 flat out uint pointVisibilityVar;
+flat out float flatnessVar;
 flat out float pointRadiusPxVar;
 
 vec3 hsv2rgb(vec3 c) {
@@ -56,6 +58,7 @@ void main() {
     isHighlighted = (gl_InstanceID == hoveredPointIdx) ? 1.0 : 0.0;
     isSelected = (gl_InstanceID == markedPointIdx) ? 1.0 : 0.0;
     pointVisibilityVar = uint(pointVisibility);
+    flatnessVar = flatness;
 
     // albedo color:
     // (the albedo color is the same for all fragments of this vertex, so it

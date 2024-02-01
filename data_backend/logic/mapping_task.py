@@ -366,7 +366,7 @@ def generate_map(map_id, ignore_cache):
         else:
             map_data["results"]["clusters"] = {}
 
-        for attr in ["size", "hue", "val", "sat", "opacity", "secondary_hue", "secondary_val", "secondary_sat", "secondary_opacity"]:
+        for attr in ["size", "hue", "val", "sat", "opacity", "secondary_hue", "secondary_val", "secondary_sat", "secondary_opacity", "flatness"]:
             attr_type = params.rendering[attr].type
             attr_parameter = params.rendering[attr].parameter
             if attr_type == "number_field":

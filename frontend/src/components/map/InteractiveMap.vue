@@ -48,6 +48,7 @@ export default {
         secondary_sat: [],
         secondary_val: [],
         secondary_opacity: [],
+        flatness: [],
       },
 
       // for all points:
@@ -63,6 +64,7 @@ export default {
         secondary_sat: 1.0,
         secondary_val: 1.0,
         secondary_opacity: 1.0,
+        flatness: 0.0,
       },
 
       clusterData: [], // array of cluster description objects
@@ -173,6 +175,7 @@ export default {
         secondary_sat: [],
         secondary_val: [],
         secondary_opacity: [],
+        flatness: [],
       }
 
       this.maxOpacity = 0.7
@@ -187,6 +190,7 @@ export default {
         secondary_sat: 1.0,
         secondary_val: 1.0,
         secondary_opacity: 1.0,
+        flatness: 0.0,
       }
 
       this.clusterData = []
@@ -511,6 +515,7 @@ export default {
         "secondary_sat",
         "secondary_val",
         "secondary_opacity",
+        "flatness",
       ]) {
         this.per_point[attr] = []
         this.per_point[attr] = ensureLength(
@@ -551,6 +556,7 @@ export default {
         "secondary_sat",
         "secondary_val",
         "secondary_opacity",
+        "flatness",
       ]) {
         this.per_point[attr] = ensureLength(
           this.per_point[attr],
@@ -741,6 +747,11 @@ export default {
           instanced: 1,
           size: 1,
           data: new Float32Array(this.pointVisibility.slice(0, pointCount)),
+        },
+        flatness: {
+          instanced: 1,
+          size: 1,
+          data: new Float32Array(this.per_point.flatness.slice(0, pointCount)),
         },
       })
 

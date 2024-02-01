@@ -85,6 +85,7 @@ export default {
       this.appStateStore.selected_item_id = null
       this.appStateStore.highlighted_cluster_id = null
       this.appStateStore.selected_cluster_id = null
+      this.appStateStore.visited_point_indexes = []
 
       this.search_result_score_info = null
       if (this.score_info_chart) this.score_info_chart.destroy()
@@ -156,6 +157,7 @@ export default {
         "secondary_sat",
         "secondary_val",
         "secondary_opacity",
+        "flatness",
       ]) {
         that.$refs.embedding_map.attribute_fallback[attr] =
           that.appStateStore.settings.frontend.rendering[attr].fallback
@@ -335,6 +337,7 @@ export default {
               "secondary_sat",
               "secondary_val",
               "secondary_opacity",
+              "flatness",
             ]) {
               if (results_per_point[attr] && results_per_point[attr].length > 0) {
                 const attr_params = that.appStateStore.settings.rendering[attr]
@@ -489,6 +492,9 @@ export default {
     show_document_details(pointIdx) {
       this.selectedDocumentIdx = pointIdx
       this.$refs.embedding_map.markedPointIdx = pointIdx
+      this.appStateStore.visited_point_indexes.push(pointIdx)
+      this.$refs.embedding_map.per_point.flatness[pointIdx] = 1.0
+      this.$refs.embedding_map.updateGeometry()
     },
     show_document_details_by_id(item_id) {
       for (const i of Array(this.map_item_details.length).keys()) {
@@ -595,6 +601,7 @@ export default {
             "secondary_sat",
             "secondary_val",
             "secondary_opacity",
+            "flatness",
           ]) {
             that.$refs.embedding_map.attribute_fallback[attr] =
               that.appStateStore.settings.frontend.rendering[attr].fallback

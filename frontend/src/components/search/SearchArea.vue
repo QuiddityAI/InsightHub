@@ -110,6 +110,7 @@ export default {
         ["secondary_sat", "2nd Saturation"],
         ["secondary_val", "2nd Value"],
         ["secondary_opacity", "2nd Opacity"],
+        ["flatness", "Flatness"],
       ],
     }
   },

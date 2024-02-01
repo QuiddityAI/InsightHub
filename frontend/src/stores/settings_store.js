@@ -24,6 +24,7 @@ export const useAppStateStore = defineStore("appState", {
       selected_map_tool: "drag", // one of 'drag' or 'lasso'
       selection_merging_mode: "replace", // one of 'replace', 'add', 'remove'
       selected_point_indexes: [],
+      visited_point_indexes: [],
 
       available_vector_fields: [],
       available_number_fields: [],
@@ -102,6 +103,7 @@ export const useAppStateStore = defineStore("appState", {
           secondary_sat: { type: "fixed", parameter: "" },
           secondary_val: { type: "fixed", parameter: "" },
           secondary_opacity: { type: "fixed", parameter: "" },
+          flatness: { type: "fixed", parameter: "" },
           enable_clustering: true,
           clusterizer_parameters: {
             min_cluster_size: -1,
@@ -143,6 +145,13 @@ export const useAppStateStore = defineStore("appState", {
               threshold: null,
             },
             secondary_opacity: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 0.0,
+              gamma: "auto",
+              threshold: null,
+            },
+            flatness: {
               min: 0.0,
               max: 1.0,
               fallback: 0.0,
@@ -218,6 +227,7 @@ export const useAppStateStore = defineStore("appState", {
           secondary_sat: { type: "fixed", parameter: "" },
           secondary_val: { type: "fixed", parameter: "" },
           secondary_opacity: { type: "fixed", parameter: "" },
+          flatness: { type: "fixed", parameter: "" },
           enable_clustering: true,
           clusterizer_parameters: {
             min_cluster_size: -1,
@@ -259,6 +269,13 @@ export const useAppStateStore = defineStore("appState", {
               threshold: null,
             },
             secondary_opacity: {
+              min: 0.0,
+              max: 1.0,
+              fallback: 0.0,
+              gamma: "auto",
+              threshold: null,
+            },
+            flatness: {
               min: 0.0,
               max: 1.0,
               fallback: 0.0,

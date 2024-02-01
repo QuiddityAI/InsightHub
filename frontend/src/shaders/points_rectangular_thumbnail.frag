@@ -10,6 +10,7 @@ flat in int pointIdxVar;
 in float isHighlighted;
 in float isSelected;
 flat in uint pointVisibilityVar;
+flat in float flatnessVar;
 flat in float pointRadiusPxVar;
 
 uniform sampler2D textureAtlas;
@@ -131,9 +132,9 @@ void main() {
         float specAngle = max(dot(R, V), 0.0);
         specular = pow(specAngle, shininessVal);
     }
-    float ambientLight = 0.5;
+    float ambientLight = 0.5 + 0.5 * flatnessVar;
     vec3 specularColor = vec3(1.0);
-    float specularStrength = 0.7;
+    float specularStrength = 0.7 * (1.0 - flatnessVar);
     // vec3 albedoColor = texture(pointTextureBaseColor, sphereUv).rgb;
     vec3 albedoColor = albedoColorVar;
 
