@@ -66,7 +66,7 @@ void main() {
     float pointRadiusPx = pointRadiusPxVar;
 
     // circle area:
-    float antiAliasingEdgePx = 1.0;
+    float antiAliasingEdgePx = 2.0;
     float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
     float imageSize = 0.8;
     float imageCircleArea = 1.0 - smoothstep(imageSize - (antiAliasingEdgePx / pointRadiusPx), imageSize, distFromCenter);

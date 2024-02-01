@@ -79,7 +79,7 @@ void main() {
     vec2 positionOnCircle = (posFromCenter + 1.0) / 2.0;
 
     // circle area:
-    float antiAliasingEdgePx = 1.0;
+    float antiAliasingEdgePx = 2.0;
     float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
     FragColor.a = max(FragColor.a, circleArea) * maxOpacity;
 
