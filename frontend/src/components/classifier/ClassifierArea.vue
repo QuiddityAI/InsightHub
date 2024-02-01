@@ -15,9 +15,9 @@ const appState = useAppStateStore()
 
 <script>
 export default {
-  inject: ["eventBus"],
   props: [],
   emits: [],
+  inject: ["eventBus"],
   data() {
     return {
       currently_selected_classifier: null,

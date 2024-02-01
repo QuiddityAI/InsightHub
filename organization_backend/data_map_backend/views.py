@@ -300,8 +300,10 @@ def add_item_to_classifier(request):
     item.value = value
     item.weight = weight
     item.save()
+    dataset_dict = ClassifierExampleSerializer(instance=item).data
+    serialized_data = json.dumps(dataset_dict)
 
-    return HttpResponse(None, status=204)
+    return HttpResponse(serialized_data, status=200, content_type='application/json')
 
 
 @csrf_exempt

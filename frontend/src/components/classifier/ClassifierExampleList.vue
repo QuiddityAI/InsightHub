@@ -15,6 +15,7 @@ const appState = useAppStateStore()
 export default {
   props: ["classifier_id", "class_name", "is_positive"],
   emits: [],
+  inject: ["eventBus"],
   data() {
     return {
       classifier: useAppStateStore().classifiers.find((classifier) => classifier.id === this.classifier_id),
@@ -27,6 +28,12 @@ export default {
   },
   mounted() {
     this.load_examples(this.is_positive)
+    this.eventBus.on("classifier_example_added", ({classifier_id, class_name, is_positive, created_item}) => {
+      console.log("classifier_example_added", classifier_id, class_name, is_positive, created_item)
+      if (classifier_id === this.classifier_id && class_name === this.class_name && is_positive === this.is_positive) {
+        this.examples.unshift(created_item)
+      }
+    })
   },
   methods: {
     load_examples(is_positive) {
@@ -51,6 +58,9 @@ export default {
         .then(function (response) {
           const item_index = that.examples.findIndex((item) => item.id === classifier_example_id)
           that.examples.splice(item_index, 1)
+          const classifier = that.appStateStore.classifiers.find((classifier) => classifier.id === that.classifier_id)
+          const class_details = classifier.actual_classes.find((actual_class) => actual_class.name === that.class_name)
+          class_details[that.is_positive ? "positive_count" : "negative_count"] -= 1
         })
     },
   },

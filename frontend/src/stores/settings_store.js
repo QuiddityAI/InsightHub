@@ -1,11 +1,17 @@
 import { defineStore } from "pinia"
+import { inject } from 'vue'
+
 import httpClient from "../api/httpClient"
 
 import { FieldType } from "../utils/utils"
 
+
+
 export const useAppStateStore = defineStore("appState", {
   state: () => {
     return {
+      eventBus: inject('eventBus'),
+
       show_timings: false,
       store_search_history: true,
       ignore_cache: false,
@@ -289,13 +295,10 @@ export const useAppStateStore = defineStore("appState", {
       }
       httpClient
         .post("/org/data_map/add_item_to_classifier", add_item_to_classifier_body)
-        .then(function (response) {
-          // TODO: refresh list of examples if open
-          // if (is_positive) {
-          //   classifier.positive_ids.push(item_id)
-          // } else {
-          //   classifier.negative_ids.push(item_id)
-          // }
+        .then(function (created_item) {
+          const class_details = classifier.actual_classes.find((actual_class) => actual_class.name === class_name)
+          class_details[is_positive ? "positive_count" : "negative_count"] += 1
+          that.eventBus.emit("classifier_example_added", {classifier_id: classifier.id, class_name, is_positive, created_item: created_item.data})
         })
     },
   },
