@@ -7,6 +7,7 @@ in float isHighlighted;
 
 uniform float viewportWidth;
 uniform float viewportHeight;
+uniform float shadowOpacity;
 
 out vec4 FragColor;  // name doesn't matter, if there is just one output, it is the color
 
@@ -26,5 +27,5 @@ void main() {
     float smoothShadowDarkness = pow(1.0 - smoothstep(0.0, 1.0, distFromCenter), 1.3);
 
     FragColor.rgb = baseShadowColor;
-    FragColor.a = smoothShadowDarkness;
+    FragColor.a = smoothShadowDarkness * shadowOpacity;
 }

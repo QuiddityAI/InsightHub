@@ -112,6 +112,10 @@ export default {
         ["secondary_opacity", "2nd Opacity"],
         ["flatness", "Flatness"],
       ],
+      available_styles: [
+        { id: "3d", title: "3D" },
+        { id: "plotly", title: "Plotly" },
+      ],
     }
   },
   mounted() {
@@ -732,6 +736,55 @@ export default {
           <input
             v-model="appState.settings.frontend.rendering[param[0]].gamma"
             class="w-1/2 text-sm text-gray-500" />
+        </div>
+        <div class="flex flex-row items-center justify-between">
+          <span class="w-1/4 text-sm text-gray-500">Max. Opacity</span>
+          <span class="text-sm text-gray-500">
+            {{ appState.settings.frontend.rendering.max_opacity }}
+          </span>
+          <input
+            v-model.number="appState.settings.frontend.rendering.max_opacity"
+            type="range"
+            min="0.0"
+            max="1.0"
+            step="0.05"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
+        </div>
+        <div class="flex flex-row items-center justify-between">
+          <span class="w-1/4 text-sm text-gray-500">Shadow Opacity</span>
+          <span class="text-sm text-gray-500">
+            {{ appState.settings.frontend.rendering.shadow_opacity }}
+          </span>
+          <input
+            v-model.number="appState.settings.frontend.rendering.shadow_opacity"
+            type="range"
+            min="0.0"
+            max="1.0"
+            step="0.01"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
+        </div>
+        <div class="flex flex-row items-center justify-between">
+          <span class="w-1/4 text-sm text-gray-500">Point Size</span>
+          <span class="text-sm text-gray-500">
+            {{ appState.settings.frontend.rendering.point_size_factor }}
+          </span>
+          <input
+            v-model.number="appState.settings.frontend.rendering.point_size_factor"
+            type="range"
+            min="0.1"
+            max="5.0"
+            step="0.1"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
+        </div>
+        <div class="flex flex-row items-center justify-between">
+          <span class="w-1/4 text-sm text-gray-500">Style</span>
+          <select
+            v-model="appState.settings.frontend.rendering.style"
+            class="w-1/2 rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <option v-for="item in available_styles" :value="item.id" selected>
+              {{ item.title }}
+            </option>
+          </select>
         </div>
       </div>
       <div

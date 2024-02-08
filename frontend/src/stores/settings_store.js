@@ -158,6 +158,10 @@ export const useAppStateStore = defineStore("appState", {
               gamma: "auto",
               threshold: null,
             },
+            max_opacity: 0.7,
+            shadow_opacity: 1.0,
+            point_size_factor: 1.0,
+            style: "3d",  // one of "3d", "plotly"
           },
         },
       },
@@ -282,6 +286,10 @@ export const useAppStateStore = defineStore("appState", {
               gamma: "auto",
               threshold: null,
             },
+            max_opacity: 0.7,
+            shadow_opacity: 1.0,
+            point_size_factor: 1.0,
+            style: "3d",  // one of "3d", "plotly"
           },
         },
       },

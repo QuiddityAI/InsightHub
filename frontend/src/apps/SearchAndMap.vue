@@ -302,11 +302,8 @@ export default {
           that.progress_step_title = progress.step_title
 
           if (that.appStateStore.dataset.thumbnail_image) {
-            that.$refs.embedding_map.pointSizeFactor = 3.0
-            that.$refs.embedding_map.maxOpacity = 1.0
-          } else {
-            that.$refs.embedding_map.pointSizeFactor = 1.0
-            that.$refs.embedding_map.maxOpacity = 0.7
+            that.appStateStore.settings.frontend.rendering.point_size_factor = 3.0
+            that.appStateStore.settings.frontend.rendering.max_opacity = 1.0
           }
 
           const results = data["results"]

@@ -16,8 +16,10 @@ import {
 import * as math from "mathjs"
 import pointInPolygon from "point-in-polygon"
 
-import pointsVertexShader from "../../shaders/points.vert?raw"
-import pointsFragmentShader from "../../shaders/points_rectangular_thumbnail.frag?raw"
+import pointsVertexShader3D from "../../shaders/points.vert?raw"
+import pointsFragmentShader3D from "../../shaders/points_rectangular_thumbnail.frag?raw"
+import pointsVertexShaderPlotly from "../../shaders/points_plotly_style.vert?raw"
+import pointsFragmentShaderPlotly from "../../shaders/points_plotly_style.frag?raw"
 import shadowsVertexShader from "../../shaders/shadows.vert?raw"
 import shadowsFragmentShader from "../../shaders/shadows.frag?raw"
 
@@ -52,8 +54,6 @@ export default {
       },
 
       // for all points:
-      maxOpacity: 0.7,
-      pointSizeFactor: 1.0,
       attribute_fallback: {
         size: 0.5,
         hue: 0.0,
@@ -126,6 +126,16 @@ export default {
         .map((p) => `${this.screenLeftFromRelative(p[0])},${this.screenTopFromRelative(p[1])}`)
         .join(" ")
     },
+    pointsVertexShader() {
+      return this.appStateStore.settings.frontend.rendering.style == "plotly"
+        ? pointsVertexShaderPlotly
+        : pointsVertexShader3D
+    },
+    pointsFragmentShader() {
+      return this.appStateStore.settings.frontend.rendering.style == "plotly"
+        ? pointsFragmentShaderPlotly
+        : pointsFragmentShader3D
+    },
   },
   mounted() {
     this.setupWebGl()
@@ -158,6 +168,9 @@ export default {
         }
       }
     },
+    "appState.settings.frontend.rendering.style"() {
+      this.updateGeometry()
+    }
   },
   methods: {
     resetData() {
@@ -178,8 +191,6 @@ export default {
         flatness: [],
       }
 
-      this.maxOpacity = 0.7
-      this.pointSizeFactor = 1.0
       this.attribute_fallback = {
         size: 0.5,
         hue: 0.0,
@@ -676,9 +687,11 @@ export default {
 
       const per_point_hue = [...this.per_point.hue.slice(0, pointCount)]
       const per_point_sat = [...this.per_point.sat.slice(0, pointCount)]
+      const per_point_val = [...this.per_point.val.slice(0, pointCount)]
       for (const i of Array(pointCount).keys()) {
         if (this.per_point.cluster_id[i] === -1) {
           per_point_sat[i] = 0.0
+          per_point_val[i] = 0.7
         }
       }
       for (const i of this.appStateStore.selected_point_indexes) {
@@ -713,11 +726,7 @@ export default {
         },
         hue: { instanced: 1, size: 1, data: new Float32Array(per_point_hue) },
         sat: { instanced: 1, size: 1, data: new Float32Array(per_point_sat) },
-        val: {
-          instanced: 1,
-          size: 1,
-          data: new Float32Array(this.per_point.val.slice(0, pointCount)),
-        },
+        val: { instanced: 1, size: 1, data: new Float32Array(per_point_val), },
         opacity: {
           instanced: 1,
           size: 1,
@@ -756,8 +765,8 @@ export default {
       })
 
       this.glProgram = new Program(this.glContext, {
-        vertex: pointsVertexShader,
-        fragment: pointsFragmentShader,
+        vertex: this.pointsVertexShader,
+        fragment: this.pointsFragmentShader,
         uniforms: this.getUniforms(),
         transparent: true,
         depthTest: false,
@@ -804,8 +813,9 @@ export default {
         pointTextureNormalMap: { value: this.pointTextureNormalMap },
         thumbnailSpriteSize: { value: this.thumbnailSpriteSize },
         selectedClusterId: { value: selectedClusterId },
-        maxOpacity: { value: this.maxOpacity },
-        pointSizeFactor: { value: this.pointSizeFactor },
+        maxOpacity: { value: this.appStateStore.settings.frontend.rendering.max_opacity },
+        shadowOpacity: { value: this.appStateStore.settings.frontend.rendering.shadow_opacity },
+        pointSizeFactor: { value: this.appStateStore.settings.frontend.rendering.point_size_factor },
       }
     },
     updateUniforms() {
