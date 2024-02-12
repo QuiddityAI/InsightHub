@@ -275,11 +275,13 @@ export const useAppStateStore = defineStore("appState", {
             dataset.hover_label_rendering = hover_label_rendering
 
             that.datasets[dataset_id] = dataset
-            if (!that.settings.dataset_ids.includes(dataset_id)) {
-              that.settings.dataset_ids.push(dataset_id)
+            if (that.organization.default_dataset_selection.includes(dataset_id) || !that.organization.default_dataset_selection) {
+              if (!that.settings.dataset_ids.includes(dataset_id)) {
+                that.settings.dataset_ids.push(dataset_id)
+                // FIXME: should be triggered automatically
+                that.on_selected_datasets_changed()
+              }
             }
-            // FIXME: should be triggered automatically
-            that.on_selected_datasets_changed()
           })
       }
     },
