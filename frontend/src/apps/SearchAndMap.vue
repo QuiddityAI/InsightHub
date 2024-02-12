@@ -78,7 +78,10 @@ export default {
         }
       } else {
         // there is a new dataset_id in the parameters:
-        this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")))
+        this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")), /*change history*/ false)
+        if (queryParams.get("map_id")) {
+          this.appStateStore.show_stored_map(queryParams.get("map_id"))
+        }
       }
     },
     show_score_info_chart() {
@@ -466,7 +469,7 @@ export default {
           class="pointer-events-auto flex w-full flex-initial overflow-hidden">
           <ObjectDetailsModal
             :initial_item="map_item_details[appState.selectedDocumentIdx]"
-            :dataset="appState.dataset"
+            :dataset="appState.datasets[map_item_details[appState.selectedDocumentIdx]._dataset_id]"
             :classifiers="appState.classifiers"
             :last_used_classifier_id="appState.last_used_classifier_id"
             @addToClassifier="
