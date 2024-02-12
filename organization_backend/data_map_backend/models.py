@@ -293,6 +293,7 @@ class Dataset(models.Model):
         verbose_name="Organization",
         to=Organization,
         on_delete=models.PROTECT,
+        related_name="datasets",
         blank=False,
         null=False)
     is_public = models.BooleanField(
