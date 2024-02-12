@@ -251,7 +251,7 @@ def get_search_results_for_stored_map(map_data):
     params = DotDict(map_data['parameters'])
     search_settings = params.search
     vectorize_settings = params.vectorize
-    dataset = get_dataset(params.dataset_id)
+    dataset = get_dataset(params.dataset_ids[0])
     purpose = 'list'
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
@@ -265,7 +265,6 @@ def get_search_results_for_stored_map(map_data):
     result = {
         "items": search_results,
         "timings": timings.get_timestamps(),
-        "rendering": dataset.result_list_rendering,
     }
     return result
 
@@ -293,9 +292,9 @@ def get_search_results_for_global_map(dataset, search_settings: DotDict, vectori
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
 
 
-def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_meta_info, purpose: str, timings):
+def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_meta_info: dict, purpose: str, timings) -> list[dict]:
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
-    search_results = sort_items_and_complete_them(dataset, search_result_meta_info, required_fields, len(search_result_meta_info), timings)
+    search_results: list[dict] = sort_items_and_complete_them(dataset, search_result_meta_info, required_fields, len(search_result_meta_info), timings)
     return search_results
 
 

@@ -30,8 +30,6 @@ export const useAppStateStore = defineStore("appState", {
       organization_id: null,
       organization: null,
       datasets: {},
-      dataset: null, // deprecated
-
 
       logged_in: false,
       username: null,
@@ -430,6 +428,7 @@ export const useAppStateStore = defineStore("appState", {
     },
     request_search_results() {
       const that = this
+      if (this.settings.dataset_ids.length === 0) return
 
       if (
         this.settings.search.search_type == "external_input" &&
@@ -515,6 +514,7 @@ export const useAppStateStore = defineStore("appState", {
     },
     request_map() {
       const that = this
+      if (this.settings.dataset_ids.length === 0) return
 
       httpClient
         .post(
@@ -638,7 +638,7 @@ export const useAppStateStore = defineStore("appState", {
               ["hue", "secondary_hue"].includes(attr) &&
               (["cluster_idx", "origin_query_idx"].includes(attr_params.type) ||
                 (attr_params.type == "number_field" &&
-                  that.dataset.object_fields[attr_params.parameter]
+                  that.datasets[that.settings.dataset_ids[0]].object_fields[attr_params.parameter]  // FIXME: only valid for first dataset
                     .field_type == FieldType.INTEGER))
             ) {
               // if an integer value is assigned to a hue value, we need to make sure that the last value doesn't have
@@ -848,7 +848,7 @@ export const useAppStateStore = defineStore("appState", {
         .then(function (response) {
           const parameters = response.data.parameters
           that.settings = parameters
-          this.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")
+          that.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")
 
           // now done when map results are received
           //that.show_received_search_results(response.data)

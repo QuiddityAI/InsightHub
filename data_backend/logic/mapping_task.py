@@ -131,9 +131,9 @@ def generate_map(map_id, ignore_cache):
         map_data['results']['thumbnail_atlas_filename'] = origin_map['results']['thumbnail_atlas_filename']
         map_data['results']['thumbnail_sprite_size'] = origin_map['results']['thumbnail_sprite_size']
 
-    dataset_id = params.dataset_id
+    # TODO: support multiple datasets, this is just a workaround to make it work with one again
+    dataset_id = params.dataset_ids[0]
     dataset = get_dataset(dataset_id)
-    map_data["hover_label_rendering"] = dataset.hover_label_rendering
     timings.log("map preparation")
 
     map_vector_field = params.vectorize.map_vector_field
@@ -207,6 +207,7 @@ def generate_map(map_id, ignore_cache):
         for item in search_results:
             hover_label_data = {}
             hover_label_data['_id'] = item['_id']
+            hover_label_data['_dataset_id'] = item['_dataset_id']
             hover_label_data['_score'] = item['_score']
             hover_label_data['_reciprocal_rank_score'] = item['_reciprocal_rank_score']
             hover_label_data['_origins'] = item['_origins']
