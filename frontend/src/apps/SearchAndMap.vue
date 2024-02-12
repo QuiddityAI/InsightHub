@@ -24,9 +24,11 @@ import AddToClassifierButtons from "../components/classifier/AddToClassifierButt
 
 import httpClient from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
-import { useAppStateStore } from "../stores/settings_store"
 
+import { useAppStateStore } from "../stores/settings_store"
+import { useMapStateStore } from "../stores/map_state_store"
 const appState = useAppStateStore()
+const mapState = useMapStateStore()
 
 Chart.register(annotationPlugin)
 </script>
@@ -36,577 +38,24 @@ export default {
   inject: ["eventBus"],
   data() {
     return {
-      // results:
-      search_results: [],
-      result_list_rendering: {},
-      map_id: null,
-      map_item_details: [],
-      cluster_data: [],
-      clusterIdsPerPoint: [],
-
-      search_result_score_info: null,
-      score_info_chart: null,
-      search_timings: "",
-      map_timings: "",
-
-      // mapping progress:
-      map_is_in_progess: false,
-      show_loading_bar: false,
-      map_viewport_is_adjusted: false,
-      progress: 0.0,
-      progress_step_title: "",
-      fields_already_received: new Set(),
-
-      // selection:
-      selectedDocumentIdx: -1,
-      selectedDocumentDetails: null,
-
       // tabs:
       selected_tab: "map",
 
-      // classifiers:
-      last_used_classifier_id: null,
+      score_info_chart: null,
     }
   },
   methods: {
-    reset_search_results_and_map(params = { leave_map_unchanged: false }) {
-      // results:
-      this.search_results = []
-      this.map_task_id = null
-      this.map_item_details = []
-      this.cluster_data = []
-      this.clusterIdsPerPoint = []
-      this.appStateStore.highlighted_item_id = null
-      this.appStateStore.selected_item_id = null
-      this.appStateStore.highlighted_cluster_id = null
-      this.appStateStore.selected_cluster_id = null
-      this.appStateStore.visited_point_indexes = []
-
-      this.search_result_score_info = null
-      if (this.score_info_chart) this.score_info_chart.destroy()
-      this.score_info_chart = null
-      this.map_timings = []
-      this.search_timings = []
-
-      // mapping progress:
-      this.map_viewport_is_adjusted = false
-      this.show_loading_bar = false
-      this.map_viewport_is_adjusted = false
-      this.progress = 0.0
-      this.progress_step_title = ""
-      this.fields_already_received = new Set()
-
-      // map:
-      if (!params.leave_map_unchanged) {
-        this.$refs.embedding_map.resetData()
-        this.$refs.embedding_map.resetPanAndZoom()
-      }
-
-      // selection:
-      this.selectedDocumentIdx = -1
-      this.selectedDocumentDetails = null
-    },
-    reset_search_box() {
-      this.appStateStore.settings.search.search_type = "external_input"
-      this.appStateStore.settings.search.use_separate_queries = false
-      this.appStateStore.settings.search.all_field_query = ""
-      this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.settings.search.origin_display_name = ""
-
-      this.appStateStore.settings.search.cluster_origin_map_id = null
-      this.appStateStore.settings.search.cluster_id = null
-      this.appStateStore.settings.search.classifier_id = null
-      this.appStateStore.settings.search.similar_to_item_id = null
-
-      this.appStateStore.settings.projection = JSON.parse(
-        JSON.stringify(this.appStateStore.default_settings.projection)
-      )
-      this.appStateStore.settings.rendering = JSON.parse(
-        JSON.stringify(this.appStateStore.default_settings.rendering)
-      )
-    },
-    run_search_from_history(history_item) {
-      this.appStateStore.settings = history_item.parameters
-      this.request_search_results()
-    },
-    request_search_results() {
-      const that = this
-
-      if (
-        this.appStateStore.settings.search.search_type == "external_input" &&
-        !this.appStateStore.settings.search.use_separate_queries &&
-        !this.appStateStore.settings.search.all_field_query
-      ) {
-        this.reset_search_results_and_map()
-        return
-      }
-
-      this.reset_search_results_and_map({ leave_map_unchanged: true })
-      for (const attr of [
-        "size",
-        "hue",
-        "sat",
-        "val",
-        "opacity",
-        "secondary_hue",
-        "secondary_sat",
-        "secondary_val",
-        "secondary_opacity",
-        "flatness",
-      ]) {
-        that.$refs.embedding_map.attribute_fallback[attr] =
-          that.appStateStore.settings.frontend.rendering[attr].fallback
-      }
-      that.$refs.embedding_map.regenerateAttributeArraysFromFallbacks()
-      this.selected_tab = "results"
-
-      this.add_search_history_item()
-
-      httpClient
-        .post(
-          `/data_backend/search_list_result?ignore_cache=${this.appStateStore.ignore_cache}`,
-          this.appStateStore.settings
-        )
-        .then(function (response) {
-          that.show_received_search_results(response.data)
-          that.request_map()
-        })
-    },
-    show_received_search_results(response_data) {
-      this.search_results = response_data["items"]
-      this.search_timings = response_data["timings"]
-    },
-    get_current_map_name() {
-      let entry_name = ""
-      if (this.appStateStore.settings.search.search_type == "external_input") {
-        if (this.appStateStore.settings.search.use_separate_queries) {
-          entry_name = "TODO: separate fields"
-        } else {
-          entry_name = this.appStateStore.settings.search.all_field_query
-          if (this.appStateStore.settings.search.all_field_query_negative) {
-            entry_name =
-              entry_name + ` (-${this.appStateStore.settings.search.all_field_query_negative})`
-          }
-        }
-      } else if (this.appStateStore.settings.search.search_type == "cluster") {
-        entry_name = `<i>Cluster</i> '${this.appStateStore.settings.search.origin_display_name}'`
-      } else if (this.appStateStore.settings.search.search_type == "similar_to_item") {
-        entry_name = `<i>Similar to</i> '${this.appStateStore.settings.search.origin_display_name}'`
-      } else if (this.appStateStore.settings.search.search_type == "classifier") {
-        entry_name = `<i>Classifier</i> '${this.appStateStore.settings.search.origin_display_name}'`
-      } else if (
-        this.appStateStore.settings.search.search_type == "recommended_for_classifier"
-      ) {
-        entry_name = `<i>Recommended for classifier</i> '${this.appStateStore.settings.search.origin_display_name}'`
-      }
-      return entry_name
-    },
-    add_search_history_item() {
-      const that = this
-      if (!this.appStateStore.store_search_history) return
-
-      if (
-        this.appStateStore.search_history.length > 0 &&
-        JSON.stringify(this.appStateStore.search_history[this.appStateStore.search_history.length - 1].parameters) ==
-          JSON.stringify(this.appStateStore.settings)
-      ) {
-        // -> same query as before, don't save this duplicate:
-        return
-      }
-
-      const entry_name = this.get_current_map_name()
-      if (!entry_name) return
-
-      const history_item_body = {
-        dataset_id: this.appStateStore.settings.dataset_id,
-        name: entry_name,
-        parameters: this.appStateStore.settings,
-      }
-
-      httpClient
-        .post("/org/data_map/add_search_history_item", history_item_body)
-        .then(function (response) {
-          that.appStateStore.search_history.push(response.data)
-        })
-    },
-    request_map() {
-      const that = this
-
-      httpClient
-        .post(
-          `/data_backend/map?ignore_cache=${this.appStateStore.ignore_cache}`,
-          this.appStateStore.settings
-        )
-        .then(function (response) {
-          that.map_id = response.data["map_id"]
-          that.map_viewport_is_adjusted = false
-          that.map_is_in_progess = true
-          that.request_mapping_progress()
-        })
-    },
-    request_mapping_progress() {
-      const that = this
-
-      if (!this.map_id || !this.map_is_in_progess) return
-
-      const queryParams = new URLSearchParams(window.location.search)
-      if (queryParams.get("map_id") != this.map_id) {
-        queryParams.set("map_id", this.map_id)
-        history.pushState(null, null, "?" + queryParams.toString())
-      }
-
-      // note: these may be needed in the future, pay attention to remove them in this case here
-      const not_needed = [
-        "item_ids",
-        "raw_projections",
-        "search_result_meta_information",
-        "parameters",
-      ]
-      if (!that.appStateStore.debug_autocut) {
-        not_needed.push("search_result_score_info")
-      }
-
-      const payload = {
-        map_id: this.map_id,
-        exclude_fields: not_needed.concat(Array.from(this.fields_already_received)),
-      }
-      const cborConfig = {
-        headers: { Accept: "application/cbor" },
-        responseType: "arraybuffer",
-      }
-      const jsonConfig = {
-        headers: { Accept: "application/json" },
-      }
-      httpClient
-        .post("/data_backend/map/result", payload, cborConfig)
-        .then(function (response) {
-          const content_type = response.headers["content-type"]
-          const data =
-            content_type == "application/cbor" ? cborJs.decode(response.data) : response.data
-          that.appStateStore.map_data = data
-
-          if (data["finished"]) {
-            // no need to get further results:
-            that.map_is_in_progess = false
-          }
-
-          const progress = data["progress"]
-
-          that.show_loading_bar = !progress.embeddings_available
-          that.progress = progress.current_step / Math.max(1, progress.total_steps - 1)
-          that.progress_step_title = progress.step_title
-
-          if (that.appStateStore.dataset.thumbnail_image) {
-            that.appStateStore.settings.frontend.rendering.point_size_factor = 3.0
-            that.appStateStore.settings.frontend.rendering.max_opacity = 1.0
-          }
-
-          const results = data["results"]
-          if (results) {
-            const results_per_point = results["per_point_data"]
-            if (
-              results_per_point["hover_label_data"] &&
-              results_per_point["hover_label_data"].length > 0
-            ) {
-              that.map_item_details = results_per_point["hover_label_data"]
-              that.$refs.embedding_map.per_point.text_data =
-                results_per_point["hover_label_data"]
-              that.search_results = results_per_point["hover_label_data"]
-              that.fields_already_received.add("hover_label_data")
-            }
-
-            // TODO: restore good gamma corrections:
-            // that.$refs.embedding_map.per_point.size = normalizeArrayMedianGamma(results_per_point["size"], 2.0)
-            // that.$refs.embedding_map.saturation = normalizeArrayMedianGamma(results_per_point["sat"], 3.0, 0.001)
-
-            for (const attr of [
-              "size",
-              "hue",
-              "sat",
-              "val",
-              "opacity",
-              "secondary_hue",
-              "secondary_sat",
-              "secondary_val",
-              "secondary_opacity",
-              "flatness",
-            ]) {
-              if (results_per_point[attr] && results_per_point[attr].length > 0) {
-                const attr_params = that.appStateStore.settings.rendering[attr]
-                if (
-                  ["hue", "secondary_hue"].includes(attr) &&
-                  (["cluster_idx", "origin_query_idx"].includes(attr_params.type) ||
-                    (attr_params.type == "number_field" &&
-                      that.appStateStore.dataset.object_fields[attr_params.parameter]
-                        .field_type == FieldType.INTEGER))
-                ) {
-                  // if an integer value is assigned to a hue value, we need to make sure that the last value doesn't have
-                  // the same hue as the first value:
-                  results_per_point[attr].push(Math.max(...results_per_point[attr]) + 1)
-                  that.$refs.embedding_map.per_point[attr] = normalizeArrayMedianGamma(
-                    results_per_point[attr],
-                    2.0
-                  ).slice(0, results_per_point[attr].length - 1)
-                } else {
-                  that.$refs.embedding_map.per_point[attr] = normalizeArrayMedianGamma(
-                    results_per_point[attr],
-                    2.0
-                  )
-                }
-                that.fields_already_received.add(attr)
-              }
-            }
-
-            if (
-              results_per_point["cluster_ids"] &&
-              results_per_point["cluster_ids"].length > 0
-            ) {
-              that.$refs.embedding_map.per_point.cluster_id = results_per_point["cluster_ids"]
-              that.clusterIdsPerPoint = results_per_point["cluster_ids"]
-              that.fields_already_received.add("cluster_ids")
-            } else if (!that.fields_already_received.has("cluster_ids")) {
-              that.$refs.embedding_map.per_point.cluster_id = Array(
-                that.$refs.embedding_map.per_point.x.length
-              ).fill(-1)
-            }
-
-            let should_update_geometry = false
-            if (
-              results_per_point["positions_x"] &&
-              results_per_point["positions_x"].length > 0
-            ) {
-              that.$refs.embedding_map.per_point.x = results_per_point["positions_x"]
-              should_update_geometry = true
-            }
-            if (
-              results_per_point["positions_y"] &&
-              results_per_point["positions_y"].length > 0
-            ) {
-              that.$refs.embedding_map.per_point.y = results_per_point["positions_y"]
-              should_update_geometry = true
-            }
-            if (should_update_geometry) {
-              that.$refs.embedding_map.updateGeometry()
-            }
-
-            if (
-              results["thumbnail_atlas_filename"] &&
-              results["thumbnail_atlas_filename"] !== "loading"
-            ) {
-              const image = new Image()
-              image.src =
-                "data_backend/map/thumbnail_atlas/" + results["thumbnail_atlas_filename"]
-              image.onload = () => {
-                that.$refs.embedding_map.textureAtlas = image
-                that.$refs.embedding_map.thumbnailSpriteSize = results["thumbnail_sprite_size"]
-                that.$refs.embedding_map.updateGeometry()
-              }
-              that.fields_already_received.add("thumbnail_atlas_filename")
-            } else if (
-              results["thumbnail_atlas_filename"] &&
-              results["thumbnail_atlas_filename"] === "loading"
-            ) {
-              that.$refs.embedding_map.textureAtlas = null
-            }
-
-            if (results["clusters"] && Object.keys(results["clusters"]).length > 0) {
-              that.$refs.embedding_map.clusterData = results["clusters"]
-              that.cluster_data = results["clusters"]
-              that.fields_already_received.add("clusters")
-            }
-
-            if (that.map_viewport_is_adjusted) {
-              that.$refs.embedding_map.centerAndFitDataToActiveAreaSmooth()
-            } else {
-              that.$refs.embedding_map.resetPanAndZoom()
-              that.$refs.embedding_map.centerAndFitDataToActiveAreaInstant()
-              that.map_viewport_is_adjusted = true
-            }
-
-            if (results["search_result_score_info"]) {
-              that.search_result_score_info = results["search_result_score_info"]
-              that.fields_already_received.add("search_result_score_info")
-              that.show_score_info_chart()
-            }
-
-            that.map_timings = results["timings"]
-          }
-        })
-        .catch(function (error) {
-          if (error.response && error.response.status === 404) {
-            // no more data for this task, stop polling:
-            that.map_is_in_progess = false
-            console.log("404 response")
-          } else {
-            console.log(error)
-          }
-        })
-        .finally(function () {
-          setTimeout(
-            function () {
-              that.request_mapping_progress()
-            }.bind(this),
-            100
-          )
-        })
-    },
-    narrow_down_on_cluster(cluster_item) {
-      this.appStateStore.settings.search.search_type = "cluster"
-      this.appStateStore.settings.search.cluster_origin_map_id = this.map_id
-      this.appStateStore.settings.search.cluster_id = cluster_item.id
-      this.appStateStore.settings.search.all_field_query = ""
-      this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.settings.search.origin_display_name = cluster_item.title
-      this.request_search_results()
-    },
-    show_classifier_as_map(classifier) {
-      this.appStateStore.settings.search.search_type = "classifier"
-      this.appStateStore.settings.search.classifier_id = classifier.id
-      this.appStateStore.settings.search.all_field_query = ""
-      this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.settings.search.origin_display_name = classifier.name
-      this.request_search_results()
-    },
-    recommend_items_for_classifier(classifier) {
-      this.appStateStore.settings.search.search_type = "recommended_for_classifier"
-      this.appStateStore.settings.search.classifier_id = classifier.id
-      this.appStateStore.settings.search.all_field_query = ""
-      this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.settings.search.origin_display_name = classifier.name
-      this.request_search_results()
-    },
-    show_global_map() {
-      this.appStateStore.settings.search.search_type = "global_map"
-      this.appStateStore.settings.search.all_field_query = ""
-      this.appStateStore.settings.search.all_field_query_negative = ""
-      this.request_search_results()
-    },
-    show_document_details(pointIdx) {
-      this.selectedDocumentIdx = pointIdx
-      this.$refs.embedding_map.markedPointIdx = pointIdx
-      this.appStateStore.visited_point_indexes.push(pointIdx)
-      this.$refs.embedding_map.per_point.flatness[pointIdx] = 1.0
-      this.$refs.embedding_map.updateGeometry()
-    },
-    show_document_details_by_id(item_id) {
-      for (const i of Array(this.map_item_details.length).keys()) {
-        if (this.map_item_details[i]._id == item_id) {
-          this.selectedDocumentIdx = i
-          this.$refs.embedding_map.markedPointIdx = i
-          break
-        }
-      }
-    },
-    showSimilarItems() {
-      this.appStateStore.settings.search.search_type = "similar_to_item"
-      this.appStateStore.settings.search.similar_to_item_id =
-        this.map_item_details[this.selectedDocumentIdx]._id
-      this.appStateStore.settings.search.all_field_query = ""
-      this.appStateStore.settings.search.all_field_query_negative = ""
-      this.appStateStore.settings.projection.use_polar_coordinates = true
-      this.appStateStore.settings.projection.x_axis = { type: "score", parameter: "" }
-      this.appStateStore.settings.projection.y_axis = {
-        type: "umap",
-        parameter: "primary",
-      }
-      const title_func = this.$refs.embedding_map.hover_label_rendering.title
-      this.appStateStore.settings.search.origin_display_name = title_func(
-        this.map_item_details[this.selectedDocumentIdx]
-      )
-      this.request_search_results()
-    },
-    close_document_details() {
-      this.selectedDocumentIdx = -1
-      this.$refs.embedding_map.markedPointIdx = -1
-      this.selectedDocumentDetails = null
-    },
     updateMapPassiveMargin() {
       if (window.innerWidth > 768) {
-        this.$refs.embedding_map.passiveMarginsLRTB = [
+        this.mapStateStore.passiveMarginsLRTB = [
           this.$refs.left_column.getBoundingClientRect().right + 50,
           50,
           50,
           150,
         ]
       } else {
-        this.$refs.embedding_map.passiveMarginsLRTB = [50, 50, 250, 50]
+        this.mapStateStore.passiveMarginsLRTB = [50, 50, 250, 50]
       }
-    },
-    store_current_map() {
-      const that = this
-      const entry_name = this.get_current_map_name()
-      if (!entry_name) return
-      const store_map_body = {
-        dataset_id: this.appStateStore.settings.dataset_id,
-        name: entry_name,
-        map_id: this.map_id,
-      }
-      httpClient.post("/data_backend/map/store", store_map_body).then(function (response) {
-        that.appStateStore.stored_maps.push(response.data)
-      })
-    },
-    delete_stored_map(stored_map_id) {
-      const that = this
-      const delete_stored_map_body = {
-        stored_map_id: stored_map_id,
-      }
-      httpClient
-        .post("/org/data_map/delete_stored_map", delete_stored_map_body)
-        .then(function (response) {
-          let index_to_be_removed = null
-          let i = 0
-          for (const map of that.appStateStore.stored_maps) {
-            if (map.id == stored_map_id) {
-              index_to_be_removed = i
-              break
-            }
-            i += 1
-          }
-          if (index_to_be_removed !== null) {
-            that.appStateStore.stored_maps.splice(index_to_be_removed, 1)
-          }
-        })
-    },
-    show_stored_map(stored_map_id) {
-      console.log("showing stored map", stored_map_id)
-      const that = this
-
-      that.map_id = stored_map_id
-      const body = {
-        map_id: this.map_id,
-      }
-      this.reset_search_results_and_map()
-      this.selected_tab = "results"
-
-      httpClient
-        .post("/data_backend/stored_map/parameters_and_search_results", body)
-        .then(function (response) {
-          const parameters = response.data.parameters
-          that.appStateStore.settings = parameters
-          for (const attr of [
-            "size",
-            "hue",
-            "sat",
-            "val",
-            "opacity",
-            "secondary_hue",
-            "secondary_sat",
-            "secondary_val",
-            "secondary_opacity",
-            "flatness",
-          ]) {
-            that.$refs.embedding_map.attribute_fallback[attr] =
-              that.appStateStore.settings.frontend.rendering[attr].fallback
-          }
-          that.$refs.embedding_map.regenerateAttributeArraysFromFallbacks()
-
-          // now done when map results are received
-          //that.show_received_search_results(response.data)
-
-          that.map_viewport_is_adjusted = false
-          that.map_is_in_progess = true
-          that.request_mapping_progress()
-        })
     },
     evaluate_url_query_parameters() {
       // this is almost the first thing that is done when the page is being loaded
@@ -625,7 +74,7 @@ export default {
         // In this case, load it here:
         // (in any other case, the stored map is loaded after the dataset object is loaded)
         if (queryParams.get("map_id")) {
-          this.show_stored_map(queryParams.get("map_id"))
+          this.appStateStore.show_stored_map(queryParams.get("map_id"))
         }
       } else {
         // there is a new dataset_id in the parameters:
@@ -639,14 +88,14 @@ export default {
       const colors = ["red", "green", "blue", "purple", "fuchsia", "aqua", "yellow", "navy"]
       let i = 0
       let maxElements = 1
-      for (const score_info_title in this.search_result_score_info) {
+      for (const score_info_title in this.appStateStore.search_result_score_info) {
         maxElements = Math.max(
           maxElements,
-          this.search_result_score_info[score_info_title].scores.length
+          this.appStateStore.search_result_score_info[score_info_title].scores.length
         )
         datasets.push({
           label: score_info_title,
-          data: this.search_result_score_info[score_info_title].scores,
+          data: this.appStateStore.search_result_score_info[score_info_title].scores,
           borderWidth: 1,
           pointStyle: false,
           borderColor: colors[i],
@@ -654,8 +103,8 @@ export default {
         annotations.push({
           type: "line",
           mode: "vertical",
-          xMax: this.search_result_score_info[score_info_title].cutoff_index,
-          xMin: this.search_result_score_info[score_info_title].cutoff_index,
+          xMax: this.appStateStore.search_result_score_info[score_info_title].cutoff_index,
+          xMin: this.appStateStore.search_result_score_info[score_info_title].cutoff_index,
           borderColor: colors[i],
           label: {
             display: false,
@@ -683,13 +132,10 @@ export default {
         },
       })
     },
-    on_organization_id_change() {
-      const that = this
-      this.reset_search_results_and_map()
-    },
   },
   computed: {
     ...mapStores(useAppStateStore),
+    ...mapStores(useMapStateStore),
   },
   mounted() {
     this.appStateStore.initialize()
@@ -702,10 +148,17 @@ export default {
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
     window.addEventListener("popstate", this.evaluate_url_query_parameters)
+
+    this.eventBus.on("show_results_tab", () => {
+      this.selected_tab = "results"
+    })
+    this.eventBus.on("show_score_info_chart", () => {
+      this.show_score_info_chart()
+    })
   },
   watch: {
     "appStateStore.organization_id"() {
-      this.on_organization_id_change()
+      this.appStateStore.reset_search_results_and_map()
     },
   },
 }
@@ -716,39 +169,38 @@ export default {
     <InteractiveMap
       ref="embedding_map"
       class="absolute top-0 h-screen w-screen"
-      :appStateStore="appState"
-      @cluster_selected="narrow_down_on_cluster"
-      @point_selected="show_document_details"
+      @cluster_selected="appState.narrow_down_on_cluster"
+      @point_selected="appState.show_document_details"
       @cluster_hovered="(cluster_id) => (appState.highlighted_cluster_id = cluster_id)"
       @cluster_hover_end="appState.highlighted_cluster_id = null" />
 
     <div
-      v-if="appState.selected_map_tool === 'lasso'"
+      v-if="mapState.selected_map_tool === 'lasso'"
       class="absolute bottom-6 right-4 flex flex-row justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <button
-        @click="appState.selection_merging_mode = 'replace'"
+        @click="mapState.selection_merging_mode = 'replace'"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
-          'text-blue-600': appState.selection_merging_mode === 'replace',
-          'text-gray-400': appState.selection_merging_mode !== 'replace',
+          'text-blue-600': mapState.selection_merging_mode === 'replace',
+          'text-gray-400': mapState.selection_merging_mode !== 'replace',
         }">
         <ViewfinderCircleIcon></ViewfinderCircleIcon>
       </button>
       <button
-        @click="appState.selection_merging_mode = 'add'"
+        @click="mapState.selection_merging_mode = 'add'"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
-          'text-blue-600': appState.selection_merging_mode === 'add',
-          'text-gray-400': appState.selection_merging_mode !== 'add',
+          'text-blue-600': mapState.selection_merging_mode === 'add',
+          'text-gray-400': mapState.selection_merging_mode !== 'add',
         }">
         <PlusIcon></PlusIcon>
       </button>
       <button
-        @click="appState.selection_merging_mode = 'remove'"
+        @click="mapState.selection_merging_mode = 'remove'"
         class="mr-2 h-6 w-6 rounded hover:bg-gray-100"
         :class="{
-          'text-blue-600': appState.selection_merging_mode === 'remove',
-          'text-gray-400': appState.selection_merging_mode !== 'remove',
+          'text-blue-600': mapState.selection_merging_mode === 'remove',
+          'text-gray-400': mapState.selection_merging_mode !== 'remove',
         }">
         <MinusIcon></MinusIcon>
       </button>
@@ -757,37 +209,37 @@ export default {
     <div
       class="absolute bottom-6 right-4 flex flex-col justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <button
-        @click="appState.selected_map_tool = 'drag'; appState.selection_merging_mode = 'replace'"
+        @click="mapState.selected_map_tool = 'drag'; mapState.selection_merging_mode = 'replace'"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
-          'text-blue-600': appState.selected_map_tool === 'drag',
-          'text-gray-400': appState.selected_map_tool !== 'drag',
+          'text-blue-600': mapState.selected_map_tool === 'drag',
+          'text-gray-400': mapState.selected_map_tool !== 'drag',
         }">
         <CursorArrowRaysIcon></CursorArrowRaysIcon>
       </button>
       <button
-        @click="appState.selected_map_tool = 'lasso'"
+        @click="mapState.selected_map_tool = 'lasso'"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
-          'text-blue-600': appState.selected_map_tool === 'lasso',
-          'text-gray-400': appState.selected_map_tool !== 'lasso',
+          'text-blue-600': mapState.selected_map_tool === 'lasso',
+          'text-gray-400': mapState.selected_map_tool !== 'lasso',
         }">
         <RectangleGroupIcon></RectangleGroupIcon>
       </button>
     </div>
 
     <div
-      v-if="appState.selected_point_indexes.length"
+      v-if="mapState.selected_point_indexes.length"
       class="absolute bottom-6 right-48 flex flex-row items-center justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <span class="mr-2 text-sm text-gray-400">Selection:</span>
       <AddToClassifierButtons
         :classifiers="appState.classifiers"
-        :last_used_classifier_id="last_used_classifier_id"
-        @addToClassifier="this.appStateStore.add_selected_points_to_classifier"
-        @removeFromClassifier="this.appStateStore.remove_selected_points_from_classifier">
+        :last_used_classifier_id="appState.last_used_classifier_id"
+        @addToClassifier="appState.add_selected_points_to_classifier"
+        @removeFromClassifier="appState.remove_selected_points_from_classifier">
       </AddToClassifierButtons>
       <button
-        @click="appState.selected_point_indexes = []"
+        @click="mapState.selected_point_indexes = []"
         class="h-6 w-6 rounded text-gray-400 hover:bg-red-100">
         <XMarkIcon></XMarkIcon>
       </button>
@@ -796,13 +248,13 @@ export default {
     <div v-if="appState.show_timings" class="absolute bottom-0 right-0 text-right">
       <!-- timings -->
       <ul role="list">
-        <li v-for="item in search_timings" :key="item.part" class="text-gray-300">
+        <li v-for="item in appState.search_timings" :key="item.part" class="text-gray-300">
           {{ item.part }}: {{ item.duration.toFixed(2) }} s
         </li>
       </ul>
       <hr />
       <ul role="list">
-        <li v-for="item in map_timings" :key="item.part" class="text-gray-300">
+        <li v-for="item in appState.map_timings" :key="item.part" class="text-gray-300">
           {{ item.part }}: {{ item.duration.toFixed(2) }} s
         </li>
       </ul>
@@ -816,9 +268,9 @@ export default {
       <div ref="left_column" class="pointer-events-none flex flex-col overflow-hidden">
         <!-- search card -->
         <SearchArea
-          @request_search_results="request_search_results"
-          @reset_search_box="reset_search_box"
-          @show_global_map="show_global_map"
+          @request_search_results="appState.request_search_results"
+          @reset_search_box="appState.reset_search_box"
+          @show_global_map="appState.show_global_map"
           class="pointer-events-auto flex-none rounded-md bg-white p-3 shadow-sm"></SearchArea>
 
         <!-- tab box -->
@@ -896,41 +348,41 @@ export default {
               </div>
 
               <div
-                v-if="search_results.length !== 0"
+                v-if="appState.search_results.length !== 0"
                 class="ml-2 mt-2 flex flex-row items-center">
                 <span class="mr-2 flex-none text-gray-500">Cluster:</span>
                 <select
                   v-model="appState.selected_cluster_id"
                   class="text-md flex-1 rounded border-transparent text-gray-500 focus:border-blue-500 focus:ring-blue-500">
                   <option :value="null" selected>All</option>
-                  <option v-for="cluster in cluster_data" :value="cluster.id" selected>
+                  <option v-for="cluster in appState.cluster_data" :value="cluster.id" selected>
                     {{ cluster.title }}
                   </option>
                 </select>
               </div>
 
-              <ul v-if="search_results.length !== 0" role="list" class="pt-1">
+              <ul v-if="appState.search_results.length !== 0" role="list" class="pt-1">
                 <li
-                  v-for="item in search_results
+                  v-for="item in appState.search_results
                     .filter(
                       (result, i) =>
                         appState.selected_cluster_id == null ||
-                        clusterIdsPerPoint[i] == appState.selected_cluster_id
+                        appState.clusterIdsPerPoint[i] == appState.selected_cluster_id
                     )
                     .slice(0, 10)"
                   :key="item._id"
                   class="justify-between pb-3">
                   <ResultListItem
                     :initial_item="item"
-                    :rendering="result_list_rendering"
+                    :rendering="appState.result_list_rendering"
                     :dataset="appState.dataset"
                     @mouseenter="appState.highlighted_item_id = item._id"
                     @mouseleave="appState.highlighted_item_id = null"
-                    @mousedown="show_document_details_by_id(item._id)"></ResultListItem>
+                    @mousedown="appState.show_document_details_by_id(item._id)"></ResultListItem>
                 </li>
               </ul>
               <div
-                v-if="search_results.length === 0"
+                v-if="appState.search_results.length === 0"
                 class="flex h-20 flex-col place-content-center text-center">
                 <p class="flex-none text-gray-400">No Results Yet</p>
               </div>
@@ -967,7 +419,7 @@ export default {
                 <button
                   class="flex-auto rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
                   type="button"
-                  @click="store_current_map">
+                  @click="appState.store_current_map">
                   Add Current Map
                 </button>
               </div>
@@ -1011,17 +463,17 @@ export default {
         ref="right_column"
         class="pointer-events-none flex flex-col overflow-hidden md:h-screen">
         <div
-          v-if="selectedDocumentIdx !== -1 && map_item_details.length > selectedDocumentIdx"
+          v-if="appState.selectedDocumentIdx !== -1 && appState.map_item_details.length > appState.selectedDocumentIdx"
           class="pointer-events-auto flex w-full flex-initial overflow-hidden">
           <ObjectDetailsModal
-            :initial_item="map_item_details[selectedDocumentIdx]"
+            :initial_item="map_item_details[appState.selectedDocumentIdx]"
             :dataset="appState.dataset"
             :classifiers="appState.classifiers"
-            :last_used_classifier_id="last_used_classifier_id"
+            :last_used_classifier_id="appState.last_used_classifier_id"
             @addToClassifier="
               (classifier_id, class_name, is_positive) => {
                 appState.add_item_to_classifier(
-                  selectedDocumentIdx,
+                  appState.selectedDocumentIdx,
                   classifier_id,
                   class_name,
                   is_positive
@@ -1031,35 +483,35 @@ export default {
             @removeFromClassifier="
               (classifier_id, class_name) => {
                 appState.remove_item_from_classifier(
-                  selectedDocumentIdx,
+                  appState.selectedDocumentIdx,
                   classifier_id,
                   class_name
                 )
               }
             "
-            @showSimilarItems="showSimilarItems"
-            @close="close_document_details"></ObjectDetailsModal>
+            @showSimilarItems="appState.showSimilarItems"
+            @close="appState.close_document_details"></ObjectDetailsModal>
         </div>
 
-        <div v-if="show_loading_bar" class="flex w-full flex-1 flex-col justify-center">
-          <span class="self-center font-bold text-gray-400">{{ progress_step_title }}</span>
+        <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center">
+          <span class="self-center font-bold text-gray-400">{{ appState.progress_step_title }}</span>
           <div class="mt-2 h-2.5 w-1/5 self-center rounded-full bg-gray-400/50">
             <div
               class="h-2.5 rounded-full bg-blue-400"
-              :style="{ width: (progress * 100).toFixed(0) + '%' }"></div>
+              :style="{ width: (appState.progress * 100).toFixed(0) + '%' }"></div>
           </div>
         </div>
 
         <div
-          v-if="!show_loading_bar && !search_results.length"
-          class="align-center pointer-events-auto flex flex-1 flex-col justify-center">
+          v-if="!appState.show_loading_bar && !appState.search_results.length"
+          class="align-center flex flex-1 flex-col justify-center">
           <div class="mb-6 flex flex-row justify-center">
             <img
               class="h-12"
               :src="appState.organization ? appState.organization.workspace_tool_logo_url : ''" />
           </div>
           <div
-            class="mb-2 flex-none text-center font-bold text-gray-400"
+            class="mb-2 flex-none text-center pointer-events-auto font-bold text-gray-400"
             v-html="appState.organization ? appState.organization.workspace_tool_intro_text : ''"></div>
         </div>
       </div>
