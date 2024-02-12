@@ -3,6 +3,7 @@ import { createPinia } from "pinia"
 import mitt from 'mitt';
 import PrimeVue from 'primevue/config';
 import Wind from './prime_vue_presets/wind';
+import "inter-ui/inter.css";
 
 import "./style.css"
 import SearchAndMap from "./apps/SearchAndMap.vue"

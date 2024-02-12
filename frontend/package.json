@@ -14,6 +14,7 @@
     "axios": "^1.4.0",
     "chart.js": "^4.4.0",
     "chartjs-plugin-annotation": "^3.0.1",
+    "inter-ui": "^4.0.2",
     "mathjs": "^11.9.1",
     "mitt": "^3.0.1",
     "panzoom": "^9.4.3",
