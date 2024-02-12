@@ -204,6 +204,12 @@ class Organization(models.Model):
         verbose_name="Members",
         to=User,
         blank=True)
+    default_dataset_selection = models.ManyToManyField(
+        verbose_name="Default Dataset Selection",
+        help_text="",
+        to='Dataset',
+        related_name='+',
+        blank=True)
     workspace_tool_title = models.CharField(
         verbose_name="Workspace Tool Title",
         help_text="Title of the workspace tool in the frontend",

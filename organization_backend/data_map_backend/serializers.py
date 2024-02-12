@@ -29,6 +29,7 @@ class ObjectFieldSerializer(drf_serializers.ModelSerializer):
 
 class OrganizationSerializer(drf_serializers.ModelSerializer):
     datasets = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    default_dataset_selection = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Organization

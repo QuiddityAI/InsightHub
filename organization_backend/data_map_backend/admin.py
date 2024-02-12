@@ -69,6 +69,17 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     readonly_fields = ('changed_at', 'created_at')
     inlines = [DatasetInline]
 
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        # only show datasets of same organization for default_dataset_selection:
+        if db_field.name == "default_dataset_selection":
+            try:
+                organization_id = int(request.path.split("/")[-3])
+            except ValueError:
+                kwargs["queryset"] = Dataset.objects.filter(organization = -1)
+            else:
+                kwargs["queryset"] = Dataset.objects.filter(organization = organization_id)
+        return super(OrganizationAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
+
 
 class ObjectFieldInline(admin.StackedInline):
     model = ObjectField
