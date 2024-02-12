@@ -19,7 +19,7 @@ from database_client.django_client import get_dataset, get_stored_map_data
 from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
 from logic.search import get_search_results, get_full_results_from_meta_info
-from logic.search_common import fill_in_details_from_text_storage
+from logic.search_common import fill_in_details_from_text_storage_list
 from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
     projection_stage_hash_to_map_id, get_map_parameters_hash, get_search_stage_hash, \
     get_vectorize_stage_hash, get_projection_stage_hash
@@ -260,7 +260,7 @@ def generate_map(map_id, ignore_cache):
         final_positions = np.zeros([len(search_results), 2])
         if projection_parameters.x_axis.type == "number_field":
             field = projection_parameters.x_axis.parameter
-            fill_in_details_from_text_storage(dataset.id, search_results, [field])
+            fill_in_details_from_text_storage_list(dataset.id, search_results, [field])
             cartesian_positions[:, 0] = [e.get(field, -1) for e in search_results]
         elif projection_parameters.x_axis.type == "count":
             cartesian_positions[:, 0] = [len(e.get(projection_parameters.x_axis.parameter, [])) for e in search_results]
@@ -274,7 +274,7 @@ def generate_map(map_id, ignore_cache):
             pass
         if projection_parameters.y_axis.type == "number_field":
             field = projection_parameters.y_axis.parameter
-            fill_in_details_from_text_storage(dataset.id, search_results, [field])
+            fill_in_details_from_text_storage_list(dataset.id, search_results, [field])
             cartesian_positions[:, 1] = [e.get(field, -1) for e in search_results]
         elif projection_parameters.y_axis.type == "count":
             cartesian_positions[:, 1] = [len(e.get(projection_parameters.y_axis.parameter, [])) for e in search_results]
@@ -372,7 +372,7 @@ def generate_map(map_id, ignore_cache):
             attr_parameter = params.rendering[attr].parameter
             if attr_type == "number_field":
                 field = attr_parameter
-                fill_in_details_from_text_storage(dataset.id, search_results, [field])
+                fill_in_details_from_text_storage_list(dataset.id, search_results, [field])
                 values = [e.get(field) or 0.0 for e in search_results]
                 map_data["results"]["per_point_data"][attr] = values
             elif attr_type == "count":

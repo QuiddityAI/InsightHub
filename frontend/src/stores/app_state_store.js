@@ -35,7 +35,8 @@ export const useAppStateStore = defineStore("appState", {
       username: null,
 
       // results:
-      search_results: [],
+      search_result_ids: [],
+      search_result_items: {},
       result_list_rendering: {},
       map_id: null,
       map_data: null,
@@ -369,7 +370,8 @@ export const useAppStateStore = defineStore("appState", {
     },
     reset_search_results_and_map(params = { leave_map_unchanged: false }) {
       // results:
-      this.search_results = []
+      this.search_result_ids = []
+      this.search_result_items = {}
       this.map_task_id = null
       this.map_item_details = []
       this.cluster_data = []
@@ -509,7 +511,8 @@ export const useAppStateStore = defineStore("appState", {
         })
     },
     show_received_search_results(response_data) {
-      this.search_results = response_data["items"]
+      this.search_result_ids = response_data["sorted_ids"]
+      this.search_result_items = response_data["items_by_dataset"]
       this.search_timings = response_data["timings"]
     },
     request_map() {
@@ -612,7 +615,8 @@ export const useAppStateStore = defineStore("appState", {
           that.map_item_details = results_per_point["hover_label_data"]
           that.mapState.per_point.text_data =
             results_per_point["hover_label_data"]
-          that.search_results = results_per_point["hover_label_data"]
+          that.search_result_ids = results_per_point["hover_label_data"]  // FIXME
+          that.search_result_items = results_per_point["hover_label_data"]
           that.fields_already_received.add("hover_label_data")
         }
 

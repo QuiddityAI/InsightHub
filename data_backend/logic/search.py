@@ -15,7 +15,7 @@ from logic.local_map_cache import local_maps
 from logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
     get_vector_search_results_matching_classifier, get_fulltext_search_results, \
     combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold, \
-    fill_in_vector_data
+    fill_in_vector_data_list
 
 from database_client.django_client import get_dataset
 
@@ -29,7 +29,8 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         timings = Timings()
     params = DotDict(json.loads(params_str))
 
-    all_results = []
+    all_ids = []
+    all_items_by_dataset = {}
     all_score_info = {}
     for dataset_id in params.dataset_ids:
         dataset = get_dataset(dataset_id)
@@ -37,34 +38,37 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
 
         if params.search.search_type == "external_input":
             if params.search.use_separate_queries:
-                search_results = get_search_results_using_separate_queries(dataset, params.search, params.vectorize, purpose, timings)
+                sorted_ids, full_items = get_search_results_using_separate_queries(dataset, params.search, params.vectorize, purpose, timings)
             else:
-                search_results, score_info = get_search_results_using_combined_query(dataset, params.search, params.vectorize, purpose, timings)
+                sorted_ids, full_items, score_info = get_search_results_using_combined_query(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "cluster":
-            search_results = get_search_results_for_cluster(dataset, params.search, params.vectorize, purpose, timings)
+            sorted_ids, full_items = get_search_results_for_cluster(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "classifier":
-            search_results = get_search_results_included_in_classifier(dataset, params.search, params.vectorize, purpose, timings)
+            sorted_ids, full_items = get_search_results_included_in_classifier(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "recommended_for_classifier":
-            search_results, score_info = get_search_results_matching_a_classifier(dataset, params.search, params.vectorize, purpose, timings)
+            sorted_ids, full_items, score_info = get_search_results_matching_a_classifier(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "similar_to_item":
-            search_results, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings)
+            sorted_ids, full_items, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "global_map":
-            search_results, score_info = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
+            sorted_ids, full_items, score_info = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
         else:
             logging.error("Unsupported search type: " + params.search.search_type)
-            search_results = []
-        all_results += search_results
+            sorted_ids = []
+            full_items = {}
+        all_ids += [(dataset_id, item_id) for item_id in sorted_ids]
+        all_items_by_dataset[dataset_id] = full_items
         all_score_info.update(score_info)
 
     result = {
-        "items": all_results,
+        "sorted_ids": all_ids,
+        "items_by_dataset": all_items_by_dataset,
         "score_info": all_score_info,
         "timings": timings.get_timestamps(),
     }
     return result
 
 
-def get_search_results_using_combined_query(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
+def get_search_results_using_combined_query(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
     raw_query = search_settings.all_field_query
     negative_query = search_settings.all_field_query_negative
     image_query = ""  # TODO: search_settings.all_field_image_url
@@ -82,10 +86,10 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     timings.log("search preparation")
 
     # TODO: currently only first page is returned
-    if dataset.id == ABSCLUST_DATASET_ID:
-        results =  get_absclust_search_results(raw_query, required_fields, limit)
-        save_search_cache()
-        return results, {}
+    # if dataset.id == ABSCLUST_DATASET_ID:
+    #     results =  get_absclust_search_results(raw_query, required_fields, limit)
+    #     save_search_cache()
+    #     return results, {}
 
     queries = QueryInput.from_raw_query(raw_query, negative_query, image_query, negative_image_query)
     result_sets: list[dict] = []
@@ -116,11 +120,11 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
 
 
-def get_search_results_using_separate_queries(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> list:
-    return []
+def get_search_results_using_separate_queries(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
+    return [], {}
 
 
-def get_search_results_for_cluster(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> list:
+def get_search_results_for_cluster(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
     origin_map_id: str = search_settings.cluster_origin_map_id
     cluster_id: int = search_settings.cluster_id
 
@@ -151,10 +155,10 @@ def get_search_results_for_cluster(dataset, search_settings: DotDict, vectorize_
     return sort_items_and_complete_them(dataset, total_items, required_fields, limit, timings)
 
 
-def get_search_results_similar_to_item(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
+def get_search_results_similar_to_item(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
     if dataset.id == ABSCLUST_DATASET_ID:
         # similar item functionality doesn't work with AbsClust database as it doesn't contain vectors
-        return [], {}
+        return [], {}, {}
     similar_to_item_id = search_settings.similar_to_item_id
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
@@ -167,7 +171,7 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
 
     search_engine_client = TextSearchEngineClient.get_instance()
     items = search_engine_client.get_items_by_ids(dataset.id, [similar_to_item_id], fields=[field.identifier for field in vector_fields])
-    fill_in_vector_data(dataset.id, items, [field.identifier for field in vector_fields])
+    fill_in_vector_data_list(dataset.id, items, [field.identifier for field in vector_fields])
     item = items[0]
     timings.log("getting original item")
 
@@ -185,7 +189,7 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
 
 
-def get_search_results_matching_a_classifier(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
+def get_search_results_matching_a_classifier(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
     classifier_id = search_settings.classifier_id
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
@@ -211,7 +215,7 @@ def get_search_results_matching_a_classifier(dataset, search_settings: DotDict, 
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
 
 
-def get_search_results_included_in_classifier(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> list:
+def get_search_results_included_in_classifier(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple:
     classifier_id = search_settings.classifier_id
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
@@ -269,7 +273,7 @@ def get_search_results_for_stored_map(map_data):
     return result
 
 
-def get_search_results_for_global_map(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
+def get_search_results_for_global_map(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
     if not all([limit, page is not None, dataset]):
@@ -292,10 +296,9 @@ def get_search_results_for_global_map(dataset, search_settings: DotDict, vectori
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
 
 
-def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_meta_info: dict, purpose: str, timings) -> list[dict]:
+def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_meta_info: dict, purpose: str, timings) -> tuple:
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
-    search_results: list[dict] = sort_items_and_complete_them(dataset, search_result_meta_info, required_fields, len(search_result_meta_info), timings)
-    return search_results
+    return sort_items_and_complete_them(dataset, search_result_meta_info, required_fields, len(search_result_meta_info), timings)
 
 
 @lru_cache

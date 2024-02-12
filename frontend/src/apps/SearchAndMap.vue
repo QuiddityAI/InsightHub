@@ -351,7 +351,7 @@ export default {
               </div>
 
               <div
-                v-if="appState.search_results.length !== 0"
+                v-if="appState.search_result_ids.length !== 0"
                 class="ml-2 mt-2 flex flex-row items-center">
                 <span class="mr-2 flex-none text-gray-500">Cluster:</span>
                 <select
@@ -364,27 +364,27 @@ export default {
                 </select>
               </div>
 
-              <ul v-if="appState.search_results.length !== 0" role="list" class="pt-1">
+              <ul v-if="appState.search_result_ids.length !== 0" role="list" class="pt-1">
                 <li
-                  v-for="item in appState.search_results
+                  v-for="item_id in appState.search_result_ids
                     .filter(
                       (result, i) =>
                         appState.selected_cluster_id == null ||
                         appState.clusterIdsPerPoint[i] == appState.selected_cluster_id
                     )
                     .slice(0, 10)"
-                  :key="item._id"
+                  :key="item_id.join('_')"
                   class="justify-between pb-3">
                   <ResultListItem
-                    :initial_item="item"
-                    :rendering="appState.datasets[item._dataset_id].result_list_rendering"
-                    @mouseenter="appState.highlighted_item_id = item._id"
+                    :initial_item="appState.search_result_items[item_id[0]][item_id[1]]"
+                    :rendering="appState.datasets[item_id[0]].result_list_rendering"
+                    @mouseenter="appState.highlighted_item_id = item_id[1]"
                     @mouseleave="appState.highlighted_item_id = null"
-                    @mousedown="appState.show_document_details_by_id(item._id)"></ResultListItem>
+                    @mousedown="appState.show_document_details_by_id(item_id[1])"></ResultListItem>
                 </li>
               </ul>
               <div
-                v-if="appState.search_results.length === 0"
+                v-if="appState.search_result_ids.length === 0"
                 class="flex h-20 flex-col place-content-center text-center">
                 <p class="flex-none text-gray-400">No Results Yet</p>
               </div>
@@ -505,7 +505,7 @@ export default {
         </div>
 
         <div
-          v-if="!appState.show_loading_bar && !appState.search_results.length"
+          v-if="!appState.show_loading_bar && !appState.search_result_ids.length"
           class="align-center flex flex-1 flex-col justify-center">
           <div class="mb-6 flex flex-row justify-center">
             <img

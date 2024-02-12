@@ -43,11 +43,11 @@ class QueryInput(object):
 
 def combine_and_sort_result_sets(result_sets: list[dict], required_fields: list[str],
                                  dataset: DotDict, search_settings: DotDict, limit: int,
-                                 timings: Timings) -> tuple[list, dict]:
+                                 timings: Timings) -> tuple[list, dict, dict]:
     score_info = get_score_curves_and_cut_sets(result_sets, search_settings, dataset)
     total_items = combine_result_sets_and_calculate_scores(result_sets, timings)
-    sorted_complete_items = sort_items_and_complete_them(dataset, total_items, required_fields, limit, timings)
-    return sorted_complete_items, score_info
+    sorted_ids, full_items = sort_items_and_complete_them(dataset, total_items, required_fields, limit, timings)
+    return sorted_ids, full_items, score_info
 
 
 def get_score_curves_and_cut_sets(result_sets: list[dict], search_settings: DotDict, dataset: DotDict) -> dict:
@@ -153,23 +153,25 @@ def combine_result_sets_and_calculate_scores(result_sets: list[dict], timings: T
 
 
 def sort_items_and_complete_them(dataset:DotDict, total_items:dict, required_fields:list[str],
-                                 limit:int, timings:Timings) -> list[dict]:
+                                 limit:int, timings:Timings) -> tuple[list[str], dict[str, dict]]:
     # TODO: check how much faster it is to get partial results from search engines and only fill in missing fields
-    sorted_results = sorted(total_items.values(), key=lambda item: item['_reciprocal_rank_score'], reverse=True)
-    sorted_results = sorted_results[:limit]
+    sorted_ids = sorted(total_items.keys(), key=lambda id: total_items[id]['_reciprocal_rank_score'], reverse=True)
+    for id_to_remove in sorted_ids[limit:]:
+        del total_items[id_to_remove]
+    sorted_ids = sorted_ids[:limit]
     timings.log("sort items")
     required_text_fields, required_vector_fields = separate_text_and_vector_fields(dataset, required_fields)
-    fill_in_details_from_text_storage(dataset.id, sorted_results, required_text_fields)
+    fill_in_details_from_text_storage(dataset.id, total_items, required_text_fields)
     timings.log("getting actual data from text storage")
     if required_vector_fields:
-        fill_in_vector_data(dataset.id, sorted_results, required_vector_fields)
+        fill_in_vector_data(dataset.id, total_items, required_vector_fields)
         timings.log("getting vector data from vector DB")
 
     # search_results = enrich_search_results(search_results, query)
     # timings.log("enriching results")
     # -> replaced by context dependent generator (for important words per abstract and highlighting of words)
 
-    return sorted_results
+    return sorted_ids, total_items
 
 
 def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
@@ -316,36 +318,40 @@ def get_vector_search_results_matching_classifier(dataset: DotDict, vector_field
     return items
 
 
-def fill_in_details_from_text_storage(dataset_id: int, items: list[dict], required_fields: list[str]):
+def fill_in_details_from_text_storage_list(dataset_id: int, items: list[dict], required_fields: list[str]):
+    items_by_id = {item['_id']: item for item in items}
+    fill_in_details_from_text_storage(dataset_id, items_by_id, required_fields)
+
+
+def fill_in_details_from_text_storage(dataset_id: int, items: dict[str, dict], required_fields: list[str]):
     if not items:
         return
-    ids = [item['_id'] for item in items]
+    ids = list(items.keys())
     if dataset_id == ABSCLUST_DATASET_ID:
         full_items = get_absclust_items_by_ids(ids)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
         full_items = search_engine_client.get_items_by_ids(dataset_id, ids, fields=required_fields)
     for full_item in full_items:
-        for item in items:
-            if item['_id'] == full_item['_id']:
-                item.update(full_item)
-                break
+        items[full_item['_id']].update(full_item)
 
 
-def fill_in_vector_data(dataset_id: int, items: list[dict], required_vector_fields: list[str]):
+def fill_in_vector_data_list(dataset_id: int, items: list[dict], required_vector_fields: list[str]):
+    items_by_id = {item['_id']: item for item in items}
+    fill_in_vector_data(dataset_id, items_by_id, required_vector_fields)
+
+
+def fill_in_vector_data(dataset_id: int, items: dict[str, dict], required_vector_fields: list[str]):
     if not items or not required_vector_fields:
         return
     if dataset_id == ABSCLUST_DATASET_ID:
         return
-    ids = [item['_id'] for item in items]
+    ids = list(items.keys())
     vector_db_client = VectorSearchEngineClient.get_instance()
     for vector_field in required_vector_fields:
         results = vector_db_client.get_items_by_ids(dataset_id, ids, vector_field, return_vectors=True, return_payloads=False)
         for result in results:
-            for item in items:
-                if item['_id'] == result.id:
-                    item[vector_field] = result.vector[vector_field]
-                    break
+            items[result.id][vector_field] = result.vector[vector_field]
 
 
 def get_field_similarity_threshold(field, input_is_image: bool | None=None):
