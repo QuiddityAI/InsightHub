@@ -19,6 +19,7 @@
     "panzoom": "^9.4.3",
     "pinia": "^2.1.6",
     "point-in-polygon": "^1.1.0",
+    "primevue": "^3.48.1",
     "vue": "^3.3.4"
   },
   "devDependencies": {
