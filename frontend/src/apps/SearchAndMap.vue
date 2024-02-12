@@ -374,8 +374,7 @@ export default {
                   class="justify-between pb-3">
                   <ResultListItem
                     :initial_item="item"
-                    :rendering="appState.result_list_rendering"
-                    :dataset="appState.dataset"
+                    :rendering="appState.datasets[item._dataset_id].result_list_rendering"
                     @mouseenter="appState.highlighted_item_id = item._id"
                     @mouseleave="appState.highlighted_item_id = null"
                     @mousedown="appState.show_document_details_by_id(item._id)"></ResultListItem>

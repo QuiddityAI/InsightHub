@@ -1,10 +1,13 @@
 <script setup>
 import httpClient from "../../api/httpClient"
+import { mapStores } from "pinia"
+import { useAppStateStore } from "../../stores/app_state_store"
+const appState = useAppStateStore()
 </script>
 
 <script>
 export default {
-  props: ["initial_item", "rendering", "dataset"],
+  props: ["initial_item", "rendering"],
   data() {
     return {
       item: this.initial_item,
@@ -23,9 +26,9 @@ export default {
       const that = this
 
       const payload = {
-        dataset_id: this.dataset.id,
+        dataset_id: this.item._dataset_id,
         item_id: this.item._id,
-        fields: this.dataset.result_list_rendering.required_fields,
+        fields: this.appStateStore.datasets[this.item._dataset_id].result_list_rendering.required_fields,
       }
       this.loading_item = true
       httpClient
@@ -44,6 +47,9 @@ export default {
   mounted() {
     this.getFullItem()
   },
+  computed: {
+    ...mapStores(useAppStateStore),
+  }
 }
 </script>
 

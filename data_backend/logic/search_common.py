@@ -214,6 +214,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
     for i, item in enumerate(search_result):
         items[item['_id']] = {
             '_id': item['_id'],
+            '_dataset_id': dataset.id,
             '_origins': [{'type': 'fulltext', 'field': 'unknown',
                           'query': query.positive_query_str, 'score': item['_score'], 'rank': i+1}],
             '_highlights': " ".join([" ".join(x) for x in item.get('highlight', {}).values()])
@@ -282,6 +283,7 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
     for i, item in enumerate(vector_search_result):
         items[item.id] = {
             '_id': item.id,
+            '_dataset_id': dataset.id,
             '_origins': [{'type': 'vector', 'field': vector_field,
                           'query': query.positive_query_str, 'score': item.score, 'rank': i+1}],
         }
@@ -305,6 +307,7 @@ def get_vector_search_results_matching_classifier(dataset: DotDict, vector_field
     for i, item in enumerate(vector_search_result):
         items[item.id] = {
             '_id': item.id,
+            '_dataset_id': dataset.id,
             '_origins': [{'type': 'vector', 'field': vector_field,
                           'query': 'matching a classifier', 'score': item.score, 'rank': i+1}],
         }

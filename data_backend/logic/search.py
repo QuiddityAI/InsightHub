@@ -29,33 +29,37 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         timings = Timings()
     params = DotDict(json.loads(params_str))
 
-    dataset = get_dataset(params.dataset_id)
-    score_info = None
+    all_results = []
+    all_score_info = {}
+    for dataset_id in params.dataset_ids:
+        dataset = get_dataset(dataset_id)
+        score_info = {}
 
-    if params.search.search_type == "external_input":
-        if params.search.use_separate_queries:
-            search_results = get_search_results_using_separate_queries(dataset, params.search, params.vectorize, purpose, timings)
+        if params.search.search_type == "external_input":
+            if params.search.use_separate_queries:
+                search_results = get_search_results_using_separate_queries(dataset, params.search, params.vectorize, purpose, timings)
+            else:
+                search_results, score_info = get_search_results_using_combined_query(dataset, params.search, params.vectorize, purpose, timings)
+        elif params.search.search_type == "cluster":
+            search_results = get_search_results_for_cluster(dataset, params.search, params.vectorize, purpose, timings)
+        elif params.search.search_type == "classifier":
+            search_results = get_search_results_included_in_classifier(dataset, params.search, params.vectorize, purpose, timings)
+        elif params.search.search_type == "recommended_for_classifier":
+            search_results, score_info = get_search_results_matching_a_classifier(dataset, params.search, params.vectorize, purpose, timings)
+        elif params.search.search_type == "similar_to_item":
+            search_results, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings)
+        elif params.search.search_type == "global_map":
+            search_results, score_info = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
         else:
-            search_results, score_info = get_search_results_using_combined_query(dataset, params.search, params.vectorize, purpose, timings)
-    elif params.search.search_type == "cluster":
-        search_results = get_search_results_for_cluster(dataset, params.search, params.vectorize, purpose, timings)
-    elif params.search.search_type == "classifier":
-        search_results = get_search_results_included_in_classifier(dataset, params.search, params.vectorize, purpose, timings)
-    elif params.search.search_type == "recommended_for_classifier":
-        search_results, score_info = get_search_results_matching_a_classifier(dataset, params.search, params.vectorize, purpose, timings)
-    elif params.search.search_type == "similar_to_item":
-        search_results, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings)
-    elif params.search.search_type == "global_map":
-        search_results, score_info = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
-    else:
-        logging.error("Unsupported search type: " + params.search.search_type)
-        search_results = []
+            logging.error("Unsupported search type: " + params.search.search_type)
+            search_results = []
+        all_results += search_results
+        all_score_info.update(score_info)
 
     result = {
-        "items": search_results,
-        "score_info": score_info,
+        "items": all_results,
+        "score_info": all_score_info,
         "timings": timings.get_timestamps(),
-        "rendering": dataset.result_list_rendering,
     }
     return result
 
