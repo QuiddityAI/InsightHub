@@ -7,8 +7,8 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 
-from .models import Classifier, ClassifierExample, Dataset, SearchHistoryItem, ItemCollection, StoredMap, Generator
-from .serializers import ClassifierExampleSerializer, ClassifierSerializer, DatasetSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer, GeneratorSerializer
+from .models import Classifier, ClassifierExample, Dataset, Organization, SearchHistoryItem, ItemCollection, StoredMap, Generator
+from .serializers import ClassifierExampleSerializer, ClassifierSerializer, DatasetSerializer, OrganizationSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer, GeneratorSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -33,6 +33,30 @@ def get_current_user(request):
         'username': user.username,
     })
     return HttpResponse(response_json, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def get_available_organizations(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    items = Organization.objects.all()
+
+    result = []
+    for item in items:
+        if not item.members.filter(id=request.user.id).exists():
+            continue
+        result.append(item)
+
+    serialized_data = OrganizationSerializer(items, many=True).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
 
 @csrf_exempt
 def get_dataset(request):
@@ -69,10 +93,13 @@ def get_available_datasets(request):
 
     try:
         data = json.loads(request.body)
+        organization_id: int = data.get("organization_id")
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     datasets = Dataset.objects.all()
+    # TODO: filter by organization_id later on:
+    # datasets = Dataset.objects.filter(Q(organization_id=organization_id))
 
     result = []
     for dataset in datasets:

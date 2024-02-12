@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import Classifier, ClassifierExample, Dataset, ObjectField, Generator, EmbeddingSpace, SearchHistoryItem, ItemCollection, StoredMap
+from .models import Classifier, ClassifierExample, Dataset, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, ItemCollection, StoredMap
 
 
 class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
@@ -25,6 +25,14 @@ class ObjectFieldSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = ObjectField
         exclude = ['created_at', 'changed_at', '_order', 'description']
+
+
+class OrganizationSerializer(drf_serializers.ModelSerializer):
+    datasets = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = Organization
+        exclude = ['created_at', 'changed_at']
 
 
 class DatasetSerializer(drf_serializers.ModelSerializer):

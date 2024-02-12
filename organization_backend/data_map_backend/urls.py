@@ -4,6 +4,7 @@ from . import views
 urlpatterns=[
     path("health", views.get_health),
     path("get_current_user", views.get_current_user),
+    path("available_organizations", views.get_available_organizations),
     path("dataset", views.get_dataset),
     path("available_datasets", views.get_available_datasets),
     path("add_search_history_item", views.add_search_history_item),
