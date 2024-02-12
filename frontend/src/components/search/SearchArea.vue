@@ -12,7 +12,7 @@ import MultiSelect from 'primevue/multiselect';
 
 import httpClient from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
-import { useAppStateStore } from "../../stores/settings_store"
+import { useAppStateStore } from "../../stores/app_state_store"
 
 const appState = useAppStateStore()
 </script>

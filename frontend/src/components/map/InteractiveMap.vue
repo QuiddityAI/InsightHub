@@ -1,6 +1,6 @@
 <script setup>
 import { mapStores } from "pinia"
-import { useAppStateStore } from "../../stores/settings_store"
+import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()

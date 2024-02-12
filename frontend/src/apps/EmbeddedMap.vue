@@ -15,7 +15,7 @@ import ClassifierExample from "../components/classifier/ClassifierExample.vue"
 
 import httpClient from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
-import { useAppStateStore } from "../stores/settings_store"
+import { useAppStateStore } from "../stores/app_state_store"
 
 const appState = useAppStateStore()
 
