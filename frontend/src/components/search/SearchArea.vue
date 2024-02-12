@@ -8,6 +8,7 @@ import {
   UserCircleIcon,
   CircleStackIcon,
 } from "@heroicons/vue/24/outline"
+import MultiSelect from 'primevue/multiselect';
 
 import httpClient from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
@@ -42,12 +43,10 @@ export default {
   emits: ["request_search_results", "reset_search_box", "show_global_map"],
   data() {
     return {
-      internal_dataset_id: null,
+      internal_organization_id: null,
 
       show_negative_query_field: false,
       show_settings: false,
-      available_databases: [],
-      dataset_information: {},
 
       show_search_settings: false,
       show_autocut_settings: false,
@@ -120,106 +119,29 @@ export default {
   },
   mounted() {
     const that = this
-    this.internal_dataset_id = this.appStateStore.settings.dataset_id
-    httpClient
-      .post("/org/data_map/available_datasets", { organization_id: -1 })
-      .then(function (response) {
-        that.available_databases = response.data
-        that.dataset_information = {}
-        for (const database of that.available_databases) {
-          that.dataset_information[database.id] = database
-        }
-        // initial dataset_id is set in evaluate_url_query_parameters() in SearchAndMap
-      })
-
-    httpClient.get("/org/data_map/get_current_user").then(function (response) {
-      that.appStateStore.logged_in = response.data.logged_in
-      that.appStateStore.username = response.data.username
-    })
+    this.internal_organization_id = this.appStateStore.organization_id
   },
   computed: {
     ...mapStores(useAppStateStore),
   },
   watch: {
-    "appStateStore.settings.dataset_id": function (newValue, oldValue) {
+    "appStateStore.organization_id": function (newValue, oldValue) {
       // using internal variable to be able to reset parameters before
       // actually changing global dataset_id in select-field listener below
-      this.internal_dataset_id = this.appStateStore.settings.dataset_id
-    },
-    "appStateStore.dataset": function (newValue, oldValue) {
-      this.on_full_dataset_object_loaded()
+      this.internal_organization_id = this.appStateStore.organization_id
     },
     show_negative_query_field() {
       if (!this.show_negative_query_field) {
         this.appStateStore.settings.search.all_field_query_negative = ""
       }
     },
+    "appStateStore.settings.dataset_ids": function (newValue, oldValue) {
+      this.appStateStore.on_selected_datasets_changed()
+    },
   },
   methods: {
-    dataset_id_changed_by_user() {
-      const clean_settings = JSON.parse(JSON.stringify(this.appStateStore.default_settings))
-      clean_settings.dataset_id = this.internal_dataset_id
-      this.appStateStore.settings = clean_settings
-
-      const emptyQueryParams = new URLSearchParams()
-      emptyQueryParams.set("dataset_id", this.appStateStore.settings.dataset_id)
-      history.pushState(null, null, "?" + emptyQueryParams.toString())
-    },
-    on_full_dataset_object_loaded() {
-      if (this.appStateStore.dataset === null) return
-      if (!this.appStateStore.dataset.object_fields) return
-
-      const that = this
-
-      // initialize available search fields:
-      this.appStateStore.settings.search.separate_queries = {}
-      for (const field of Object.values(this.appStateStore.dataset.object_fields)) {
-        if (field.is_available_for_search) {
-          this.appStateStore.settings.search.separate_queries[field.identifier] = {
-            query: "",
-            query_negative: "",
-            must: false,
-            threshold_offset: 0.0,
-            use_for_combined_search: that.appStateStore.dataset.default_search_fields.includes(
-              field.identifier
-            ),
-          }
-        }
-      }
-
-      // initialize available number and vector fields:
-      that.appStateStore.settings.vectorize.map_vector_field = "w2v_vector"
-      that.appStateStore.available_vector_fields = []
-      that.appStateStore.available_number_fields = []
-      for (const field_identifier in that.appStateStore.dataset.object_fields) {
-        const field = that.appStateStore.dataset.object_fields[field_identifier]
-        if (field.field_type == FieldType.VECTOR) {
-          that.appStateStore.available_vector_fields.push(field.identifier)
-          if (
-            field.is_available_for_search &&
-            this.appStateStore.dataset.default_search_fields.includes(field.identifier)
-          ) {
-            that.appStateStore.settings.vectorize.map_vector_field = field.identifier
-          }
-        } else if (
-          field.field_type == FieldType.INTEGER ||
-          field.field_type == FieldType.FLOAT
-        ) {
-          that.appStateStore.available_number_fields.push(field.identifier)
-        }
-      }
-      that.appStateStore.settings.rendering.size.type = "score"
-      that.appStateStore.settings.rendering.size.parameter = ""
-      if (that.appStateStore.available_number_fields.length > 0) {
-        for (const field of that.appStateStore.available_number_fields) {
-          if (field === "cited_by_count") {
-            // prefer this field even if it is not the first one:
-            that.appStateStore.settings.rendering.size.type = "number_field"
-            that.appStateStore.settings.rendering.size.parameter = field
-            break
-          }
-        }
-      }
+    organization_id_changed_by_user() {
+      this.appStateStore.set_organization_id(this.internal_organization_id)
     },
   },
 }
@@ -230,23 +152,29 @@ export default {
     <!-- Database Selection -->
     <div class="mb-2 flex items-center justify-between">
       <a
-        :href="`?dataset_id=${appState.settings.dataset_id}`"
+        :href="`?organization_id=${appState.organization_id}`"
         class="w-8 rounded p-2 text-gray-500 hover:bg-gray-100">
         <HomeIcon></HomeIcon>
       </a>
-      <span class="ml-1 font-['Lexend'] font-bold text-black">{{
-        appState.dataset ? appState.dataset.workspace_tool_title || "Quiddity" : ""
-      }}</span>
-      <div class="flex-1"></div>
 
       <select
-        v-model="internal_dataset_id"
-        @change="dataset_id_changed_by_user"
-        class="rounded-md border-gray-300 pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
-        <option v-for="item in available_databases" :value="item.id" selected>
+        v-model="internal_organization_id"
+        @change="organization_id_changed_by_user"
+        class="rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm ml-1 font-['Lexend'] font-bold text-black focus:border-blue-500 focus:ring-blue-500">
+        <option v-for="item in appState.available_organizations" :value="item.id" selected>
           {{ item.name }}
         </option>
       </select>
+
+      <div class="flex-initial w-48">
+      <MultiSelect v-model="appState.settings.dataset_ids"
+        :options="Object.values(appState.datasets)"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Datasets"
+        class="mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+      </div>
+
       <div class="flex-1"></div>
       <a
         v-if="!appState.logged_in"
@@ -324,7 +252,7 @@ export default {
           v-model="appState.settings.search.all_field_query"
           :placeholder="
             appState.settings.search.search_type == 'external_input'
-              ? `Describe what ${dataset_information[appState.settings.dataset_id] ? dataset_information[appState.settings.dataset_id].entity_name || '' : ''} you want to find`
+              ? `Describe what ${appState.settings.dataset_ids.length ? appState.datasets[appState.settings.dataset_ids[0]].entity_name || '' : ''} you want to find`
               : 'But more like this:'
           "
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />

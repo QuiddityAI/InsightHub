@@ -49,8 +49,6 @@ export default {
       search_timings: "",
       map_timings: "",
 
-      search_history: [],
-
       // mapping progress:
       map_is_in_progess: false,
       show_loading_bar: false,
@@ -68,9 +66,6 @@ export default {
 
       // classifiers:
       last_used_classifier_id: null,
-
-      // stored maps:
-      stored_maps: [],
     }
   },
   methods: {
@@ -211,8 +206,8 @@ export default {
       if (!this.appStateStore.store_search_history) return
 
       if (
-        this.search_history.length > 0 &&
-        JSON.stringify(this.search_history[this.search_history.length - 1].parameters) ==
+        this.appStateStore.search_history.length > 0 &&
+        JSON.stringify(this.appStateStore.search_history[this.appStateStore.search_history.length - 1].parameters) ==
           JSON.stringify(this.appStateStore.settings)
       ) {
         // -> same query as before, don't save this duplicate:
@@ -231,7 +226,7 @@ export default {
       httpClient
         .post("/org/data_map/add_search_history_item", history_item_body)
         .then(function (response) {
-          that.search_history.push(response.data)
+          that.appStateStore.search_history.push(response.data)
         })
     },
     request_map() {
@@ -547,7 +542,7 @@ export default {
         map_id: this.map_id,
       }
       httpClient.post("/data_backend/map/store", store_map_body).then(function (response) {
-        that.stored_maps.push(response.data)
+        that.appStateStore.stored_maps.push(response.data)
       })
     },
     delete_stored_map(stored_map_id) {
@@ -560,7 +555,7 @@ export default {
         .then(function (response) {
           let index_to_be_removed = null
           let i = 0
-          for (const map of that.stored_maps) {
+          for (const map of that.appStateStore.stored_maps) {
             if (map.id == stored_map_id) {
               index_to_be_removed = i
               break
@@ -568,7 +563,7 @@ export default {
             i += 1
           }
           if (index_to_be_removed !== null) {
-            that.stored_maps.splice(index_to_be_removed, 1)
+            that.appStateStore.stored_maps.splice(index_to_be_removed, 1)
           }
         })
     },
@@ -617,13 +612,13 @@ export default {
       // this is almost the first thing that is done when the page is being loaded
       // most importantly, it initializes the dataset_id, which then triggers other stuff
       const queryParams = new URLSearchParams(window.location.search)
-      if (queryParams.get("dataset_id") === null) {
-        this.appStateStore.settings.dataset_id = 6
+      if (queryParams.get("organization_id") === null) {
+        this.appStateStore.set_organization_id(1, /* change_history */ false)
         const emptyQueryParams = new URLSearchParams()
-        emptyQueryParams.set("dataset_id", this.appStateStore.settings.dataset_id)
+        emptyQueryParams.set("organization_id", this.appStateStore.organization_id)
         history.replaceState(null, null, "?" + emptyQueryParams.toString())
       } else if (
-        queryParams.get("dataset_id") === String(this.appStateStore.settings.dataset_id)
+        queryParams.get("organization_id") === String(this.appStateStore.organization_id)
       ) {
         // If this method was called because the user pressed the back arrow in the browser and
         // the dataset is the same, the stored_map might be different.
@@ -634,7 +629,7 @@ export default {
         }
       } else {
         // there is a new dataset_id in the parameters:
-        this.appStateStore.settings.dataset_id = parseInt(queryParams.get("dataset_id"))
+        this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")))
       }
     },
     show_score_info_chart() {
@@ -688,92 +683,29 @@ export default {
         },
       })
     },
-    on_dataset_id_change() {
+    on_organization_id_change() {
       const that = this
-
-      that.appStateStore.dataset = null
       this.reset_search_results_and_map()
-
-      httpClient
-        .post("/org/data_map/dataset", {
-          dataset_id: this.appStateStore.settings.dataset_id,
-        })
-        .then(function (response) {
-          that.appStateStore.dataset = response.data
-
-          const result_list_rendering = that.appStateStore.dataset.result_list_rendering
-          for (const field of ["title", "subtitle", "body", "image", "url"]) {
-            result_list_rendering[field] = eval(result_list_rendering[field])
-          }
-          that.result_list_rendering = result_list_rendering
-
-          const classifier_example_rendering =
-            that.appStateStore.dataset.classifier_example_rendering
-          for (const field of ["title", "subtitle", "body", "image", "url"]) {
-            classifier_example_rendering[field] = eval(classifier_example_rendering[field])
-          }
-          that.appStateStore.classifier_example_rendering = classifier_example_rendering
-
-          const hover_label_rendering = that.appStateStore.dataset.hover_label_rendering
-          for (const field of ["title", "subtitle", "body", "image"]) {
-            hover_label_rendering[field] = hover_label_rendering[field]
-              ? eval(hover_label_rendering[field])
-              : (item) => ""
-          }
-          that.$refs.embedding_map.hover_label_rendering = hover_label_rendering
-
-          const queryParams = new URLSearchParams(window.location.search)
-          if (
-            queryParams.get("dataset_id") === String(that.appStateStore.settings.dataset_id) &&
-            queryParams.get("map_id")
-          ) {
-            that.show_stored_map(queryParams.get("map_id"))
-          }
-        })
-
-      this.search_history = []
-      const get_history_body = {
-        dataset_id: this.appStateStore.settings.dataset_id,
-      }
-      httpClient
-        .post("/org/data_map/get_search_history", get_history_body)
-        .then(function (response) {
-          that.search_history = response.data
-        })
-
-      this.appStateStore.classifiers = []
-      const get_classifiers_body = {
-        dataset_id: this.appStateStore.settings.dataset_id,
-      }
-      httpClient
-        .post("/org/data_map/get_classifiers", get_classifiers_body)
-        .then(function (response) {
-          that.appStateStore.classifiers = response.data
-        })
-
-      this.stored_maps = []
-      const get_stored_maps_body = {
-        dataset_id: this.appStateStore.settings.dataset_id,
-      }
-      httpClient
-        .post("/org/data_map/get_stored_maps", get_stored_maps_body)
-        .then(function (response) {
-          that.stored_maps = response.data
-        })
     },
   },
   computed: {
     ...mapStores(useAppStateStore),
   },
   mounted() {
-    this.evaluate_url_query_parameters()
+    this.appStateStore.initialize()
+    this.appStateStore.retrieve_current_user()
+    this.appStateStore.retrieve_available_organizations(() => {
+      this.evaluate_url_query_parameters()
+    })
+    this.appStateStore.retrieve_stored_maps_history_and_classifiers()
+
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
     window.addEventListener("popstate", this.evaluate_url_query_parameters)
   },
   watch: {
-    "appStateStore.settings.dataset_id"() {
-      this.on_dataset_id_change()
+    "appStateStore.organization_id"() {
+      this.on_organization_id_change()
     },
   },
 }
@@ -1006,9 +938,9 @@ export default {
 
             <!-- history -->
             <div v-if="selected_tab === 'history'">
-              <ul v-if="Object.keys(search_history).length !== 0" role="list" class="pt-3">
+              <ul v-if="Object.keys(appState.search_history).length !== 0" role="list" class="pt-3">
                 <li
-                  v-for="history_item in search_history.slice().reverse()"
+                  v-for="history_item in appState.search_history.slice().reverse()"
                   :key="history_item.id"
                   class="justify-between pb-3">
                   <div class="flex flex-row gap-3">
@@ -1023,7 +955,7 @@ export default {
                 </li>
               </ul>
               <div
-                v-if="Object.keys(search_history).length === 0"
+                v-if="Object.keys(appState.search_history).length === 0"
                 class="flex h-20 flex-col place-content-center text-center">
                 <p class="flex-none text-gray-400">No History Yet</p>
               </div>
@@ -1040,9 +972,9 @@ export default {
                 </button>
               </div>
 
-              <ul v-if="Object.keys(stored_maps).length !== 0" role="list" class="pt-3">
+              <ul v-if="Object.keys(appState.stored_maps).length !== 0" role="list" class="pt-3">
                 <li
-                  v-for="stored_map in stored_maps"
+                  v-for="stored_map in appState.stored_maps"
                   :key="stored_map.name"
                   class="justify-between pb-3">
                   <div class="flex flex-row gap-3">
@@ -1062,7 +994,7 @@ export default {
                 </li>
               </ul>
               <div
-                v-if="Object.keys(stored_maps).length === 0"
+                v-if="Object.keys(appState.stored_maps).length === 0"
                 class="flex h-20 flex-col place-content-center text-center">
                 <p class="flex-none text-gray-400">No Stored Maps Yet</p>
               </div>
@@ -1124,17 +1056,17 @@ export default {
           <div class="mb-6 flex flex-row justify-center">
             <img
               class="h-12"
-              :src="appState.dataset ? appState.dataset.workspace_tool_logo_url : ''" />
+              :src="appState.organization ? appState.organization.workspace_tool_logo_url : ''" />
           </div>
           <div
             class="mb-2 flex-none text-center font-bold text-gray-400"
-            v-html="appState.dataset ? appState.dataset.workspace_tool_intro_text : ''"></div>
+            v-html="appState.organization ? appState.organization.workspace_tool_intro_text : ''"></div>
         </div>
       </div>
     </div>
 
     <div
-      v-if="appState.dataset ? !appState.dataset.workspace_tool_title : true"
+      v-if="appState.organization ? !appState.organization.workspace_tool_title : true"
       class="absolute -right-3 bottom-4 rounded-xl bg-black py-1 pl-3 pr-5 font-['Lexend'] shadow-sm">
       <span class="font-bold text-white">Quiddity</span>
       <span class="font-light text-gray-200">Workspace</span>
