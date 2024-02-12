@@ -1,5 +1,6 @@
 import { defineStore } from "pinia"
 import { inject } from "vue"
+import cborJs from "https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/+esm"
 
 import httpClient from "../api/httpClient"
 
