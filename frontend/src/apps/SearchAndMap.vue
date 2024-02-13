@@ -380,7 +380,7 @@ export default {
                     :rendering="appState.datasets[ds_and_item_id[0]].result_list_rendering"
                     @mouseenter="appState.highlighted_item_id = ds_and_item_id"
                     @mouseleave="appState.highlighted_item_id = null"
-                    @mousedown="appState.show_document_details_by_id(ds_and_item_id)"></ResultListItem>
+                    @mousedown="appState.show_document_details(ds_and_item_id)"></ResultListItem>
                 </li>
               </ul>
               <div
@@ -465,17 +465,17 @@ export default {
         ref="right_column"
         class="pointer-events-none flex flex-col overflow-hidden md:h-screen">
         <div
-          v-if="appState.selectedDocumentIdx !== -1 && appState.map_item_details.length > appState.selectedDocumentIdx"
+          v-if="appState.selected_document_ds_and_id !== null"
           class="pointer-events-auto flex w-full flex-initial overflow-hidden">
           <ObjectDetailsModal
-            :initial_item="map_item_details[appState.selectedDocumentIdx]"
-            :dataset="appState.datasets[map_item_details[appState.selectedDocumentIdx]._dataset_id]"
+            :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
+            :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
             :classifiers="appState.classifiers"
             :last_used_classifier_id="appState.last_used_classifier_id"
             @addToClassifier="
               (classifier_id, class_name, is_positive) => {
                 appState.add_item_to_classifier(
-                  appState.selectedDocumentIdx,
+                  appState.selected_document_ds_and_id,
                   classifier_id,
                   class_name,
                   is_positive
@@ -485,7 +485,7 @@ export default {
             @removeFromClassifier="
               (classifier_id, class_name) => {
                 appState.remove_item_from_classifier(
-                  appState.selectedDocumentIdx,
+                  appState.selected_document_ds_and_id,
                   classifier_id,
                   class_name
                 )

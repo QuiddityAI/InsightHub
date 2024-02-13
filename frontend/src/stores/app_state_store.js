@@ -57,8 +57,7 @@ export const useAppStateStore = defineStore("appState", {
       fields_already_received: new Set(),
 
       // selection:
-      selectedDocumentIdx: -1,
-      selectedDocumentDetails: null,
+      selected_document_ds_and_id: null,  // (dataset_id, item_id)
 
       // classifiers:
       classifiers: [],
@@ -402,8 +401,7 @@ export const useAppStateStore = defineStore("appState", {
       }
 
       // selection:
-      this.selectedDocumentIdx = -1
-      this.selectedDocumentDetails = null
+      this.selected_document_ds_and_id = null
     },
     reset_search_box() {
       this.settings.search.search_type = "external_input"
@@ -758,26 +756,17 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query_negative = ""
       this.request_search_results()
     },
-    show_document_details(pointIdx) {
-      this.selectedDocumentIdx = pointIdx
+    show_document_details(dataset_and_item_id) {
+      this.selected_document_ds_and_id = dataset_and_item_id
+      const pointIdx = this.mapState.per_point.item_id.indexOf(dataset_and_item_id)
       this.mapState.markedPointIdx = pointIdx
       this.mapState.visited_point_indexes.push(pointIdx)
       this.mapState.per_point.flatness[pointIdx] = 1.0
-      that.eventBus.emit("map_update_geometry")
-    },
-    show_document_details_by_id(item_id) {
-      for (const i of Array(this.map_item_details.length).keys()) {
-        if (this.map_item_details[i]._id == item_id) {
-          this.selectedDocumentIdx = i
-          this.mapState.markedPointIdx = i
-          break
-        }
-      }
+      this.eventBus.emit("map_update_geometry")
     },
     showSimilarItems() {
       this.settings.search.search_type = "similar_to_item"
-      this.settings.search.similar_to_item_id =
-        this.map_item_details[this.selectedDocumentIdx]._id
+      this.settings.search.similar_to_item_id = this.selected_document_ds_and_id
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.projection.use_polar_coordinates = true
@@ -788,14 +777,17 @@ export const useAppStateStore = defineStore("appState", {
       }
       const title_func = this.mapState.hover_label_rendering.title
       this.settings.search.origin_display_name = title_func(
-        this.map_item_details[this.selectedDocumentIdx]
+        this.map_item_details[this.selected_document_ds_and_id[0]][this.selected_document_ds_and_id[1]]
       )
       this.request_search_results()
     },
     close_document_details() {
-      this.selectedDocumentIdx = -1
+      this.selected_document_ds_and_id = null
       this.mapState.markedPointIdx = -1
-      this.selectedDocumentDetails = null
+    },
+    get_item_by_ds_and_id(dataset_and_item_id) {
+      const ds_items = this.map_item_details[dataset_and_item_id[0]]
+      return ds_items ? ds_items[dataset_and_item_id[1]] : null
     },
     store_current_map() {
       const that = this

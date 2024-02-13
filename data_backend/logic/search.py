@@ -164,7 +164,9 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
     if dataset.id == ABSCLUST_DATASET_ID:
         # similar item functionality doesn't work with AbsClust database as it doesn't contain vectors
         return [], {}, {}
-    similar_to_item_id = search_settings.similar_to_item_id
+    dataset_id, similar_to_item_id = search_settings.similar_to_item_id
+    if dataset_id != dataset.id:
+        return [], {}, {}
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
     if not all([similar_to_item_id is not None, limit, page is not None, dataset]):
@@ -259,8 +261,6 @@ def get_search_results_for_stored_map(map_data):
     timings = Timings()
     params = DotDict(map_data['parameters'])
     search_settings = params.search
-    vectorize_settings = params.vectorize
-    dataset = get_dataset(params.dataset_ids[0])
     purpose = 'list'
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0

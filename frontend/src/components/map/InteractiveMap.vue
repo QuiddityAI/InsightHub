@@ -824,7 +824,7 @@ export default {
       const pointSize = this.mapStateStore.per_point.size[closestIdx]
       const zoomAdjustment = (this.currentZoom - 1.0) * 0.05 + 1.0
       const pointSizeScreenPx =
-        (5.0 + 15.0 * pointSize) * zoomAdjustment * this.pointSizeFactor
+        (5.0 + 15.0 * pointSize) * zoomAdjustment * this.appStateStore.settings.frontend.rendering.point_size_factor
       const pointRadiusScreenPx = pointSizeScreenPx / 2
       // FIXME: as x and y may have different scale factors, the "closestDist" might be squashed in one direction
       // this should be fixed by unsqueezing it by the scale factor of the respective axis before
@@ -886,7 +886,8 @@ export default {
           this.updateGeometry()
         }
       } else {
-        this.$emit("point_selected", this.hoveredPointIdx)
+        const dataset_and_item_id = this.mapStateStore.per_point.item_id[this.hoveredPointIdx]
+        this.$emit("point_selected", dataset_and_item_id)
       }
     },
     updatePointVisibility() {
