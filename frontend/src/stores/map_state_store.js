@@ -8,9 +8,10 @@ export const useMapStateStore = defineStore("mapState", {
 
       passiveMarginsLRTB: [0, 0, 0, 0],
 
+      text_data: {},
       per_point: {
+        item_id: [],
         cluster_id: [],
-        text_data: [],
         x: [],
         y: [],
         size: [],
@@ -38,4 +39,10 @@ export const useMapStateStore = defineStore("mapState", {
       markedPointIdx: -1,
     }
   },
+  actions: {
+    get_item_by_index: (index) => {
+      const {ds_id, item_id} = this.per_point.item_id[index]
+      return this.text_data[ds_id][item_id]
+    },
+  }
 })

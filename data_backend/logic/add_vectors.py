@@ -18,7 +18,7 @@ from logic.generator_functions import get_generator_function_from_field
 from logic.search_common import get_required_fields
 
 
-def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fields, map_data, vectorize_stage_params_hash, timings):
+def add_w2v_vectors(items: dict[str, dict], query, params: DotDict, descriptive_text_fields, map_data, vectorize_stage_params_hash, timings):
     # last_w2v_embeddings_file_path might be used if search and vectorize settings are the same
     # or when narrowing down on subcluster of bigger map
     last_w2v_embeddings_file_path = map_data['results']['w2v_embeddings_file_path']
@@ -27,7 +27,7 @@ def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fie
             embeddings = pickle.load(f)
         try:
             query_embedding = embeddings["query"]
-            for item in search_results:
+            for item in items.values():
                 item_embedding = embeddings[item["_id"]]
                 item["w2v_vector"] = item_embedding
                 item["_score"] = np.dot(query_embedding, item_embedding)
@@ -41,19 +41,19 @@ def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fie
             return
 
     map_data["progress"]["step_title"] = "Training model"
-    corpus = [join_text_source_fields(item, descriptive_text_fields) for item in search_results]
+    corpus = [join_text_source_fields(item, descriptive_text_fields) for item in items.values()]
     vectorizer = GensimW2VVectorizer()
     vectorizer.prepare(corpus)
     timings.log("training w2v model")
 
     map_data["progress"]["step_title"] = "Generating vectors"
-    map_data["progress"]["total_steps"] = len(search_results)
+    map_data["progress"]["total_steps"] = len(items)
     map_data["progress"]["current_step"] = 0
 
     embeddings = {}
     query_embedding = vectorizer.get_embedding(query)
     embeddings["query"] = query_embedding
-    for i, item in enumerate(search_results):
+    for i, item in enumerate(items.values()):
         text = join_text_source_fields(item, descriptive_text_fields)
         item_embedding = vectorizer.get_embedding(text).tolist()
         item["w2v_vector"] = item_embedding
@@ -70,16 +70,16 @@ def add_w2v_vectors(search_results, query, params: DotDict, descriptive_text_fie
     timings.log("generating w2v embeddings")
 
 
-def add_missing_map_vectors(search_results, query, params: DotDict, map_data, dataset, timings):
+def add_missing_map_vectors(items: dict[str, dict], query, params: DotDict, map_data, dataset, timings):
     map_data["progress"]["step_title"] = "Generating vectors"
-    map_data["progress"]["total_steps"] = len(search_results)
+    map_data["progress"]["total_steps"] = len(items)
     map_data["progress"]["current_step"] = 0
 
     map_vector_field = dataset.object_fields[params.vectorize.map_vector_field]
     t1 = time.time()
 
     # try to get embeddings from cache:
-    for item in search_results:
+    for item in items.values():
         if item.get(map_vector_field.identifier) is not None:
             continue
         cache_key = str(dataset.id) + item['_id'] + map_vector_field.identifier
@@ -87,7 +87,7 @@ def add_missing_map_vectors(search_results, query, params: DotDict, map_data, da
         if cached_embedding is not None:
             item[map_vector_field.identifier] = cached_embedding
 
-    if not all([item.get(map_vector_field.identifier) is not None for item in search_results]):
+    if not all([item.get(map_vector_field.identifier) is not None for item in items.values()]):
         # if some or all vectors are still missing, generate them:
         batch_size = 128
         pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[map_vector_field.identifier])
@@ -95,8 +95,8 @@ def add_missing_map_vectors(search_results, query, params: DotDict, map_data, da
         missing_fields = required_fields - set(available_fields)
         if missing_fields:
             logging.warning(f"Some fields are missing in the search result data to generate missing vectors: {missing_fields}")
-        for batch_number in range(math.ceil(len(search_results) / batch_size)):
-            elements = search_results[batch_number*batch_size : (batch_number+1) * batch_size]
+        for batch_number in range(math.ceil(len(items) / batch_size)):
+            elements = list(items.values())[batch_number*batch_size : (batch_number+1) * batch_size]
             changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements)
             for i, item in enumerate(elements):
                 if map_vector_field.identifier in changed_fields[i]:
@@ -105,22 +105,22 @@ def add_missing_map_vectors(search_results, query, params: DotDict, map_data, da
             map_data["progress"]["current_step"] = batch_number * batch_size
         save_embedding_cache()
 
-    duration_per_item = (time.time() - t1) / len(search_results)
+    duration_per_item = (time.time() - t1) / len(items)
     timings.log(f"adding missing vectors ({duration_per_item * 1000:.1f} ms per item)")
 
     # check if scores need to be re-calculated:
-    scores = [item.get('_score') for item in search_results]
+    scores = [item.get('_score') for item in items.values()]
     if query and map_vector_field.generator and map_vector_field.generator.input_type == FieldType.TEXT \
         and (not all([score is not None for score in scores]) \
             or np.min(scores) == np.max(scores)):
         map_data["progress"]["step_title"] = "Generating scores"
-        map_data["progress"]["total_steps"] = len(search_results)
+        map_data["progress"]["total_steps"] = len(items)
         map_data["progress"]["current_step"] = 0
 
         generator_function = get_generator_function_from_field(map_vector_field)
         query_embedding = generator_function([[query]])[0]
 
-        for i, item in enumerate(search_results):
+        for i, item in enumerate(items.values()):
             item_embedding = item[map_vector_field.identifier]
             item["_score"] = np.dot(query_embedding, item_embedding)
 

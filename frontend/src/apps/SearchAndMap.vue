@@ -366,21 +366,21 @@ export default {
 
               <ul v-if="appState.search_result_ids.length !== 0" role="list" class="pt-1">
                 <li
-                  v-for="item_id in appState.search_result_ids
+                  v-for="ds_and_item_id in appState.search_result_ids
                     .filter(
                       (result, i) =>
                         appState.selected_cluster_id == null ||
                         appState.clusterIdsPerPoint[i] == appState.selected_cluster_id
                     )
                     .slice(0, 10)"
-                  :key="item_id.join('_')"
+                  :key="ds_and_item_id.join('_')"
                   class="justify-between pb-3">
                   <ResultListItem
-                    :initial_item="appState.search_result_items[item_id[0]][item_id[1]]"
-                    :rendering="appState.datasets[item_id[0]].result_list_rendering"
-                    @mouseenter="appState.highlighted_item_id = item_id[1]"
+                    :initial_item="appState.search_result_items[ds_and_item_id[0]][ds_and_item_id[1]]"
+                    :rendering="appState.datasets[ds_and_item_id[0]].result_list_rendering"
+                    @mouseenter="appState.highlighted_item_id = ds_and_item_id"
                     @mouseleave="appState.highlighted_item_id = null"
-                    @mousedown="appState.show_document_details_by_id(item_id[1])"></ResultListItem>
+                    @mousedown="appState.show_document_details_by_id(ds_and_item_id)"></ResultListItem>
                 </li>
               </ul>
               <div

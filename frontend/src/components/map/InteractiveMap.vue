@@ -145,15 +145,12 @@ export default {
         this.$emit("cluster_hover_end")
         return
       }
-      for (const i of Array(this.mapStateStore.per_point.text_data.length).keys()) {
-        if (this.mapStateStore.per_point.text_data[i]._id == this.appStateStore.highlighted_item_id) {
-          this.hoveredPointIdx = i
-          // TODO: highlighted_cluster_id should be changed directly, but currently accessing appState breaks this component
-          this.$emit("cluster_hovered", this.mapStateStore.per_point.cluster_id[i])
-          this.updateUniforms()
-          break
-        }
-      }
+      this.hoveredPointIdx = this.mapStateStore.per_point.item_id.findIndex(
+        (ds_and_item_id) => ds_and_item_id == this.appStateStore.highlighted_item_id
+      )
+      // TODO: highlighted_cluster_id should be changed directly, but currently accessing appState breaks this component
+      this.$emit("cluster_hovered", this.mapStateStore.per_point.cluster_id[this.hoveredPointIdx])
+      this.updateUniforms()
     },
     "appStateStore.settings.frontend.rendering.style"() {
       this.updateGeometry()
@@ -161,9 +158,10 @@ export default {
   },
   methods: {
     resetData() {
+      this.mapStateStore.text_data = {}
       this.mapStateStore.per_point = {
+        item_id: [],
         cluster_id: [],
-        text_data: [],
         x: [],
         y: [],
         size: [],
@@ -1001,11 +999,11 @@ export default {
       style="transform: translate(-50%, 50%)">
       <div class="px-1 text-xs text-gray-500">
         <div
-          v-if="mapState.per_point.text_data.length > pointIndex && mapState.hover_label_rendering"
+          v-if="mapState.per_point.item_id.length > pointIndex && mapState.hover_label_rendering"
           class="flex flex-col items-center rounded bg-white/50 text-xs text-gray-500">
           <img
-            v-if="mapState.hover_label_rendering.image(mapState.per_point.text_data[pointIndex])"
-            :src="mapState.hover_label_rendering.image(mapState.per_point.text_data[pointIndex])"
+            v-if="mapState.hover_label_rendering.image(mapState.get_item_by_index(pointIndex))"
+            :src="mapState.hover_label_rendering.image(mapState.get_item_by_index(pointIndex))"
             class="h-24" />
         </div>
       </div>
@@ -1025,12 +1023,12 @@ export default {
         }"
         style="transform: translate(-50%, 50%)">
         <div
-          v-if="mapState.per_point.text_data.length > pointIndex && mapState.hover_label_rendering"
+          v-if="mapState.per_point.item_id.length > pointIndex && mapState.hover_label_rendering"
           class="flex flex-col items-center rounded bg-white px-1 text-gray-500 text-[10px] max-w-[140px]">
-          <div v-html="mapState.hover_label_rendering.title(mapState.per_point.text_data[pointIndex])"></div>
+          <div v-html="mapState.hover_label_rendering.title(mapState.get_item_by_index(pointIndex))"></div>
           <img
-            v-if="mapState.hover_label_rendering.image(mapState.per_point.text_data[pointIndex])"
-            :src="mapState.hover_label_rendering.image(mapState.per_point.text_data[pointIndex])"
+            v-if="mapState.hover_label_rendering.image(mapState.get_item_by_index(pointIndex))"
+            :src="mapState.hover_label_rendering.image(mapState.get_item_by_index(pointIndex))"
             class="h-24" />
         </div>
       </div>
@@ -1080,16 +1078,16 @@ export default {
         'max-width': '200px',
       }">
       <div
-        v-if="mapState.per_point.text_data.length > mapState.hoveredPointIdx && mapState.hover_label_rendering"
+        v-if="mapState.per_point.item_id.length > mapState.hoveredPointIdx && mapState.hover_label_rendering"
         class="flex flex-col items-center rounded bg-white px-1 text-xs text-gray-500">
-        <div v-html="mapState.hover_label_rendering.title(mapState.per_point.text_data[hoveredPointIdx])"></div>
+        <div v-html="mapState.hover_label_rendering.title(mapState.get_item_by_index(hoveredPointIdx))"></div>
         <img
-          v-if="mapState.hover_label_rendering.image(mapState.per_point.text_data[hoveredPointIdx])"
-          :src="mapState.hover_label_rendering.image(mapState.per_point.text_data[hoveredPointIdx])"
+          v-if="mapState.hover_label_rendering.image(mapState.get_item_by_index(hoveredPointIdx))"
+          :src="mapState.hover_label_rendering.image(mapState.get_item_by_index(hoveredPointIdx))"
           class="h-24" />
       </div>
       <div
-        v-if="mapState.per_point.text_data.length <= hoveredPointIdx || !mapState.hover_label_rendering"
+        v-if="mapState.per_point.item_id.length <= hoveredPointIdx || !mapState.hover_label_rendering"
         class="rounded bg-white px-1 text-xs text-gray-500">
         loading...
       </div>

@@ -8,7 +8,7 @@ import hdbscan
 from utils.regex_tokenizer import tokenize
 from utils.collect_timings import Timings
 from utils.dotdict import DotDict
-from utils.helpers import normalize_array, join_text_source_fields
+from utils.helpers import normalize_array, join_text_source_fields, get_field_from_all_items
 
 
 def clusterize_results(projections, clusterizer_parameters: DotDict):
@@ -21,26 +21,28 @@ def clusterize_results(projections, clusterizer_parameters: DotDict):
     return clusterer.labels_
 
 
-def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fields, timings: Timings):
-    num_clusters = max(cluster_labels) + 1
+def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[str, str]], items_by_dataset: dict[str, dict[str, dict]], datasets: dict[str, DotDict], timings: Timings):
+    num_clusters: int = max(cluster_id_per_point) + 1
     if num_clusters <= 0:
         return []
-    texts_per_cluster = [""] * num_clusters
-    texts_per_item = []
+    texts_per_cluster: list[str] = [""] * num_clusters
+    texts_per_item: list[str] = []
     point_positions_per_cluster = [[] for i in range(num_clusters)]
     scores_per_cluster = [[] for i in range(num_clusters)]
-    normalized_scores = normalize_array(np.array([result['_score'] for result in results]))
+    normalized_scores = normalize_array(np.array(get_field_from_all_items(items_by_dataset, sorted_ids, "score", 0.0)))
     max_text_length = 512
     field_boundary_indicator = "_stop_"
     field_boundary_indicator_padded = " _stop_ "
 
-    for result_index, cluster_index in enumerate(cluster_labels):
-        if cluster_index <= -1: continue
-        text = join_text_source_fields(results[result_index], descriptive_text_fields, field_boundary_indicator_padded)
+    for result_index, cluster_id in enumerate(cluster_id_per_point):
+        if cluster_id <= -1: continue
+        ds_id, item_id = sorted_ids[result_index]
+        descriptive_text_fields = datasets[ds_id].get("descriptive_text_fields", [])
+        text = join_text_source_fields(items_by_dataset[ds_id][item_id], descriptive_text_fields, field_boundary_indicator_padded)
         texts_per_item.append(text)
-        texts_per_cluster[cluster_index] += f" {field_boundary_indicator} {text[:max_text_length]}"
-        point_positions_per_cluster[cluster_index].append(positions[result_index])
-        scores_per_cluster[cluster_index].append(normalized_scores[result_index])
+        texts_per_cluster[cluster_id] += f" {field_boundary_indicator} {text[:max_text_length]}"
+        point_positions_per_cluster[cluster_id].append(positions[result_index])
+        scores_per_cluster[cluster_id].append(normalized_scores[result_index])
     timings.log("collect information for clusters")
 
     # IDEA: get top words from all clusters, then subtract all other vectors from vector from current
@@ -82,9 +84,9 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
 
     cluster_data = []
 
-    for cluster_index in range(num_clusters):
+    for cluster_id in range(num_clusters):
         # converting scipy sparse array to numpy using toarray() and selecting the only row [0]
-        sort_indexes_of_important_words = np.argsort(tf_idf_matrix[cluster_index].toarray()[0])  # type: ignore
+        sort_indexes_of_important_words = np.argsort(tf_idf_matrix[cluster_id].toarray()[0])  # type: ignore
         # oversample 6 instead of 3, remove near duplicates, then take first 3:
         most_important_words_idx = list(sort_indexes_of_important_words[-6:][::-1])
         for i in range(len(most_important_words_idx) - 1, -1, -1):
@@ -107,14 +109,14 @@ def get_cluster_titles(cluster_labels, positions, results, descriptive_text_fiel
         most_important_words = words[most_important_words_idx[:3]]
         # Note: score of each word could be obtained like this:
         # score = tf_idf_matrix[cluster_index].toarray()[0][word_idx]  # type: ignore
-        cluster_center = np.mean(point_positions_per_cluster[cluster_index], axis=0).tolist()
-        min_score = min(scores_per_cluster[cluster_index])
-        max_score = max(scores_per_cluster[cluster_index])
-        avg_score = np.mean(scores_per_cluster[cluster_index])
-        cluster_title = ", ".join(list(most_important_words)) + f" ({len(point_positions_per_cluster[cluster_index])}x, {avg_score * 100:.0f}%)"
+        cluster_center = np.mean(point_positions_per_cluster[cluster_id], axis=0).tolist()
+        min_score = min(scores_per_cluster[cluster_id])
+        max_score = max(scores_per_cluster[cluster_id])
+        avg_score = np.mean(scores_per_cluster[cluster_id])
+        cluster_title = ", ".join(list(most_important_words)) + f" ({len(point_positions_per_cluster[cluster_id])}x, {avg_score * 100:.0f}%)"
         cluster_title_html = f'<span style="font-weight: bold;">{most_important_words[0]}</span>, '
-        cluster_title_html += ", ".join(list(most_important_words[1:])) + f" ({len(point_positions_per_cluster[cluster_index])}x, {avg_score * 100:.0f}%)"
-        cluster_data.append({"id": cluster_index, "title": cluster_title, "title_html": cluster_title_html, "center": cluster_center,
+        cluster_title_html += ", ".join(list(most_important_words[1:])) + f" ({len(point_positions_per_cluster[cluster_id])}x, {avg_score * 100:.0f}%)"
+        cluster_data.append({"id": cluster_id, "title": cluster_title, "title_html": cluster_title_html, "center": cluster_center,
                              "min_score": min_score, "max_score": max_score, "avg_score": avg_score})
     cluster_data = sorted(cluster_data, key=lambda cluster: cluster["avg_score"], reverse=True)
     timings.log("Tf-Idf for cluster titles")

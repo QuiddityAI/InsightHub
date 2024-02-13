@@ -17,7 +17,7 @@ THUMBNAIL_ATLAS_DIR = "/data/quiddity_data/thumbnail_atlas/"
 THUMBNAIL_SIZE = 256
 
 
-def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str],
+def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | None],
                            sprite_size: int, on_success: Callable,
                            atlas_total_width: int = 4096,):
     if not os.path.exists(THUMBNAIL_CACHE_DIR):

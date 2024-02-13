@@ -1,3 +1,4 @@
+from collections import defaultdict
 from copy import deepcopy
 import logging
 from threading import Thread
@@ -11,7 +12,7 @@ from PIL import Image
 # import umap  # imported lazily when used
 
 from utils.collect_timings import Timings
-from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions
+from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions, get_field_from_all_items
 from utils.dotdict import DotDict
 
 from database_client.django_client import get_dataset, get_stored_map_data
@@ -19,7 +20,7 @@ from database_client.django_client import get_dataset, get_stored_map_data
 from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
 from logic.search import get_search_results, get_full_results_from_meta_info
-from logic.search_common import fill_in_details_from_text_storage_list
+from logic.search_common import fill_in_details_from_text_storage
 from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
     projection_stage_hash_to_map_id, get_map_parameters_hash, get_search_stage_hash, \
     get_vectorize_stage_hash, get_projection_stage_hash
@@ -34,7 +35,7 @@ default_map_data = {
     "errors": [],
     "is_stored": False,
     "parameters": {
-            # dataset_id
+            # dataset_ids
             # search settings
             # vectorize settings
             # projection settings
@@ -47,13 +48,12 @@ default_map_data = {
         "step_title": "Preparation",
         "projections_available": False,
     },
-    "map_rendering": None,
     "results": {
         "search_result_meta_information": {},
+        "hover_label_data": {},  # dataset_id -> item_id -> data
         "per_point_data": {
-            "item_ids": [],
+            "item_ids": [],  # list of tuples (dataset_id, item_id)
             "scores": [],
-            "hover_label_data": [],
             "positions_x": [],
             "positions_y": [],
             "cluster_ids": [],
@@ -131,14 +131,13 @@ def generate_map(map_id, ignore_cache):
         map_data['results']['thumbnail_atlas_filename'] = origin_map['results']['thumbnail_atlas_filename']
         map_data['results']['thumbnail_sprite_size'] = origin_map['results']['thumbnail_sprite_size']
 
-    # TODO: support multiple datasets, this is just a workaround to make it work with one again
-    dataset_id = params.dataset_ids[0]
-    dataset = get_dataset(dataset_id)
+    datasets = {dataset_id: get_dataset(dataset_id) for dataset_id in params.dataset_ids}
     timings.log("map preparation")
 
     map_vector_field = params.vectorize.map_vector_field
     thumbnail_atlas_thread = None
-    search_results = None
+    sorted_ids: list[tuple[str, str]] = []
+    items_by_dataset = {}
 
     search_phase_is_needed = not similar_map or vectorize_stage_params_hash != get_vectorize_stage_hash(map_data['last_parameters']) or ignore_cache
 
@@ -150,18 +149,23 @@ def generate_map(map_id, ignore_cache):
         map_data["results"]["thumbnail_atlas_filename"] = deepcopy(similar_map["results"].get("thumbnail_atlas_filename"))
         map_data["results"]["thumbnail_sprite_size"] = deepcopy(similar_map["results"].get("thumbnail_sprite_size"))
         map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
-        map_data["results"]["per_point_data"]["hover_label_data"] = deepcopy(similar_map["results"]["per_point_data"]["hover_label_data"])
+        map_data["results"]["hover_label_data"] = deepcopy(similar_map["results"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
-        search_results = get_full_results_from_meta_info(dataset, params.vectorize, search_result_meta_information, 'map', timings)
+        sorted_ids = map_data["results"]["per_point_data"]["item_ids"]
+        for ds_id, ds_items in search_result_meta_information.items():
+            dataset = datasets[ds_id]
+            _, ds_full_items = get_full_results_from_meta_info(dataset, params.vectorize, ds_items, 'map', timings)
+            items_by_dataset[ds_id] = ds_full_items
         timings.log("reusing vectorize stage results")
     else:
         map_data['progress']['step_title'] = "Getting search results"
         params_str = json.dumps(map_data["parameters"], indent=2)
         search_results_all = get_search_results(params_str, purpose='map', timings=timings)
-        search_results = search_results_all['items']
+        sorted_ids = search_results_all['sorted_ids']
+        items_by_dataset = search_results_all['items_by_dataset']
         map_data['results']['search_result_score_info'] = search_results_all['score_info']
 
-        if not search_results:
+        if not sorted_ids:
             map_data["errors"].append("No results found")
             map_data["results"]["timings"] = timings.get_timestamps()
             map_data["finished"] = True
@@ -170,14 +174,13 @@ def generate_map(map_id, ignore_cache):
         timings.log("database query")
 
         # thumbnail atlas:
-        thumbnail_field = dataset.thumbnail_image
-        if thumbnail_field:
+        if any([datasets[ds_id].thumbnail_image for ds_id in datasets]):
             search_params_hash = get_search_stage_hash(params)
             sprite_size = params.search.get("thumbnail_sprite_size", "auto")
             if sprite_size == "auto":
-                if len(search_results) <= pow(4096 / 256, 2):
+                if len(sorted_ids) <= pow(4096 / 256, 2):
                     sprite_size = 256
-                elif len(search_results) <= pow(4096 / 128, 2):
+                elif len(sorted_ids) <= pow(4096 / 128, 2):
                     sprite_size = 128
                 else:
                     sprite_size = 64
@@ -189,7 +192,7 @@ def generate_map(map_id, ignore_cache):
             else:
                 # don't leave the field empty, otherwise the last atlas is still visible
                 map_data["results"]["thumbnail_atlas_filename"] = "loading"
-                thumbnail_uris = [item.get(thumbnail_field, None) for item in search_results]
+                thumbnail_uris = [items_by_dataset[ds_id][item_id][datasets[ds_id].thumbnail_image] if datasets[ds_id].thumbnail_image else None for (ds_id, item_id) in sorted_ids]
                 def _generate_thumbnail_atlas():
                     t1 = time.time()
                     def _on_success():
@@ -201,24 +204,26 @@ def generate_map(map_id, ignore_cache):
                 thumbnail_atlas_thread = Thread(target=_generate_thumbnail_atlas)
                 thumbnail_atlas_thread.start()
 
-        map_data["results"]["per_point_data"]["item_ids"] = [item["_id"] for item in search_results]
+        map_data["results"]["per_point_data"]["item_ids"] = sorted_ids
 
-        hover_label_data_total = []
-        for item in search_results:
+        hover_label_data_total = defaultdict(dict)
+        for ds_id, item_id in sorted_ids:
+            item = items_by_dataset[ds_id][item_id]
             hover_label_data = {}
             hover_label_data['_id'] = item['_id']
             hover_label_data['_dataset_id'] = item['_dataset_id']
             hover_label_data['_score'] = item['_score']
             hover_label_data['_reciprocal_rank_score'] = item['_reciprocal_rank_score']
             hover_label_data['_origins'] = item['_origins']
-            for field in dataset.hover_label_rendering.required_fields:
+            for field in datasets[ds_id].hover_label_rendering.required_fields:
                 hover_label_data[field] = item.get(field, None)
-            hover_label_data_total.append(hover_label_data)
+            hover_label_data_total[ds_id][item_id] = hover_label_data
 
-        map_data["results"]["per_point_data"]["hover_label_data"] = hover_label_data_total
+        map_data["results"]["hover_label_data"] = hover_label_data_total
 
-    assert search_results is not None
-    all_map_vectors_present = all([item.get(params.vectorize.map_vector_field) is not None for item in search_results])
+    assert len(sorted_ids)
+    assert items_by_dataset != {}
+    all_map_vectors_present = all(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, None))
     projection_phase_is_needed = not similar_map or projection_stage_params_hash != get_projection_stage_hash(map_data['last_parameters']) or ignore_cache
     adding_missing_vectors_is_needed = search_phase_is_needed or (projection_phase_is_needed and not all_map_vectors_present)
     # TODO: decide what to do with secondary_map_vector
@@ -229,20 +234,25 @@ def generate_map(map_id, ignore_cache):
         if params.search.search_type == 'cluster' and origin_map is not None:
             query = origin_map['parameters']['search']['all_field_query']
         if map_vector_field == "w2v_vector":
-            add_w2v_vectors(search_results, query, params, dataset.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
-        elif dataset.object_fields[params.vectorize.map_vector_field].generator \
-                and not all_map_vectors_present:
-            add_missing_map_vectors(search_results, query, params, map_data, dataset, timings)
+            for ds_id, ds_items in items_by_dataset.items():
+                dataset = datasets[ds_id]
+                add_w2v_vectors(ds_items, query, params, dataset.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
+        elif not all_map_vectors_present:
+            for ds_id, ds_items in items_by_dataset.items():
+                dataset = datasets[ds_id]
+                if dataset.object_fields[params.vectorize.map_vector_field].generator:
+                    add_missing_map_vectors(ds_items, query, params, map_data, dataset, timings)
 
-        search_result_meta_information = {}
-        for item in search_results:
-            search_result_meta_information[item['_id']] = {
-                field: item[field] for field in ['_id', '_origins', '_score', '_reciprocal_rank_score']
-            }
+        search_result_meta_information = defaultdict(dict)
+        for ds_id, ds_item in items_by_dataset.items():
+            for item_id, item in ds_item.items():
+                search_result_meta_information[ds_id][item_id] = {
+                    field: item[field] for field in ['_id', '_origins', '_score', '_reciprocal_rank_score']
+                }
         map_data['results']['search_result_meta_information'] = search_result_meta_information
 
     projection_parameters = params.projection
-    scores = [e["_score"] for e in search_results]
+    scores = get_field_from_all_items(items_by_dataset, sorted_ids, "_score", 0.0)
     map_data["results"]["per_point_data"]["scores"] = scores
     scores = np.array(scores)
 
@@ -256,32 +266,34 @@ def generate_map(map_id, ignore_cache):
         map_data["progress"]["embeddings_available"] = True
         timings.log("reusing projection stage results")
     else:
-        cartesian_positions = np.zeros([len(search_results), 2])
-        final_positions = np.zeros([len(search_results), 2])
+        cartesian_positions = np.zeros([len(sorted_ids), 2])
+        final_positions = np.zeros([len(sorted_ids), 2])
         if projection_parameters.x_axis.type == "number_field":
             field = projection_parameters.x_axis.parameter
-            fill_in_details_from_text_storage_list(dataset.id, search_results, [field])
-            cartesian_positions[:, 0] = [e.get(field, -1) for e in search_results]
+            for ds_id, ds_items in items_by_dataset.items():
+                fill_in_details_from_text_storage(ds_id, ds_items, [field])
+            cartesian_positions[:, 0] = get_field_from_all_items(items_by_dataset, sorted_ids, field, -1)
         elif projection_parameters.x_axis.type == "count":
-            cartesian_positions[:, 0] = [len(e.get(projection_parameters.x_axis.parameter, [])) for e in search_results]
+            cartesian_positions[:, 0] = [len(v) for v in get_field_from_all_items(items_by_dataset, sorted_ids, projection_parameters.x_axis.parameter, [])]
         elif projection_parameters.x_axis.type == "rank":
-            cartesian_positions[:, 0] = list(range(len(search_results)))
+            cartesian_positions[:, 0] = list(range(len(sorted_ids)))
         elif projection_parameters.x_axis.type == "score":
-            cartesian_positions[:, 0] = [e.get("_score", 0.0) for e in search_results]
+            cartesian_positions[:, 0] = get_field_from_all_items(items_by_dataset, sorted_ids, "_score", 0.0)
             # TODO: fulltext score
         elif projection_parameters.x_axis.type == "classifier":
             # TODO
             pass
         if projection_parameters.y_axis.type == "number_field":
             field = projection_parameters.y_axis.parameter
-            fill_in_details_from_text_storage_list(dataset.id, search_results, [field])
-            cartesian_positions[:, 1] = [e.get(field, -1) for e in search_results]
+            for ds_id, ds_items in items_by_dataset.items():
+                fill_in_details_from_text_storage(ds_id, ds_items, [field])
+            cartesian_positions[:, 1] = get_field_from_all_items(items_by_dataset, sorted_ids, field, -1)
         elif projection_parameters.y_axis.type == "count":
-            cartesian_positions[:, 1] = [len(e.get(projection_parameters.y_axis.parameter, [])) for e in search_results]
+            cartesian_positions[:, 1] = [len(v) for v in get_field_from_all_items(items_by_dataset, sorted_ids, projection_parameters.y_axis.parameter, [])]
         elif projection_parameters.y_axis.type == "rank":
-            cartesian_positions[:, 1] = list(range(len(search_results)))
+            cartesian_positions[:, 1] = list(range(len(sorted_ids)))
         elif projection_parameters.y_axis.type == "score":
-            cartesian_positions[:, 1] = [e.get("_score", 0.0) for e in search_results]
+            cartesian_positions[:, 1] = get_field_from_all_items(items_by_dataset, sorted_ids, "_score", 0.0)
             # TODO: fulltext score
         elif projection_parameters.y_axis.type == "classifier":
             # TODO
@@ -307,7 +319,7 @@ def generate_map(map_id, ignore_cache):
             vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(dataset.object_fields[map_vector_field])
             # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
             dummy_vector = np.zeros(vector_size)
-            vectors = np.asarray([e.get(map_vector_field, dummy_vector) for e in search_results])
+            vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, dummy_vector))
             timings.log("convert to numpy")
 
             def apply_projections_to_positions(raw_projections):
@@ -356,13 +368,13 @@ def generate_map(map_id, ignore_cache):
     run_clusterize_and_render_stage = True  # just to label this stage
     if run_clusterize_and_render_stage:
         map_data['progress']['step_title'] = "Clusterize results"
-        cluster_id_per_point = clusterize_results(raw_projections, params.rendering.clusterizer_parameters)
+        cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, params.rendering.clusterizer_parameters)
         map_data["results"]["per_point_data"]["cluster_ids"] = cluster_id_per_point.tolist()
         timings.log("clustering")
 
         map_data['progress']['step_title'] = "Find cluster titles"
-        if dataset.descriptive_text_fields:
-            cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, search_results, dataset.descriptive_text_fields, timings)
+        if any(datasets[ds_id].descriptive_text_fields for ds_id in datasets.keys()):
+            cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, timings)
             map_data["results"]["clusters"] = cluster_data
         else:
             map_data["results"]["clusters"] = {}
@@ -372,15 +384,16 @@ def generate_map(map_id, ignore_cache):
             attr_parameter = params.rendering[attr].parameter
             if attr_type == "number_field":
                 field = attr_parameter
-                fill_in_details_from_text_storage_list(dataset.id, search_results, [field])
-                values = [e.get(field) or 0.0 for e in search_results]
+                for ds_id, ds_items in items_by_dataset.items():
+                    fill_in_details_from_text_storage(ds_id, ds_items, [field])
+                values = get_field_from_all_items(items_by_dataset, sorted_ids, field, 0.0)
                 map_data["results"]["per_point_data"][attr] = values
             elif attr_type == "count":
-                map_data["results"]["per_point_data"][attr] = [len(e.get(attr_parameter, [])) for e in search_results]
+                map_data["results"]["per_point_data"][attr] = [len(v) for v in get_field_from_all_items(items_by_dataset, sorted_ids, attr_parameter, [])]
             elif attr_type == "rank":
-                map_data["results"]["per_point_data"][attr] = list(range(len(search_results)))
+                map_data["results"]["per_point_data"][attr] = list(range(len(sorted_ids)))
             elif attr_type == "score":
-                values = [e.get("_score") for e in search_results]
+                values = get_field_from_all_items(items_by_dataset, sorted_ids, "_score", 0.0)
                 map_data["results"]["per_point_data"][attr] = values
             elif attr_type == "cluster_idx":
                 map_data["results"]["per_point_data"][attr] = cluster_id_per_point.tolist()

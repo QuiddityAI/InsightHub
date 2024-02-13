@@ -544,7 +544,6 @@ export const useAppStateStore = defineStore("appState", {
 
       // note: these may be needed in the future, pay attention to remove them in this case here
       const not_needed = [
-        "item_ids",
         "raw_projections",
         "search_result_meta_information",
         "parameters",
@@ -607,17 +606,18 @@ export const useAppStateStore = defineStore("appState", {
 
       const results = data["results"]
       if (results) {
-        const results_per_point = results["per_point_data"]
-        if (
-          results_per_point["hover_label_data"] &&
-          results_per_point["hover_label_data"].length > 0
-        ) {
-          that.map_item_details = results_per_point["hover_label_data"]
-          that.mapState.per_point.text_data =
-            results_per_point["hover_label_data"]
-          that.search_result_ids = results_per_point["hover_label_data"]  // FIXME
-          that.search_result_items = results_per_point["hover_label_data"]
+        if (results["hover_label_data"] && Object.keys(results["hover_label_data"]).length > 0) {
+          that.map_item_details = results["hover_label_data"]
+          that.mapState.text_data = results["hover_label_data"]
+          that.search_result_items = results["hover_label_data"]
           that.fields_already_received.add("hover_label_data")
+        }
+
+        const results_per_point = results["per_point_data"]
+        if (results_per_point["item_ids"]?.length > 0) {
+          that.search_result_ids = results_per_point["item_ids"]
+          that.mapState.per_point.item_id = results_per_point["item_ids"]
+          that.fields_already_received.add("item_ids")
         }
 
         // TODO: restore good gamma corrections:
@@ -638,13 +638,10 @@ export const useAppStateStore = defineStore("appState", {
         ]) {
           if (results_per_point[attr] && results_per_point[attr].length > 0) {
             const attr_params = that.settings.rendering[attr]
-            if (
-              ["hue", "secondary_hue"].includes(attr) &&
-              (["cluster_idx", "origin_query_idx"].includes(attr_params.type) ||
-                (attr_params.type == "number_field" &&
-                  that.datasets[that.settings.dataset_ids[0]].object_fields[attr_params.parameter]  // FIXME: only valid for first dataset
-                    .field_type == FieldType.INTEGER))
-            ) {
+            const is_hue_attr = ["hue", "secondary_hue"].includes(attr)
+            const is_integer_attr_type = ["cluster_idx", "origin_query_idx"].includes(attr_params.type)
+            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.settings.dataset_ids[0]].object_fields[attr_params.parameter].field_type == FieldType.INTEGER
+            if (is_hue_attr && (is_integer_attr_type || is_integer_field)) {
               // if an integer value is assigned to a hue value, we need to make sure that the last value doesn't have
               // the same hue as the first value:
               results_per_point[attr].push(Math.max(...results_per_point[attr]) + 1)
@@ -662,10 +659,7 @@ export const useAppStateStore = defineStore("appState", {
           }
         }
 
-        if (
-          results_per_point["cluster_ids"] &&
-          results_per_point["cluster_ids"].length > 0
-        ) {
+        if (results_per_point["cluster_ids"]?.length > 0) {
           that.mapState.per_point.cluster_id = results_per_point["cluster_ids"]
           that.clusterIdsPerPoint = results_per_point["cluster_ids"]
           that.fields_already_received.add("cluster_ids")
@@ -676,17 +670,11 @@ export const useAppStateStore = defineStore("appState", {
         }
 
         let should_update_geometry = false
-        if (
-          results_per_point["positions_x"] &&
-          results_per_point["positions_x"].length > 0
-        ) {
+        if (results_per_point["positions_x"]?.length > 0) {
           that.mapState.per_point.x = results_per_point["positions_x"]
           should_update_geometry = true
         }
-        if (
-          results_per_point["positions_y"] &&
-          results_per_point["positions_y"].length > 0
-        ) {
+        if (results_per_point["positions_y"]?.length > 0) {
           that.mapState.per_point.y = results_per_point["positions_y"]
           should_update_geometry = true
         }
@@ -875,7 +863,8 @@ export const useAppStateStore = defineStore("appState", {
       if (!classifier) return
 
       this.last_used_classifier_id = classifier.id
-      const item_id = this.map_data.results.per_point_data.hover_label_data[item_index]._id
+      const {dataset_id, item_id} = this.map_data.results.per_point.item_id[item_index]
+      // FIXME: submit dataset_id
       const add_item_to_classifier_body = {
         classifier_id: classifier.id,
         is_positive: is_positive,
@@ -907,7 +896,8 @@ export const useAppStateStore = defineStore("appState", {
     },
     remove_item_from_classifier(item_index, classifier_id, class_name) {
       const that = this
-      const item_id = this.map_data.results.per_point_data.hover_label_data[item_index]._id
+      const {dataset_id, item_id} = this.map_data.results.per_point.item_id[item_index]
+      // FIXME: submit dataset_id
       const body = {
         classifier_id: classifier_id,
         class_name: class_name,

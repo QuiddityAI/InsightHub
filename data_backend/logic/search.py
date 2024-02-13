@@ -1,4 +1,5 @@
 import copy
+import itertools
 import json
 import logging
 from functools import lru_cache
@@ -29,7 +30,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         timings = Timings()
     params = DotDict(json.loads(params_str))
 
-    all_ids = []
+    sorted_id_sets = []
     all_items_by_dataset = {}
     all_score_info = {}
     for dataset_id in params.dataset_ids:
@@ -55,9 +56,12 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
             logging.error("Unsupported search type: " + params.search.search_type)
             sorted_ids = []
             full_items = {}
-        all_ids += [(dataset_id, item_id) for item_id in sorted_ids]
+        sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
         all_items_by_dataset[dataset_id] = full_items
         all_score_info.update(score_info)
+
+    # interleave results from different datasets:
+    all_ids = [x for x in itertools.chain(*itertools.zip_longest(*sorted_id_sets)) if x is not None]
 
     result = {
         "sorted_ids": all_ids,
@@ -296,7 +300,7 @@ def get_search_results_for_global_map(dataset, search_settings: DotDict, vectori
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
 
 
-def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_meta_info: dict, purpose: str, timings) -> tuple:
+def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_meta_info: dict, purpose: str, timings) -> tuple[list[str], dict[str, dict]]:
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
     return sort_items_and_complete_them(dataset, search_result_meta_info, required_fields, len(search_result_meta_info), timings)
 

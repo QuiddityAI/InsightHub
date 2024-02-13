@@ -201,6 +201,8 @@ def retrive_map_results():
         del result['results']['clusters']
     if 'parameters' in exclude_fields and 'parameters' in result:
         del result['parameters']
+    if 'hover_label_data' in exclude_fields and 'hover_label_data' in result['results']:
+        del result['results']['hover_label_data']
 
     use_cbor = request.headers.get('Accept') == "application/cbor"
     if use_cbor:
