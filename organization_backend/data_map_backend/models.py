@@ -46,6 +46,11 @@ class LanguageAnalysis(models.TextChoices):
     HINDI = "hindi", "Hindi"
 
 
+class SourcePlugin(models.TextChoices):
+    INTERNAL_OPENSEARCH_QDRANT = "INTERNAL_OPENSEARCH_QDRANT", "Internal DB (OpenSearch + Qdrant)"
+    BRAVE_WEB_API = "BRAVE_WEB_API", "Brave Web Search API"
+
+
 class EmbeddingSpace(models.Model):
     name = models.CharField(
         verbose_name="Name",
@@ -305,6 +310,13 @@ class Dataset(models.Model):
     is_public = models.BooleanField(
         verbose_name="Is public",
         default=False,
+        blank=False,
+        null=False)
+    source_plugin = models.CharField(
+        verbose_name="Source Plugin",
+        max_length=50,
+        choices=SourcePlugin.choices,
+        default=SourcePlugin.INTERNAL_OPENSEARCH_QDRANT,
         blank=False,
         null=False)
     primary_key = models.ForeignKey(
