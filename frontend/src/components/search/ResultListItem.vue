@@ -71,5 +71,8 @@ export default {
       {{ origin.score.toFixed(2) }}, {{ origin.type }}: {{ origin.field }}, q =
       {{ origin.query }}
     </span>
+    <span v-if="appState.settings.dataset_ids.length > 1" class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+      {{ appState.datasets[item._dataset_id].name }}
+    </span>
   </div>
 </template>
