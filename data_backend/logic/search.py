@@ -1,3 +1,4 @@
+from collections import defaultdict
 import copy
 import itertools
 import json
@@ -263,15 +264,17 @@ def get_search_results_for_stored_map(map_data):
     purpose = 'list'
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
-    if not all([limit, page is not None, dataset]):
-        raise ValueError("a parameter is missing")
 
-    search_result_meta_info = map_data['results']['search_result_meta_information']
-    sorted_results = sorted(search_result_meta_info.values(), key=lambda item: item['_reciprocal_rank_score'], reverse=True)
-    limited_search_result_meta_info = {item['_id']: item for item in sorted_results[:limit]}
-    search_results = get_full_results_from_meta_info(dataset, vectorize_settings, limited_search_result_meta_info, purpose, timings)
+    # TODO: implement paging
+    sorted_ids = map_data['results']['per_point_data']['item_ids'][:limit]
+    all_items_by_dataset = map_data['results']['hover_label_data']
+    items_by_dataset = defaultdict(dict)
+    for dataset_id, item_id in sorted_ids:
+        items_by_dataset[dataset_id][item_id] = all_items_by_dataset[dataset_id][item_id]
+
     result = {
-        "items": search_results,
+        "sorted_ids": sorted_ids,
+        "items_by_dataset": items_by_dataset,
         "timings": timings.get_timestamps(),
     }
     return result
