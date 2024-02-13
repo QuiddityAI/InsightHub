@@ -40,8 +40,8 @@ export const useMapStateStore = defineStore("mapState", {
     }
   },
   actions: {
-    get_item_by_index: (index) => {
-      const {ds_id, item_id} = this.per_point.item_id[index]
+    get_item_by_index(index) {
+      const [ds_id, item_id] = this.per_point.item_id[index]
       return this.text_data[ds_id][item_id]
     },
   }

@@ -792,6 +792,13 @@ export const useAppStateStore = defineStore("appState", {
       const ds_items = this.map_item_details[dataset_and_item_id[0]]
       return ds_items ? ds_items[dataset_and_item_id[1]] : null
     },
+    get_dataset_by_index(item_index) {
+      const [dataset_id, item_id] = this.mapState.per_point.item_id[item_index]
+      return this.datasets[dataset_id]
+    },
+    get_hover_rendering_by_index(item_index) {
+      return this.get_dataset_by_index(item_index).hover_label_rendering
+    },
     store_current_map() {
       const that = this
       const entry_name = this.get_current_map_name()
