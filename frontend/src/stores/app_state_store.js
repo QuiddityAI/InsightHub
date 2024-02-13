@@ -304,6 +304,9 @@ export const useAppStateStore = defineStore("appState", {
                 that.on_selected_datasets_changed()
               }
             }
+            if (Object.keys(that.datasets).length == that.organization.datasets.length) {
+              that.eventBus.emit("datasets_are_loaded")
+            }
           })
       }
     },

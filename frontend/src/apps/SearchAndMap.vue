@@ -71,17 +71,14 @@ export default {
       ) {
         // If this method was called because the user pressed the back arrow in the browser and
         // the dataset is the same, the stored_map might be different.
-        // In this case, load it here:
-        // (in any other case, the stored map is loaded after the dataset object is loaded)
+        // In this case, the datasets are still loaded and we can directly load the map:
         if (queryParams.get("map_id")) {
           this.appStateStore.show_stored_map(queryParams.get("map_id"))
         }
       } else {
         // there is a new dataset_id in the parameters:
         this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")), /*change history*/ false)
-        if (queryParams.get("map_id")) {
-          this.appStateStore.show_stored_map(queryParams.get("map_id"))
-        }
+        // if there is a map_id in the parameters, its loaded after all datasets are loaded
       }
     },
     show_score_info_chart() {
@@ -141,12 +138,19 @@ export default {
     ...mapStores(useMapStateStore),
   },
   mounted() {
+    const that = this
     this.appStateStore.initialize()
     this.appStateStore.retrieve_current_user()
     this.appStateStore.retrieve_available_organizations(() => {
       this.evaluate_url_query_parameters()
     })
     this.appStateStore.retrieve_stored_maps_history_and_classifiers()
+    this.eventBus.on("datasets_are_loaded", () => {
+      const queryParams = new URLSearchParams(window.location.search)
+      if (queryParams.get("map_id")) {
+        that.appStateStore.show_stored_map(queryParams.get("map_id"))
+      }
+    })
 
     this.updateMapPassiveMargin()
     window.addEventListener("resize", this.updateMapPassiveMargin)
