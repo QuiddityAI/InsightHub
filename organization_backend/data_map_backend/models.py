@@ -49,6 +49,7 @@ class LanguageAnalysis(models.TextChoices):
 class SourcePlugin(models.TextChoices):
     INTERNAL_OPENSEARCH_QDRANT = "INTERNAL_OPENSEARCH_QDRANT", "Internal DB (OpenSearch + Qdrant)"
     BRAVE_WEB_API = "BRAVE_WEB_API", "Brave Web Search API"
+    BING_WEB_API = "BING_WEB_API", "Bing Web Search API"
 
 
 class EmbeddingSpace(models.Model):
