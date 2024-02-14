@@ -756,10 +756,10 @@ export default {
       const ww = window.innerWidth
       const wh = window.innerHeight
       let selectedClusterId =
-        this.appStateStore.selected_cluster_id != null
+        (this.appStateStore.selected_cluster_id !== null && this.appStateStore.selected_cluster_id !== undefined)
           ? this.appStateStore.selected_cluster_id
           : -1
-      if (this.appStateStore.highlighted_cluster_id !== null) {
+      if (this.appStateStore.highlighted_cluster_id !== null && this.appStateStore.highlighted_cluster_id !== undefined) {
         selectedClusterId = this.appStateStore.highlighted_cluster_id
       }
 

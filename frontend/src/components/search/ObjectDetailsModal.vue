@@ -41,7 +41,10 @@ export default {
       httpClient
         .post("/data_backend/document/details_by_id", payload)
         .then(function (response) {
-          that.item = response.data
+          that.item = {
+            ...that.item,
+            ...response.data
+          }
         })
         .finally(function () {
           that.loading_item = false
