@@ -94,7 +94,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
                             skipped_items += 1
                             del elements[i]
             if required_vector_fields:
-                fill_in_vector_data_list(dataset.id, elements, required_vector_fields)
+                fill_in_vector_data_list(dataset, elements, required_vector_fields)
             element_retrieval_time = time.time() - last_batch_time
             logging.warning(f"Time to retrieve {len(elements)} items: {element_retrieval_time * 1000:.2f} ms")
             _process(elements)
@@ -103,7 +103,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
     if elements:
         # process remaining elements
         if required_vector_fields:
-            fill_in_vector_data_list(dataset.id, elements, required_vector_fields)
+            fill_in_vector_data_list(dataset, elements, required_vector_fields)
         element_retrieval_time = time.time() - last_batch_time
         logging.warning(f"Time to retrieve {len(elements)} items: {element_retrieval_time * 1000:.2f} ms")
         _process(elements)

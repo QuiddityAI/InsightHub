@@ -271,7 +271,7 @@ def generate_map(map_id, ignore_cache):
         if projection_parameters.x_axis.type == "number_field":
             field = projection_parameters.x_axis.parameter
             for ds_id, ds_items in items_by_dataset.items():
-                fill_in_details_from_text_storage(ds_id, ds_items, [field])
+                fill_in_details_from_text_storage(datasets[ds_id], ds_items, [field])
             cartesian_positions[:, 0] = get_field_from_all_items(items_by_dataset, sorted_ids, field, -1)
         elif projection_parameters.x_axis.type == "count":
             cartesian_positions[:, 0] = [len(v) for v in get_field_from_all_items(items_by_dataset, sorted_ids, projection_parameters.x_axis.parameter, [])]
@@ -286,7 +286,7 @@ def generate_map(map_id, ignore_cache):
         if projection_parameters.y_axis.type == "number_field":
             field = projection_parameters.y_axis.parameter
             for ds_id, ds_items in items_by_dataset.items():
-                fill_in_details_from_text_storage(ds_id, ds_items, [field])
+                fill_in_details_from_text_storage(datasets[ds_id], ds_items, [field])
             cartesian_positions[:, 1] = get_field_from_all_items(items_by_dataset, sorted_ids, field, -1)
         elif projection_parameters.y_axis.type == "count":
             cartesian_positions[:, 1] = [len(v) for v in get_field_from_all_items(items_by_dataset, sorted_ids, projection_parameters.y_axis.parameter, [])]
@@ -385,7 +385,7 @@ def generate_map(map_id, ignore_cache):
             if attr_type == "number_field":
                 field = attr_parameter
                 for ds_id, ds_items in items_by_dataset.items():
-                    fill_in_details_from_text_storage(ds_id, ds_items, [field])
+                    fill_in_details_from_text_storage(datasets[ds_id], ds_items, [field])
                 values = get_field_from_all_items(items_by_dataset, sorted_ids, field, 0.0)
                 map_data["results"]["per_point_data"][attr] = values
             elif attr_type == "count":

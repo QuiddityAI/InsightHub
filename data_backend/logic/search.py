@@ -8,7 +8,9 @@ from functools import lru_cache
 from utils.field_types import FieldType
 from utils.collect_timings import Timings
 from utils.dotdict import DotDict
+from utils.source_plugin_types import SourcePlugin
 
+from api_clients.bing_web_search import bing_web_search_formatted
 from database_client.absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
 from database_client.django_client import get_dataset, get_classifier
 from database_client.vector_search_engine_client import VectorSearchEngineClient
@@ -37,6 +39,13 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
     for dataset_id in params.dataset_ids:
         dataset = get_dataset(dataset_id)
         score_info = {}
+
+        if dataset.source_plugin == SourcePlugin.BING_WEB_API:
+            query = params.search.all_field_query
+            sorted_ids, full_items = bing_web_search_formatted(dataset, query, limit=10 if purpose == "list" else 300)
+            sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
+            all_items_by_dataset[dataset_id] = full_items
+            continue
 
         if params.search.search_type == "external_input":
             if params.search.use_separate_queries:
@@ -178,7 +187,7 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
 
     search_engine_client = TextSearchEngineClient.get_instance()
     items = search_engine_client.get_items_by_ids(dataset.id, [similar_to_item_id], fields=[field.identifier for field in vector_fields])
-    fill_in_vector_data_list(dataset.id, items, [field.identifier for field in vector_fields])
+    fill_in_vector_data_list(dataset, items, [field.identifier for field in vector_fields])
     item = items[0]
     timings.log("getting original item")
 
@@ -312,6 +321,9 @@ def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_m
 def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]):
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
+
+    if get_dataset(dataset_id).source_plugin != SourcePlugin.INTERNAL_OPENSEARCH_QDRANT:
+        return {}
 
     search_engine_client = TextSearchEngineClient.get_instance()
     items = search_engine_client.get_items_by_ids(dataset_id, [item_id], fields=fields)
