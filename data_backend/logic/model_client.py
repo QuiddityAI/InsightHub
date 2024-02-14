@@ -155,5 +155,9 @@ def get_infinity_embeddings(texts: list[str], model_name: str, prefix: str):
         "model": model_name
     }
     result = requests.post(url, json=data)
-    embeddings = np.asarray([x["embedding"] for x in result.json()["data"]])
+    try:
+        embeddings = np.asarray([x["embedding"] for x in result.json()["data"]])
+    except KeyError:
+        logging.error("Batch of embeddings lost because at least one could not be processed by Infinity")
+        return [np.zeros(768) for _ in range(len(texts))]
     return embeddings
