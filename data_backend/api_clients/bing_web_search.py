@@ -1,4 +1,4 @@
-import json
+from functools import lru_cache
 import os
 import time
 import requests
@@ -22,16 +22,17 @@ def bing_web_search_formatted(dataset, query: str, website_filter: str | None = 
     for i, item in enumerate(data):
         score = 1.0 / (i + 1)
         item["_id"] = item["url"]
-        item["_dataset_id"] = dataset.id,
+        item["_dataset_id"] = dataset.id
         item["_origins"] = [{'type': 'web_search', 'field': 'unknown',
                           'query': query, 'score': score, 'rank': i+1}]
         item["_score"] = score
         item["_reciprocal_rank_score"] = score
-    sorted_ids = [e["url"] for e in data]
-    full_items = {e["url"]: e for e in data}
+    sorted_ids = [e["_id"] for e in data]
+    full_items = {e["_id"]: e for e in data}
     return sorted_ids, full_items
 
 
+@lru_cache
 def bing_web_search(query: str, website_filter: str | None = None, limit: int = 50):
     per_page = 50  # maximum allowed by Bing
     results = []
