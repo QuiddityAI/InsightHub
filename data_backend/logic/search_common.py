@@ -227,7 +227,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
 def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryInput,
                               query_vector: list | None, required_fields: list[str],
                               internal_input_weight: float,
-                              limit: int, page: int, score_threshold: float | None):
+                              limit: int, page: int, score_threshold: float | None) -> dict[str, dict]:
     def get_suitable_generator():
         generators: list[DotDict] = get_generators()
         field = dataset.object_fields[vector_field]
@@ -299,7 +299,7 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
 def get_vector_search_results_matching_classifier(dataset: DotDict, vector_field: str,
                                                   positive_ids, negative_ids,
                                                   required_fields: list[str], limit: int, page: int,
-                                                  score_threshold: float | None):
+                                                  score_threshold: float | None) -> dict[str, dict]:
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
     vector_search_result = vector_db_client.get_items_matching_classifier(dataset.id, vector_field, positive_ids,

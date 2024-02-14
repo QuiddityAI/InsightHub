@@ -100,7 +100,7 @@ def get_random_item_route(dataset_id: int):
     items = get_random_items(dataset_id, 1)
     item = items[0] if len(items) else {}
     response = app.response_class(
-        response=json.dumps({"item": item}, cls=HumanReadableJSONEncoder),
+        response=json.dumps({"item": item}, cls=HumanReadableJSONEncoder),  # type: ignore
         mimetype='application/json'
     )
     return response
@@ -160,7 +160,7 @@ def get_search_list_result_endpoint():
         return str(e.args), 400  # TODO: there could be other reasons, e.g. dataset not found
 
     response = app.response_class(
-        response=json.dumps(result, cls=CustomJSONEncoder),
+        response=json.dumps(result, cls=CustomJSONEncoder),  # type: ignore
         mimetype='application/json'
     )
     return response
