@@ -38,7 +38,7 @@ const mapState = useMapStateStore()
 
 export default {
   inject: ["eventBus"],
-  emits: ["cluster_selected", "point_selected", "cluster_hovered", "cluster_hover_end"],
+  emits: ["point_selected"],
   data() {
     return {
       // internal:
@@ -128,14 +128,14 @@ export default {
     "appStateStore.highlighted_item_id"() {
       if (this.appStateStore.highlighted_item_id === null) {
         this.hoveredPointIdx = -1
-        this.$emit("cluster_hover_end")
+        this.appStateStore.cluster_hover_end()
         return
       }
       this.hoveredPointIdx = this.mapStateStore.per_point.item_id.findIndex(
         (ds_and_item_id) => ds_and_item_id == this.appStateStore.highlighted_item_id
       )
       // TODO: highlighted_cluster_id should be changed directly, but currently accessing appState breaks this component
-      this.$emit("cluster_hovered", this.mapStateStore.per_point.cluster_id[this.hoveredPointIdx])
+      this.appStateStore.cluster_hovered(this.mapStateStore.per_point.cluster_id[this.hoveredPointIdx])
       this.updateUniforms()
     },
     "appStateStore.settings.frontend.rendering.style"() {
@@ -971,25 +971,6 @@ export default {
             class="h-24" />
         </div>
       </div>
-    </div>
-
-    <div
-      v-for="cluster_label in mapState.clusterData"
-      class="fixed"
-      :style="{
-        left: mapState.screenLeftFromRelative(cluster_label.center[0]) + 'px',
-        bottom: mapState.screenBottomFromRelative(cluster_label.center[1]) + 'px',
-      }">
-      <button
-        v-if="
-          appState.selected_cluster_id === null ||
-          cluster_label.id === appState.selected_cluster_id
-        "
-        @click="$emit('cluster_selected', cluster_label)"
-        @mouseenter="$emit('cluster_hovered', cluster_label.id)"
-        @mouseleave="$emit('cluster_hover_end')"
-        class="rounded bg-white px-1 text-xs text-gray-500 hover:bg-gray-100"
-        v-html="cluster_label.title_html"></button>
     </div>
 
     <svg

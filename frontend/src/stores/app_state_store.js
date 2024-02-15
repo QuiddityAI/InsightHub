@@ -739,6 +739,15 @@ export const useAppStateStore = defineStore("appState", {
         that.map_timings = results["timings"]
       }
     },
+    cluster_selected(cluster_item) {
+      this.narrow_down_on_cluster(cluster_item)
+    },
+    cluster_hovered(cluster_id) {
+      this.highlighted_cluster_id = cluster_id
+    },
+    cluster_hover_end(cluster_id) {
+      this.highlighted_cluster_id = null
+    },
     narrow_down_on_cluster(cluster_item) {
       this.settings.search.search_type = "cluster"
       this.settings.search.cluster_origin_map_id = this.map_id

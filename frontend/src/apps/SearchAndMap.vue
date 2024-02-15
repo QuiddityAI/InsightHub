@@ -14,7 +14,7 @@ import {
   XMarkIcon,
 } from "@heroicons/vue/24/outline"
 
-import InteractiveMap from "../components/map/InteractiveMap.vue"
+import MapWithLabels from "../components/map/MapWithLabels.vue"
 import SearchArea from "../components/search/SearchArea.vue"
 import ResultListItem from "../components/search/ResultListItem.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
@@ -173,13 +173,7 @@ export default {
 
 <template>
   <main class="overflow-hidden">
-    <InteractiveMap
-      ref="embedding_map"
-      class="absolute top-0 h-screen w-screen"
-      @cluster_selected="appState.narrow_down_on_cluster"
-      @point_selected="appState.show_document_details"
-      @cluster_hovered="(cluster_id) => (appState.highlighted_cluster_id = cluster_id)"
-      @cluster_hover_end="appState.highlighted_cluster_id = null" />
+    <MapWithLabels class="absolute top-0 h-screen w-screen"/>
 
     <div
       v-if="mapState.selected_map_tool === 'lasso'"
