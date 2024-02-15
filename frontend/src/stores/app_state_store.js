@@ -397,6 +397,7 @@ export const useAppStateStore = defineStore("appState", {
       this.progress = 0.0
       this.progress_step_title = ""
       this.fields_already_received = new Set()
+      this.last_position_update_received = null
 
       // map:
       if (!params.leave_map_unchanged) {
@@ -424,6 +425,10 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.rendering = JSON.parse(
         JSON.stringify(this.default_settings.rendering)
       )
+
+      const emptyQueryParams = new URLSearchParams()
+      emptyQueryParams.set("organization_id", this.organization_id)
+      history.pushState(null, null, "?" + emptyQueryParams.toString())
     },
     run_search_from_history(history_item) {
       this.settings = history_item.parameters
@@ -439,6 +444,7 @@ export const useAppStateStore = defineStore("appState", {
         !this.settings.search.all_field_query
       ) {
         this.reset_search_results_and_map()
+        this.reset_search_box()
         return
       }
 
