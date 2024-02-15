@@ -31,6 +31,8 @@ def get_generator_function(module: str, parameters: dict) -> Callable:
         return lambda texts: get_clip_text_embeddings([join_extracted_text_sources(t) for t in texts], parameters.model_name)
     elif module == 'clip_image':
         return lambda image_paths: get_clip_image_embeddings([item for sublist in image_paths for item in sublist], parameters.model_name)
+    elif module == 'favicon_url':
+        return lambda source_data_list: [get_favicon_url(urls[0]) for urls in source_data_list if urls]
 
     return lambda x: None
 
@@ -58,3 +60,11 @@ def get_openai_embedding_batch(texts: list[str]):
             results.append(result_item["embedding"])
 
     return results
+
+
+def get_favicon_url(url):
+    domain = url.split("/")[2]
+    return f"https://www.google.com/s2/favicons?sz=64&domain={domain}"
+    domain = url.split("/")[2]
+    protocol = url.split("/")[0]
+    return f"{protocol}//{domain}/favicon.ico"

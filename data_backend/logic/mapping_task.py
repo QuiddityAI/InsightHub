@@ -25,6 +25,8 @@ from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
     projection_stage_hash_to_map_id, get_map_parameters_hash, get_search_stage_hash, \
     get_vectorize_stage_hash, get_projection_stage_hash
 from logic.thumbnail_atlas import generate_thumbnail_atlas, THUMBNAIL_ATLAS_DIR
+from logic.extract_pipeline import get_pipeline_steps
+from logic.generate_missing_values import generate_missing_values_for_given_elements
 
 
 ABSCLUST_DATASET_ID = 1
@@ -175,6 +177,18 @@ def generate_map(map_id, ignore_cache):
 
         # thumbnail atlas:
         if any([datasets[ds_id].thumbnail_image for ds_id in datasets]):
+            for ds_id, dataset in datasets.items():
+                if not dataset.thumbnail_image:
+                    continue
+                if dataset.object_fields[dataset.thumbnail_image].generator:
+                    elements = []
+                    for item in items_by_dataset[ds_id].values():
+                        if item.get(dataset.thumbnail_image) is None:
+                            elements.append(item)
+                    pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[dataset.thumbnail_image])
+                    generate_missing_values_for_given_elements(pipeline_steps, elements)
+                    logging.info(f"Generated {len(elements)} missing thumbnail URLs")
+
             search_params_hash = get_search_stage_hash(params)
             sprite_size = params.search.get("thumbnail_sprite_size", "auto")
             if sprite_size == "auto":

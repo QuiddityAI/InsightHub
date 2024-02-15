@@ -2,6 +2,8 @@ from hashlib import md5
 import os
 import logging
 from typing import Callable
+import time
+import random
 
 import PIL
 from PIL import Image
@@ -36,12 +38,30 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | Non
             thumbnail_path = os.path.join(THUMBNAIL_CACHE_DIR, url_hash + ".jpg")
             if not os.path.exists(thumbnail_path):
                 try:
-                    image = Image.open(requests.get(thumbnail_uri, stream=True).raw)
+                    # prevent being blocked because of too many requests
+                    time.sleep(random.random() * 0.1)
+                    # using headers to prevent 403 forbidden because of scraper protection:
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                        # 'Accept-Encoding': 'gzip, deflate, br',
+                        'DNT': '1',
+                        'Connection': 'keep-alive',
+                        'Upgrade-Insecure-Requests': '1',
+                        'Sec-Fetch-Dest': 'document',
+                        'Sec-Fetch-Mode': 'navigate',
+                        'Sec-Fetch-Site': 'none',
+                        'Sec-Fetch-User': '?1',
+                    }
+                    formats = ['ICO'] if thumbnail_uri.endswith('.ico') else None
+                    image = Image.open(requests.get(thumbnail_uri, headers=headers, stream=True, timeout=2).raw, formats=formats)
+                    # reduce size already here to only save small version to disk (but might be larger than current sprite size)
                     image.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE))
                     if image.mode != 'RGB':
                         image = image.convert('RGB')
                 except (PIL.UnidentifiedImageError, OSError) as e:
-                    #logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
+                    logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
                     return None
                 try:
                     image.save(thumbnail_path, quality=80)
@@ -52,22 +72,26 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | Non
                 try:
                     image = Image.open(thumbnail_path)
                 except (PIL.UnidentifiedImageError, OSError) as e:
-                    #logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
+                    logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
                     return None
         elif os.path.exists(thumbnail_uri):
             try:
                 image = Image.open(thumbnail_uri)
             except (PIL.UnidentifiedImageError, OSError) as e:
-                #logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
+                logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
                 return None
         else:
             # image URI exists but can't be found
             logging.warning(f"Image can't be loaded: {thumbnail_uri}")
             return None
-        image.thumbnail((sprite_size, sprite_size))
+        image_smaller_than_sprite = image.size[0] < sprite_size or image.size[1] < sprite_size
+        if image_smaller_than_sprite:
+            image = image.resize((sprite_size, sprite_size))
+        else:
+            image.thumbnail((sprite_size, sprite_size))
         return image
 
-    images = do_in_parallel(_load_image, thumbnail_uris[:max_images])
+    images = do_in_parallel(_load_image, thumbnail_uris[:max_images], max_workers=5)
 
     for i, image in enumerate(images):
         if not image:
