@@ -276,6 +276,7 @@ def generate_map(map_id, ignore_cache):
         raw_projections = similar_map["results"]["per_point_data"]["raw_projections"]
         map_data["results"]["per_point_data"]["positions_x"] = similar_map["results"]["per_point_data"]["positions_x"]
         map_data["results"]["per_point_data"]["positions_y"] = similar_map["results"]["per_point_data"]["positions_y"]
+        map_data["results"]["last_position_update"] = time.time()
         final_positions = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
         map_data["progress"]["embeddings_available"] = True
         timings.log("reusing projection stage results")
@@ -328,6 +329,7 @@ def generate_map(map_id, ignore_cache):
                 final_positions = polar_to_cartesian(1 - normalize_array(final_positions[:, 0]), normalize_array(final_positions[:, 1]) * np.pi * 2)
             map_data["results"]["per_point_data"]["positions_x"] = final_positions[:, 0].tolist()
             map_data["results"]["per_point_data"]["positions_y"] = final_positions[:, 1].tolist()
+            map_data["results"]["last_position_update"] = time.time()
 
         if umap_dimensions_required:
             vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(dataset.object_fields[map_vector_field])

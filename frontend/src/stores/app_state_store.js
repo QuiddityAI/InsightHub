@@ -55,6 +55,7 @@ export const useAppStateStore = defineStore("appState", {
       progress: 0.0,
       progress_step_title: "",
       fields_already_received: new Set(),
+      last_position_update_received: null,
 
       // selection:
       selected_document_ds_and_id: null,  // (dataset_id, item_id)
@@ -69,7 +70,6 @@ export const useAppStateStore = defineStore("appState", {
 
       settings: {
         dataset_ids: [],
-        dataset_id: null, // deprecated, use dataset_ids instead
         search: {
           search_type: "external_input", // or cluster, classifier or similar item
           use_separate_queries: false,
@@ -548,6 +548,8 @@ export const useAppStateStore = defineStore("appState", {
         "raw_projections",
         "search_result_meta_information",
         "parameters",
+        "scores",
+        "last_parameters",
       ]
       if (!that.debug_autocut) {
         not_needed.push("search_result_score_info")
@@ -556,6 +558,7 @@ export const useAppStateStore = defineStore("appState", {
       const payload = {
         map_id: this.map_id,
         exclude_fields: not_needed.concat(Array.from(this.fields_already_received)),
+        last_position_update_received: this.last_position_update_received,
       }
       const cborConfig = {
         headers: { Accept: "application/cbor" },
@@ -674,10 +677,12 @@ export const useAppStateStore = defineStore("appState", {
         if (results_per_point["positions_x"]?.length > 0) {
           that.mapState.per_point.x = results_per_point["positions_x"]
           should_update_geometry = true
+          that.last_position_update_received = results["last_position_update"]
         }
         if (results_per_point["positions_y"]?.length > 0) {
           that.mapState.per_point.y = results_per_point["positions_y"]
           should_update_geometry = true
+          that.last_position_update_received = results["last_position_update"]
         }
         if (should_update_geometry) {
           that.eventBus.emit("map_update_geometry")

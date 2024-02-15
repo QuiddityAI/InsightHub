@@ -203,6 +203,16 @@ def retrive_map_results():
         del result['parameters']
     if 'hover_label_data' in exclude_fields and 'hover_label_data' in result['results']:
         del result['results']['hover_label_data']
+    if 'last_parameters' in exclude_fields and 'last_parameters' in result:
+        del result['last_parameters']
+
+    if params.get("last_position_update_received") and 'last_position_update' in result['results']:
+        if result['results']['last_position_update'] <= params["last_position_update_received"]:
+            # most up-to-date data already received
+            if 'positions_x' in result['results']['per_point_data']:
+                del result['results']['per_point_data']['positions_x']
+            if 'positions_y' in result['results']['per_point_data']:
+                del result['results']['per_point_data']['positions_y']
 
     use_cbor = request.headers.get('Accept') == "application/cbor"
     if use_cbor:
