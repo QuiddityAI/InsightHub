@@ -1,12 +1,4 @@
 <script setup>
-import { mapStores } from "pinia"
-import { useAppStateStore } from "../../stores/app_state_store"
-import { useMapStateStore } from "../../stores/map_state_store"
-const appState = useAppStateStore()
-const mapState = useMapStateStore()
-</script>
-
-<script>
 import panzoom from "panzoom"
 
 import {
@@ -33,6 +25,16 @@ import shadowsFragmentShader from "../../shaders/shadows.frag?raw"
 // import pointTextureNormalMapUrl from "../../textures/Crystal_001_NORM.jpg"
 
 import { ensureLength } from "../../utils/utils.js"
+
+import { mapStores } from "pinia"
+import { useAppStateStore } from "../../stores/app_state_store"
+import { useMapStateStore } from "../../stores/map_state_store"
+const appState = useAppStateStore()
+const mapState = useMapStateStore()
+</script>
+
+<script>
+
 
 export default {
   inject: ["eventBus"],
@@ -1011,9 +1013,8 @@ export default {
     </div>
 
     <div
-        class="pointer-events-none fixed transition-opacity duration-300"
-      :class="{'opacity-0': !show_html_points, 'opacity-100': show_html_points}"
-      >
+      class="pointer-events-none fixed transition-opacity duration-300"
+      :class="{'opacity-0': !show_html_points, 'opacity-100': show_html_points}">
       <div
         v-for="pointIndex in visiblePointIndexes"
         :key="pointIndex"
@@ -1025,8 +1026,9 @@ export default {
         style="transform: translate(-50%, 50%)">
         <div
           v-if="appState.get_hover_rendering_by_index(pointIndex)"
-          class="flex flex-col items-center rounded bg-white px-1 text-gray-500 text-[10px] max-w-[140px]">
-          <div v-html="appState.get_hover_rendering_by_index(pointIndex).title(mapState.get_item_by_index(pointIndex))"></div>
+          class="flex max-w-[140px] flex-col items-center rounded bg-white px-1 text-[10px] text-gray-500">
+          <div
+            v-html="appState.get_hover_rendering_by_index(pointIndex).title(mapState.get_item_by_index(pointIndex))"></div>
           <img
             v-if="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
             :src="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
@@ -1081,7 +1083,8 @@ export default {
       <div
         v-if="appState.get_hover_rendering_by_index(hoveredPointIdx)"
         class="flex flex-col items-center rounded bg-white px-1 text-xs text-gray-500">
-        <div v-html="appState.get_hover_rendering_by_index(hoveredPointIdx).title(mapState.get_item_by_index(hoveredPointIdx))"></div>
+        <div
+          v-html="appState.get_hover_rendering_by_index(hoveredPointIdx).title(mapState.get_item_by_index(hoveredPointIdx))"></div>
         <img
           v-if="appState.get_hover_rendering_by_index(hoveredPointIdx).image(mapState.get_item_by_index(hoveredPointIdx))"
           :src="appState.get_hover_rendering_by_index(hoveredPointIdx).image(mapState.get_item_by_index(hoveredPointIdx))"
