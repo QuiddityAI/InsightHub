@@ -37,6 +37,7 @@ export const useMapStateStore = defineStore("mapState", {
       visited_point_indexes: [],
       lasso_points: [],
       markedPointIdx: -1,
+      hovered_point_idx: -1,
 
       baseScale: [1.0, 1.0],
       baseOffset: [0.0, 0.0],

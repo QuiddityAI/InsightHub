@@ -1,31 +1,4 @@
 <script setup>
-import panzoom from "panzoom"
-
-import {
-  Renderer,
-  Camera,
-  Geometry,
-  Program,
-  Mesh,
-  Transform,
-  Texture,
-  TextureLoader,
-} from "https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm"
-import * as math from "mathjs"
-import pointInPolygon from "point-in-polygon"
-
-import pointsVertexShader3D from "../../shaders/points.vert?raw"
-import pointsFragmentShader3D from "../../shaders/points_rectangular_thumbnail.frag?raw"
-import pointsVertexShaderPlotly from "../../shaders/points_plotly_style.vert?raw"
-import pointsFragmentShaderPlotly from "../../shaders/points_plotly_style.frag?raw"
-import shadowsVertexShader from "../../shaders/shadows.vert?raw"
-import shadowsFragmentShader from "../../shaders/shadows.frag?raw"
-
-// import pointTextureBaseColorUrl from "../../textures/Brick_Wall_017_basecolor.jpg"
-// import pointTextureNormalMapUrl from "../../textures/Crystal_001_NORM.jpg"
-
-import { ensureLength } from "../../utils/utils.js"
-
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"

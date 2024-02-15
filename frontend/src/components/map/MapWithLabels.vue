@@ -1,10 +1,12 @@
 <script setup>
-import InteractiveMap from "./InteractiveMap.vue"
-import ClusterLabels from "./ClusterLabels.vue"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import InteractiveMap from "./InteractiveMap.vue"
+import ClusterLabels from "./ClusterLabels.vue"
+import HoverLabel from "./HoverLabel.vue"
+
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 </script>
@@ -39,6 +41,8 @@ export default {
       @point_selected="appState.show_document_details" />
 
     <ClusterLabels class="absolute top-0 h-screen w-screen" />
+
+    <HoverLabel class="absolute top-0 h-screen w-screen" />
   </div>
 </template>
 

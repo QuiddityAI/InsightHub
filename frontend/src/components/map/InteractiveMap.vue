@@ -53,7 +53,6 @@ export default {
       panzoomInstance: null,
 
       // mouseover highlight and selection:
-      hoveredPointIdx: -1, // set internally by mouseover
       mouseDownPosition: [-1, -1],
 
       // rendering:
@@ -127,15 +126,15 @@ export default {
     },
     "appStateStore.highlighted_item_id"() {
       if (this.appStateStore.highlighted_item_id === null) {
-        this.hoveredPointIdx = -1
+        this.mapStateStore.hovered_point_idx = -1
         this.appStateStore.cluster_hover_end()
         return
       }
-      this.hoveredPointIdx = this.mapStateStore.per_point.item_id.findIndex(
+      this.mapStateStore.hovered_point_idx = this.mapStateStore.per_point.item_id.findIndex(
         (ds_and_item_id) => ds_and_item_id == this.appStateStore.highlighted_item_id
       )
       // TODO: highlighted_cluster_id should be changed directly, but currently accessing appState breaks this component
-      this.appStateStore.cluster_hovered(this.mapStateStore.per_point.cluster_id[this.hoveredPointIdx])
+      this.appStateStore.cluster_hovered(this.mapStateStore.per_point.cluster_id[this.mapStateStore.hovered_point_idx])
       this.updateUniforms()
     },
     "appStateStore.settings.frontend.rendering.style"() {
@@ -167,7 +166,7 @@ export default {
       this.mapStateStore.thumbnailSpriteSize = 64
 
       this.mapStateStore.markedPointIdx = -1
-      this.hoveredPointIdx = -1
+      this.mapStateStore.hovered_point_idx = -1
 
       this.updateGeometry()
     },
@@ -713,7 +712,7 @@ export default {
         marginBottom: { value: this.mapStateStore.passiveMarginsLRTB[3] / wh },
         pan: { value: math.dotDivide(this.mapStateStore.currentPan, [ww, wh]) },
         zoom: { value: this.mapStateStore.currentZoom },
-        hoveredPointIdx: { value: this.hoveredPointIdx },
+        hoveredPointIdx: { value: this.mapStateStore.hovered_point_idx },
         lightPosition: { value: this.lightPosition },
         devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
         markedPointIdx: { value: this.mapStateStore.markedPointIdx },
@@ -770,14 +769,14 @@ export default {
         this.mapStateStore.screenToEmbeddingX(pointRadiusScreenPx) - this.mapStateStore.screenToEmbeddingX(0)
       const threshold = pointRadiusEmbedding
       if (closestIdx !== null && closestDist < threshold) {
-        this.hoveredPointIdx = closestIdx
+        this.mapStateStore.hovered_point_idx = closestIdx
       } else {
-        this.hoveredPointIdx = -1
+        this.mapStateStore.hovered_point_idx = -1
       }
       this.updateUniforms()
     },
     onMouseLeave() {
-      this.hoveredPointIdx = -1
+      this.mapStateStore.hovered_point_idx = -1
     },
     onMouseDown(event) {
       if (event.pointerType === "mouse" && event.button != 0) return
@@ -808,23 +807,23 @@ export default {
           this.mapStateStore.selected_map_tool = "drag"
         }
       }
-      if (this.hoveredPointIdx === -1) return
+      if (this.mapStateStore.hovered_point_idx === -1) return
       const mouseMovementDistance = math.distance(this.mouseDownPosition, [
         event.clientX,
         event.clientY,
       ])
       if (mouseMovementDistance > 5) return
       if (event.shiftKey) {
-        if (this.mapStateStore.selected_point_indexes.includes(this.hoveredPointIdx)) {
+        if (this.mapStateStore.selected_point_indexes.includes(this.mapStateStore.hovered_point_idx)) {
           this.mapStateStore.selected_point_indexes =
-            this.mapStateStore.selected_point_indexes.filter((x) => x !== this.hoveredPointIdx)
+            this.mapStateStore.selected_point_indexes.filter((x) => x !== this.mapStateStore.hovered_point_idx)
         } else {
-          this.mapStateStore.selected_point_indexes.push(this.hoveredPointIdx)
+          this.mapStateStore.selected_point_indexes.push(this.mapStateStore.hovered_point_idx)
           // the array object is still the same, so we need to trigger a change event manually:
           this.updateGeometry()
         }
       } else {
-        const dataset_and_item_id = this.mapStateStore.per_point.item_id[this.hoveredPointIdx]
+        const dataset_and_item_id = this.mapStateStore.per_point.item_id[this.mapStateStore.hovered_point_idx]
         this.$emit("point_selected", dataset_and_item_id)
       }
     },
@@ -920,7 +919,7 @@ export default {
       class="fixed h-full w-full"
       :class="{
         'cursor-crosshair': mapStateStore.selected_map_tool === 'lasso',
-        'cursor-pointer': hoveredPointIdx !== -1,
+        'cursor-pointer': mapState.hovered_point_idx !== -1,
       }"></div>
 
     <!-- this div shows a gray outline around the "active area" for debugging purposes -->
@@ -988,31 +987,6 @@ export default {
           stroke-linecap: round;
         " />
     </svg>
-
-    <div
-      v-if="hoveredPointIdx !== -1"
-      class="pointer-events-none fixed"
-      :style="{
-        right: mapState.screenRightFromRelative(currentPositionsX[hoveredPointIdx]) + 'px',
-        top: mapState.screenTopFromRelative(currentPositionsY[hoveredPointIdx]) + 'px',
-        'max-width': '200px',
-      }">
-      <div
-        v-if="appState.get_hover_rendering_by_index(hoveredPointIdx)"
-        class="flex flex-col items-center rounded bg-white px-1 text-xs text-gray-500">
-        <div
-          v-html="appState.get_hover_rendering_by_index(hoveredPointIdx).title(mapState.get_item_by_index(hoveredPointIdx))"></div>
-        <img
-          v-if="appState.get_hover_rendering_by_index(hoveredPointIdx).image(mapState.get_item_by_index(hoveredPointIdx))"
-          :src="appState.get_hover_rendering_by_index(hoveredPointIdx).image(mapState.get_item_by_index(hoveredPointIdx))"
-          class="h-24" />
-      </div>
-      <div
-        v-if="!appState.get_hover_rendering_by_index(hoveredPointIdx)"
-        class="rounded bg-white px-1 text-xs text-gray-500">
-        loading...
-      </div>
-    </div>
   </div>
 </template>
 
