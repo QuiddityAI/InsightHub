@@ -6,6 +6,8 @@ import { useMapStateStore } from "../../stores/map_state_store"
 import InteractiveMap from "./InteractiveMap.vue"
 import ClusterLabels from "./ClusterLabels.vue"
 import HoverLabel from "./HoverLabel.vue"
+import CloseUpPointItems from "./CloseUpPointItems.vue"
+import LassoArea from "./LassoArea.vue"
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
@@ -40,9 +42,13 @@ export default {
       class="absolute top-0 h-screen w-screen"
       @point_selected="appState.show_document_details" />
 
+    <CloseUpPointItems class="absolute top-0 h-screen w-screen" />
+
     <ClusterLabels class="absolute top-0 h-screen w-screen" />
 
     <HoverLabel class="absolute top-0 h-screen w-screen" />
+
+    <LassoArea class="absolute top-0 h-screen w-screen" />
   </div>
 </template>
 

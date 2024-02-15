@@ -47,8 +47,6 @@ export default {
       currentVelocityX: [],
       currentVelocityY: [],
       pointVisibility: [],
-      visiblePointIndexes: [],
-      show_html_points: false,
 
       panzoomInstance: null,
 
@@ -71,11 +69,6 @@ export default {
     }
   },
   computed: {
-    lasso_points_str() {
-      return this.mapStateStore.lasso_points
-        .map((p) => `${this.mapStateStore.screenLeftFromRelative(p[0])},${this.mapStateStore.screenTopFromRelative(p[1])}`)
-        .join(" ")
-    },
     pointsVertexShader() {
       return this.appStateStore.settings.frontend.rendering.style == "plotly"
         ? pointsVertexShaderPlotly
@@ -864,13 +857,13 @@ export default {
         if (pointIndexes.length > maxItems) break
       }
       if (pointIndexes.length <= maxItems) {
-        this.visiblePointIndexes = pointIndexes
+        this.mapStateStore.visiblePointIndexes = pointIndexes
         //this.pointVisibility = pointVisibility
-        this.show_html_points = true
+        this.mapStateStore.show_html_points = true
       } else {
-        //this.visiblePointIndexes = []
+        //this.mapStateStore.visiblePointIndexes = []
         //this.pointVisibility = Array(this.currentPositionsX.length).fill(0)
-        this.show_html_points = false
+        this.mapStateStore.show_html_points = false
       }
       this.updateGeometry()
     },
@@ -925,68 +918,6 @@ export default {
     <!-- this div shows a gray outline around the "active area" for debugging purposes -->
     <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': mapState.passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
 
-    <div
-      v-if="mapState.textureAtlas"
-      v-for="pointIndex in visiblePointIndexes"
-      :key="pointIndex"
-      class="pointer-events-none fixed"
-      :style="{
-        left: mapState.screenLeftFromRelative(currentPositionsX[pointIndex]) + 'px',
-        bottom: mapState.screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
-      }"
-      style="transform: translate(-50%, 50%)">
-      <div class="px-1 text-xs text-gray-500">
-        <div
-          v-if="appState.get_hover_rendering_by_index(pointIndex)"
-          class="flex flex-col items-center rounded bg-white/50 text-xs text-gray-500">
-          <img
-            v-if="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
-            :src="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
-            class="h-24" />
-        </div>
-      </div>
-    </div>
-
-    <div
-      class="pointer-events-none fixed transition-opacity duration-300"
-      :class="{'opacity-0': !show_html_points, 'opacity-100': show_html_points}">
-      <div
-        v-for="pointIndex in visiblePointIndexes"
-        :key="pointIndex"
-        class="pointer-events-none fixed"
-        :style="{
-          left: mapState.screenLeftFromRelative(currentPositionsX[pointIndex]) + 'px',
-          bottom: mapState.screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
-        }"
-        style="transform: translate(-50%, 50%)">
-        <div
-          v-if="appState.get_hover_rendering_by_index(pointIndex)"
-          class="flex max-w-[140px] flex-col items-center rounded bg-white px-1 text-[10px] text-gray-500">
-          <div
-            v-html="appState.get_hover_rendering_by_index(pointIndex).title(mapState.get_item_by_index(pointIndex))"></div>
-          <img
-            v-if="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
-            :src="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
-            class="h-24" />
-        </div>
-      </div>
-    </div>
-
-    <svg
-      v-if="lasso_points_str"
-      id="lasso_area"
-      class="pointer-events-none fixed h-full w-full"
-      xmlns="http://www.w3.org/2000/svg">
-      <polygon
-        :points="lasso_points_str"
-        style="
-          fill: rgba(150, 178, 224, 0.329);
-          stroke: rgba(103, 103, 103, 0.478);
-          stroke-width: 3;
-          stroke-dasharray: 3, 7;
-          stroke-linecap: round;
-        " />
-    </svg>
   </div>
 </template>
 
