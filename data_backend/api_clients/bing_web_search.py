@@ -41,12 +41,13 @@ def bing_web_search(query: str, website_filter: str | None = None, limit: int = 
             # hacky workaround to avoid rate limit of 3 requests per second
             time.sleep(0.33)
         # the API doesn't always return the number of requested results even if there are more
+        # (and it might also return more results than requested)
         partial_results = bing_web_search_call(query, website_filter, min(per_page, limit - len(results)), len(results))
         results += partial_results
         logging.warning(f"bing_web_search: {len(results)} results so far")
         if len(partial_results) == 0:
             break
-    return results
+    return results[:limit]
 
 
 def bing_web_search_call(query: str, website_filter: str | None = None, limit: int = 50, offset: int = 0) -> list:
