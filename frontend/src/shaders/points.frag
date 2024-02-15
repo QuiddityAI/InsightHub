@@ -19,8 +19,8 @@ uniform vec2 viewportSize;
 uniform vec3 lightPosition;
 uniform float devicePixelRatio;
 uniform bool useTextureAtlas;
-uniform sampler2D pointTextureBaseColor;
-uniform sampler2D pointTextureNormalMap;
+// uniform sampler2D pointTextureBaseColor;
+// uniform sampler2D pointTextureNormalMap;
 uniform int thumbnailSpriteSize;
 uniform float maxOpacity;
 
@@ -84,7 +84,7 @@ void main() {
     float yFactor = cos(atan(posFromCenter.y, sqrt(1.0 - pow(posFromCenter.y, 2.0))));
     vec2 sphereUv = vec2(((vUv.x - 0.5) * 2.0 / max(yFactor, 0.001)) / 2.0 + 0.5, vUv.y);
 
-    vec3 tangentSpaceTextureNormal = texture(pointTextureNormalMap, sphereUv / 3.0).xyz * 2.0 - 1.0;
+    // vec3 tangentSpaceTextureNormal = texture(pointTextureNormalMap, sphereUv / 3.0).xyz * 2.0 - 1.0;
 
     vec3 sphereNormal = get_normal_from_position_on_circle(vUv.x, vUv.y);  // normal from surface
 

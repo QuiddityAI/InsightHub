@@ -19,8 +19,8 @@ uniform vec2 viewportSize;
 uniform vec3 lightPosition;
 uniform float devicePixelRatio;
 uniform bool useTextureAtlas;
-uniform sampler2D pointTextureBaseColor;
-uniform sampler2D pointTextureNormalMap;
+// uniform sampler2D pointTextureBaseColor;
+// uniform sampler2D pointTextureNormalMap;
 uniform int thumbnailSpriteSize;
 uniform float maxOpacity;
 

@@ -29,8 +29,8 @@ import pointsFragmentShaderPlotly from "../../shaders/points_plotly_style.frag?r
 import shadowsVertexShader from "../../shaders/shadows.vert?raw"
 import shadowsFragmentShader from "../../shaders/shadows.frag?raw"
 
-import pointTextureBaseColorUrl from "../../textures/Brick_Wall_017_basecolor.jpg"
-import pointTextureNormalMapUrl from "../../textures/Crystal_001_NORM.jpg"
+// import pointTextureBaseColorUrl from "../../textures/Brick_Wall_017_basecolor.jpg"
+// import pointTextureNormalMapUrl from "../../textures/Crystal_001_NORM.jpg"
 
 import { ensureLength } from "../../utils/utils.js"
 
@@ -557,13 +557,13 @@ export default {
         this.glTextureAtlas.image = this.mapStateStore.textureAtlas
       }
 
-      this.pointTextureBaseColor = TextureLoader.load(this.glContext, {
-        src: pointTextureBaseColorUrl,
-      })
-      this.pointTextureNormalMap = TextureLoader.load(this.glContext, {
-        src: pointTextureNormalMapUrl,
-        minFilter: this.glContext.LINEAR,
-      })
+      // this.pointTextureBaseColor = TextureLoader.load(this.glContext, {
+      //   src: pointTextureBaseColorUrl,
+      // })
+      // this.pointTextureNormalMap = TextureLoader.load(this.glContext, {
+      //   src: pointTextureNormalMapUrl,
+      //   minFilter: this.glContext.LINEAR,
+      // })
 
       this.glScene = new Transform()
       this.updateMeshesQuads()
@@ -781,8 +781,8 @@ export default {
         markedPointIdx: { value: this.mapStateStore.markedPointIdx },
         textureAtlas: { value: this.glTextureAtlas },
         useTextureAtlas: { value: this.mapStateStore.textureAtlas !== null },
-        pointTextureBaseColor: { value: this.pointTextureBaseColor },
-        pointTextureNormalMap: { value: this.pointTextureNormalMap },
+        // pointTextureBaseColor: { value: this.pointTextureBaseColor },
+        // pointTextureNormalMap: { value: this.pointTextureNormalMap },
         thumbnailSpriteSize: { value: this.mapStateStore.thumbnailSpriteSize },
         selectedClusterId: { value: selectedClusterId },
         maxOpacity: { value: this.appStateStore.settings.frontend.rendering.max_opacity },
