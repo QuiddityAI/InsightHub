@@ -176,7 +176,7 @@ export default {
         flatness: [],
       }
 
-      this.clusterData = []
+      this.mapStateStore.clusterData = []
       this.mapStateStore.textureAtlas = null
       this.mapStateStore.thumbnailSpriteSize = 64
 
