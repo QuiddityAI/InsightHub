@@ -847,25 +847,27 @@ export default {
       const maxItems = 10
       const pointIndexes = []
       const pointVisibility = []
+      let visibility_change = false
       for (const i of Array(this.currentPositionsX.length).keys()) {
         const x = this.currentPositionsX[i]
         const y = this.currentPositionsY[i]
         const xInView = x >= left && x <= right
         const yInView = y >= bottom && y <= top
         pointVisibility[i] = xInView && yInView ? 1 : 0
-        if (xInView && yInView) pointIndexes.push(i)
+        if (xInView && yInView) {
+          pointIndexes.push(i)
+          if (!visibility_change && this.mapStateStore.visiblePointIndexes[pointIndexes.length - 1] !== i) {
+            visibility_change = true
+          }
+        }
         if (pointIndexes.length > maxItems) break
       }
-      if (pointIndexes.length <= maxItems) {
+      if (visibility_change) {
         this.mapStateStore.visiblePointIndexes = pointIndexes
-        //this.pointVisibility = pointVisibility
-        this.mapStateStore.show_html_points = true
-      } else {
-        //this.mapStateStore.visiblePointIndexes = []
-        //this.pointVisibility = Array(this.currentPositionsX.length).fill(0)
-        this.mapStateStore.show_html_points = false
+        this.mapStateStore.show_html_points = pointIndexes.length <= maxItems
+        // update geometry is not needed as currently only HTML elements use the visibility:
+        // this.updateGeometry()
       }
-      this.updateGeometry()
     },
     executeLassoSelection(mode = "replace") {
       const polygonPoints = this.mapStateStore.lasso_points
