@@ -50,16 +50,7 @@ export default {
       visiblePointIndexes: [],
       show_html_points: false,
 
-      baseScale: [1.0, 1.0],
-      baseOffset: [0.0, 0.0],
-      baseScaleTarget: [1.0, 1.0],
-      baseOffsetTarget: [0.0, 0.0],
-      baseScaleVelocity: [0.0, 0.0],
-      baseOffsetVelocity: [0.0, 0.0],
-
       panzoomInstance: null,
-      currentZoom: 1.0,
-      currentPan: [0.0, 0.0],
 
       // mouseover highlight and selection:
       hoveredPointIdx: -1, // set internally by mouseover
@@ -76,21 +67,14 @@ export default {
       glScene: null,
       glTextureAtlas: null,
       lightPosition: [0.5, 0.5, -0.5],
-
-      pointTextureBaseColor: null,
-      pointTextureNormalMap: null,
+      // pointTextureBaseColor: null,
+      // pointTextureNormalMap: null,
     }
   },
   computed: {
-    activeAreaWidth() {
-      return window.innerWidth - this.mapStateStore.passiveMarginsLRTB[0] - this.mapStateStore.passiveMarginsLRTB[1]
-    },
-    activeAreaHeight() {
-      return window.innerHeight - this.mapStateStore.passiveMarginsLRTB[2] - this.mapStateStore.passiveMarginsLRTB[3]
-    },
     lasso_points_str() {
       return this.mapStateStore.lasso_points
-        .map((p) => `${this.screenLeftFromRelative(p[0])},${this.screenTopFromRelative(p[1])}`)
+        .map((p) => `${this.mapStateStore.screenLeftFromRelative(p[0])},${this.mapStateStore.screenTopFromRelative(p[1])}`)
         .join(" ")
     },
     pointsVertexShader() {
@@ -192,54 +176,6 @@ export default {
       this.panzoomInstance.moveTo(0, 0)
       this.panzoomInstance.zoomAbs(0, 0, 1)
     },
-    screenLeftFromRelative(x) {
-      const normalizedPos = (x + this.baseOffset[0]) * this.baseScale[0]
-      const shiftedToActiveAreaPos =
-        normalizedPos * this.activeAreaWidth + this.mapStateStore.passiveMarginsLRTB[0]
-      const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPan[0]
-      return pannedAndZoomed
-    },
-    screenBottomFromRelative(y) {
-      const normalizedPos = (y + this.baseOffset[1]) * this.baseScale[1]
-      const shiftedToActiveAreaPos =
-        normalizedPos * this.activeAreaHeight + this.mapStateStore.passiveMarginsLRTB[3]
-      const zoomed =
-        (shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom + window.innerHeight
-      const pannedAndZoomed = zoomed - this.currentPan[1]
-      return pannedAndZoomed
-    },
-    screenRightFromRelative(x) {
-      const normalizedPos = (x + this.baseOffset[0]) * this.baseScale[0]
-      const shiftedToActiveAreaPos =
-        normalizedPos * this.activeAreaWidth + this.mapStateStore.passiveMarginsLRTB[0]
-      const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPan[0]
-      return window.innerWidth - pannedAndZoomed
-    },
-    screenTopFromRelative(y) {
-      const normalizedPos = (y + this.baseOffset[1]) * this.baseScale[1]
-      const shiftedToActiveAreaPos =
-        normalizedPos * this.activeAreaHeight + this.mapStateStore.passiveMarginsLRTB[3]
-      const zoomed =
-        (shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom + window.innerHeight
-      const pannedAndZoomed = zoomed - this.currentPan[1]
-      return window.innerHeight - pannedAndZoomed
-    },
-    screenToEmbeddingX(screenX) {
-      const notPannedAndZoomedX = (screenX - this.currentPan[0]) / this.currentZoom
-      const notShiftedToActiveAreaX =
-        (notPannedAndZoomedX - this.mapStateStore.passiveMarginsLRTB[0]) / this.activeAreaWidth
-      const notNormalizedX = notShiftedToActiveAreaX / this.baseScale[0] - this.baseOffset[0]
-      return notNormalizedX
-    },
-    screenToEmbeddingY(screenY) {
-      const notPannedY = window.innerHeight - screenY + this.currentPan[1]
-      const notPannedAndZoomedY =
-        (notPannedY - window.innerHeight) / this.currentZoom + window.innerHeight
-      const notShiftedToActiveAreaY =
-        (notPannedAndZoomedY - this.mapStateStore.passiveMarginsLRTB[3]) / this.activeAreaHeight
-      const notNormalizedY = notShiftedToActiveAreaY / this.baseScale[1] - this.baseOffset[1]
-      return notNormalizedY
-    },
     setupPanZoom() {
       const that = this
       this.panzoomInstance = panzoom(this.$refs.panZoomProxy, {
@@ -261,8 +197,8 @@ export default {
 
       this.panzoomInstance.on("transform", function (e) {
         const transform = e.getTransform()
-        that.currentPan = [transform.x, transform.y]
-        that.currentZoom = transform.scale
+        that.mapStateStore.currentPan = [transform.x, transform.y]
+        that.mapStateStore.currentZoom = transform.scale
         that.updateUniforms()
       })
     },
@@ -334,62 +270,62 @@ export default {
         let geometryChanged = false
         let uniformsChanged = false
 
-        const baseOffsetDiff = math.subtract(that.baseOffsetTarget, that.baseOffset)
+        const baseOffsetDiff = math.subtract(that.mapStateStore.baseOffsetTarget, that.mapStateStore.baseOffset)
         if (math.max(math.abs(baseOffsetDiff)) !== 0.0) {
           uniformsChanged = true
 
           const a = getAccelerationOfSpringArr(
-            that.baseOffset,
-            that.baseOffsetVelocity,
-            that.baseOffsetTarget,
+            that.mapStateStore.baseOffset,
+            that.mapStateStore.baseOffsetVelocity,
+            that.mapStateStore.baseOffsetTarget,
             /* stiffness */ 15.0,
             /* mass */ 1.0,
             /* damping */ 8.0
           )
-          that.baseOffsetVelocity = math.add(
-            that.baseOffsetVelocity,
+          that.mapStateStore.baseOffsetVelocity = math.add(
+            that.mapStateStore.baseOffsetVelocity,
             math.dotMultiply(a, timeSinceLastUpdateInSec)
           )
-          that.baseOffset = math.add(
-            that.baseOffset,
-            math.dotMultiply(that.baseOffsetVelocity, timeSinceLastUpdateInSec)
+          that.mapStateStore.baseOffset = math.add(
+            that.mapStateStore.baseOffset,
+            math.dotMultiply(that.mapStateStore.baseOffsetVelocity, timeSinceLastUpdateInSec)
           )
           if (
-            math.max(math.abs(that.baseOffsetVelocity)) < restSpeed &&
+            math.max(math.abs(that.mapStateStore.baseOffsetVelocity)) < restSpeed &&
             math.max(math.abs(baseOffsetDiff)) < restDelta
           ) {
-            that.baseOffset = that.baseOffsetTarget.slice() // using slice to copy the array
+            that.mapStateStore.baseOffset = that.mapStateStore.baseOffsetTarget.slice() // using slice to copy the array
           }
         }
 
         const restSpeedScale = 0.0005
         const restDeltaScale = 0.00005
 
-        const baseScaleDiff = math.subtract(that.baseScaleTarget, that.baseScale)
+        const baseScaleDiff = math.subtract(that.mapStateStore.baseScaleTarget, that.mapStateStore.baseScale)
         if (math.max(math.abs(baseScaleDiff)) !== 0.0) {
           uniformsChanged = true
 
           const a = getAccelerationOfSpringArr(
-            that.baseScale,
-            that.baseScaleVelocity,
-            that.baseScaleTarget,
+            that.mapStateStore.baseScale,
+            that.mapStateStore.baseScaleVelocity,
+            that.mapStateStore.baseScaleTarget,
             /* stiffness */ 15.0,
             /* mass */ 1.0,
             /* damping */ 8.0
           )
-          that.baseScaleVelocity = math.add(
-            that.baseScaleVelocity,
+          that.mapStateStore.baseScaleVelocity = math.add(
+            that.mapStateStore.baseScaleVelocity,
             math.dotMultiply(a, timeSinceLastUpdateInSec)
           )
-          that.baseScale = math.add(
-            that.baseScale,
-            math.dotMultiply(that.baseScaleVelocity, timeSinceLastUpdateInSec)
+          that.mapStateStore.baseScale = math.add(
+            that.mapStateStore.baseScale,
+            math.dotMultiply(that.mapStateStore.baseScaleVelocity, timeSinceLastUpdateInSec)
           )
           if (
-            math.max(math.abs(that.baseScaleVelocity)) < restSpeedScale &&
+            math.max(math.abs(that.mapStateStore.baseScaleVelocity)) < restSpeedScale &&
             math.max(math.abs(baseScaleDiff)) < restDeltaScale
           ) {
-            that.baseScale = that.baseScaleTarget.slice() // using slice to copy the array
+            that.mapStateStore.baseScale = that.mapStateStore.baseScaleTarget.slice() // using slice to copy the array
           }
         }
 
@@ -461,32 +397,32 @@ export default {
       newBaseScaleTarget[0] = 1.0 / (math.max(this.mapStateStore.per_point.x) + newBaseOffsetTarget[0])
       newBaseScaleTarget[1] = 1.0 / (math.max(this.mapStateStore.per_point.y) + newBaseOffsetTarget[1])
       const offsetChange = math.max(
-        math.max(newBaseOffsetTarget[0], this.baseOffsetTarget[0]) /
-          math.min(newBaseOffsetTarget[0], this.baseOffsetTarget[0]),
-        math.max(newBaseOffsetTarget[1], this.baseOffsetTarget[1]) /
-          math.min(newBaseOffsetTarget[1], this.baseOffsetTarget[1])
+        math.max(newBaseOffsetTarget[0], this.mapStateStore.baseOffsetTarget[0]) /
+          math.min(newBaseOffsetTarget[0], this.mapStateStore.baseOffsetTarget[0]),
+        math.max(newBaseOffsetTarget[1], this.mapStateStore.baseOffsetTarget[1]) /
+          math.min(newBaseOffsetTarget[1], this.mapStateStore.baseOffsetTarget[1])
       )
       const scaleChange = math.max(
-        math.max(newBaseScaleTarget[0], this.baseScaleTarget[0]) /
-          math.min(newBaseScaleTarget[0], this.baseScaleTarget[0]),
-        math.max(newBaseScaleTarget[1], this.baseScaleTarget[1]) /
-          math.min(newBaseScaleTarget[1], this.baseScaleTarget[1])
+        math.max(newBaseScaleTarget[0], this.mapStateStore.baseScaleTarget[0]) /
+          math.min(newBaseScaleTarget[0], this.mapStateStore.baseScaleTarget[0]),
+        math.max(newBaseScaleTarget[1], this.mapStateStore.baseScaleTarget[1]) /
+          math.min(newBaseScaleTarget[1], this.mapStateStore.baseScaleTarget[1])
       )
-      this.baseOffsetTarget = newBaseOffsetTarget
-      this.baseScaleTarget = newBaseScaleTarget
+      this.mapStateStore.baseOffsetTarget = newBaseOffsetTarget
+      this.mapStateStore.baseScaleTarget = newBaseScaleTarget
       if (offsetChange > 30.5 || scaleChange > 3.5) {
-        this.baseOffset = this.baseOffsetTarget.slice() // using slice to copy the array
-        this.baseScale = this.baseScaleTarget.slice() // using slice to copy the array
-        this.baseOffsetVelocity = [0.0, 0.0]
-        this.baseScaleVelocity = [0.0, 0.0]
+        this.mapStateStore.baseOffset = this.mapStateStore.baseOffsetTarget.slice() // using slice to copy the array
+        this.mapStateStore.baseScale = this.mapStateStore.baseScaleTarget.slice() // using slice to copy the array
+        this.mapStateStore.baseOffsetVelocity = [0.0, 0.0]
+        this.mapStateStore.baseScaleVelocity = [0.0, 0.0]
       }
     },
     centerAndFitDataToActiveAreaInstant() {
       this.centerAndFitDataToActiveAreaSmooth()
-      this.baseOffset = this.baseOffsetTarget.slice() // using slice to copy the array
-      this.baseScale = this.baseScaleTarget.slice() // using slice to copy the array
-      this.baseOffsetVelocity = [0.0, 0.0]
-      this.baseScaleVelocity = [0.0, 0.0]
+      this.mapStateStore.baseOffset = this.mapStateStore.baseOffsetTarget.slice() // using slice to copy the array
+      this.mapStateStore.baseScale = this.mapStateStore.baseScaleTarget.slice() // using slice to copy the array
+      this.mapStateStore.baseOffsetVelocity = [0.0, 0.0]
+      this.mapStateStore.baseScaleVelocity = [0.0, 0.0]
     },
     regenerateAttributeArraysFromFallbacks() {
       const pointCount = this.mapStateStore.per_point.x.length
@@ -767,16 +703,16 @@ export default {
 
       return {
         // types are inferred from shader code
-        baseOffset: { value: this.baseOffset },
-        baseScale: { value: this.baseScale },
+        baseOffset: { value: this.mapStateStore.baseOffset },
+        baseScale: { value: this.mapStateStore.baseScale },
         viewportSize: { value: [ww, wh] },
         activeAreaSize: {
-          value: [this.activeAreaWidth / ww, this.activeAreaHeight / wh],
+          value: [this.mapStateStore.activeAreaWidth / ww, this.mapStateStore.activeAreaHeight / wh],
         },
         marginLeft: { value: this.mapStateStore.passiveMarginsLRTB[0] / ww },
         marginBottom: { value: this.mapStateStore.passiveMarginsLRTB[3] / wh },
-        pan: { value: math.dotDivide(this.currentPan, [ww, wh]) },
-        zoom: { value: this.currentZoom },
+        pan: { value: math.dotDivide(this.mapStateStore.currentPan, [ww, wh]) },
+        zoom: { value: this.mapStateStore.currentZoom },
         hoveredPointIdx: { value: this.hoveredPointIdx },
         lightPosition: { value: this.lightPosition },
         devicePixelRatio: { value: window.devicePixelRatio || 1.0 },
@@ -800,15 +736,15 @@ export default {
     updateOnHover(event) {
       if (event.buttons) {
         if (this.mapStateStore.selected_map_tool === "lasso") {
-          const x = this.screenToEmbeddingX(event.clientX)
-          const y = this.screenToEmbeddingY(event.clientY)
+          const x = this.mapStateStore.screenToEmbeddingX(event.clientX)
+          const y = this.mapStateStore.screenToEmbeddingY(event.clientY)
           this.mapStateStore.lasso_points.push([x, y])
           //this.$emit('lasso_points_changed', this.mapStateStore.lasso_points)
         }
         return
       }
-      const mousePosInEmbeddingSpaceX = this.screenToEmbeddingX(event.clientX)
-      const mousePosInEmbeddingSpaceY = this.screenToEmbeddingY(event.clientY)
+      const mousePosInEmbeddingSpaceX = this.mapStateStore.screenToEmbeddingX(event.clientX)
+      const mousePosInEmbeddingSpaceY = this.mapStateStore.screenToEmbeddingY(event.clientY)
 
       // this.lightPosition = [event.clientX / window.innerWidth,  1.0 - event.clientY / window.innerHeight]
 
@@ -824,14 +760,14 @@ export default {
         }
       }
       const pointSize = this.mapStateStore.per_point.size[closestIdx]
-      const zoomAdjustment = (this.currentZoom - 1.0) * 0.05 + 1.0
+      const zoomAdjustment = (this.mapStateStore.currentZoom - 1.0) * 0.05 + 1.0
       const pointSizeScreenPx =
         (5.0 + 15.0 * pointSize) * zoomAdjustment * this.appStateStore.settings.frontend.rendering.point_size_factor
       const pointRadiusScreenPx = pointSizeScreenPx / 2
       // FIXME: as x and y may have different scale factors, the "closestDist" might be squashed in one direction
       // this should be fixed by unsqueezing it by the scale factor of the respective axis before
       const pointRadiusEmbedding =
-        this.screenToEmbeddingX(pointRadiusScreenPx) - this.screenToEmbeddingX(0)
+        this.mapStateStore.screenToEmbeddingX(pointRadiusScreenPx) - this.mapStateStore.screenToEmbeddingX(0)
       const threshold = pointRadiusEmbedding
       if (closestIdx !== null && closestDist < threshold) {
         this.hoveredPointIdx = closestIdx
@@ -853,8 +789,8 @@ export default {
         }
         this.mapStateStore.lasso_points = []
         this.mapStateStore.lasso_points.push([
-          this.screenToEmbeddingX(event.clientX),
-          this.screenToEmbeddingY(event.clientY),
+          this.mapStateStore.screenToEmbeddingX(event.clientX),
+          this.mapStateStore.screenToEmbeddingY(event.clientY),
         ])
       }
       this.mouseDownPosition = [event.clientX, event.clientY]
@@ -863,8 +799,8 @@ export default {
       if (event.pointerType === "mouse" && event.button != 0) return
       if (this.mapStateStore.selected_map_tool === "lasso") {
         this.mapStateStore.lasso_points.push([
-          this.screenToEmbeddingX(event.clientX),
-          this.screenToEmbeddingY(event.clientY),
+          this.mapStateStore.screenToEmbeddingX(event.clientX),
+          this.mapStateStore.screenToEmbeddingY(event.clientY),
         ])
         //this.$emit('lasso_points_changed', this.mapStateStore.lasso_points)
         this.executeLassoSelection(this.mapStateStore.selection_merging_mode)
@@ -898,21 +834,21 @@ export default {
       // return
       const margin = -30 * window.devicePixelRatio
 
-      // const left = this.screenToEmbeddingX(this.mapStateStore.passiveMarginsLRTB[0] + margin)
-      // const right = this.screenToEmbeddingX(
+      // const left = this.mapStateStore.screenToEmbeddingX(this.mapStateStore.passiveMarginsLRTB[0] + margin)
+      // const right = this.mapStateStore.screenToEmbeddingX(
       //   window.innerWidth - this.mapStateStore.passiveMarginsLRTB[1] - margin
       // )
-      // const top = this.screenToEmbeddingY(this.mapStateStore.passiveMarginsLRTB[2] + margin)
-      // const bottom = this.screenToEmbeddingY(
+      // const top = this.mapStateStore.screenToEmbeddingY(this.mapStateStore.passiveMarginsLRTB[2] + margin)
+      // const bottom = this.mapStateStore.screenToEmbeddingY(
       //   window.innerHeight - this.mapStateStore.passiveMarginsLRTB[3] - margin
       // )
 
-      const left = this.screenToEmbeddingX(margin)
-      const right = this.screenToEmbeddingX(
+      const left = this.mapStateStore.screenToEmbeddingX(margin)
+      const right = this.mapStateStore.screenToEmbeddingX(
         window.innerWidth - margin
       )
-      const top = this.screenToEmbeddingY(margin)
-      const bottom = this.screenToEmbeddingY(
+      const top = this.mapStateStore.screenToEmbeddingY(margin)
+      const bottom = this.mapStateStore.screenToEmbeddingY(
         window.innerHeight - margin
       )
 
@@ -996,8 +932,8 @@ export default {
       :key="pointIndex"
       class="pointer-events-none fixed"
       :style="{
-        left: screenLeftFromRelative(currentPositionsX[pointIndex]) + 'px',
-        bottom: screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
+        left: mapState.screenLeftFromRelative(currentPositionsX[pointIndex]) + 'px',
+        bottom: mapState.screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
       }"
       style="transform: translate(-50%, 50%)">
       <div class="px-1 text-xs text-gray-500">
@@ -1020,8 +956,8 @@ export default {
         :key="pointIndex"
         class="pointer-events-none fixed"
         :style="{
-          left: screenLeftFromRelative(currentPositionsX[pointIndex]) + 'px',
-          bottom: screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
+          left: mapState.screenLeftFromRelative(currentPositionsX[pointIndex]) + 'px',
+          bottom: mapState.screenBottomFromRelative(currentPositionsY[pointIndex]) + 'px',
         }"
         style="transform: translate(-50%, 50%)">
         <div
@@ -1041,8 +977,8 @@ export default {
       v-for="cluster_label in mapState.clusterData"
       class="fixed"
       :style="{
-        left: screenLeftFromRelative(cluster_label.center[0]) + 'px',
-        bottom: screenBottomFromRelative(cluster_label.center[1]) + 'px',
+        left: mapState.screenLeftFromRelative(cluster_label.center[0]) + 'px',
+        bottom: mapState.screenBottomFromRelative(cluster_label.center[1]) + 'px',
       }">
       <button
         v-if="
@@ -1076,8 +1012,8 @@ export default {
       v-if="hoveredPointIdx !== -1"
       class="pointer-events-none fixed"
       :style="{
-        right: screenRightFromRelative(currentPositionsX[hoveredPointIdx]) + 'px',
-        top: screenTopFromRelative(currentPositionsY[hoveredPointIdx]) + 'px',
+        right: mapState.screenRightFromRelative(currentPositionsX[hoveredPointIdx]) + 'px',
+        top: mapState.screenTopFromRelative(currentPositionsY[hoveredPointIdx]) + 'px',
         'max-width': '200px',
       }">
       <div
