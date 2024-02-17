@@ -75,6 +75,7 @@ void main() {
         // circle area:
         float antiAliasingEdgePx = 1.0;
         float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
+        FragColor.a = max(FragColor.a, circleArea) * maxOpacity;
 
         vec3 albedoColor = albedoColorVar;
 

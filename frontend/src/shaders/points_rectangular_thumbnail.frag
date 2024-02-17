@@ -94,6 +94,7 @@ void main() {
         // circle area:
         float antiAliasingEdgePx = 2.0;
         float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
+        FragColor.a = max(FragColor.a, circleArea) * maxOpacity;
 
         // position of this fragment on the screen:
         vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
