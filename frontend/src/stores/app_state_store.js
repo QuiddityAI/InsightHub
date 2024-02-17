@@ -657,7 +657,7 @@ export const useAppStateStore = defineStore("appState", {
             const attr_params = that.settings.rendering[attr]
             const is_hue_attr = ["hue", "secondary_hue"].includes(attr)
             const is_integer_attr_type = ["cluster_idx", "origin_query_idx"].includes(attr_params.type)
-            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.settings.dataset_ids[0]].object_fields[attr_params.parameter].field_type == FieldType.INTEGER
+            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.settings.dataset_ids[0]].object_fields[attr_params.parameter]?.field_type == FieldType.INTEGER
             if (is_hue_attr && (is_integer_attr_type || is_integer_field)) {
               // if an integer value is assigned to a hue value, we need to make sure that the last value doesn't have
               // the same hue as the first value:
