@@ -690,12 +690,6 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         editable=False,
         blank=False,
         null=False)
-    dataset = models.ForeignKey(
-        verbose_name="Dataset",
-        to=Dataset,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True)
     created_by = models.ForeignKey(
         verbose_name="User",
         to=User,
@@ -738,28 +732,6 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         help_text="block classes e.g. from parents, using weight of -1",
         blank=True,
         null=True)
-    relevant_object_fields = models.ManyToManyField(  # the "source" of the classifier, e.g. text or image
-        verbose_name="Relevant Object Fields",
-        help_text="The 'source' fields (text or image) for items from this dataset, using default search fields (or their sources for vectors) if empty",
-        to='ObjectField',
-        related_name='+',
-        blank=True)
-    positive_annotation_field = models.ForeignKey(
-        verbose_name="Positive Annotation Field",
-        help_text="binary: bool field, exclusive: single tag, non-exclusive: tag array field",  # or class probability field (not yet, only makes sense if regression is supported)
-        to='ObjectField',
-        related_name='+',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True)
-    negative_annotation_field = models.ForeignKey(
-        verbose_name="Negative Annotation Field",
-        help_text="binary: bool field, exclusive: single tag, non-exclusive: tag array field",
-        to='ObjectField',
-        related_name='+',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True)
     trained_classifiers = models.JSONField(
         verbose_name="Trained Classifiers",
         help_text="For each embedding space, and there for each class, a 'decision' vector to be applied with dotproduct (plus time_updated)",
@@ -791,6 +763,63 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
     class Meta:
         verbose_name = "Classifier"
         verbose_name_plural = "Classifiers"
+
+
+class ClassifierDatasetSpecificSettings(models.Model):
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=True,
+        null=True)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    classifier = models.ForeignKey(
+        verbose_name="Classifier",
+        to=Classifier,
+        on_delete=models.CASCADE,
+        related_name='dataset_specific_settings',
+        blank=False,
+        null=False)
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
+        on_delete=models.CASCADE,
+        related_name='+',
+        blank=False,
+        null=False)
+    relevant_object_fields = models.ManyToManyField(  # the "source" of the classifier, e.g. text or image
+        verbose_name="Relevant Object Fields",
+        help_text="The 'source' fields (text or image) for items from this dataset, using default search fields (or their sources for vectors) if empty",
+        to='ObjectField',
+        related_name='+',
+        blank=True)
+    positive_annotation_field = models.ForeignKey(
+        verbose_name="Positive Annotation Field",
+        help_text="binary: bool field, exclusive: single tag, non-exclusive: tag array field",  # or class probability field (not yet, only makes sense if regression is supported)
+        to='ObjectField',
+        related_name='+',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+    negative_annotation_field = models.ForeignKey(
+        verbose_name="Negative Annotation Field",
+        help_text="binary: bool field, exclusive: single tag, non-exclusive: tag array field",
+        to='ObjectField',
+        related_name='+',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True)
+
+    def __str__(self):
+        return f"{self.classifier.name} - {self.dataset.name}"
+
+    class Meta:
+        verbose_name = "Dataset Specific Settings"
+        verbose_name_plural = "Dataset Specific Settings"
 
 
 class ClassifierExample(models.Model):  # aka DataCollection / DataClassification Entry
