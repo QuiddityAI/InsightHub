@@ -31,27 +31,6 @@ export default {
 
 <template>
   <div class="pointer-events-none">
-    <div
-      v-if="mapState.textureAtlas"
-      v-for="pointIndex in mapState.visiblePointIndexes"
-      :key="pointIndex"
-      class="pointer-events-none fixed"
-      :style="{
-        left: mapState.screenLeftFromRelative(mapState.per_point.x[pointIndex]) + 'px',
-        bottom: mapState.screenBottomFromRelative(mapState.per_point.y[pointIndex]) + 'px',
-      }"
-      style="transform: translate(-50%, 50%)">
-      <div class="px-1 text-xs text-gray-500">
-        <div
-          v-if="appState.get_hover_rendering_by_index(pointIndex)"
-          class="flex flex-col items-center rounded bg-white/50 text-xs text-gray-500">
-          <img
-            v-if="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
-            :src="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
-            class="h-24" />
-        </div>
-      </div>
-    </div>
 
     <div
       class="pointer-events-none fixed transition-opacity duration-300"
