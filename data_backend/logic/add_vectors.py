@@ -16,12 +16,17 @@ from logic.generate_missing_values import generate_missing_values_for_given_elem
 from logic.extract_pipeline import get_pipeline_steps
 from logic.generator_functions import get_generator_function_from_field
 from logic.search_common import get_required_fields
+from logic.local_map_cache import get_vectorize_stage_hash
 
 
-def add_w2v_vectors(items: dict[str, dict], query, params: DotDict, descriptive_text_fields, map_data, vectorize_stage_params_hash, timings):
+def add_w2v_vectors(items: dict[str, dict], query, similar_map: dict | None, origin_map: dict | None, descriptive_text_fields, map_data, vectorize_stage_params_hash, timings):
     # last_w2v_embeddings_file_path might be used if search and vectorize settings are the same
     # or when narrowing down on subcluster of bigger map
-    last_w2v_embeddings_file_path = map_data['results']['w2v_embeddings_file_path']
+    last_w2v_embeddings_file_path = None
+    if similar_map and vectorize_stage_params_hash == get_vectorize_stage_hash(map_data['last_parameters']):
+        last_w2v_embeddings_file_path = similar_map['results']['w2v_embeddings_file_path']
+    elif origin_map:
+        last_w2v_embeddings_file_path = origin_map['results']['w2v_embeddings_file_path']
     if last_w2v_embeddings_file_path and os.path.exists(last_w2v_embeddings_file_path):
         with open(last_w2v_embeddings_file_path, "rb") as f:
             embeddings = pickle.load(f)
@@ -34,6 +39,7 @@ def add_w2v_vectors(items: dict[str, dict], query, params: DotDict, descriptive_
         except KeyError as e:
             logging.warning("Existing w2v embedding file is missing an item:")
             logging.warning(e)
+            timings.log("Existing w2v embedding file is missing an item")
             # falling through to training model again from scratch
             pass
         else:
