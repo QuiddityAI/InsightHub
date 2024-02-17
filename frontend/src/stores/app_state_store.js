@@ -641,6 +641,7 @@ export const useAppStateStore = defineStore("appState", {
         // that.mapState.per_point.size = normalizeArrayMedianGamma(results_per_point["size"], 2.0)
         // that.mapState.saturation = normalizeArrayMedianGamma(results_per_point["sat"], 3.0, 0.001)
 
+        let should_update_geometry = false
         for (const attr of [
           "size",
           "hue",
@@ -673,6 +674,7 @@ export const useAppStateStore = defineStore("appState", {
               )
             }
             that.fields_already_received.add(attr)
+            should_update_geometry = true
           }
         }
 
@@ -686,7 +688,6 @@ export const useAppStateStore = defineStore("appState", {
           ).fill(-1)
         }
 
-        let should_update_geometry = false
         if (results_per_point["positions_x"]?.length > 0) {
           that.mapState.per_point.x = results_per_point["positions_x"]
           should_update_geometry = true
