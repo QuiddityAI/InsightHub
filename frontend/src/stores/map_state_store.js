@@ -24,6 +24,7 @@ export const useMapStateStore = defineStore("mapState", {
         secondary_val: [],
         secondary_opacity: [],
         flatness: [],
+        thumbnail_aspect_ratio: [],  // aspect ration or -1.0 if no thumbnail
       },
 
       clusterData: [], // array of cluster description objects

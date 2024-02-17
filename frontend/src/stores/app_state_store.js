@@ -180,6 +180,13 @@ export const useAppStateStore = defineStore("appState", {
               threshold: null,
             },
             flatness: { min: 0.0, max: 1.0, fallback: 0.0, gamma: "auto", threshold: null },
+            thumbnail_aspect_ratio: {
+              min: -1.0,
+              max: 5.0,
+              fallback: -1.0,
+              gamma: "auto",
+              threshold: null,
+            },
             max_opacity: 0.7,
             shadow_opacity: 1.0,
             point_size_factor: 1.0,
@@ -694,6 +701,12 @@ export const useAppStateStore = defineStore("appState", {
           that.eventBus.emit("map_update_geometry")
         }
 
+        if (results_per_point["thumbnail_aspect_ratios"]?.length > 0) {
+          that.mapState.per_point.thumbnail_aspect_ratio =
+            results_per_point["thumbnail_aspect_ratios"]
+          that.fields_already_received.add("thumbnail_aspect_ratios")
+        }
+
         if (
           results["thumbnail_atlas_filename"] &&
           results["thumbnail_atlas_filename"] !== "loading"
@@ -707,8 +720,8 @@ export const useAppStateStore = defineStore("appState", {
             that.eventBus.emit("map_update_geometry")
           }
           that.fields_already_received.add("thumbnail_atlas_filename")
-          that.settings.frontend.rendering.point_size_factor = 3.0
-          that.settings.frontend.rendering.max_opacity = 1.0
+          //that.settings.frontend.rendering.point_size_factor = 3.0
+          //that.settings.frontend.rendering.max_opacity = 1.0
         } else if (
           results["thumbnail_atlas_filename"] &&
           results["thumbnail_atlas_filename"] === "loading"

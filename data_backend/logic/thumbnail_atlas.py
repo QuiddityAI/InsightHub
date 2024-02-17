@@ -20,8 +20,8 @@ THUMBNAIL_SIZE = 256
 
 
 def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | None],
-                           sprite_size: int, on_success: Callable,
-                           atlas_total_width: int = 4096,):
+                           sprite_size: int, on_success: Callable = lambda: None,
+                           atlas_total_width: int = 4096,) -> list[float]:
     if not os.path.exists(THUMBNAIL_CACHE_DIR):
         os.makedirs(THUMBNAIL_CACHE_DIR, exist_ok=True)
     if not os.path.exists(THUMBNAIL_ATLAS_DIR):
@@ -93,6 +93,7 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | Non
 
     images = do_in_parallel(_load_image, thumbnail_uris[:max_images], max_workers=5)
 
+    aspect_ratios = [float(image.width) / image.height if image else -1.0 for image in images]
     for i, image in enumerate(images):
         if not image:
             continue
@@ -104,3 +105,4 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | Non
     atlas.save(atlas_filename, quality=80)
     logging.warning(f"Thumbnail atlas sucessfully created: {atlas_filename}")
     on_success()
+    return aspect_ratios

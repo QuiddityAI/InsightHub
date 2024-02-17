@@ -34,8 +34,6 @@ const mapState = useMapStateStore()
 </script>
 
 <script>
-
-
 export default {
   inject: ["eventBus"],
   emits: ["point_selected"],
@@ -152,6 +150,7 @@ export default {
         secondary_val: [],
         secondary_opacity: [],
         flatness: [],
+        thumbnail_aspect_ratio: [],
       }
 
       this.mapStateStore.clusterData = []
@@ -429,6 +428,7 @@ export default {
         "secondary_val",
         "secondary_opacity",
         "flatness",
+        "thumbnail_aspect_ratio",
       ]) {
         this.mapStateStore.per_point[attr] = []
         this.mapStateStore.per_point[attr] = ensureLength(
@@ -470,6 +470,7 @@ export default {
         "secondary_val",
         "secondary_opacity",
         "flatness",
+        "thumbnail_aspect_ratio",
       ]) {
         this.mapStateStore.per_point[attr] = ensureLength(
           this.mapStateStore.per_point[attr],
@@ -663,6 +664,11 @@ export default {
           instanced: 1,
           size: 1,
           data: new Float32Array(this.mapStateStore.per_point.flatness.slice(0, pointCount)),
+        },
+        thumbnailAspectRatio: {
+          instanced: 1,
+          size: 1,
+          data: new Float32Array(this.mapStateStore.per_point.thumbnail_aspect_ratio.slice(0, pointCount)),
         },
       })
 
@@ -919,7 +925,6 @@ export default {
 
     <!-- this div shows a gray outline around the "active area" for debugging purposes -->
     <!-- <div class="fixed ring-1 ring-inset ring-gray-300" :style="{'left': mapState.passiveMarginsLRTB[0] + 'px', 'right': passiveMarginsLRTB[1] + 'px', 'top': passiveMarginsLRTB[2] + 'px', 'bottom': passiveMarginsLRTB[3] + 'px'}"></div> -->
-
   </div>
 </template>
 

@@ -150,6 +150,7 @@ def generate_map(map_id, ignore_cache):
         map_data['results']['search_result_score_info'] = deepcopy(similar_map['results']['search_result_score_info'])
         map_data["results"]["thumbnail_atlas_filename"] = deepcopy(similar_map["results"].get("thumbnail_atlas_filename"))
         map_data["results"]["thumbnail_sprite_size"] = deepcopy(similar_map["results"].get("thumbnail_sprite_size"))
+        map_data["results"]["per_point_data"]["thumbnail_aspect_ratios"] = deepcopy(similar_map["results"].get("per_point_data", {}).get("thumbnail_aspect_ratios"))
         map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
         map_data["results"]["hover_label_data"] = deepcopy(similar_map["results"]["hover_label_data"])
         search_result_meta_information = map_data['results']['search_result_meta_information']
@@ -201,7 +202,7 @@ def generate_map(map_id, ignore_cache):
             map_data["results"]["thumbnail_sprite_size"] = sprite_size
             atlas_filename = f"atlas_{search_params_hash}.webp"
             atlas_path = os.path.join(THUMBNAIL_ATLAS_DIR, atlas_filename)
-            if os.path.exists(atlas_path) and not ignore_cache:
+            if os.path.exists(atlas_path) and not ignore_cache and not search_phase_is_needed:
                 map_data["results"]["thumbnail_atlas_filename"] = atlas_filename
             else:
                 # don't leave the field empty, otherwise the last atlas is still visible
@@ -209,9 +210,9 @@ def generate_map(map_id, ignore_cache):
                 thumbnail_uris = [items_by_dataset[ds_id][item_id][datasets[ds_id].thumbnail_image] if datasets[ds_id].thumbnail_image else None for (ds_id, item_id) in sorted_ids]
                 def _generate_thumbnail_atlas():
                     t1 = time.time()
-                    def _on_success():
-                        map_data["results"]["thumbnail_atlas_filename"] = atlas_filename
-                    generate_thumbnail_atlas(atlas_path, thumbnail_uris, sprite_size, _on_success)
+                    aspect_ratios = generate_thumbnail_atlas(atlas_path, thumbnail_uris, sprite_size)
+                    map_data["results"]["thumbnail_atlas_filename"] = atlas_filename
+                    map_data["results"]["per_point_data"]["thumbnail_aspect_ratios"] = aspect_ratios
                     time_to_generate_atlas = time.time() - t1
                     timings.timings.append({"part": "thumbnail atlas generation", "duration": time_to_generate_atlas})
 
