@@ -52,6 +52,9 @@ def get_pipeline_steps(dataset_: dict, ignored_fields: list[str] = [], enabled_f
                     'target_field': field.identifier,
                 })
                 steps_added_this_phase.append(field.identifier)
+            # TODO: add elif for fields that should not be generated on insert but
+            # have a generator and which source fields changed
+            # -> set the field to None (and add it to the potentially_changed_fields?)
         if phase_steps:
             pipeline_steps.append(phase_steps)
             steps_added += steps_added_this_phase
