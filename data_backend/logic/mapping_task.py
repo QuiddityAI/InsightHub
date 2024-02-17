@@ -238,7 +238,7 @@ def generate_map(map_id, ignore_cache):
 
     assert len(sorted_ids)
     assert items_by_dataset != {}
-    all_map_vectors_present = all(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, None))
+    all_map_vectors_present = all([x is not None for x in get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, None)])
     projection_phase_is_needed = not similar_map or projection_stage_params_hash != get_projection_stage_hash(map_data['last_parameters']) or ignore_cache
     adding_missing_vectors_is_needed = search_phase_is_needed or (projection_phase_is_needed and not all_map_vectors_present)
     # TODO: decide what to do with secondary_map_vector
