@@ -4,7 +4,9 @@ import time
 import requests
 import logging
 
-with open(".env", "r") as f:
+from diskcache import Cache
+
+with open("../.env", "r") as f:
     for line in f:
         if line.startswith("#"):
             continue
@@ -17,12 +19,16 @@ bing_subscription_key = os.environ.get('BING_SEARCH_V7_SUBSCRIPTION_KEY', '')
 bing_web_search_endpoint = os.environ.get('BING_SEARCH_V7_ENDPOINT', '') + "/v7.0/search"
 
 
-def bing_web_search_formatted(dataset, query: str, website_filter: str | None = None, limit: int = 300):
+cache = Cache("/data/quiddity_data/bing_web_search_cache/")
+
+@cache.memoize(expire=3600*24*7*4)  # 4 weeks
+def bing_web_search_formatted(dataset_id: int, query: str, website_filter: str | None = None, limit: int = 300):
     data = bing_web_search(query, website_filter, limit)
     for i, item in enumerate(data):
         score = 1.0 / (i + 1)
-        item["_id"] = item["url"]
-        item["_dataset_id"] = dataset.id
+        # query needs to be part of id because snippet is query specific
+        item["_id"] = item["url"] + f"_{query}"
+        item["_dataset_id"] = dataset_id
         item["_origins"] = [{'type': 'web_search', 'field': 'unknown',
                           'query': query, 'score': score, 'rank': i+1}]
         item["_score"] = score

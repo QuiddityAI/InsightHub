@@ -44,7 +44,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
             query = params.search.all_field_query
             limit = params.search.result_list_items_per_page if purpose == "list" else params.search.max_items_used_for_mapping
             limit = min(limit, 300)
-            sorted_ids, full_items = bing_web_search_formatted(dataset, query, limit=limit)
+            sorted_ids, full_items = bing_web_search_formatted(dataset.id, query, limit=limit)
             sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
             all_items_by_dataset[dataset_id] = full_items
             continue

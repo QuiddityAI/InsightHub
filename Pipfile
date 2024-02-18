@@ -36,6 +36,7 @@ pillow = "*"
 sentence-transformers = "*"
 django-object-actions = "*"
 cbor2 = "*"
+diskcache = "*"
 
 [dev-packages]
 ipykernel = "*"
