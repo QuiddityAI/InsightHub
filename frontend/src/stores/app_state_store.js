@@ -63,7 +63,6 @@ export const useAppStateStore = defineStore("appState", {
       // classifiers:
       classifiers: [],
       last_used_classifier_id: null,
-      classifier_example_rendering: {},
 
       search_history: [],
       stored_maps: [],
@@ -843,7 +842,7 @@ export const useAppStateStore = defineStore("appState", {
       return this.datasets[dataset_id]
     },
     get_hover_rendering_by_index(item_index) {
-      return this.get_dataset_by_index(item_index).hover_label_rendering
+      return this.get_dataset_by_index(item_index)?.hover_label_rendering
     },
     store_current_map() {
       const that = this
@@ -905,26 +904,22 @@ export const useAppStateStore = defineStore("appState", {
         this.add_item_to_classifier(point_index, classifier_id, class_name, is_positive)
       }
     },
-    add_item_to_classifier(item_index, classifier_id, class_name, is_positive) {
+    add_item_to_classifier(ds_and_item_id, classifier_id, class_name, is_positive) {
       const that = this
-      const classifier =
-        this.classifiers[this.classifiers.findIndex((e) => e.id == classifier_id)]
-      if (!classifier) return
-
-      this.last_used_classifier_id = classifier.id
-      const {dataset_id, item_id} = this.map_data.results.per_point.item_id[item_index]
-      // FIXME: submit dataset_id
+      this.last_used_classifier_id = classifier_id
       const add_item_to_classifier_body = {
-        classifier_id: classifier.id,
+        classifier_id: classifier_id,
         is_positive: is_positive,
         class_name: class_name,
         field_type: FieldType.IDENTIFIER,
-        value: item_id,
+        value: JSON.stringify(ds_and_item_id),
         weight: 1.0,
       }
       httpClient
         .post("/org/data_map/add_item_to_classifier", add_item_to_classifier_body)
         .then(function (created_item) {
+          const classifier = that.classifiers.find((classifier) => classifier.id === classifier_id)
+          if (!classifier) return
           const class_details = classifier.actual_classes.find(
             (actual_class) => actual_class.name === class_name
           )
@@ -943,14 +938,12 @@ export const useAppStateStore = defineStore("appState", {
         this.remove_item_from_classifier(point_index, classifier_id, class_name)
       }
     },
-    remove_item_from_classifier(item_index, classifier_id, class_name) {
+    remove_item_from_classifier(ds_and_item_id, classifier_id, class_name) {
       const that = this
-      const {dataset_id, item_id} = this.map_data.results.per_point.item_id[item_index]
-      // FIXME: submit dataset_id
       const body = {
         classifier_id: classifier_id,
         class_name: class_name,
-        value: item_id,
+        value: JSON.stringify(ds_and_item_id),
       }
       httpClient
         .post("/org/data_map/remove_classifier_example_by_value", body)

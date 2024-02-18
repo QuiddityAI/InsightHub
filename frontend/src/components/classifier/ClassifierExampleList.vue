@@ -78,7 +78,8 @@ export default {
     <ul class="mb-2 mt-4">
       <li v-for="example in examples" :key="example.id" class="justify-between pb-2">
         <ClassifierExample
-          :item_id="example.value"
+          :dataset_id="JSON.parse(example.value)[0]"
+          :item_id="JSON.parse(example.value)[1]"
           :is_positive="example.is_positive"
           @remove="remove_classifier_example(example.id)">
         </ClassifierExample>
