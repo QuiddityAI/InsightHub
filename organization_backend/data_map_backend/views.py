@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -77,10 +78,8 @@ def get_dataset(request):
         return HttpResponse(status=401)
 
     dataset_dict = DatasetSerializer(instance=dataset).data
+    assert isinstance(dataset_dict, dict)
     dataset_dict["object_fields"] = {item['identifier']: item for item in dataset_dict["object_fields"]}
-    dataset_dict["workspace_tool_title"] = dataset.organization.workspace_tool_title
-    dataset_dict["workspace_tool_logo_url"] = dataset.organization.workspace_tool_logo_url
-    dataset_dict["workspace_tool_intro_text"] = dataset.organization.workspace_tool_intro_text
 
     result = json.dumps(dataset_dict)
     return HttpResponse(result, status=200, content_type='application/json')
@@ -125,16 +124,18 @@ def add_search_history_item(request):
 
     try:
         data = json.loads(request.body)
-        dataset_id: int = data["dataset_id"]
+        organization_id: int = data["organization_id"]
         name: str = data["name"]
+        display_name: str = data["display_name"]
         parameters: dict = data["parameters"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     item = SearchHistoryItem()
     item.user_id = request.user.id  # type: ignore
-    item.dataset_id = dataset_id  # type: ignore
+    item.organization_id = organization_id  # type: ignore
     item.name = name
+    item.display_name = display_name
     item.parameters = parameters  # type: ignore
     item.save()
 
@@ -153,11 +154,11 @@ def get_search_history(request):
 
     try:
         data = json.loads(request.body)
-        dataset_id: int = data["dataset_id"]
+        organization_id: int = data["organization_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = SearchHistoryItem.objects.filter(user_id=request.user.id, dataset_id=dataset_id).order_by('-created_at')[:25:-1]
+    items = SearchHistoryItem.objects.filter(user_id=request.user.id, organization_id=organization_id).order_by('-created_at')[:25:-1]
     serialized_data = SearchHistoryItemSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
@@ -173,21 +174,45 @@ def add_classifier(request):
 
     try:
         data = json.loads(request.body)
-        dataset_id: int = data["dataset_id"]
         name: str = data["name"]
+        related_organization_id: int = data["related_organization_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     item = Classifier()
     item.created_by = request.user  # type: ignore
-    item.dataset_id = dataset_id  # type: ignore
     item.name = name
+    item.related_organization_id = related_organization_id  # type: ignore
     item.save()
 
     dataset_dict = ClassifierSerializer(instance=item).data
     result = json.dumps(dataset_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def delete_classifier(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        classifier_id: int = data["classifier_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        item = Classifier.objects.get(id=classifier_id)
+    except Classifier.DoesNotExist:
+        return HttpResponse(status=404)
+    if item.created_by != request.user:
+        return HttpResponse(status=401)
+    item.delete()
+
+    return HttpResponse(None, status=204)
 
 
 @csrf_exempt
@@ -262,11 +287,11 @@ def get_classifiers(request):
 
     try:
         data = json.loads(request.body)
-        dataset_id: int = data["dataset_id"]
+        related_organization_id: int = data["related_organization_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = Classifier.objects.filter(Q(dataset_id=dataset_id) & (Q(created_by=request.user.id) | Q(is_public=True))).order_by('created_at')
+    items = Classifier.objects.filter(Q(related_organization_id=related_organization_id) & (Q(created_by=request.user.id) | Q(is_public=True))).order_by('created_at')
     serialized_data = ClassifierSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
@@ -323,31 +348,6 @@ def get_classifier_examples(request):
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
-
-
-
-@csrf_exempt
-def delete_classifier(request):
-    if request.method != 'POST':
-        return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
-
-    try:
-        data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
-    except (KeyError, ValueError):
-        return HttpResponse(status=400)
-
-    try:
-        item = Classifier.objects.get(id=classifier_id)
-    except Classifier.DoesNotExist:
-        return HttpResponse(status=404)
-    if item.created_by != request.user:
-        return HttpResponse(status=401)
-    item.delete()
-
-    return HttpResponse(None, status=204)
 
 
 @csrf_exempt
@@ -420,7 +420,6 @@ def remove_classifier_example(request):
 
     return HttpResponse(None, status=204)
 
-import logging
 
 @csrf_exempt
 def remove_classifier_example_by_value(request):
@@ -467,8 +466,9 @@ def add_stored_map(request):
 
     try:
         data = json.loads(request.body)
-        dataset_id: int = data["dataset_id"]
+        organization_id: int = data["organization_id"]
         name: str = data["name"]
+        display_name: str = data["display_name"]
         map_id: str = data["map_id"]
         map_data: str = data["map_data"]
     except (KeyError, ValueError):
@@ -476,8 +476,9 @@ def add_stored_map(request):
 
     item = StoredMap(id=map_id)
     item.user_id = request.user.id  # type: ignore
-    item.dataset_id = dataset_id  # type: ignore
+    item.organization_id = organization_id  # type: ignore
     item.name = name
+    item.display_name = display_name
     item.map_data = map_data.encode()  # type: ignore  # FIXME: base64 str needs to be decoded
     item.save()
 
@@ -496,12 +497,12 @@ def get_stored_maps(request):
 
     try:
         data = json.loads(request.body)
-        dataset_id: int = data["dataset_id"]
+        organization_id: int = data["organization_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     # TODO: also show public ones
-    items = StoredMap.objects.filter(user_id=request.user.id, dataset_id=dataset_id).order_by('created_at')[:25]
+    items = StoredMap.objects.filter(user_id=request.user.id, organization_id=organization_id).order_by('created_at')[:25]
     serialized_data = StoredMapSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 

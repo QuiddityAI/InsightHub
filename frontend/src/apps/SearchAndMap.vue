@@ -143,8 +143,8 @@ export default {
     this.appStateStore.retrieve_current_user()
     this.appStateStore.retrieve_available_organizations(() => {
       this.evaluate_url_query_parameters()
+      this.appStateStore.retrieve_stored_maps_history_and_classifiers()
     })
-    this.appStateStore.retrieve_stored_maps_history_and_classifiers()
     this.eventBus.on("datasets_are_loaded", () => {
       const queryParams = new URLSearchParams(window.location.search)
       if (queryParams.get("map_id")) {
@@ -166,6 +166,7 @@ export default {
   watch: {
     "appStateStore.organization_id"() {
       this.appStateStore.reset_search_results_and_map()
+      this.appStateStore.retrieve_stored_maps_history_and_classifiers()
     },
   },
 }
@@ -396,10 +397,10 @@ export default {
                   :key="history_item.id"
                   class="justify-between pb-3">
                   <div class="flex flex-row gap-3">
-                    <span class="font-medium text-gray-500" v-html="history_item.name"></span>
+                    <span class="font-medium text-gray-500" v-html="history_item.display_name"></span>
                     <div class="flex-1"></div>
                     <button
-                      @click="run_search_from_history(history_item)"
+                      @click="appState.run_search_from_history(history_item)"
                       class="text-sm font-light text-gray-500 hover:text-blue-500/50">
                       Run again
                     </button>

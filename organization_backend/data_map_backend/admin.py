@@ -273,6 +273,10 @@ class SearchHistoryItemAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     ordering = ['name']
     readonly_fields = ('changed_at', 'created_at')
 
+    formfield_overrides = {
+        models.JSONField: {'widget': JSONSuit },
+    }
+
 
 @admin.register(ItemCollection)
 class ItemCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
@@ -350,10 +354,10 @@ class ClassifierExampleInline(admin.TabularInline):
 @admin.register(Classifier)
 class ClassifierAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name', 'created_by', 'is_public')
+    list_display = ('id', 'related_organization', 'name', 'created_by', 'is_public')
     list_display_links = ('id', 'name')
-    search_fields = ('name',)
-    ordering = ['name']
+    search_fields = ('name', 'related_organization')
+    ordering = ['related_organization', 'name']
     readonly_fields = ('changed_at', 'created_at', 'actual_classes')
 
     inlines = [

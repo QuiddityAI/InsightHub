@@ -50,7 +50,7 @@ class DatasetSerializer(drf_serializers.ModelSerializer):
 
 class SearchHistoryItemSerializer(drf_serializers.ModelSerializer):
     user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
-    dataset = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+    organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
 
     class Meta:
         model = SearchHistoryItem
@@ -79,6 +79,7 @@ class ClassifierDatasetSpecificSettingsSerializer(drf_serializers.ModelSerialize
 
 class ClassifierSerializer(drf_serializers.ModelSerializer):
     user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+    related_organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
     parent_classifiers = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     dataset_specific_settings = ClassifierDatasetSpecificSettingsSerializer(many=True, read_only=True)
     actual_classes = drf_serializers.ReadOnlyField()
@@ -98,7 +99,7 @@ class ClassifierExampleSerializer(drf_serializers.ModelSerializer):
 
 class StoredMapSerializer(drf_serializers.ModelSerializer):
     user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
-    dataset = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+    organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
 
     class Meta:
         model = StoredMap

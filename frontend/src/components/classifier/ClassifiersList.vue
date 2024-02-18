@@ -29,8 +29,8 @@ export default {
       }
       const that = this
       const create_classifier_body = {
-        dataset_id: this.appStateStore.settings.dataset_id,
         name: name,
+        related_organization_id: this.appStateStore.organization.id,
       }
       httpClient
         .post("/org/data_map/add_classifier", create_classifier_body)

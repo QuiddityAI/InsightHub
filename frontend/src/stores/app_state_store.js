@@ -214,10 +214,14 @@ export const useAppStateStore = defineStore("appState", {
     },
     retrieve_stored_maps_history_and_classifiers() {
       const that = this
+      if (this.organization_id == null) {
+        console.log("organization_id is null, cannot retrieve stored maps, history and classifiers")
+        return
+      }
       this.search_history = []
       // FIXME: refactor with organization_id
       const get_history_body = {
-        dataset_id: this.settings.dataset_id,
+        organization_id: this.organization_id,
       }
       httpClient
         .post("/org/data_map/get_search_history", get_history_body)
@@ -227,7 +231,7 @@ export const useAppStateStore = defineStore("appState", {
 
       this.classifiers = []
       const get_classifiers_body = {
-        dataset_id: this.settings.dataset_id,
+        related_organization_id: this.organization_id,
       }
       httpClient
         .post("/org/data_map/get_classifiers", get_classifiers_body)
@@ -237,7 +241,7 @@ export const useAppStateStore = defineStore("appState", {
 
       this.stored_maps = []
       const get_stored_maps_body = {
-        dataset_id: this.settings.dataset_id,
+        organization_id: this.organization_id,
       }
       httpClient
         .post("/org/data_map/get_stored_maps", get_stored_maps_body)
@@ -472,29 +476,35 @@ export const useAppStateStore = defineStore("appState", {
         })
     },
     get_current_map_name() {
-      let entry_name = ""
+      let name = ""
+      let display_name = ""
       if (this.settings.search.search_type == "external_input") {
         if (this.settings.search.use_separate_queries) {
-          entry_name = "TODO: separate fields"
+          name = "TODO: separate fields"
+          display_name = name
         } else {
-          entry_name = this.settings.search.all_field_query
+          name = this.settings.search.all_field_query
           if (this.settings.search.all_field_query_negative) {
-            entry_name =
-              entry_name + ` (-${this.settings.search.all_field_query_negative})`
+            name = name + ` (-${this.settings.search.all_field_query_negative})`
           }
+          display_name = name
         }
       } else if (this.settings.search.search_type == "cluster") {
-        entry_name = `<i>Cluster</i> '${this.settings.search.origin_display_name}'`
+        name = `Cluster '${this.settings.search.cluster_id}'`
+        display_name = `<i>Cluster</i> '${this.settings.search.origin_display_name}'`
       } else if (this.settings.search.search_type == "similar_to_item") {
-        entry_name = `<i>Similar to</i> '${this.settings.search.origin_display_name}'`
+        name = `Similar to '${this.settings.search.origin_display_name}'`
+        display_name = `<i>Similar to</i> '${this.settings.search.origin_display_name}'`
       } else if (this.settings.search.search_type == "classifier") {
-        entry_name = `<i>Classifier</i> '${this.settings.search.origin_display_name}'`
+        name = `Classifier '${this.settings.search.origin_display_name}'`
+        display_name = `<i>Classifier</i> '${this.settings.search.origin_display_name}'`
       } else if (
         this.settings.search.search_type == "recommended_for_classifier"
       ) {
-        entry_name = `<i>Recommended for classifier</i> '${this.settings.search.origin_display_name}'`
+        name = `Recommended for classifier '${this.settings.search.origin_display_name}'`
+        display_name = `<i>Recommended for classifier</i> '${this.settings.search.origin_display_name}'`
       }
-      return entry_name
+      return [name, display_name]
     },
     add_search_history_item() {
       const that = this
@@ -509,12 +519,13 @@ export const useAppStateStore = defineStore("appState", {
         return
       }
 
-      const entry_name = this.get_current_map_name()
-      if (!entry_name) return
+      const [name, display_name] = this.get_current_map_name()
+      if (!name) return
 
       const history_item_body = {
-        dataset_id: this.settings.dataset_id,
-        name: entry_name,
+        organization_id: this.organization_id,
+        name: name,
+        display_name: display_name,
         parameters: this.settings,
       }
 
@@ -581,7 +592,7 @@ export const useAppStateStore = defineStore("appState", {
         headers: { Accept: "application/json" },
       }
       httpClient
-        .post("/data_backend/map/result", payload, cborConfig)
+        .post("/data_backend/map/result", payload, jsonConfig)
         .then(function (response) {
           that.process_map_update(response)
         })
@@ -827,6 +838,7 @@ export const useAppStateStore = defineStore("appState", {
       return ds_items ? ds_items[dataset_and_item_id[1]] : null
     },
     get_dataset_by_index(item_index) {
+      if (!this.mapState.per_point.item_id[item_index]) return undefined
       const [dataset_id, item_id] = this.mapState.per_point.item_id[item_index]
       return this.datasets[dataset_id]
     },
@@ -835,11 +847,12 @@ export const useAppStateStore = defineStore("appState", {
     },
     store_current_map() {
       const that = this
-      const entry_name = this.get_current_map_name()
-      if (!entry_name) return
+      const [name, display_name] = this.get_current_map_name()
+      if (!name) return
       const store_map_body = {
-        dataset_id: this.settings.dataset_id,
-        name: entry_name,
+        organization_id: this.organization_id,
+        name: name,
+        display_name: display_name,
         map_id: this.map_id,
       }
       httpClient.post("/data_backend/map/store", store_map_body).then(function (response) {
