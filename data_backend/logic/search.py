@@ -324,9 +324,6 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
 
-    if get_dataset(dataset_id).source_plugin != SourcePlugin.INTERNAL_OPENSEARCH_QDRANT:
-        return {}
-
     search_engine_client = TextSearchEngineClient.get_instance()
     items = search_engine_client.get_items_by_ids(dataset_id, [item_id], fields=fields)
     if not items:

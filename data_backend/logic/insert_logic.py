@@ -1,3 +1,4 @@
+from typing import Iterable
 import uuid
 from uuid import uuid4, uuid5
 
@@ -20,7 +21,7 @@ def update_database_layout(dataset_id: int):
     search_engine_client.ensure_dataset_exists(dataset)
 
 
-def insert_many(dataset_id: int, elements: list[dict]):
+def insert_many(dataset_id: int, elements: Iterable[dict]):
     dataset = get_dataset(dataset_id)
 
     for element in elements:

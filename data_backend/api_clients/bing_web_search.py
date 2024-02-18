@@ -6,6 +6,8 @@ import logging
 
 from diskcache import Cache
 
+from logic.insert_logic import insert_many
+
 with open("../.env", "r") as f:
     for line in f:
         if line.startswith("#"):
@@ -24,10 +26,11 @@ cache = Cache("/data/quiddity_data/bing_web_search_cache/")
 @cache.memoize(expire=3600*24*7*4)  # 4 weeks
 def bing_web_search_formatted(dataset_id: int, query: str, website_filter: str | None = None, limit: int = 300):
     data = bing_web_search(query, website_filter, limit)
+    # TODO: remove unused and distracting fields (e.g. "id" that is only valid for this query)
+    logging.warning(f"Inserting {len(data)} Bing web results into dataset {dataset_id}")
+    insert_many(dataset_id, data)
     for i, item in enumerate(data):
         score = 1.0 / (i + 1)
-        # query needs to be part of id because snippet is query specific
-        item["_id"] = item["url"] + f"_{query}"
         item["_dataset_id"] = dataset_id
         item["_origins"] = [{'type': 'web_search', 'field': 'unknown',
                           'query': query, 'score': score, 'rank': i+1}]
@@ -53,7 +56,11 @@ def bing_web_search(query: str, website_filter: str | None = None, limit: int = 
         logging.warning(f"bing_web_search: {len(results)} results so far")
         if len(partial_results) == 0:
             break
-    return results[:limit]
+    results = results[:limit]
+    for item in results:
+        # query needs to be part of id because snippet is query specific
+        item["_id"] = item["url"] + f"_{query}"
+    return results
 
 
 def bing_web_search_call(query: str, website_filter: str | None = None, limit: int = 50, offset: int = 0) -> list:
