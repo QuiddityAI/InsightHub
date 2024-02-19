@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -393,6 +394,9 @@ def add_item_to_classifier(request):
     dataset_dict = ClassifierExampleSerializer(instance=item).data
     serialized_data = json.dumps(dataset_dict)
 
+    classifier.examples_last_changed[class_name] = time.time()  # type: ignore
+    classifier.save()
+
     return HttpResponse(serialized_data, status=200, content_type='application/json')
 
 
@@ -417,6 +421,10 @@ def remove_classifier_example(request):
         return HttpResponse(status=401)
 
     classifier_example.delete()
+
+    for class_name in classifier_example.classes:  # type: ignore
+        classifier_example.classifier.examples_last_changed[class_name] = time.time()  # type: ignore
+    classifier_example.classifier.save()
 
     return HttpResponse(None, status=204)
 

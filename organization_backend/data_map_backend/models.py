@@ -754,6 +754,12 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         help_text="block classes e.g. from parents, using weight of -1",
         blank=True,
         null=True)
+    examples_last_changed = models.JSONField(
+        verbose_name="Examples Last Changed",
+        help_text="For each class, the last time an example was added or removed",
+        default=dict,
+        blank=True,
+        null=True)
     trained_classifiers = models.JSONField(
         verbose_name="Trained Classifiers",
         help_text="For each embedding space, and there for each class, a 'decision' vector to be applied with dotproduct (plus time_updated)",
