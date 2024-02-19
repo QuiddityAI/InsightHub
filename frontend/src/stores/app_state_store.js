@@ -352,7 +352,7 @@ export const useAppStateStore = defineStore("appState", {
         for (const field_identifier in dataset.object_fields) {
           const field = dataset.object_fields[field_identifier]
           if (field.field_type == FieldType.VECTOR) {
-            that.available_vector_fields.push(field.identifier)
+            that.available_vector_fields.push([dataset.id, field.identifier])
             if (
               field.is_available_for_search &&
               dataset.default_search_fields.includes(field.identifier)

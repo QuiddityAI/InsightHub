@@ -424,8 +424,8 @@ export default {
             v-model="appState.settings.vectorize.map_vector_field"
             class="w-1/2 rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
             <option value="w2v_vector" selected>Context-trained W2V Model</option>
-            <option v-for="item in appState.available_vector_fields" :value="item" selected>
-              {{ item }}
+            <option v-for="item in appState.available_vector_fields" :value="item[1]" selected>
+              {{ item[1] }}
             </option>
           </select>
         </div>
@@ -436,8 +436,8 @@ export default {
             class="w-1/2 rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
             <option value="null" selected>None</option>
             <option value="w2v_vector" selected>Context-trained W2V Model</option>
-            <option v-for="item in appState.available_vector_fields" :value="item" selected>
-              {{ item }}
+            <option v-for="item in appState.available_vector_fields" :value="item[1]" selected>
+              {{ item[1] }}
             </option>
           </select>
         </div>

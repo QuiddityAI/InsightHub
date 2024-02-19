@@ -49,7 +49,7 @@ def get_stored_map_data(map_id: str) -> dict | None:
         return None
 
 
-def get_classifier(classifier_id: str) -> DotDict | None:
+def get_classifier(classifier_id: int) -> DotDict | None:
     url = backend_url + '/org/data_map/get_classifier'
     data = {
         'classifier_id': classifier_id,

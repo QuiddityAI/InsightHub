@@ -17,6 +17,7 @@ from logic.insert_logic import insert_many, update_database_layout
 from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_items, get_items_having_value_count
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
+from logic.classifiers import get_decision_vector, get_retraining_status, get_training_status, start_retrain
 
 from database_client.django_client import add_stored_map
 
@@ -290,6 +291,38 @@ def store_map():
     result = add_stored_map(map_id, user_id, dataset_id, name, map_data)
 
     return result
+
+
+# -------------------- Classifiers --------------------
+
+@app.route('/data_backend/classifier/<int:classifier_id>/training_status', methods=['POST'])
+def get_training_status_route(classifier_id: int):
+    params = request.json or {}
+    params = DotDict(params)
+    status = get_training_status(classifier_id, params.class_name, params.target_vector_ds_and_field)
+    return jsonify(status)
+
+
+@app.route('/data_backend/classifier/<int:classifier_id>/retraining_status', methods=['GET'])
+def get_retraining_status_route(classifier_id: int):
+    status = get_retraining_status(classifier_id)
+    return jsonify(status)
+
+
+@app.route('/data_backend/classifier/<int:classifier_id>/retrain', methods=['POST'])
+def start_retrain_route(classifier_id: int):
+    params = request.json or {}
+    params = DotDict(params)
+    start_retrain(classifier_id, params.class_name, params.deep_train)
+    return "", 204
+
+
+@app.route('/data_backend/classifier/<int:classifier_id>/decision_vector', methods=['GET'])
+def get_decision_vector_route(classifier_id: int):
+    params = request.json or {}
+    params = DotDict(params)
+    decision_vector = get_decision_vector(classifier_id, params.class_name, params.embedding_space_id)
+    return jsonify(decision_vector)
 
 
 if __name__ == "__main__":

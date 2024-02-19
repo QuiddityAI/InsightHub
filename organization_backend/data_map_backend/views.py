@@ -313,12 +313,12 @@ def get_classifier(request):
         return HttpResponse(status=400)
 
     try:
-        item = ItemCollection.objects.get(id=classifier_id)
-    except ItemCollection.DoesNotExist:
+        item = Classifier.objects.get(id=classifier_id)
+    except Classifier.DoesNotExist:
         return HttpResponse(status=404)
-    if item.user != request.user:  # TODO: also allow public ones
+    if item.created_by != request.user and not item.is_public:
         return HttpResponse(status=401)
-    serialized_data = ItemCollectionSerializer(item).data
+    serialized_data = ClassifierSerializer(item).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
