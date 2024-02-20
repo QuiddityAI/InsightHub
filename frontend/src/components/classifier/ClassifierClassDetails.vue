@@ -235,7 +235,13 @@ export default {
 
     <div v-if="selected_tab === 'learn'">Learn</div>
 
-    <div v-if="selected_tab === 'recommend'">Rec</div>
+    <div v-if="selected_tab === 'recommend'">
+      <button
+      @click="appStateStore.recommend_items_for_classifier(classifier, class_name)"
+      >
+        Show Map with Recommendations
+      </button>
+    </div>
 
   </div>
 </template>

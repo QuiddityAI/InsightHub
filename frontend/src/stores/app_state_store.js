@@ -93,7 +93,7 @@ export const useAppStateStore = defineStore("appState", {
           origin_display_name: "", // classifier or cluster name, that this map refers to, just for displaying it
           cluster_origin_map_id: null,
           cluster_id: null,
-          classifier_id: null,
+          classifier_id_and_class: null,
           similar_to_item_id: null,
 
           // list results:
@@ -426,7 +426,7 @@ export const useAppStateStore = defineStore("appState", {
 
       this.settings.search.cluster_origin_map_id = null
       this.settings.search.cluster_id = null
-      this.settings.search.classifier_id = null
+      this.settings.search.classifier_id_and_class = null
       this.settings.search.similar_to_item_id = null
 
       this.settings.projection = JSON.parse(
@@ -781,20 +781,20 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.origin_display_name = cluster_item.title
       this.request_search_results()
     },
-    show_classifier_as_map(classifier) {
+    show_classifier_as_map(classifier, class_name) {
       this.settings.search.search_type = "classifier"
-      this.settings.search.classifier_id = classifier.id
+      this.settings.search.classifier_id_and_class = [classifier.id, class_name]
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
-      this.settings.search.origin_display_name = classifier.name
+      this.settings.search.origin_display_name = `${classifier.name}: ${class_name}`
       this.request_search_results()
     },
-    recommend_items_for_classifier(classifier) {
+    recommend_items_for_classifier(classifier, class_name) {
       this.settings.search.search_type = "recommended_for_classifier"
-      this.settings.search.classifier_id = classifier.id
+      this.settings.search.classifier_id_and_class = [classifier.id, class_name]
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
-      this.settings.search.origin_display_name = classifier.name
+      this.settings.search.origin_display_name = `${classifier.name}: ${class_name}`
       this.request_search_results()
     },
     show_global_map() {

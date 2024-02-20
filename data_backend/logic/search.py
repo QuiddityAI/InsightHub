@@ -5,6 +5,8 @@ import json
 import logging
 from functools import lru_cache
 
+import numpy as np
+
 from utils.field_types import FieldType
 from utils.collect_timings import Timings
 from utils.dotdict import DotDict
@@ -12,7 +14,7 @@ from utils.source_plugin_types import SourcePlugin
 
 from api_clients.bing_web_search import bing_web_search_formatted
 from database_client.absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
-from database_client.django_client import get_dataset, get_classifier
+from database_client.django_client import get_classifier_decision_vector, get_dataset, get_classifier
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.local_map_cache import local_maps
@@ -208,26 +210,50 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
 
 
 def get_search_results_matching_a_classifier(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
-    classifier_id = search_settings.classifier_id
+    classifier_id, class_name = search_settings.classifier_id_and_class
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
     if not all([classifier_id is not None, limit, page is not None, dataset]):
         raise ValueError("a parameter is missing")
 
     classifier = get_classifier(classifier_id)
-    if not classifier:
-        raise ValueError("Couldn't find the classifier:" + str(classifier_id))
-    timings.log("search preparation")
+    assert classifier is not None
+    source_fields = []
+    dataset_specific_settings = next(filter(lambda item: item.dataset_id == dataset.id, classifier.dataset_specific_settings), None)
+    vector_field = None
+    embedding_space_id = None
+    if dataset_specific_settings:
+        source_fields = dataset_specific_settings.relevant_object_fields
+    else:
+        source_fields = dataset.default_search_fields
+    # finding the first vector field, starting with the default search fields:
+    for field_name in itertools.chain(source_fields, dataset.object_fields.keys()):
+        field = dataset.object_fields[field_name]
+        try:
+            field_embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
+        except AttributeError:
+            field_embedding_space_id = None
+        if field_embedding_space_id:
+            vector_field = field.identifier
+            embedding_space_id = field_embedding_space_id
+            break
+    if not vector_field or not embedding_space_id:
+        return [], {}, {}
 
-    vector_fields = [field for field in dataset.object_fields.values() if field.is_available_for_search and field.field_type == FieldType.VECTOR]
-    result_sets: list[dict] = []
-    for field in vector_fields:
-        score_threshold = get_field_similarity_threshold(field) if search_settings.use_similarity_thresholds else None
-        results = get_vector_search_results_matching_classifier(dataset, field.identifier, classifier.positive_ids,
-                                                                classifier.negative_ids, required_fields=[],
-                                                                limit=limit, page=page, score_threshold=score_threshold)
-        result_sets.append(results)
-        timings.log("vector database query")
+    decision_vector_data = get_classifier_decision_vector(classifier_id, class_name, embedding_space_id)
+    decision_vector = np.array(decision_vector_data["decision_vector"])
+
+    score_threshold = None
+    metrics = decision_vector_data["metrics"].get("without_random_data") or decision_vector_data["metrics"].get("with_random_data") or {}
+    if metrics.get("best_threshold"):
+        score_threshold = metrics["best_threshold"]
+
+    results = get_vector_search_results(dataset, vector_field, QueryInput(search_settings.all_field_query, search_settings.all_field_query_negative),
+                                        decision_vector.tolist(), required_fields=[],
+                                        internal_input_weight=search_settings.internal_input_weight,
+                                        limit=limit, page=page, score_threshold=score_threshold)
+    result_sets = [results]
+    timings.log("vector database query")
 
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
