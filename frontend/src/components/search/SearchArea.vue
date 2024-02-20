@@ -13,6 +13,7 @@ import MultiSelect from 'primevue/multiselect';
 import httpClient from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
 import { useAppStateStore } from "../../stores/app_state_store"
+import ClassifierAndVectorFieldSelection from "./ClassifierAndVectorFieldSelection.vue";
 
 const appState = useAppStateStore()
 </script>
@@ -106,9 +107,9 @@ export default {
         ["val", "Value"],
         ["opacity", "Opacity"],
         ["secondary_hue", "2nd Hue"],
-        ["secondary_sat", "2nd Saturation"],
-        ["secondary_val", "2nd Value"],
-        ["secondary_opacity", "2nd Opacity"],
+        ["secondary_sat", "2nd Sat"],
+        ["secondary_val", "2nd Val"],
+        ["secondary_opacity", "2nd Opa."],
         ["flatness", "Flatness"],
       ],
       available_styles: [
@@ -568,51 +569,61 @@ export default {
       <div v-show="show_rendering_settings">
         <div
           v-for="param in rendering_parameters"
-          class="flex flex-row items-center justify-between">
-          <span class="w-1/4 text-sm text-gray-500">{{ param[1] }}</span>
-          <select
-            v-model="appState.settings.rendering[param[0]].type"
-            class="rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
-            <option v-for="item in rendering_type_options" :value="item.id" selected>
-              {{ item.title }}
-            </option>
-          </select>
-          <select
+          class="flex flex-row items-center">
+          <span class="w-20 text-sm text-gray-500">{{ param[1] }}</span>
+          <div class="w-32">
+            <select
+              v-model="appState.settings.rendering[param[0]].type"
+              class="w-full rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+              <option v-for="item in rendering_type_options" :value="item.id" selected>
+                {{ item.title }}
+              </option>
+            </select>
+          </div>
+          <div
+            v-if="!['classifier'].includes(appState.settings.rendering[param[0]].type)"
+            class="flex-1">
+            <select
+              v-model="appState.settings.rendering[param[0]].parameter"
+              class="w-full rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+              <option
+                v-if="
+                  ['score', 'fixed', 'rank', 'cluster_idx', 'origin_query_idx'].includes(
+                    appState.settings.rendering[param[0]].type
+                  )
+                "
+                value="">
+                (no parameters)
+              </option>
+              <option
+                v-if="
+                  ['umap', 'umap_perplexity'].includes(
+                    appState.settings.rendering[param[0]].type
+                  )
+                "
+                value="primary">
+                Primary
+              </option>
+              <option
+                v-if="
+                  ['umap', 'umap_perplexity'].includes(
+                    appState.settings.rendering[param[0]].type
+                  )
+                ">
+                Secondary
+              </option>
+              <option
+                v-if="['number_field'].includes(appState.settings.rendering[param[0]].type)"
+                v-for="item in appState.available_number_fields"
+                :value="item">
+                {{ item }}
+              </option>
+            </select>
+          </div>
+          <ClassifierAndVectorFieldSelection
+            v-if="['classifier'].includes(appState.settings.rendering[param[0]].type)"
             v-model="appState.settings.rendering[param[0]].parameter"
-            class="rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
-            <option
-              v-if="
-                ['score', 'fixed', 'rank', 'cluster_idx', 'origin_query_idx'].includes(
-                  appState.settings.rendering[param[0]].type
-                )
-              "
-              value="">
-              (no parameters)
-            </option>
-            <option
-              v-if="
-                ['umap', 'umap_perplexity'].includes(
-                  appState.settings.rendering[param[0]].type
-                )
-              "
-              value="primary">
-              Primary
-            </option>
-            <option
-              v-if="
-                ['umap', 'umap_perplexity'].includes(
-                  appState.settings.rendering[param[0]].type
-                )
-              ">
-              Secondary
-            </option>
-            <option
-              v-if="['number_field'].includes(appState.settings.rendering[param[0]].type)"
-              v-for="item in appState.available_number_fields"
-              :value="item">
-              {{ item }}
-            </option>
-          </select>
+            class="flex-1"/>
         </div>
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-500">Cluster min. samples:</span>
