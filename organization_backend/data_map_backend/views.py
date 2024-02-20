@@ -354,7 +354,7 @@ def get_classifier_decision_vector(request):
 
     decision_vector = None
     if classifier.trained_classifiers:
-        decision_vector = classifier.trained_classifiers.get(embedding_space_id, {}).get(class_name, {}).get('decision_vector')
+        decision_vector = classifier.trained_classifiers.get(str(embedding_space_id), {}).get(class_name, {}).get('decision_vector')
     result = json.dumps(decision_vector)
 
     return HttpResponse(result, status=200, content_type='application/json')

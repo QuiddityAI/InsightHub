@@ -13,7 +13,7 @@ export function normalizeArrayMedianGamma(a, gamma_factor, max_default = 1.0) {
   if (aMin == aMax) {
     return Array(a.length).fill(1.0)
   }
-  a = math.subtract(a, math.min(a))
+  a = aMin > 0 ? math.subtract(a, aMin) : math.add(a, -aMin)
   a = math.divide(a, math.max(math.max(a), max_default))
   // using the median as gamma should provide a good, balanced distribution:
   const gamma = math.max(0.1, math.median(a) * 2.0 * gamma_factor)

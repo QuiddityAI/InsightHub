@@ -14,7 +14,7 @@ from utils.collect_timings import Timings
 from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions, get_field_from_all_items
 from utils.dotdict import DotDict
 
-from database_client.django_client import get_dataset, get_stored_map_data
+from database_client.django_client import get_dataset, get_stored_map_data, get_classifier_decision_vector
 
 from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
@@ -26,6 +26,7 @@ from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
 from logic.thumbnail_atlas import generate_thumbnail_atlas, THUMBNAIL_ATLAS_DIR
 from logic.extract_pipeline import get_pipeline_steps
 from logic.generate_missing_values import generate_missing_values_for_given_elements
+from logic.classifiers import get_embedding_space_from_ds_and_field
 
 
 ABSCLUST_DATASET_ID = 1
@@ -489,6 +490,17 @@ def clusterize_and_render_stage(map_data: dict, params: DotDict, datasets: dict,
             map_data["results"]["per_point_data"][attr] = values
         elif attr_type == "cluster_idx":
             map_data["results"]["per_point_data"][attr] = cluster_id_per_point.tolist()
+        elif attr_type == "classifier":
+            attr_parameter = DotDict(attr_parameter)
+            embedding_space: dict = get_embedding_space_from_ds_and_field([attr_parameter.target_dataset_id, attr_parameter.target_vector_field])  # type: ignore
+            decision_vector = np.array(get_classifier_decision_vector(attr_parameter.classifier_id, attr_parameter.class_name, embedding_space.id))
+            # FIXME: assuming here that the vector is already present (e.g. because its the map vector)
+            # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
+            dummy_vector = np.zeros(embedding_space.dimensions)
+            vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, attr_parameter.target_vector_field, dummy_vector))
+            # using numpy to get dot product between decision vector and all vectors
+            scores = np.dot(vectors, decision_vector)
+            map_data["results"]["per_point_data"][attr] = scores.tolist()
 
 
 def get_map_results(map_id) -> dict | None:

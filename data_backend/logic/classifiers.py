@@ -30,15 +30,15 @@ from logic.generate_missing_values import generate_missing_values_for_given_elem
 from logic.search import get_document_details_by_id
 
 
-def _get_embedding_space_id_from_ds_and_field(ds_and_field: tuple[int, str]):
+def get_embedding_space_from_ds_and_field(ds_and_field: tuple[int, str]) -> DotDict:
     dataset: DotDict = get_dataset(ds_and_field[0])
     field = dataset.object_fields[ds_and_field[1]]
-    embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
-    return embedding_space_id
+    embedding_space = field.generator.embedding_space if field.generator else field.embedding_space
+    return DotDict(embedding_space)
 
 
 def get_training_status(classifier_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str]):
-    embedding_space_id = _get_embedding_space_id_from_ds_and_field(target_vector_ds_and_field)
+    embedding_space_id = get_embedding_space_from_ds_and_field(target_vector_ds_and_field).id
     classifier = get_classifier(classifier_id)
     assert classifier is not None
     time_updated = None
@@ -65,7 +65,7 @@ def get_retraining_status(classifier_id):
 
 
 def start_retrain(classifier_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str], deep_train=False):
-    embedding_space_id = _get_embedding_space_id_from_ds_and_field(target_vector_ds_and_field)
+    embedding_space_id = get_embedding_space_from_ds_and_field(target_vector_ds_and_field).id
     thread = Thread(target=_retrain_safe, args=(classifier_id, class_name, embedding_space_id, deep_train))
     RETRAINING_TASKS[classifier_id] = {
         'class_name': class_name,

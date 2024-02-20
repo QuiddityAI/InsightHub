@@ -599,7 +599,6 @@ export const useAppStateStore = defineStore("appState", {
           if (error.response && error.response.status === 404) {
             // no more data for this task, stop polling:
             that.map_is_in_progess = false
-            console.log("404 response")
           } else {
             console.log(error)
           }
@@ -680,7 +679,8 @@ export const useAppStateStore = defineStore("appState", {
             } else {
               that.mapState.per_point[attr] = normalizeArrayMedianGamma(
                 results_per_point[attr],
-                2.0
+                2.0,
+                0.1
               )
             }
             that.fields_already_received.add(attr)
