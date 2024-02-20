@@ -518,12 +518,12 @@ export default {
       </div>
     </div>
 
-    <div
+    <!-- <div
       v-if="appState.organization ? !appState.organization.workspace_tool_title : true"
       class="absolute -right-3 bottom-4 rounded-xl bg-black py-1 pl-3 pr-5 font-['Lexend'] shadow-sm">
       <span class="font-bold text-white">Quiddity</span>
       <span class="font-light text-gray-200">Workspace</span>
-    </div>
+    </div> -->
 
     <!--  -->
   </main>
