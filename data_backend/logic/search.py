@@ -320,7 +320,7 @@ def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_m
 
 
 @lru_cache
-def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]):
+def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]) -> dict | None:
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
 

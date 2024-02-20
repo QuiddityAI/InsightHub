@@ -12,22 +12,22 @@
 
 
 import copy
+from itertools import chain
+import json
+import logging
 from threading import Thread
 import time
 
+import numpy as np
+
 from utils.dotdict import DotDict
+from utils.field_types import FieldType
 
-from database_client.django_client import get_classifier, get_dataset
-
-
-def get_decision_vector(classifier_id, class_name, embedding_space_id):
-    classifier = get_classifier(classifier_id)
-    assert classifier is not None
-    if not classifier.trained_classifiers:
-        return None
-    # TODO: decision_vectors might be stripped from classifier, might need to retrieve them separately
-    decision_vector = classifier.trained_classifiers.get(embedding_space_id, {}).get(class_name, {}).get('decision_vector')
-    return decision_vector
+from database_client.django_client import get_classifier, get_classifier_examples, get_dataset, get_classifier_decision_vector, set_classifier_decision_vector
+from database_client.vector_search_engine_client import VectorSearchEngineClient
+from logic.extract_pipeline import get_pipeline_steps
+from logic.generate_missing_values import generate_missing_values_for_given_elements
+from logic.search import get_document_details_by_id
 
 
 def _get_embedding_space_id_from_ds_and_field(ds_and_field: tuple[int, str]):
@@ -43,7 +43,7 @@ def get_training_status(classifier_id: int, class_name: str, target_vector_ds_an
     assert classifier is not None
     time_updated = None
     if classifier.trained_classifiers:
-        time_updated = classifier.trained_classifiers.get(embedding_space_id, {}).get(class_name, {}).get('time_updated')
+        time_updated = classifier.trained_classifiers.get(str(embedding_space_id), {}).get(class_name, {}).get('time_updated')
     status = {
         'embedding_space_id': embedding_space_id,
         'time_updated': time_updated,
@@ -66,7 +66,7 @@ def get_retraining_status(classifier_id):
 
 def start_retrain(classifier_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str], deep_train=False):
     embedding_space_id = _get_embedding_space_id_from_ds_and_field(target_vector_ds_and_field)
-    thread = Thread(target=_retrain, args=(classifier_id, class_name, embedding_space_id, deep_train))
+    thread = Thread(target=_retrain_safe, args=(classifier_id, class_name, embedding_space_id, deep_train))
     RETRAINING_TASKS[classifier_id] = {
         'class_name': class_name,
         'progress': 0,
@@ -82,21 +82,90 @@ def start_retrain(classifier_id: int, class_name: str, target_vector_ds_and_fiel
             del RETRAINING_TASKS[other_classifier_id]
 
 
-def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
+def _retrain_safe(classifier_id, class_name, embedding_space_id, deep_train=False):
     # if deep_train, retrain using examples instead of decision vectors from parent classifiers
     # get all examples for class
     # get all embeddings for examples
     # train classifier
     # store classifier, best threshold, metrics
 
+    try:
+        _retrain(classifier_id, class_name, embedding_space_id, deep_train)
+    except Exception as e:
+        RETRAINING_TASKS[classifier_id]['status'] = 'error'
+        RETRAINING_TASKS[classifier_id]['error'] = str(e)
+        RETRAINING_TASKS[classifier_id]['time_finished'] = time.time()
+        logging.exception(e)
+
+
+def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
+    # rudimentary implementation just for simple case of non-exclusive classes and item_id examples:
     classifier = get_classifier(classifier_id)
+    assert classifier is not None
+    examples = get_classifier_examples(classifier_id, class_name, field_type=None, is_positive=None)
+    positive_vectors = []
+    negative_vectors = []
+    vector_db_client = VectorSearchEngineClient.get_instance()
+    for i, example in enumerate(examples):
+        RETRAINING_TASKS[classifier_id]['progress'] = i / len(examples)
+        vector = None
+        if example['field_type'] == FieldType.IDENTIFIER:
+            dataset_id, item_id = json.loads(example['value'])
+            # TODO: batch process
+            dataset = get_dataset(dataset_id)
+            source_fields = []
+            dataset_specific_settings = next(filter(lambda item: item.dataset_id == dataset_id, classifier.dataset_specific_settings), None)
+            vector_field = None
+            if dataset_specific_settings:
+                source_fields = dataset_specific_settings.relevant_object_fields
+            else:
+                source_fields = dataset.default_search_fields
+            for field_name in chain(source_fields, dataset.object_fields.keys()):
+                if field_name in dataset.object_fields:
+                    field = dataset.object_fields[field_name]
+                    try:
+                        field_embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
+                    except AttributeError:
+                        field_embedding_space_id = None
+                    if embedding_space_id == field_embedding_space_id:
+                        vector_field = field.identifier
+                        break
+            if vector_field:
+                try:
+                    logging.warning(f'Getting vector for {dataset_id} {item_id} {vector_field}')
+                    results = vector_db_client.get_items_by_ids(dataset_id, [item_id], vector_field, return_vectors=True, return_payloads=False)
+                except Exception as e:
+                    logging.warning(e)
+                    results = []
+                if len(results) >= 1 and results[0].id == item_id:
+                    vector = results[0].vector[vector_field]
+                if not vector:
+                    pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[vector_field])
+                    item = get_document_details_by_id(dataset_id, item_id, fields=tuple(required_fields))
+                    assert item is not None
+                    generate_missing_values_for_given_elements(pipeline_steps, [item])
+                    vector = item[vector_field]
+        else:
+            # not implemented yet
+            vector = None
+        if vector is not None:
+            if example['is_positive']:
+                positive_vectors.append(vector)
+            else:
+                negative_vectors.append(vector)
 
+    logging.warning(f"Positive vectors: {len(positive_vectors)}, negative vectors: {len(negative_vectors)}")
+    decision_vector = None
+    if positive_vectors:
+        decision_vector = np.average(positive_vectors, axis=0)
+        if negative_vectors:
+            decision_vector -= np.average(negative_vectors, axis=0)
 
-
-    for i in range (10):
-        RETRAINING_TASKS[classifier_id]['progress'] = i / 10.0
-        time.sleep(0.3)
-
+    if decision_vector is not None:
+        logging.warning(f"Decision vector created: {len(decision_vector)} dimensions")
+        set_classifier_decision_vector(classifier_id, class_name, embedding_space_id, decision_vector.tolist())
+    else:
+        logging.warning(f"Decision vector not created")
 
     RETRAINING_TASKS[classifier_id]['status'] = 'done'
     RETRAINING_TASKS[classifier_id]['time_finished'] = time.time()

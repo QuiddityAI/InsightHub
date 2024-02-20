@@ -41,6 +41,9 @@ export default {
   },
   computed: {
     ...mapStores(useAppStateStore),
+    last_retraining_human_readable() {
+      return new Date(this.last_retraining * 1000).toLocaleString()
+    },
   },
   mounted() {
     this.target_vector_field = this.appStateStore.available_vector_fields.find((ds_and_field) => ds_and_field[1] === this.appStateStore.settings.vectorize.map_vector_field)
@@ -98,7 +101,6 @@ export default {
         class_name: this.class_name,
         target_vector_ds_and_field: this.target_vector_field,
       }
-      console.log(this.target_vector_field)
       httpClient.post(`/data_backend/classifier/${this.classifier_id}/training_status`, body)
       .then(function (response) {
         const status = response.data
@@ -142,11 +144,14 @@ export default {
         } else if (status.status === "done") {
           that.is_retraining = false
           that.retraining_progress = 0.0
-          that.last_retraining = new Date()
+          that.last_retraining = Math.floor(Date.now() / 1000)
           that.show_retrain_success_label = true
           setTimeout(() => {
             that.show_retrain_success_label = false
           }, 2000)
+        } else if (status.status === "error") {
+          that.is_retraining = false
+          that.retraining_progress = 0.0
         } else {
           that.retraining_progress = status.progress
           setTimeout(that.get_retraining_status, 300)
@@ -190,7 +195,7 @@ export default {
         class="relative h-6 items-center justify-center rounded-md text-gray-400 bg-gray-100"
         @click="retrain"
         :disabled="is_retraining"
-        :title="`Last retraining: ${last_retraining}, embedding space ${embedding_space_id}`">
+        :title="`Last retraining: ${last_retraining_human_readable}, embedding space ${embedding_space_id}`">
         <div class="absolute h-full bg-blue-500/20 rounded-md" :style="{ width: `${retraining_progress * 100}%` }"></div>
         <span class="mx-2 hover:text-blue-500">{{ is_retraining ? "Retraining..." : (show_retrain_success_label ? "Retrained ✓": "Retrain") }}</span>
       </button>

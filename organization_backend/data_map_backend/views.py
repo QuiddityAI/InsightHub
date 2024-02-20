@@ -313,12 +313,18 @@ def get_classifier(request):
         return HttpResponse(status=400)
 
     try:
-        item = Classifier.objects.get(id=classifier_id)
+        classifier = Classifier.objects.get(id=classifier_id)
     except Classifier.DoesNotExist:
         return HttpResponse(status=404)
-    if item.created_by != request.user and not item.is_public:
+    if classifier.created_by != request.user and not classifier.is_public:
+        # FIXME: not working for non-public?
         return HttpResponse(status=401)
-    serialized_data = ClassifierSerializer(item).data
+    serialized_data = ClassifierSerializer(classifier).data
+    assert isinstance(serialized_data, dict)
+    for item in (serialized_data.get('trained_classifiers') or {}).values():
+        for class_name in item:
+            item[class_name]['decision_vector'] = f'<array of length {len(item[class_name]["decision_vector"])}>'
+
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
@@ -407,7 +413,11 @@ def get_classifier_examples(request):
         return HttpResponse(status=400)
 
     items = []
-    all_items = ClassifierExample.objects.filter(classifier_id=classifier_id, field_type=field_type, is_positive=is_positive).order_by('-date_added')
+    if field_type or is_positive:
+        all_items = ClassifierExample.objects.filter(classifier_id=classifier_id, field_type=field_type, is_positive=is_positive).order_by('-date_added')
+    else:
+        # return all examples
+        all_items = ClassifierExample.objects.filter(classifier_id=classifier_id).order_by('-date_added')
     for item in all_items:
         if (class_name == "_default" and not item.classes) or class_name in item.classes:  # type: ignore
             items.append(item)
