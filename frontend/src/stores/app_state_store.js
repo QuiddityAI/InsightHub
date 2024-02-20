@@ -680,7 +680,7 @@ export const useAppStateStore = defineStore("appState", {
               that.mapState.per_point[attr] = normalizeArrayMedianGamma(
                 results_per_point[attr],
                 2.0,
-                0.1
+                0.0001
               )
             }
             that.fields_already_received.add(attr)

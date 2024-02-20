@@ -77,7 +77,7 @@ def get_classifier_examples(classifier_id: int, class_name: str, field_type: str
     return result.json()
 
 
-def get_classifier_decision_vector(classifier_id: int, class_name: str, embedding_space_id: int) -> list[dict]:
+def get_classifier_decision_vector(classifier_id: int, class_name: str, embedding_space_id: int) -> dict:
     url = backend_url + '/org/data_map/get_classifier_decision_vector'
     data = {
         'classifier_id': classifier_id,
@@ -91,13 +91,14 @@ def get_classifier_decision_vector(classifier_id: int, class_name: str, embeddin
     return result.json()
 
 
-def set_classifier_decision_vector(classifier_id: int, class_name: str, embedding_space_id: int, decision_vector: Iterable) -> None:
+def set_classifier_decision_vector(classifier_id: int, class_name: str, embedding_space_id: int, decision_vector: Iterable, metrics: dict) -> None:
     url = backend_url + '/org/data_map/set_classifier_decision_vector'
     data = {
         'classifier_id': classifier_id,
         'class_name': class_name,
         'embedding_space_id': embedding_space_id,
         'decision_vector': decision_vector,
+        'metrics': metrics,
     }
     result = requests.post(url, json=data)
     if result.status_code != 204:

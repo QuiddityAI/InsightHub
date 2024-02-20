@@ -352,10 +352,10 @@ def get_classifier_decision_vector(request):
     if classifier.created_by != request.user and not classifier.is_public:
         return HttpResponse(status=401)
 
-    decision_vector = None
+    result_data = None
     if classifier.trained_classifiers:
-        decision_vector = classifier.trained_classifiers.get(str(embedding_space_id), {}).get(class_name, {}).get('decision_vector')
-    result = json.dumps(decision_vector)
+        result_data = classifier.trained_classifiers.get(str(embedding_space_id), {}).get(class_name, {})
+    result = json.dumps(result_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
@@ -373,6 +373,7 @@ def set_classifier_decision_vector(request):
         class_name: str = data["class_name"]
         embedding_space_id: int = data["embedding_space_id"]
         decision_vector = data["decision_vector"]
+        metrics = data["metrics"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -390,6 +391,7 @@ def set_classifier_decision_vector(request):
     if class_name not in classifier.trained_classifiers[embedding_space_id]:
         classifier.trained_classifiers[embedding_space_id][class_name] = {}
     classifier.trained_classifiers[embedding_space_id][class_name]['decision_vector'] = decision_vector
+    classifier.trained_classifiers[embedding_space_id][class_name]['metrics'] = metrics
     classifier.trained_classifiers[embedding_space_id][class_name]['time_updated'] = time.time()
     classifier.save()
 

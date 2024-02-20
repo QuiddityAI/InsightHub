@@ -25,6 +25,7 @@ from utils.field_types import FieldType
 
 from database_client.django_client import get_classifier, get_classifier_examples, get_dataset, get_classifier_decision_vector, set_classifier_decision_vector
 from database_client.vector_search_engine_client import VectorSearchEngineClient
+from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.extract_pipeline import get_pipeline_steps
 from logic.generate_missing_values import generate_missing_values_for_given_elements
 from logic.search import get_document_details_by_id
@@ -106,6 +107,7 @@ def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
     positive_vectors = []
     negative_vectors = []
     vector_db_client = VectorSearchEngineClient.get_instance()
+    included_dataset_ids = set()
     for i, example in enumerate(examples):
         RETRAINING_TASKS[classifier_id]['progress'] = i / len(examples)
         vector = None
@@ -131,6 +133,7 @@ def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
                         vector_field = field.identifier
                         break
             if vector_field:
+                included_dataset_ids.add((dataset_id, vector_field))
                 try:
                     logging.warning(f'Getting vector for {dataset_id} {item_id} {vector_field}')
                     results = vector_db_client.get_items_by_ids(dataset_id, [item_id], vector_field, return_vectors=True, return_payloads=False)
@@ -163,12 +166,74 @@ def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
 
     if decision_vector is not None:
         logging.warning(f"Decision vector created: {len(decision_vector)} dimensions")
-        set_classifier_decision_vector(classifier_id, class_name, embedding_space_id, decision_vector.tolist())
+        metrics_without_random_data = None
+        metrics_with_random_data = None
+        if negative_vectors:
+            metrics_without_random_data = get_metrics(decision_vector, positive_vectors, negative_vectors)
+        if included_dataset_ids:
+            text_search_engine_client = TextSearchEngineClient.get_instance()
+            negative_items_per_dataset = 20
+            random_negative_vectors = []
+            for dataset_id, vector_field in included_dataset_ids:
+                random_items = text_search_engine_client.get_random_items(dataset_id, negative_items_per_dataset, [])
+                results = vector_db_client.get_items_by_ids(dataset_id, [e['_id'] for e in random_items], vector_field, return_vectors=True, return_payloads=False)
+                for result in results:
+                    vector = result.vector[vector_field]
+                    random_negative_vectors.append(vector)
+                # TODO: if vectors not in database, create them here on-the-fly
+            if random_negative_vectors:
+                negative_vectors = np.array(negative_vectors)
+                random_negative_vectors = np.array(random_negative_vectors)
+                negative_vectors = np.concatenate([negative_vectors, random_negative_vectors])
+                metrics_with_random_data = get_metrics(decision_vector, positive_vectors, negative_vectors)
+        metrics = {
+            'without_random_data': metrics_without_random_data,
+            'with_random_data': metrics_with_random_data,
+        }
+        set_classifier_decision_vector(classifier_id, class_name, embedding_space_id, decision_vector.tolist(), metrics)
     else:
         logging.warning(f"Decision vector not created")
 
+
     RETRAINING_TASKS[classifier_id]['status'] = 'done'
     RETRAINING_TASKS[classifier_id]['time_finished'] = time.time()
+
+
+def get_metrics(decision_vector, positive_vectors, negative_vectors):
+    positive_scores = np.dot(positive_vectors, decision_vector)
+    negative_scores = np.dot(negative_vectors, decision_vector)
+    all_scores = np.concatenate([positive_scores, negative_scores])
+    all_labels = np.concatenate([np.ones(len(positive_scores)), np.zeros(len(negative_scores))])
+    thresholds = np.sort(all_scores)
+    # using midpoints between scores as thresholds:
+    # for i in range(1, len(thresholds)):
+    #     thresholds[i] = (thresholds[i - 1] + thresholds[i]) / 2
+    best_f1 = 0
+    best_threshold = 0
+    best_precision = 0
+    best_recall = 0
+    epsilon = 1e-10
+    for threshold in thresholds:
+        predictions = all_scores > threshold
+        true_positives = np.sum(predictions * all_labels)
+        false_positives = np.sum(predictions * (1 - all_labels))
+        false_negatives = np.sum((1 - predictions) * all_labels)
+        precision = true_positives / (true_positives + false_positives + epsilon)
+        recall = true_positives / (true_positives + false_negatives + epsilon)
+        f1 = 2 * precision * recall / (precision + recall + epsilon)
+        if f1 > best_f1:
+            best_f1 = f1
+            best_threshold = threshold
+            best_precision = precision
+            best_recall = recall
+    metrics = {
+        'highest_score': np.max(positive_scores),
+        'best_f1': best_f1,
+        'best_threshold': best_threshold,
+        'best_precision': best_precision,
+        'best_recall': best_recall,
+    }
+    return metrics
 
 
 def _calculate_decision_vector_and_best_threshold_and_metrics(classifier_id, class_name, embedding_space_id):
