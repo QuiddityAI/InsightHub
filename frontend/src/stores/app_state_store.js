@@ -897,6 +897,12 @@ export const useAppStateStore = defineStore("appState", {
           that.map_is_in_progess = true
           that.request_mapping_progress()
         })
+        .catch(function (error) {
+          if (error.response && error.response.status === 404) {
+            // map doesn't exist anymore, go back to clear page and reset URL parameters:
+            that.reset_search_box()
+          }
+        })
     },
     add_selected_points_to_classifier(classifier_id, class_name, is_positive) {
       // TODO: implement more efficient way
