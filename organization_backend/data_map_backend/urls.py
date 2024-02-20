@@ -14,6 +14,8 @@ urlpatterns=[
     path("delete_classifier_class", views.delete_classifier_class),
     path("get_classifiers", views.get_classifiers),
     path("get_classifier", views.get_classifier),
+    path("get_classifier_decision_vector", views.get_classifier_decision_vector),
+    path("set_classifier_decision_vector", views.set_classifier_decision_vector),
     path("get_classifier_examples", views.get_classifier_examples),
     path("delete_classifier", views.delete_classifier),
     path("add_item_to_classifier", views.add_item_to_classifier),

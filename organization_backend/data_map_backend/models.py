@@ -2,6 +2,7 @@ from collections import defaultdict
 import copy
 import json
 
+import numpy as np
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -785,6 +786,16 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
                 "negative_count": v[1]
             })
         return sorted(classes_list_of_dicts, key=lambda x: x["name"])
+
+    def simplified_trained_classifiers(self):
+        data = copy.deepcopy(self.trained_classifiers) or {}
+        for embedding_space_data in data.values():
+            for class_name in embedding_space_data:
+                if "decision_vector" in embedding_space_data[class_name]:
+                    embedding_space_data[class_name]["decision_vector"] = f"&ltarray of length {len(embedding_space_data[class_name]['decision_vector'])}, stdev {np.std(embedding_space_data[class_name]['decision_vector']):.4f}&gt"
+        return mark_safe(json.dumps(data, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
+    simplified_trained_classifiers.short_description = "Trained Classifiers"
+
 
     def __str__(self):
         return f"{self.name}"

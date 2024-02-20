@@ -325,6 +325,72 @@ def get_classifier(request):
 
 
 @csrf_exempt
+def get_classifier_decision_vector(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        classifier_id: int = data["classifier_id"]
+        class_name: str = data["class_name"]
+        embedding_space_id: int = data["embedding_space_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        classifier = Classifier.objects.get(id=classifier_id)
+    except Classifier.DoesNotExist:
+        return HttpResponse(status=404)
+    if classifier.created_by != request.user and not classifier.is_public:
+        return HttpResponse(status=401)
+
+    decision_vector = None
+    if classifier.trained_classifiers:
+        decision_vector = classifier.trained_classifiers.get(embedding_space_id, {}).get(class_name, {}).get('decision_vector')
+    result = json.dumps(decision_vector)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def set_classifier_decision_vector(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        classifier_id: int = data["classifier_id"]
+        class_name: str = data["class_name"]
+        embedding_space_id: int = data["embedding_space_id"]
+        decision_vector = data["decision_vector"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        classifier = Classifier.objects.get(id=classifier_id)
+    except Classifier.DoesNotExist:
+        return HttpResponse(status=404)
+    if classifier.created_by != request.user and not classifier.is_public:
+        return HttpResponse(status=401)
+
+    if classifier.trained_classifiers is None:
+        classifier.trained_classifiers = {}  # type: ignore
+    if embedding_space_id not in classifier.trained_classifiers:
+        classifier.trained_classifiers[embedding_space_id] = {}
+    if class_name not in classifier.trained_classifiers[embedding_space_id]:
+        classifier.trained_classifiers[embedding_space_id][class_name] = {}
+    classifier.trained_classifiers[embedding_space_id][class_name]['decision_vector'] = decision_vector
+    classifier.trained_classifiers[embedding_space_id][class_name]['time_updated'] = time.time()
+    classifier.save()
+
+    return HttpResponse(None, status=204)
+
+
+@csrf_exempt
 def get_classifier_examples(request):
     if request.method != 'POST':
         return HttpResponse(status=405)

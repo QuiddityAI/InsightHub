@@ -1,5 +1,6 @@
 
 import logging
+from typing import Iterable
 import requests
 import os
 import json
@@ -59,6 +60,35 @@ def get_classifier(classifier_id: int) -> DotDict | None:
         logging.warning("Couldn't find classifier: " + str(classifier_id))
         return None
     return DotDict(result.json())
+
+
+
+def get_classifier_decision_vector(classifier_id: int, class_name: str, embedding_space_id: int) -> list[dict]:
+    url = backend_url + '/org/data_map/get_classifier_decision_vector'
+    data = {
+        'classifier_id': classifier_id,
+        'class_name': class_name,
+        'embedding_space_id': embedding_space_id,
+    }
+    result = requests.post(url, json=data)
+    if result.status_code != 200:
+        logging.warning("Couldn't find classifier decision vector")
+        return []
+    return result.json()
+
+
+def set_classifier_decision_vector(classifier_id: int, class_name: str, embedding_space_id: int, decision_vector: Iterable) -> None:
+    url = backend_url + '/org/data_map/set_classifier_decision_vector'
+    data = {
+        'classifier_id': classifier_id,
+        'class_name': class_name,
+        'embedding_space_id': embedding_space_id,
+        'decision_vector': decision_vector,
+    }
+    result = requests.post(url, json=data)
+    if result.status_code != 204:
+        logging.warning("Couldn't set classifier decision vector")
+    return None
 
 
 def get_generators() -> list[DotDict]:

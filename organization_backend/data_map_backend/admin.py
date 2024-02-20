@@ -358,7 +358,10 @@ class ClassifierAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     list_display_links = ('id', 'name')
     search_fields = ('name', 'related_organization')
     ordering = ['related_organization', 'name']
-    readonly_fields = ('changed_at', 'created_at', 'actual_classes')
+    readonly_fields = ('changed_at', 'created_at', 'actual_classes', 'simplified_trained_classifiers')
+
+    exclude = ['trained_classifiers']
+
 
     inlines = [
         ClassifierDatasetSpecificSettingsInline,
