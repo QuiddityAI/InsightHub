@@ -901,7 +901,8 @@ export const useAppStateStore = defineStore("appState", {
     add_selected_points_to_classifier(classifier_id, class_name, is_positive) {
       // TODO: implement more efficient way
       for (const point_index of this.mapState.selected_point_indexes) {
-        this.add_item_to_classifier(point_index, classifier_id, class_name, is_positive)
+        const ds_and_item_id = this.mapState.per_point.item_id[point_index]
+        this.add_item_to_classifier(ds_and_item_id, classifier_id, class_name, is_positive)
       }
     },
     add_item_to_classifier(ds_and_item_id, classifier_id, class_name, is_positive) {
