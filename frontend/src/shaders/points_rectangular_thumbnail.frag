@@ -5,6 +5,7 @@ precision highp float;
 in vec2 vUv;
 in vec3 vertexPositionVar;
 in vec3 albedoColorVar;
+in vec4 secondaryColorVar;
 in float clusterIdVar;
 flat in int pointIdxVar;
 in float isHighlighted;
@@ -66,6 +67,10 @@ float roundedBoxSDF(vec2 posFromCenter, vec2 size, float radius, float borderThi
 void main() {
     // position of this fragment within point vertex / quad:
     vec2 posFromBottomLeft = vUv;  // 0 - 1
+    vec2 circleCenter = vec2(0.5, 0.5);
+    float circleRadius = 0.5;
+    vec2 posFromCenter = (posFromBottomLeft - circleCenter) / circleRadius;
+    float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
 
     bool showThumbnail = useTextureAtlas && thumbnailAspectRatioVar > 0.0;
     if (showThumbnail) {
@@ -84,10 +89,6 @@ void main() {
         FragColor.a = max(FragColor.a, isBorder) * maxOpacity;
         FragColor.rgb = mix(FragColor.rgb, albedoColorVar, isBorder);
     } else {
-        vec2 circleCenter = vec2(0.5, 0.5);
-        float circleRadius = 0.5;
-        vec2 posFromCenter = (posFromBottomLeft - circleCenter) / circleRadius;
-        float distFromCenter = length(posFromCenter);  // 0 - 1.0 within circle
         float pointRadiusPx = pointRadiusPxVar;
         vec2 positionOnCircle = (posFromCenter + 1.0) / 2.0;
 
@@ -156,4 +157,9 @@ void main() {
 
         FragColor.rgb = mix(FragColor.rgb, pointColorAtThisPixel, circleArea);
     }
+
+    // secondary color:
+    float isRing = distFromCenter > 0.7 ? (distFromCenter <= 1.0 ? 1.0 : 0.0) : 0.0;
+    FragColor.rgb = mix(FragColor.rgb, secondaryColorVar.rgb, isRing * secondaryColorVar.a);
+    FragColor.a = max(FragColor.a, secondaryColorVar.a * maxOpacity * isRing);
 }

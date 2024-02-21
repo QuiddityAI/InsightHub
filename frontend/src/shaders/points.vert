@@ -38,6 +38,7 @@ uniform float pointSizeFactor;
 out vec2 vUv;
 out vec3 vertexPositionVar;
 out vec3 albedoColorVar;
+out vec4 secondaryColorVar;
 out float clusterIdVar;
 flat out int pointIdxVar;
 out float isHighlighted;
@@ -70,6 +71,8 @@ void main() {
     vec3 selectedColor = vec3(1.0, 0.0, 0.0);
     vec3 unclustered_color = vec3(0.7);
     albedoColorVar = isHighlighted > 0.5 ? highlightedColor : (isSelected > 0.5 ? selectedColor : (selectedClusterId != -1 && selectedClusterId != int(clusterId) ? unclustered_color : normalColor));
+
+    secondaryColorVar = vec4(hsv2rgb(vec3(secondary_hue, secondary_sat, secondary_val)), secondary_opacity);
 
     // position calculation:
     vec3 rawPos = vec3(positionX, positionY, (gl_InstanceID == hoveredPointIdx) ? -0.9 : -1.0);
