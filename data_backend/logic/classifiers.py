@@ -161,8 +161,8 @@ def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
     decision_vector = None
     if positive_vectors:
         decision_vector = np.average(positive_vectors, axis=0)
-        if negative_vectors:
-            decision_vector -= np.average(negative_vectors, axis=0)
+        #if negative_vectors:
+        #    decision_vector -= np.average(negative_vectors, axis=0)
 
     if decision_vector is not None:
         logging.warning(f"Decision vector created: {len(decision_vector)} dimensions")
@@ -184,7 +184,7 @@ def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
             if random_negative_vectors:
                 negative_vectors = np.array(negative_vectors)
                 random_negative_vectors = np.array(random_negative_vectors)
-                negative_vectors = np.concatenate([negative_vectors, random_negative_vectors])
+                negative_vectors = np.concatenate([negative_vectors, random_negative_vectors]) if len(negative_vectors) > 0 else random_negative_vectors
                 metrics_with_random_data = get_metrics(decision_vector, positive_vectors, negative_vectors)
         metrics = {
             'without_random_data': metrics_without_random_data,
