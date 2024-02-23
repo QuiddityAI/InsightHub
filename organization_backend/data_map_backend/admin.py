@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from django.contrib import admin
@@ -350,7 +351,6 @@ class CollectionItemAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     }
 
 
-
 class CollectionItemInline(admin.TabularInline):
     model = CollectionItem
     readonly_fields = ('date_added',)
@@ -365,29 +365,72 @@ class CollectionItemInline(admin.TabularInline):
 
 
 @admin.register(TrainedClassifier)
-class TrainedClassifierAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ('id', 'collection', 'class_name', 'embedding_space')
     list_display_links = ('id', 'collection', 'class_name', 'embedding_space')
     search_fields = ('id', 'collection', 'class_name', 'embedding_space')
     ordering = ['collection', 'class_name', 'embedding_space']
-    readonly_fields = ('changed_at', 'created_at', 'last_retrained_at', 'decision_vector_stats')
+    readonly_fields = ('changed_at', 'created_at', 'last_retrained_at', 'is_up_to_date', 'decision_vector_stats', 'get_retraining_status')
     exclude = ('decision_vector',)
 
     formfield_overrides = {
         models.JSONField: {'widget': JSONSuit },
     }
 
+    def get_retraining_status(self, obj):
+        try:
+            url = data_backend_url + f'/data_backend/classifier/{obj.collection_id}/retraining_status'  # type: ignore
+            result = requests.get(url)
+        except Exception as e:
+            return repr(e)
+        try:
+            data = result.json()
+            if not data:
+                return "Not currently training"
+            return mark_safe(json.dumps(data, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
+        except requests.exceptions.JSONDecodeError:
+            return "Not currently training"
+    get_retraining_status.short_description = "Retraining status"  # type: ignore
+
+    @action(label="(Re)train Classifier", description="Train classifier for this class and embedding space")
+    def retrain_classifier(self, request, obj):
+        url = data_backend_url + f'/data_backend/classifier/{obj.collection_id}/retrain'
+        data = {
+            'class_name': obj.class_name,
+            'embedding_space_id': obj.embedding_space_id,
+        }
+        requests.post(url, json=data)
+        self.message_user(request, "Retraining classifier...")
+
+    change_actions = ('retrain_classifier',)
+
+    def retrain_multiple_classifiers(self, request, queryset):
+        for obj in queryset:
+            url = data_backend_url + f'/data_backend/classifier/{obj.collection_id}/retrain'
+            data = {
+                'class_name': obj.class_name,
+                'embedding_space_id': obj.embedding_space_id,
+            }
+            requests.post(url, json=data)
+
+    actions = ['retrain_multiple_classifiers']
+
 
 class TrainedClassifierInline(admin.StackedInline):
     model = TrainedClassifier
-    readonly_fields = ('changed_at', 'created_at', 'last_retrained_at', 'decision_vector_stats')
+    readonly_fields = ('changed_at', 'created_at', 'last_retrained_at', 'is_up_to_date', 'decision_vector_stats', 'link_to_change_view')
     exclude = ('decision_vector',)
     extra = 0
 
     formfield_overrides = {
         models.JSONField: {'widget': JSONSuit },
     }
+
+    def link_to_change_view(self, obj):
+        return mark_safe(f'<a href="/org/admin/data_map_backend/trainedclassifier/{obj.id}/change/">Open Details</a>')
+
+    link_to_change_view.short_description='Details'
 
 
 @admin.register(DataCollection)

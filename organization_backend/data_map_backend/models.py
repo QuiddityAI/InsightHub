@@ -521,6 +521,11 @@ class ObjectField(models.Model):
             return repr(e)
     items_having_value_count.fget.short_description = "Items having this value"  # type: ignore
 
+    @property
+    def actual_embedding_space(self):
+        return self.embedding_space or self.generator.embedding_space if self.generator else None
+    actual_embedding_space.fget.short_description = "Actual Embedding Space"  # type: ignore
+
     def __str__(self):
         return f"{self.identifier}"
 
