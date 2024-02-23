@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import time
@@ -8,9 +9,10 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
+from django.utils import timezone
 
-from .models import Classifier, ClassifierExample, Dataset, Organization, SearchHistoryItem, ItemCollection, StoredMap, Generator
-from .serializers import ClassifierExampleSerializer, ClassifierSerializer, DatasetSerializer, OrganizationSerializer, SearchHistoryItemSerializer, ItemCollectionSerializer, StoredMapSerializer, GeneratorSerializer
+from .models import DataCollection, CollectionItem, Dataset, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
+from .serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -167,7 +169,7 @@ def get_search_history(request):
 
 
 @csrf_exempt
-def add_classifier(request):
+def add_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -180,20 +182,20 @@ def add_classifier(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    item = Classifier()
+    item = DataCollection()
     item.created_by = request.user  # type: ignore
     item.name = name
     item.related_organization_id = related_organization_id  # type: ignore
     item.save()
 
-    dataset_dict = ClassifierSerializer(instance=item).data
+    dataset_dict = CollectionSerializer(instance=item).data
     result = json.dumps(dataset_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
 @csrf_exempt
-def delete_classifier(request):
+def delete_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -201,13 +203,13 @@ def delete_classifier(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        item = Classifier.objects.get(id=classifier_id)
-    except Classifier.DoesNotExist:
+        item = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if item.created_by != request.user:
         return HttpResponse(status=401)
@@ -217,7 +219,7 @@ def delete_classifier(request):
 
 
 @csrf_exempt
-def add_classifier_class(request):
+def add_collection_class(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -225,14 +227,14 @@ def add_classifier_class(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        item = Classifier.objects.get(id=classifier_id)
-    except Classifier.DoesNotExist:
+        item = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if item.created_by != request.user:
         return HttpResponse(status=401)
@@ -247,7 +249,7 @@ def add_classifier_class(request):
 
 
 @csrf_exempt
-def delete_classifier_class(request):
+def delete_collection_class(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -255,32 +257,35 @@ def delete_classifier_class(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    all_items = ClassifierExample.objects.filter(classifier_id=classifier_id)
+    all_items = CollectionItem.objects.filter(collection_id=collection_id)
     for item in all_items:
         if (class_name == "_default" and not item.classes) or class_name in item.classes:  # type: ignore
             item.delete()
 
+    classifiers = TrainedClassifier.objects.filter(collection_id=collection_id, class_name=class_name)
+    classifiers.delete()
+
     try:
-        item = Classifier.objects.get(id=classifier_id)
-    except Classifier.DoesNotExist:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-    if item.created_by != request.user:
+    if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    if item.class_names != None and class_name in item.class_names:
-        item.class_names.remove(class_name)
-    item.save()
+    if collection.class_names != None and class_name in collection.class_names:
+        collection.class_names.remove(class_name)
+    collection.save()
 
     return HttpResponse(None, status=204)
 
 
 @csrf_exempt
-def get_classifiers(request):
+def get_collections(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -292,15 +297,15 @@ def get_classifiers(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = Classifier.objects.filter(Q(related_organization_id=related_organization_id) & (Q(created_by=request.user.id) | Q(is_public=True))).order_by('created_at')
-    serialized_data = ClassifierSerializer(items, many=True).data
+    items = DataCollection.objects.filter(Q(related_organization_id=related_organization_id) & (Q(created_by=request.user.id) | Q(is_public=True))).order_by('created_at')
+    serialized_data = CollectionSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
 @csrf_exempt
-def get_classifier(request):
+def get_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -308,30 +313,24 @@ def get_classifier(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        classifier = Classifier.objects.get(id=classifier_id)
-    except Classifier.DoesNotExist:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-    if classifier.created_by != request.user and not classifier.is_public:
-        # FIXME: not working for non-public?
+    if collection.created_by != request.user and not collection.is_public and not is_from_backend(request):
         return HttpResponse(status=401)
-    serialized_data = ClassifierSerializer(classifier).data
-    assert isinstance(serialized_data, dict)
-    for item in (serialized_data.get('trained_classifiers') or {}).values():
-        for class_name in item:
-            item[class_name]['decision_vector'] = f'<array of length {len(item[class_name]["decision_vector"])}>'
-
+    serialized_data = CollectionSerializer(collection).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
 @csrf_exempt
-def get_classifier_decision_vector(request):
+def get_trained_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -339,29 +338,26 @@ def get_classifier_decision_vector(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
         embedding_space_id: int = data["embedding_space_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        classifier = Classifier.objects.get(id=classifier_id)
-    except Classifier.DoesNotExist:
+        classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
+    except TrainedClassifier.DoesNotExist:
         return HttpResponse(status=404)
-    if classifier.created_by != request.user and not classifier.is_public:
+    if classifier.collection.created_by != request.user and not classifier.collection.is_public:
         return HttpResponse(status=401)
-
-    result_data = None
-    if classifier.trained_classifiers:
-        result_data = classifier.trained_classifiers.get(str(embedding_space_id), {}).get(class_name, {})
-    result = json.dumps(result_data)
+    serialized_data = TrainedClassifierSerializer(classifier).data
+    result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
 @csrf_exempt
-def set_classifier_decision_vector(request):
+def set_trained_classifier(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -369,37 +365,39 @@ def set_classifier_decision_vector(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
         embedding_space_id: int = data["embedding_space_id"]
-        decision_vector = data["decision_vector"]
-        metrics = data["metrics"]
+        decision_vector = data.get("decision_vector")
+        highest_score = data.get("highest_score")
+        threshold = data.get("threshold")
+        metrics = data.get("metrics")
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        classifier = Classifier.objects.get(id=classifier_id)
-    except Classifier.DoesNotExist:
-        return HttpResponse(status=404)
-    if classifier.created_by != request.user and not classifier.is_public:
+        classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
+    except TrainedClassifier.DoesNotExist:
+        classifier = TrainedClassifier(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
+    if classifier.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    if classifier.trained_classifiers is None:
-        classifier.trained_classifiers = {}  # type: ignore
-    if embedding_space_id not in classifier.trained_classifiers:
-        classifier.trained_classifiers[embedding_space_id] = {}
-    if class_name not in classifier.trained_classifiers[embedding_space_id]:
-        classifier.trained_classifiers[embedding_space_id][class_name] = {}
-    classifier.trained_classifiers[embedding_space_id][class_name]['decision_vector'] = decision_vector
-    classifier.trained_classifiers[embedding_space_id][class_name]['metrics'] = metrics
-    classifier.trained_classifiers[embedding_space_id][class_name]['time_updated'] = time.time()
+    if decision_vector is not None:
+        classifier.decision_vector = decision_vector
+        classifier.last_retrained_at = timezone.now()
+    if highest_score is not None:
+        classifier.highest_score = highest_score
+    if threshold is not None:
+        classifier.threshold = threshold
+    if metrics is not None:
+        classifier.metrics = metrics
     classifier.save()
 
     return HttpResponse(None, status=204)
 
 
 @csrf_exempt
-def get_classifier_examples(request):
+def get_collection_items(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -407,30 +405,31 @@ def get_classifier_examples(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
         class_name = data["class_name"]
         field_type = data["type"]
         is_positive = data["is_positive"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = []
     if field_type or is_positive:
-        all_items = ClassifierExample.objects.filter(classifier_id=classifier_id, field_type=field_type, is_positive=is_positive).order_by('-date_added')
+        all_items = CollectionItem.objects.filter(collection_id=collection_id, field_type=field_type, is_positive=is_positive).order_by('-date_added')
     else:
         # return all examples
-        all_items = ClassifierExample.objects.filter(classifier_id=classifier_id).order_by('-date_added')
+        all_items = CollectionItem.objects.filter(collection_id=collection_id).order_by('-date_added')
+    # FIXME: filter by class already above (not sure why it's not done in the query above already)
+    items = []
     for item in all_items:
         if (class_name == "_default" and not item.classes) or class_name in item.classes:  # type: ignore
             items.append(item)
-    serialized_data = ClassifierExampleSerializer(items, many=True).data
+    serialized_data = CollectionItemSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
 
 
 @csrf_exempt
-def add_item_to_classifier(request):
+def add_item_to_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -438,9 +437,9 @@ def add_item_to_classifier(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
         is_positive: bool = data["is_positive"]
-        class_name: str = data["class_name"]
+        class_name: str = data.get("class_name", '_default')
         field_type: str = data["field_type"]
         value: str = data["value"]
         weight: float = data["weight"]
@@ -448,38 +447,39 @@ def add_item_to_classifier(request):
         return HttpResponse(status=400)
 
     try:
-        classifier = Classifier.objects.get(id=classifier_id)
-    except Classifier.DoesNotExist:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-    if classifier.created_by != request.user:
+    if collection.created_by != request.user and not is_from_backend(request):
         return HttpResponse(status=401)
 
-    items = ClassifierExample.objects.filter(classifier_id=classifier_id, is_positive=is_positive, field_type=field_type, value=value)
+    items = CollectionItem.objects.filter(collection_id=collection_id, is_positive=is_positive, field_type=field_type, value=value)
     for item in items:
         if class_name in item.classes:  # type: ignore
+            # the item exists already, but the weight might need to be updated:
             item.weight = weight
             item.save()
             return HttpResponse(None, status=204)
 
-    item = ClassifierExample()
-    item.classifier_id = classifier_id  # type: ignore
+    item = CollectionItem()
+    item.collection_id = collection_id  # type: ignore
     item.is_positive = is_positive
-    item.classes = [class_name] if class_name != "_default" else []  # type: ignore
+    item.classes = [class_name]  # type: ignore
     item.field_type = field_type
     item.value = value
     item.weight = weight
     item.save()
-    dataset_dict = ClassifierExampleSerializer(instance=item).data
+    dataset_dict = CollectionItemSerializer(instance=item).data
     serialized_data = json.dumps(dataset_dict)
 
-    classifier.examples_last_changed[class_name] = time.time()  # type: ignore
-    classifier.save()
+    collection.items_last_changed[class_name] = timezone.now().timestamp()  # type: ignore
+    collection.save()
 
     return HttpResponse(serialized_data, status=200, content_type='application/json')
 
 
 @csrf_exempt
-def remove_classifier_example(request):
+def remove_collection_item(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -487,28 +487,28 @@ def remove_classifier_example(request):
 
     try:
         data = json.loads(request.body)
-        classifier_example_id: int = data["classifier_example_id"]
+        collection_item_id: int = data["collection_item_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        classifier_example = ClassifierExample.objects.get(id=classifier_example_id)
-    except ClassifierExample.DoesNotExist:
+        collection_item = CollectionItem.objects.get(id=collection_item_id)
+    except CollectionItem.DoesNotExist:
         return HttpResponse(status=404)
-    if classifier_example.classifier.created_by != request.user:
+    if collection_item.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    classifier_example.delete()
+    for class_name in collection_item.classes:  # type: ignore
+        collection_item.collection.items_last_changed[class_name] = timezone.now().timestamp()  # type: ignore
+    collection_item.collection.save()
 
-    for class_name in classifier_example.classes:  # type: ignore
-        classifier_example.classifier.examples_last_changed[class_name] = time.time()  # type: ignore
-    classifier_example.classifier.save()
+    collection_item.delete()
 
     return HttpResponse(None, status=204)
 
 
 @csrf_exempt
-def remove_classifier_example_by_value(request):
+def remove_collection_item_by_value(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -516,27 +516,25 @@ def remove_classifier_example_by_value(request):
 
     try:
         data = json.loads(request.body)
-        classifier_id: int = data["classifier_id"]
+        collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
         value: str = data["value"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    classifier_examples = ClassifierExample.objects.filter(classifier_id=classifier_id, value=value)
-    if not classifier_examples:
+    collection_items = CollectionItem.objects.filter(collection_id=collection_id, value=value)
+    if not collection_items:
         return HttpResponse(status=404)
 
     removed_items = []
-    for example in classifier_examples:
-        if example.classifier.created_by != request.user:
+    for item in collection_items:
+        if item.collection.created_by != request.user:
             return HttpResponse(status=401)
-        logging.warning(example.classes)
-        logging.warning(class_name)
-        if class_name not in example.classes and not (class_name == '_default' and not example.classes):  # type: ignore
+        if class_name not in item.classes and not (class_name == '_default' and not item.classes):  # type: ignore
             continue
-        item_dict = ClassifierExampleSerializer(instance=example).data
+        item_dict = CollectionItemSerializer(instance=item).data
         removed_items.append(item_dict)
-        example.delete()
+        item.delete()
 
     serialized_data = json.dumps(removed_items)
 

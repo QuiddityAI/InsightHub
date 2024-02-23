@@ -22,12 +22,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='dataset',
             name='classifier_example_rendering',
-            field=models.JSONField(blank=True, default=data_map_backend.models.get_default_classifier_example_rendering, null=True, verbose_name='Collection List Rendering'),
+            field=models.JSONField(blank=True, default=data_map_backend.models.get_default_collection_item_rendering, null=True, verbose_name='Collection List Rendering'),
         ),
         migrations.AddField(
             model_name='historicaldataset',
             name='classifier_example_rendering',
-            field=models.JSONField(blank=True, default=data_map_backend.models.get_default_classifier_example_rendering, null=True, verbose_name='Collection List Rendering'),
+            field=models.JSONField(blank=True, default=data_map_backend.models.get_default_collection_item_rendering, null=True, verbose_name='Collection List Rendering'),
         ),
         migrations.AlterField(
             model_name='classifier',

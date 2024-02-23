@@ -13,7 +13,7 @@ from django_object_actions import DjangoObjectActions, action
 
 from .data_backend_client import data_backend_url
 
-from .models import ClassifierDatasetSpecificSettings, EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, ItemCollection, StoredMap, Classifier, ClassifierExample
+from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier
 from .utils import get_vector_field_dimensions
 
 admin.site.site_header = 'Quiddity'
@@ -73,7 +73,7 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         # only show datasets of same organization for default_dataset_selection:
         if db_field.name == "default_dataset_selection":
             try:
-                organization_id = int(request.path.split("/")[-3])
+                organization_id = int(request.path.split("/")[-3])  # type: ignore
             except ValueError:
                 kwargs["queryset"] = Dataset.objects.filter(organization = -1)
             else:
@@ -106,7 +106,7 @@ class ObjectFieldInline(admin.StackedInline):
         # only show fields of same dataset for source fields:
         if db_field.name == "source_fields":
             try:
-                dataset_id = int(request.path.split("/")[-3])
+                dataset_id = int(request.path.split("/")[-3])  # type: ignore
             except ValueError:
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
@@ -135,7 +135,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         "organization", "is_public", "source_plugin", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields",
         "item_count", "get_field_overview_table_html",
-        "result_list_rendering", "classifier_example_rendering",
+        "result_list_rendering", "collection_item_rendering",
         "hover_label_rendering", "detail_view_rendering",
         "random_item",
         "created_at", "changed_at",
@@ -155,7 +155,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         # only show fields of same dataset for source fields:
         if db_field.name in ["primary_key", "thumbnail_image"]:
             try:
-                dataset_id = int(request.path.split("/")[-3])
+                dataset_id = int(request.path.split("/")[-3])  # type: ignore
             except ValueError:
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
@@ -166,7 +166,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         # only show fields of same dataset for source fields:
         if db_field.name in ["descriptive_text_fields", "default_search_fields"]:
             try:
-                dataset_id = int(request.path.split("/")[-3])
+                dataset_id = int(request.path.split("/")[-3])  # type: ignore
             except ValueError:
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
@@ -234,9 +234,10 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 @admin.register(ObjectField)
 class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'field_type', 'identifier', 'description')
+    list_display = ('id', 'dataset', 'identifier', 'field_type', 'description')
     list_display_links = ('id', 'identifier')
     search_fields = ('identifier', 'description')
+    ordering = ['dataset', 'identifier']
 
     readonly_fields = ('changed_at', 'created_at', 'items_having_value_count')
 
@@ -278,16 +279,6 @@ class SearchHistoryItemAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     }
 
 
-@admin.register(ItemCollection)
-class ItemCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
-    djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name')
-    list_display_links = ('id', 'name')
-    search_fields = ('name',)
-    ordering = ['name']
-    readonly_fields = ('changed_at', 'created_at')
-
-
 @admin.register(StoredMap)
 class StoredMapAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
@@ -298,13 +289,13 @@ class StoredMapAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     readonly_fields = ('changed_at', 'created_at')
 
 
-@admin.register(ClassifierDatasetSpecificSettings)
-class ClassifierDatasetSpecificSettingsAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+@admin.register(DatasetSpecificSettingsOfCollection)
+class DatasetSpecificSettingsOfCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'classifier', 'dataset')
+    list_display = ('id', 'collection', 'dataset')
     list_display_links = ('id',)
-    search_fields = ('classifier', 'dataset',)
-    ordering = ['classifier', 'dataset']
+    search_fields = ('collection', 'dataset',)
+    ordering = ['collection', 'dataset']
     readonly_fields = ('changed_at', 'created_at')
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -315,9 +306,9 @@ class ClassifierDatasetSpecificSettingsAdmin(DjangoQLSearchMixin, SimpleHistoryA
             except ValueError:
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
-                dataset_id = ClassifierDatasetSpecificSettings.objects.get(id = item_id).dataset_id
+                dataset_id = DatasetSpecificSettingsOfCollection.objects.get(id = item_id).dataset_id  # type: ignore
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
-        return super(ClassifierDatasetSpecificSettingsAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        return super(DatasetSpecificSettingsOfCollectionAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         # only show fields of same dataset for source fields:
@@ -327,45 +318,91 @@ class ClassifierDatasetSpecificSettingsAdmin(DjangoQLSearchMixin, SimpleHistoryA
             except ValueError:
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
-                dataset_id = ClassifierDatasetSpecificSettings.objects.get(id = item_id).dataset_id
+                dataset_id = DatasetSpecificSettingsOfCollection.objects.get(id = item_id).dataset_id  # type: ignore
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
-        return super(ClassifierDatasetSpecificSettingsAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
+        return super(DatasetSpecificSettingsOfCollectionAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
 
-class ClassifierDatasetSpecificSettingsInline(admin.StackedInline):
-    model = ClassifierDatasetSpecificSettings
+class DatasetSpecificSettingsOfCollectionInline(admin.StackedInline):
+    model = DatasetSpecificSettingsOfCollection
     show_change_link = True
     readonly_fields = ('changed_at', 'created_at', 'link_to_change_view')
     extra = 0
 
     def link_to_change_view(self, obj):
-        return mark_safe(f'<a href="/org/admin/data_map_backend/classifierdatasetspecificsettings/{obj.id}/change/">Change View</a>')
+        return mark_safe(f'<a href="/org/admin/data_map_backend/datasetspecificsettingsofcollection/{obj.id}/change/">Open Details</a>')
 
-    link_to_change_view.short_description='Change View'
+    link_to_change_view.short_description='Details'
+
+
+@admin.register(CollectionItem)
+class CollectionItemAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False
+    list_display = ('id', 'collection', 'classes', 'date_added')
+    list_display_links = ('id', 'classes')
+    search_fields = ('id', 'collection', 'classes')
+    ordering = ['collection', 'classes', 'date_added']
+    readonly_fields = ('changed_at', 'date_added')
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2, 'cols': 30})},
+        models.JSONField: {'widget': Textarea(attrs={'rows': 2, 'cols': 20})},
+    }
 
 
 
-class ClassifierExampleInline(admin.TabularInline):
-    model = ClassifierExample
-    readonly_fields = tuple()
+class CollectionItemInline(admin.TabularInline):
+    model = CollectionItem
+    readonly_fields = ('date_added',)
+    ordering = ['classes', 'date_added']
+    extra = 0
+    max_num = 100
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2, 'cols': 30})},
+        models.JSONField: {'widget': Textarea(attrs={'rows': 2, 'cols': 20})},
+    }
+
+
+@admin.register(TrainedClassifier)
+class TrainedClassifierAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'collection', 'class_name', 'embedding_space')
+    list_display_links = ('id', 'collection', 'class_name', 'embedding_space')
+    search_fields = ('id', 'collection', 'class_name', 'embedding_space')
+    ordering = ['collection', 'class_name', 'embedding_space']
+    readonly_fields = ('changed_at', 'created_at', 'last_retrained_at', 'decision_vector_stats')
+    exclude = ('decision_vector',)
+
+    formfield_overrides = {
+        models.JSONField: {'widget': JSONSuit },
+    }
+
+
+class TrainedClassifierInline(admin.StackedInline):
+    model = TrainedClassifier
+    readonly_fields = ('changed_at', 'created_at', 'last_retrained_at', 'decision_vector_stats')
+    exclude = ('decision_vector',)
     extra = 0
 
+    formfield_overrides = {
+        models.JSONField: {'widget': JSONSuit },
+    }
 
-@admin.register(Classifier)
-class ClassifierAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+
+@admin.register(DataCollection)
+class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ('id', 'related_organization', 'name', 'created_by', 'is_public')
     list_display_links = ('id', 'name')
     search_fields = ('name', 'related_organization')
     ordering = ['related_organization', 'name']
-    readonly_fields = ('changed_at', 'created_at', 'actual_classes', 'simplified_trained_classifiers')
-
-    exclude = ['trained_classifiers']
-
+    readonly_fields = ('changed_at', 'created_at', 'actual_classes_formatted')
 
     inlines = [
-        ClassifierDatasetSpecificSettingsInline,
-        ClassifierExampleInline,
+        DatasetSpecificSettingsOfCollectionInline,
+        CollectionItemInline,
+        TrainedClassifierInline,
     ]
 
     formfield_overrides = {

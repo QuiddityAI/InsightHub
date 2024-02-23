@@ -184,14 +184,14 @@ CSRF_TRUSTED_ORIGINS = ['http://localhost:55140', 'http://home-server:55140']
 
 JAZZMIN_SETTINGS = {
     # Hide these models when generating side menu (e.g auth.user)
-    "hide_models": [],
+    "hide_models": ['data_map_backend.datasetspecificsettingsofcollection'],
 
     # List of apps (and/or models) to base side menu ordering off of (does not need to contain all apps/models)
     "order_with_respect_to": ["auth", "auth.user", "auth.group", "data_map_backend", "data_map_backend.organization",
                               "data_map_backend.dataset", "data_map_backend.objectfield", "data_map_backend.generator",
-                              "data_map_backend.embeddingspace", "data_map_backend.searchhistoryitem", "data_map_backend.classifier",
-                              "data_map_backend.classifierdatasetspecificsettings", "data_map_backend.classifierexample",
-                              "data_map_backend.storedmap"],
+                              "data_map_backend.embeddingspace", "data_map_backend.searchhistoryitem", "data_map_backend.storedmap",
+                              "data_map_backend.datacollection", "data_map_backend.collectionitem", "data_map_backend.trainedclassifier",
+                              ],
 
     # Custom icons for side menu apps/models See https://fontawesome.com/icons?d=gallery&m=free&v=5.0.0,5.0.1,5.0.10,5.0.11,5.0.12,5.0.13,5.0.2,5.0.3,5.0.4,5.0.5,5.0.6,5.0.7,5.0.8,5.0.9,5.1.0,5.1.1,5.2.0,5.3.0,5.3.1,5.4.0,5.4.1,5.4.2,5.13.0,5.12.0,5.11.2,5.11.1,5.10.0,5.9.0,5.8.2,5.8.1,5.7.2,5.7.1,5.7.0,5.6.3,5.5.0,5.4.2
     # for the full list of 5.13.0 free icon classes
@@ -205,10 +205,10 @@ JAZZMIN_SETTINGS = {
         "data_map_backend.generator": "fas fa-microchip",
         "data_map_backend.embeddingspace": "fas fa-globe",
         "data_map_backend.searchhistoryitem": "fas fa-clock",
-        "data_map_backend.classifier": "fas fa-filter",
-        "data_map_backend.classifierdatasetspecificsettings": "fas fa-filter",
-        "data_map_backend.classifierexample": "fas fa-filter",
         "data_map_backend.storedmap": "fas fa-map",
+        "data_map_backend.datacollection": "fas fa-list",
+        "data_map_backend.collectionitem": "fas fa-file",
+        "data_map_backend.trainedclassifier": "fas fa-filter",
     },
 
     "show_ui_builder": True,

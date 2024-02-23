@@ -293,7 +293,7 @@ def store_map():
     return result
 
 
-# -------------------- Classifiers --------------------
+# -------------------- DataCollections --------------------
 
 @app.route('/data_backend/classifier/<int:classifier_id>/training_status', methods=['POST'])
 def get_training_status_route(classifier_id: int):

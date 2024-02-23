@@ -1,5 +1,6 @@
 from collections import defaultdict
 import copy
+import datetime
 import json
 
 import numpy as np
@@ -259,7 +260,7 @@ def get_default_result_list_rendering():
 def get_default_collection_list_rendering():
     return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
 
-def get_default_classifier_example_rendering():
+def get_default_collection_item_rendering():
     return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
 
 def get_default_hover_label_rendering():
@@ -352,9 +353,9 @@ class Dataset(models.Model):
         default=get_default_result_list_rendering,
         blank=True,
         null=True)
-    classifier_example_rendering =  models.JSONField(
+    collection_item_rendering =  models.JSONField(
         verbose_name="Collection List Rendering",
-        default=get_default_classifier_example_rendering,
+        default=get_default_collection_item_rendering,
         blank=True,
         null=True)
     hover_label_rendering =  models.JSONField(
@@ -373,17 +374,17 @@ class Dataset(models.Model):
     @property
     def item_count(self):
         try:
-            url = data_backend_url + f'/data_backend/dataset/{self.id}/item_count'
+            url = data_backend_url + f'/data_backend/dataset/{self.id}/item_count'  # type: ignore
             result = requests.get(url)
             return result.json()["count"]
         except Exception as e:
             return repr(e)
-    item_count.fget.short_description = "Current Item Count"
+    item_count.fget.short_description = "Current Item Count"  # type: ignore
 
     @property
     def random_item(self):
         try:
-            url = data_backend_url + f'/data_backend/dataset/{self.id}/random_item'
+            url = data_backend_url + f'/data_backend/dataset/{self.id}/random_item'  # type: ignore
             result = requests.get(url)
             item = result.json()["item"]
             for key in item.get("_source", {}).keys():
@@ -392,7 +393,7 @@ class Dataset(models.Model):
             return mark_safe(json.dumps(item, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
         except Exception as e:
             return repr(e)
-    item_count.fget.random_item = "Random Item"
+    random_item.fget.short_description = "Random Item"  # type: ignore
 
     def __str__(self):
         return f"{self.name}"
@@ -513,12 +514,12 @@ class ObjectField(models.Model):
     @property
     def items_having_value_count(self):
         try:
-            url = data_backend_url + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/items_having_value_count'
+            url = data_backend_url + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/items_having_value_count'  # type: ignore
             result = requests.get(url)
             return result.json()["count"]
         except Exception as e:
             return repr(e)
-    items_having_value_count.fget.short_description = "Items having this value"
+    items_having_value_count.fget.short_description = "Items having this value"  # type: ignore
 
     def __str__(self):
         return f"{self.identifier}"
@@ -580,56 +581,6 @@ class SearchHistoryItem(models.Model):
         verbose_name_plural = "Search History Items"
 
 
-class ItemCollection(models.Model):
-    name = models.CharField(
-        verbose_name="Name",
-        max_length=200,
-        blank=False,
-        null=False)
-    created_at = models.DateTimeField(
-        verbose_name="Created at",
-        default=timezone.now,
-        blank=False,
-        null=False)
-    changed_at = models.DateTimeField(
-        verbose_name="Changed at",
-        auto_now=True,
-        editable=False,
-        blank=False,
-        null=False)
-    user = models.ForeignKey(
-        verbose_name="User",
-        to=User,
-        on_delete=models.CASCADE,
-        blank=False,
-        null=False)
-    dataset = models.ForeignKey(
-        verbose_name="Dataset",
-        to=Dataset,
-        on_delete=models.CASCADE,
-        blank=False,
-        null=False)
-    positive_ids = models.JSONField(
-        verbose_name="Positive IDs",
-        default=list,
-        blank=False,
-        null=False)
-    negative_ids = models.JSONField(
-        verbose_name="Negative IDs",
-        default=list,
-        blank=False,
-        null=False)
-
-    history = HistoricalRecords()
-
-    def __str__(self):
-        return f"{self.name}"
-
-    class Meta:
-        verbose_name = "Item Collection"
-        verbose_name_plural = "Item Collections"
-
-
 class StoredMap(models.Model):
     id = models.CharField(
         verbose_name="ID",
@@ -688,7 +639,11 @@ class StoredMap(models.Model):
         verbose_name_plural = "Stored Maps"
 
 
-class Classifier(models.Model):  # aka DataCollection / DataClassification
+def class_field_default():
+    return ["_default"]
+
+
+class DataCollection(models.Model):  # aka DataCollection / DataClassification
     name = models.CharField(
         verbose_name="Name",
         max_length=200,
@@ -706,7 +661,7 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         blank=False,
         null=False)
     created_by = models.ForeignKey(
-        verbose_name="User",
+        verbose_name="Created By",
         to=User,
         on_delete=models.CASCADE,
         blank=False,
@@ -718,14 +673,14 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         null=False)
     related_organization = models.ForeignKey(
         verbose_name="Related Organization",
-        help_text="Classifiers can be used across organizations, but they usually belong to one",
+        help_text="Collections can be used across organizations, but they usually belong to one",
         to=Organization,
         related_name='+',
         on_delete=models.SET_NULL,
         blank=True,
         null=True)
-    parent_classifiers = models.ManyToManyField(  # only their text or image sources are extracted, or vectors if embedding space matches target space
-        verbose_name="Parent Classifiers",
+    parent_collection = models.ManyToManyField(  # only their text or image sources are extracted, or vectors if embedding space matches target space
+        verbose_name="Parent Collection",
         to='self',
         symmetrical=False,
         blank=True)
@@ -741,8 +696,8 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         null=False)
     class_names = models.JSONField(
         verbose_name="Class Names",
-        help_text="If empty, either deducted from classes or if data doesn't have classed, converted classifier name is used",
-        default=list,
+        help_text="Minimal list of classes shown in the UI, even if no items are present. More classes are deducted from items.",
+        default=class_field_default,
         blank=True,
         null=True)
     default_threshold = models.FloatField(
@@ -755,15 +710,9 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         help_text="block classes e.g. from parents, using weight of -1",
         blank=True,
         null=True)
-    examples_last_changed = models.JSONField(
-        verbose_name="Examples Last Changed",
-        help_text="For each class, the last time an example was added or removed",
-        default=dict,
-        blank=True,
-        null=True)
-    trained_classifiers = models.JSONField(
-        verbose_name="Trained Classifiers",
-        help_text="For each embedding space, and there for each class, a 'decision' vector to be applied with dotproduct (plus time_updated)",
+    items_last_changed = models.JSONField(
+        verbose_name="Items Last Changed",
+        help_text="For each class, the last time an item was added or removed",
         default=dict,
         blank=True,
         null=True)
@@ -775,7 +724,7 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
         classes = defaultdict(lambda: [0, 0])
         for class_name in self.class_names or ['_default']:
             classes[class_name] = [0, 0]
-        for example in ClassifierExample.objects.filter(classifier=self):
+        for example in CollectionItem.objects.filter(collection=self):
             for c in example.classes or ['_default']:
                 classes[c][0 if example.is_positive else 1] += 1
         classes_list_of_dicts = []
@@ -787,25 +736,30 @@ class Classifier(models.Model):  # aka DataCollection / DataClassification
             })
         return sorted(classes_list_of_dicts, key=lambda x: x["name"])
 
-    def simplified_trained_classifiers(self):
-        data = copy.deepcopy(self.trained_classifiers) or {}
-        for embedding_space_data in data.values():
-            for class_name in embedding_space_data:
-                if "decision_vector" in embedding_space_data[class_name]:
-                    embedding_space_data[class_name]["decision_vector"] = f"&ltarray of length {len(embedding_space_data[class_name]['decision_vector'])}, stdev {np.std(embedding_space_data[class_name]['decision_vector']):.4f}&gt"
-        return mark_safe(json.dumps(data, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
-    simplified_trained_classifiers.short_description = "Trained Classifiers"
+
+    def actual_classes_formatted(self):
+        return mark_safe(json.dumps(self.actual_classes, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
+    actual_classes_formatted.short_description = "Actual Classes"
+
+    # def simplified_trained_classifiers(self):
+    #     data = copy.deepcopy(self.trained_classifiers) or {}
+    #     for embedding_space_data in data.values():
+    #         for class_name in embedding_space_data:
+    #             if "decision_vector" in embedding_space_data[class_name]:
+    #                 embedding_space_data[class_name]["decision_vector"] = f"&ltarray of length {len(embedding_space_data[class_name]['decision_vector'])}, stdev {np.std(embedding_space_data[class_name]['decision_vector']):.4f}&gt"
+    #     return mark_safe(json.dumps(data, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
+    # simplified_trained_classifiers.short_description = "Trained Classifiers"
 
 
     def __str__(self):
         return f"{self.name}"
 
     class Meta:
-        verbose_name = "Classifier"
-        verbose_name_plural = "Classifiers"
+        verbose_name = "Data Collection"
+        verbose_name_plural = "Data Collections"
 
 
-class ClassifierDatasetSpecificSettings(models.Model):
+class DatasetSpecificSettingsOfCollection(models.Model):
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
@@ -817,9 +771,9 @@ class ClassifierDatasetSpecificSettings(models.Model):
         editable=False,
         blank=False,
         null=False)
-    classifier = models.ForeignKey(
-        verbose_name="Classifier",
-        to=Classifier,
+    collection = models.ForeignKey(
+        verbose_name="Collection",
+        to=DataCollection,
         on_delete=models.CASCADE,
         related_name='dataset_specific_settings',
         blank=False,
@@ -831,7 +785,7 @@ class ClassifierDatasetSpecificSettings(models.Model):
         related_name='+',
         blank=False,
         null=False)
-    relevant_object_fields = models.ManyToManyField(  # the "source" of the classifier, e.g. text or image
+    relevant_object_fields = models.ManyToManyField(
         verbose_name="Relevant Object Fields",
         help_text="The 'source' fields (text or image) for items from this dataset, using default search fields (or their sources for vectors) if empty",
         to='ObjectField',
@@ -854,26 +808,36 @@ class ClassifierDatasetSpecificSettings(models.Model):
         blank=True,
         null=True)
 
+    history = HistoricalRecords()
+
     def __str__(self):
-        return f"{self.classifier.name} - {self.dataset.name}"
+        return f"{self.collection.name} - {self.dataset.name}"
 
     class Meta:
         verbose_name = "Dataset Specific Settings"
         verbose_name_plural = "Dataset Specific Settings"
+        unique_together = [['collection', 'dataset']]
 
 
-class ClassifierExample(models.Model):  # aka DataCollection / DataClassification Entry
-    classifier = models.ForeignKey(
-        verbose_name="Classifier",
-        to=Classifier,
+class CollectionItem(models.Model):
+    collection = models.ForeignKey(
+        verbose_name="Collection",
+        to=DataCollection,
         on_delete=models.CASCADE,
         blank=False,
         null=False)
     date_added = models.DateTimeField(
         verbose_name="Date added",
         default=timezone.now,
-        blank=True,
-        null=True)
+        editable=False,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
     is_positive = models.BooleanField(
         verbose_name="Is positive",
         default=True,
@@ -881,13 +845,13 @@ class ClassifierExample(models.Model):  # aka DataCollection / DataClassificatio
         null=False)
     classes = models.JSONField(
         verbose_name="Classes",
-        default=list,
-        blank=True,
-        null=True)
+        default=class_field_default,
+        blank=False,
+        null=False)
     field_type = models.CharField(
         verbose_name="Type",
         help_text="Either IDENTIFIER, TEXT, IMAGE",
-        # if you want to store a vector, use a parent classifier connected to a dataset with only those vectors
+        # if you want to store a vector, use a parent collection connected to a dataset with only those vectors
         max_length=50,
         choices=FieldType.choices,
         default=FieldType.TEXT,
@@ -909,5 +873,85 @@ class ClassifierExample(models.Model):  # aka DataCollection / DataClassificatio
     #     return f"{self.name}"
 
     class Meta:
-        verbose_name = "Classifier Example"
-        verbose_name_plural = "Classifier Examples"
+        verbose_name = "Collection Item"
+        verbose_name_plural = "Collection Item"
+
+
+class TrainedClassifier(models.Model):
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        editable=False,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    last_retrained_at = models.DateTimeField(
+        verbose_name="Last Retrained at",
+        blank=True,
+        null=True)
+    collection = models.ForeignKey(
+        verbose_name="Collection",
+        to=DataCollection,
+        on_delete=models.CASCADE,
+        related_name='trained_classifiers',
+        blank=False,
+        null=False)
+    class_name = models.CharField(
+        verbose_name="Class",
+        max_length=200,
+        blank=False,
+        null=False)
+    embedding_space = models.ForeignKey(
+        verbose_name="Embedding Space",
+        to=EmbeddingSpace,
+        related_name='+',
+        on_delete=models.PROTECT,
+        blank=False,
+        null=False)
+    decision_vector = models.JSONField(
+        verbose_name="decision_vector",
+        blank=True,
+        null=True)
+    highest_score = models.FloatField(
+        verbose_name="Highest Score",
+        blank=True,
+        null=True)
+    threshold = models.FloatField(
+        verbose_name="Threshold",
+        default=0.5,
+        blank=False,
+        null=False)
+    metrics = models.JSONField(
+        verbose_name="Metrics",
+        default=dict,
+        blank=True,
+        null=True)
+
+    history = HistoricalRecords()
+
+    def decision_vector_stats(self):
+        if self.decision_vector is None:
+            return "No decision vector"
+        return f"Length: {len(self.decision_vector)} Mean: {np.mean(self.decision_vector):.3f}, Stdev: {np.std(self.decision_vector):.3f}"
+    decision_vector_stats.short_description = "Decision Vector Stats"
+
+    def is_up_to_date(self):
+        if self.last_retrained_at is None:
+            return False
+        items_last_changed = self.collection.items_last_changed.get(self.class_name, timezone.now().timestamp())  # type: ignore
+        items_last_changed = datetime.datetime.fromisoformat(items_last_changed)
+        return self.last_retrained_at >= items_last_changed  # type: ignore
+
+    def __str__(self):
+        return f"{self.collection.name}: {self.class_name} ({self.embedding_space.name})"
+
+    class Meta:
+        verbose_name = "Trained Classifier"
+        verbose_name_plural = "Trained Classifiers"
+        unique_together = [['collection', 'class_name', 'embedding_space']]
+
