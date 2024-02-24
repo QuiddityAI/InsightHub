@@ -341,7 +341,7 @@ class DatasetSpecificSettingsOfCollectionAdmin(DjangoQLSearchMixin, SimpleHistor
         # only show fields of same dataset for source fields:
         if db_field.name in ["positive_annotation_field", "negative_annotation_field"]:
             try:
-                item_id = int(request.path.split("/")[-3])
+                item_id = int(request.path.split("/")[-3])  # type: ignore
             except ValueError:
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
@@ -353,7 +353,7 @@ class DatasetSpecificSettingsOfCollectionAdmin(DjangoQLSearchMixin, SimpleHistor
         # only show fields of same dataset for source fields:
         if db_field.name in ["relevant_object_fields"]:
             try:
-                item_id = int(request.path.split("/")[-3])
+                item_id = int(request.path.split("/")[-3])  # type: ignore
             except ValueError:
                 kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
             else:
