@@ -281,7 +281,7 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
     for ds_id, ds_item in items_by_dataset.items():
         for item_id, item in ds_item.items():
             search_result_meta_information[ds_id][item_id] = {
-                field: item[field] for field in ['_id', '_origins', '_score', '_reciprocal_rank_score']
+                field: item[field] for field in ['_id', '_dataset_id', '_origins', '_score', '_reciprocal_rank_score']
             }
     map_data['results']['search_result_meta_information'] = search_result_meta_information
     return sorted_ids, items_by_dataset
@@ -338,7 +338,7 @@ def add_missing_vectors(map_data: dict, params: DotDict, datasets: dict, items_b
     for ds_id, ds_item in items_by_dataset.items():
         for item_id, item in ds_item.items():
             search_result_meta_information[ds_id][item_id] = {
-                field: item[field] for field in ['_id', '_origins', '_score', '_reciprocal_rank_score']
+                field: item[field] for field in ['_id', '_dataset_id', '_origins', '_score', '_reciprocal_rank_score']
             }
     map_data['results']['search_result_meta_information'] = search_result_meta_information
 
@@ -386,7 +386,7 @@ def projection_stage(map_data: dict, params: DotDict, datasets: dict, items_by_d
 
     def transform_coordinate_system_and_write_to_map():
         nonlocal cartesian_positions, final_positions
-        final_positions = cartesian_positions[:]
+        final_positions = cartesian_positions[:]  # type: ignore
         if projection_parameters.invert_x_axis:
             final_positions[:, 0] = 1 - normalize_array(final_positions[:, 0])
         if projection_parameters.use_polar_coordinates:

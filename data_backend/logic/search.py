@@ -154,17 +154,20 @@ def get_search_results_for_cluster(dataset, search_settings: DotDict, vectorize_
     origin_map: dict = local_maps[origin_map_id]
     results_per_point: dict = origin_map['results']['per_point_data']
 
-    item_ids = results_per_point['item_ids']
+    item_ds_and_ids = results_per_point['item_ids']
     cluster_ids = results_per_point['cluster_ids']
 
     cluster_item_ids = []
-    for i in range(len(item_ids)):
+    for i in range(len(item_ds_and_ids)):
+        if item_ds_and_ids[i][0] != dataset.id:
+            continue
         if cluster_ids[i] == cluster_id:
-            cluster_item_ids.append(item_ids[i])
+            cluster_item_ids.append(item_ds_and_ids[i][1])
 
+    meta_info = origin_map['results']['search_result_meta_information'][dataset.id]
     total_items = {}
     for i, item_id in enumerate(cluster_item_ids):
-        total_items[item_id] = copy.deepcopy(origin_map['results']['search_result_meta_information'][item_id])
+        total_items[item_id] = copy.deepcopy(meta_info[item_id])
 
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
