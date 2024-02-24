@@ -322,6 +322,11 @@ class Dataset(models.Model):
         default=SourcePlugin.INTERNAL_OPENSEARCH_QDRANT,
         blank=False,
         null=False)
+    source_plugin_parameters = models.JSONField(
+        verbose_name="Source Plugin Parameters",
+        default=dict,
+        blank=True,
+        null=True)
     primary_key = models.ForeignKey(
         verbose_name="Primary Key",
         to='ObjectField',

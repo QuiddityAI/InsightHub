@@ -133,7 +133,8 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     fields = [
         "id", "name", "entity_name", "entity_name_plural", "short_description",
-        "organization", "is_public", "source_plugin", "primary_key", "thumbnail_image",
+        "organization", "is_public", "source_plugin", "source_plugin_parameters",
+        "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields",
         "item_count", "get_field_overview_table_html",
         "result_list_rendering", "collection_item_rendering",
@@ -227,6 +228,43 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         self.message_user(request, "Updated the database layout")
 
     change_actions = ('update_database_layout',)
+
+    def duplicate_datasets(self, request, queryset):
+        for object in queryset:
+            original_id = object.id
+            original_descriptive_text_fields = object.descriptive_text_fields.all()
+            original_default_search_fields = object.default_search_fields.all()
+            object.id = None
+            object.save()
+            field_name_to_sink = {}
+            for field in ObjectField.objects.filter(dataset = original_id):
+                is_pk = field == object.primary_key
+                is_thumbnail =  field == object.thumbnail_image
+                is_descriptive = field in original_descriptive_text_fields
+                is_default = field in original_default_search_fields
+                source_fields = field.source_fields.all()
+                field.id = None  # type: ignore
+                field.dataset = object
+                field.save()
+                for source_field in source_fields:
+                    field_name_to_sink[source_field.identifier] = field
+                if is_pk:
+                    object.primary_key = field
+                if is_thumbnail:
+                    object.thumbnail_image = field
+                if is_descriptive:
+                    object.descriptive_text_fields.add(field)
+                if is_default:
+                    object.default_search_fields.add(field)
+            for field in ObjectField.objects.filter(dataset = object):
+                if field.identifier in field_name_to_sink:
+                    sink_field = field_name_to_sink[field.identifier]
+                    sink_field.source_fields.add(field)
+                    sink_field.save()
+            object.save()
+    duplicate_datasets.short_description = "Duplicate Datasets"
+
+    actions = ['duplicate_datasets']
 
     class Media:
         js = ('hide_objectfield_parameters.js',)

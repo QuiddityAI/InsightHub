@@ -65,7 +65,7 @@ def bing_web_search(query: str, website_filter: str | None = None, limit: int = 
 
 def bing_web_search_call(query: str, website_filter: str | None = None, limit: int = 50, offset: int = 0) -> list:
     if website_filter:
-        query += f'+site:{website_filter}'
+        query = f'site:{website_filter} {query}'
     market = 'en-US'
     params = {
               'q': query,
@@ -82,6 +82,9 @@ def bing_web_search_call(query: str, website_filter: str | None = None, limit: i
     except requests.exceptions.HTTPError as err:
         logging.error(err)
         logging.error(err.response.text)
+        return []
+    if 'webPages' not in response.json():
+        logging.error(response.json())
         return []
 
     logging.warning(f"Estimated number of results: {response.json()['webPages']['totalEstimatedMatches']}, {limit} {offset}")

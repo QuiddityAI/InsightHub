@@ -42,11 +42,11 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         dataset = get_dataset(dataset_id)
         score_info = {}
 
-        if dataset.source_plugin == SourcePlugin.BING_WEB_API:
+        if dataset.source_plugin == SourcePlugin.BING_WEB_API and params.search.search_type == "external_input":
             query = params.search.all_field_query
             limit = params.search.result_list_items_per_page if purpose == "list" else params.search.max_items_used_for_mapping
-            limit = min(limit, 300)
-            sorted_ids, full_items = bing_web_search_formatted(dataset.id, query, limit=limit)
+            limit = min(limit, dataset.source_plugin_parameters.get("max_results") or 300, 300)
+            sorted_ids, full_items = bing_web_search_formatted(dataset.id, query, limit=limit, website_filter=dataset.source_plugin_parameters.get("website_filter"))
             sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
             all_items_by_dataset[dataset_id] = full_items
             continue
