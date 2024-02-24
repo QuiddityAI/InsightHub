@@ -1,7 +1,7 @@
 <script>
 export default {
   props: ["class_details"],
-  emits: ["classifier_selected", "class_selected"],
+  emits: ["collection_selected", "class_selected"],
   data() {
     return {}
   },
@@ -33,12 +33,12 @@ export default {
         - {{ class_details.negative_count }}
       </span>
       <!-- <button
-        @click="$emit('recommend_items_for_classifier', classifier)"
+        @click="$emit('recommend_items_for_collection', collection)"
         class="text-sm font-light text-gray-500 hover:text-blue-500/50">
         Recommend Similar
       </button>
       <button
-        @click="$emit('show_classifier_as_map', classifier)"
+        @click="$emit('show_collection_as_map', collection)"
         class="text-sm font-light text-gray-500 hover:text-blue-500/50">
         Show Map
       </button> -->

@@ -18,9 +18,9 @@ import MapWithLabels from "../components/map/MapWithLabels.vue"
 import SearchArea from "../components/search/SearchArea.vue"
 import ResultListItem from "../components/search/ResultListItem.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
-import ClassifierArea from "../components/classifier/ClassifierArea.vue"
-import ClassifierExample from "../components/classifier/ClassifierExample.vue"
-import AddToClassifierButtons from "../components/classifier/AddToClassifierButtons.vue"
+import CollectionArea from "../components/collections/CollectionArea.vue"
+import CollectionItem from "../components/collections/CollectionItem.vue"
+import AddToCollectionButtons from "../components/collections/AddToCollectionButtons.vue"
 
 import httpClient from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
@@ -143,7 +143,7 @@ export default {
     this.appStateStore.retrieve_current_user()
     this.appStateStore.retrieve_available_organizations(() => {
       this.evaluate_url_query_parameters()
-      this.appStateStore.retrieve_stored_maps_history_and_classifiers()
+      this.appStateStore.retrieve_stored_maps_history_and_collections()
     })
     this.eventBus.on("datasets_are_loaded", () => {
       const queryParams = new URLSearchParams(window.location.search)
@@ -166,7 +166,7 @@ export default {
   watch: {
     "appStateStore.organization_id"() {
       this.appStateStore.reset_search_results_and_map()
-      this.appStateStore.retrieve_stored_maps_history_and_classifiers()
+      this.appStateStore.retrieve_stored_maps_history_and_collections()
     },
   },
 }
@@ -234,12 +234,10 @@ export default {
       v-if="mapState.selected_point_indexes.length"
       class="absolute bottom-6 right-48 flex flex-row items-center justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <span class="mr-2 text-sm text-gray-400">Selection:</span>
-      <AddToClassifierButtons
-        :classifiers="appState.classifiers"
-        :last_used_classifier_id="appState.last_used_classifier_id"
-        @addToClassifier="appState.add_selected_points_to_classifier"
-        @removeFromClassifier="appState.remove_selected_points_from_classifier">
-      </AddToClassifierButtons>
+      <AddToCollectionButtons
+        @addToCollection="appState.add_selected_points_to_collection"
+        @removeFromCollection="appState.remove_selected_points_from_collection">
+      </AddToCollectionButtons>
       <button
         @click="mapState.selected_point_indexes = []"
         class="h-6 w-6 rounded text-gray-400 hover:bg-red-100">
@@ -304,8 +302,8 @@ export default {
               Maps
             </button>
             <button
-              @click="selected_tab = 'classifiers'; eventBus.emit('classifier_tab_is_clicked')"
-              :class="{ 'text-blue-500': selected_tab === 'classifiers' }"
+              @click="selected_tab = 'collections'; eventBus.emit('collections_tab_is_clicked')"
+              :class="{ 'text-blue-500': selected_tab === 'collections' }"
               class="flex-1">
               Collections
             </button>
@@ -334,16 +332,16 @@ export default {
                         .positive_examples"
                       :key="'example' + item_id"
                       class="justify-between pb-3">
-                      <ClassifierExample :item_id="item_id" :is_positive="true">
-                      </ClassifierExample>
+                      <CollectionItem :item_id="item_id" :is_positive="true">
+                      </CollectionItem>
                     </div>
                     <div
                       v-for="item_id in search_result_score_info[score_info_title]
                         .negative_examples"
                       :key="'example' + item_id"
                       class="justify-between pb-3">
-                      <ClassifierExample :item_id="item_id" :is_positive="false">
-                      </ClassifierExample>
+                      <CollectionItem :item_id="item_id" :is_positive="false">
+                      </CollectionItem>
                     </div>
                   </div>
                 </div>
@@ -453,8 +451,8 @@ export default {
               </div>
             </div>
 
-            <!-- classifiers -->
-            <ClassifierArea v-if="selected_tab === 'classifiers'"> </ClassifierArea>
+            <!-- collections -->
+            <CollectionArea v-if="selected_tab === 'collections'"> </CollectionArea>
           </div>
         </div>
       </div>
@@ -469,23 +467,21 @@ export default {
           <ObjectDetailsModal
             :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
             :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
-            :classifiers="appState.classifiers"
-            :last_used_classifier_id="appState.last_used_classifier_id"
-            @addToClassifier="
-              (classifier_id, class_name, is_positive) => {
-                appState.add_item_to_classifier(
+            @addToCollection="
+              (collection_id, class_name, is_positive) => {
+                appState.add_item_to_collection(
                   appState.selected_document_ds_and_id,
-                  classifier_id,
+                  collection_id,
                   class_name,
                   is_positive
                 )
               }
             "
-            @removeFromClassifier="
-              (classifier_id, class_name) => {
-                appState.remove_item_from_classifier(
+            @removeFromCollection="
+              (collection_id, class_name) => {
+                appState.remove_item_from_collection(
                   appState.selected_document_ds_and_id,
-                  classifier_id,
+                  collection_id,
                   class_name
                 )
               }

@@ -6,7 +6,7 @@ import {
   TrashIcon,
 } from "@heroicons/vue/24/outline"
 
-import ClassifierExampleList from "./ClassifierExampleList.vue"
+import CollectionItemList from "./CollectionItemList.vue"
 import { FieldType } from "../../utils/utils"
 
 import { mapStores } from "pinia"
@@ -16,12 +16,12 @@ const appState = useAppStateStore()
 
 <script>
 export default {
-  props: ["classifier_id", "class_name"],
+  props: ["collection_id", "class_name"],
   emits: ["close"],
   data() {
     return {
       selected_tab: "positives",
-      classifier: useAppStateStore().classifiers.find((classifier) => classifier.id === this.classifier_id),
+      collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       positive_examples: [],
       negative_examples: [],
       target_vector_field: null,
@@ -58,12 +58,12 @@ export default {
     load_examples(is_positive) {
       const that = this
       const body = {
-        classifier_id: this.classifier.id,
+        collection_id: this.collection.id,
         class_name: this.class_name,
         type: FieldType.IDENTIFIER,
         is_positive: is_positive,
       }
-      httpClient.post("/org/data_map/get_classifier_examples", body).then(function (response) {
+      httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
         if (is_positive) {
           that.positive_examples = response.data
         } else {
@@ -71,22 +71,22 @@ export default {
         }
       })
     },
-    delete_classifier_class() {
+    delete_collection_class() {
       if (!confirm("Are you sure you want to delete this class and the list of examples?")) {
         return
       }
       const that = this
       const body = {
-        classifier_id: this.classifier_id,
+        collection_id: this.collection_id,
         class_name: this.class_name,
       }
       httpClient
-        .post("/org/data_map/delete_classifier_class", body)
+        .post("/org/data_map/delete_collection_class", body)
         .then(function (response) {
-          const index = that.classifier.actual_classes.findIndex((classifier_class) => classifier_class.name === that.class_name)
-          that.classifier.actual_classes.splice(index, 1)
-          if (that.classifier.actual_classes.length === 0) {
-            that.classifier.actual_classes.push({
+          const index = that.collection.actual_classes.findIndex((collection_class) => collection_class.name === that.class_name)
+          that.collection.actual_classes.splice(index, 1)
+          if (that.collection.actual_classes.length === 0) {
+            that.collection.actual_classes.push({
               name: "_default",
               positive_count: 0,
               negative_count: 0,
@@ -101,7 +101,7 @@ export default {
         class_name: this.class_name,
         target_vector_ds_and_field: this.target_vector_field,
       }
-      httpClient.post(`/data_backend/classifier/${this.classifier_id}/training_status`, body)
+      httpClient.post(`/data_backend/classifier/${this.collection_id}/training_status`, body)
       .then(function (response) {
         const status = response.data
         that.embedding_space_id = status.embedding_space_id
@@ -123,7 +123,7 @@ export default {
         deep_train: false,
         target_vector_ds_and_field: this.target_vector_field,
       }
-      httpClient.post(`/data_backend/classifier/${this.classifier_id}/retrain`, body)
+      httpClient.post(`/data_backend/classifier/${this.collection_id}/retrain`, body)
       .then(function (response) {
         that.get_retraining_status()
       })
@@ -135,7 +135,7 @@ export default {
     },
     get_retraining_status() {
       const that = this
-      httpClient.get(`/data_backend/classifier/${this.classifier_id}/retraining_status`)
+      httpClient.get(`/data_backend/classifier/${this.collection_id}/retraining_status`)
       .then(function (response) {
         const status = response.data
         if (!status) {
@@ -175,7 +175,7 @@ export default {
         class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
         <ChevronLeftIcon></ChevronLeftIcon>
       </button>
-      <span class="font-bold text-gray-600">{{ classifier.name }}:</span>
+      <span class="font-bold text-gray-600">{{ collection.name }}:</span>
       <span class="text-medium text-gray-500">
         {{ class_name === '_default' ? 'Items' : class_name }} </span>
 
@@ -201,7 +201,7 @@ export default {
       </button>
 
       <button
-        @click="delete_classifier_class"
+        @click="delete_collection_class"
         class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </button>
@@ -219,25 +219,25 @@ export default {
     </div>
     <hr />
 
-    <ClassifierExampleList
+    <CollectionItemList
       v-if="selected_tab === 'positives'"
       :is_positive="true"
-      :classifier_id="classifier_id"
+      :collection_id="collection_id"
       :class_name="class_name">
-    </ClassifierExampleList>
+    </CollectionItemList>
 
-    <ClassifierExampleList
+    <CollectionItemList
       v-if="selected_tab === 'negatives'"
       :is_positive="false"
-      :classifier_id="classifier_id"
+      :collection_id="collection_id"
       :class_name="class_name">
-    </ClassifierExampleList>
+    </CollectionItemList>
 
     <div v-if="selected_tab === 'learn'">Learn</div>
 
     <div v-if="selected_tab === 'recommend'">
       <button
-      @click="appStateStore.recommend_items_for_classifier(classifier, class_name)"
+      @click="appStateStore.recommend_items_for_collection(collection, class_name)"
       >
         Show Map with Recommendations
       </button>

@@ -295,25 +295,25 @@ def store_map():
 
 # -------------------- DataCollections --------------------
 
-@app.route('/data_backend/classifier/<int:classifier_id>/training_status', methods=['POST'])
-def get_training_status_route(classifier_id: int):
+@app.route('/data_backend/classifier/<int:collection_id>/training_status', methods=['POST'])
+def get_training_status_route(collection_id: int):
     params = request.json or {}
     params = DotDict(params)
-    status = get_training_status(classifier_id, params.class_name, params.target_vector_ds_and_field)
+    status = get_training_status(collection_id, params.class_name, params.target_vector_ds_and_field)
     return jsonify(status)
 
 
-@app.route('/data_backend/classifier/<int:classifier_id>/retraining_status', methods=['GET'])
-def get_retraining_status_route(classifier_id: int):
-    status = get_retraining_status(classifier_id)
+@app.route('/data_backend/classifier/<int:collection_id>/retraining_status', methods=['GET'])
+def get_retraining_status_route(collection_id: int):
+    status = get_retraining_status(collection_id)
     return jsonify(status)
 
 
-@app.route('/data_backend/classifier/<int:classifier_id>/retrain', methods=['POST'])
-def start_retrain_route(classifier_id: int):
+@app.route('/data_backend/classifier/<int:collection_id>/retrain', methods=['POST'])
+def start_retrain_route(collection_id: int):
     params = request.json or {}
     params = DotDict(params)
-    start_retrain(classifier_id, params.class_name, params.target_vector_ds_and_field, params.deep_train)
+    start_retrain(collection_id, params.class_name, params.target_vector_ds_and_field, params.deep_train)
     return "", 204
 
 

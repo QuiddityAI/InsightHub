@@ -60,9 +60,9 @@ export const useAppStateStore = defineStore("appState", {
       // selection:
       selected_document_ds_and_id: null,  // (dataset_id, item_id)
 
-      // classifiers:
-      classifiers: [],
-      last_used_classifier_id: null,
+      // collections:
+      collections: [],
+      last_used_collection_id: null,
 
       search_history: [],
       stored_maps: [],
@@ -70,7 +70,7 @@ export const useAppStateStore = defineStore("appState", {
       settings: {
         dataset_ids: [],
         search: {
-          search_type: "external_input", // or cluster, classifier or similar item
+          search_type: "external_input", // or cluster, collection or similar item
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
@@ -90,10 +90,10 @@ export const useAppStateStore = defineStore("appState", {
             // use_for_combined_search: that.dataset.default_search_fields.includes(field.identifier),
           },
 
-          origin_display_name: "", // classifier or cluster name, that this map refers to, just for displaying it
+          origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
           cluster_origin_map_id: null,
           cluster_id: null,
-          classifier_id_and_class: null,
+          collection_id_and_class: null,
           similar_to_item_id: null,
 
           // list results:
@@ -211,10 +211,10 @@ export const useAppStateStore = defineStore("appState", {
         that.username = response.data.username
       })
     },
-    retrieve_stored_maps_history_and_classifiers() {
+    retrieve_stored_maps_history_and_collections() {
       const that = this
       if (this.organization_id == null) {
-        console.log("organization_id is null, cannot retrieve stored maps, history and classifiers")
+        console.log("organization_id is null, cannot retrieve stored maps, history and collections")
         return
       }
       this.search_history = []
@@ -228,14 +228,14 @@ export const useAppStateStore = defineStore("appState", {
           that.search_history = response.data
         })
 
-      this.classifiers = []
-      const get_classifiers_body = {
+      this.collections = []
+      const get_collections_body = {
         related_organization_id: this.organization_id,
       }
       httpClient
-        .post("/org/data_map/get_classifiers", get_classifiers_body)
+        .post("/org/data_map/get_collections", get_collections_body)
         .then(function (response) {
-          that.classifiers = response.data
+          that.collections = response.data
         })
 
       this.stored_maps = []
@@ -292,11 +292,11 @@ export const useAppStateStore = defineStore("appState", {
             }
             dataset.result_list_rendering = result_list_rendering
 
-            const classifier_example_rendering = dataset.classifier_example_rendering
+            const collection_item_rendering = dataset.collection_item_rendering
             for (const field of ["title", "subtitle", "body", "image", "url"]) {
-              classifier_example_rendering[field] = eval(classifier_example_rendering[field])
+              collection_item_rendering[field] = eval(collection_item_rendering[field])
             }
-            dataset.classifier_example_rendering = classifier_example_rendering
+            dataset.collection_item_rendering = collection_item_rendering
 
             const hover_label_rendering = dataset.hover_label_rendering
             for (const field of ["title", "subtitle", "body", "image"]) {
@@ -426,7 +426,7 @@ export const useAppStateStore = defineStore("appState", {
 
       this.settings.search.cluster_origin_map_id = null
       this.settings.search.cluster_id = null
-      this.settings.search.classifier_id_and_class = null
+      this.settings.search.collection_id_and_class = null
       this.settings.search.similar_to_item_id = null
 
       this.settings.projection = JSON.parse(
@@ -494,14 +494,14 @@ export const useAppStateStore = defineStore("appState", {
       } else if (this.settings.search.search_type == "similar_to_item") {
         name = `Similar to '${this.settings.search.origin_display_name}'`
         display_name = `<i>Similar to</i> '${this.settings.search.origin_display_name}'`
-      } else if (this.settings.search.search_type == "classifier") {
-        name = `Classifier '${this.settings.search.origin_display_name}'`
-        display_name = `<i>Classifier</i> '${this.settings.search.origin_display_name}'`
+      } else if (this.settings.search.search_type == "collection") {
+        name = `Collection '${this.settings.search.origin_display_name}'`
+        display_name = `<i>Collection</i> '${this.settings.search.origin_display_name}'`
       } else if (
-        this.settings.search.search_type == "recommended_for_classifier"
+        this.settings.search.search_type == "recommended_for_collection"
       ) {
-        name = `Recommended for classifier '${this.settings.search.origin_display_name}'`
-        display_name = `<i>Recommended for classifier</i> '${this.settings.search.origin_display_name}'`
+        name = `Recommended for collection '${this.settings.search.origin_display_name}'`
+        display_name = `<i>Recommended for collection</i> '${this.settings.search.origin_display_name}'`
       }
       return [name, display_name]
     },
@@ -781,20 +781,20 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.origin_display_name = cluster_item.title
       this.request_search_results()
     },
-    show_classifier_as_map(classifier, class_name) {
-      this.settings.search.search_type = "classifier"
-      this.settings.search.classifier_id_and_class = [classifier.id, class_name]
+    show_collection_as_map(collection, class_name) {
+      this.settings.search.search_type = "collection"
+      this.settings.search.collection_id_and_class = [collection.id, class_name]
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
-      this.settings.search.origin_display_name = `${classifier.name}: ${class_name}`
+      this.settings.search.origin_display_name = `${collection.name}: ${class_name}`
       this.request_search_results()
     },
-    recommend_items_for_classifier(classifier, class_name) {
-      this.settings.search.search_type = "recommended_for_classifier"
-      this.settings.search.classifier_id_and_class = [classifier.id, class_name]
+    recommend_items_for_collection(collection, class_name) {
+      this.settings.search.search_type = "recommended_for_collection"
+      this.settings.search.collection_id_and_class = [collection.id, class_name]
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
-      this.settings.search.origin_display_name = `${classifier.name}: ${class_name}`
+      this.settings.search.origin_display_name = `${collection.name}: ${class_name}`
       this.request_search_results()
     },
     show_global_map() {
@@ -904,18 +904,18 @@ export const useAppStateStore = defineStore("appState", {
           }
         })
     },
-    add_selected_points_to_classifier(classifier_id, class_name, is_positive) {
+    add_selected_points_to_collection(collection_id, class_name, is_positive) {
       // TODO: implement more efficient way
       for (const point_index of this.mapState.selected_point_indexes) {
         const ds_and_item_id = this.mapState.per_point.item_id[point_index]
-        this.add_item_to_classifier(ds_and_item_id, classifier_id, class_name, is_positive)
+        this.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive)
       }
     },
-    add_item_to_classifier(ds_and_item_id, classifier_id, class_name, is_positive) {
+    add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive) {
       const that = this
-      this.last_used_classifier_id = classifier_id
-      const add_item_to_classifier_body = {
-        classifier_id: classifier_id,
+      this.last_used_collection_id = collection_id
+      const add_item_to_collection_body = {
+        collection_id: collection_id,
         is_positive: is_positive,
         class_name: class_name,
         field_type: FieldType.IDENTIFIER,
@@ -923,49 +923,49 @@ export const useAppStateStore = defineStore("appState", {
         weight: 1.0,
       }
       httpClient
-        .post("/org/data_map/add_item_to_classifier", add_item_to_classifier_body)
+        .post("/org/data_map/add_item_to_collection", add_item_to_collection_body)
         .then(function (created_item) {
-          const classifier = that.classifiers.find((classifier) => classifier.id === classifier_id)
-          if (!classifier) return
-          const class_details = classifier.actual_classes.find(
+          const collection = that.collections.find((collection) => collection.id === collection_id)
+          if (!collection) return
+          const class_details = collection.actual_classes.find(
             (actual_class) => actual_class.name === class_name
           )
           class_details[is_positive ? "positive_count" : "negative_count"] += 1
-          that.eventBus.emit("classifier_example_added", {
-            classifier_id: classifier.id,
+          that.eventBus.emit("collection_item_added", {
+            collection_id: collection.id,
             class_name,
             is_positive,
             created_item: created_item.data,
           })
         })
     },
-    remove_selected_points_from_classifier(classifier_id, class_name) {
+    remove_selected_points_from_collection(collection_id, class_name) {
       // TODO: implement more efficient way
       for (const point_index of this.mapState.selected_point_indexes) {
-        this.remove_item_from_classifier(point_index, classifier_id, class_name)
+        this.remove_item_from_collection(point_index, collection_id, class_name)
       }
     },
-    remove_item_from_classifier(ds_and_item_id, classifier_id, class_name) {
+    remove_item_from_collection(ds_and_item_id, collection_id, class_name) {
       const that = this
       const body = {
-        classifier_id: classifier_id,
+        collection_id: collection_id,
         class_name: class_name,
         value: JSON.stringify(ds_and_item_id),
       }
       httpClient
-        .post("/org/data_map/remove_classifier_example_by_value", body)
+        .post("/org/data_map/remove_collection_item_by_value", body)
         .then(function (response) {
           for (const item of response.data) {
-            const classifier_example_id = item.id
-            that.eventBus.emit("classifier_example_removed", {
-              classifier_id,
+            const collection_item_id = item.id
+            that.eventBus.emit("collection_item_removed", {
+              collection_id,
               class_name,
-              classifier_example_id,
+              collection_item_id,
             })
-            const classifier = that.classifiers.find(
-              (classifier) => classifier.id === classifier_id
+            const collection = that.collections.find(
+              (collection) => collection.id === collection_id
             )
-            const class_details = classifier.actual_classes.find(
+            const class_details = collection.actual_classes.find(
               (actual_class) => actual_class.name === class_name
             )
             class_details[item.is_positive ? "positive_count" : "negative_count"] -= 1

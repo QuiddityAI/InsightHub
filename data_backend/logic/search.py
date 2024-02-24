@@ -14,12 +14,12 @@ from utils.source_plugin_types import SourcePlugin
 
 from api_clients.bing_web_search import bing_web_search_formatted
 from database_client.absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
-from database_client.django_client import get_classifier_decision_vector, get_dataset, get_classifier
+from database_client.django_client import get_classifier_decision_vector, get_dataset, get_collection
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.local_map_cache import local_maps
 from logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
-    get_vector_search_results_matching_classifier, get_fulltext_search_results, \
+    get_vector_search_results_matching_collection, get_fulltext_search_results, \
     combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold, \
     fill_in_vector_data_list
 
@@ -58,10 +58,10 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
                 sorted_ids, full_items, score_info = get_search_results_using_combined_query(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "cluster":
             sorted_ids, full_items = get_search_results_for_cluster(dataset, params.search, params.vectorize, purpose, timings)
-        elif params.search.search_type == "classifier":
-            sorted_ids, full_items = get_search_results_included_in_classifier(dataset, params.search, params.vectorize, purpose, timings)
-        elif params.search.search_type == "recommended_for_classifier":
-            sorted_ids, full_items, score_info = get_search_results_matching_a_classifier(dataset, params.search, params.vectorize, purpose, timings)
+        elif params.search.search_type == "collection":
+            sorted_ids, full_items = get_search_results_included_in_collection(dataset, params.search, params.vectorize, purpose, timings)
+        elif params.search.search_type == "recommended_for_collection":
+            sorted_ids, full_items, score_info = get_search_results_matching_a_collection(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "similar_to_item":
             sorted_ids, full_items, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "global_map":
@@ -209,17 +209,17 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
 
 
-def get_search_results_matching_a_classifier(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
-    classifier_id, class_name = search_settings.classifier_id_and_class
+def get_search_results_matching_a_collection(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
+    collection_id, class_name = search_settings.collection_id_and_class
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
-    if not all([classifier_id is not None, limit, page is not None, dataset]):
+    if not all([collection_id is not None, limit, page is not None, dataset]):
         raise ValueError("a parameter is missing")
 
-    classifier = get_classifier(classifier_id)
-    assert classifier is not None
+    collection = get_collection(collection_id)
+    assert collection is not None
     source_fields = []
-    dataset_specific_settings = next(filter(lambda item: item.dataset_id == dataset.id, classifier.dataset_specific_settings), None)
+    dataset_specific_settings = next(filter(lambda item: item.dataset_id == dataset.id, collection.dataset_specific_settings), None)
     vector_field = None
     embedding_space_id = None
     if dataset_specific_settings:
@@ -240,7 +240,7 @@ def get_search_results_matching_a_classifier(dataset, search_settings: DotDict, 
     if not vector_field or not embedding_space_id:
         return [], {}, {}
 
-    decision_vector_data = get_classifier_decision_vector(classifier_id, class_name, embedding_space_id)
+    decision_vector_data = get_classifier_decision_vector(collection_id, class_name, embedding_space_id)
     decision_vector = np.array(decision_vector_data["decision_vector"])
 
     score_threshold = None
@@ -259,31 +259,31 @@ def get_search_results_matching_a_classifier(dataset, search_settings: DotDict, 
     return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
 
 
-def get_search_results_included_in_classifier(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple:
-    classifier_id = search_settings.classifier_id
+def get_search_results_included_in_collection(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple:
+    collection_id = search_settings.collection_id
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
-    if not all([classifier_id is not None, limit, page is not None, dataset]):
+    if not all([collection_id is not None, limit, page is not None, dataset]):
         raise ValueError("a parameter is missing")
 
-    classifier = get_classifier(classifier_id)
-    if not classifier:
-        raise ValueError("Couldn't find the classifier:" + str(classifier_id))
+    collection = get_collection(collection_id)
+    if not collection:
+        raise ValueError("Couldn't find the collection:" + str(collection_id))
     timings.log("search preparation")
 
     total_items = {}
-    for item_id in classifier.positive_ids:
+    for item_id in collection.positive_ids:
         total_items[item_id] = {
             '_id': item_id,
-            '_origins': [{'type': 'classifier', 'field': 'positives',
+            '_origins': [{'type': 'collection', 'field': 'positives',
                           'query': '', 'score': 1.0, 'rank': 1}],
             '_score': 1.0,
             '_reciprocal_rank_score': 1.0,
         }
-    for item_id in classifier.negative_ids:
+    for item_id in collection.negative_ids:
         total_items[item_id] = {
             '_id': item_id,
-            '_origins': [{'type': 'classifier', 'field': 'negatives',
+            '_origins': [{'type': 'collection', 'field': 'negatives',
                           'query': '', 'score': 0.0, 'rank': 1}],
             '_score': 0.0,
             '_reciprocal_rank_score': 0.0,

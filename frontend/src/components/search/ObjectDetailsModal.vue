@@ -3,15 +3,15 @@ import { XMarkIcon } from "@heroicons/vue/24/outline"
 import axios from "axios"
 
 import LoadingDotAnimation from "./LoadingDotAnimation.vue"
-import AddToClassifierButtons from "../classifier/AddToClassifierButtons.vue"
+import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
 
 import httpClient from "../../api/httpClient"
 </script>
 
 <script>
 export default {
-  props: ["dataset", "initial_item", "classifiers", "last_used_classifier_id"],
-  emits: ["addToClassifier", "removeFromClassifier", "showSimilarItems", "close"],
+  props: ["dataset", "initial_item"],
+  emits: ["addToCollection", "removeFromCollection", "showSimilarItems", "close"],
   data() {
     return {
       rendering: null,
@@ -106,19 +106,17 @@ export default {
         :src="rendering ? rendering.image(item) : null" />
     </div>
     <div class="mt-2 flex flex-none flex-row">
-      <AddToClassifierButtons
+      <AddToCollectionButtons
         class="mr-3"
-        :classifiers="classifiers"
-        :last_used_classifier_id="last_used_classifier_id"
-        @addToClassifier="
-          (classifier_id, class_name, is_positive) =>
-            $emit('addToClassifier', classifier_id, class_name, is_positive)
+        @addToCollection="
+          (collection_id, class_name, is_positive) =>
+            $emit('addToCollection', collection_id, class_name, is_positive)
         "
-        @removeFromClassifier="
-          (classifier_id, class_name) =>
-            $emit('removeFromClassifier', classifier_id, class_name)
+        @removeFromCollection="
+          (collection_id, class_name) =>
+            $emit('removeFromCollection', collection_id, class_name)
         ">
-      </AddToClassifierButtons>
+      </AddToCollectionButtons>
       <button
         @click="$emit('showSimilarItems')"
         class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">

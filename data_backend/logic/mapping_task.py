@@ -493,8 +493,8 @@ def clusterize_and_render_stage(map_data: dict, params: DotDict, datasets: dict,
         elif attr_type == "classifier":
             attr_parameter = DotDict(attr_parameter)
             embedding_space: dict = get_embedding_space_from_ds_and_field([attr_parameter.target_dataset_id, attr_parameter.target_vector_field])  # type: ignore
-            decision_vector_data = get_classifier_decision_vector(attr_parameter.classifier_id, attr_parameter.class_name, embedding_space.id)
-            # logging.warning(f"decision_vector_data: {decision_vector_data} {attr_parameter.classifier_id} {attr_parameter.class_name} {embedding_space.id}")
+            decision_vector_data = get_classifier_decision_vector(attr_parameter.collection_id, attr_parameter.class_name, embedding_space.id)
+            # logging.warning(f"decision_vector_data: {decision_vector_data} {attr_parameter.collection_id} {attr_parameter.class_name} {embedding_space.id}")
             decision_vector = np.array(decision_vector_data["decision_vector"])
             # FIXME: assuming here that the vector is already present (e.g. because its the map vector)
             # in the case the map vector can't be generated (missing images etc.), use a dummy vector:

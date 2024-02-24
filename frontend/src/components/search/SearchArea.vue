@@ -13,7 +13,7 @@ import MultiSelect from 'primevue/multiselect';
 import httpClient from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
 import { useAppStateStore } from "../../stores/app_state_store"
-import ClassifierAndVectorFieldSelection from "./ClassifierAndVectorFieldSelection.vue";
+import CollectionAndVectorFieldSelection from "./CollectionAndVectorFieldSelection.vue";
 
 const appState = useAppStateStore()
 </script>
@@ -219,13 +219,13 @@ export default {
           Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
         <button
-          v-if="appState.settings.search.search_type == 'classifier'"
+          v-if="appState.settings.search.search_type == 'collection'"
           @click="$emit('reset_search_box')"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
         <button
-          v-if="appState.settings.search.search_type == 'recommended_for_classifier'"
+          v-if="appState.settings.search.search_type == 'recommended_for_collection'"
           @click="$emit('reset_search_box')"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Recommended for Collection '{{
@@ -620,7 +620,7 @@ export default {
               </option>
             </select>
           </div>
-          <ClassifierAndVectorFieldSelection
+          <CollectionAndVectorFieldSelection
             v-if="['classifier'].includes(appState.settings.rendering[param[0]].type)"
             v-model="appState.settings.rendering[param[0]].parameter"
             class="flex-1"/>

@@ -3,7 +3,7 @@ import httpClient from "../../api/httpClient"
 
 import { EllipsisVerticalIcon, TrashIcon } from "@heroicons/vue/24/outline"
 
-import ClassifierClassListItem from "./ClassifierClassListItem.vue"
+import CollectionClassListItem from "./CollectionClassListItem.vue"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -14,7 +14,7 @@ const appState = useAppStateStore()
 <script>
 export default {
   props: [],
-  emits: ["classifier_selected", "class_selected"],
+  emits: ["collection_selected", "class_selected"],
   data() {
     return {}
   },
@@ -23,19 +23,19 @@ export default {
   },
   mounted() {},
   methods: {
-    create_classifier(name) {
+    create_collection(name) {
       if (!name) {
         return
       }
       const that = this
-      const create_classifier_body = {
+      const create_collection_body = {
         name: name,
         related_organization_id: this.appStateStore.organization.id,
       }
       httpClient
-        .post("/org/data_map/add_classifier", create_classifier_body)
+        .post("/org/data_map/add_collection", create_collection_body)
         .then(function (response) {
-          that.appStateStore.classifiers.push(response.data)
+          that.appStateStore.collections.push(response.data)
         })
     },
   },
@@ -47,67 +47,67 @@ export default {
 
     <div class="my-2 flex items-stretch">
       <input
-        ref="new_classifier_name"
+        ref="new_collection_name"
         type="text"
         class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         placeholder="Collection Name"
-        @keyup.enter="create_classifier($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''" />
+        @keyup.enter="create_collection($refs.new_collection_name.value); $refs.new_collection_name.value = ''" />
       <button
         class="rounded-r-md border-0 px-2 py-1.5 text-gray-400 hover:text-blue-500 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
-        @click="create_classifier($refs.new_classifier_name.value); $refs.new_classifier_name.value = ''">
+        @click="create_collection($refs.new_collection_name.value); $refs.new_collection_name.value = ''">
         Create
       </button>
     </div>
 
-    <ul v-if="Object.keys(appState.classifiers).length !== 0" role="list" class="mb-4 mt-5">
+    <ul v-if="Object.keys(appState.collections).length !== 0" role="list" class="mb-4 mt-5">
       <li
-        v-for="classifier in appState.classifiers"
-        :key="classifier.id"
+        v-for="collection in appState.collections"
+        :key="collection.id"
         class="mb-4 rounded-md bg-gray-100 pb-1 pl-3 pr-2 pt-2">
 
         <div class="flex flex-row gap-3">
-          <span class="font-bold text-gray-600">{{ classifier.name }}</span>
+          <span class="font-bold text-gray-600">{{ collection.name }}</span>
           <div class="flex-1"></div>
           <!-- <button
-            @click="$emit('recommend_items_for_classifier', classifier)"
+            @click="$emit('recommend_items_for_collection', collection)"
             class="text-sm font-light text-gray-500 hover:text-blue-500/50">
             Recommend Similar
           </button>
           <button
-            @click="$emit('show_classifier_as_map', classifier)"
+            @click="$emit('show_collection_as_map', collection)"
             class="text-sm font-light text-gray-500 hover:text-blue-500/50">
             Show Map
           </button> -->
           <button
-            @click="$emit('classifier_selected', classifier.id)"
+            @click="$emit('collection_selected', collection.id)"
             class="ml-1 w-8 rounded px-1 hover:bg-gray-100">
             <EllipsisVerticalIcon></EllipsisVerticalIcon>
           </button>
         </div>
 
         <ul class="mt-3">
-          <ClassifierClassListItem
-            v-for="class_details in classifier.actual_classes.slice(0, 3)"
+          <CollectionClassListItem
+            v-for="class_details in collection.actual_classes.slice(0, 3)"
             :key="class_details.name"
             :class_details="class_details"
-            @click="$emit('class_selected', class_details.name); $emit('classifier_selected', classifier.id)">
-          </ClassifierClassListItem>
+            @click="$emit('class_selected', class_details.name); $emit('collection_selected', collection.id)">
+          </CollectionClassListItem>
         </ul>
 
         <button
-          v-if="classifier.actual_classes.length > 3"
+          v-if="collection.actual_classes.length > 3"
           class="mb-2 flex flex-row gap-3 py-[1px] pr-2"
-          @click="$emit('classifier_selected', classifier.id)">
+          @click="$emit('collection_selected', collection.id)">
           <span class="text-sm pl-2 text-gray-500 hover:text-blue-500">
-            Show all {{ classifier.actual_classes.length }} classes
+            Show all {{ collection.actual_classes.length }} classes
           </span>
         </button>
       </li>
     </ul>
 
     <div
-      v-if="Object.keys(appState.classifiers).length === 0"
+      v-if="Object.keys(appState.collections).length === 0"
       class="flex h-20 flex-col place-content-center text-center">
       <p class="flex-none text-gray-400">No Collections Yet</p>
     </div>

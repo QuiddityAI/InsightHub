@@ -165,7 +165,7 @@ class VectorSearchEngineClient(object):
         return hits
 
 
-    def get_items_matching_classifier(self, dataset_id: int, vector_field: str, positive_ids: list[str],
+    def get_items_matching_collection(self, dataset_id: int, vector_field: str, positive_ids: list[str],
                                       negative_ids: list[str], filter_criteria: dict, return_vectors: bool,
                                       limit: int, score_threshold: float | None, min_results: int = 10) -> list:
         hits = self.client.recommend(
@@ -189,7 +189,7 @@ class VectorSearchEngineClient(object):
             score_threshold=score_threshold,
         )
         if len(hits) == 0 and score_threshold and min_results > 0:
-            return self.get_items_matching_classifier(dataset_id, vector_field, positive_ids, negative_ids, filter_criteria, return_vectors, min(min_results, limit), None, min_results)
+            return self.get_items_matching_collection(dataset_id, vector_field, positive_ids, negative_ids, filter_criteria, return_vectors, min(min_results, limit), None, min_results)
         return hits
 
 

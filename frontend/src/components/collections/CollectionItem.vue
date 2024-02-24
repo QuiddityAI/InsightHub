@@ -22,7 +22,7 @@ export default {
   },
   mounted() {
     const that = this
-    this.rendering = this.appStateStore.datasets[this.dataset_id].classifier_example_rendering
+    this.rendering = this.appStateStore.datasets[this.dataset_id].collection_item_rendering
     const payload = {
       dataset_id: this.dataset_id,
       item_id: this.item_id,

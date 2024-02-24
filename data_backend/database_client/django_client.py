@@ -50,51 +50,51 @@ def get_stored_map_data(map_id: str) -> dict | None:
         return None
 
 
-def get_classifier(classifier_id: int) -> DotDict | None:
-    url = backend_url + '/org/data_map/get_classifier'
+def get_collection(collection_id: int) -> DotDict | None:
+    url = backend_url + '/org/data_map/get_collection'
     data = {
-        'classifier_id': classifier_id,
+        'collection_id': collection_id,
     }
     result = requests.post(url, json=data)
     if result.status_code != 200:
-        logging.warning("Couldn't find classifier: " + str(classifier_id))
+        logging.warning("Couldn't find collection: " + str(collection_id))
         return None
     return DotDict(result.json())
 
 
-def get_classifier_examples(classifier_id: int, class_name: str, field_type: str | None = None, is_positive: bool | None = None) -> list[dict]:
-    url = backend_url + '/org/data_map/get_classifier_examples'
+def get_collection_items(collection_id: int, class_name: str, field_type: str | None = None, is_positive: bool | None = None) -> list[dict]:
+    url = backend_url + '/org/data_map/get_collection_items'
     data = {
-        'classifier_id': classifier_id,
+        'collection_id': collection_id,
         'class_name': class_name,
         'type': field_type,
         'is_positive': is_positive,
     }
     result = requests.post(url, json=data)
     if result.status_code != 200:
-        logging.warning("Couldn't find classifier examples")
+        logging.warning("Couldn't find collection items")
         return []
     return result.json()
 
 
-def get_classifier_decision_vector(classifier_id: int, class_name: str, embedding_space_id: int) -> dict:
+def get_classifier_decision_vector(collection_id: int, class_name: str, embedding_space_id: int) -> dict:
     url = backend_url + '/org/data_map/get_classifier_decision_vector'
     data = {
-        'classifier_id': classifier_id,
+        'collection_id': collection_id,
         'class_name': class_name,
         'embedding_space_id': embedding_space_id,
     }
     result = requests.post(url, json=data)
     if result.status_code != 200:
         logging.warning("Couldn't find classifier decision vector")
-        return []
+        return {}
     return result.json()
 
 
-def set_classifier_decision_vector(classifier_id: int, class_name: str, embedding_space_id: int, decision_vector: Iterable, metrics: dict) -> None:
+def set_classifier_decision_vector(collection_id: int, class_name: str, embedding_space_id: int, decision_vector: Iterable, metrics: dict) -> None:
     url = backend_url + '/org/data_map/set_classifier_decision_vector'
     data = {
-        'classifier_id': classifier_id,
+        'collection_id': collection_id,
         'class_name': class_name,
         'embedding_space_id': embedding_space_id,
         'decision_vector': decision_vector,

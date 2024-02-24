@@ -3,7 +3,7 @@ import httpClient from "../../api/httpClient"
 
 import { EllipsisVerticalIcon, TrashIcon } from "@heroicons/vue/24/outline"
 
-import ClassifierExample from "./ClassifierExample.vue"
+import CollectionItem from "./CollectionItem.vue"
 import { FieldType } from "../../utils/utils"
 
 import { mapStores } from "pinia"
@@ -13,12 +13,12 @@ const appState = useAppStateStore()
 
 <script>
 export default {
-  props: ["classifier_id", "class_name", "is_positive"],
+  props: ["collection_id", "class_name", "is_positive"],
   emits: [],
   inject: ["eventBus"],
   data() {
     return {
-      classifier: useAppStateStore().classifiers.find((classifier) => classifier.id === this.classifier_id),
+      collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       examples: [],
     }
   },
@@ -29,14 +29,14 @@ export default {
   mounted() {
     const that = this
     this.load_examples(this.is_positive)
-    this.eventBus.on("classifier_example_added", ({classifier_id, class_name, is_positive, created_item}) => {
-      if (classifier_id === this.classifier_id && class_name === this.class_name && is_positive === this.is_positive) {
+    this.eventBus.on("collection_item_added", ({collection_id, class_name, is_positive, created_item}) => {
+      if (collection_id === this.collection_id && class_name === this.class_name && is_positive === this.is_positive) {
         this.examples.unshift(created_item)
       }
     })
-    this.eventBus.on("classifier_example_removed", ({classifier_id, class_name, classifier_example_id}) => {
-      if (classifier_id === this.classifier_id && class_name === this.class_name) {
-        const item_index = that.examples.findIndex((item) => item.id === classifier_example_id)
+    this.eventBus.on("collection_item_removed", ({collection_id, class_name, collection_item_id}) => {
+      if (collection_id === this.collection_id && class_name === this.class_name) {
+        const item_index = that.examples.findIndex((item) => item.id === collection_item_id)
         that.examples.splice(item_index, 1)
       }
     })
@@ -45,27 +45,27 @@ export default {
     load_examples(is_positive) {
       const that = this
       const body = {
-        classifier_id: this.classifier.id,
+        collection_id: this.collection.id,
         class_name: this.class_name,
         type: FieldType.IDENTIFIER,
         is_positive: is_positive,
       }
-      httpClient.post("/org/data_map/get_classifier_examples", body).then(function (response) {
+      httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
         that.examples = response.data
       })
     },
-    remove_classifier_example(classifier_example_id) {
+    remove_collection_item(collection_item_id) {
       const that = this
       const body = {
-        classifier_example_id: classifier_example_id,
+        collection_item_id: collection_item_id,
       }
       httpClient
-        .post("/org/data_map/remove_classifier_example", body)
+        .post("/org/data_map/remove_collection_item", body)
         .then(function (response) {
-          const item_index = that.examples.findIndex((item) => item.id === classifier_example_id)
+          const item_index = that.examples.findIndex((item) => item.id === collection_item_id)
           that.examples.splice(item_index, 1)
-          const classifier = that.appStateStore.classifiers.find((classifier) => classifier.id === that.classifier_id)
-          const class_details = classifier.actual_classes.find((actual_class) => actual_class.name === that.class_name)
+          const collection = that.appStateStore.collections.find((collection) => collection.id === that.collection_id)
+          const class_details = collection.actual_classes.find((actual_class) => actual_class.name === that.class_name)
           class_details[that.is_positive ? "positive_count" : "negative_count"] -= 1
         })
     },
@@ -77,12 +77,12 @@ export default {
   <div>
     <ul class="mb-2 mt-4">
       <li v-for="example in examples" :key="example.id" class="justify-between pb-2">
-        <ClassifierExample
+        <CollectionItem
           :dataset_id="JSON.parse(example.value)[0]"
           :item_id="JSON.parse(example.value)[1]"
           :is_positive="example.is_positive"
-          @remove="remove_classifier_example(example.id)">
-        </ClassifierExample>
+          @remove="remove_collection_item(example.id)">
+        </CollectionItem>
       </li>
     </ul>
   </div>

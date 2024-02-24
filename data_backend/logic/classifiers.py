@@ -2,10 +2,10 @@
 # when using classifier class to color an attribute, it must have a version / last changed date in parameters to make caching work
 
 # simple use cases:
-# - use classifier class (e.g. review paper) for saturation (or secondary opacity) property
+# - use collection class (e.g. review paper) for saturation (or secondary opacity) property
 #   but what if map by title but colorize by classifier on image embedding?
 # - show classifier scores / tags in details modal (based on default search fields or overrides)
-# - show recommendations / search by classifier class (based on default search fields or overrides)
+# - show recommendations / search by collection class (based on default search fields or overrides)
 
 # workflow:
 # - retrain button (per class, for all - but what if only one class of 10k tags changed? solved, if no annotation field is used)
@@ -23,7 +23,7 @@ import numpy as np
 from utils.dotdict import DotDict
 from utils.field_types import FieldType
 
-from database_client.django_client import get_classifier, get_classifier_examples, get_dataset, get_classifier_decision_vector, set_classifier_decision_vector
+from database_client.django_client import get_collection, get_collection_items, get_dataset, get_classifier_decision_vector, set_classifier_decision_vector
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.extract_pipeline import get_pipeline_steps
@@ -38,13 +38,13 @@ def get_embedding_space_from_ds_and_field(ds_and_field: tuple[int, str]) -> DotD
     return DotDict(embedding_space)
 
 
-def get_training_status(classifier_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str]):
+def get_training_status(collection_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str]):
     embedding_space_id = get_embedding_space_from_ds_and_field(target_vector_ds_and_field).id
-    classifier = get_classifier(classifier_id)
-    assert classifier is not None
+    collection = get_collection(collection_id)
+    assert collection is not None
     time_updated = None
-    if classifier.trained_classifiers:
-        time_updated = classifier.trained_classifiers.get(str(embedding_space_id), {}).get(class_name, {}).get('time_updated')
+    if collection.trained_classifiers:
+        time_updated = collection.trained_collections.get(str(embedding_space_id), {}).get(class_name, {}).get('time_updated')
     status = {
         'embedding_space_id': embedding_space_id,
         'time_updated': time_updated,
@@ -52,23 +52,23 @@ def get_training_status(classifier_id: int, class_name: str, target_vector_ds_an
     return status
 
 
-RETRAINING_TASKS = {}  # classifier_id -> task status (class name, progress)
+RETRAINING_TASKS = {}  # collection_id -> task status (class name, progress)
 
 
-def get_retraining_status(classifier_id):
-    status = copy.copy(RETRAINING_TASKS.get(classifier_id))
+def get_retraining_status(collection_id):
+    status = copy.copy(RETRAINING_TASKS.get(collection_id))
     if isinstance(status, dict):
         if 'thread' in status:
             del status['thread']
         if status['status'] == 'done':
-            del RETRAINING_TASKS[classifier_id]
+            del RETRAINING_TASKS[collection_id]
     return status
 
 
-def start_retrain(classifier_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str], deep_train=False):
+def start_retrain(collection_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str], deep_train=False):
     embedding_space_id = get_embedding_space_from_ds_and_field(target_vector_ds_and_field).id
-    thread = Thread(target=_retrain_safe, args=(classifier_id, class_name, embedding_space_id, deep_train))
-    RETRAINING_TASKS[classifier_id] = {
+    thread = Thread(target=_retrain_safe, args=(collection_id, class_name, embedding_space_id, deep_train))
+    RETRAINING_TASKS[collection_id] = {
         'class_name': class_name,
         'progress': 0,
         'status': 'running',
@@ -78,45 +78,45 @@ def start_retrain(classifier_id: int, class_name: str, target_vector_ds_and_fiel
     }
     thread.start()
     # general clean up: delete other status after 5 minutes:
-    for other_classifier_id, other_status in RETRAINING_TASKS.items():
+    for other_collection_id, other_status in RETRAINING_TASKS.items():
         if other_status.get('time_finished') and time.time() - other_status['time_finished'] > 300:
-            del RETRAINING_TASKS[other_classifier_id]
+            del RETRAINING_TASKS[other_collection_id]
 
 
-def _retrain_safe(classifier_id, class_name, embedding_space_id, deep_train=False):
-    # if deep_train, retrain using examples instead of decision vectors from parent classifiers
+def _retrain_safe(collection_id, class_name, embedding_space_id, deep_train=False):
+    # if deep_train, retrain using examples instead of decision vectors from parent collections
     # get all examples for class
     # get all embeddings for examples
     # train classifier
     # store classifier, best threshold, metrics
 
     try:
-        _retrain(classifier_id, class_name, embedding_space_id, deep_train)
+        _retrain(collection_id, class_name, embedding_space_id, deep_train)
     except Exception as e:
-        RETRAINING_TASKS[classifier_id]['status'] = 'error'
-        RETRAINING_TASKS[classifier_id]['error'] = str(e)
-        RETRAINING_TASKS[classifier_id]['time_finished'] = time.time()
+        RETRAINING_TASKS[collection_id]['status'] = 'error'
+        RETRAINING_TASKS[collection_id]['error'] = str(e)
+        RETRAINING_TASKS[collection_id]['time_finished'] = time.time()
         logging.exception(e)
 
 
-def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
+def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
     # rudimentary implementation just for simple case of non-exclusive classes and item_id examples:
-    classifier = get_classifier(classifier_id)
-    assert classifier is not None
-    examples = get_classifier_examples(classifier_id, class_name, field_type=None, is_positive=None)
+    collection = get_collection(collection_id)
+    assert collection is not None
+    examples = get_collection_items(collection_id, class_name, field_type=None, is_positive=None)
     positive_vectors = []
     negative_vectors = []
     vector_db_client = VectorSearchEngineClient.get_instance()
     included_dataset_ids = set()
     for i, example in enumerate(examples):
-        RETRAINING_TASKS[classifier_id]['progress'] = i / len(examples)
+        RETRAINING_TASKS[collection_id]['progress'] = i / len(examples)
         vector = None
         if example['field_type'] == FieldType.IDENTIFIER:
             dataset_id, item_id = json.loads(example['value'])
             # TODO: batch process
             dataset = get_dataset(dataset_id)
             source_fields = []
-            dataset_specific_settings = next(filter(lambda item: item.dataset_id == dataset_id, classifier.dataset_specific_settings), None)
+            dataset_specific_settings = next(filter(lambda item: item.dataset_id == dataset_id, collection.dataset_specific_settings), None)
             vector_field = None
             if dataset_specific_settings:
                 source_fields = dataset_specific_settings.relevant_object_fields
@@ -190,13 +190,13 @@ def _retrain(classifier_id, class_name, embedding_space_id, deep_train=False):
             'without_random_data': metrics_without_random_data,
             'with_random_data': metrics_with_random_data,
         }
-        set_classifier_decision_vector(classifier_id, class_name, embedding_space_id, decision_vector.tolist(), metrics)
+        set_classifier_decision_vector(collection_id, class_name, embedding_space_id, decision_vector.tolist(), metrics)
     else:
         logging.warning(f"Decision vector not created")
 
 
-    RETRAINING_TASKS[classifier_id]['status'] = 'done'
-    RETRAINING_TASKS[classifier_id]['time_finished'] = time.time()
+    RETRAINING_TASKS[collection_id]['status'] = 'done'
+    RETRAINING_TASKS[collection_id]['time_finished'] = time.time()
 
 
 def get_metrics(decision_vector, positive_vectors, negative_vectors):
@@ -236,14 +236,14 @@ def get_metrics(decision_vector, positive_vectors, negative_vectors):
     return metrics
 
 
-def _calculate_decision_vector_and_best_threshold_and_metrics(classifier_id, class_name, embedding_space_id):
+def _calculate_decision_vector_and_best_threshold_and_metrics(collection_id, class_name, embedding_space_id):
     # a) binary (single class, pos, neg): do below
     # b) multi class, single output (classification): get all vectors, train together (use other pos as strong neg)
     # c) multi class, multi output (tagging): do below for each class (use other pos as weak neg)
     # a and c are same thing
 
-    # for classifier and each parent: (or use decision vec from parent, recursive, if not deep_train flag?)
-    # get all classifier examples
+    # for collection and each parent: (or use decision vec from parent, recursive, if not deep_train flag?)
+    # get all collection items
     # plus: examples from positive and negative annotation field (overrriden by examples), needs paging (not all at once)
 
     # for each example, get embedding and weighting

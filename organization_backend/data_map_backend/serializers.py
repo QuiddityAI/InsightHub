@@ -72,7 +72,7 @@ class DatasetSpecificSettingsOfCollectionSerializer(drf_serializers.ModelSeriali
 class CollectionSerializer(drf_serializers.ModelSerializer):
     user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
     related_organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
-    parent_classifiers = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    parent_collection = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     dataset_specific_settings = DatasetSpecificSettingsOfCollectionSerializer(many=True, read_only=True)
     actual_classes = drf_serializers.ReadOnlyField()
 
@@ -82,7 +82,7 @@ class CollectionSerializer(drf_serializers.ModelSerializer):
 
 
 class CollectionItemSerializer(drf_serializers.ModelSerializer):
-    classifier = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+    collection = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
 
     class Meta:
         model = CollectionItem
