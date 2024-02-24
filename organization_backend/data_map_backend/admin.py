@@ -380,8 +380,13 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHis
 
     def get_retraining_status(self, obj):
         try:
-            url = data_backend_url + f'/data_backend/classifier/{obj.collection_id}/retraining_status'  # type: ignore
-            result = requests.get(url)
+            url = data_backend_url + f'/data_backend/classifier/retraining_status'  # type: ignore
+            data = {
+                'collection_id': obj.collection_id,
+                'class_name': obj.class_name,
+                'embedding_space_id': obj.embedding_space_id,
+            }
+            result = requests.post(url, json=data)
         except Exception as e:
             return repr(e)
         try:
@@ -395,8 +400,9 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHis
 
     @action(label="(Re)train Classifier", description="Train classifier for this class and embedding space")
     def retrain_classifier(self, request, obj):
-        url = data_backend_url + f'/data_backend/classifier/{obj.collection_id}/retrain'
+        url = data_backend_url + f'/data_backend/classifier/retrain'
         data = {
+            'collection_id': obj.collection_id,
             'class_name': obj.class_name,
             'embedding_space_id': obj.embedding_space_id,
         }

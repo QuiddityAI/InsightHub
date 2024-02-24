@@ -17,7 +17,7 @@ from logic.insert_logic import insert_many, update_database_layout
 from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_items, get_items_having_value_count
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
-from logic.classifiers import get_retraining_status, get_training_status, start_retrain
+from logic.classifiers import get_retraining_status, start_retrain
 
 from database_client.django_client import add_stored_map
 
@@ -295,25 +295,19 @@ def store_map():
 
 # -------------------- DataCollections --------------------
 
-@app.route('/data_backend/classifier/<int:collection_id>/training_status', methods=['POST'])
-def get_training_status_route(collection_id: int):
+@app.route('/data_backend/classifier/retraining_status', methods=['POST'])
+def get_retraining_status_route():
     params = request.json or {}
     params = DotDict(params)
-    status = get_training_status(collection_id, params.class_name, params.target_vector_ds_and_field)
+    status = get_retraining_status(params.collection_id, params.class_name, params.embedding_space_id)
     return jsonify(status)
 
 
-@app.route('/data_backend/classifier/<int:collection_id>/retraining_status', methods=['GET'])
-def get_retraining_status_route(collection_id: int):
-    status = get_retraining_status(collection_id)
-    return jsonify(status)
-
-
-@app.route('/data_backend/classifier/<int:collection_id>/retrain', methods=['POST'])
-def start_retrain_route(collection_id: int):
+@app.route('/data_backend/classifier/retrain', methods=['POST'])
+def start_retrain_route():
     params = request.json or {}
     params = DotDict(params)
-    start_retrain(collection_id, params.class_name, params.target_vector_ds_and_field, params.deep_train)
+    start_retrain(params.collection_id, params.class_name, params.embedding_space_id, params.deep_train)
     return "", 204
 
 

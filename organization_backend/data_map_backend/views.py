@@ -341,16 +341,22 @@ def get_trained_classifier(request):
         collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
         embedding_space_id: int = data["embedding_space_id"]
+        include_vector: bool = data.get("include_vector", False)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
         classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
     except TrainedClassifier.DoesNotExist:
-        return HttpResponse(status=404)
+        result = json.dumps(None)
+        return HttpResponse(result, status=200, content_type='application/json')
     if classifier.collection.created_by != request.user and not classifier.collection.is_public:
         return HttpResponse(status=401)
     serialized_data = TrainedClassifierSerializer(classifier).data
+    assert isinstance(serialized_data, dict)
+    if not include_vector and "decision_vector" in serialized_data:
+        serialized_data["decision_vector_exists"] = len(serialized_data["decision_vector"]) > 0
+        del serialized_data["decision_vector"]
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
@@ -379,7 +385,7 @@ def set_trained_classifier(request):
         classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
     except TrainedClassifier.DoesNotExist:
         classifier = TrainedClassifier(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
-    if classifier.collection.created_by != request.user:
+    if classifier.collection.created_by != request.user and not is_from_backend(request):
         return HttpResponse(status=401)
 
     if decision_vector is not None:
@@ -472,7 +478,7 @@ def add_item_to_collection(request):
     dataset_dict = CollectionItemSerializer(instance=item).data
     serialized_data = json.dumps(dataset_dict)
 
-    collection.items_last_changed[class_name] = timezone.now().timestamp()  # type: ignore
+    collection.items_last_changed[class_name] = timezone.now().isoformat()  # type: ignore
     collection.save()
 
     return HttpResponse(serialized_data, status=200, content_type='application/json')
@@ -499,7 +505,7 @@ def remove_collection_item(request):
         return HttpResponse(status=401)
 
     for class_name in collection_item.classes:  # type: ignore
-        collection_item.collection.items_last_changed[class_name] = timezone.now().timestamp()  # type: ignore
+        collection_item.collection.items_last_changed[class_name] = timezone.now().isoformat()  # type: ignore
     collection_item.collection.save()
 
     collection_item.delete()

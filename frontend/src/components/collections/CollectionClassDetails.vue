@@ -22,55 +22,43 @@ export default {
     return {
       selected_tab: "positives",
       collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
-      positive_examples: [],
-      negative_examples: [],
-      target_vector_field: null,
-      last_retraining: null,
-      embedding_space_id: null,
+      target_vector_ds_and_field: null,
+      trained_classifier: null,
       is_retraining: false,
       retraining_progress: 0.0,
       show_retrain_success_label: false,
     }
   },
   watch: {
-    selected_tab() {
-      if (this.selected_tab === "negatives") {
-        this.load_examples(/* is_positive */ false)
-      }
+    target_vector_ds_and_field() {
+      this.get_trained_classifier()
     },
   },
   computed: {
     ...mapStores(useAppStateStore),
     last_retraining_human_readable() {
-      return new Date(this.last_retraining * 1000).toLocaleString()
+      return new Date(this.trained_classifier?.last_retrained_at).toLocaleString()
     },
+    embedding_space_id() {
+      if (!this.target_vector_ds_and_field) {
+        return null
+      }
+      const dataset = this.appStateStore.datasets[this.target_vector_ds_and_field[0]]
+      return dataset.object_fields[this.target_vector_ds_and_field[1]].actual_embedding_space.id
+    },
+    class_details() {
+      return this.collection.actual_classes.find((collection_class) => collection_class.name === this.class_name)
+    }
   },
   mounted() {
-    this.target_vector_field = this.appStateStore.available_vector_fields.find((ds_and_field) => ds_and_field[1] === this.appStateStore.settings.vectorize.map_vector_field)
-    if (!this.target_vector_field) {
-      this.target_vector_field = this.appStateStore.available_vector_fields[0]
+    this.target_vector_ds_and_field = this.appStateStore.available_vector_fields.find((ds_and_field) => ds_and_field[1] === this.appStateStore.settings.vectorize.map_vector_field)
+    if (!this.target_vector_ds_and_field) {
+      this.target_vector_ds_and_field = this.appStateStore.available_vector_fields[0]
     }
-    this.load_examples(/* is_positive */ true)
-    this.get_training_status()
+    this.get_trained_classifier()
     this.get_retraining_status()
   },
   methods: {
-    load_examples(is_positive) {
-      const that = this
-      const body = {
-        collection_id: this.collection.id,
-        class_name: this.class_name,
-        type: FieldType.IDENTIFIER,
-        is_positive: is_positive,
-      }
-      httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
-        if (is_positive) {
-          that.positive_examples = response.data
-        } else {
-          that.negative_examples = response.data
-        }
-      })
-    },
     delete_collection_class() {
       if (!confirm("Are you sure you want to delete this class and the list of examples?")) {
         return
@@ -95,17 +83,17 @@ export default {
         })
       this.$emit("close")
     },
-    get_training_status() {
+    get_trained_classifier() {
       const that = this
       const body = {
+        collection_id: this.collection_id,
         class_name: this.class_name,
-        target_vector_ds_and_field: this.target_vector_field,
+        embedding_space_id: this.embedding_space_id,
+        include_vector: false,
       }
-      httpClient.post(`/data_backend/classifier/${this.collection_id}/training_status`, body)
+      httpClient.post(`/org/data_map/get_trained_classifier`, body)
       .then(function (response) {
-        const status = response.data
-        that.embedding_space_id = status.embedding_space_id
-        that.last_retraining = status.time_updated
+        that.trained_classifier = response.data
       })
       .catch(function (error) {
         console.error(error)
@@ -119,11 +107,12 @@ export default {
       this.is_retraining = true
       this.retraining_progress = 0.0
       const body = {
+        collection_id: this.collection_id,
         class_name: this.class_name,
+        embedding_space_id: this.embedding_space_id,
         deep_train: false,
-        target_vector_ds_and_field: this.target_vector_field,
       }
-      httpClient.post(`/data_backend/classifier/${this.collection_id}/retrain`, body)
+      httpClient.post(`/data_backend/classifier/retrain`, body)
       .then(function (response) {
         that.get_retraining_status()
       })
@@ -135,7 +124,12 @@ export default {
     },
     get_retraining_status() {
       const that = this
-      httpClient.get(`/data_backend/classifier/${this.collection_id}/retraining_status`)
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+        embedding_space_id: this.embedding_space_id,
+      }
+      httpClient.post(`/data_backend/classifier/retraining_status`, body)
       .then(function (response) {
         const status = response.data
         if (!status) {
@@ -183,7 +177,7 @@ export default {
 
       <div class="w-40 h-6">
         <select
-          v-model="target_vector_field"
+          v-model="target_vector_ds_and_field"
           class="w-full py-0 rounded border-transparent text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
           <option v-for="item in appState.available_vector_fields" :value="item" selected>
             {{ appState.datasets[item[0]]?.name }}: {{ item[1] }}
@@ -210,7 +204,7 @@ export default {
     <div
       class="flex flex-row items-center justify-between text-center font-bold text-gray-400">
       <button
-        v-for="item in [['positives', '+'], ['negatives', '-'], ['learn', 'Learn'], ['recommend', 'Recom.']]"
+        v-for="item in [['positives', `+ ${class_details.positive_count}`], ['negatives', `- ${class_details.negative_count}`], ['learn', 'Learn'], ['recommend', 'Recom.']]"
         class="flex-1"
         :class="{'text-blue-500': selected_tab === item[0]}"
         @click="selected_tab = item[0]">

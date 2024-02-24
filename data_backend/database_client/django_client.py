@@ -77,32 +77,37 @@ def get_collection_items(collection_id: int, class_name: str, field_type: str | 
     return result.json()
 
 
-def get_classifier_decision_vector(collection_id: int, class_name: str, embedding_space_id: int) -> dict:
-    url = backend_url + '/org/data_map/get_classifier_decision_vector'
+def get_trained_classifier(collection_id: int, class_name: str, embedding_space_id: int, include_vector: bool) -> DotDict:
+    url = backend_url + '/org/data_map/get_trained_classifier'
     data = {
         'collection_id': collection_id,
         'class_name': class_name,
         'embedding_space_id': embedding_space_id,
+        'include_vector': include_vector,
     }
     result = requests.post(url, json=data)
     if result.status_code != 200:
         logging.warning("Couldn't find classifier decision vector")
-        return {}
-    return result.json()
+        return DotDict()
+    return DotDict(result.json())
 
 
-def set_classifier_decision_vector(collection_id: int, class_name: str, embedding_space_id: int, decision_vector: Iterable, metrics: dict) -> None:
-    url = backend_url + '/org/data_map/set_classifier_decision_vector'
+def set_trained_classifier(collection_id: int, class_name: str, embedding_space_id: int,
+                           decision_vector: Iterable, highest_score: float | None, threshold: float | None,
+                           metrics: dict) -> None:
+    url = backend_url + '/org/data_map/set_trained_classifier'
     data = {
         'collection_id': collection_id,
         'class_name': class_name,
         'embedding_space_id': embedding_space_id,
         'decision_vector': decision_vector,
+        'highest_score': highest_score,
+        'threshold': threshold,
         'metrics': metrics,
     }
     result = requests.post(url, json=data)
     if result.status_code != 204:
-        logging.warning("Couldn't set classifier decision vector")
+        logging.warning("Couldn't set trained classifier")
     return None
 
 

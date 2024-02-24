@@ -23,7 +23,7 @@ import numpy as np
 from utils.dotdict import DotDict
 from utils.field_types import FieldType
 
-from database_client.django_client import get_collection, get_collection_items, get_dataset, get_classifier_decision_vector, set_classifier_decision_vector
+from database_client.django_client import get_collection, get_collection_items, get_dataset, set_trained_classifier
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.extract_pipeline import get_pipeline_steps
@@ -38,37 +38,27 @@ def get_embedding_space_from_ds_and_field(ds_and_field: tuple[int, str]) -> DotD
     return DotDict(embedding_space)
 
 
-def get_training_status(collection_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str]):
-    embedding_space_id = get_embedding_space_from_ds_and_field(target_vector_ds_and_field).id
-    collection = get_collection(collection_id)
-    assert collection is not None
-    time_updated = None
-    if collection.trained_classifiers:
-        time_updated = collection.trained_collections.get(str(embedding_space_id), {}).get(class_name, {}).get('time_updated')
-    status = {
-        'embedding_space_id': embedding_space_id,
-        'time_updated': time_updated,
-    }
-    return status
+def _get_task_id(collection_id: int, class_name: str, embedding_space_id: int):
+    return f'{collection_id}_{class_name}_{embedding_space_id}'
 
 
 RETRAINING_TASKS = {}  # collection_id -> task status (class name, progress)
 
 
-def get_retraining_status(collection_id):
-    status = copy.copy(RETRAINING_TASKS.get(collection_id))
+def get_retraining_status(collection_id: int, class_name: str, embedding_space_id: int):
+    status = RETRAINING_TASKS.get(_get_task_id(collection_id, class_name, embedding_space_id))
     if isinstance(status, dict):
+        status = copy.copy(status)
         if 'thread' in status:
             del status['thread']
         if status['status'] == 'done':
-            del RETRAINING_TASKS[collection_id]
+            del RETRAINING_TASKS[_get_task_id(collection_id, class_name, embedding_space_id)]
     return status
 
 
-def start_retrain(collection_id: int, class_name: str, target_vector_ds_and_field: tuple[int, str], deep_train=False):
-    embedding_space_id = get_embedding_space_from_ds_and_field(target_vector_ds_and_field).id
+def start_retrain(collection_id: int, class_name: str, embedding_space_id: int, deep_train=False):
     thread = Thread(target=_retrain_safe, args=(collection_id, class_name, embedding_space_id, deep_train))
-    RETRAINING_TASKS[collection_id] = {
+    RETRAINING_TASKS[_get_task_id(collection_id, class_name, embedding_space_id)] = {
         'class_name': class_name,
         'progress': 0,
         'status': 'running',
@@ -78,9 +68,9 @@ def start_retrain(collection_id: int, class_name: str, target_vector_ds_and_fiel
     }
     thread.start()
     # general clean up: delete other status after 5 minutes:
-    for other_collection_id, other_status in RETRAINING_TASKS.items():
+    for other_task_id, other_status in RETRAINING_TASKS.items():
         if other_status.get('time_finished') and time.time() - other_status['time_finished'] > 300:
-            del RETRAINING_TASKS[other_collection_id]
+            del RETRAINING_TASKS[other_task_id]
 
 
 def _retrain_safe(collection_id, class_name, embedding_space_id, deep_train=False):
@@ -93,15 +83,17 @@ def _retrain_safe(collection_id, class_name, embedding_space_id, deep_train=Fals
     try:
         _retrain(collection_id, class_name, embedding_space_id, deep_train)
     except Exception as e:
-        RETRAINING_TASKS[collection_id]['status'] = 'error'
-        RETRAINING_TASKS[collection_id]['error'] = str(e)
-        RETRAINING_TASKS[collection_id]['time_finished'] = time.time()
+        task_id = _get_task_id(collection_id, class_name, embedding_space_id)
+        RETRAINING_TASKS[task_id]['status'] = 'error'
+        RETRAINING_TASKS[task_id]['error'] = str(e)
+        RETRAINING_TASKS[task_id]['time_finished'] = time.time()
         logging.exception(e)
 
 
 def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
     # rudimentary implementation just for simple case of non-exclusive classes and item_id examples:
     collection = get_collection(collection_id)
+    task_id = _get_task_id(collection_id, class_name, embedding_space_id)
     assert collection is not None
     examples = get_collection_items(collection_id, class_name, field_type=None, is_positive=None)
     positive_vectors = []
@@ -109,7 +101,7 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
     vector_db_client = VectorSearchEngineClient.get_instance()
     included_dataset_ids = set()
     for i, example in enumerate(examples):
-        RETRAINING_TASKS[collection_id]['progress'] = i / len(examples)
+        RETRAINING_TASKS[task_id]['progress'] = i / len(examples)
         vector = None
         if example['field_type'] == FieldType.IDENTIFIER:
             dataset_id, item_id = json.loads(example['value'])
@@ -190,13 +182,15 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
             'without_random_data': metrics_without_random_data,
             'with_random_data': metrics_with_random_data,
         }
-        set_classifier_decision_vector(collection_id, class_name, embedding_space_id, decision_vector.tolist(), metrics)
+        highest_score = metrics_without_random_data['highest_score'] if metrics_without_random_data else None
+        best_threshold = metrics_without_random_data['best_threshold'] if metrics_without_random_data else None
+        set_trained_classifier(collection_id, class_name, embedding_space_id, decision_vector.tolist(), highest_score, best_threshold, metrics)
     else:
         logging.warning(f"Decision vector not created")
 
 
-    RETRAINING_TASKS[collection_id]['status'] = 'done'
-    RETRAINING_TASKS[collection_id]['time_finished'] = time.time()
+    RETRAINING_TASKS[task_id]['status'] = 'done'
+    RETRAINING_TASKS[task_id]['time_finished'] = time.time()
 
 
 def get_metrics(decision_vector, positive_vectors, negative_vectors):

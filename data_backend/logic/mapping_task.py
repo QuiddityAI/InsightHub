@@ -14,7 +14,7 @@ from utils.collect_timings import Timings
 from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions, get_field_from_all_items
 from utils.dotdict import DotDict
 
-from database_client.django_client import get_dataset, get_stored_map_data, get_classifier_decision_vector
+from database_client.django_client import get_dataset, get_stored_map_data, get_trained_classifier
 
 from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
@@ -493,9 +493,9 @@ def clusterize_and_render_stage(map_data: dict, params: DotDict, datasets: dict,
         elif attr_type == "classifier":
             attr_parameter = DotDict(attr_parameter)
             embedding_space: dict = get_embedding_space_from_ds_and_field([attr_parameter.target_dataset_id, attr_parameter.target_vector_field])  # type: ignore
-            decision_vector_data = get_classifier_decision_vector(attr_parameter.collection_id, attr_parameter.class_name, embedding_space.id)
+            decision_vector_data = get_trained_classifier(attr_parameter.collection_id, attr_parameter.class_name, embedding_space.id, include_vector=True)
             # logging.warning(f"decision_vector_data: {decision_vector_data} {attr_parameter.collection_id} {attr_parameter.class_name} {embedding_space.id}")
-            decision_vector = np.array(decision_vector_data["decision_vector"])
+            decision_vector = np.array(decision_vector_data.decision_vector)
             # FIXME: assuming here that the vector is already present (e.g. because its the map vector)
             # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
             dummy_vector = np.zeros(embedding_space.dimensions)
@@ -506,13 +506,12 @@ def clusterize_and_render_stage(map_data: dict, params: DotDict, datasets: dict,
             #logging.warning(f"{vectors[0][:4]}")
             # using numpy to get dot product between decision vector and all vectors
             scores = np.dot(vectors, decision_vector)
-            metrics = decision_vector_data["metrics"].get("without_random_data") or decision_vector_data["metrics"].get("with_random_data") or {}
             # making sure that false items are zero and that the positives start at the middle of the scale
             #logging.warning(f"score values: {max(scores)} {min(scores)}")
-            if metrics.get("best_threshold") is not None and metrics.get("highest_score") is not None:
-                negatives = scores < metrics["best_threshold"]
-                scores -= metrics["best_threshold"]
-                scores += metrics["highest_score"] - metrics["best_threshold"]
+            if decision_vector_data.threshold is not None and decision_vector_data.highest_score is not None:
+                negatives = scores < decision_vector_data.threshold
+                scores -= decision_vector_data.threshold
+                scores += decision_vector_data.highest_score - decision_vector_data.threshold
                 scores[negatives] = 0
             #logging.warning(f"score values: {max(scores)} {min(scores)}")
             map_data["results"]["per_point_data"][attr] = scores.tolist()

@@ -948,8 +948,11 @@ class TrainedClassifier(models.Model):
     def is_up_to_date(self):
         if self.last_retrained_at is None:
             return False
-        items_last_changed = self.collection.items_last_changed.get(self.class_name, timezone.now().timestamp())  # type: ignore
-        items_last_changed = datetime.datetime.fromisoformat(items_last_changed)
+        items_last_changed = self.collection.items_last_changed.get(self.class_name, timezone.now().isoformat())  # type: ignore
+        try:
+            items_last_changed = datetime.datetime.fromisoformat(items_last_changed)
+        except Exception:
+            return False
         return self.last_retrained_at >= items_last_changed  # type: ignore
 
     def __str__(self):

@@ -14,7 +14,7 @@ from utils.source_plugin_types import SourcePlugin
 
 from api_clients.bing_web_search import bing_web_search_formatted
 from database_client.absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
-from database_client.django_client import get_classifier_decision_vector, get_dataset, get_collection
+from database_client.django_client import get_trained_classifier, get_dataset, get_collection
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.local_map_cache import local_maps
@@ -240,13 +240,9 @@ def get_search_results_matching_a_collection(dataset, search_settings: DotDict, 
     if not vector_field or not embedding_space_id:
         return [], {}, {}
 
-    decision_vector_data = get_classifier_decision_vector(collection_id, class_name, embedding_space_id)
-    decision_vector = np.array(decision_vector_data["decision_vector"])
-
-    score_threshold = None
-    metrics = decision_vector_data["metrics"].get("without_random_data") or decision_vector_data["metrics"].get("with_random_data") or {}
-    if metrics.get("best_threshold"):
-        score_threshold = metrics["best_threshold"]
+    decision_vector_data = get_trained_classifier(collection_id, class_name, embedding_space_id, include_vector=True)
+    decision_vector = np.array(decision_vector_data.decision_vector)
+    score_threshold = decision_vector_data.threshold
 
     results = get_vector_search_results(dataset, vector_field, QueryInput(search_settings.all_field_query, search_settings.all_field_query_negative),
                                         decision_vector.tolist(), required_fields=[],
