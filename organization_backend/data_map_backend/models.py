@@ -373,6 +373,12 @@ class Dataset(models.Model):
         default=get_default_detail_view_rendering,
         blank=True,
         null=True)
+    statistics = models.JSONField(
+        verbose_name="Statistics",
+        help_text="Statistics shown for the search results",
+        default=dict,
+        blank=True,
+        null=True)
 
     history = HistoricalRecords()
 

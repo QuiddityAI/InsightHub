@@ -138,7 +138,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         "descriptive_text_fields", "default_search_fields",
         "item_count", "get_field_overview_table_html",
         "result_list_rendering", "collection_item_rendering",
-        "hover_label_rendering", "detail_view_rendering",
+        "hover_label_rendering", "detail_view_rendering", "statistics",
         "random_item",
         "created_at", "changed_at",
         'action_buttons',
