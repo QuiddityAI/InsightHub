@@ -34,9 +34,6 @@ export default {
     "appStateStore.map_item_details"(new_val, old_val) {
       this.create_plot()
     },
-    "mapStateStore.visibility_filters"(new_val, old_val) {
-      this.create_plot()
-    },
   },
   methods: {
     create_plot() {

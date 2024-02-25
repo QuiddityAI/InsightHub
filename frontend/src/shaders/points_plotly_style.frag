@@ -5,6 +5,7 @@ precision highp float;
 in vec2 vUv;
 in vec3 vertexPositionVar;
 in vec3 albedoColorVar;
+in float opacityVar;
 in float clusterIdVar;
 flat in int pointIdxVar;
 in float isHighlighted;
@@ -62,7 +63,7 @@ void main() {
 
         // add colored border:
         float isBorder = roundedBoxSDF((posFromBottomLeft - vec2(0.5)) * 2.0, vec2(1.0), 0.4, 0.18);
-        FragColor.a = max(FragColor.a, isBorder) * maxOpacity;
+        FragColor.a = max(FragColor.a, isBorder) * opacityVar * maxOpacity;
         FragColor.rgb = mix(FragColor.rgb, albedoColorVar, isBorder);
     } else {
 
@@ -75,7 +76,7 @@ void main() {
         // circle area:
         float antiAliasingEdgePx = 1.0;
         float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
-        FragColor.a = max(FragColor.a, circleArea) * maxOpacity;
+        FragColor.a = max(FragColor.a, circleArea) * opacityVar * maxOpacity;
 
         vec3 albedoColor = albedoColorVar;
 

@@ -4,6 +4,7 @@ in vec2 position;
 in float positionX;
 in float positionY;
 in float pointSize;
+in float opacity;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
@@ -24,10 +25,12 @@ uniform float pointSizeFactor;
 
 out vec2 vUv;
 out float isHighlighted;
+out float opacityVar;
 
 void main() {
     // pass data to fragment shader by setting varying variables:
     isHighlighted = (gl_VertexID == hoveredPointIdx) ? 1.0 : 0.0;
+    opacityVar = opacity;
 
     // position calculation:
     vec3 rawPos = vec3(positionX, positionY, -2.0);

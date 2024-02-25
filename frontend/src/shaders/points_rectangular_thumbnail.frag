@@ -5,6 +5,7 @@ precision highp float;
 in vec2 vUv;
 in vec3 vertexPositionVar;
 in vec3 albedoColorVar;
+in float opacityVar;
 in vec4 secondaryColorVar;
 in float clusterIdVar;
 flat in int pointIdxVar;
@@ -86,7 +87,7 @@ void main() {
 
         // add colored border:
         float isBorder = roundedBoxSDF((posFromBottomLeft - vec2(0.5)) * 2.0, vec2(1.0), 0.4, 0.18);
-        FragColor.a = max(FragColor.a, isBorder) * maxOpacity;
+        FragColor.a = max(FragColor.a, isBorder) * opacityVar * maxOpacity;
         FragColor.rgb = mix(FragColor.rgb, albedoColorVar, isBorder);
     } else {
         float pointRadiusPx = pointRadiusPxVar;
@@ -95,7 +96,7 @@ void main() {
         // circle area:
         float antiAliasingEdgePx = 2.0;
         float circleArea = 1.0 - smoothstep(1.0 - (antiAliasingEdgePx / pointRadiusPx), 1.0, distFromCenter);
-        FragColor.a = max(FragColor.a, circleArea) * maxOpacity;
+        FragColor.a = max(FragColor.a, circleArea) * opacityVar * maxOpacity;
 
         // position of this fragment on the screen:
         vec2 relativeScreenPos = gl_FragCoord.xy / (viewportSize * devicePixelRatio);  // 0-1, from bottom left
@@ -161,5 +162,5 @@ void main() {
     // secondary color:
     float isRing = distFromCenter > 0.7 ? (distFromCenter <= 1.0 ? 1.0 : 0.0) : 0.0;
     FragColor.rgb = mix(FragColor.rgb, secondaryColorVar.rgb, isRing * secondaryColorVar.a);
-    FragColor.a = max(FragColor.a, secondaryColorVar.a * maxOpacity * isRing);
+    FragColor.a = max(FragColor.a, secondaryColorVar.a * opacityVar * maxOpacity * isRing);
 }

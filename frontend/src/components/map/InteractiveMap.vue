@@ -45,6 +45,7 @@ export default {
       currentVelocityX: [],
       currentVelocityY: [],
       pointVisibility: [],
+      actual_opacity: [],
 
       panzoomInstance: null,
 
@@ -104,6 +105,9 @@ export default {
     this.eventBus.on("map_reset_pan_and_zoom", () => {
       that.resetPanAndZoom()
     })
+    this.eventBus.on("visibility_filters_changed", () => {
+      that.update_opacities()
+    })
   },
   watch: {
     "mapStateStore.selected_point_indexes"() {
@@ -130,7 +134,13 @@ export default {
     },
     "appStateStore.settings.frontend.rendering.style"() {
       this.updateGeometry()
-    }
+    },
+    "mapStateStore.per_point.item_id"() {
+      this.update_opacities()
+    },
+    "mapStateStore.per_point.opacity"() {
+      this.update_opacities()
+    },
   },
   methods: {
     resetData() {
@@ -438,6 +448,16 @@ export default {
         )
       }
     },
+    update_opacities() {
+      this.actual_opacity = Array(this.mapStateStore.per_point.x.length).fill(1.0)
+      for (const i in this.mapStateStore.per_point.x) {
+        const item_ds_and_id = this.mapStateStore.per_point.item_id[i]
+        const item = this.mapStateStore.text_data[item_ds_and_id[0]][item_ds_and_id[1]]
+        const include = this.mapStateStore.visibility_filters.every(filter_item => filter_item.filter_fn(item))
+        this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+      }
+      this.updateGeometry()
+    },
     updateGeometry() {
       const pointCount = this.mapStateStore.per_point.x.length
       this.mapStateStore.per_point.y = ensureLength(this.mapStateStore.per_point.y, pointCount, 0.0)
@@ -456,6 +476,7 @@ export default {
       )
       this.currentVelocityX = ensureLength(this.currentVelocityX, pointCount, 0.0, true)
       this.currentVelocityY = ensureLength(this.currentVelocityY, pointCount, 0.0, true)
+      this.actual_opacity = ensureLength(this.actual_opacity, pointCount, 1.0)
       this.pointVisibility = ensureLength(this.pointVisibility, pointCount, 0)
 
       this.mapStateStore.per_point.cluster_id = ensureLength(this.mapStateStore.per_point.cluster_id, pointCount, 0)
@@ -571,6 +592,11 @@ export default {
           size: 1,
           data: new Float32Array(this.pointVisibility.slice(0, pointCount)),
         },
+        opacity: {
+          instanced: 1,
+          size: 1,
+          data: new Float32Array(this.actual_opacity.slice(0, pointCount)),
+        },
       })
 
       this.glProgramShadows = new Program(this.glContext, {
@@ -633,7 +659,7 @@ export default {
         opacity: {
           instanced: 1,
           size: 1,
-          data: new Float32Array(this.mapStateStore.per_point.opacity.slice(0, pointCount)),
+          data: new Float32Array(this.actual_opacity.slice(0, pointCount)),
         },
         secondary_hue: {
           instanced: 1,

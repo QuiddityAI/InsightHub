@@ -4,6 +4,7 @@ precision highp float;
 
 in vec2 vUv;
 in float isHighlighted;
+in float opacityVar;
 
 uniform float viewportWidth;
 uniform float viewportHeight;
@@ -27,5 +28,5 @@ void main() {
     float smoothShadowDarkness = pow(1.0 - smoothstep(0.0, 1.0, distFromCenter), 1.3);
 
     FragColor.rgb = baseShadowColor;
-    FragColor.a = smoothShadowDarkness * shadowOpacity;
+    FragColor.a = smoothShadowDarkness * shadowOpacity * opacityVar;
 }

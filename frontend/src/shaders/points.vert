@@ -38,6 +38,7 @@ uniform float pointSizeFactor;
 out vec2 vUv;
 out vec3 vertexPositionVar;
 out vec3 albedoColorVar;
+out float opacityVar;
 out vec4 secondaryColorVar;
 out float clusterIdVar;
 flat out int pointIdxVar;
@@ -61,6 +62,7 @@ void main() {
     isSelected = (gl_InstanceID == markedPointIdx) ? 1.0 : 0.0;
     flatnessVar = flatness;
     thumbnailAspectRatioVar = thumbnailAspectRatio;
+    opacityVar = opacity;
 
     // albedo color:
     // (the albedo color is the same for all fragments of this vertex, so it
