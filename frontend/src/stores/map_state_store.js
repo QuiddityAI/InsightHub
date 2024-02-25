@@ -42,6 +42,8 @@ export const useMapStateStore = defineStore("mapState", {
       visiblePointIndexes: [],
       show_html_points: false,
 
+      visibility_filters: [], // each filter is an object with keys 'display_name', 'filter_fn' function (item) => bool
+
       baseScale: [1.0, 1.0],
       baseOffset: [0.0, 0.0],
       baseScaleTarget: [1.0, 1.0],

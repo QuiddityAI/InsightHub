@@ -26,9 +26,15 @@ export default {
   },
   mounted() {
     this.create_plot()
+    this.eventBus.on("visibility_filters_changed", () => {
+      this.create_plot()
+    })
   },
   watch: {
     "appStateStore.map_item_details"(new_val, old_val) {
+      this.create_plot()
+    },
+    "mapStateStore.visibility_filters"(new_val, old_val) {
       this.create_plot()
     },
   },
@@ -43,9 +49,14 @@ export default {
       for (const ds_id in item_details) {
         for (const item_id in item_details[ds_id]) {
           const item = item_details[ds_id][item_id]
+          const include = this.mapStateStore.visibility_filters.every(filter_item => filter_item.filter_fn(item))
+          if (!include) {
+            continue
+          }
+
           const categories = this.statistic.x_type === "array_item_category" ? item[this.statistic.x] : [item[this.statistic.x]]
           for (const category of categories) {
-              y_counts[category] = (y_counts[category] || 0) + 1
+            y_counts[category] = (y_counts[category] || 0) + 1
           }
           for (const y_params of this.statistic.y) {
             const value = y_params.field ? item[y_params.field] : null
@@ -153,16 +164,37 @@ export default {
         ]
       }
 
-      console.log(`time to plot: ${(new Date().getTime() / 1000) - begin}`)
+      //console.log(`time to plot: ${(new Date().getTime() / 1000) - begin}`)
     },
     clickHandler(event, chartContext, config) {
       if (config.dataPointIndex === undefined) {
         return
       }
       const category = this.categories[config.dataPointIndex]
-      console.log(category)
-      console.log(this.category_field)
-      console.log(this.statistic.x_type)
+      const category_field = this.category_field
+      const display_name = `${category_field} = ${category}`
+      if (this.mapStateStore.visibility_filters.some(filter_item => filter_item.display_name === display_name)) {
+        return
+      }
+
+      let filter_fn = null
+      if (this.statistic.x_type === "array_item_category") {
+        filter_fn = (item) => {
+          // the category is always stored as a string, so we need to convert the candidates to strings as well
+          return item[category_field].map(String).includes(category)
+        }
+      } else {
+        filter_fn = (item) => {
+          // the category is always stored as a string, so we need to convert the candidates to strings as well
+          return String(item[category_field]) === category
+        }
+      }
+
+      this.mapStateStore.visibility_filters.push({
+        display_name: display_name,
+        filter_fn: filter_fn,
+      })
+      this.eventBus.emit("visibility_filters_changed")
     },
   },
 }

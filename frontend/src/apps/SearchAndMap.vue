@@ -28,6 +28,7 @@ import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/u
 
 import { useAppStateStore } from "../stores/app_state_store"
 import { useMapStateStore } from "../stores/map_state_store"
+import FilterList from "../components/search/FilterList.vue"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 
@@ -361,6 +362,8 @@ export default {
                   </option>
                 </select>
               </div>
+
+              <FilterList></FilterList>
 
               <StatisticList>
 
