@@ -165,7 +165,7 @@ export default {
       </select>
 
       <div class="flex-initial w-48">
-      <MultiSelect v-model="appState.settings.dataset_ids"
+      <MultiSelect v-model="appState.settings.search.dataset_ids"
         :options="Object.values(appState.datasets)"
         optionLabel="name"
         optionValue="id"
@@ -251,7 +251,7 @@ export default {
           v-model="appState.settings.search.all_field_query"
           :placeholder="
             appState.settings.search.search_type == 'external_input'
-              ? `Describe what ${appState.settings.dataset_ids.length ? appState.datasets[appState.settings.dataset_ids[0]]?.entity_name || '' : ''} you want to find`
+              ? `Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.entity_name || '' : ''} you want to find`
               : 'But more like this:'
           "
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />

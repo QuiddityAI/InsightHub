@@ -100,7 +100,7 @@ def generate_map(map_id: str, ignore_cache: bool):
     # and to make get_map_results work during initial phase:
     map_data: dict = local_maps[map_id]
     params: DotDict = DotDict(map_data["parameters"])
-    datasets = {dataset_id: get_dataset(dataset_id) for dataset_id in params.dataset_ids}
+    datasets = {dataset_id: get_dataset(dataset_id) for dataset_id in params.search.dataset_ids}
 
     # variables set in specific stages but used globally later on:
     thumbnail_atlas_thread = None

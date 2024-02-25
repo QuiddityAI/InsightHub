@@ -38,7 +38,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
     sorted_id_sets = []
     all_items_by_dataset = {}
     all_score_info = {}
-    for dataset_id in params.dataset_ids:
+    for dataset_id in params.search.dataset_ids:
         dataset = get_dataset(dataset_id)
         score_info = {}
 

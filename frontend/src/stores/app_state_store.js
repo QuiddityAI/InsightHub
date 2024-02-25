@@ -68,8 +68,8 @@ export const useAppStateStore = defineStore("appState", {
       stored_maps: [],
 
       settings: {
-        dataset_ids: [],
         search: {
+          dataset_ids: [],
           search_type: "external_input", // or cluster, collection or similar item
           use_separate_queries: false,
           all_field_query: "",
@@ -308,8 +308,8 @@ export const useAppStateStore = defineStore("appState", {
 
             that.datasets[dataset_id] = dataset
             if (that.organization.default_dataset_selection.includes(dataset_id) || that.organization.default_dataset_selection.length == 0) {
-              if (!that.settings.dataset_ids.includes(dataset_id)) {
-                that.settings.dataset_ids.push(dataset_id)
+              if (!that.settings.search.dataset_ids.includes(dataset_id)) {
+                that.settings.search.dataset_ids.push(dataset_id)
                 // FIXME: should be triggered automatically
                 that.on_selected_datasets_changed()
               }
@@ -327,7 +327,7 @@ export const useAppStateStore = defineStore("appState", {
       const that = this
       this.settings.search.separate_queries = {}
 
-      for (const dataset_id of this.settings.dataset_ids) {
+      for (const dataset_id of this.settings.search.dataset_ids) {
         const dataset = this.datasets[dataset_id]
 
         // initialize available search fields:
@@ -446,7 +446,7 @@ export const useAppStateStore = defineStore("appState", {
     },
     request_search_results() {
       const that = this
-      if (this.settings.dataset_ids.length === 0) return
+      if (this.settings.search.dataset_ids.length === 0) return
 
       if (
         this.settings.search.search_type == "external_input" &&
@@ -541,7 +541,7 @@ export const useAppStateStore = defineStore("appState", {
     },
     request_map() {
       const that = this
-      if (this.settings.dataset_ids.length === 0) return
+      if (this.settings.search.dataset_ids.length === 0) return
 
       httpClient
         .post(
@@ -667,7 +667,7 @@ export const useAppStateStore = defineStore("appState", {
             const attr_params = that.settings.rendering[attr]
             const is_hue_attr = ["hue", "secondary_hue"].includes(attr)
             const is_integer_attr_type = ["cluster_idx", "origin_query_idx"].includes(attr_params.type)
-            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.settings.dataset_ids[0]].object_fields[attr_params.parameter]?.field_type == FieldType.INTEGER
+            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.settings.search.dataset_ids[0]].object_fields[attr_params.parameter]?.field_type == FieldType.INTEGER
             if (is_hue_attr && (is_integer_attr_type || is_integer_field)) {
               // if an integer value is assigned to a hue value, we need to make sure that the last value doesn't have
               // the same hue as the first value:
