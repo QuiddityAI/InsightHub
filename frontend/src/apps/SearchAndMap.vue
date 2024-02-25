@@ -21,6 +21,7 @@ import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
 import CollectionArea from "../components/collections/CollectionArea.vue"
 import CollectionItem from "../components/collections/CollectionItem.vue"
 import AddToCollectionButtons from "../components/collections/AddToCollectionButtons.vue"
+import StatisticList from "../components/search/StatisticList.vue"
 
 import httpClient from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
@@ -360,6 +361,10 @@ export default {
                   </option>
                 </select>
               </div>
+
+              <StatisticList>
+
+              </StatisticList>
 
               <ul v-if="appState.search_result_ids.length !== 0" role="list" class="pt-1">
                 <li

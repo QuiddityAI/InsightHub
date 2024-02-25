@@ -266,6 +266,8 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
         hover_label_data['_origins'] = item['_origins']
         for field in datasets[ds_id].hover_label_rendering.required_fields:
             hover_label_data[field] = item.get(field, None)
+        for field in datasets[ds_id].get("statistics", {}).get("required_fields", []):
+            hover_label_data[field] = item.get(field, None)
         # FIXME: this is just a workaround to make web search results work:
         if "snippet" in item:
             hover_label_data['snippet'] = item['snippet']

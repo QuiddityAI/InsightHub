@@ -3,6 +3,7 @@ import { createPinia } from "pinia"
 import mitt from 'mitt';
 import PrimeVue from 'primevue/config';
 import Wind from './prime_vue_presets/wind';
+import VueApexCharts from "vue3-apexcharts";
 import "inter-ui/inter.css";
 
 import "./style.css"
@@ -18,6 +19,8 @@ app.use(PrimeVue, {
   unstyled: true,
   pt: Wind,
 });
+
+app.use(VueApexCharts)
 
 app.use(pinia)
 app.mount("#app")

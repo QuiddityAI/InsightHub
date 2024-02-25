@@ -191,6 +191,7 @@ def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
         # used for cluster titles and potentially w2v:
         # TODO: this may be slow, maybe use only subset for cluster titles?
         required_fields += dataset.descriptive_text_fields
+        required_fields += dataset.get("statistics", {}).get("required_fields", [])
 
     required_fields = list(set(required_fields))
     return required_fields
