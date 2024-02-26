@@ -29,6 +29,7 @@ import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/u
 import { useAppStateStore } from "../stores/app_state_store"
 import { useMapStateStore } from "../stores/map_state_store"
 import FilterList from "../components/search/FilterList.vue"
+import ResultList from "../components/search/ResultList.vue"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 
@@ -369,30 +370,7 @@ export default {
 
               </StatisticList>
 
-              <ul v-if="appState.search_result_ids.length !== 0" role="list" class="pt-1">
-                <li
-                  v-for="ds_and_item_id in appState.search_result_ids
-                    .filter(
-                      (result, i) =>
-                        appState.selected_cluster_id == null ||
-                        appState.clusterIdsPerPoint[i] == appState.selected_cluster_id
-                    )
-                    .slice(0, 10)"
-                  :key="ds_and_item_id.join('_')"
-                  class="justify-between pb-3">
-                  <ResultListItem
-                    :initial_item="appState.search_result_items[ds_and_item_id[0]][ds_and_item_id[1]]"
-                    :rendering="appState.datasets[ds_and_item_id[0]].result_list_rendering"
-                    @mouseenter="appState.highlighted_item_id = ds_and_item_id"
-                    @mouseleave="appState.highlighted_item_id = null"
-                    @mousedown="appState.show_document_details(ds_and_item_id)"></ResultListItem>
-                </li>
-              </ul>
-              <div
-                v-if="appState.search_result_ids.length === 0"
-                class="flex h-20 flex-col place-content-center text-center">
-                <p class="flex-none text-gray-400">No Results Yet</p>
-              </div>
+              <ResultList></ResultList>
             </div>
 
             <!-- history -->

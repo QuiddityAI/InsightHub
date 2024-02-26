@@ -539,6 +539,21 @@ export const useAppStateStore = defineStore("appState", {
       this.search_result_items = response_data["items_by_dataset"]
       this.search_timings = response_data["timings"]
     },
+    get_search_result_ids(page, per_page) {
+      return this.search_result_ids
+        .filter(
+          (item_ds_and_id, i) => {
+            let visible = this.selected_cluster_id == null ||
+              this.clusterIdsPerPoint[i] == this.selected_cluster_id
+            const item = this.search_result_items[item_ds_and_id[0]][item_ds_and_id[1]]
+            visible = visible && this.mapState.visibility_filters.every(
+              (filter_item) => filter_item.filter_fn(item)
+            )
+            return visible
+          }
+        )
+        .slice(page * per_page, page * per_page + per_page)
+    },
     request_map() {
       const that = this
       if (this.settings.search.dataset_ids.length === 0) return
