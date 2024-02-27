@@ -355,9 +355,13 @@ export default {
                 </div>
               </div>
 
+              <FilterList></FilterList>
+
+              <StatisticList></StatisticList>
+
               <div
                 v-if="appState.search_result_ids.length !== 0"
-                class="ml-2 mt-2 flex flex-row items-center">
+                class="ml-2 mt-1 flex flex-row items-center">
                 <span class="mr-2 flex-none text-gray-500">Cluster:</span>
                 <select
                   v-model="appState.selected_cluster_id"
@@ -368,12 +372,6 @@ export default {
                   </option>
                 </select>
               </div>
-
-              <FilterList></FilterList>
-
-              <StatisticList>
-
-              </StatisticList>
 
               <ResultList></ResultList>
             </div>

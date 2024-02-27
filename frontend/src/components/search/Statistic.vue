@@ -111,9 +111,15 @@ export default {
         xaxis: {
           categories: categories,
         },
+        yaxis: {
+          show: false,
+        },
         tooltip: {  // show tooltip for full height of chart, not only when hovering directly over bar
           shared: true,
           intersect: false
+        },
+        dataLabels: {  // numbers on bars
+          enabled: false,
         },
       }
       this.series = series
@@ -170,6 +176,9 @@ export default {
       const category = this.categories[config.dataPointIndex]
       const category_field = this.category_field
       const display_name = `${category_field} = ${category}`
+      if (category === undefined) {
+        return
+      }
       if (this.mapStateStore.visibility_filters.some(filter_item => filter_item.display_name === display_name)) {
         return
       }

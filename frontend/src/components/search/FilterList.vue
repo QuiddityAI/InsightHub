@@ -1,4 +1,6 @@
 <script setup>
+import Chip from 'primevue/chip';
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -34,11 +36,11 @@ export default {
 </script>
 
 <template>
-  <div>
-    <div v-for="filter, index in mapState.visibility_filters">
-      <span>{{ filter.display_name }}</span>
-      <button @click="remove_filter(index)">X</button>
-    </div>
+  <div v-if="mapState.visibility_filters.length" class="mt-3 flex flex-row flex-wrap gap-2">
+    <Chip v-for="filter, index in mapState.visibility_filters"
+      :label="filter.display_name"
+      removable @remove="remove_filter(index)">
+    </Chip>
   </div>
 
 </template>

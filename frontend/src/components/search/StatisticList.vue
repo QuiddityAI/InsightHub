@@ -1,4 +1,7 @@
 <script setup>
+import TabView from 'primevue/tabview';
+import TabPanel from 'primevue/tabpanel';
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -15,8 +18,6 @@ export default {
   emits: [],
   data() {
     return {
-      selected_dataset_id: null,
-      selected_statistics_group: null,
     }
   },
   computed: {
@@ -26,10 +27,6 @@ export default {
   mounted() {
   },
   watch: {
-    "appStateStore.settings.search.dataset_ids"(new_val, old_val) {
-      this.selected_dataset_id = new_val[0]
-      this.selected_statistics_group = this.appStateStore.datasets[this.selected_dataset_id]?.statistics?.groups[0]
-    },
   },
   methods: {
   },
@@ -37,19 +34,19 @@ export default {
 </script>
 
 <template>
-  <div>
-    <span class="text-gray-600 text-sm">Statistics:</span>
-    <select v-model="selected_dataset_id" class="border-transparent rounded text-gray-600 text-sm">
-        <option v-for="dataset_id in appState.settings.search.dataset_ids" :value="dataset_id">{{ appState.datasets[dataset_id].name }}</option>
-    </select>
-    <select v-if="selected_dataset_id" v-model="selected_statistics_group" class="border-transparent rounded text-gray-600 text-sm">
-      <option v-for="group in appState.datasets[selected_dataset_id]?.statistics?.groups" :value="group">{{ group.title }}</option>
-    </select>
-    <Statistic
-      v-if="selected_statistics_group"
-      v-for="statistic in selected_statistics_group.plots"
-      :key="statistic"
-      :statistic="statistic" />
+  <div v-if="appState.search_result_ids.length" v-for="dataset_id in appState.settings.search.dataset_ids">
+    <div v-if="appState.datasets[dataset_id]?.statistics?.groups?.length">
+    <TabView class="mt-1">
+      <TabPanel v-for="group in appState.datasets[dataset_id]?.statistics?.groups"
+        :header="group.title">
+        <Statistic
+          v-if="group"
+          v-for="statistic in group.plots"
+          :key="statistic"
+          :statistic="statistic" />
+      </TabPanel>
+    </TabView>
+  </div>
   </div>
 </template>
 
