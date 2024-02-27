@@ -14,6 +14,7 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
 import { useAppStateStore } from "../../stores/app_state_store"
 import CollectionAndVectorFieldSelection from "./CollectionAndVectorFieldSelection.vue";
+import LoginButton from "../LoginButton.vue";
 
 const appState = useAppStateStore()
 const _window = window
@@ -176,12 +177,7 @@ export default {
       </div>
 
       <div class="flex-1"></div>
-      <a
-        v-if="!appState.logged_in"
-        :href="`org/login/?next=/?dataset_id=${appState.settings.dataset_id}`"
-        class="rounded p-2 text-sm text-gray-500 hover:bg-gray-100">
-        Login
-      </a>
+      <LoginButton></LoginButton>
       <span v-if="appState.logged_in" class="mr-2 text-sm text-gray-500">
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
         {{ appState.username }}

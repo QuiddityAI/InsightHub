@@ -3,6 +3,7 @@ import { createPinia } from "pinia"
 import mitt from 'mitt';
 import PrimeVue from 'primevue/config';
 import Wind from './prime_vue_presets/wind';
+import ToastService from 'primevue/toastservice';
 import VueApexCharts from "vue3-apexcharts";
 import "inter-ui/inter.css";
 
@@ -19,6 +20,7 @@ app.use(PrimeVue, {
   unstyled: true,
   pt: Wind,
 });
+app.use(ToastService);
 
 app.use(VueApexCharts)
 

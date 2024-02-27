@@ -20,6 +20,7 @@ from django.shortcuts import redirect
 
 from django.contrib.auth import views as auth_views
 import data_map_backend
+from .views import login_from_app, signup_from_app
 
 
 def redirect_to_admin(request):
@@ -39,6 +40,8 @@ urlpatterns = [
     # Login and Logout
     path('org/login/', auth_views.LoginView.as_view(), name='login'),
     path('org/logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
+    path('org/login_from_app/', login_from_app, name='login_from_app'),
+    path('org/signup_from_app/', signup_from_app, name='signup_from_app'),
 
     # OAuth toolkit
     path("org/o/", include('oauth2_provider.urls', namespace='oauth2_provider')),

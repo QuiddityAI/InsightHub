@@ -14,6 +14,8 @@ import {
   XMarkIcon,
 } from "@heroicons/vue/24/outline"
 
+import Toast from 'primevue/toast';
+
 import MapWithLabels from "../components/map/MapWithLabels.vue"
 import SearchArea from "../components/search/SearchArea.vue"
 import ResultListItem from "../components/search/ResultListItem.vue"
@@ -61,9 +63,11 @@ export default {
       }
     },
     evaluate_url_query_parameters() {
-      // this is almost the first thing that is done when the page is being loaded
-      // most importantly, it initializes the dataset_id, which then triggers other stuff
       const queryParams = new URLSearchParams(window.location.search)
+      if (queryParams.get("error") !== null) {
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: queryParams.get("error") })
+      }
+
       if (queryParams.get("organization_id") === null) {
         this.appStateStore.set_organization_id(1, /* change_history */ false)
         const emptyQueryParams = new URLSearchParams()
@@ -177,6 +181,7 @@ export default {
 
 <template>
   <main class="overflow-hidden">
+    <Toast position="top-right"></Toast>
     <MapWithLabels class="absolute top-0 h-screen w-screen"/>
 
     <div
