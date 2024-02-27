@@ -179,7 +179,9 @@ LOGIN_REDIRECT_URL = 'home'
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost:55140', 'http://home-server:55140']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:55140', 'http://home-server:55140',
+                        'http://localhost:55440', 'http://home-server:55440',
+                        'http://www.luminosus.org:55440']
 
 
 JAZZMIN_SETTINGS = {
