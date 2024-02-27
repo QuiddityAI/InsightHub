@@ -277,18 +277,19 @@ def retrieve_document_details_by_id():
 def store_map():
     params = request.json or {}
     user_id = params.get("user_id")
-    dataset_id = params.get("dataset_id")
+    organization_id = params.get("organization_id")
     name = params.get("name")
+    display_name = params.get("display_name")
     map_id = params.get("map_id")
 
-    if not all([user_id is not None, dataset_id is not None, name, map_id is not None]):
+    if not all([user_id is not None, organization_id is not None, name, display_name, map_id is not None]):
         return "a parameter is missing", 400
 
     map_data = get_map_results(map_id)
     if map_data is None:
         return "map not found", 404
 
-    result = add_stored_map(map_id, user_id, dataset_id, name, map_data)
+    result = add_stored_map(map_id, user_id, organization_id, name, display_name, map_data)
 
     return result
 

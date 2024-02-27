@@ -428,7 +428,7 @@ export default {
                       Delete
                     </button>
                     <button
-                      @click="show_stored_map(stored_map.id)"
+                      @click="appState.show_stored_map(stored_map.id)"
                       class="text-sm font-light text-gray-500 hover:text-blue-500/50">
                       Show Map
                     </button>

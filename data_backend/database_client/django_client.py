@@ -22,14 +22,15 @@ def get_dataset(dataset_id: int) -> DotDict:
     return DotDict(result.json())
 
 
-def add_stored_map(map_id, user_id, dataset_id, name, map_data) -> dict:
+def add_stored_map(map_id, user_id, organization_id, name, display_name, map_data) -> dict:
     url = backend_url + '/org/data_map/add_stored_map'
     encoded_map_data = base64.b64encode(json.dumps(map_data, cls=CustomJSONEncoder).encode()).decode()
     logging.warning(f"storing map, size: {len(encoded_map_data) / 1024 / 1024} MB")
     body = {
         'user_id': user_id,
-        'dataset_id': dataset_id,
+        'organization_id': organization_id,
         'name': name,
+        'display_name': display_name,
         'map_id': map_id,
         'map_data': encoded_map_data,
     }

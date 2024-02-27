@@ -36,6 +36,7 @@ def get_health(request):
 def get_current_user(request):
     user = request.user
     response_json = json.dumps({
+        'id': user.id,
         'logged_in': user.is_authenticated,
         'username': user.username,
     })
@@ -559,6 +560,7 @@ def add_stored_map(request):
 
     try:
         data = json.loads(request.body)
+        user_id: int = data["user_id"]
         organization_id: int = data["organization_id"]
         name: str = data["name"]
         display_name: str = data["display_name"]
@@ -568,7 +570,7 @@ def add_stored_map(request):
         return HttpResponse(status=400)
 
     item = StoredMap(id=map_id)
-    item.user_id = request.user.id  # type: ignore
+    item.user_id = user_id  # call comes from backend, thats why request.user is not valid  # type: ignore
     item.organization_id = organization_id  # type: ignore
     item.name = name
     item.display_name = display_name

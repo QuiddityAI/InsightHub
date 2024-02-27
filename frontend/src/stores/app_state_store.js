@@ -31,6 +31,7 @@ export const useAppStateStore = defineStore("appState", {
       organization: null,
       datasets: {},
 
+      user_id: null,
       logged_in: false,
       username: null,
 
@@ -208,6 +209,7 @@ export const useAppStateStore = defineStore("appState", {
     retrieve_current_user() {
       const that = this
       httpClient.get("/org/data_map/get_current_user").then(function (response) {
+        that.user_id = response.data.id
         that.logged_in = response.data.logged_in
         that.username = response.data.username
       })
@@ -864,6 +866,7 @@ export const useAppStateStore = defineStore("appState", {
       const [name, display_name] = this.get_current_map_name()
       if (!name) return
       const store_map_body = {
+        user_id: this.user_id,
         organization_id: this.organization_id,
         name: name,
         display_name: display_name,
