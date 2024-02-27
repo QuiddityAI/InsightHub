@@ -280,7 +280,7 @@ export default {
           @request_search_results="appState.request_search_results"
           @reset_search_box="appState.reset_search_box"
           @show_global_map="appState.show_global_map"
-          class="pointer-events-auto flex-none rounded-md bg-white p-3 shadow-sm"></SearchArea>
+          class="pointer-events-auto flex-none rounded-md bg-white p-3 shadow-sm"></SearchAreaAbsClust>
 
         <!-- tab box -->
         <div
