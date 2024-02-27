@@ -36,6 +36,7 @@ export const useAppStateStore = defineStore("appState", {
 
       // results:
       search_result_ids: [],
+      visible_result_ids : [],
       search_result_items: {},
       result_list_rendering: {},
       map_id: null,
@@ -539,8 +540,8 @@ export const useAppStateStore = defineStore("appState", {
       this.search_result_items = response_data["items_by_dataset"]
       this.search_timings = response_data["timings"]
     },
-    get_search_result_ids(page, per_page) {
-      return this.search_result_ids
+    update_visible_result_ids() {
+      this.visible_result_ids = this.search_result_ids
         .filter(
           (item_ds_and_id, i) => {
             let visible = this.selected_cluster_id == null ||
@@ -552,7 +553,6 @@ export const useAppStateStore = defineStore("appState", {
             return visible
           }
         )
-        .slice(page * per_page, page * per_page + per_page)
     },
     request_map() {
       const that = this

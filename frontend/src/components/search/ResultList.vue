@@ -1,4 +1,6 @@
 <script setup>
+import Paginator from 'primevue/paginator';
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -15,38 +17,34 @@ export default {
   emits: [],
   data() {
     return {
-      page: 0,
+      first_index: 0,
       per_page: 10,
-      ds_and_item_ids: [],
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    result_ids_for_this_page() {
+      return this.appStateStore.visible_result_ids.slice(this.first_index, this.first_index + this.per_page)
+    },
   },
   mounted() {
     this.eventBus.on("visibility_filters_changed", () => {
-      this.update_results()
+      this.appStateStore.update_visible_result_ids()
     })
   },
   watch: {
-    page(new_val, old_val) {
-      this.update_results()
-    },
-    per_page(new_val, old_val) {
-      this.update_results()
+    first(new_val, old_val) {
+      console.log("first", new_val, old_val)
     },
     "appStateStore.search_result_ids"(new_val, old_val) {
-      this.update_results()
+      this.appStateStore.update_visible_result_ids()
     },
     "appStateStore.selected_cluster_id"(new_val, old_val) {
-      this.update_results()
+      this.appStateStore.update_visible_result_ids()
     },
   },
   methods: {
-    update_results() {
-      this.ds_and_item_ids = this.appStateStore.get_search_result_ids(this.page, this.per_page)
-    }
   },
 }
 </script>
@@ -54,27 +52,27 @@ export default {
 
 <template>
   <div>
-    {{ page }}
-    <button @click="page -= 1" :disabled="page === 0">Previous</button>
-    <button @click="page += 1">Next</button>
-
-    <ul v-if="appState.search_result_ids.length !== 0" role="list" class="pt-1">
-      <li
-        v-for="ds_and_item_id in ds_and_item_ids"
-        :key="ds_and_item_id.join('_')"
-        class="justify-between pb-3">
-        <ResultListItem
-          :initial_item="appState.search_result_items[ds_and_item_id[0]][ds_and_item_id[1]]"
-          :rendering="appState.datasets[ds_and_item_id[0]].result_list_rendering"
-          @mouseenter="appState.highlighted_item_id = ds_and_item_id"
-          @mouseleave="appState.highlighted_item_id = null"
-          @mousedown="appState.show_document_details(ds_and_item_id)"></ResultListItem>
-      </li>
-    </ul>
+    <div v-if="appState.visible_result_ids.length !== 0">
+      <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length"></Paginator>
+      <ul role="list" class="pt-1">
+        <li
+          v-for="ds_and_item_id in result_ids_for_this_page"
+          :key="ds_and_item_id.join('_')"
+          class="justify-between pb-3">
+          <ResultListItem
+            :initial_item="appState.search_result_items[ds_and_item_id[0]][ds_and_item_id[1]]"
+            :rendering="appState.datasets[ds_and_item_id[0]].result_list_rendering"
+            @mouseenter="appState.highlighted_item_id = ds_and_item_id"
+            @mouseleave="appState.highlighted_item_id = null"
+            @mousedown="appState.show_document_details(ds_and_item_id)"></ResultListItem>
+        </li>
+      </ul>
+      <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length"></Paginator>
+    </div>
     <div
-      v-if="ds_and_item_ids.length === 0"
+      v-if="appState.visible_result_ids.length === 0"
       class="flex h-20 flex-col place-content-center text-center">
-      <p class="flex-none text-gray-400">No Results Yet</p>
+      <p class="flex-none text-gray-400">No Results</p>
     </div>
   </div>
 </template>
