@@ -273,7 +273,7 @@ export default {
       class="pointer-events-none relative mr-auto grid h-screen min-h-0 min-w-0 max-w-7xl grid-cols-1 gap-4 overflow-hidden px-3 pb-20 pt-6 md:grid-cols-2 md:pb-6 md:pt-6 xl:px-12"
       style="grid-auto-rows: minmax(auto, min-content)">
       <!-- left column -->
-      <div ref="left_column" class="pointer-events-none flex flex-col overflow-hidden">
+      <div ref="left_column" class="pointer-events-none flex flex-col overflow-hidden h-[calc(100%-3em)]">
         <!-- search card -->
         <SearchArea
           @request_search_results="appState.request_search_results"
