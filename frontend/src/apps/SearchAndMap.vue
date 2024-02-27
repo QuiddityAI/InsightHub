@@ -1,5 +1,6 @@
 <script setup>
 import cborJs from "https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/+esm"
+import Message from 'primevue/message';
 
 import { mapStores } from "pinia"
 
@@ -405,7 +406,11 @@ export default {
 
             <!-- maps -->
             <div v-if="selected_tab === 'maps'">
-              <div class="my-2 flex items-stretch">
+              <Message v-if="!appState.logged_in" severity="warn">
+                Log in to store maps
+              </Message>
+
+              <div v-if="appState.map_id && appState.logged_in" class="my-2 flex items-stretch">
                 <button
                   class="flex-auto rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
                   type="button"

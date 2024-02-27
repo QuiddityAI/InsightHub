@@ -45,7 +45,7 @@ export default {
 <template>
   <div>
 
-    <div class="my-2 flex items-stretch">
+    <div v-if="appState.logged_in" class="my-2 flex items-stretch">
       <input
         ref="new_collection_name"
         type="text"

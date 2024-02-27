@@ -1,4 +1,6 @@
 <script setup>
+import Message from 'primevue/message';
+
 import { httpClient } from "../../api/httpClient"
 
 import { EllipsisVerticalIcon, TrashIcon } from "@heroicons/vue/24/outline"
@@ -39,6 +41,10 @@ export default {
 
 <template>
   <div>
+    <Message v-if="!appState.logged_in" severity="warn">
+      Log in to store maps
+    </Message>
+
     <CollectionList
       v-if="!currently_selected_collection && !currently_selected_collection_class"
       @collection_selected="(collection_id) => currently_selected_collection = collection_id"
