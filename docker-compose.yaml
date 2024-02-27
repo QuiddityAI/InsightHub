@@ -115,3 +115,6 @@ volumes:
   opensearch_data:
   monogdb_data:
   infinity_model_cache:
+networks:
+  default:
+    name: visualdatamapnetwork

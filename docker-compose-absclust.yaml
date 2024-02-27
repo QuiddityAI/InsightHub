@@ -26,7 +26,7 @@ services:
     ports:
       - "55425:55125"
     environment:
-      - data_backend_host=http://data-backend:55123
+      - data_backend_host=http://data-backend:55423
   data-backend:
     image: visual_data_map/data_backend
     build:
@@ -40,12 +40,12 @@ services:
     depends_on:
       - organization-backend
     environment:
-      - model_server_host=http://localhost:55180
-      - infinity_server_host=http://localhost:55181
-      - organization_backend_host=http://organization-backend:55125
-      - vector_database_host=localhost
+      - model_server_host=http://model-server:55180
+      - infinity_server_host=http://infinity-model-server:55181
+      - organization_backend_host=http://organization-backend:55425
+      - vector_database_host=qdrant
       # - object_storage_host=mongo
-      - search_engine_host=localhost
+      - search_engine_host=opensearch
       - ABSCLUST_TYPESENSE_DB_API_KEY
       - ABSCLUST_TYPESENSE_DB_HOST
   webserver:
@@ -58,8 +58,8 @@ services:
     ports:
       - "55440:55140"
     environment:
-      - organization_backend_host=http://organization-backend:55125
-      - data_backend_host=http://data-backend:55123
+      - organization_backend_host=http://organization-backend:55425
+      - data_backend_host=http://data-backend:55423
   # qdrant:
   #   image: "qdrant/qdrant:latest"
   #   volumes:
@@ -115,3 +115,6 @@ services:
   # opensearch_data:
   # monogdb_data:
   # infinity_model_cache:
+networks:
+  default:
+    name: visualdatamapnetwork

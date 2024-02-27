@@ -21,7 +21,10 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
 def is_from_backend(request):
     # FIXME: this is not secure
-    return request.META.get('HTTP_ORIGIN') in ('http://localhost:55125', 'http://home-server:55125', None)
+    possible_hosts = ('http://localhost:55125', 'http://home-server:55125',
+                      'http://localhost:55425', 'http://home-server:55425',
+                      None)
+    return request.META.get('HTTP_ORIGIN') in possible_hosts
 
 
 @csrf_exempt
