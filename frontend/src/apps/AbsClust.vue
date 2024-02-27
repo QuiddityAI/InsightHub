@@ -1,5 +1,6 @@
 <script setup>
 import cborJs from "https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/+esm"
+import Message from 'primevue/message';
 
 import { mapStores } from "pinia"
 
@@ -273,13 +274,13 @@ export default {
       class="pointer-events-none relative mr-auto grid h-screen min-h-0 min-w-0 max-w-7xl grid-cols-1 gap-4 overflow-hidden px-3 pb-20 pt-6 md:grid-cols-2 md:pb-6 md:pt-6 xl:px-12"
       style="grid-auto-rows: minmax(auto, min-content)">
       <!-- left column -->
-      <div ref="left_column" class="pointer-events-none flex flex-col overflow-hidden">
+      <div ref="left_column" class="pointer-events-none flex flex-col overflow-hidden h-[calc(100%-3em)]">
         <!-- search card -->
         <SearchAreaAbsClust
           @request_search_results="appState.request_search_results"
           @reset_search_box="appState.reset_search_box"
           @show_global_map="appState.show_global_map"
-          class="pointer-events-auto flex-none rounded-md bg-white p-3 shadow-sm"></SearchAreaAbsClust>
+          class="pointer-events-auto flex-none rounded-md bg-white p-3 shadow-sm"></SearchArea>
 
         <!-- tab box -->
         <div
@@ -355,25 +356,25 @@ export default {
                 </div>
               </div>
 
-              <div
-                v-if="appState.search_result_ids.length !== 0"
-                class="ml-2 mt-2 flex flex-row items-center">
-                <span class="mr-2 flex-none text-gray-500">Cluster:</span>
-                <select
-                  v-model="appState.selected_cluster_id"
-                  class="text-md flex-1 rounded border-transparent text-gray-500 focus:border-blue-500 focus:ring-blue-500">
-                  <option :value="null" selected>All</option>
-                  <option v-for="cluster in appState.cluster_data" :value="cluster.id" selected>
-                    {{ cluster.title }}
-                  </option>
-                </select>
-              </div>
-
               <FilterList></FilterList>
 
-              <StatisticList>
+              <StatisticList></StatisticList>
 
-              </StatisticList>
+              <div
+                v-if="appState.search_result_ids.length !== 0"
+                class="ml-2 mt-1 flex flex-row items-center">
+                <span class="mr-2 flex-none text-gray-500">Cluster:</span>
+                <div class="h-10">
+                  <select
+                    v-model="appState.selected_cluster_id"
+                    class="h-[90%] text-md flex-1 rounded border-transparent text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+                    <option :value="null" selected>All</option>
+                    <option v-for="cluster in appState.cluster_data" :value="cluster.id" selected>
+                      {{ cluster.title }}
+                    </option>
+                  </select>
+                </div>
+              </div>
 
               <ResultList></ResultList>
             </div>
@@ -405,7 +406,11 @@ export default {
 
             <!-- maps -->
             <div v-if="selected_tab === 'maps'">
-              <div class="my-2 flex items-stretch">
+              <Message v-if="!appState.logged_in" severity="warn">
+                Log in to store maps
+              </Message>
+
+              <div v-if="appState.map_id && appState.logged_in" class="my-2 flex items-stretch">
                 <button
                   class="flex-auto rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
                   type="button"
@@ -428,7 +433,7 @@ export default {
                       Delete
                     </button>
                     <button
-                      @click="show_stored_map(stored_map.id)"
+                      @click="appState.show_stored_map(stored_map.id)"
                       class="text-sm font-light text-gray-500 hover:text-blue-500/50">
                       Show Map
                     </button>

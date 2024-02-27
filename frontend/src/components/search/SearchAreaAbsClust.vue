@@ -205,25 +205,25 @@ export default {
         class="flex h-9 flex-1 flex-row items-center">
         <button
           v-if="appState.settings.search.search_type == 'cluster'"
-          @click="$emit('reset_search_box')"
+          @click="appState.reset_search_results_and_map(); appState.reset_search_box()"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Cluster '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
         <button
           v-if="appState.settings.search.search_type == 'similar_to_item'"
-          @click="$emit('reset_search_box')"
+          @click="appState.reset_search_results_and_map(); appState.reset_search_box()"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
         <button
           v-if="appState.settings.search.search_type == 'collection'"
-          @click="$emit('reset_search_box')"
+          @click="appState.reset_search_results_and_map(); appState.reset_search_box()"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
         </button>
         <button
           v-if="appState.settings.search.search_type == 'recommended_for_collection'"
-          @click="$emit('reset_search_box')"
+          @click="appState.reset_search_results_and_map(); appState.reset_search_box()"
           class="flex-none rounded-xl bg-blue-400 px-3 text-white">
           Recommended for Collection '{{
             ellipse(appState.settings.search.origin_display_name, 15)
