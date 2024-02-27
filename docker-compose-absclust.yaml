@@ -1,22 +1,5 @@
 services:
-  # model-server:
-  #   image: visual_data_map/model_server
-  #   build:
-  #     context: ./
-  #     dockerfile: ./docker/model_server.Dockerfile
-  #   volumes:
-  #     - ./:/source_code/
-  #     - /data:/data
-  #     - model_server_cache:/home/appuser/.cache/
-  #   ports:
-  #     - "55180:55180"
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             capabilities: [gpu]
-  organization-backend:
+  organization-backend-staging:
     image: visual_data_map/organization_backend
     build:
       context: ./
@@ -27,7 +10,7 @@ services:
       - "55425:55125"
     environment:
       - data_backend_host=http://data-backend:55423
-  data-backend:
+  data-backend-staging:
     image: visual_data_map/data_backend
     build:
       context: ./
@@ -38,17 +21,17 @@ services:
     ports:
       - "55423:55123"
     depends_on:
-      - organization-backend
+      - organization-backend-staging
     environment:
       - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
-      - organization_backend_host=http://organization-backend:55425
+      - organization_backend_host=http://organization-backend-staging:55125
       - vector_database_host=qdrant
       # - object_storage_host=mongo
       - search_engine_host=opensearch
       - ABSCLUST_TYPESENSE_DB_API_KEY
       - ABSCLUST_TYPESENSE_DB_HOST
-  webserver:
+  webserver-staging:
     image: visual_data_map/webserver
     build:
       context: ./frontend
@@ -58,63 +41,8 @@ services:
     ports:
       - "55440:55140"
     environment:
-      - organization_backend_host=http://organization-backend:55425
-      - data_backend_host=http://data-backend:55423
-  # qdrant:
-  #   image: "qdrant/qdrant:latest"
-  #   volumes:
-  #     - qdrant_storage:/qdrant/storage
-  #   ports:
-  #     - "6333:6333"
-  # opensearch:
-  #   image: "opensearchproject/opensearch:latest"
-  #   volumes:
-  #     - opensearch_data:/usr/share/opensearch/data
-  #   ports:
-  #     - "9200:9200"
-  #     - "9600:9600"
-  #   environment:
-  #     - discovery.type=single-node
-  #     - http.port=9200
-  #     - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358,http://tim-desktop:1358
-  #     - http.cors.enabled=true
-  #     - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
-  #     - http.cors.allow-credentials=true
-  # mongo:
-  #   image: "mongodb/mongodb-community-server:latest"
-  #   volumes:
-  #     - monogdb_data:/data/db
-  #   ports:
-  #     - "27017:27017"
-  # opensearch-dashboards:
-  #   image: opensearchproject/opensearch-dashboards:latest
-  #   ports:
-  #     - 5601:5601
-  #   environment:
-  #     OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
-  # dejavu:
-  #   image: appbaseio/dejavu
-  #   ports:
-  #     - 1358:1358
-  # infinity-model-server:
-  #   image: michaelf34/infinity:latest
-  #   ports:
-  #     - 55181:55181
-  #   volumes:
-  #     - infinity_model_cache:/app/.cache/torch
-  #   command: --model-name-or-path intfloat/e5-base-v2 --port 55181 --engine ctranslate2
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             capabilities: [gpu]
-# volumes:
-  # model_server_cache:
-  # qdrant_storage:
-  # opensearch_data:
-  # monogdb_data:
-  # infinity_model_cache:
+      - organization_backend_host=http://organization-backend-staging:55125
+      - data_backend_host=http://data-backend-staging:55123
 networks:
   default:
     name: visualdatamapnetwork
