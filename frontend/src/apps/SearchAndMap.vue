@@ -23,7 +23,7 @@ import CollectionItem from "../components/collections/CollectionItem.vue"
 import AddToCollectionButtons from "../components/collections/AddToCollectionButtons.vue"
 import StatisticList from "../components/search/StatisticList.vue"
 
-import httpClient from "../api/httpClient"
+import { httpClient } from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
 
 import { useAppStateStore } from "../stores/app_state_store"

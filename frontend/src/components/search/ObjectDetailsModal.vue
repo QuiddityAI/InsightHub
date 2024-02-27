@@ -5,7 +5,7 @@ import axios from "axios"
 import LoadingDotAnimation from "./LoadingDotAnimation.vue"
 import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
 
-import httpClient from "../../api/httpClient"
+import { httpClient } from "../../api/httpClient"
 </script>
 
 <script>

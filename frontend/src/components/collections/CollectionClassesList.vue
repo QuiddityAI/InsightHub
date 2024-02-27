@@ -1,5 +1,5 @@
 <script setup>
-import httpClient from "../../api/httpClient"
+import { httpClient } from "../../api/httpClient"
 
 import {
   ChevronLeftIcon,

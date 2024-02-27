@@ -10,12 +10,13 @@ import {
 } from "@heroicons/vue/24/outline"
 import MultiSelect from 'primevue/multiselect';
 
-import httpClient from "../../api/httpClient"
+import { httpClient, djangoClient } from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
 import { useAppStateStore } from "../../stores/app_state_store"
 import CollectionAndVectorFieldSelection from "./CollectionAndVectorFieldSelection.vue";
 
 const appState = useAppStateStore()
+const _window = window
 </script>
 
 <script>
@@ -194,7 +195,7 @@ export default {
       </a>
       <a
         v-if="appState.logged_in"
-        :href="`org/logout/?next=/?dataset_id=${appState.settings.dataset_id}`"
+        @click="djangoClient.post(`/org/logout/`).then(() => { _window.location.reload() })"
         title="Logout"
         class="w-8 rounded p-2 text-sm text-gray-500 hover:bg-gray-100">
         <ArrowRightOnRectangleIcon></ArrowRightOnRectangleIcon>

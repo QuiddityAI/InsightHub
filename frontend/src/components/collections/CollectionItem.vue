@@ -6,7 +6,7 @@ const appState = useAppStateStore()
 </script>
 
 <script>
-import httpClient from "../../api/httpClient"
+import { httpClient } from "../../api/httpClient"
 
 export default {
   props: ["dataset_id", "item_id", "is_positive"],

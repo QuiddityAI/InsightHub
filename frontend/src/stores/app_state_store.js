@@ -2,7 +2,7 @@ import { defineStore } from "pinia"
 import { inject } from "vue"
 import cborJs from "https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/+esm"
 
-import httpClient from "../api/httpClient"
+import { httpClient } from "../api/httpClient"
 
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
 import { useMapStateStore } from "./map_state_store"

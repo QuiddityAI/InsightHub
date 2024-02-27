@@ -1,5 +1,5 @@
 <script setup>
-import httpClient from "../../api/httpClient"
+import { httpClient } from "../../api/httpClient"
 
 import { EllipsisVerticalIcon, TrashIcon } from "@heroicons/vue/24/outline"
 
