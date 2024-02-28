@@ -147,6 +147,9 @@ export default {
   },
   mounted() {
     const that = this
+    // AbsClust specific settings (needs to be before initialize()):
+    this.appStateStore.settings.frontend.rendering.style = "plotly"
+
     this.appStateStore.initialize()
     this.appStateStore.retrieve_current_user()
     this.appStateStore.retrieve_available_organizations(() => {
