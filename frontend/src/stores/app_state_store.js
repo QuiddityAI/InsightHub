@@ -421,6 +421,8 @@ export const useAppStateStore = defineStore("appState", {
 
       // selection:
       this.selected_document_ds_and_id = null
+
+      this.eventBus.emit("search_results_cleared")
     },
     reset_search_box() {
       this.settings.search.search_type = "external_input"

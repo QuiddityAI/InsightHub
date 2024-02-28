@@ -32,6 +32,9 @@ export default {
     this.eventBus.on("visibility_filters_changed", () => {
       this.appStateStore.update_visible_result_ids()
     })
+    this.eventBus.on("search_results_cleared", () => {
+      this.appStateStore.update_visible_result_ids()
+    })
   },
   watch: {
     first(new_val, old_val) {
@@ -60,6 +63,7 @@ export default {
           :key="ds_and_item_id.join('_')"
           class="justify-between pb-3">
           <ResultListItem
+            v-if="appState.search_result_items.hasOwnProperty(ds_and_item_id[0]) && appState.search_result_items[ds_and_item_id[0]].hasOwnProperty(ds_and_item_id[1])"
             :initial_item="appState.search_result_items[ds_and_item_id[0]][ds_and_item_id[1]]"
             :rendering="appState.datasets[ds_and_item_id[0]].result_list_rendering"
             @mouseenter="appState.highlighted_item_id = ds_and_item_id"
