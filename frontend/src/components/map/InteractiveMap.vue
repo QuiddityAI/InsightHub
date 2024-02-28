@@ -126,7 +126,7 @@ export default {
         return
       }
       this.mapStateStore.hovered_point_idx = this.mapStateStore.per_point.item_id.findIndex(
-        (ds_and_item_id) => ds_and_item_id == this.appStateStore.highlighted_item_id
+        (ds_and_item_id) => ds_and_item_id[0] == this.appStateStore.highlighted_item_id[0] && ds_and_item_id[1] == this.appStateStore.highlighted_item_id[1]
       )
       // TODO: highlighted_cluster_id should be changed directly, but currently accessing appState breaks this component
       this.appStateStore.cluster_hovered(this.mapStateStore.per_point.cluster_id[this.mapStateStore.hovered_point_idx])
