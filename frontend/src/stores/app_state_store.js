@@ -416,6 +416,8 @@ export const useAppStateStore = defineStore("appState", {
       if (!params.leave_map_unchanged) {
         this.eventBus.emit("reset_map")
       }
+      // always remove cluster labels before new map is loaded:
+      this.mapState.clusterData = []
 
       // selection:
       this.selected_document_ds_and_id = null

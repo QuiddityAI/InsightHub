@@ -501,7 +501,7 @@ export default {
         </div>
 
         <div
-          v-if="!appState.show_loading_bar && !appState.search_result_ids.length"
+          v-if="!appState.show_loading_bar && !appState.search_result_ids.length && !appState.map_id"
           class="align-center flex flex-1 flex-col justify-center">
           <div class="mb-6 flex flex-row justify-center">
             <img
