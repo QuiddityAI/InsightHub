@@ -6,6 +6,11 @@ import LoadingDotAnimation from "./LoadingDotAnimation.vue"
 import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
 
 import { httpClient } from "../../api/httpClient"
+
+import { useToast } from "primevue/usetoast"
+import { useAppStateStore } from "../../stores/app_state_store"
+const appState = useAppStateStore()
+const toast = useToast()
 </script>
 
 <script>
@@ -107,6 +112,7 @@ export default {
     </div>
     <div class="mt-2 flex flex-none flex-row">
       <AddToCollectionButtons
+        v-if="appState.collections?.length"
         class="mr-3"
         @addToCollection="
           (collection_id, class_name, is_positive) =>
@@ -118,7 +124,7 @@ export default {
         ">
       </AddToCollectionButtons>
       <button
-        @click="$emit('showSimilarItems')"
+        @click="toast.add({severity:'info', summary:'Under construction', detail:'This feature is currently under construction.'})"
         class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         Similar Items
       </button>

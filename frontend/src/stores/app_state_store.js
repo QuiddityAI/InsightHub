@@ -238,7 +238,7 @@ export const useAppStateStore = defineStore("appState", {
       httpClient
         .post("/org/data_map/get_collections", get_collections_body)
         .then(function (response) {
-          that.collections = response.data
+          that.collections = response.data || []
         })
 
       this.stored_maps = []

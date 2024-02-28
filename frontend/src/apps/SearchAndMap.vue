@@ -381,6 +381,9 @@ export default {
 
             <!-- history -->
             <div v-if="selected_tab === 'history'">
+              <Message v-if="!appState.logged_in" severity="warn">
+                Log in to see the history
+              </Message>
               <ul v-if="Object.keys(appState.search_history).length !== 0" role="list" class="pt-3">
                 <li
                   v-for="history_item in appState.search_history.slice().reverse()"
