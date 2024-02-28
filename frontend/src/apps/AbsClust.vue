@@ -489,12 +489,14 @@ export default {
             @close="appState.close_document_details"></ObjectDetailsModal>
         </div>
 
-        <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center">
-          <span class="self-center font-bold text-gray-400">{{ appState.progress_step_title }}</span>
-          <div class="mt-2 h-2.5 w-1/5 self-center rounded-full bg-gray-400/50">
-            <div
-              class="h-2.5 rounded-full bg-blue-400"
-              :style="{ width: (appState.progress * 100).toFixed(0) + '%' }"></div>
+        <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center items-center">
+          <div class="flex flex-col p-4 bg-white shadow-xl rounded-xl">
+            <span class="self-center font-bold text-gray-400">{{ appState.progress_step_title }}</span>
+            <div class="mt-2 h-2.5 w-32 self-center rounded-full bg-gray-400/50">
+              <div
+                class="h-2.5 rounded-full bg-blue-400"
+                :style="{ width: (appState.progress * 100).toFixed(0) + '%' }"></div>
+            </div>
           </div>
         </div>
 
