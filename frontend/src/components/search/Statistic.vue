@@ -52,6 +52,9 @@ export default {
           }
 
           const categories = this.statistic.x_type === "array_item_category" ? item[this.statistic.x] : [item[this.statistic.x]]
+          if (categories === undefined) {
+            continue
+          }
           for (const category of categories) {
             y_counts[category] = (y_counts[category] || 0) + 1
           }
