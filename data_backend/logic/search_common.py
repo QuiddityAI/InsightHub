@@ -9,7 +9,7 @@ from utils.collect_timings import Timings
 from utils.dotdict import DotDict
 from utils.source_plugin_types import SourcePlugin
 
-from api_clients.absclust_database_client import get_absclust_items_by_ids
+from api_clients.old_absclust_database_client import get_absclust_items_by_ids
 from database_client.django_client import get_generators
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
