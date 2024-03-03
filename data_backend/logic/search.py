@@ -13,7 +13,7 @@ from utils.dotdict import DotDict
 from utils.source_plugin_types import SourcePlugin
 
 from api_clients.bing_web_search import bing_web_search_formatted
-from database_client.absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
+from api_clients.absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
 from database_client.django_client import get_trained_classifier, get_dataset, get_collection
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
