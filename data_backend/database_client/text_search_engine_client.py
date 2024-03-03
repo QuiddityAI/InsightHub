@@ -147,7 +147,7 @@ class TextSearchEngineClient(object):
         return response.get("hits", {}).get("hits", [])
 
 
-    def upsert_items(self, dataset_id: int, ids: list[str], payloads: list[dict]):
+    def upsert_items(self, dataset_id: int, ids: Iterable[str], payloads: Iterable[dict]):
         index_name = self._get_index_name(dataset_id)
 
         def upsert_batch(ids_and_payloads):
@@ -160,8 +160,18 @@ class TextSearchEngineClient(object):
 
             response = self.client.bulk(body=bulk_operations)
             if response.get("errors"):
-                logging.error(repr(response))
-                raise ValueError(response)
+                error_items = []
+                if response.get("items"):
+                    for item in response["items"]:
+                        if item.get("update"):
+                            if item["update"].get("error"):
+                                error_items.append(item)
+                if error_items:
+                    logging.error(repr(error_items))
+                    raise ValueError(error_items)
+                else:
+                    logging.error(f"Error during upserting items: {response}")
+                    raise ValueError(response)
 
         run_in_batches_without_result(list(zip(ids, payloads)), 512, upsert_batch)
 
