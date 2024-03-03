@@ -17,6 +17,8 @@ export const useAppStateStore = defineStore("appState", {
       store_search_history: true,
       ignore_cache: false,
       debug_autocut: false,
+      show_error_dialog: false,
+      error_dialog_message: "",
 
       highlighted_item_id: null,
       selected_item_id: null,
@@ -643,6 +645,13 @@ export const useAppStateStore = defineStore("appState", {
       if (data["finished"]) {
         // no need to get further results:
         that.map_is_in_progess = false
+      }
+
+      if (data["errors"]) {
+        this.show_error_dialog = true
+        this.error_dialog_message = `An error occurred: ${data["errors"].join(", ")}`
+        this.reset_search_results_and_map()
+        return
       }
 
       const progress = data["progress"]

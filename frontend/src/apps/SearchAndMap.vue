@@ -16,6 +16,8 @@ import {
 } from "@heroicons/vue/24/outline"
 
 import Toast from 'primevue/toast';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
 
 import MapWithLabels from "../components/map/MapWithLabels.vue"
 import SearchArea from "../components/search/SearchArea.vue"
@@ -183,6 +185,12 @@ export default {
 <template>
   <main class="overflow-hidden">
     <Toast position="top-right"></Toast>
+    <Dialog v-model:visible="appState.show_error_dialog" modal header="Error">
+      <p>{{ appState.error_dialog_message }}</p>
+      <div class="mt-2 flex flex-row-reverse">
+        <Button @click="appState.show_error_dialog = false" label="OK"></Button>
+      </div>
+    </Dialog>
     <MapWithLabels class="absolute top-0 h-screen w-screen"/>
 
     <div
