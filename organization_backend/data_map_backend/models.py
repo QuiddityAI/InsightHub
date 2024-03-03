@@ -524,6 +524,9 @@ class ObjectField(models.Model):
 
     @property
     def items_having_value_count(self):
+        if not self.is_available_for_search and not self.is_available_for_filtering:
+            # OpenSearch can't easily count values that are not indexed
+            return "?"
         try:
             url = data_backend_url + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/items_having_value_count'  # type: ignore
             result = requests.get(url)

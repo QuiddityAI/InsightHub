@@ -192,7 +192,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
                 attributes = f"{'s' if field.is_available_for_search else '-'} {thresholds} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
                 html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
                 html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
-                html += f"<td style='border: 1px solid;'>{field.items_having_value_count}</td>\n"
+                html += f"<td style='border: 1px solid;' align='right'>{field.items_having_value_count}</td>\n"
                 html += "</tr>\n"
 
             html += "</table>"
