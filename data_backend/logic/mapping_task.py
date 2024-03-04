@@ -13,6 +13,7 @@ import numpy as np
 from utils.collect_timings import Timings
 from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions, get_field_from_all_items
 from utils.dotdict import DotDict
+from utils.source_plugin_types import SourcePlugin
 
 from database_client.django_client import get_dataset, get_stored_map_data, get_trained_classifier
 
@@ -28,8 +29,6 @@ from logic.extract_pipeline import get_pipeline_steps
 from logic.generate_missing_values import generate_missing_values_for_given_elements
 from logic.classifiers import get_embedding_space_from_ds_and_field
 
-
-ABSCLUST_DATASET_ID = 1
 
 default_map_data = {
     "last_accessed": None,
@@ -51,8 +50,7 @@ default_map_data = {
         "projections_available": False,
     },
     "results": {
-        "search_result_meta_information": {},
-        "hover_label_data": {},  # dataset_id -> item_id -> data
+        "slimmed_items_per_dataset": {},  # dataset_id -> item_id -> data
         "per_point_data": {
             "item_ids": [],  # list of tuples (dataset_id, item_id)
             "scores": [],
@@ -85,10 +83,21 @@ def get_or_create_map(params, ignore_cache: bool) -> str:
         map_data['parameters'] = params
 
         local_maps[map_id] = map_data
-        thread = Thread(target = generate_map, args = (map_id, ignore_cache))
+        thread = Thread(target = generate_map_safe, args = (map_id, ignore_cache))
         thread.start()
 
     return map_id
+
+
+def generate_map_safe(map_id: str, ignore_cache: bool):
+    try:
+        generate_map(map_id, ignore_cache)
+    except Exception as e:
+        logging.error(f"Error while generating map {map_id}: {e}")
+        if map_id in local_maps:
+            local_maps[map_id]["errors"].append(f"Error while generating map: {e}")
+            local_maps[map_id]["finished"] = True
+        raise e
 
 
 def generate_map(map_id: str, ignore_cache: bool):
@@ -111,57 +120,66 @@ def generate_map(map_id: str, ignore_cache: bool):
     # now check if there are maps that are partially equal:
     vectorize_stage_params_hash: str = get_vectorize_stage_hash(params)
     projection_stage_params_hash: str = get_projection_stage_hash(params)
-    similar_map: dict | None = find_similar_map(map_data, vectorize_stage_params_hash, projection_stage_params_hash)
+    similar_map: dict | None = find_similar_map(vectorize_stage_params_hash, projection_stage_params_hash)
+    if similar_map:
+        same_search_and_vectorize_settings = vectorize_stage_params_hash == get_vectorize_stage_hash(similar_map['last_parameters'])
+        same_search_vec_and_projection_settings = projection_stage_params_hash == get_projection_stage_hash(similar_map['last_parameters'])
+        map_data['last_parameters'] = similar_map['parameters']
+    else:
+        same_search_and_vectorize_settings = False
+        same_search_vec_and_projection_settings = False
 
     timings.log("map preparation")
 
-    # ----------------- Search Phase -----------------
+    # ----------------- Search / Data Collection Phase -----------------
+    # aka collecting the relevant data, not necessarily search
 
-    search_phase_is_needed = not similar_map or vectorize_stage_params_hash != get_vectorize_stage_hash(map_data['last_parameters']) or ignore_cache
+    search_phase_can_be_resused = similar_map and same_search_and_vectorize_settings and not ignore_cache
 
-    if search_phase_is_needed:
+    if search_phase_can_be_resused:
+        assert similar_map is not None
+        sorted_ids, items_by_dataset = reuse_search_phase(map_data, similar_map, params, datasets, items_by_dataset, timings)
+        timings.log("reused search stage results")
+    else:
         sorted_ids, items_by_dataset = search_phase(map_data, params, datasets, items_by_dataset, timings)
         if not sorted_ids:
             # no results were found, later stages would fail
             return
-    else:
-        assert similar_map is not None
-        sorted_ids, items_by_dataset = reuse_search_stage(map_data, similar_map, params, datasets, items_by_dataset, timings)
-        timings.log("reused search stage results")
 
     assert len(sorted_ids)
     assert items_by_dataset != {}
+
 
     # ----------------- Vectorize Phase -----------------
 
     map_vector_field = params.vectorize.map_vector_field
     all_map_vectors_present = all([x is not None for x in get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, None)])
-    projection_phase_is_needed = not similar_map or projection_stage_params_hash != get_projection_stage_hash(map_data['last_parameters']) or ignore_cache
-    adding_missing_vectors_is_needed = search_phase_is_needed or (projection_phase_is_needed and not all_map_vectors_present)
+    projection_phase_can_be_reused = similar_map and same_search_vec_and_projection_settings and not ignore_cache
+    no_vectorization_needed = search_phase_can_be_resused and projection_phase_can_be_reused and all_map_vectors_present
     # TODO: decide what to do with secondary_map_vector
 
-    if adding_missing_vectors_is_needed:
+    if not no_vectorization_needed:
         add_missing_vectors(map_data, params, datasets, items_by_dataset, similar_map, vectorize_stage_params_hash, all_map_vectors_present, timings)
 
+    # scores should be part of the first phase, but might change when new vectors are generated and used for scoring
     scores = get_field_from_all_items(items_by_dataset, sorted_ids, "_score", 0.0)
     map_data["results"]["per_point_data"]["scores"] = scores
 
     # ----------------- Projection Phase -----------------
 
-    if projection_phase_is_needed:
-        raw_projections, final_positions = projection_stage(map_data, params, datasets, items_by_dataset, sorted_ids, timings)
-    else:
+    if projection_phase_can_be_reused:
         assert similar_map is not None
         logging.warning("reusing projection stage results")
         raw_projections, final_positions = reuse_projection_phase(map_data, similar_map)
         timings.log("reusing projection stage results")
-
+    else:
+        raw_projections, final_positions = projection_phase(map_data, params, datasets, items_by_dataset, sorted_ids, timings)
 
     # ----------------- Clusterize and Render Phase -----------------
 
-    clusterize_and_render_stage(map_data, params, datasets, items_by_dataset, sorted_ids, raw_projections, final_positions, timings)
+    clusterize_and_render_phase(map_data, params, datasets, items_by_dataset, sorted_ids, raw_projections, final_positions, timings)
 
-    # ----------------- Final Stage -----------------
+    # ----------------- Final Phase -----------------
 
     if thumbnail_atlas_thread:
         thumbnail_atlas_thread.join()
@@ -175,26 +193,16 @@ def generate_map(map_id: str, ignore_cache: bool):
     projection_stage_hash_to_map_id[projection_stage_params_hash].append(map_id)
 
 
-def find_similar_map(map_data: dict, vectorize_stage_params_hash: str, projection_stage_params_hash: str) -> dict | None:
+def find_similar_map(vectorize_stage_params_hash: str, projection_stage_params_hash: str) -> dict | None:
     # finding a map with the same vectorization or projection settings:
-    found_similar_map: bool = False
     maps_with_same_projection: list = projection_stage_hash_to_map_id.get(projection_stage_params_hash, [])
-    similar_map = None
     for similar_map_id in maps_with_same_projection:
         if similar_map_id in local_maps:
-            similar_map = local_maps[similar_map_id]
-            map_data['last_parameters'] = similar_map['parameters']
-            found_similar_map = True
-            break
-    if not found_similar_map:
-        maps_with_same_vectorization = vectorize_stage_hash_to_map_id.get(vectorize_stage_params_hash, [])
-        for similar_map_id in maps_with_same_vectorization:
-            if similar_map_id in local_maps:
-                similar_map = local_maps[similar_map_id]
-                map_data['last_parameters'] = similar_map['parameters']
-                found_similar_map = True
-                break
-    return similar_map
+            return local_maps[similar_map_id]
+    maps_with_same_vectorization = vectorize_stage_hash_to_map_id.get(vectorize_stage_params_hash, [])
+    for similar_map_id in maps_with_same_vectorization:
+        if similar_map_id in local_maps:
+            return local_maps[similar_map_id]
 
 
 def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_dataset: dict, timings: Timings) -> tuple[list[tuple[str, str]], dict]:
@@ -204,6 +212,7 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
     sorted_ids = search_results_all['sorted_ids']
     items_by_dataset = search_results_all['items_by_dataset']
     map_data['results']['search_result_score_info'] = search_results_all['score_info']
+    timings.log("database query")
 
     if not sorted_ids:
         map_data["errors"].append("No results found")
@@ -211,98 +220,88 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
         map_data["finished"] = True
         return sorted_ids, items_by_dataset
 
-    timings.log("database query")
-
-    # thumbnail atlas:
-    if any([datasets[ds_id].thumbnail_image for ds_id in datasets]):
-        for ds_id, dataset in datasets.items():
-            if not dataset.thumbnail_image:
-                continue
-            if dataset.object_fields[dataset.thumbnail_image].generator:
-                elements = []
-                for item in items_by_dataset[ds_id].values():
-                    if item.get(dataset.thumbnail_image) is None:
-                        elements.append(item)
-                pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[dataset.thumbnail_image])
-                generate_missing_values_for_given_elements(pipeline_steps, elements)
-                logging.info(f"Generated {len(elements)} missing thumbnail URLs")
-
-        search_params_hash = get_search_stage_hash(params)
-        sprite_size = params.search.get("thumbnail_sprite_size", "auto")
-        if sprite_size == "auto":
-            if len(sorted_ids) <= pow(4096 / 256, 2):
-                sprite_size = 256
-            elif len(sorted_ids) <= pow(4096 / 128, 2):
-                sprite_size = 128
-            else:
-                sprite_size = 64
-        map_data["results"]["thumbnail_sprite_size"] = sprite_size
-        atlas_filename = f"atlas_{search_params_hash}.webp"
-        atlas_path = os.path.join(THUMBNAIL_ATLAS_DIR, atlas_filename)
-        # don't leave the field empty, otherwise the last atlas is still visible
-        map_data["results"]["thumbnail_atlas_filename"] = "loading"
-        thumbnail_uris = [items_by_dataset[ds_id][item_id][datasets[ds_id].thumbnail_image] if datasets[ds_id].thumbnail_image else None for (ds_id, item_id) in sorted_ids]
-        def _generate_thumbnail_atlas():
-            t1 = time.time()
-            aspect_ratios = generate_thumbnail_atlas(atlas_path, thumbnail_uris, sprite_size)
-            map_data["results"]["thumbnail_atlas_filename"] = atlas_filename
-            map_data["results"]["per_point_data"]["thumbnail_aspect_ratios"] = aspect_ratios
-            time_to_generate_atlas = time.time() - t1
-            timings.timings.append({"part": "thumbnail atlas generation", "duration": time_to_generate_atlas})
-
-        thumbnail_atlas_thread = Thread(target=_generate_thumbnail_atlas)
-        thumbnail_atlas_thread.start()
-
     map_data["results"]["per_point_data"]["item_ids"] = sorted_ids
 
-    hover_label_data_total = defaultdict(dict)
-    for ds_id, item_id in sorted_ids:
-        item = items_by_dataset[ds_id][item_id]
-        hover_label_data = {}
-        hover_label_data['_id'] = item['_id']
-        hover_label_data['_dataset_id'] = item['_dataset_id']
-        hover_label_data['_score'] = item['_score']
-        hover_label_data['_reciprocal_rank_score'] = item['_reciprocal_rank_score']
-        hover_label_data['_origins'] = item['_origins']
-        for field in datasets[ds_id].hover_label_rendering.required_fields:
-            hover_label_data[field] = item.get(field, None)
-        for field in datasets[ds_id].get("statistics", {}).get("required_fields", []):
-            hover_label_data[field] = item.get(field, None)
-        # FIXME: this is just a workaround to make web search results work:
-        if "snippet" in item:
-            hover_label_data['snippet'] = item['snippet']
-        if "displayUrl" in item:
-            hover_label_data['displayUrl'] = item['displayUrl']
-        hover_label_data_total[ds_id][item_id] = hover_label_data
+    # currently, thumbnail phase might add missing fields, so do it before collecting the initially transfered data:
+    thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, timings)
 
-    map_data["results"]["hover_label_data"] = hover_label_data_total
+    # items_per_dataset contains all data that is needed either here in the backend or in the frontend,
+    # but transfering everything might be slow and not all of it is needed initially,
+    # so we extract the initially needed data and basically remove the large fields like long texts and vectors:
+    slimmed_items_per_dataset = defaultdict(dict)
+    generic_fields = {"_id", "_dataset_id", "_score", "_reciprocal_rank_score", "_origins"}
+    for ds_id, ds_items in items_by_dataset.items():
+        ds_specific_fields = set(datasets[ds_id].hover_label_rendering.required_fields)
+        ds_specific_fields |= set(datasets[ds_id].get("statistics", {}).get("required_fields", []))
+        logging.warning(datasets[ds_id].get("statistics", {}).get("required_fields", []))
+        logging.warning(ds_specific_fields)
+        # workaround to store snippet and displayUrl for web search results:
+        if datasets[ds_id].source_plugin == SourcePlugin.BING_WEB_API:
+            ds_specific_fields |= {"snippet", "displayUrl"}
+        all_fields = generic_fields | ds_specific_fields
+        for item_id, item in ds_items.items():
+            slimmed_items_per_dataset[ds_id][item_id] = {field: item.get(field, None) for field in all_fields}
 
-    # search_result_meta_information is needed to be able to reuse search stage results
-    # and to get items for cluster from origin map:
-    search_result_meta_information = defaultdict(dict)
-    for ds_id, ds_item in items_by_dataset.items():
-        for item_id, item in ds_item.items():
-            search_result_meta_information[ds_id][item_id] = {
-                field: item[field] for field in ['_id', '_dataset_id', '_origins', '_score', '_reciprocal_rank_score']
-            }
-    map_data['results']['search_result_meta_information'] = search_result_meta_information
+    map_data["results"]["slimmed_items_per_dataset"] = slimmed_items_per_dataset
     return sorted_ids, items_by_dataset
 
 
-def reuse_search_stage(map_data: dict, similar_map: dict, params: DotDict, datasets: dict, items_by_dataset: dict, timings: Timings) -> tuple[list[tuple[str, str]], dict]:
+def thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, timings: Timings):
+    if not any([datasets[ds_id].thumbnail_image for ds_id in datasets]):
+        return
+
+    for ds_id, dataset in datasets.items():
+        if not dataset.thumbnail_image:
+            continue
+        if dataset.object_fields[dataset.thumbnail_image].generator:
+            elements = []
+            for item in items_by_dataset[ds_id].values():
+                if item.get(dataset.thumbnail_image) is None:
+                    elements.append(item)
+            pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[dataset.thumbnail_image])
+            generate_missing_values_for_given_elements(pipeline_steps, elements)
+            logging.info(f"Generated {len(elements)} missing thumbnail URLs")
+
+    search_params_hash = get_search_stage_hash(params)
+    sprite_size = params.search.get("thumbnail_sprite_size", "auto")
+    if sprite_size == "auto":
+        if len(sorted_ids) <= pow(4096 / 256, 2):
+            sprite_size = 256
+        elif len(sorted_ids) <= pow(4096 / 128, 2):
+            sprite_size = 128
+        else:
+            sprite_size = 64
+    map_data["results"]["thumbnail_sprite_size"] = sprite_size
+    atlas_filename = f"atlas_{search_params_hash}.webp"
+    atlas_path = os.path.join(THUMBNAIL_ATLAS_DIR, atlas_filename)
+    # don't leave the field empty, otherwise the last atlas is still visible
+    map_data["results"]["thumbnail_atlas_filename"] = "loading"
+    thumbnail_uris = [items_by_dataset[ds_id][item_id][datasets[ds_id].thumbnail_image] if datasets[ds_id].thumbnail_image else None for (ds_id, item_id) in sorted_ids]
+    def _generate_thumbnail_atlas():
+        t1 = time.time()
+        aspect_ratios = generate_thumbnail_atlas(atlas_path, thumbnail_uris, sprite_size)
+        map_data["results"]["thumbnail_atlas_filename"] = atlas_filename
+        map_data["results"]["per_point_data"]["thumbnail_aspect_ratios"] = aspect_ratios
+        time_to_generate_atlas = time.time() - t1
+        timings.timings.append({"part": "thumbnail atlas generation", "duration": time_to_generate_atlas})
+
+    thumbnail_atlas_thread = Thread(target=_generate_thumbnail_atlas)
+    thumbnail_atlas_thread.start()
+
+
+def reuse_search_phase(map_data: dict, similar_map: dict, params: DotDict, datasets: dict, items_by_dataset: dict, timings: Timings) -> tuple[list[tuple[str, str]], dict]:
     logging.warning("reusing search stage results")
     # copy the search stage results from the similar map to the current map:
-    map_data["results"]["search_result_meta_information"] = deepcopy(similar_map["results"]["search_result_meta_information"])
     map_data['results']['search_result_score_info'] = deepcopy(similar_map['results']['search_result_score_info'])
     map_data["results"]["thumbnail_atlas_filename"] = deepcopy(similar_map["results"].get("thumbnail_atlas_filename"))
     map_data["results"]["thumbnail_sprite_size"] = deepcopy(similar_map["results"].get("thumbnail_sprite_size"))
     map_data["results"]["per_point_data"]["thumbnail_aspect_ratios"] = deepcopy(similar_map["results"].get("per_point_data", {}).get("thumbnail_aspect_ratios"))
     map_data["results"]["per_point_data"]["item_ids"] = deepcopy(similar_map["results"]["per_point_data"]["item_ids"])
-    map_data["results"]["hover_label_data"] = deepcopy(similar_map["results"]["hover_label_data"])
+    map_data["results"]["slimmed_items_per_dataset"] = deepcopy(similar_map["results"]["slimmed_items_per_dataset"])
     # extract variables needed for later stages:
-    search_result_meta_information = map_data['results']['search_result_meta_information']
+    slimmed_items_per_dataset = map_data['results']['slimmed_items_per_dataset']
     sorted_ids = map_data["results"]["per_point_data"]["item_ids"]
-    for ds_id, ds_items in search_result_meta_information.items():
+    for ds_id, ds_items in slimmed_items_per_dataset.items():
         dataset = datasets[ds_id]
         _, ds_full_items = get_full_results_from_meta_info(dataset, params.vectorize, ds_items, 'map', timings)
         items_by_dataset[ds_id] = ds_full_items
@@ -335,17 +334,15 @@ def add_missing_vectors(map_data: dict, params: DotDict, datasets: dict, items_b
             if dataset.object_fields[params.vectorize.map_vector_field].generator:
                 add_missing_map_vectors(ds_items, query, params, map_data, dataset, timings)
 
-    # regenerate search_result_meta_information because the scores might have changed / were added:
-    search_result_meta_information = defaultdict(dict)
-    for ds_id, ds_item in items_by_dataset.items():
+    # update slimmed_items_per_dataset because the scores might have changed / were added:
+    # FIXME: at this point, the slimmed items are already transfered and won't be updated
+    # Where is the score read from slimmed items anyway?
+    for ds_id, ds_item in map_data['results']['slimmed_items_per_dataset'].items():
         for item_id, item in ds_item.items():
-            search_result_meta_information[ds_id][item_id] = {
-                field: item[field] for field in ['_id', '_dataset_id', '_origins', '_score', '_reciprocal_rank_score']
-            }
-    map_data['results']['search_result_meta_information'] = search_result_meta_information
+            item['_score'] = items_by_dataset[ds_id][item_id]['_score']
 
 
-def projection_stage(map_data: dict, params: DotDict, datasets: dict, items_by_dataset: dict, sorted_ids: list[tuple[str, str]], timings: Timings) -> tuple[np.ndarray, np.ndarray]:
+def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_dataset: dict, sorted_ids: list[tuple[str, str]], timings: Timings) -> tuple[np.ndarray, np.ndarray]:
     projection_parameters = params.projection
     cartesian_positions = np.zeros([len(sorted_ids), 2])
     final_positions = np.zeros([len(sorted_ids), 2])
@@ -461,7 +458,7 @@ def reuse_projection_phase(map_data: dict, similar_map: dict) -> tuple[np.ndarra
     return raw_projections, final_positions
 
 
-def clusterize_and_render_stage(map_data: dict, params: DotDict, datasets: dict, items_by_dataset: dict, sorted_ids: list[tuple[str, str]], raw_projections: np.ndarray, final_positions: np.ndarray, timings: Timings):
+def clusterize_and_render_phase(map_data: dict, params: DotDict, datasets: dict, items_by_dataset: dict, sorted_ids: list[tuple[str, str]], raw_projections: np.ndarray, final_positions: np.ndarray, timings: Timings):
     map_data['progress']['step_title'] = "Clusterize results"
     cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, params.rendering.clusterizer_parameters)
     map_data["results"]["per_point_data"]["cluster_ids"] = cluster_id_per_point.tolist()

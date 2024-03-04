@@ -194,16 +194,14 @@ def retrive_map_results():
         if field in exclude_fields:
             del result['results']['per_point_data'][field]
 
-    if 'search_result_meta_information' in exclude_fields and 'search_result_meta_information' in result['results']:
-        del result['results']['search_result_meta_information']
     if 'search_result_score_info' in exclude_fields and 'search_result_score_info' in result['results']:
         del result['results']['search_result_score_info']
     if 'clusters' in exclude_fields and 'clusters' in result['results']:
         del result['results']['clusters']
     if 'parameters' in exclude_fields and 'parameters' in result:
         del result['parameters']
-    if 'hover_label_data' in exclude_fields and 'hover_label_data' in result['results']:
-        del result['results']['hover_label_data']
+    if 'slimmed_items_per_dataset' in exclude_fields and 'slimmed_items_per_dataset' in result['results']:
+        del result['results']['slimmed_items_per_dataset']
     if 'last_parameters' in exclude_fields and 'last_parameters' in result:
         del result['last_parameters']
 

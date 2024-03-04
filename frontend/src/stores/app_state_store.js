@@ -406,6 +406,7 @@ export const useAppStateStore = defineStore("appState", {
       this.search_timings = []
 
       // mapping progress:
+      this.map_is_in_progess = false
       this.map_viewport_is_adjusted = false
       this.show_loading_bar = false
       this.map_viewport_is_adjusted = false
@@ -592,7 +593,6 @@ export const useAppStateStore = defineStore("appState", {
       // note: these may be needed in the future, pay attention to remove them in this case here
       const not_needed = [
         "raw_projections",
-        "search_result_meta_information",
         "parameters",
         "scores",
         "last_parameters",
@@ -647,7 +647,7 @@ export const useAppStateStore = defineStore("appState", {
         that.map_is_in_progess = false
       }
 
-      if (data["errors"]) {
+      if (data["errors"] && data["errors"].length > 0) {
         this.show_error_dialog = true
         this.error_dialog_message = `An error occurred: ${data["errors"].join(", ")}`
         this.reset_search_results_and_map()
@@ -662,11 +662,11 @@ export const useAppStateStore = defineStore("appState", {
 
       const results = data["results"]
       if (results) {
-        if (results["hover_label_data"] && Object.keys(results["hover_label_data"]).length > 0) {
-          that.map_item_details = results["hover_label_data"]
-          that.mapState.text_data = results["hover_label_data"]
-          that.search_result_items = results["hover_label_data"]
-          that.fields_already_received.add("hover_label_data")
+        if (results["slimmed_items_per_dataset"] && Object.keys(results["slimmed_items_per_dataset"]).length > 0) {
+          that.map_item_details = results["slimmed_items_per_dataset"]
+          that.mapState.text_data = results["slimmed_items_per_dataset"]
+          that.search_result_items = results["slimmed_items_per_dataset"]
+          that.fields_already_received.add("slimmed_items_per_dataset")
         }
 
         const results_per_point = results["per_point_data"]
@@ -931,6 +931,8 @@ export const useAppStateStore = defineStore("appState", {
         .catch(function (error) {
           if (error.response && error.response.status === 404) {
             // map doesn't exist anymore, go back to clear page and reset URL parameters:
+            that.show_error_dialog = true
+            that.error_dialog_message = `The requested map doesn't exist anymore.`
             that.reset_search_box()
           }
         })

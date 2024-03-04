@@ -68,7 +68,10 @@ def add_w2v_vectors(items: dict[str, dict], query, similar_map: dict | None, ori
 
         map_data["progress"]["current_step"] = i
 
-    w2v_embeddings_file_path = f"map_data/w2v_embeddings_{vectorize_stage_params_hash}.pkl"
+    w2v_embeddings_cache_folder = "/data/quiddity_data/w2v_embeddings"
+    if not os.path.exists(w2v_embeddings_cache_folder):
+        os.makedirs(w2v_embeddings_cache_folder)
+    w2v_embeddings_file_path = f"{w2v_embeddings_cache_folder}/w2v_embeddings_{vectorize_stage_params_hash}.pkl"
     with open(w2v_embeddings_file_path, "wb") as f:
         pickle.dump(embeddings, f)
     map_data['results']['w2v_embeddings_file_path'] = w2v_embeddings_file_path

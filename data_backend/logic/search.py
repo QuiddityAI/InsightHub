@@ -164,7 +164,7 @@ def get_search_results_for_cluster(dataset, search_settings: DotDict, vectorize_
         if cluster_ids[i] == cluster_id:
             cluster_item_ids.append(item_ds_and_ids[i][1])
 
-    meta_info = origin_map['results']['search_result_meta_information'][dataset.id]
+    meta_info = origin_map['results']['slimmed_items_per_dataset'][dataset.id]
     total_items = {}
     for i, item_id in enumerate(cluster_item_ids):
         total_items[item_id] = copy.deepcopy(meta_info[item_id])
@@ -303,7 +303,7 @@ def get_search_results_for_stored_map(map_data):
 
     # TODO: implement paging
     sorted_ids = map_data['results']['per_point_data']['item_ids'][:limit]
-    all_items_by_dataset = map_data['results']['hover_label_data']
+    all_items_by_dataset = map_data['results']['slimmed_items_per_dataset']
     items_by_dataset = defaultdict(dict)
     for dataset_id, item_id in sorted_ids:
         items_by_dataset[dataset_id][item_id] = all_items_by_dataset[dataset_id][item_id]
