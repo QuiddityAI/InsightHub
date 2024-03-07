@@ -278,7 +278,7 @@ export const useAppStateStore = defineStore("appState", {
         }
       })
     },
-    set_organization_id(organization_id, change_history = true) {
+    set_organization_id(organization_id, change_history = true, preselected_dataset_ids = null) {
       if (this.organization_id === organization_id) return
       this.organization_id = organization_id
       this.organization = this.available_organizations.find(
@@ -294,9 +294,9 @@ export const useAppStateStore = defineStore("appState", {
         history.pushState(null, null, "?" + emptyQueryParams.toString())
       }
 
-      this.retrieve_available_datasets()
+      this.retrieve_available_datasets(preselected_dataset_ids)
     },
-    retrieve_available_datasets() {
+    retrieve_available_datasets(preselected_dataset_ids = null) {
       const that = this
       this.datasets = {}
 
@@ -328,7 +328,13 @@ export const useAppStateStore = defineStore("appState", {
             dataset.hover_label_rendering = hover_label_rendering
 
             that.datasets[dataset_id] = dataset
-            if (that.organization.default_dataset_selection.includes(dataset_id) || that.organization.default_dataset_selection.length == 0) {
+            let selected = false
+            if (preselected_dataset_ids !== null) {
+              selected = preselected_dataset_ids.includes(dataset_id)
+            } else if (that.organization.default_dataset_selection.includes(dataset_id) || that.organization.default_dataset_selection.length == 0) {
+              selected = true
+            }
+            if (selected) {
               if (!that.settings.search.dataset_ids.includes(dataset_id)) {
                 that.settings.search.dataset_ids.push(dataset_id)
                 // FIXME: should be triggered automatically
@@ -342,6 +348,10 @@ export const useAppStateStore = defineStore("appState", {
       }
     },
     on_selected_datasets_changed() {
+      // store selected datasets in URL:
+      const queryParams = new URLSearchParams(window.location.search)
+      queryParams.set("dataset_ids", this.settings.search.dataset_ids.join(","))
+      history.replaceState(null, null, "?" + queryParams.toString())
       this.populate_search_fields_based_on_selected_datasets()
     },
     populate_search_fields_based_on_selected_datasets() {

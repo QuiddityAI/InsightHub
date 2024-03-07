@@ -85,9 +85,13 @@ export default {
         if (queryParams.get("map_id")) {
           this.appStateStore.show_stored_map(queryParams.get("map_id"))
         }
+        if (queryParams.get("dataset_ids")) {
+          const dataset_ids = queryParams.get("dataset_ids").split(",").map((x) => parseInt(x))
+          this.appStateStore.settings.search.dataset_ids = dataset_ids
+        }
       } else {
         // there is a new dataset_id in the parameters:
-        this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")), /*change history*/ false)
+        this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")), /*change history*/ false, queryParams.get("dataset_ids"))
         // if there is a map_id in the parameters, its loaded after all datasets are loaded
       }
     },
