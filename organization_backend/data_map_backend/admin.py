@@ -147,7 +147,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         "id", "name", "entity_name", "entity_name_plural", "short_description",
         "organization", "is_public", "source_plugin", "source_plugin_parameters",
         "database_name", "primary_key", "thumbnail_image",
-        "descriptive_text_fields", "default_search_fields",
+        "descriptive_text_fields", "default_search_fields", "defaults",
         "item_count", "get_field_overview_table_html",
         "result_list_rendering", "collection_item_rendering",
         "hover_label_rendering", "detail_view_rendering", "statistics",

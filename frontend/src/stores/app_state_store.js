@@ -357,6 +357,16 @@ export const useAppStateStore = defineStore("appState", {
     populate_search_fields_based_on_selected_datasets() {
       const that = this
       this.settings.search.separate_queries = {}
+      that.settings.vectorize.map_vector_field = "w2v_vector"
+      that.settings.rendering.size.type = "score"
+      that.settings.rendering.size.parameter = ""
+      that.available_vector_fields = []
+      that.available_number_fields = []
+
+      const all_default_search_fields = Object.values(this.datasets)
+        .filter(dataset => this.settings.search.dataset_ids.includes(dataset.id))
+        .map(dataset => dataset.default_search_fields)
+        .reduce((acc, fields) => acc.concat(fields), []);
 
       for (const dataset_id of this.settings.search.dataset_ids) {
         const dataset = this.datasets[dataset_id]
@@ -369,7 +379,7 @@ export const useAppStateStore = defineStore("appState", {
               query_negative: "",
               must: false,
               threshold_offset: 0.0,
-              use_for_combined_search: dataset.default_search_fields.includes(
+              use_for_combined_search: all_default_search_fields.includes(
                 field.identifier
               ),
             }
@@ -377,39 +387,68 @@ export const useAppStateStore = defineStore("appState", {
         }
 
         // initialize available number and vector fields:
-        that.settings.vectorize.map_vector_field = "w2v_vector"
-        that.available_vector_fields = []
-        that.available_number_fields = []
-        for (const field_identifier in dataset.object_fields) {
-          const field = dataset.object_fields[field_identifier]
+        for (const field of Object.values(dataset.object_fields)) {
           if (field.field_type == FieldType.VECTOR) {
             that.available_vector_fields.push([dataset.id, field.identifier])
-            if (
-              field.is_available_for_search &&
-              dataset.default_search_fields.includes(field.identifier)
-            ) {
-              that.settings.vectorize.map_vector_field = field.identifier
-            }
           } else if (
             field.field_type == FieldType.INTEGER ||
             field.field_type == FieldType.FLOAT
           ) {
-            that.available_number_fields.push(field.identifier)
-          }
-        }
-        that.settings.rendering.size.type = "score"
-        that.settings.rendering.size.parameter = ""
-        if (that.available_number_fields.length > 0) {
-          for (const field of that.available_number_fields) {
-            if (field === "cited_by_count") {
-              // prefer this field even if it is not the first one:
-              that.settings.rendering.size.type = "number_field"
-              that.settings.rendering.size.parameter = field
-              break
-            }
+            that.available_number_fields.push([dataset.id, field.identifier])
           }
         }
       }
+
+      // select best map vector field:
+      const default_map_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].defaults.map_vector_field)
+      // if all datasets have the same default map vector field, use it:
+      if (default_map_fields.every((field) => field == default_map_fields[0]) && default_map_fields[0] != undefined) {
+        that.settings.vectorize.map_vector_field = default_map_fields[0]
+        //console.log(`all datasets have the same default map vector field, use it (${that.settings.vectorize.map_vector_field})`)
+      } else {
+        // check if one of the default fields is also available as a non-default field of all others:
+        for (const field of default_map_fields) {
+          let all_datasets_have_field = true
+          for (const dataset_id of this.settings.search.dataset_ids) {
+            if (!this.datasets[dataset_id].object_fields[field]) {
+              all_datasets_have_field = false
+              break
+            }
+          }
+          if (all_datasets_have_field) {
+            that.settings.vectorize.map_vector_field = field
+            //console.log(`all datasets have the same default map vector field, use it (${that.settings.vectorize.map_vector_field})`)
+            break
+          }
+        }
+      }
+
+      // select best size field:
+      const default_size_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].defaults.size_field)
+      // if all datasets have the same default size field, use it:
+      if (default_size_fields.every((field) => field == default_size_fields[0]) && default_size_fields[0] != undefined) {
+        that.settings.rendering.size.type = "number_field"
+        that.settings.rendering.size.parameter = default_size_fields[0]
+        //console.log(`all datasets have the same default size field, use it (${that.settings.rendering.size.parameter})`)
+      } else {
+        // check if one of the default fields is also available as a non-default field of all others:
+        for (const field of default_size_fields) {
+          let all_datasets_have_field = true
+          for (const dataset_id of this.settings.search.dataset_ids) {
+            if (!this.datasets[dataset_id].object_fields[field]) {
+              all_datasets_have_field = false
+              break
+            }
+          }
+          if (all_datasets_have_field) {
+            that.settings.rendering.size.type = "number_field"
+            that.settings.rendering.size.parameter = field
+            //console.log(`all datasets have the same default size field, use it (${that.settings.rendering.size.parameter})`)
+            break
+          }
+        }
+      }
+
     },
     reset_search_results_and_map(params = { leave_map_unchanged: false }) {
       // results:
@@ -474,6 +513,7 @@ export const useAppStateStore = defineStore("appState", {
 
       const emptyQueryParams = new URLSearchParams()
       emptyQueryParams.set("organization_id", this.organization_id)
+      emptyQueryParams.set("dataset_ids", this.settings.search.dataset_ids.join(","))
       history.pushState(null, null, "?" + emptyQueryParams.toString())
     },
     run_search_from_history(history_item) {

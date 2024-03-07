@@ -174,13 +174,13 @@ export default {
       </select>
 
       <div class="flex-initial w-48">
-      <MultiSelect v-model="appState.settings.search.dataset_ids"
-        :options="Object.values(appState.datasets)"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Datasets"
-        @change="appState.on_selected_datasets_changed"
-        class="mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+        <MultiSelect v-model="appState.settings.search.dataset_ids"
+          :options="Object.values(appState.datasets)"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Select Source..."
+          @change="appState.on_selected_datasets_changed"
+          class="w-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       </div>
 
       <div class="flex-1"></div>
@@ -507,9 +507,9 @@ export default {
             </option>
             <option
               v-if="appState.settings.projection[axis[0]].type === 'number_field'"
-              v-for="item in appState.available_number_fields"
-              :value="item">
-              {{ item }}
+              v-for="ds_and_identifier in appState.available_number_fields"
+              :value="ds_and_identifier[1]">
+              {{ ds_and_identifier[1] }}
             </option>
           </select>
         </div>
@@ -627,9 +627,9 @@ export default {
               </option>
               <option
                 v-if="['number_field'].includes(appState.settings.rendering[param[0]].type)"
-                v-for="item in appState.available_number_fields"
-                :value="item">
-                {{ item }}
+                v-for="ds_and_identifier in appState.available_number_fields"
+                :value="ds_and_identifier[1]">
+                {{ ds_and_identifier[1] }}
               </option>
             </select>
           </div>

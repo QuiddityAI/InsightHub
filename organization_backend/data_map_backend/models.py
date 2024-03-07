@@ -360,6 +360,12 @@ class Dataset(models.Model):
         to='ObjectField',
         related_name='+',
         blank=True)
+    defaults = models.JSONField(
+        verbose_name="Other Defaults",
+        help_text="Default values for map parameters",
+        default=dict,
+        blank=False,
+        null=False)
     result_list_rendering = models.JSONField(
         verbose_name="Result List Rendering",
         default=get_default_result_list_rendering,

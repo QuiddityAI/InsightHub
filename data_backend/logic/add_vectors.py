@@ -81,6 +81,8 @@ def add_w2v_vectors(items: dict[str, dict], query, similar_map: dict | None, ori
 
 
 def add_missing_map_vectors(items: dict[str, dict], query, params: DotDict, map_data, dataset, timings):
+    if not items:
+        return
     map_data["progress"]["step_title"] = "Generating vectors"
     map_data["progress"]["total_steps"] = len(items)
     map_data["progress"]["current_step"] = 0
