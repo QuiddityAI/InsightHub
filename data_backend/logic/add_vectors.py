@@ -63,7 +63,8 @@ def add_w2v_vectors(items: dict[str, dict], query, similar_map: dict | None, ori
         text = join_text_source_fields(item, descriptive_text_fields)
         item_embedding = vectorizer.get_embedding(text).tolist()
         item["w2v_vector"] = item_embedding
-        item["_score"] = np.dot(query_embedding, item_embedding)
+        # not setting the score here as it turned out to be not very useful with w2v embeddings:
+        # item["_score"] = np.dot(query_embedding, item_embedding)
         embeddings[item["_id"]] = item_embedding
 
         map_data["progress"]["current_step"] = i
