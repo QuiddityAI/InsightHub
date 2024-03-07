@@ -175,6 +175,9 @@ def get_search_results_for_cluster(dataset, search_settings: DotDict, vectorize_
             cluster_item_ids.append(item_ds_and_ids[i][1])
 
     meta_info = origin_map['results']['slimmed_items_per_dataset'][dataset.id]
+    if dataset.source_plugin == SourcePlugin.BING_WEB_API:
+        # because web snippets are unique each time, the full results are stored in the map_data:
+        meta_info = origin_map['results']['full_items_per_dataset'][dataset.id]
     total_items = {}
     for i, item_id in enumerate(cluster_item_ids):
         total_items[item_id] = copy.deepcopy(meta_info[item_id])

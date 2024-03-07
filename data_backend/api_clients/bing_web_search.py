@@ -22,6 +22,7 @@ def bing_web_search_formatted(dataset_id: int, query: str, website_filter: str |
     data = bing_web_search(query, website_filter, limit)
     # TODO: remove unused and distracting fields (e.g. "id" that is only valid for this query)
     logging.warning(f"Inserting {len(data)} Bing web results into dataset {dataset_id}")
+    # _id field is added in insert_many:
     insert_many(dataset_id, data)
     for i, item in enumerate(data):
         score = 1.0 / (i + 1)
@@ -53,7 +54,7 @@ def bing_web_search(query: str, website_filter: str | None = None, limit: int = 
     results = results[:limit]
     for item in results:
         # query needs to be part of id because snippet is query specific
-        item["_id"] = item["url"] + f"_{query}"
+        item["snippet_id"] = item["url"] + f"_{query}"
     return results
 
 

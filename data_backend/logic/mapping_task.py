@@ -141,7 +141,7 @@ def generate_map(map_id: str, ignore_cache: bool):
         sorted_ids, items_by_dataset = reuse_search_phase(map_data, similar_map, params, datasets, items_by_dataset, timings)
         timings.log("reused search stage results")
     else:
-        sorted_ids, items_by_dataset = search_phase(map_data, params, datasets, items_by_dataset, timings)
+        sorted_ids, items_by_dataset, thumbnail_atlas_thread = search_phase(map_data, params, datasets, items_by_dataset, timings)
         if not sorted_ids:
             # no results were found, later stages would fail
             return
@@ -205,7 +205,7 @@ def find_similar_map(vectorize_stage_params_hash: str, projection_stage_params_h
             return local_maps[similar_map_id]
 
 
-def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_dataset: dict, timings: Timings) -> tuple[list[tuple[str, str]], dict]:
+def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_dataset: dict, timings: Timings) -> tuple[list[tuple[str, str]], dict, Thread | None]:
     map_data['progress']['step_title'] = "Getting search results"
     params_str = json.dumps(map_data["parameters"], indent=2)
     search_results_all = get_search_results(params_str, purpose='map', timings=timings)
@@ -218,12 +218,12 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
         map_data["errors"].append("No results found")
         map_data["results"]["timings"] = timings.get_timestamps()
         map_data["finished"] = True
-        return sorted_ids, items_by_dataset
+        return sorted_ids, items_by_dataset, None
 
     map_data["results"]["per_point_data"]["item_ids"] = sorted_ids
 
     # currently, thumbnail phase might add missing fields, so do it before collecting the initially transfered data:
-    thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, timings)
+    thumbnail_thread = thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, timings)
 
     # items_per_dataset contains all data that is needed either here in the backend or in the frontend,
     # but transfering everything might be slow and not all of it is needed initially,
@@ -241,7 +241,12 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
             slimmed_items_per_dataset[ds_id][item_id] = {field: item.get(field, None) for field in all_fields}
 
     map_data["results"]["slimmed_items_per_dataset"] = slimmed_items_per_dataset
-    return sorted_ids, items_by_dataset
+    if any(dataset.source_plugin == SourcePlugin.BING_WEB_API for dataset in datasets.values()):
+        # results from some source types are unique each time or hard to retrieve,
+        # those are then stored here in the map_data so that they can be retrieved from there
+        # for reclustering or other purposes
+        map_data["results"]["full_items_per_dataset"] = items_by_dataset
+    return sorted_ids, items_by_dataset, thumbnail_thread
 
 
 def thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, timings: Timings):
@@ -285,6 +290,7 @@ def thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, ti
 
     thumbnail_atlas_thread = Thread(target=_generate_thumbnail_atlas)
     thumbnail_atlas_thread.start()
+    return thumbnail_atlas_thread
 
 
 def reuse_search_phase(map_data: dict, similar_map: dict, params: DotDict, datasets: dict, items_by_dataset: dict, timings: Timings) -> tuple[list[tuple[str, str]], dict]:

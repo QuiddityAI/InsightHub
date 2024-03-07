@@ -450,11 +450,15 @@ export default {
     },
     update_opacities() {
       this.actual_opacity = Array(this.mapStateStore.per_point.x.length).fill(1.0)
-      for (const i in this.mapStateStore.per_point.x) {
-        const item_ds_and_id = this.mapStateStore.per_point.item_id[i]
-        const item = this.mapStateStore.text_data[item_ds_and_id[0]][item_ds_and_id[1]]
-        const include = this.mapStateStore.visibility_filters.every(filter_item => filter_item.filter_fn(item))
-        this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+      try {
+        for (const i in this.mapStateStore.per_point.x) {
+          const item_ds_and_id = this.mapStateStore.per_point.item_id[i]
+          const item = this.mapStateStore.text_data[item_ds_and_id[0]][item_ds_and_id[1]]
+          const include = this.mapStateStore.visibility_filters.every(filter_item => filter_item.filter_fn(item))
+          this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+        }
+      } catch (e) {
+        console.warn(e)
       }
       this.updateGeometry()
     },
