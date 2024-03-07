@@ -1,4 +1,4 @@
-
+import os
 from concurrent.futures import ThreadPoolExecutor
 import math
 from typing import Any, Callable, Iterable
@@ -81,3 +81,14 @@ def join_extracted_text_sources(source_texts: list[str | list]) -> str:
 
 def get_field_from_all_items(items_by_dataset: dict[str, dict[str, dict]], sorted_ids: list[tuple[str, str]], field_name: str, default_value: Any):
     return [items_by_dataset[ds_id][item_id].get(field_name, default_value) for (ds_id, item_id) in sorted_ids]
+
+
+def load_env_file():
+    with open("../.env", "r") as f:
+        for line in f:
+            if line.startswith("#"):
+                continue
+            if "=" not in line:
+                continue
+            key, value = line.strip().split("=")
+            os.environ[key] = value

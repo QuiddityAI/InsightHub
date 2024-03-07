@@ -7,15 +7,9 @@ import logging
 from diskcache import Cache
 
 from logic.insert_logic import insert_many
+from utils.helpers import load_env_file
 
-with open("../.env", "r") as f:
-    for line in f:
-        if line.startswith("#"):
-            continue
-        if "=" not in line:
-            continue
-        key, value = line.strip().split("=")
-        os.environ[key] = value
+load_env_file()
 
 bing_subscription_key = os.environ.get('BING_SEARCH_V7_SUBSCRIPTION_KEY', '')
 bing_web_search_endpoint = os.environ.get('BING_SEARCH_V7_ENDPOINT', '') + "/v7.0/search"

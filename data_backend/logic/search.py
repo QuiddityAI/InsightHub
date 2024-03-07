@@ -13,6 +13,7 @@ from utils.dotdict import DotDict
 from utils.source_plugin_types import SourcePlugin
 
 from api_clients.bing_web_search import bing_web_search_formatted
+from api_clients.semantic_scholar_client import semantic_scholar_search_formatted
 from api_clients.old_absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
 from database_client.django_client import get_trained_classifier, get_dataset, get_collection
 from database_client.vector_search_engine_client import VectorSearchEngineClient
@@ -47,6 +48,15 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
             limit = params.search.result_list_items_per_page if purpose == "list" else params.search.max_items_used_for_mapping
             limit = min(limit, dataset.source_plugin_parameters.get("max_results") or 300, 300)
             sorted_ids, full_items = bing_web_search_formatted(dataset.id, query, limit=limit, website_filter=dataset.source_plugin_parameters.get("website_filter"))
+            sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
+            all_items_by_dataset[dataset_id] = full_items
+            continue
+
+        if dataset.source_plugin == SourcePlugin.SEMANTIC_SCHOLAR_API and params.search.search_type == "external_input":
+            query = params.search.all_field_query
+            limit = params.search.result_list_items_per_page if purpose == "list" else params.search.max_items_used_for_mapping
+            required_fields = get_required_fields(dataset, params.vectorize, purpose)
+            sorted_ids, full_items = semantic_scholar_search_formatted(dataset.id, query, required_fields, limit=limit)
             sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
             all_items_by_dataset[dataset_id] = full_items
             continue

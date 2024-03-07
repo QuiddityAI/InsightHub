@@ -233,8 +233,6 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
     for ds_id, ds_items in items_by_dataset.items():
         ds_specific_fields = set(datasets[ds_id].hover_label_rendering.required_fields)
         ds_specific_fields |= set(datasets[ds_id].get("statistics", {}).get("required_fields", []))
-        logging.warning(datasets[ds_id].get("statistics", {}).get("required_fields", []))
-        logging.warning(ds_specific_fields)
         # workaround to store snippet and displayUrl for web search results:
         if datasets[ds_id].source_plugin == SourcePlugin.BING_WEB_API:
             ds_specific_fields |= {"snippet", "displayUrl"}
