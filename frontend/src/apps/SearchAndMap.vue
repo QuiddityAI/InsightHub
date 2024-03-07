@@ -91,7 +91,8 @@ export default {
         }
       } else {
         // there is a new dataset_id in the parameters:
-        this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")), /*change history*/ false, queryParams.get("dataset_ids"))
+        const dataset_ids = queryParams.get("dataset_ids").split(",").map((x) => parseInt(x))
+        this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")), /*change history*/ false, dataset_ids)
         // if there is a map_id in the parameters, its loaded after all datasets are loaded
       }
     },
