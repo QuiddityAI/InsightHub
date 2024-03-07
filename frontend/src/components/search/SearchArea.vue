@@ -157,7 +157,14 @@ export default {
         <HomeIcon></HomeIcon>
       </a>
 
+      <span
+        v-if="!appState.dev_mode"
+        class="pb-1 pl-2 pr-8 pt-1 text-sm ml-1 font-['Lexend'] font-bold text-black ">
+        {{ appState.organization?.name }}
+      </span>
+
       <select
+        v-if="appState.dev_mode"
         v-model="internal_organization_id"
         @change="organization_id_changed_by_user"
         class="rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm ml-1 font-['Lexend'] font-bold text-black focus:border-blue-500 focus:ring-blue-500">
@@ -180,7 +187,7 @@ export default {
       <LoginButton></LoginButton>
       <span v-if="appState.logged_in" class="mr-2 text-sm text-gray-500">
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
-        {{ appState.username }}
+        {{ appState.user.username }}
       </span>
       <a
         v-if="appState.logged_in"
@@ -196,6 +203,13 @@ export default {
         class="w-8 rounded p-2 text-sm text-gray-500 hover:bg-gray-100">
         <ArrowRightOnRectangleIcon></ArrowRightOnRectangleIcon>
       </a>
+      <button
+        v-if="appState.user?.is_staff"
+        @click="appState.toggle_dev_mode()"
+        class="rounded px-1 py-2 text-xs text-gray-500 hover:bg-gray-100"
+        :class="{'ring-1 ring-green-200': appState.dev_mode}">
+        Dev
+      </button>
     </div>
 
     <!-- Search Field -->
@@ -254,6 +268,7 @@ export default {
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
       </div>
       <button
+        v-if="appState.dev_mode"
         title="Negative Search"
         @click="show_negative_query_field = !show_negative_query_field"
         class="ml-1 w-8 rounded px-1 hover:bg-gray-100"
@@ -264,6 +279,7 @@ export default {
         <MinusCircleIcon></MinusCircleIcon>
       </button>
       <button
+        v-if="appState.dev_mode"
         @click="show_settings = !show_settings"
         class="ml-1 w-8 rounded px-1 hover:bg-gray-100"
         :class="{ 'text-blue-600': show_settings, 'text-gray-400': !show_settings }">

@@ -39,6 +39,7 @@ def get_current_user(request):
         'id': user.id,
         'logged_in': user.is_authenticated,
         'username': user.username,
+        'is_staff': user.is_staff,
     })
     return HttpResponse(response_json, status=200, content_type='application/json')
 

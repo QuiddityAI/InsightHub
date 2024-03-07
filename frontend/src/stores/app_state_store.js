@@ -36,6 +36,7 @@ export const useAppStateStore = defineStore("appState", {
       user_id: null,
       logged_in: false,
       username: null,
+      dev_mode: false,
 
       // results:
       search_result_ids: [],
@@ -193,7 +194,7 @@ export const useAppStateStore = defineStore("appState", {
             max_opacity: 0.7,
             shadow_opacity: 1.0,
             point_size_factor: 1.0,
-            style: "3d", // one of "3d", "plotly"
+            style: "plotly", // one of "3d", "plotly"
           },
         },
       },
@@ -206,14 +207,28 @@ export const useAppStateStore = defineStore("appState", {
   },
   actions: {
     initialize() {
+      this.store_current_settings_as_default()
+    },
+    store_current_settings_as_default() {
       this.default_settings = JSON.parse(JSON.stringify(this.settings))
+    },
+    enable_simplified_absclust_user_mode() {
+      this.set_organization_id(1)
+      this.reset_search_box()
+    },
+    toggle_dev_mode() {
+      this.dev_mode = !this.dev_mode
+      if (this.dev_mode) {
+        // do other dev things?
+      } else {
+        this.enable_simplified_absclust_user_mode()
+      }
     },
     retrieve_current_user() {
       const that = this
       httpClient.get("/org/data_map/get_current_user").then(function (response) {
-        that.user_id = response.data.id
         that.logged_in = response.data.logged_in
-        that.username = response.data.username
+        that.user = response.data
       })
     },
     retrieve_stored_maps_history_and_collections() {
@@ -264,6 +279,7 @@ export const useAppStateStore = defineStore("appState", {
       })
     },
     set_organization_id(organization_id, change_history = true) {
+      if (this.organization_id === organization_id) return
       this.organization_id = organization_id
       this.organization = this.available_organizations.find(
         (item) => item.id === organization_id
@@ -879,7 +895,7 @@ export const useAppStateStore = defineStore("appState", {
       const [name, display_name] = this.get_current_map_name()
       if (!name) return
       const store_map_body = {
-        user_id: this.user_id,
+        user_id: this.user.id,
         organization_id: this.organization_id,
         name: name,
         display_name: display_name,
