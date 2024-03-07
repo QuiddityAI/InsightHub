@@ -5,20 +5,32 @@ from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.forms import Textarea
 from django.db import models
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin
 
 from djangoql.admin import DjangoQLSearchMixin
 import requests
 from simple_history.admin import SimpleHistoryAdmin
 from jsonsuit.widgets import JSONSuit
 from django_object_actions import DjangoObjectActions, action
+from import_export.admin import ImportExportMixin
 
 from .data_backend_client import data_backend_url
 
 from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier
 from .utils import get_vector_field_dimensions
+from .import_export import UserResource
 
 admin.site.site_header = 'Quiddity'
 admin.site.site_title = 'Quiddity'
+
+
+class UserAdmin(ImportExportMixin, UserAdmin):
+    resource_class = UserResource
+    pass
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
 
 
 @admin.register(EmbeddingSpace)

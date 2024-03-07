@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'drf_social_oauth2',
     'jsonsuit.apps.JSONSuitConfig',
     'django_object_actions',
+    'import_export',
 ]
 
 MIDDLEWARE = [

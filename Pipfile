@@ -37,6 +37,7 @@ sentence-transformers = "*"
 django-object-actions = "*"
 cbor2 = "*"
 diskcache = "*"
+django-import-export = "*"
 
 [dev-packages]
 ipykernel = "*"
