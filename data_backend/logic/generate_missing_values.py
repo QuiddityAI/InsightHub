@@ -19,10 +19,10 @@ def delete_field_content(dataset_id: int, field_identifier: str):
     is_vector_field = dataset.object_fields[field_identifier].field_type == FieldType.VECTOR
     if is_vector_field:
         vector_db_client = VectorSearchEngineClient.get_instance()
-        vector_db_client.delete_field(dataset_id, field_identifier)
+        vector_db_client.delete_field(dataset.actual_database_name, field_identifier)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
-        search_engine_client.delete_field(dataset_id, field_identifier)
+        search_engine_client.delete_field(dataset.actual_database_name, field_identifier)
 
 
 def generate_missing_values(dataset_id: int, field_identifier: str):
@@ -46,10 +46,10 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
     search_engine_client = TextSearchEngineClient.get_instance()
     vector_db_client = VectorSearchEngineClient.get_instance()
     items_processed = 0
-    total_items_estimated = search_engine_client.get_all_items_with_missing_field_count(dataset_id, field_identifier)
+    total_items_estimated = search_engine_client.get_all_items_with_missing_field_count(dataset.actual_database_name, field_identifier)
     is_vector_field = dataset.object_fields[field_identifier].field_type == FieldType.VECTOR
     if is_vector_field:
-        total_items_estimated -= vector_db_client.get_item_count(dataset_id, field_identifier)
+        total_items_estimated -= vector_db_client.get_item_count(dataset.actual_database_name, field_identifier)
     logging.warning(f"Total items with missing value: {total_items_estimated}")
     if total_items_estimated == 0:
         logging.warning(f"Nothing to do")
@@ -71,7 +71,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
 
     batch_size = 512
 
-    generator = search_engine_client.get_all_items_with_missing_field(dataset_id, field_identifier, required_text_fields, internal_batch_size=batch_size)
+    generator = search_engine_client.get_all_items_with_missing_field(dataset.actual_database_name, field_identifier, required_text_fields, internal_batch_size=batch_size)
     elements = []
     last_batch_time = time.time()
     skipped_items = 0
@@ -80,7 +80,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
         if len(elements) % batch_size == 0:
             if is_vector_field:
                 items_where_vector_already_exists = vector_db_client.get_items_by_ids(
-                    dataset_id, [x["_id"] for x in elements], field_identifier, return_payloads=False, return_vectors=False)
+                    dataset.actual_database_name, [x["_id"] for x in elements], field_identifier, return_payloads=False, return_vectors=False)
                 if len(items_where_vector_already_exists) == len(elements):
                     skipped_items += len(elements)
                     elements = []
@@ -170,7 +170,7 @@ def _update_indexes_with_generated_values(dataset, elements, changed_fields):
             payloads.append(filtering_attributes)
 
         if vectors:
-            vector_db_client.upsert_items(dataset.id, vector_field, ids, payloads, vectors)
+            vector_db_client.upsert_items(dataset.actual_database_name, vector_field, ids, payloads, vectors)
 
     # FIXME: Does OpenSearch upsert actually only update provided fields or does it delete the other fields?
     text_search_updates = []
@@ -183,4 +183,4 @@ def _update_indexes_with_generated_values(dataset, elements, changed_fields):
 
     if text_search_updates:
         search_engine_client = TextSearchEngineClient.get_instance()
-        search_engine_client.upsert_items(dataset.id, [item["_id"] for item in text_search_updates], text_search_updates)
+        search_engine_client.upsert_items(dataset.actual_database_name, [item["_id"] for item in text_search_updates], text_search_updates)

@@ -109,7 +109,7 @@ def insert_many(dataset_id: int, elements: Iterable[dict]):
             payloads.append(filtering_attributes)
 
         if vectors:
-            vector_db_client.upsert_items(dataset.id, vector_field, ids, payloads, vectors)
+            vector_db_client.upsert_items(dataset.actual_database_name, vector_field, ids, payloads, vectors)
 
     for element in elements:
         for vector_field in index_settings.all_vector_fields:
@@ -117,7 +117,7 @@ def insert_many(dataset_id: int, elements: Iterable[dict]):
                 del element[vector_field]
 
     search_engine_client = TextSearchEngineClient.get_instance()
-    search_engine_client.upsert_items(dataset.id, [item["_id"] for item in elements], elements)
+    search_engine_client.upsert_items(dataset.actual_database_name, [item["_id"] for item in elements], elements)
 
 
 def get_index_settings(dataset: DotDict):

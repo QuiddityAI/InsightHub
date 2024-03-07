@@ -206,7 +206,7 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
     vector_fields = [field for field in dataset.object_fields.values() if field.identifier in dataset.default_search_fields and field.field_type == FieldType.VECTOR]
 
     search_engine_client = TextSearchEngineClient.get_instance()
-    items = search_engine_client.get_items_by_ids(dataset.id, [similar_to_item_id], fields=[field.identifier for field in vector_fields])
+    items = search_engine_client.get_items_by_ids(dataset.actual_database_name, [similar_to_item_id], fields=[field.identifier for field in vector_fields])
     fill_in_vector_data_list(dataset, items, [field.identifier for field in vector_fields])
     item = items[0]
     timings.log("getting original item")
@@ -338,7 +338,7 @@ def get_search_results_for_global_map(dataset, search_settings: DotDict, vectori
     timings.log("search preparation")
 
     search_engine_client = TextSearchEngineClient.get_instance()
-    search_result = search_engine_client.get_random_items(dataset.id, limit, [])
+    search_result = search_engine_client.get_random_items(dataset.actual_database_name, limit, [])
     items = {}
     for i, item in enumerate(search_result):
         items[item['_id']] = {
@@ -358,12 +358,16 @@ def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_m
 
 
 @lru_cache
-def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]) -> dict | None:
+def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str], database_name: str | None = None) -> dict | None:
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
 
+    if not database_name:
+        dataset = get_dataset(dataset_id)
+        database_name = dataset.actual_database_name
+        assert database_name is not None
     search_engine_client = TextSearchEngineClient.get_instance()
-    items = search_engine_client.get_items_by_ids(dataset_id, [item_id], fields=fields)
+    items = search_engine_client.get_items_by_ids(database_name, [item_id], fields=fields)
     if not items:
         return None
 
@@ -371,9 +375,10 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
 
 
 def get_item_count(dataset_id: int) -> int:
+    dataset = get_dataset(dataset_id)
     search_engine_client = TextSearchEngineClient.get_instance()
     try:
-        count = search_engine_client.get_item_count(dataset_id)
+        count = search_engine_client.get_item_count(dataset.actual_database_name)
         return count
     except Exception as e:
         logging.error(e)
@@ -384,21 +389,22 @@ def get_items_having_value_count(dataset_id: int, field: str) -> int:
     dataset = get_dataset(dataset_id)
     if dataset.object_fields[field].field_type == FieldType.VECTOR:
         vector_db_client = VectorSearchEngineClient.get_instance()
-        return vector_db_client.get_item_count(dataset_id, field)
+        return vector_db_client.get_item_count(dataset.actual_database_name, field)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
         try:
-            count = search_engine_client.get_item_count(dataset_id)
-            return count - search_engine_client.get_all_items_with_missing_field_count(dataset_id, field)
+            count = search_engine_client.get_item_count(dataset.actual_database_name)
+            return count - search_engine_client.get_all_items_with_missing_field_count(dataset.actual_database_name, field)
         except Exception as e:
             logging.error(e)
             return 0
 
 
 def get_random_items(dataset_id: int, count: int) -> list[dict]:
+    dataset = get_dataset(dataset_id)
     search_engine_client = TextSearchEngineClient.get_instance()
     try:
-        items = search_engine_client.get_random_items(dataset_id, count)
+        items = search_engine_client.get_random_items(dataset.actual_database_name, count)
         return items
     except Exception as e:
         logging.error(e)

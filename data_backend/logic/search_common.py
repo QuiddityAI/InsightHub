@@ -212,7 +212,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
                                 required_fields: list[str], limit: int, page: int):
     text_db_client = TextSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    search_result = text_db_client.get_search_results(dataset.id, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
+    search_result = text_db_client.get_search_results(dataset.actual_database_name, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     for i, item in enumerate(search_result):
@@ -280,7 +280,7 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
     assert query_vector is not None
-    vector_search_result = vector_db_client.get_items_near_vector(dataset.id, vector_field, query_vector,
+    vector_search_result = vector_db_client.get_items_near_vector(dataset.actual_database_name, vector_field, query_vector,
                                                                   criteria, return_vectors=False, limit=limit,
                                                                   score_threshold=score_threshold) # type: ignore
     items = {}
@@ -304,7 +304,7 @@ def get_vector_search_results_matching_collection(dataset: DotDict, vector_field
                                                   score_threshold: float | None) -> dict[str, dict]:
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    vector_search_result = vector_db_client.get_items_matching_collection(dataset.id, vector_field, positive_ids,
+    vector_search_result = vector_db_client.get_items_matching_collection(dataset.actual_database_name, vector_field, positive_ids,
                                                                           negative_ids, criteria, return_vectors=False,
                                                                           limit=limit, score_threshold=score_threshold)
     items = {}
@@ -333,7 +333,7 @@ def fill_in_details_from_text_storage(dataset: DotDict, items: dict[str, dict], 
         full_items = get_absclust_items_by_ids(ids)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
-        full_items = search_engine_client.get_items_by_ids(dataset.id, ids, fields=required_fields)
+        full_items = search_engine_client.get_items_by_ids(dataset.actual_database_name, ids, fields=required_fields)
     for full_item in full_items:
         items[full_item['_id']].update(full_item)
 
@@ -356,7 +356,7 @@ def fill_in_vector_data(dataset: DotDict, items: dict[str, dict], required_vecto
     ids = list(items.keys())
     vector_db_client = VectorSearchEngineClient.get_instance()
     for vector_field in required_vector_fields:
-        results = vector_db_client.get_items_by_ids(dataset.id, ids, vector_field, return_vectors=True, return_payloads=False)
+        results = vector_db_client.get_items_by_ids(dataset.actual_database_name, ids, vector_field, return_vectors=True, return_payloads=False)
         for result in results:
             items[result.id][vector_field] = result.vector[vector_field]
 

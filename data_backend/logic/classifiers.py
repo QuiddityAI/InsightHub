@@ -128,7 +128,7 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
                 included_dataset_ids.add((dataset_id, vector_field))
                 try:
                     logging.warning(f'Getting vector for {dataset_id} {item_id} {vector_field}')
-                    results = vector_db_client.get_items_by_ids(dataset_id, [item_id], vector_field, return_vectors=True, return_payloads=False)
+                    results = vector_db_client.get_items_by_ids(dataset.actual_database_name, [item_id], vector_field, return_vectors=True, return_payloads=False)
                 except Exception as e:
                     logging.warning(e)
                     results = []
@@ -136,7 +136,7 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
                     vector = results[0].vector[vector_field]
                 if not vector:
                     pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[vector_field])
-                    item = get_document_details_by_id(dataset_id, item_id, fields=tuple(required_fields))
+                    item = get_document_details_by_id(dataset_id, item_id, fields=tuple(required_fields), database_name=dataset.actual_database_name)
                     assert item is not None
                     generate_missing_values_for_given_elements(pipeline_steps, [item])
                     vector = item[vector_field]
@@ -167,8 +167,9 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
             negative_items_per_dataset = 20
             random_negative_vectors = []
             for dataset_id, vector_field in included_dataset_ids:
-                random_items = text_search_engine_client.get_random_items(dataset_id, negative_items_per_dataset, [])
-                results = vector_db_client.get_items_by_ids(dataset_id, [e['_id'] for e in random_items], vector_field, return_vectors=True, return_payloads=False)
+                dataset = get_dataset(dataset_id)
+                random_items = text_search_engine_client.get_random_items(dataset.actual_database_name, negative_items_per_dataset, [])
+                results = vector_db_client.get_items_by_ids(dataset.actual_database_name, [e['_id'] for e in random_items], vector_field, return_vectors=True, return_payloads=False)
                 for result in results:
                     vector = result.vector[vector_field]
                     random_negative_vectors.append(vector)

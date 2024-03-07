@@ -46,17 +46,13 @@ class TextSearchEngineClient(object):
         return TextSearchEngineClient._instance
 
 
-    def _get_index_name(self, dataset_id: int):
-        return f'dataset_{dataset_id}'
-
-
     def ensure_dataset_exists(self, dataset: dict):
         # create dataset
         # create indexes
         # check if dataset is still valid, update if necessary
         dataset = DotDict(dataset)
 
-        index_name = self._get_index_name(dataset.id)
+        index_name = dataset.actual_database_name
         index_body = {}
         try:
             response = self.client.indices.create(index_name, body=index_body)
@@ -109,7 +105,7 @@ class TextSearchEngineClient(object):
             'properties': properties,
         }
         try:
-            response = self.client.indices.put_mapping(index=self._get_index_name(dataset.id), body=mappings)
+            response = self.client.indices.put_mapping(index=index_name, body=mappings)
         except Exception as e:
             logging.error(f"Error during updating text search engine mapping: type {type(e)}, error: {e}")
             raise e
@@ -117,17 +113,16 @@ class TextSearchEngineClient(object):
             logging.info(f"Successfully changed text search engine mapping: {response}")
 
 
-    def remove_dataset(self, dataset_id: str):
+    def remove_dataset(self, index_name: str):
         pass
 
 
-    def get_item_count(self, dataset_id: int):
-        index_name = self._get_index_name(dataset_id)
+    def get_item_count(self, index_name: str):
         response = self.client.count(index=index_name)
         return response["count"]
 
 
-    def get_random_items(self, dataset_id: int, count: int, required_fields: Optional[list[str]] = None):
+    def get_random_items(self, index_name: str, count: int, required_fields: Optional[list[str]] = None):
         query = {
             "size": count,
             "query": {
@@ -142,13 +137,12 @@ class TextSearchEngineClient(object):
             query["_source"] = required_fields
         response = self.client.search(
             body = query,
-            index = self._get_index_name(dataset_id)
+            index = index_name
         )
         return response.get("hits", {}).get("hits", [])
 
 
-    def upsert_items(self, dataset_id: int, ids: Iterable[str], payloads: Iterable[dict]):
-        index_name = self._get_index_name(dataset_id)
+    def upsert_items(self, index_name: str, ids: Iterable[str], payloads: Iterable[dict]):
 
         def upsert_batch(ids_and_payloads):
             bulk_operations = ""
@@ -180,8 +174,7 @@ class TextSearchEngineClient(object):
         pass
 
 
-    def get_items_by_ids(self, dataset_id: int, ids: Iterable[str], fields: Iterable[str]) -> list:
-        index_name = self._get_index_name(dataset_id)
+    def get_items_by_ids(self, index_name: str, ids: Iterable[str], fields: Iterable[str]) -> list:
         body = {
             "ids": ids,
         }
@@ -194,8 +187,7 @@ class TextSearchEngineClient(object):
         return items
 
 
-    def get_all_items_with_missing_field_count(self, dataset_id: int, missing_field: str) -> int:
-        index_name = self._get_index_name(dataset_id)
+    def get_all_items_with_missing_field_count(self, index_name: str, missing_field: str) -> int:
         query = {
             "query": {
                 "bool": {
@@ -211,8 +203,7 @@ class TextSearchEngineClient(object):
         return response["count"]
 
 
-    def get_all_items_with_missing_field(self, dataset_id: int, missing_field: str, required_fields: list[str], internal_batch_size: int = 1000) -> Generator:
-        index_name = self._get_index_name(dataset_id)
+    def get_all_items_with_missing_field(self, index_name: str, missing_field: str, required_fields: list[str], internal_batch_size: int = 1000) -> Generator:
         query = {
             '_source': required_fields,
             "query": {
@@ -238,9 +229,7 @@ class TextSearchEngineClient(object):
             yield item
 
 
-    def delete_field(self, dataset_id, field):
-        index_name = self._get_index_name(dataset_id)
-
+    def delete_field(self, index_name: str, field):
         body = {
             "query": {
                 "match_all": {},
@@ -254,7 +243,7 @@ class TextSearchEngineClient(object):
         logging.warning(f"Deleted field {field} from text search engine: {response}")
 
 
-    def get_search_results(self, dataset_id, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields, highlights=False):
+    def get_search_results(self, index_name: str, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields, highlights=False):
         query = {
             'size': limit,
             'query': {
@@ -272,6 +261,6 @@ class TextSearchEngineClient(object):
 
         response = self.client.search(
             body = query,
-            index = self._get_index_name(dataset_id)
+            index = index_name
         )
         return response.get("hits", {}).get("hits", [])

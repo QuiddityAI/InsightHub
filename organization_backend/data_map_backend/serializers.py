@@ -39,6 +39,7 @@ class OrganizationSerializer(drf_serializers.ModelSerializer):
 
 class DatasetSerializer(drf_serializers.ModelSerializer):
     object_fields = ObjectFieldSerializer(many=True, read_only=True)
+    actual_database_name = drf_serializers.ReadOnlyField()
     primary_key = drf_serializers.StringRelatedField(many=False, read_only=True)
     thumbnail_image = drf_serializers.StringRelatedField(many=False, read_only=True)
     descriptive_text_fields = drf_serializers.StringRelatedField(many=True, read_only=True)

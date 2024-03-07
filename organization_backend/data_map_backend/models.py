@@ -328,6 +328,12 @@ class Dataset(models.Model):
         default=dict,
         blank=True,
         null=True)
+    database_name = models.CharField(
+        verbose_name="Database Name",
+        help_text="Name of the OpenSearch index and vector DB prefix, using 'dataset_&lt;id&gt;' if empty",
+        max_length=100,
+        blank=True,
+        null=True)
     primary_key = models.ForeignKey(
         verbose_name="Primary Key",
         to='ObjectField',
@@ -406,6 +412,11 @@ class Dataset(models.Model):
         except Exception as e:
             return repr(e)
     random_item.fget.short_description = "Random Item"  # type: ignore
+
+    @property
+    def actual_database_name(self):
+        return self.database_name or f"dataset_{self.id}"  # type: ignore
+    actual_database_name.fget.short_description = "Actual Database Name"  # type: ignore
 
     def __str__(self):
         return f"{self.name}"

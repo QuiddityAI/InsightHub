@@ -46,9 +46,9 @@ def test_vector_db_client(dataset):
         "year": 2017,
     }
 
-    vse_client.upsert_items(dataset.id, vector_field, [32, 34], [item, item], [[4, 5, 6, 7]]*2)
+    vse_client.upsert_items(dataset.actual_database_name, vector_field, [32, 34], [item, item], [[4, 5, 6, 7]]*2)
 
-    items = vse_client.get_items_near_vector(dataset.id, vector_field, [7, 8, 4, 5], {}, limit=5)
+    items = vse_client.get_items_near_vector(dataset.actual_database_name, vector_field, [7, 8, 4, 5], {}, limit=5)
     print(items)
 
 
