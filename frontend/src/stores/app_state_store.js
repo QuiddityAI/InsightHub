@@ -308,14 +308,14 @@ export const useAppStateStore = defineStore("appState", {
 
             // convert strings to functions:
             const result_list_rendering = dataset.result_list_rendering
-            for (const field of ["title", "subtitle", "body", "image", "url"]) {
-              result_list_rendering[field] = eval(result_list_rendering[field])
+            for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
+              result_list_rendering[field] = eval(result_list_rendering[field]) || ((item) => null)
             }
             dataset.result_list_rendering = result_list_rendering
 
             const collection_item_rendering = dataset.collection_item_rendering
-            for (const field of ["title", "subtitle", "body", "image", "url"]) {
-              collection_item_rendering[field] = eval(collection_item_rendering[field])
+            for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
+              collection_item_rendering[field] = eval(collection_item_rendering[field]) || ((item) => null)
             }
             dataset.collection_item_rendering = collection_item_rendering
 
@@ -818,13 +818,16 @@ export const useAppStateStore = defineStore("appState", {
           results["thumbnail_atlas_filename"] &&
           results["thumbnail_atlas_filename"] !== "loading"
         ) {
+          console.log("thumbnail atlas received, loading...")
           const image = new Image()
           image.src =
             "data_backend/map/thumbnail_atlas/" + results["thumbnail_atlas_filename"]
           image.onload = () => {
+            console.log("thumbnail atlas loaded", image, results["thumbnail_sprite_size"])
             that.mapState.textureAtlas = image
             that.mapState.thumbnailSpriteSize = results["thumbnail_sprite_size"]
             that.eventBus.emit("map_update_geometry")
+            console.log("thumbnail atlas done")
           }
           that.fields_already_received.add("thumbnail_atlas_filename")
           //that.settings.frontend.rendering.point_size_factor = 3.0

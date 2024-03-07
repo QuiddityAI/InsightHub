@@ -206,6 +206,9 @@ def retrive_map_results():
         del result['last_parameters']
     if 'thumbnail_atlas_filename' in exclude_fields and 'thumbnail_atlas_filename' in result['results']:
         del result['results']['thumbnail_atlas_filename']
+    if 'full_items_per_dataset' in result['results']:
+        # always exclude full items
+        del result['results']['full_items_per_dataset']
 
     if params.get("last_position_update_received") and 'last_position_update' in result['results']:
         if result['results']['last_position_update'] <= params["last_position_update_received"]:

@@ -40,9 +40,16 @@ export default {
       }">
       <div
         v-if="appState.get_hover_rendering_by_index(mapState.hovered_point_idx)"
-        class="flex flex-col items-center rounded bg-white px-1 text-xs text-gray-500">
+        class="flex flex-col rounded bg-white px-2 py-1 text-xs text-gray-500">
         <div
-          v-html="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).title(mapState.get_item_by_index(mapState.hovered_point_idx))"></div>
+          class="text-xs font-semibold"
+          v-html="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).title(mapState.get_item_by_index(mapState.hovered_point_idx))">
+        </div>
+        <div
+          class="mt-1 text-xs font-normal"
+          v-show="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).subtitle(mapState.get_item_by_index(mapState.hovered_point_idx))"
+          v-html="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).subtitle(mapState.get_item_by_index(mapState.hovered_point_idx))">
+        </div>
         <img
           v-if="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).image(mapState.get_item_by_index(mapState.hovered_point_idx))"
           :src="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).image(mapState.get_item_by_index(mapState.hovered_point_idx))"
