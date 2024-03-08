@@ -46,9 +46,16 @@ export default {
         style="transform: translate(-50%, 50%)">
         <div
           v-if="appState.get_hover_rendering_by_index(pointIndex)"
-          class="flex max-w-[140px] flex-col items-center rounded bg-white px-1 text-[10px] text-gray-500">
+          class="flex max-w-[200px] flex-col items-center rounded bg-white px-2 py-1 text-[10px] text-gray-500">
           <div
-            v-html="appState.get_hover_rendering_by_index(pointIndex).title(mapState.get_item_by_index(pointIndex))"></div>
+            class="text-xs font-semibold"
+            v-html="appState.get_hover_rendering_by_index(pointIndex).title(mapState.get_item_by_index(pointIndex))">
+          </div>
+          <div
+            class="mt-1 text-xs font-normal"
+            v-show="appState.get_hover_rendering_by_index(pointIndex).subtitle(mapState.get_item_by_index(pointIndex))"
+            v-html="appState.get_hover_rendering_by_index(pointIndex).subtitle(mapState.get_item_by_index(pointIndex))">
+          </div>
           <img
             v-if="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
             :src="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
