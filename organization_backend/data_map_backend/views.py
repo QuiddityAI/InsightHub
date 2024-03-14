@@ -355,7 +355,7 @@ def get_trained_classifier(request):
     except TrainedClassifier.DoesNotExist:
         result = json.dumps(None)
         return HttpResponse(result, status=200, content_type='application/json')
-    if classifier.collection.created_by != request.user and not classifier.collection.is_public:
+    if classifier.collection.created_by != request.user and not classifier.collection.is_public and not is_from_backend(request):
         return HttpResponse(status=401)
     serialized_data = TrainedClassifierSerializer(classifier).data
     assert isinstance(serialized_data, dict)
