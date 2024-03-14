@@ -756,6 +756,24 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         default=dict,
         blank=True,
         null=True)
+    extraction_questions = models.JSONField(
+        verbose_name="Extraction Questions",
+        help_text="",
+        default=list,
+        blank=True,
+        null=True)
+    table_columns = models.JSONField(
+        verbose_name="Table Columns",
+        help_text="",
+        default=list,
+        blank=True,
+        null=True)
+    current_extraction_processes = models.JSONField(
+        verbose_name="Current Extraction Processes",
+        help_text="",
+        default=list,
+        blank=True,
+        null=True)
 
     history = HistoricalRecords()
 
@@ -908,6 +926,12 @@ class CollectionItem(models.Model):
         default=1.0,
         blank=False,
         null=False)
+    extraction_answers = models.JSONField(
+        verbose_name="Extraction Answers",
+        help_text="",
+        default=dict,
+        blank=True,
+        null=True)
 
     # def __str__(self):
     #     return f"{self.name}"
