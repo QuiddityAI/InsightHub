@@ -2,6 +2,8 @@ from collections import defaultdict
 import copy
 import datetime
 import json
+import logging
+import threading
 
 import numpy as np
 from django.db import models
@@ -12,7 +14,8 @@ import requests
 
 from simple_history.models import HistoricalRecords
 
-from .data_backend_client import data_backend_url
+from .data_backend_client import data_backend_url, get_item_by_id
+from .chatgpt_client import get_chatgpt_response_using_history
 
 
 class FieldType(models.TextChoices):
@@ -995,3 +998,117 @@ class TrainedClassifier(models.Model):
         verbose_name_plural = "Trained Classifiers"
         unique_together = [['collection', 'class_name', 'embedding_space']]
 
+
+class CollectionChat(models.Model):
+    collection = models.ForeignKey(
+        verbose_name="Collection",
+        to=DataCollection,
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    class_name = models.CharField(
+        verbose_name="Class",
+        max_length=200,
+        blank=False,
+        null=False)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        editable=False,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=True,
+        null=True)
+    chat_history = models.JSONField(
+        verbose_name="Chat History",
+        default=list,
+        blank=True,
+        null=True)
+    is_processing = models.BooleanField(
+        verbose_name="Is Processing",
+        default=False,
+        blank=False,
+        null=False)
+
+
+    def add_question(self, question: str):
+        assert isinstance(self.chat_history, list)
+        self.chat_history.append({
+            "role": "user",
+            "content": question,
+            "date": timezone.now().isoformat(),
+        })
+        self.is_processing = True
+        self.save()
+
+        obj = self
+
+        def answer_question():
+            system_prompt = "You are a helpful assistant. You can answer questions based on the following items. " + \
+                "Answer in one concise sentence. Mention the item id you got the answer from in brackets after the sentence. If you need more information, ask for it."
+            collection_items = CollectionItem.objects.filter(collection=self.collection)
+            included_items = 0
+            for item in collection_items:
+                if obj.class_name not in item.classes:
+                    continue
+                text = None
+                if item.field_type == FieldType.TEXT:
+                    text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
+                if item.field_type == FieldType.IDENTIFIER:
+                    ds_id, item_id = json.loads(item.value)  # type: ignore
+                    fields = list(Dataset.objects.get(id=ds_id).descriptive_text_fields.all().values_list("identifier", flat=True))
+                    fields.append("_id")
+                    full_item = get_item_by_id(ds_id, item_id, fields)
+                    text = json.dumps(full_item, indent=2)
+                if not text:
+                    continue
+                included_items += 1
+                system_prompt += "\n" + text + "\n"
+                if included_items > 5:
+                    break
+
+            history = []
+            history.append({"role": "system", "content": system_prompt})
+            for chat_item in obj.chat_history:  # type: ignore
+                history.append({
+                    "role": chat_item["role"],
+                    "content": chat_item["content"],
+                })
+
+            response_text = get_chatgpt_response_using_history(history)
+            #response_text = "I'm sorry, I can't answer that question yet."
+
+            obj.chat_history.append({  # type: ignore
+                "role": "system",
+                "content": response_text,
+                "date": timezone.now().isoformat(),
+            })
+            obj.is_processing = False
+            obj.save()
+
+        def safe_answer_question():
+            obj.is_processing = True
+            obj.save()
+            try:
+                answer_question()
+            except Exception as e:
+                logging.error("Error in answer_question", e)
+                obj.is_processing = False
+                obj.save()
+
+        try:
+            thread = threading.Thread(target=safe_answer_question)
+            thread.start()
+        except Exception as e:
+            logging.error("Error in add_question", e)
+            obj.is_processing = False
+            obj.save()

@@ -7,6 +7,7 @@ import {
 } from "@heroicons/vue/24/outline"
 
 import CollectionItemList from "./CollectionItemList.vue"
+import ChatList from "./ChatList.vue"
 import { FieldType } from "../../utils/utils"
 
 import { mapStores } from "pinia"
@@ -204,7 +205,7 @@ export default {
     <div
       class="flex flex-row items-center justify-between text-center font-bold text-gray-400">
       <button
-        v-for="item in [['positives', `+ ${class_details.positive_count}`], ['negatives', `- ${class_details.negative_count}`], ['learn', 'Learn'], ['recommend', 'Recom.']]"
+        v-for="item in [['positives', `+ ${class_details.positive_count}`], ['negatives', `- ${class_details.negative_count}`], ['recommend', 'Recom.'], ['chat', 'Chat']]"
         class="flex-1"
         :class="{'text-blue-500': selected_tab === item[0]}"
         @click="selected_tab = item[0]">
@@ -227,8 +228,6 @@ export default {
       :class_name="class_name">
     </CollectionItemList>
 
-    <div v-if="selected_tab === 'learn'">Learn</div>
-
     <div v-if="selected_tab === 'recommend'">
       <button
       @click="appStateStore.recommend_items_for_collection(collection, class_name)"
@@ -236,6 +235,12 @@ export default {
         Show Map with Recommendations
       </button>
     </div>
+
+    <ChatList
+      v-if="selected_tab === 'chat'"
+      :collection_id="collection_id"
+      :class_name="class_name">
+    </ChatList>
 
   </div>
 </template>

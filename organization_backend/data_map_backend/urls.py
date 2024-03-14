@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import question_views
 
 urlpatterns=[
     path("health", views.get_health),
@@ -26,4 +27,8 @@ urlpatterns=[
     path("stored_map_data", views.get_stored_map_data),
     path("delete_stored_map", views.delete_stored_map),
     path("get_generators", views.get_generators),
+    path("add_collection_class_chat", question_views.add_collection_class_chat),
+    path("add_chat_question", question_views.add_chat_question),
+    path("get_collection_class_chats", question_views.get_collection_class_chats),
+    path("get_chat_by_id", question_views.get_chat_by_id),
 ]

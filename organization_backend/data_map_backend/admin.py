@@ -17,7 +17,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import data_backend_url
 
-from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier
+from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier, CollectionChat
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -503,6 +503,21 @@ class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         CollectionItemInline,
         TrainedClassifierInline,
     ]
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit }
+    }
+
+
+@admin.register(CollectionChat)
+class CollectionChatAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False
+    list_display = ('id', 'name')
+    list_display_links = ('id', 'name')
+    search_fields = ('id', 'name')
+    ordering = ['id']
+    readonly_fields = ('changed_at', 'created_at')
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
