@@ -5,9 +5,15 @@ import {
   ChevronLeftIcon,
   TrashIcon,
 } from "@heroicons/vue/24/outline"
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import InputGroup from 'primevue/inputgroup';
+import InputGroupAddon from 'primevue/inputgroupaddon';
+import Button from 'primevue/button';
 
 import CollectionItemList from "./CollectionItemList.vue"
 import ChatList from "./ChatList.vue"
+import CollectionTableView from "./CollectionTableView.vue"
 import { FieldType } from "../../utils/utils"
 
 import { mapStores } from "pinia"
@@ -28,6 +34,7 @@ export default {
       is_retraining: false,
       retraining_progress: 0.0,
       show_retrain_success_label: false,
+      table_visible: false,
     }
   },
   watch: {
@@ -157,7 +164,12 @@ export default {
         that.retraining_progress = 0.0
         console.error(error)
       })
-    }
+    },
+    show_map() {
+      this.appStateStore.reset_search_box()
+      this.appStateStore.settings.search.all_field_query = this.collection.search_intent
+      this.appStateStore.request_search_results()
+    },
   },
 }
 </script>
@@ -202,10 +214,16 @@ export default {
       </button>
     </div>
 
+    <InputGroup class="mb-4 mt-4">
+      <InputGroupAddon>Search Intent:</InputGroupAddon>
+      <InputText placeholder="Intent" v-model="collection.search_intent" />
+      <Button label="Show Map" @click="show_map()"></Button>
+    </InputGroup>
+
     <div
       class="flex flex-row items-center justify-between text-center font-bold text-gray-400">
       <button
-        v-for="item in [['positives', `+ ${class_details.positive_count}`], ['negatives', `- ${class_details.negative_count}`], ['recommend', 'Recom.'], ['chat', 'Chat']]"
+        v-for="item in [['positives', `Items (${class_details.positive_count})`], ['negatives', `Negatives (${class_details.negative_count})`], ['recommend', 'Recom.'], ['chat', 'Chat'], ['table', 'Table']]"
         class="flex-1"
         :class="{'text-blue-500': selected_tab === item[0]}"
         @click="selected_tab = item[0]">
@@ -229,8 +247,21 @@ export default {
     </CollectionItemList>
 
     <div v-if="selected_tab === 'recommend'">
+      <br>
+      <p class="text-md text-gray-700">
+        The "Funnel" <br>
+        Two step process:<br><br>
+        1. Sort items on current map based on similarity to query / positive examples (or search full database using vector search)<br>
+        2. Evalute each item using an LLM, starting with the top items<br>
+        <br>
+        -> Show either top-n results to the user and wait for feedback<br>
+        -> or process all items that could match for an exhaustive result
+      </p>
+      <br>
+
       <button
       @click="appStateStore.recommend_items_for_collection(collection, class_name)"
+      class="bg-gray-100 hover:bg-blue-100/50 text-gray-700 font-semibold rounded py-1 px-2 mb-2"
       >
         Show Map with Recommendations
       </button>
@@ -241,6 +272,26 @@ export default {
       :collection_id="collection_id"
       :class_name="class_name">
     </ChatList>
+
+    <div v-if="selected_tab === 'table'">
+      <br>
+      <div class="flex flex-row justify-center">
+        <button @click="table_visible = true; $refs.table_dialog.maximize()"
+        class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold">
+          Show Table
+        </button>
+      </div>
+      <br>
+
+      <Dialog ref="table_dialog" v-model:visible="table_visible" maximizable modal header="Collection Table View">
+        <CollectionTableView
+          :collection_id="collection_id"
+          :class_name="class_name"
+          :initial_collection="collection">
+        </CollectionTableView>
+      </Dialog>
+
+    </div>
 
   </div>
 </template>

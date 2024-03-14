@@ -85,5 +85,8 @@ export default {
         </CollectionItem>
       </li>
     </ul>
+    <div v-if="!examples.length" class="text-center text-gray-500 mb-2">
+      No items yet
+    </div>
   </div>
 </template>
