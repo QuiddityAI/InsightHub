@@ -31,4 +31,7 @@ urlpatterns=[
     path("add_chat_question", question_views.add_chat_question),
     path("get_collection_class_chats", question_views.get_collection_class_chats),
     path("get_chat_by_id", question_views.get_chat_by_id),
+    path("add_collection_extraction_question", question_views.add_collection_extraction_question),
+    path("extract_question_from_collection_class_items", question_views.extract_question_from_collection_class_items),
+    path("remove_collection_class_extraction_results", question_views.remove_collection_class_extraction_results),
 ]
