@@ -7,6 +7,8 @@ import {
   ArrowRightOnRectangleIcon,
   UserCircleIcon,
   CircleStackIcon,
+  ClockIcon,
+  BookmarkIcon
 } from "@heroicons/vue/24/outline"
 import MultiSelect from 'primevue/multiselect';
 
@@ -15,6 +17,8 @@ import { FieldType, ellipse } from "../../utils/utils"
 import { useAppStateStore } from "../../stores/app_state_store"
 import CollectionAndVectorFieldSelection from "./CollectionAndVectorFieldSelection.vue";
 import LoginButton from "../LoginButton.vue";
+import SearchHistoryDialog from "../history/SearchHistoryDialog.vue";
+import StoredMapsDialog from "../history/StoredMapsDialog.vue";
 
 const appState = useAppStateStore()
 const _window = window
@@ -142,6 +146,12 @@ export default {
   methods: {
     organization_id_changed_by_user() {
       this.appStateStore.set_organization_id(this.internal_organization_id)
+    },
+    open_search_history_dialog() {
+      this.$dialog.open(SearchHistoryDialog, {props: {modal: true}});
+    },
+    open_stored_maps_dialog() {
+      this.$dialog.open(StoredMapsDialog, {props: {modal: true}});
     },
   },
 }
@@ -277,6 +287,19 @@ export default {
           'text-gray-400': !show_negative_query_field,
         }">
         <MinusCircleIcon></MinusCircleIcon>
+      </button>
+      <button
+        v-if="appState.logged_in"
+        @click="open_search_history_dialog()"
+        title="Search History"
+        class="ml-1 w-6 rounded px-1 hover:bg-gray-100 text-gray-400">
+        <ClockIcon></ClockIcon>
+      </button><button
+        v-if="appState.logged_in"
+        @click="open_stored_maps_dialog()"
+        title="Stored Views"
+        class="ml-1 w-6 rounded px-1 hover:bg-gray-100 text-gray-400">
+        <BookmarkIcon></BookmarkIcon>
       </button>
       <button
         v-if="appState.dev_mode"

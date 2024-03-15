@@ -4,6 +4,7 @@ import mitt from 'mitt';
 import PrimeVue from 'primevue/config';
 import Wind from './prime_vue_presets/wind';
 import ToastService from 'primevue/toastservice';
+import DialogService from 'primevue/dialogservice';
 import VueApexCharts from "vue3-apexcharts";
 import "inter-ui/inter.css";
 
@@ -21,6 +22,7 @@ app.use(PrimeVue, {
   pt: Wind,
 });
 app.use(ToastService);
+app.use(DialogService);
 
 app.use(VueApexCharts)
 
