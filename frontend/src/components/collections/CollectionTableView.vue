@@ -168,14 +168,15 @@ export default {
       Processing...
     </div>
 
-    <DataTable :value="items" tableStyle="min-width: 50rem">
+    <DataTable :value="items" tableStyle="">
         <Column header="Item">
           <template #body="slotProps">
             <CollectionItem
               :dataset_id="JSON.parse(slotProps.data.value)[0]"
               :item_id="JSON.parse(slotProps.data.value)[1]"
               :is_positive="slotProps.data.is_positive"
-              @remove="remove_collection_item(slotProps.data.id)">
+              @remove="remove_collection_item(slotProps.data.id)"
+              class="w-[600px]">
             </CollectionItem>
           </template>
         </Column>
