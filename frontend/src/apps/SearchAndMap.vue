@@ -28,6 +28,7 @@ import CollectionArea from "../components/collections/CollectionArea.vue"
 import CollectionItem from "../components/collections/CollectionItem.vue"
 import AddToCollectionButtons from "../components/collections/AddToCollectionButtons.vue"
 import StatisticList from "../components/search/StatisticList.vue"
+import DatasetsArea from "../components/datasets/DatasetsArea.vue"
 
 import { httpClient } from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
@@ -390,6 +391,8 @@ export default {
 
             <!-- collections -->
             <CollectionArea v-if="selected_tab === 'collections'"> </CollectionArea>
+
+            <DatasetsArea v-if="selected_tab === 'datasets'"></DatasetsArea>
           </div>
         </div>
       </div>
