@@ -6,7 +6,7 @@ from django.utils.safestring import mark_safe
 from django.forms import Textarea
 from django.db import models
 from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin  # type: ignore
 
 from djangoql.admin import DjangoQLSearchMixin
 import requests
@@ -17,7 +17,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import data_backend_url
 
-from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier, CollectionChat
+from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier, CollectionChat
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -94,6 +94,22 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         return super(OrganizationAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
 
+@admin.register(ImportConverter)
+class ImportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'name')
+    list_display_links = ('id', 'name')
+    search_fields = ('name', 'description')
+    ordering = ['name']
+
+    readonly_fields = ('changed_at', 'created_at')
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit },
+    }
+
+
 class ObjectFieldInline(admin.StackedInline):
     model = ObjectField
     readonly_fields = ('changed_at', 'created_at', 'action_buttons', 'items_having_value_count')
@@ -135,7 +151,7 @@ class ObjectFieldInline(admin.StackedInline):
 @admin.register(Dataset)
 class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'organization', 'name', 'is_public')
+    list_display = ('id', 'organization', 'name', 'is_public', 'is_template')
     list_display_links = ('id', 'name')
     search_fields = ('name', 'organization')
     ordering = ['organization', 'name']
@@ -145,9 +161,11 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     fields = [
         "id", "name", "entity_name", "entity_name_plural", "short_description",
-        "organization", "is_public", "source_plugin", "source_plugin_parameters",
+        "is_template", "origin_template", "organization", "is_public", "admins",
+        "source_plugin", "source_plugin_parameters",
         "database_name", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields", "defaults",
+        "applicable_import_converters",
         "item_count", "get_field_overview_table_html",
         "result_list_rendering", "collection_item_rendering",
         "hover_label_rendering", "detail_view_rendering", "statistics",

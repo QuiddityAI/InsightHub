@@ -250,6 +250,53 @@ class Organization(models.Model):
         verbose_name_plural = "Organizations"
 
 
+class ImportConverter(models.Model):
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=True,
+        null=True)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    description = models.TextField(
+        verbose_name="Description",
+        blank=True,
+        null=True)
+    module = models.CharField(
+        verbose_name="Code Module Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    parameters = models.JSONField(
+        verbose_name="Parameters",
+        default=dict,
+        blank=True,
+        null=True)
+    example_file_url = models.CharField(
+        verbose_name="Example File URL",
+        max_length=200,
+        blank=True,
+        null=True)
+
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name = "Import Converter"
+        verbose_name_plural = "Import Converters"
+
+
 def get_rendering_json_field_default(fields: list):
     val = {}
     val["required_fields"] = []
@@ -296,6 +343,19 @@ class Dataset(models.Model):
         max_length=200,
         blank=True,
         null=True)
+    is_template = models.BooleanField(
+        verbose_name="Template",
+        help_text="Whether this dataset is a schema for creating new datasets in the UI. Templates are not used for data storage.",
+        default=False,
+        blank=False,
+        null=False)
+    origin_template = models.ForeignKey(
+        verbose_name="Origin Template",
+        to='self',
+        on_delete=models.SET_NULL,
+        related_name='+',
+        blank=True,
+        null=True)
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
@@ -319,6 +379,12 @@ class Dataset(models.Model):
         default=False,
         blank=False,
         null=False)
+    admins = models.ManyToManyField(
+        verbose_name="Admins",
+        help_text="Users who can change the dataset and upload items to it",
+        to=User,
+        related_name='+',
+        blank=True)
     source_plugin = models.CharField(
         verbose_name="Source Plugin",
         max_length=50,
@@ -369,6 +435,11 @@ class Dataset(models.Model):
         default=dict,
         blank=True,
         null=True)
+    applicable_import_converters = models.ManyToManyField(
+        verbose_name="Applicable Import Converters",
+        to=ImportConverter,
+        related_name='+',
+        blank=True)
     result_list_rendering = models.JSONField(
         verbose_name="Result List Rendering",
         default=get_default_result_list_rendering,
