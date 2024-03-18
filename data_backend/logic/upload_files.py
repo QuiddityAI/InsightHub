@@ -6,6 +6,7 @@ import uuid
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
+from utils.dotdict import DotDict
 from database_client.text_search_engine_client import TextSearchEngineClient
 from database_client.django_client import get_dataset, get_import_converter
 from logic.insert_logic import insert_many, update_database_layout
@@ -46,16 +47,25 @@ def get_import_converter_by_name(name: str) -> Callable:
 
 
 def _scientific_article_pdf(paths, parameters):
+    from pdfparser import grobid_parser # only load import here to improve startup time
+
+    parser = grobid_parser.GROBIDParser(grobid_address='http://grobid:8070')
+    parsed = parser.fit_transform({path: path for path in paths})
     items = []
-    for path in paths:
+    for path, parsed_pdf in parsed.items():
+        parsed_pdf = DotDict(parsed_pdf)
+        try:
+            pub_year = int(parsed_pdf.pub_date.split("-")[0])
+        except:
+            pub_year = None
         items.append({
-            "doi": uuid.uuid4().hex,
-            "title": "A scientific article",
-            "abstract": "This is an abstract",
-            "authors": "John Doe, Jane Doe",
-            "container_title": "Journal of Science",
-            "publication_year": 2021,
-            "cited_by": 50,
+            "doi": parsed_pdf.doi or uuid.uuid4().hex,
+            "title": parsed_pdf.title,
+            "abstract": parsed_pdf.abstract,
+            "authors": parsed_pdf.authors,
+            "container_title": "unknown",
+            "publication_year": pub_year,
+            "cited_by": 0,
             "file_path": path,
         })
     return items

@@ -38,6 +38,8 @@ django-object-actions = "*"
 cbor2 = "*"
 diskcache = "*"
 django-import-export = "*"
+scipdf-parser = "*"
+beautifulsoup4 = "*"
 
 [dev-packages]
 ipykernel = "*"

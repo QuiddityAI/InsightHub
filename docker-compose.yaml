@@ -109,6 +109,19 @@ services:
           devices:
             - driver: nvidia
               capabilities: [gpu]
+  grobid:
+    image: lfoppiano/grobid:0.8.0
+    init: true
+    ports:
+      - "127.0.0.1:8070:8070"
+      - "127.0.0.1:8071:8071"
+    environment:
+      - grobid__3rdparty__pdf2xml__memory__limit__mb=4000
+    deploy:
+      resources:
+        limits:
+          cpus: "20"
+          memory: "5000mb"
 volumes:
   model_server_cache:
   qdrant_storage:
