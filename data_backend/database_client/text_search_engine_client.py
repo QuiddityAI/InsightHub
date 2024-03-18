@@ -114,11 +114,11 @@ class TextSearchEngineClient(object):
 
 
     def remove_dataset(self, index_name: str):
-        pass
+        self.client.indices.delete(index=index_name, ignore_unavailable=True)  # type: ignore
 
 
     def get_item_count(self, index_name: str):
-        response = self.client.count(index=index_name)
+        response = self.client.count(index=index_name, ignore_unavailable=True)  # type: ignore
         return response["count"]
 
 
@@ -199,7 +199,7 @@ class TextSearchEngineClient(object):
                 }
             }
         }
-        response = self.client.count(index=index_name, body=query)
+        response = self.client.count(index=index_name, body=query, ignore_unavailable=True)  # type: ignore
         return response["count"]
 
 

@@ -151,7 +151,7 @@ class ObjectFieldInline(admin.StackedInline):
 @admin.register(Dataset)
 class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'organization', 'name', 'is_public', 'is_template')
+    list_display = ('id', 'organization', 'name', 'is_public', 'is_template', 'created_in_ui')
     list_display_links = ('id', 'name')
     search_fields = ('name', 'organization')
     ordering = ['organization', 'name']
@@ -161,7 +161,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     fields = [
         "id", "name", "entity_name", "entity_name_plural", "short_description",
-        "is_template", "origin_template", "organization", "is_public", "admins",
+        "is_template", "origin_template", "created_in_ui", "organization", "is_public", "admins",
         "source_plugin", "source_plugin_parameters",
         "database_name", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields", "defaults",
@@ -259,6 +259,12 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     change_actions = ('update_database_layout',)
 
+    @action(label="Delete Content", description="Delete all items from the database")
+    def delete_content(self, request, obj):
+        obj.delete_content()
+
+    change_actions = ('update_database_layout', 'delete_content')
+
     def duplicate_datasets(self, request, queryset):
         for object in queryset:
             new_object = object.create_copy()
@@ -267,7 +273,12 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
             new_object.save()
     duplicate_datasets.short_description = "Duplicate Datasets"
 
-    actions = ['duplicate_datasets']
+    def delete_with_content(self, request, queryset):
+        for object in queryset:
+            object.delete_with_content()
+    delete_with_content.short_description = "Delete and remove all items from database"
+
+    actions = ['duplicate_datasets', 'delete_with_content']
 
     class Media:
         js = ('hide_objectfield_parameters.js',)

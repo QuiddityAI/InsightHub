@@ -34,4 +34,7 @@ urlpatterns=[
     path("add_collection_extraction_question", question_views.add_collection_extraction_question),
     path("extract_question_from_collection_class_items", question_views.extract_question_from_collection_class_items),
     path("remove_collection_class_extraction_results", question_views.remove_collection_class_extraction_results),
+    path("get_dataset_templates", views.get_dataset_templates),
+    path("create_dataset_from_template", views.create_dataset_from_template),
+    path("delete_dataset", views.delete_dataset),
 ]

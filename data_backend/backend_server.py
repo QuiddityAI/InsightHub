@@ -13,7 +13,7 @@ from utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncode
 from utils.dotdict import DotDict
 
 from logic.mapping_task import get_or_create_map, get_map_results
-from logic.insert_logic import insert_many, update_database_layout
+from logic.insert_logic import insert_many, update_database_layout, delete_dataset_content
 from logic.search import get_search_results, get_search_results_for_stored_map, get_document_details_by_id, get_item_count, get_random_items, get_items_having_value_count
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
@@ -165,6 +165,21 @@ def get_search_list_result_endpoint():
         mimetype='application/json'
     )
     return response
+
+
+@app.route('/data_backend/delete_dataset_content', methods=['POST'])
+def delete_dataset_content_endpoint():
+    # FIXME: check permissions
+    try:
+        dataset_id: int = request.json["dataset_id"]  # type: ignore
+    except KeyError:
+        return "dataset_id missing", 400
+    try:
+        delete_dataset_content(dataset_id)
+    except Exception as e:
+        raise e
+        return str(e), 500
+    return "", 204
 
 
 # --- Old Routes: ---

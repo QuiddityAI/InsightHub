@@ -1,6 +1,7 @@
 from typing import Iterable
 import uuid
 from uuid import uuid4, uuid5
+import logging
 
 from database_client.django_client import get_dataset
 from database_client.vector_search_engine_client import VectorSearchEngineClient
@@ -137,3 +138,16 @@ def get_index_settings(dataset: DotDict):
         }
 
     return DotDict(result)
+
+
+def delete_dataset_content(dataset_id: int):
+    dataset = get_dataset(dataset_id)
+
+    logging.warning(f"Deleting all data from dataset {dataset.name}, ID {dataset.id}, database name {dataset.actual_database_name}.")
+
+    vector_db_client = VectorSearchEngineClient.get_instance()
+    index_settings = get_index_settings(dataset)
+    for field in index_settings.all_vector_fields:
+        vector_db_client.delete_field(dataset.actual_database_name, field)
+    search_engine_client = TextSearchEngineClient.get_instance()
+    search_engine_client.remove_dataset(dataset.actual_database_name)

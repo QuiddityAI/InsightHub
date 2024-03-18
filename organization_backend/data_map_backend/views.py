@@ -151,7 +151,7 @@ def get_dataset_templates(request):
 
 
 @csrf_exempt
-def create_dataset(request):
+def create_dataset_from_template(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
@@ -162,6 +162,7 @@ def create_dataset(request):
         name: str = data["name"]
         organization_id: int = data["organization_id"]
         template_id: int = data["template_id"]
+        from_ui: bool = data.get("from_ui", False)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -184,6 +185,7 @@ def create_dataset(request):
     dataset.organization = organization
     dataset.is_template = False
     dataset.origin_template = template  # type: ignore
+    dataset.created_in_ui = from_ui
     dataset.admins.add(request.user)
     dataset.save()
 
@@ -191,6 +193,31 @@ def create_dataset(request):
     result = json.dumps(dataset_dict)
 
     return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def delete_dataset(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        dataset_id: int = data["dataset_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        dataset = Dataset.objects.get(id=dataset_id)
+    except Dataset.DoesNotExist:
+        return HttpResponse(status=404)
+    if not dataset.admins.filter(id=request.user.id).exists():
+        return HttpResponse(status=401)
+
+    dataset.delete_with_content()
+
+    return HttpResponse(None, status=204)
 
 
 @csrf_exempt

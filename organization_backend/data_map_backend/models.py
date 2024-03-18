@@ -14,7 +14,7 @@ import requests
 
 from simple_history.models import HistoricalRecords
 
-from .data_backend_client import data_backend_url, get_item_by_id
+from .data_backend_client import data_backend_url, get_item_by_id, delete_dataset_content
 from .chatgpt_client import get_chatgpt_response_using_history
 
 
@@ -356,6 +356,12 @@ class Dataset(models.Model):
         related_name='+',
         blank=True,
         null=True)
+    created_in_ui = models.BooleanField(
+        verbose_name="Created in UI",
+        help_text="Whether this dataset was created using the 'Create new dataset' button in the frontend",
+        default=False,
+        blank=False,
+        null=False)
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
@@ -504,6 +510,8 @@ class Dataset(models.Model):
         original_id = object.id  # type: ignore
         original_descriptive_text_fields = object.descriptive_text_fields.all()
         original_default_search_fields = object.default_search_fields.all()
+        original_admins = object.admins.all()
+        original_import_converters = object.applicable_import_converters.all()
         object.id = None  # type: ignore
         object.save()
         field_name_to_sink = {}
@@ -531,8 +539,18 @@ class Dataset(models.Model):
                 sink_field = field_name_to_sink[field.identifier]
                 sink_field.source_fields.add(field)
                 sink_field.save()
+        for admin in original_admins:
+            object.admins.add(admin)
+        for converter in original_import_converters:
+            object.applicable_import_converters.add(converter)
         return object
 
+    def delete_content(self):
+        delete_dataset_content(self.id)  # type: ignore
+
+    def delete_with_content(self):
+        self.delete_content()
+        self.delete()
 
     def __str__(self):
         return f"{self.name}"
