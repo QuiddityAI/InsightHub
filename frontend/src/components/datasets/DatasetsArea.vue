@@ -6,6 +6,7 @@ import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 import DatasetDetails from "./DatasetDetails.vue"
+import CreateDatasetDialog from './CreateDatasetDialog.vue';
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
@@ -20,21 +21,20 @@ export default {
   data() {
     return {
       selected_dataset: null,
+      create_dataset_dialog_visible: false,
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
     your_datasets() {
-      return Object.values(this.appStateStore.datasets).filter(dataset => dataset.created_by === this.appStateStore.user.id)
+      return Object.values(this.appStateStore.datasets).filter(dataset => dataset.admins.includes(this.appStateStore.user.id))
     },
     organization_datasets() {
-      // FIXME: filter is not correct
-      return Object.values(this.appStateStore.datasets).filter(dataset => dataset.created_by !== this.appStateStore.user.id && dataset.is_public === false)
+      return Object.values(this.appStateStore.datasets).filter(dataset => !dataset.admins.includes(this.appStateStore.user.id) && dataset.is_public === false)
     },
     public_datasets() {
-      // FIXME: filter is not correct
-      return Object.values(this.appStateStore.datasets).filter(dataset => dataset.created_by !== this.appStateStore.user.id && dataset.is_public === true)
+      return Object.values(this.appStateStore.datasets).filter(dataset => !dataset.admins.includes(this.appStateStore.user.id) && dataset.is_public === true)
     },
   },
   mounted() {
@@ -71,8 +71,10 @@ export default {
         No datasets yet
       </div>
       <Button v-if="category.items === your_datasets" class="h-6 mb-2 mt-1"
+        @click="create_dataset_dialog_visible = true"
         label="Create new dataset">
       </Button>
+      <CreateDatasetDialog v-if="category.items === your_datasets && create_dataset_dialog_visible" v-model:visible="create_dataset_dialog_visible" />
     </div>
 
     <DatasetDetails

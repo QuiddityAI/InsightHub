@@ -29,11 +29,7 @@ export default {
   data() {
     return {
       selected_import_type: null,
-      import_types: [
-        { name: "Scientific Article as PDF", value: "scientific_pdf" },
-        { name: "Scientific Articles as CSV", value: "scientific_csv" },
-        { name: "Scientific Articles as Excel", value: "scientific_xls" },
-      ],
+      import_types: this.dataset.applicable_import_converters,
     }
   },
   computed: {
@@ -46,7 +42,25 @@ export default {
   },
   methods: {
     delete_dataset() {
-      alert("delete dataset")
+      if (!this.dataset.created_in_ui) {
+        this.$toast.add({severity:'info', summary: 'Info', detail: 'You cannot delete this dataset because it was not created from the UI. Use the backend to delete it.'})
+        return
+      }
+      if (!confirm("Are you sure you want to delete this dataset and all of its data? This action cannot be undone.")) {
+        return
+      }
+      const that = this
+      const body = {
+        dataset_id: that.dataset.id,
+      }
+      httpClient.post(`/org/data_map/delete_dataset`, body)
+      .then(function (response) {
+        delete that.appStateStore.datasets[that.dataset.id]
+        that.$emit("close")
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
     },
   },
 }
@@ -63,14 +77,14 @@ export default {
       <span class="font-bold text-gray-600">{{ dataset.name }}</span>
       <div class="flex-1"></div>
       <button
+        v-if="dataset.admins?.includes(appState.user.id)"
         @click="delete_dataset"
         class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </button>
     </div>
 
-    <!-- FIXME: implement access control -->
-    <div v-if="dataset.admins?.includes(appState.user.id) || true">
+    <div v-if="dataset.admins?.includes(appState.user.id)">
       <h3 class="text-md text-gray-600 font-semibold">
         Upload Files
       </h3>
@@ -103,10 +117,9 @@ export default {
       </div>
     </div>
 
-    <!-- FIXME: implement access control -->
-    <div v-if="!dataset.admins?.includes(appState.user.id) && false">
+    <div v-if="!dataset.admins?.includes(appState.user.id)">
       <span class="text-sm text-gray-500">
-        You can only upload to your own datasets.
+        You can't upload files to this dataset because you are not an admin.
       </span>
     </div>
   </div>
