@@ -104,7 +104,7 @@ def get_available_datasets(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    datasets = Dataset.objects.all()
+    datasets = Dataset.objects.filter(Q(is_template=False))
     # TODO: filter by organization_id later on:
     # datasets = Dataset.objects.filter(Q(organization_id=organization_id))
 
@@ -120,6 +120,76 @@ def get_available_datasets(request):
                        })
 
     result = json.dumps(result)
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def get_dataset_templates(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    datasets = Dataset.objects.filter(Q(is_template=True))
+
+    result = []
+    for dataset in datasets:
+        if not dataset.is_public and not request.user.is_authenticated:
+            continue
+        elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
+            continue
+        result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
+                       "entity_name": dataset.entity_name, "entity_name_plural": dataset.entity_name_plural,
+                       "short_description": dataset.short_description,
+                       })
+
+    result = json.dumps(result)
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def create_dataset(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        name: str = data["name"]
+        organization_id: int = data["organization_id"]
+        template_id: int = data["template_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        organization = Organization.objects.get(id=organization_id)
+    except Organization.DoesNotExist:
+        return HttpResponse(status=404)
+    if not organization.members.filter(id=request.user.id).exists():
+        return HttpResponse(status=401)
+
+    try:
+        template = Dataset.objects.get(id=template_id)
+    except Dataset.DoesNotExist:
+        return HttpResponse(status=404)
+    if not template.is_template:
+        return HttpResponse(status=400)
+
+    dataset = template.create_copy()
+    dataset.name = name
+    dataset.organization = organization
+    dataset.is_template = False
+    dataset.origin_template = template  # type: ignore
+    dataset.admins.add(request.user)
+    dataset.save()
+
+    dataset_dict = DatasetSerializer(instance=dataset).data
+    result = json.dumps(dataset_dict)
+
     return HttpResponse(result, status=200, content_type='application/json')
 
 

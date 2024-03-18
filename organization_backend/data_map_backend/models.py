@@ -498,6 +498,42 @@ class Dataset(models.Model):
         return self.database_name or f"dataset_{self.id}"  # type: ignore
     actual_database_name.fget.short_description = "Actual Database Name"  # type: ignore
 
+
+    def create_copy(self):
+        object = copy.copy(self)
+        original_id = object.id  # type: ignore
+        original_descriptive_text_fields = object.descriptive_text_fields.all()
+        original_default_search_fields = object.default_search_fields.all()
+        object.id = None  # type: ignore
+        object.save()
+        field_name_to_sink = {}
+        for field in ObjectField.objects.filter(dataset = original_id):
+            is_pk = field == object.primary_key
+            is_thumbnail =  field == object.thumbnail_image
+            is_descriptive = field in original_descriptive_text_fields
+            is_default = field in original_default_search_fields
+            source_fields = field.source_fields.all()
+            field.id = None  # type: ignore
+            field.dataset = object
+            field.save()
+            for source_field in source_fields:
+                field_name_to_sink[source_field.identifier] = field
+            if is_pk:
+                object.primary_key = field
+            if is_thumbnail:
+                object.thumbnail_image = field
+            if is_descriptive:
+                object.descriptive_text_fields.add(field)
+            if is_default:
+                object.default_search_fields.add(field)
+        for field in ObjectField.objects.filter(dataset = object):
+            if field.identifier in field_name_to_sink:
+                sink_field = field_name_to_sink[field.identifier]
+                sink_field.source_fields.add(field)
+                sink_field.save()
+        return object
+
+
     def __str__(self):
         return f"{self.name}"
 
