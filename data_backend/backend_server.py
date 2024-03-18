@@ -18,6 +18,7 @@ from logic.search import get_search_results, get_search_results_for_stored_map, 
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from logic.classifiers import get_retraining_status, start_retrain
+from logic.upload_files import upload_files
 
 from database_client.django_client import add_stored_map
 
@@ -179,6 +180,16 @@ def delete_dataset_content_endpoint():
     except Exception as e:
         raise e
         return str(e), 500
+    return "", 204
+
+
+@app.route('/data_backend/upload_files', methods=['POST'])
+def upload_files_endpoint():
+    # TODO: check auth
+    try:
+        upload_files(int(request.form["dataset_id"]), int(request.form["import_converter_id"]), request.files.getlist("files[]"))
+    except KeyError as e:
+        return f"parameter missing: {e}", 400
     return "", 204
 
 

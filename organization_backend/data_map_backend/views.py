@@ -11,8 +11,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import DataCollection, CollectionItem, Dataset, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
-from .serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
+from .models import DataCollection, CollectionItem, Dataset, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
+from .serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -218,6 +218,26 @@ def delete_dataset(request):
     dataset.delete_with_content()
 
     return HttpResponse(None, status=204)
+
+
+@csrf_exempt
+def get_import_converter(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        import_converter_id: int = data["import_converter_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        converter = ImportConverter.objects.get(id=import_converter_id)
+    except ImportConverter.DoesNotExist:
+        return HttpResponse(status=404)
+
+    serialized_data = json.dumps(ImportConverterSerializer(instance=converter).data)
+    return HttpResponse(serialized_data, status=200, content_type='application/json')
 
 
 @csrf_exempt

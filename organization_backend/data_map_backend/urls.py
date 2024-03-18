@@ -37,4 +37,5 @@ urlpatterns=[
     path("get_dataset_templates", views.get_dataset_templates),
     path("create_dataset_from_template", views.create_dataset_from_template),
     path("delete_dataset", views.delete_dataset),
+    path("get_import_converter", views.get_import_converter),
 ]

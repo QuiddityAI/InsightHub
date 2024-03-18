@@ -119,3 +119,12 @@ def get_generators() -> list[DotDict]:
         logging.warning("Couldn't get generators")
         return []
     return [DotDict(generator) for generator in result.json()]
+
+
+def get_import_converter(import_converter_id: int) -> DotDict:
+    url = backend_url + '/org/data_map/get_import_converter'
+    data = {
+        'import_converter_id': import_converter_id,
+    }
+    result = requests.post(url, json=data)
+    return DotDict(result.json())

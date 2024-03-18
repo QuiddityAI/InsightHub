@@ -28,8 +28,7 @@ export default {
   emits: ["close"],
   data() {
     return {
-      selected_import_type: null,
-      import_types: this.dataset.applicable_import_converters,
+      selected_import_converter: null,
     }
   },
   computed: {
@@ -62,6 +61,71 @@ export default {
         console.error(error)
       })
     },
+    async custom_file_uploader(event) {
+      // see https://github.com/primefaces/primevue/blob/master/components/lib/fileupload/FileUpload.vue
+      let xhr = new XMLHttpRequest();
+      let formData = new FormData();
+      const fileUploaderComponent = this.$refs.fileUploader;
+
+      fileUploaderComponent.$emit('before-upload', {
+        xhr: xhr,
+        formData: formData
+      });
+
+      formData.append("dataset_id", this.dataset.id);
+      formData.append("import_converter_id", this.selected_import_converter.id);
+
+      for (let file of event.files) {
+        formData.append(fileUploaderComponent.name, file, file.name);
+      }
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          fileUploaderComponent.progress = Math.round((event.loaded * 100) / event.total);
+        }
+
+        fileUploaderComponent.$emit('progress', {
+          originalEvent: event,
+          progress: this.progress
+        });
+      });
+
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === 4) {
+          fileUploaderComponent.progress = 0;
+
+          if (xhr.status >= 200 && xhr.status < 300) {
+            if (fileUploaderComponent.fileLimit) {
+              fileUploaderComponent.uploadedFileCount += fileUploaderComponent.files.length;
+            }
+
+            fileUploaderComponent.$emit('upload', {
+              xhr: xhr,
+              files: fileUploaderComponent.files
+            });
+          } else {
+            fileUploaderComponent.$emit('error', {
+              xhr: xhr,
+              files: fileUploaderComponent.files
+            });
+          }
+
+          fileUploaderComponent.uploadedFiles.push(...fileUploaderComponent.files);
+          fileUploaderComponent.clear();
+        }
+      };
+
+      xhr.open('POST', fileUploaderComponent.url, true);
+
+      fileUploaderComponent.$emit('before-send', {
+        xhr: xhr,
+        formData: formData
+      });
+
+      xhr.withCredentials = fileUploaderComponent.withCredentials;
+
+      xhr.send(formData);
+    },
   },
 }
 </script>
@@ -92,11 +156,20 @@ export default {
         <label class="mr-2 text-sm text-gray-700" for="import_type">Import Type:</label>
         <Dropdown
           id="import_type"
-          v-model="selected_import_type"
-          :options="import_types"
+          v-model="selected_import_converter"
+          :options="dataset.applicable_import_converters"
           optionLabel="name"
           placeholder="Select an import type"/>
-        <FileUpload name="demo[]" url="/api/upload" @upload="onAdvancedUpload($event)" :multiple="true" accept="image/*" :maxFileSize="1000000">
+        <FileUpload
+          ref="fileUploader"
+          name="files[]"
+          url="/data_backend/upload_files"
+          :multiple="true"
+          :maxFileSize="100000000"
+          :fileLimit="500"
+          customUpload
+          @uploader="custom_file_uploader"
+          >
           <template #empty>
             <p>Drag and drop files to here to upload.<br>
               You can upload individual files or zip files with multiple files.
