@@ -37,6 +37,7 @@ npm install
   - Otherwise, run `python manage.py migrate` in the `organization_backend` folder to create a database.
   - And `python manage.py createsuperuser` to create the first user
 - Run `python manage.py collectstatic` in the `organization_backend` folder
+- Make sure the `umap_with_progress_callback-add_progress_callback_0.5.3.zip` file exists in the repo root folder (its used in the data-backend Docker file), otherwise get it [here](https://github.com/luminosuslight/umap_with_progress_callback/archive/refs/heads/add_progress_callback_0.5.3.zip)
 - (optionally) Set up VSCode by installing recommended extensions in `vsc-extensions.txt` (can be installed using `VSC Export & Import` extensions, but should be done carefully)
 - run `docker compose up -d`
 
