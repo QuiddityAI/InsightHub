@@ -1,75 +1,72 @@
-# visual-data-map
-An interactive map to visualise large sets of data embeddings using WebGL
+# Visual Data Map - Project Title "Quiddity"
 
-## How it was created initially
+This is a Python-backend, Vue-frontend tool to visualize, search, organize and extract data.
 
-- install weaviate using docker-compose
-- run `pipenv install` and  `source activate_venv.py`
-- create vite app with `cd frontend && npm create vite@latest`
-- install tailwind by following this: https://tailwindcss.com/docs/guides/vite
+Main features:
+- ingest data, convert it to embeddings and index it automatically
+- generate visual maps of data
+- create collections of data, use them to recommend more items using active learning
+- create tables of data and extract information from each item using LLMs
+- chat with the data and answer questions
 
-## How to set up on a new machine
+-> a "funnel" from massive data amounts to a curated set of items with extracted information
 
+## Development Setup
+
+Currently, the docker containers in this repo are configured for a development setup, i.e. they mount this source folder into the container and have live reload enabled. This means that running `docker compose up -d` should ideally be enough to run the code, modify it and see changes immediately.
+
+This also means that the current docker containers are not meant for production use, due to hot reload they are slow and insecure.
+
+### Steps
+
+Local setup, mostly for IDE auto-complete (but might be needed for Docker containers, too, at the moment, because they mount the source folder):
 ```
-python3.10 -m pip install pipenv
-python3.10 -m pipenv install
-python3 -m spacy download en_core_web_sm
+python3.11 -m pip install pipenv
+python3.11 -m pipenv install
+python3 -m spacy download en_core_web_sm  # not sure if this is still needed
 
 cd frontend/visual-data-map
 npm install
 ```
 
-## How to run it
+- install docker >= v24.0 (and nvidia-docker if an Nvidia GPU is available, test the GPU setup with a simple container)
+- By default, the docker setup uses `/data/quiddity_data` as a folder to store app data. Make sure it exists or change the mounting point in the docker-compose.yaml file to something else.
+- If no Nvidia GPU is available, remove the `deploy:` part about the GPU from the docker-compose file. The code _should_ work without a GPU, too.
+- Make sure an .env file with the necessary environment variables exists in the root folder of this repo.
+  - BING_SEARCH_V7_SUBSCRIPTION_KEY=?
+  - BING_SEARCH_V7_ENDPOINT=?
+  - SEMANTIC_SCHOLAR_API_KEY=?
+  - OPENAI_API_KEY=?
+  - ABSCLUST_TYPESENSE_DB_API_KEY=?  # deprecated, but not removed yet
+  - ABSCLUST_TYPESENSE_DB_HOST=?  # deprecated, but not removed yet
+- Copy an existing `db.sqlite3` file to the `organization_backend` folder if available, to not start from zero.
+  - Otherwise, run `python manage.py migrate` in the `organization_backend` folder to create a database.
+  - And `python manage.py createsuperuser` to create the first user
+- Run `python manage.py collectstatic` in the `organization_backend` folder
+- run `docker compose up -d`
 
-```
-# set up port forwardings in local terminal
-# frontend:
-ssh -L 55140:localhost:55140 home-server
+### Testing the setup
 
-# make sure weaviate is running
-cd ../weaviate
-docker compose up -d
-cd ../visual-data-map
+- the main frontend should be available at `localhost:55140`
+- the OpenSearch admin should be available at `localhost:5601`
+- check the docker logs manually for errors or install a tool to easily monitor the logs like `Dozzle`
 
-# activate pipenv in each terminal
-source activate_venv.py
+## Development Notes
 
-# model server
-python3 model_server.py
-
-# backend server
-python3 backend_server.py
-
-# frontend server
-cd frontend/visual-data-map
-npx vite --port 55140
-```
-
-### Change pip temp dir to install large dependencies
-
-`export TMPDIR=$HOME/tmp`
-
-
-### How Django backend was created:
-
-```
-python3 -m pipenv install Django  # version 4.2.2
-django-admin startproject project_base
-mv project_base django_backend
-cd django_backend
-python manage.py startapp data_map_backend
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py collectstatic
-sh start_server.py
-```
-[::]
-
-
-# Set up OAuth2 API authentication
-
-- create a new application using ´/o/applications`
-  - use client credentials type and confidential
-- create a new access token using the admin interface
-- use it like this: `curl -H "Authorization: Bearer <access_token>" -X GET "http://localhost:55125/data_map/organizations"`
-- see also: https://django-oauth-toolkit.readthedocs.io/en/latest/tutorial/tutorial_03.html
+- The main structure and the level of high or low 'abstraction' is hopefully quite thought-through and should enable fast development, easy maintanability and high scalability where needed.
+- Everything else is quite rudimental and the code is not very clean in many parts, just being there as a proof-of-concept.
+  - Please change and improve wherever needed!
+  - And especially before we have any customers, make breaking changes and rename stuff as much as needed to improve the code quickly.
+- Parts that need to be improved the most (especially before any public deployment):
+  - [ ] Authentication + Security: the data-backend code doesn't use any authentication at all yet, the organization-backend only partially. Some ports are exposed without authentication / hardening. HTTPS proxy is missing.
+  - [ ] User registration: currently, no e-mail verification is set up and access rights are not really managed.
+  - [ ] docker files and docker compose setup (maybe create different ones for production and development, improve time to update dependencies)
+  - [ ] Make sure computation power and OpenAI credits are used responsibly: currently, you could accidentially create millions of embeddings, using all of the CPU for ages, and you could also extract information from millions of items using the ChatGPT API -> we need to implement some sort of limits and / or display how much an action costs / needs CPU.
+  - [ ] switch from sqlite to Postgres for the organization backend
+- Other main TODOs:
+  - [ ] De-duplicate and simplify code to generate missing fields of items
+  - [ ] allow to export and import Dataset definitions from the Django admin page
+  - [ ] replace pipenv with a faster dependency manager
+  - [ ] Use a proper third party ML model server instead of the custom one / Infinity (at the moment, using different models simultaniously might fill up the memory and crash, and performance + scalability can also be improved with a third party model server)
+  - [ ] move these TODOs to an issue tracker
+  - ...

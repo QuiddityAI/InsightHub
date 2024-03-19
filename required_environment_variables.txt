@@ -1,3 +1,5 @@
+This file is outdated but might still contain important notes.
+
 ABSCLUST_TYPESENSE_DB_API_KEY="?"
 ABSCLUST_TYPESENSE_DB_HOST="?"
 
