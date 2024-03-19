@@ -32,13 +32,7 @@ npm install
 - install docker >= v24.0 (and nvidia-docker if an Nvidia GPU is available, test the GPU setup with a simple container)
 - By default, the docker setup uses `/data/quiddity_data` as a folder to store app data. Make sure it exists or change the mounting point in the docker-compose.yaml file to something else.
 - If no Nvidia GPU is available, remove the `deploy:` part about the GPU from the docker-compose file. The code _should_ work without a GPU, too.
-- Make sure an .env file with the necessary environment variables exists in the root folder of this repo.
-  - BING_SEARCH_V7_SUBSCRIPTION_KEY=?
-  - BING_SEARCH_V7_ENDPOINT=?
-  - SEMANTIC_SCHOLAR_API_KEY=?
-  - OPENAI_API_KEY=?
-  - ABSCLUST_TYPESENSE_DB_API_KEY=?  # deprecated, but not removed yet
-  - ABSCLUST_TYPESENSE_DB_HOST=?  # deprecated, but not removed yet
+- Make sure the env variables and credential files described in `required_environment_variables.txt` exist
 - Copy an existing `db.sqlite3` file to the `organization_backend` folder if available, to not start from zero.
   - Otherwise, run `python manage.py migrate` in the `organization_backend` folder to create a database.
   - And `python manage.py createsuperuser` to create the first user

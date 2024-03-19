@@ -1,13 +1,22 @@
-This file is outdated but might still contain important notes.
+.env file in the root of this repo with the following variables:
 
-ABSCLUST_TYPESENSE_DB_API_KEY="?"
-ABSCLUST_TYPESENSE_DB_HOST="?"
+ABSCLUST_TYPESENSE_DB_API_KEY="?"  # deprecated but not removed yet
+ABSCLUST_TYPESENSE_DB_HOST="?"  # deprecated but not removed yet
+
+BING_SEARCH_V7_SUBSCRIPTION_KEY=?
+BING_SEARCH_V7_ENDPOINT=?
+
+SEMANTIC_SCHOLAR_API_KEY=?
+
+OPENAI_API_KEY=?
+
 
 credentials.json file with the following content:
 {
   "open_search_user": "?",
   "open_search_password": "?"
 }
+
 
 openai_credentials.json file with the following content:
 {"secret_key": "?"}
