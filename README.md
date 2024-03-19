@@ -37,6 +37,7 @@ npm install
   - Otherwise, run `python manage.py migrate` in the `organization_backend` folder to create a database.
   - And `python manage.py createsuperuser` to create the first user
 - Run `python manage.py collectstatic` in the `organization_backend` folder
+- (optionally) Set up VSCode by installing recommended extensions in `vsc-extensions.txt` (can be installed using `VSC Export & Import` extensions, but should be done carefully)
 - run `docker compose up -d`
 
 ### Testing the setup
