@@ -70,7 +70,7 @@ export default {
           <input
             type="search"
             name="search"
-            @search="execute_search"
+            @keyup.enter="execute_search"
             v-model="search_query"
             :placeholder="`Describe what you want to find`"
             class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />

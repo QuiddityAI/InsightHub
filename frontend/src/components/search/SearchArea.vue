@@ -268,7 +268,7 @@ export default {
         <input
           type="search"
           name="search"
-          @search="$emit('request_search_results')"
+          @keyup.enter="$emit('request_search_results')"
           v-model="appState.settings.search.all_field_query"
           :placeholder="
             appState.settings.search.search_type == 'external_input'
@@ -316,7 +316,7 @@ export default {
       <input
         type="search"
         name="negative_search"
-        @search="$emit('request_search_results')"
+        @keyup.enter="$emit('request_search_results')"
         v-model="appState.settings.search.all_field_query_negative"
         :placeholder="
           appState.settings.search.search_type == 'external_input'
