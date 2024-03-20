@@ -187,9 +187,11 @@ def delete_dataset_content_endpoint():
 def upload_files_endpoint():
     # TODO: check auth
     try:
-        upload_files(int(request.form["dataset_id"]), int(request.form["import_converter_id"]), request.files.getlist("files[]"))
+        dataset_id: int = int(request.form["dataset_id"])
+        import_converter_id: int = int(request.form["import_converter_id"])
     except KeyError as e:
         return f"parameter missing: {e}", 400
+    upload_files(dataset_id, import_converter_id, request.files.getlist("files[]"))
     return "", 204
 
 

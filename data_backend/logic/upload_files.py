@@ -58,14 +58,42 @@ def _scientific_article_pdf(paths, parameters):
             pub_year = int(parsed_pdf.pub_date.split("-")[0])
         except:
             pub_year = None
+
+        full_text_original_chunks = []
+        for section in parsed_pdf.sections:
+            paragraphs = section.text  # 'section.text' is an array of texts
+            if isinstance(paragraphs, str):
+                paragraphs = [paragraphs]
+            if not paragraphs:
+                continue
+            if len(paragraphs) >= 2:
+                for i in range(len(paragraphs) - 1, 1, -1):
+                    if len(paragraphs[i]) < 100:
+                        # if the paragraph is too short, merge it with the previous one
+                        paragraphs[i - 1] = paragraphs[i - 1] + " " + paragraphs[i]
+            if len(paragraphs[0]) < 50:
+                if len(paragraphs) > 1:
+                    # if the first paragraph is too short, merge it with the second one
+                    paragraphs[1] = paragraphs[0] + " " + paragraphs[1]
+                    del paragraphs[0]
+                else:
+                    # if there is only one paragraph and it is too short, skip the section
+                    continue
+            if section.heading:
+                paragraphs[0] = section.heading + ": " + paragraphs[0]
+            full_text_original_chunks += paragraphs
+        full_text = " ".join(full_text_original_chunks)
+
         items.append({
             "doi": parsed_pdf.doi or uuid.uuid4().hex,
             "title": parsed_pdf.title,
             "abstract": parsed_pdf.abstract,
             "authors": parsed_pdf.authors,
-            "container_title": "unknown",
+            "journal": "unknown",
             "publication_year": pub_year,
             "cited_by": 0,
             "file_path": path,
+            "full_text": full_text,
+            "full_text_original_chunks": full_text_original_chunks,
         })
     return items
