@@ -63,6 +63,15 @@ def get_available_organizations(request):
         result.append(item)
 
     serialized_data = OrganizationSerializer(items, many=True).data
+
+    # replace list of all datasets of each organization with list of non-template datasets:
+    is_authenticated = request.user.is_authenticated
+    for item, serialized in zip(items, serialized_data):
+        if is_authenticated:
+            serialized["datasets"] = [dataset.id for dataset in Dataset.objects.filter(organization_id=item.id, is_template=False)]  # type: ignore
+        else:
+            serialized["datasets"] = [dataset.id for dataset in Dataset.objects.filter(organization_id=item.id, is_template=False, is_public=True)]  # type: ignore
+
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
@@ -104,7 +113,7 @@ def get_available_datasets(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    datasets = Dataset.objects.filter(Q(is_template=False))
+    datasets = Dataset.objects.filter(is_template=False)
     # TODO: filter by organization_id later on:
     # datasets = Dataset.objects.filter(Q(organization_id=organization_id))
 
@@ -187,6 +196,7 @@ def create_dataset_from_template(request):
     dataset.origin_template = template  # type: ignore
     dataset.created_in_ui = from_ui
     dataset.admins.add(request.user)
+    dataset.is_public = False
     dataset.save()
 
     dataset_dict = DatasetSerializer(instance=dataset).data
