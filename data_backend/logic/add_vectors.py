@@ -49,7 +49,16 @@ def add_w2v_vectors(items: dict[str, dict], query, similar_map: dict | None, ori
     map_data["progress"]["step_title"] = "Training model"
     corpus = [join_text_source_fields(item, descriptive_text_fields) for item in items.values()]
     vectorizer = GensimW2VVectorizer()
-    vectorizer.prepare(corpus)
+    try:
+        vectorizer.prepare(corpus)
+    except RuntimeError as e:
+        # if the corpus is too small, the model training might fail
+        logging.warning(f"Failed to train w2v model: {e}")
+        timings.log("failed to train w2v model")
+        for i, item in enumerate(items.values()):
+            item_embedding = np.zeros(256)
+            item["w2v_vector"] = item_embedding
+        return
     timings.log("training w2v model")
 
     map_data["progress"]["step_title"] = "Generating vectors"
