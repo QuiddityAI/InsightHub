@@ -62,6 +62,10 @@ export default {
       })
     },
     async custom_file_uploader(event) {
+      if (!this.selected_import_converter) {
+        this.$toast.add({severity:'error', summary: 'Error', detail: 'Please select an import type.'})
+        return
+      }
       // see https://github.com/primefaces/primevue/blob/master/components/lib/fileupload/FileUpload.vue
       let xhr = new XMLHttpRequest();
       let formData = new FormData();
