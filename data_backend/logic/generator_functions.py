@@ -7,6 +7,7 @@ from utils.dotdict import DotDict
 from utils.helpers import join_extracted_text_sources
 
 from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings, get_infinity_embeddings
+from logic.chunking import chunk_text_generator
 
 
 def get_generator_function_from_field(field: DotDict) -> Callable:
@@ -18,6 +19,11 @@ def get_generator_function_from_field(field: DotDict) -> Callable:
 
 
 def get_generator_function(module: str, parameters: dict) -> Callable:
+    # the input to the generators is a list of data for each source field, and the data can be an array itself if the source field is an array field
+    # i.e. if just one simple text field is assigned as a source field, the input is [ "text", ]
+    # if one array field is assigned as a source field, the input is [ ["text1", "text2"], ]
+    # if one array and one simple field is assigned as source fields, the input is [ ["text1", "text2"], "text3" ]
+    # the same applies to non-text fields, just with e.g. image paths instead of text
     parameters = DotDict(parameters)
     if module == 'pubmedbert':
         return lambda texts: get_pubmedbert_embeddings([join_extracted_text_sources(t) for t in texts])
@@ -33,6 +39,8 @@ def get_generator_function(module: str, parameters: dict) -> Callable:
         return lambda image_paths: get_clip_image_embeddings([item for sublist in image_paths for item in sublist], parameters.model_name)
     elif module == 'favicon_url':
         return lambda source_data_list: [get_favicon_url(urls[0]) for urls in source_data_list if urls]
+    elif module == 'chunking':
+        return lambda source_data_list: chunk_text_generator(source_data_list, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
 
     return lambda x: None
 
@@ -48,7 +56,7 @@ def get_openai_embedding_batch(texts: list[str]):
 
     chunk_size = 35  # 2000 / 60 requests per minute (limit for first 48h)
     for i in range(0, len(texts), chunk_size):
-        result: dict = openai.Embedding.create(
+        result: dict = openai.Embedding.create(  # type: ignore
             model=openai_model,
             input=texts[i:i+chunk_size],
         ) # type: ignore
