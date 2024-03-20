@@ -17,7 +17,12 @@ def clusterize_results(projections, clusterizer_parameters: DotDict):
                                 min_samples=clusterizer_parameters.get("min_samples", 5),
                                 cluster_selection_method="leaf" if clusterizer_parameters.get("leaf_mode", False) else "eom",
                                 )
-    clusterer.fit(projections)
+    try:
+        clusterer.fit(projections)
+    except ValueError as e:
+        # this might happen when there are too few points to cluster
+        logging.warning(f"Error in HDBSCAN: {e}")
+        return np.zeros(len(projections), dtype=int) - 1
     return clusterer.labels_
 
 
