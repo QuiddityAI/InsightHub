@@ -247,9 +247,9 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
 
         if field.generator and field.generator.input_type == FieldType.TEXT \
             and not (suitable_generator and suitable_generator.is_preferred_for_search):
-            generator_function = get_generator_function_from_field(dataset.object_fields[vector_field])
+            generator_function = get_generator_function_from_field(dataset.object_fields[vector_field], always_return_single_value_per_item=True)
         else:
-            generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters)
+            generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters, False)
         return generator_function
 
     positive_query_vector = None

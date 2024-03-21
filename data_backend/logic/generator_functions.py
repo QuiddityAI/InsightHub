@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 import json
 
@@ -10,39 +11,68 @@ from logic.model_client import get_pubmedbert_embeddings, get_sentence_transform
 from logic.chunking import chunk_text_generator
 
 
-def get_generator_function_from_field(field: DotDict) -> Callable:
+def get_generator_function_from_field(field: DotDict, always_return_single_value_per_item: bool = False) -> Callable:
     parameters = field.generator.default_parameters or {}
     if field.generator_parameters:
         parameters.update(field.generator_parameters)
     module = field.generator.module
-    return get_generator_function(module, parameters)
+    return get_generator_function(module, parameters, field.is_array and not always_return_single_value_per_item)
 
 
-def get_generator_function(module: str, parameters: dict) -> Callable:
-    # the input to the generators is a list of data for each source field, and the data can be an array itself if the source field is an array field
-    # i.e. if just one simple text field is assigned as a source field, the input is [ "text", ]
-    # if one array field is assigned as a source field, the input is [ ["text1", "text2"], ]
-    # if one array and one simple field is assigned as source fields, the input is [ ["text1", "text2"], "text3" ]
+def get_generator_function(module: str, parameters: dict, target_field_is_array: bool) -> Callable:
+    # the input to the generators is a list ('batch') of source_fields for each item in the batch
+    # source_fields is itself again a list of the data in the source fields assigned to this generated field
+    # and the data can then be either a simple data type like str, url or int, or a list of such data
+    #
+    # i.e. if just one simple text field is assigned as a source field and there is one item in the batch, the input is [ [ "text" ] ]
+    # if one array field is assigned as a source field and one item in the batch, the input is [ [ ["text1", "text2"] ] ]
+    # if one array and one simple field is assigned as source fields, the input is [ [ ["text1", "text2"], "text3" ] ]
     # the same applies to non-text fields, just with e.g. image paths instead of text
     parameters = DotDict(parameters)
+    generator = None
     if module == 'pubmedbert':
-        return lambda texts: get_pubmedbert_embeddings([join_extracted_text_sources(t) for t in texts])
+        generator = lambda batch: get_pubmedbert_embeddings([join_extracted_text_sources(source_fields_list) for source_fields_list in batch])
     elif module == 'open_ai_text_embedding_ada_002':
-        return lambda texts: get_openai_embedding_batch([join_extracted_text_sources(t) for t in texts])
+        generator = lambda batch: get_openai_embedding_batch([join_extracted_text_sources(t) for t in batch])
     elif module == 'sentence_transformer':
         if parameters.model_name == 'intfloat/e5-base-v2':
-            return lambda texts: get_infinity_embeddings([join_extracted_text_sources(t) for t in texts], parameters.model_name, parameters.prefix)
-        return lambda texts: get_sentence_transformer_embeddings([join_extracted_text_sources(t) for t in texts], parameters.model_name, parameters.prefix)
+            generator = lambda batch: get_infinity_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name, parameters.prefix)
+        else:
+            generator = lambda batch: get_sentence_transformer_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name, parameters.prefix)
     elif module == 'clip_text':
-        return lambda texts: get_clip_text_embeddings([join_extracted_text_sources(t) for t in texts], parameters.model_name)
+        generator = lambda batch: get_clip_text_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name)
     elif module == 'clip_image':
-        return lambda image_paths: get_clip_image_embeddings([item for sublist in image_paths for item in sublist], parameters.model_name)
+        generator = lambda batch: get_clip_image_embeddings([field for source_fields in batch for field in source_fields], parameters.model_name)
     elif module == 'favicon_url':
-        return lambda source_data_list: [get_favicon_url(urls[0]) for urls in source_data_list if urls]
+        generator = lambda batch: [get_favicon_url(urls[0]) for urls in batch if urls]
     elif module == 'chunking':
-        return lambda source_data_list: chunk_text_generator(source_data_list, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
+        generator = lambda batch: chunk_text_generator(batch, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
 
-    return lambda x: None
+    if not generator:
+        logging.error(f"Generator module {module} not found")
+        return lambda x: None
+
+    if target_field_is_array:
+        generate_one_value_for_each_item = generator
+
+        def generate_value_for_each_element_in_array_field(batch):
+            # e.g. if there is a batch of 50 items and each item has one source field with 10 values
+            # we flatten the batch to a list of 500 values
+            flattened_batch = [[element] for source_fields in batch for array_field in source_fields for element in array_field or [None]]
+            # then we generate a value for each of the 500 values
+            flattened_results = generate_one_value_for_each_item(flattened_batch)
+            restructured_results = []
+            # and then we restructure the results back to the original batch structure
+            for item in batch:
+                original_element_count = len([element for array_field in item for element in array_field or [None]])
+                restructured_results.append(flattened_results[:original_element_count])
+                flattened_results = flattened_results[original_element_count:]
+            return restructured_results
+
+        return generate_value_for_each_element_in_array_field
+    else:
+        return generator
+
 
 
 with open("../openai_credentials.json", "rb") as f:
