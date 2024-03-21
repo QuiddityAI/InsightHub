@@ -491,9 +491,16 @@ class Dataset(models.Model):
             url = data_backend_url + f'/data_backend/dataset/{self.id}/random_item'  # type: ignore
             result = requests.get(url)
             item = result.json()["item"]
+            def replace_long_arrays(value):
+                if isinstance(value, list):
+                    if len(value) > 50:
+                        return f"&lt;Array of length {len(value)}&gt;"
+                    else:
+                        return [replace_long_arrays(v) for v in value]
+                else:
+                    return value
             for key in item.get("_source", {}).keys():
-                if isinstance(item["_source"][key], list) and len(item["_source"][key]) > 50:
-                    item["_source"][key] = f"&lt;Array of length {len(item['_source'][key])}&gt;"
+                item["_source"][key] = replace_long_arrays(item["_source"][key])
             return mark_safe(json.dumps(item, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
         except Exception as e:
             return repr(e)
