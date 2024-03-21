@@ -247,19 +247,19 @@ export default {
         </Chip>
         <Chip v-if="appState.settings.search.search_type == 'collection'"
           removable class="text-sm font-semibold"
-          @remove="_history.back()">
+          @remove="appState.reset_search_box(); appState.reset_search_results_and_map()">
           Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}'
         </Chip>
         <Chip v-if="appState.settings.search.search_type == 'recommended_for_collection'"
           removable class="text-sm font-semibold"
-          @remove="_history.back()">
+          @remove="appState.reset_search_box(); appState.reset_search_results_and_map()">
           Recommended for Collection '{{
             ellipse(appState.settings.search.origin_display_name, 15)
           }}'
         </Chip>
         <Chip v-if="appState.settings.search.search_type == 'global_map'"
           removable class="text-sm font-semibold"
-          @remove="_history.back()">
+          @remove="appState.reset_search_box(); appState.reset_search_results_and_map()">
           Overview
         </Chip>
         <div class="flex-1"></div>
