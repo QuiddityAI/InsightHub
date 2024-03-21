@@ -17,7 +17,9 @@ def update_database_layout(dataset_id: int):
     vector_db_client = VectorSearchEngineClient.get_instance()
     index_settings = get_index_settings(dataset)
     for field in index_settings.all_vector_fields:
-        vector_db_client.ensure_dataset_exists(dataset, field, update_params=True, delete_if_params_changed=False)
+        if not dataset.object_fields[field].is_available_for_search:
+            continue
+        vector_db_client.ensure_dataset_field_exists(dataset, field, update_params=True, delete_if_params_changed=False)
     search_engine_client = TextSearchEngineClient.get_instance()
     search_engine_client.ensure_dataset_exists(dataset)
 
@@ -70,7 +72,7 @@ def insert_many(dataset_id: int, elements: Iterable[dict]):
             results = pipeline_step.generator_function(source_data_total)
 
             for element_index, result in zip(element_indexes, results):
-                elements[element_index][pipeline_step.target_field] = result
+                elements[element_index][pipeline_step.target_field] = result  # type: ignore
                 # for update case: add that field to changed fields:
                 # changed_fields_total[element_index].insert(pipeline_step.target_field)
 

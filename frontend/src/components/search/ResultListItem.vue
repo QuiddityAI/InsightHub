@@ -75,6 +75,9 @@ export default {
       <span v-if="appState.settings.search.dataset_ids.length > 1" class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
         {{ appState.datasets[item._dataset_id].name }}
       </span>
+      <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+        {{ item._highlights }}
+      </span>
     </div>
     <div v-if="rendering.image(item)" class="flex-none w-32 flex flex-col justify-center">
       <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />

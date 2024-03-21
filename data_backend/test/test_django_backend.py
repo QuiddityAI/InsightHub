@@ -39,7 +39,7 @@ def test_vector_db_client(dataset):
     vector_field = 'openai_vector'
 
     # vse_client.remove_dataset(dataset.id, vector_field)
-    vse_client.ensure_dataset_exists(dataset, vector_field)
+    vse_client.ensure_dataset_field_exists(dataset, vector_field)
 
     item = {
         "description": "White crew neck t-shirt",

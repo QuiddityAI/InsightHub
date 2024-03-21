@@ -280,9 +280,11 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
     vector_db_client = VectorSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
     assert query_vector is not None
+    is_array_field = dataset.object_fields[vector_field].is_array
+    array_source_field = dataset.object_fields[vector_field].source_fields[0] if is_array_field and dataset.object_fields[vector_field].source_fields else None
     vector_search_result = vector_db_client.get_items_near_vector(dataset.actual_database_name, vector_field, query_vector,
                                                                   criteria, return_vectors=False, limit=limit,
-                                                                  score_threshold=score_threshold) # type: ignore
+                                                                  score_threshold=score_threshold, is_array_field=is_array_field) # type: ignore
     items = {}
     for i, item in enumerate(vector_search_result):
         items[item.id] = {
@@ -291,6 +293,8 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
             '_origins': [{'type': 'vector', 'field': vector_field,
                           'query': query.positive_query_str, 'score': item.score, 'rank': i+1}],
         }
+        if is_array_field:
+            items[item.id]['_highlights'] = f'{array_source_field} {item.array_index}'
 
     # TODO: if purpose is map, get vectors directly from vector DB:
     # result_item[map_vector_field] = vector_search_result.vector[search_vector_field]

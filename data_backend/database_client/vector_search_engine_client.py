@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Iterable
+import uuid
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -41,14 +42,14 @@ class VectorSearchEngineClient(object):
         return f'{database_name}_field_{vector_field}'
 
 
-    def ensure_dataset_exists(self, dataset: dict, vector_field: str, update_params: bool = False, delete_if_params_changed: bool = False):
+    def ensure_dataset_field_exists(self, dataset: dict, vector_field: str, update_params: bool = False, delete_if_params_changed: bool = False):
         dataset = DotDict(dataset)
         vector_configs = {}
         vector_configs_update = {}
         field = dataset.object_fields[vector_field]
-        if not (field.is_available_for_search and field.field_type == FieldType.VECTOR and not field.is_array):
-            logging.error(f"Field is not supposed to be indexed or isn't a single vector: {field.identifier}")
-            raise ValueError(f"Field is not supposed to be indexed or isn't a single vector: {field.identifier}")
+        if not (field.is_available_for_search and field.field_type == FieldType.VECTOR):
+            logging.error(f"Field is not supposed to be indexed: {field.identifier}")
+            raise ValueError(f"Field is not supposed to be indexed: {field.identifier}")
         vector_size = get_vector_field_dimensions(field)
         if not vector_size:
             logging.error(f"Indexed vector field doesn't have vector size: {field.identifier}")
@@ -109,6 +110,12 @@ class VectorSearchEngineClient(object):
                 field_name=field.identifier,
                 field_schema=indexable_field_type_to_qdrant_type[field.field_type])
 
+        if field.is_array:
+            logging.info(f"Creating payload index for parent_id field because this is an array field with sub-items")
+            self.client.create_payload_index(collection_name=collection_name,
+                field_name='parent_id',
+                field_schema=PayloadSchemaType.KEYWORD)
+
 
     def delete_field(self, database_name: str, vector_field: str):
         try:
@@ -127,6 +134,29 @@ class VectorSearchEngineClient(object):
 
     def upsert_items(self, database_name: str, vector_field: str, ids: list, payloads: list[dict], vectors: list):
         collection_name = self._get_collection_name(database_name, vector_field)
+        is_array_of_vectors = isinstance(vectors[0][0], Iterable)
+        if is_array_of_vectors:
+            # TODO: if an array vector field is changed that existed before, we can't just override it
+            # but need to delete all sub points before adding the new ones as there might be less new ones
+            sub_item_ids = []
+            sub_item_vectors = []
+            sub_item_payloads = []
+            for item_id, payload, vector_array in zip(ids, payloads, vectors):
+                for i, vector in enumerate(vector_array):
+                    sub_item_payload = payload.copy()
+                    sub_item_payload['parent_id'] = item_id
+                    sub_item_payload['array_index'] = i
+                    sub_item_payloads.append(sub_item_payload)
+                    sub_item_id = f"{item_id}_{i}"
+                    sub_item_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, sub_item_id))
+                    sub_item_ids.append(sub_item_uuid)
+                    sub_item_vectors.append(vector)
+
+            self.client.upsert(
+                collection_name=collection_name,
+                points=models.Batch(ids=sub_item_ids, payloads=sub_item_payloads, vectors={vector_field: sub_item_vectors}),
+            )
+            return
 
         self.client.upsert(
             collection_name=collection_name,
@@ -141,7 +171,28 @@ class VectorSearchEngineClient(object):
 
     def get_items_near_vector(self, database_name: str, vector_field: str, query_vector: list,
                               filter_criteria: dict, return_vectors: bool, limit: int,
-                              score_threshold: float | None, min_results: int = 10) -> list:
+                              score_threshold: float | None, min_results: int = 10, is_array_field: bool=False) -> list:
+        if is_array_field:
+            group_hits = self.client.search_groups(
+                collection_name=self._get_collection_name(database_name, vector_field),
+                query_vector=NamedVector(name=vector_field, vector=query_vector),
+                with_payload=['array_index'],
+                with_vectors=return_vectors,
+                limit=limit,
+                score_threshold=score_threshold,
+                group_by='parent_id',
+                group_size=1,
+            )
+            # hits.groups is a list of {'id': parent_id, 'hits': [{'id': sub_id, 'score': score, 'payload': dict} ...]}
+            hits = []
+            for group in group_hits.groups:
+                hits.append(DotDict({
+                    'id': group.id,
+                    'score': group.hits[0].score,
+                    'array_index': group.hits[0].payload['array_index']  # type: ignore
+                }))
+            return hits  # type: ignore
+
         hits = self.client.search(
             collection_name=self._get_collection_name(database_name, vector_field),
             query_vector=NamedVector(name=vector_field, vector=query_vector),
