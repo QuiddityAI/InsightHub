@@ -21,7 +21,7 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
     paths = []
     for file in files:
         logging.warning(f"saving file: {file.filename}")
-        new_uuid = uuid.uuid4().hex
+        new_uuid = str(uuid.uuid4())
         filename = f"{new_uuid}_{secure_filename(file.filename or '')}"
         path = f"{uploaded_files_folder}/{filename}"
         file.save(path)
@@ -85,7 +85,7 @@ def _scientific_article_pdf(paths, parameters):
         full_text = " ".join(full_text_original_chunks)
 
         items.append({
-            "doi": parsed_pdf.doi or uuid.uuid4().hex,
+            "doi": parsed_pdf.doi or str(uuid.uuid4()),
             "title": parsed_pdf.title,
             "abstract": parsed_pdf.abstract,
             "authors": parsed_pdf.authors,
