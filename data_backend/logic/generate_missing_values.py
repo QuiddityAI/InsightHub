@@ -172,13 +172,15 @@ def _update_indexes_with_generated_values(dataset, elements, changed_fields):
         if vectors:
             vector_db_client.upsert_items(dataset.actual_database_name, vector_field, ids, payloads, vectors)
 
-    # FIXME: Does OpenSearch upsert actually only update provided fields or does it delete the other fields?
+    # Question: Does OpenSearch upsert actually only update provided fields or does it delete the other fields?
+    # -> yes, it only updates the provided fields
     text_search_updates = []
     for element_index, element in enumerate(elements):
         changed_non_vector_fields = changed_fields[element_index] - index_settings.all_vector_fields
         if not changed_non_vector_fields:
             continue
         updated_element = {field: v for field, v in element.items() if field in changed_non_vector_fields}
+        updated_element["_id"] = element["_id"]
         text_search_updates.append(updated_element)
 
     if text_search_updates:
