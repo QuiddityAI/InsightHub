@@ -40,13 +40,14 @@ export default {
         :key="pointIndex"
         class="pointer-events-none fixed"
         :style="{
-          left: mapState.screenLeftFromRelative(mapState.per_point.x[pointIndex]) + 'px',
+          left: mapState.screenLeftFromRelative(mapState.per_point.x[pointIndex]) - 220 + 'px',
           bottom: mapState.screenBottomFromRelative(mapState.per_point.y[pointIndex]) + 'px',
         }"
-        style="transform: translate(-50%, 50%)">
-        <div
-          v-if="appState.get_hover_rendering_by_index(pointIndex)"
-          class="flex max-w-[200px] flex-col items-center rounded bg-white px-2 py-1 text-[10px] text-gray-500">
+        style="transform: translate(0%, 50%)">
+        <button
+          v-if="appState.get_hover_rendering_by_index(pointIndex) && mapState.hovered_point_idx !== pointIndex"
+          @click="appState.show_document_details(mapState.per_point.item_id[pointIndex])"
+          class="flex max-w-[200px] flex-col rounded bg-white px-2 py-1 text-[10px] text-gray-500 hover:bg-gray-100 pointer-events-auto text-left">
           <div
             class="text-xs font-semibold"
             v-html="appState.get_hover_rendering_by_index(pointIndex).title(mapState.get_item_by_index(pointIndex))">
@@ -60,7 +61,7 @@ export default {
             v-if="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
             :src="appState.get_hover_rendering_by_index(pointIndex).image(mapState.get_item_by_index(pointIndex))"
             class="h-24" />
-        </div>
+        </button>
       </div>
     </div>
   </div>
