@@ -56,7 +56,8 @@ export default {
 <template>
   <div>
     <div v-if="appState.visible_result_ids.length !== 0">
-      <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length"></Paginator>
+      <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length"
+      class="mt-[0px]"></Paginator>
       <ul role="list" class="pt-1">
         <li
           v-for="ds_and_item_id in result_ids_for_this_page"

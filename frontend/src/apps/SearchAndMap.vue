@@ -22,7 +22,8 @@ import DynamicDialog from 'primevue/dynamicdialog'
 
 import MapWithLabels from "../components/map/MapWithLabels.vue"
 import SearchArea from "../components/search/SearchArea.vue"
-import ResultListItem from "../components/search/ResultListItem.vue"
+import FilterList from "../components/search/FilterList.vue"
+import ResultList from "../components/search/ResultList.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
 import CollectionArea from "../components/collections/CollectionArea.vue"
 import CollectionItem from "../components/collections/CollectionItem.vue"
@@ -35,8 +36,6 @@ import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/u
 
 import { useAppStateStore } from "../stores/app_state_store"
 import { useMapStateStore } from "../stores/map_state_store"
-import FilterList from "../components/search/FilterList.vue"
-import ResultList from "../components/search/ResultList.vue"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 
@@ -96,6 +95,10 @@ export default {
         const dataset_ids = queryParams.get("dataset_ids")?.split(",").map((x) => parseInt(x))
         this.appStateStore.set_organization_id(parseInt(queryParams.get("organization_id")), /*change history*/ false, dataset_ids)
         // if there is a map_id in the parameters, its loaded after all datasets are loaded
+      }
+      if (!queryParams.get("map_id") && this.appStateStore.map_id) {
+        this.appStateStore.reset_search_box()
+        this.appStateStore.reset_search_results_and_map()
       }
     },
     show_score_info_chart() {
@@ -295,7 +298,6 @@ export default {
         <SearchArea
           @request_search_results="appState.request_search_results"
           @reset_search_box="appState.reset_search_box"
-          @show_global_map="appState.show_global_map"
           class="pointer-events-auto flex-none rounded-md bg-white p-3 shadow-sm"></SearchArea>
 
         <!-- tab box -->
@@ -371,7 +373,7 @@ export default {
               <StatisticList></StatisticList>
 
               <div
-                v-if="appState.search_result_ids.length !== 0"
+                v-if="appState.search_result_ids.length !== 0 && appState.cluster_data.length !== 0"
                 class="ml-2 mt-1 flex flex-row items-center">
                 <span class="mr-2 flex-none text-gray-500">Cluster:</span>
                 <div class="h-10">

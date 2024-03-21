@@ -11,6 +11,7 @@ import {
   BookmarkIcon
 } from "@heroicons/vue/24/outline"
 import MultiSelect from 'primevue/multiselect';
+import Chip from 'primevue/chip';
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
@@ -22,6 +23,7 @@ import StoredMapsDialog from "../history/StoredMapsDialog.vue";
 
 const appState = useAppStateStore()
 const _window = window
+const _history = history
 </script>
 
 <script>
@@ -47,7 +49,7 @@ const _window = window
 // cluster id of map id
 
 export default {
-  emits: ["request_search_results", "reset_search_box", "show_global_map"],
+  emits: ["request_search_results", "reset_search_box"],
   data() {
     return {
       internal_organization_id: null,
@@ -192,6 +194,12 @@ export default {
           @change="appState.on_selected_datasets_changed"
           class="w-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       </div>
+      <button
+        @click="appState.show_global_map()"
+        title="Show all items (or a representative subset if there are too many)"
+        class="ml-1 rounded-md px-2 h-7 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
+        Overview
+      </button>
 
       <div class="flex-1"></div>
       <LoginButton></LoginButton>
@@ -223,48 +231,48 @@ export default {
     </div>
 
     <!-- Search Field -->
-    <div class="flex">
+    <div class="flex flex-row">
       <div
         v-if="appState.settings.search.search_type != 'external_input'"
         class="flex h-9 flex-1 flex-row items-center">
-        <button
-          v-if="appState.settings.search.search_type == 'cluster'"
-          @click="appState.reset_search_results_and_map(); appState.reset_search_box()"
-          class="flex-none rounded-xl bg-blue-400 px-3 text-white">
-          Cluster '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
-        </button>
-        <button
-          v-if="appState.settings.search.search_type == 'similar_to_item'"
-          @click="appState.reset_search_results_and_map(); appState.reset_search_box()"
-          class="flex-none rounded-xl bg-blue-400 px-3 text-white">
-          Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
-        </button>
-        <button
-          v-if="appState.settings.search.search_type == 'collection'"
-          @click="appState.reset_search_results_and_map(); appState.reset_search_box()"
-          class="flex-none rounded-xl bg-blue-400 px-3 text-white">
-          Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}', X
-        </button>
-        <button
-          v-if="appState.settings.search.search_type == 'recommended_for_collection'"
-          @click="appState.reset_search_results_and_map(); appState.reset_search_box()"
-          class="flex-none rounded-xl bg-blue-400 px-3 text-white">
+        <Chip v-if="appState.settings.search.search_type == 'cluster'"
+          removable class="text-sm font-semibold"
+          @remove="_history.back()">
+          Cluster '{{ ellipse(appState.settings.search.origin_display_name, 15) }}'
+        </Chip>
+        <Chip v-if="appState.settings.search.search_type == 'similar_to_item'"
+          removable class="text-sm font-semibold"
+          @remove="_history.back()">
+          Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}'
+        </Chip>
+        <Chip v-if="appState.settings.search.search_type == 'collection'"
+          removable class="text-sm font-semibold"
+          @remove="_history.back()">
+          Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}'
+        </Chip>
+        <Chip v-if="appState.settings.search.search_type == 'recommended_for_collection'"
+          removable class="text-sm font-semibold"
+          @remove="_history.back()">
           Recommended for Collection '{{
             ellipse(appState.settings.search.origin_display_name, 15)
-          }}', X
-        </button>
+          }}'
+        </Chip>
+        <Chip v-if="appState.settings.search.search_type == 'global_map'"
+          removable class="text-sm font-semibold"
+          @remove="_history.back()">
+          Overview
+        </Chip>
         <div class="flex-1"></div>
-        <span class="pr-2 text-sm text-gray-500">Weight:</span>
-        <input
-          v-model.number="appState.settings.search.internal_input_weight"
-          class="w-10 text-sm text-gray-500"
-          @keyup.enter="$emit('request_search_results')"
-          @submit="$emit('request_search_results')" />
+        <div v-if="appState.settings.search.search_type == 'similar_to_item'">
+          <span class="pr-2 text-sm text-gray-500">Weight:</span>
+          <input
+            v-model.number="appState.settings.search.internal_input_weight"
+            class="w-10 text-sm text-gray-500"
+            @keyup.enter="$emit('request_search_results')"
+            @submit="$emit('request_search_results')" />
+        </div>
       </div>
-    </div>
-    <div class="flex">
-      <!-- note: search event is not standard -->
-      <div class="flex h-9 flex-1 flex-row items-center">
+      <div v-if="['external_input', 'similar_to_item'].includes(appState.settings.search.search_type)" class="flex h-9 flex-1 flex-row items-center">
         <input
           type="search"
           name="search"
@@ -797,12 +805,6 @@ export default {
           @click="$emit('reset_search_box')"
           class="rounded px-1 text-sm text-gray-500 shadow-sm hover:bg-blue-100 active:bg-blue-200"
           value="Reset" />
-        <input
-          type="button"
-          button
-          @click="$emit('show_global_map')"
-          class="rounded px-1 text-sm text-gray-500 shadow-sm hover:bg-blue-100 active:bg-blue-200"
-          value="Show Global Map" />
       </div>
     </div>
   </div>
