@@ -66,6 +66,14 @@ def _scientific_article_pdf(paths, parameters):
                 paragraphs = [paragraphs]
             if not paragraphs:
                 continue
+            max_paragraph_length = 1000  # characters
+            i = 0
+            while i < len(paragraphs):
+                if len(paragraphs[i]) > max_paragraph_length * 1.2:
+                    # split long paragraphs into smaller ones
+                    paragraphs.insert(i + 1, paragraphs[i][max_paragraph_length:])
+                    paragraphs[i] = paragraphs[i][:max_paragraph_length]
+                i += 1
             if len(paragraphs) >= 2:
                 for i in range(len(paragraphs) - 1, 1, -1):
                     if len(paragraphs[i]) < 100:
