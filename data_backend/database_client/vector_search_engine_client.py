@@ -250,6 +250,9 @@ class VectorSearchEngineClient(object):
                     'score': group.hits[0].score,
                     'array_index': group.hits[0].payload['array_index']  # type: ignore
                 }))
+            if min_results > 0 and len(hits) < min_results and score_threshold:
+                # try again without score threshold
+                return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results, is_array_field)
             return hits  # type: ignore
 
         hits = self.client.search(
@@ -270,8 +273,9 @@ class VectorSearchEngineClient(object):
             limit=limit,
             score_threshold=score_threshold,
         )
-        if len(hits) == 0 and score_threshold and min_results > 0:
-            return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results)
+        if min_results > 0 and len(hits) < min_results and score_threshold:
+            # try again without score threshold
+            return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results, is_array_field)
         return hits
 
 
