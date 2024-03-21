@@ -150,6 +150,7 @@ def delete_dataset_content(dataset_id: int):
     vector_db_client = VectorSearchEngineClient.get_instance()
     index_settings = get_index_settings(dataset)
     for field in index_settings.all_vector_fields:
-        vector_db_client.delete_field(dataset.actual_database_name, field)
+        is_array_field = dataset.object_fields[field].is_array
+        vector_db_client.delete_field(dataset.actual_database_name, field, is_array_field)
     search_engine_client = TextSearchEngineClient.get_instance()
     search_engine_client.remove_dataset(dataset.actual_database_name)

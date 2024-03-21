@@ -18,8 +18,9 @@ def delete_field_content(dataset_id: int, field_identifier: str):
     dataset = get_dataset(dataset_id)
     is_vector_field = dataset.object_fields[field_identifier].field_type == FieldType.VECTOR
     if is_vector_field:
+        is_array_field = dataset.object_fields[field_identifier].is_array
         vector_db_client = VectorSearchEngineClient.get_instance()
-        vector_db_client.delete_field(dataset.actual_database_name, field_identifier)
+        vector_db_client.delete_field(dataset.actual_database_name, field_identifier, is_array_field)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
         search_engine_client.delete_field(dataset.actual_database_name, field_identifier)
@@ -48,6 +49,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
     items_processed = 0
     total_items_estimated = search_engine_client.get_all_items_with_missing_field_count(dataset.actual_database_name, field_identifier)
     is_vector_field = dataset.object_fields[field_identifier].field_type == FieldType.VECTOR
+    is_array_field = dataset.object_fields[field_identifier].is_array
     if is_vector_field:
         total_items_estimated -= vector_db_client.get_item_count(dataset.actual_database_name, field_identifier)
     logging.warning(f"Total items with missing value: {total_items_estimated}")
@@ -80,7 +82,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
         if len(elements) % batch_size == 0:
             if is_vector_field:
                 items_where_vector_already_exists = vector_db_client.get_items_by_ids(
-                    dataset.actual_database_name, [x["_id"] for x in elements], field_identifier, return_payloads=False, return_vectors=False)
+                    dataset.actual_database_name, [x["_id"] for x in elements], field_identifier, is_array_field, return_payloads=False, return_vectors=False)
                 if len(items_where_vector_already_exists) == len(elements):
                     skipped_items += len(elements)
                     elements = []

@@ -360,7 +360,8 @@ def fill_in_vector_data(dataset: DotDict, items: dict[str, dict], required_vecto
     ids = list(items.keys())
     vector_db_client = VectorSearchEngineClient.get_instance()
     for vector_field in required_vector_fields:
-        results = vector_db_client.get_items_by_ids(dataset.actual_database_name, ids, vector_field, return_vectors=True, return_payloads=False)
+        is_array_field = dataset.object_fields[vector_field].is_array
+        results = vector_db_client.get_items_by_ids(dataset.actual_database_name, ids, vector_field, is_array_field, return_vectors=True, return_payloads=False)
         for result in results:
             items[result.id][vector_field] = result.vector[vector_field]
 

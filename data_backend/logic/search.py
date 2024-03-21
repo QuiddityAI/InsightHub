@@ -385,11 +385,11 @@ def get_item_count(dataset_id: int) -> int:
         return 0
 
 
-def get_items_having_value_count(dataset_id: int, field: str) -> int:
+def get_items_having_value_count(dataset_id: int, field: str, count_sub_items: bool = False) -> int:
     dataset = get_dataset(dataset_id)
     if dataset.object_fields[field].field_type == FieldType.VECTOR:
         vector_db_client = VectorSearchEngineClient.get_instance()
-        return vector_db_client.get_item_count(dataset.actual_database_name, field)
+        return vector_db_client.get_item_count(dataset.actual_database_name, field, count_sub_items_of_array_field=count_sub_items)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
         try:

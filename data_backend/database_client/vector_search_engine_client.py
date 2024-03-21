@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Iterable
+from typing import Iterable, List
 import uuid
 
 from qdrant_client import QdrantClient
@@ -44,8 +44,6 @@ class VectorSearchEngineClient(object):
 
     def ensure_dataset_field_exists(self, dataset: dict, vector_field: str, update_params: bool = False, delete_if_params_changed: bool = False):
         dataset = DotDict(dataset)
-        vector_configs = {}
-        vector_configs_update = {}
         field = dataset.object_fields[vector_field]
         if not (field.is_available_for_search and field.field_type == FieldType.VECTOR):
             logging.error(f"Field is not supposed to be indexed: {field.identifier}")
@@ -55,12 +53,16 @@ class VectorSearchEngineClient(object):
             logging.error(f"Indexed vector field doesn't have vector size: {field.identifier}")
             raise ValueError(f"Indexed vector field doesn't have vector size: {field.identifier}")
         logging.info(f"Creating vector field {field.identifier} with size {vector_size}")
+        vector_configs = {}
         vector_configs[field.identifier] = models.VectorParams(size=vector_size, distance=models.Distance.COSINE,
                                                                on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))
+        vector_configs_update = {}
         vector_configs_update[field.identifier] = models.VectorParamsDiff(on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))  # TODO: add params
         # TODO: parse and add field.index_parameters for HNSW, storage type, quantization etc.
 
         collection_name = self._get_collection_name(dataset.actual_database_name, vector_field)
+        if field.is_array:
+            collection_name = f'{collection_name}_sub_items'
 
         try:
             self.client.get_collection(collection_name)
@@ -116,17 +118,43 @@ class VectorSearchEngineClient(object):
                 field_name='parent_id',
                 field_schema=PayloadSchemaType.KEYWORD)
 
+            # create a separate collection for the parent item data, for 'lookups':
+            lookup_collection_name = self._get_collection_name(dataset.actual_database_name, vector_field)
+            try:
+                self.client.get_collection(lookup_collection_name)
+            except UnexpectedResponse as e:
+                if e.status_code != 404:
+                    raise e
+                # status code is 404 -> collection doesn't exist yet
+                lookup_vector_configs = {}
+                lookup_vector_configs[field.identifier] = models.VectorParams(size=1, distance=models.Distance.COSINE,
+                                                                    on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))
+                self.client.create_collection(
+                    collection_name=lookup_collection_name,
+                    vectors_config=lookup_vector_configs,
+                    on_disk_payload=True,  # TODO: this might make filtering slow
+                )
 
-    def delete_field(self, database_name: str, vector_field: str):
+
+    def delete_field(self, database_name: str, vector_field: str, is_array_field: bool):
+        collection_name = self._get_collection_name(database_name, vector_field)
         try:
-            self.client.delete_collection(self._get_collection_name(database_name, vector_field))
+            self.client.delete_collection(collection_name)
         except Exception as e:
             print(e)
+        if is_array_field:
+            try:
+                self.client.delete_collection(f'{collection_name}_sub_items')
+            except Exception as e:
+                print(e)
 
 
-    def get_item_count(self, database_name: str, vector_field: str) -> int:
+    def get_item_count(self, database_name: str, vector_field: str, count_sub_items_of_array_field: bool = False) -> int:
+        collection_name = self._get_collection_name(database_name, vector_field)
+        if count_sub_items_of_array_field:
+            collection_name = f'{collection_name}_sub_items'
         try:
-            return self.client.count(self._get_collection_name(database_name, vector_field)).count
+            return self.client.count(collection_name).count
         except Exception as e:
             logging.warning(e)
             return 0
@@ -136,8 +164,21 @@ class VectorSearchEngineClient(object):
         collection_name = self._get_collection_name(database_name, vector_field)
         is_array_of_vectors = isinstance(vectors[0][0], Iterable)
         if is_array_of_vectors:
-            # TODO: if an array vector field is changed that existed before, we can't just override it
+            # if an array vector field is changed that existed before, we can't just override it
             # but need to delete all sub points before adding the new ones as there might be less new ones
+            self.client.delete(
+                collection_name=f'{collection_name}_sub_items',
+                points_selector=models.FilterSelector(
+                    filter=models.Filter(
+                        must=[
+                            models.FieldCondition(
+                                key="parent_id",
+                                match=models.MatchAny(any=ids)
+                            ),
+                        ],
+                    )
+                ),
+            )
             sub_item_ids = []
             sub_item_vectors = []
             sub_item_payloads = []
@@ -153,10 +194,13 @@ class VectorSearchEngineClient(object):
                     sub_item_vectors.append(vector)
 
             self.client.upsert(
-                collection_name=collection_name,
+                collection_name=f'{collection_name}_sub_items',
                 points=models.Batch(ids=sub_item_ids, payloads=sub_item_payloads, vectors={vector_field: sub_item_vectors}),
             )
-            return
+            # create empty payloads and vectors for the lookup collection:
+            payloads = [{} for _ in ids]
+            vectors = [[0] for _ in ids]
+            # fall through to normal behavior for the parent items
 
         self.client.upsert(
             collection_name=collection_name,
@@ -164,17 +208,32 @@ class VectorSearchEngineClient(object):
         )
 
 
-    def remove_items(self, database_name: str, vector_field: str, ids: list):
+    def remove_items(self, database_name: str, vector_field: str, ids: list, is_array_field: bool):
         collection_name = self._get_collection_name(database_name, vector_field)
         self.client.delete(collection_name, ids)
+        if is_array_field:
+            self.client.delete(
+                collection_name=f'{collection_name}_sub_items',
+                points_selector=models.FilterSelector(
+                    filter=models.Filter(
+                        must=[
+                            models.FieldCondition(
+                                key="parent_id",
+                                match=models.MatchAny(any=ids)
+                            ),
+                        ],
+                    )
+                ),
+            )
 
 
     def get_items_near_vector(self, database_name: str, vector_field: str, query_vector: list,
                               filter_criteria: dict, return_vectors: bool, limit: int,
                               score_threshold: float | None, min_results: int = 10, is_array_field: bool=False) -> list:
+        collection_name = self._get_collection_name(database_name, vector_field)
         if is_array_field:
             group_hits = self.client.search_groups(
-                collection_name=self._get_collection_name(database_name, vector_field),
+                collection_name=f'{collection_name}_sub_items',
                 query_vector=NamedVector(name=vector_field, vector=query_vector),
                 with_payload=['array_index'],
                 with_vectors=return_vectors,
@@ -194,7 +253,7 @@ class VectorSearchEngineClient(object):
             return hits  # type: ignore
 
         hits = self.client.search(
-            collection_name=self._get_collection_name(database_name, vector_field),
+            collection_name=collection_name,
             query_vector=NamedVector(name=vector_field, vector=query_vector),
             # query_filter=Filter(
             #     must=[
@@ -244,8 +303,11 @@ class VectorSearchEngineClient(object):
         return hits
 
 
-    def get_items_by_ids(self, database_name: str, ids: Iterable[str], vector_field: str,
+    def get_items_by_ids(self, database_name: str, ids: List[str], vector_field: str, is_array_field: bool,
                          return_vectors: bool = False, return_payloads: bool = False) -> list:
+        if is_array_field and return_vectors:
+            logging.warning("Returning vectors for array fields is not supported yet")
+            # TODO: return sub-items vectors by iterating over ids and fetch vectors for each parent item
         hits = self.client.retrieve(
             collection_name=self._get_collection_name(database_name, vector_field),
             ids=ids, # type: ignore
@@ -253,5 +315,3 @@ class VectorSearchEngineClient(object):
             with_vectors=return_vectors
         )
         return hits
-
-
