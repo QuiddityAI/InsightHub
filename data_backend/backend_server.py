@@ -299,10 +299,14 @@ def retrieve_document_details_by_id():
     dataset_id = params.get("dataset_id")
     item_id = params.get("item_id")
     fields: list[str] = params.get("fields") # type: ignore
+    relevant_parts = params.get("relevant_parts")
     if not all([dataset_id is not None, item_id is not None, fields is not None]):
         return "a parameter is missing", 400
 
-    result = get_document_details_by_id(dataset_id, item_id, tuple(fields))
+    if relevant_parts:
+        # need to convert to json string to make it hashable for caching
+        relevant_parts = json.dumps(relevant_parts)
+    result = get_document_details_by_id(dataset_id, item_id, tuple(fields), relevant_parts)
 
     if result is None:
         return "document not found", 404

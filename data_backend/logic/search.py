@@ -361,7 +361,7 @@ def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_m
 
 
 @lru_cache
-def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str], database_name: str | None = None) -> dict | None:
+def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str], relevant_parts: str | None=None, database_name: str | None = None) -> dict | None:
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
 
@@ -369,12 +369,30 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
         dataset = get_dataset(dataset_id)
         database_name = dataset.actual_database_name
         assert database_name is not None
+    if relevant_parts:
+        relevant_parts = json.loads(relevant_parts)
+        assert isinstance(relevant_parts, list)
+        original_fields = fields
+        for relevant_part in relevant_parts:
+            fields = tuple([*fields, relevant_part['field']])  # type: ignore
     search_engine_client = TextSearchEngineClient.get_instance()
     items = search_engine_client.get_items_by_ids(database_name, [item_id], fields=fields)
     if not items:
         return None
+    item = items[0]
 
-    return items[0]
+    if relevant_parts:
+        item['_extracted_relevant_parts'] = []
+        for relevant_part in relevant_parts:
+            item['_extracted_relevant_parts'].append({
+                'field': relevant_part['field'],  # type: ignore
+                'value': item[relevant_part['field']][relevant_part['index']],  # type: ignore
+                'index': relevant_part['index'],  # type: ignore
+                'array_size': len(item[relevant_part['field']])  # type: ignore
+            })
+            if relevant_part['field'] not in original_fields:  # type: ignore
+                del item[relevant_part['field']]  # type: ignore
+    return item
 
 
 def get_item_count(dataset_id: int) -> int:

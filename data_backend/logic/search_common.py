@@ -294,7 +294,7 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
                           'query': query.positive_query_str, 'score': item.score, 'rank': i+1}],
         }
         if is_array_field:
-            items[item.id]['_highlights'] = f'{array_source_field} {item.array_index}'
+            items[item.id]['_relevant_parts'] = [{'field': array_source_field, 'index': item.array_index}]
 
     # TODO: if purpose is map, get vectors directly from vector DB:
     # result_item[map_vector_field] = vector_search_result.vector[search_vector_field]

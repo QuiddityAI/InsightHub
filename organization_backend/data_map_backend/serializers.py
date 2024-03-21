@@ -25,7 +25,7 @@ class ObjectFieldSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = ObjectField
-        exclude = ['created_at', 'changed_at', '_order', 'description']
+        exclude = ['created_at', 'changed_at', '_order']
 
 
 class OrganizationSerializer(drf_serializers.ModelSerializer):

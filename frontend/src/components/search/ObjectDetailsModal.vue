@@ -41,6 +41,7 @@ export default {
         dataset_id: this.dataset.id,
         item_id: this.item._id,
         fields: this.dataset.detail_view_rendering.required_fields,
+        relevant_parts: this.item._relevant_parts,
       }
       this.loading_item = true
       httpClient
@@ -105,7 +106,7 @@ export default {
         </div>
         <p class="mt-1 flex-none text-xs leading-5 text-gray-500" v-html="rendering ? rendering.subtitle(item) : ''">
         </p>
-        <p class="mt-2 flex-1 overflow-y-auto text-xs leading-5 text-gray-700"
+        <p class="mt-2 flex-1 overflow-y-auto text-xs leading-relaxed text-gray-700"
           v-html="loading_item ? 'loading...' : rendering ? rendering.body(item) : null"></p>
 
       </div>
@@ -113,6 +114,17 @@ export default {
         <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />
       </div>
     </div>
+
+    <div v-if="item._extracted_relevant_parts">
+      <div v-for="relevant_part in item._extracted_relevant_parts"
+        class="mt-2 rounded-md bg-gray-100 py-2 px-2">
+        <div class="font-semibold text-gray-600 text-sm">Relevant Part
+          ({{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description }}
+          {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}):</div>
+        <div class="mt-1 text-gray-700 text-xs">{{ relevant_part.value }}</div>
+      </div>
+    </div>
+
     <div class="mt-2 flex flex-none flex-row">
       <AddToCollectionButtons v-if="appState.collections?.length" class="mr-3" @addToCollection="(collection_id, class_name, is_positive) =>
               $emit('addToCollection', collection_id, class_name, is_positive)

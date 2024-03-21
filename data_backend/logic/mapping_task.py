@@ -229,7 +229,7 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
     # but transfering everything might be slow and not all of it is needed initially,
     # so we extract the initially needed data and basically remove the large fields like long texts and vectors:
     slimmed_items_per_dataset = defaultdict(dict)
-    generic_fields = {"_id", "_dataset_id", "_score", "_reciprocal_rank_score", "_origins", "_highlights"}
+    generic_fields = {"_id", "_dataset_id", "_score", "_reciprocal_rank_score", "_origins", '_relevant_parts'}
     for ds_id, ds_items in items_by_dataset.items():
         ds_specific_fields = set(datasets[ds_id].hover_label_rendering.required_fields)
         ds_specific_fields |= set(datasets[ds_id].get("statistics", {}).get("required_fields", []))
