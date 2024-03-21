@@ -436,7 +436,12 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
                             n_neighbors=projection_parameters.get("n_neighbors", 15),
                             metric=projection_parameters.get("metric", "euclidean"),
                             )
-        raw_projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
+        try:
+            raw_projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
+        except (TypeError, ValueError) as e:
+            # might happend when there are too few points
+            logging.warning(f"UMAP failed: {e}")
+            raw_projections = np.zeros((len(vectors), umap_dimensions_required))
         map_data["results"]["per_point_data"]["raw_projections"] = raw_projections.tolist()
         apply_projections_to_positions(raw_projections)
         timings.log("UMAP fit transform")
