@@ -3,6 +3,8 @@ import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
+import MultiSelect from 'primevue/multiselect';
+
 import CollectionItem from "./CollectionItem.vue"
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -25,11 +27,38 @@ export default {
       items: [],
       collection: this.initial_collection,
       is_processing: false,
+      selected_source_fields: ['_descriptive_text_fields'],
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    available_source_fields() {
+      const dataset_ids = new Set()
+      for (const item of this.items) {
+        const [dataset_id, item_id] = JSON.parse(item.value)
+        dataset_ids.add(dataset_id)
+      }
+      const available_fields = {}
+      for (const dataset_id of dataset_ids) {
+        const dataset = this.appStateStore.datasets[dataset_id]
+        for (const field of Object.values(dataset.object_fields)) {
+          available_fields[field.identifier] = {
+            identifier: field.identifier,
+            name: field.description || field.identifier,
+          }
+        }
+      }
+      available_fields['_descriptive_text_fields'] = {
+        identifier: '_descriptive_text_fields',
+        name: 'Descriptive Text Fields',
+      }
+      available_fields['_full_text_chunk_embeddings'] = {
+        identifier: '_full_text_chunk_embeddings',
+        name: 'Full Text Excerpts',
+      }
+      return Object.values(available_fields)
+    }
   },
   mounted() {
     this.load_items()
@@ -62,7 +91,7 @@ export default {
       })
     },
     add_extraction_question(name, prompt) {
-      if (!name || !prompt) {
+      if (!name || !prompt || !this.selected_source_fields.length) {
         return
       }
       const that = this
@@ -70,13 +99,14 @@ export default {
         collection_id: this.collection_id,
         name: name,
         prompt: prompt,
+        source_fields: this.selected_source_fields,
       }
       httpClient.post(`/org/data_map/add_collection_extraction_question`, body)
       .then(function (response) {
         if (!that.collection.extraction_questions) {
           that.collection.extraction_questions = []
         }
-        that.collection.extraction_questions.push({name, prompt})
+        that.collection.extraction_questions.push({name, prompt, source_fields: that.selected_source_fields})
       })
       .catch(function (error) {
         console.error(error)
@@ -134,10 +164,10 @@ export default {
 
 <template>
   <div>
-    <div class="w-1/2">
+    <div class="w-2/3">
       <div class="flex flex-col">
         <div v-for="question in collection.extraction_questions" class="">
-          • {{  question.name }}: {{ question.prompt }}
+          • {{  question.name }}: {{ question.prompt }} ({{ question.source_fields.join(", ") }})
           <button @click="extract_question(question)" class="p-1 mr-2 bg-gray-100 hover:bg-blue-100/50 rounded">Extract now</button>
           <button @click="remove_results(question)" class="p-1 bg-gray-100 hover:bg-blue-100/50 rounded">Remove results</button>
         </div>
@@ -147,7 +177,7 @@ export default {
         <input
           ref="new_question_name"
           type="text"
-          class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+          class="flex-none w-40 rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
           placeholder="Question Name"/>
         <input
           ref="new_question_prompt"
@@ -155,6 +185,16 @@ export default {
           class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
           placeholder="Prompt"
           @keyup.enter="add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value)"/>
+        <div class="flex-initial w-40">
+          <MultiSelect v-model="selected_source_fields"
+            :options="available_source_fields"
+            optionLabel="name"
+            optionValue="identifier"
+            placeholder="Select Sources..."
+            :maxSelectedLabels="0"
+            selectedItemsLabel="{0} Source(s)"
+            class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+        </div>
         <button
           class="rounded-r-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
           type="button"

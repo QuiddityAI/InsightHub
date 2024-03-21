@@ -135,6 +135,7 @@ def add_collection_extraction_question(request):
         collection_id: int = data["collection_id"]
         name: str = data["name"]
         prompt: str = data["prompt"]
+        source_fields: list = data["source_fields"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -147,7 +148,7 @@ def add_collection_extraction_question(request):
 
     if item.extraction_questions is None:
         item.extraction_questions = []  # type: ignore
-    item.extraction_questions.append({'name': name, 'prompt': prompt})
+    item.extraction_questions.append({'name': name, 'prompt': prompt, 'source_fields': source_fields})
     item.save()
 
     return HttpResponse(None, status=204)
@@ -212,7 +213,7 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
 def _extract_question_from_collection_class_items(collection, class_name, question):
     system_prompt = "Answer the following question based on the following JSON document. " + \
         "Answer in one concise sentence, word or list. If the document does not contain the answer, " + \
-        "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\n"
+        "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\nQuestion:\n"
     system_prompt += question["prompt"] + "\n\nDocument:\n"
     collection_items = CollectionItem.objects.filter(collection=collection)
     included_items = 0
@@ -226,13 +227,35 @@ def _extract_question_from_collection_class_items(collection, class_name, questi
             text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
         if item.field_type == FieldType.IDENTIFIER:
             ds_id, item_id = json.loads(item.value)  # type: ignore
-            fields = list(Dataset.objects.get(id=ds_id).descriptive_text_fields.all().values_list("identifier", flat=True))
-            fields.append("_id")
+            dataset = Dataset.objects.get(id=ds_id)
+            fields = {'_id'}
+            if "_descriptive_text_fields" in question["source_fields"]:
+                descriptive_text_fields = list(dataset.descriptive_text_fields.all().values_list("identifier", flat=True))
+                fields = fields.union(descriptive_text_fields)
+            fields = fields.union([field for field in question["source_fields"] if not field.startswith("_")])
+            fields = list(fields)
             full_item = get_item_by_id(ds_id, item_id, fields)
-            text = json.dumps(full_item, indent=2)
+            text = ""
+            for source_field in question["source_fields"]:
+                if source_field == "_descriptive_text_fields":
+                    for field in descriptive_text_fields:
+                        text += f'{field}: {full_item.get(field, "n/a")}\n'
+                elif source_field == "_full_text_chunk_embeddings":
+                    # backend.get_relevant_parts_from_full_text(ds_id, item_id, question["name"], question["prompt"])
+                    # get vector array field from defaults.full_text_chunk_embeddings
+                    # get vectors from db and associated text field
+                    # convert query to same embedding space as this field
+                    # compute vector distance, get top-k matches
+                    # optionally: re-rank and re-evaluate matches using small LLM
+                    # expand context around chunks?
+                    # format chunks and return text
+                    # text += f'Full text snippets: {full_item.get(field, "n/a")}\n'
+                    pass
+                else:
+                    text += f'{source_field}: {full_item.get(source_field, "n/a")}\n'
         if not text:
             continue
-        prompt = system_prompt + text
+        prompt = system_prompt + text + "\n\nAnswer:\n"
         logging.warning(prompt)
         history = [ { "role": "system", "content": prompt } ]
         response_text = get_chatgpt_response_using_history(history)
