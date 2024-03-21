@@ -287,6 +287,7 @@ def get_search_results_included_in_collection(dataset, search_settings: DotDict,
     for item_id in collection.positive_ids:
         total_items[item_id] = {
             '_id': item_id,
+            '_dataset_id': dataset.id,
             '_origins': [{'type': 'collection', 'field': 'positives',
                           'query': '', 'score': 1.0, 'rank': 1}],
             '_score': 1.0,
@@ -295,6 +296,7 @@ def get_search_results_included_in_collection(dataset, search_settings: DotDict,
     for item_id in collection.negative_ids:
         total_items[item_id] = {
             '_id': item_id,
+            '_dataset_id': dataset.id,
             '_origins': [{'type': 'collection', 'field': 'negatives',
                           'query': '', 'score': 0.0, 'rank': 1}],
             '_score': 0.0,
@@ -343,6 +345,7 @@ def get_search_results_for_global_map(dataset, search_settings: DotDict, vectori
     for i, item in enumerate(search_result):
         items[item['_id']] = {
             '_id': item['_id'],
+            '_dataset_id': dataset.id,
             '_origins': [{'type': 'random_sample', 'field': 'unknown',
                           'query': 'random sample', 'score': item['_score'], 'rank': i+1}],
         }
