@@ -683,7 +683,14 @@ class ObjectField(models.Model):
         try:
             url = data_backend_url + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/items_having_value_count'  # type: ignore
             result = requests.get(url)
-            return result.json()["count"]
+            count = result.json()["count"]
+            if self.field_type == FieldType.VECTOR and self.is_array:
+                url = data_backend_url + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/sub_items_having_value_count'  # type: ignore
+                result = requests.get(url)
+                sub_count = result.json()["count"]
+                return f"{count} (~{sub_count / count:.0f} ppi)"
+            else:
+                return count
         except Exception as e:
             return repr(e)
     items_having_value_count.fget.short_description = "Items having this value"  # type: ignore

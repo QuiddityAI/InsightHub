@@ -97,6 +97,12 @@ def get_items_having_value_count_route(dataset_id: int, field: str):
     return jsonify({"count": count})
 
 
+@app.route('/data_backend/dataset/<int:dataset_id>/<field>/sub_items_having_value_count', methods=['GET'])
+def get_sub_items_having_value_count_route(dataset_id: int, field: str):
+    count = get_items_having_value_count(dataset_id, field, count_sub_items=True)
+    return jsonify({"count": count})
+
+
 @app.route('/data_backend/dataset/<int:dataset_id>/random_item', methods=['GET'])
 def get_random_item_route(dataset_id: int):
     items = get_random_items(dataset_id, 1)

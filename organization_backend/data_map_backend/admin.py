@@ -238,6 +238,8 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
                     bytes_per_vector = 4
                     space_needed_gb = (dimensions * bytes_per_vector * total_items) / 1024 / 1024 / 1024
                     html += f"<br>Space needed for field '{field.identifier}': {space_needed_gb:.1f} GB"
+                    if field.is_array:
+                        html += " (with one array element per item)"
         except Exception as e:
             return repr(e)
         return mark_safe(html)
