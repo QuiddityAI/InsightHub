@@ -1,0 +1,5 @@
+./manage.py dumpdata --natural-foreign --natural-primary -e drf_social_oauth2 --indent 2 > db_export.json
+# psql -h localhost -U postgres
+# DROP DATABASE visdatamap;
+# CREATE DATABASE visdatamap;
+./manage.py loaddata db_export.json
