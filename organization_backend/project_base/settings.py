@@ -114,12 +114,20 @@ DATABASES = {
     # },
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'visdatamap2',
+        'NAME': 'visdatamap',
         'USER': 'postgres',
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'staging.absclust.com',
-        'PORT': '22851',
-    }
+        'HOST': os.environ.get('postgres_host', 'localhost'),
+        'PORT': 5432,
+    },
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'visdatamap',
+    #     'USER': 'postgres',
+    #     'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+    #     'HOST': 'staging.absclust.com',
+    #     'PORT': 22851,
+    # }
 }
 
 
