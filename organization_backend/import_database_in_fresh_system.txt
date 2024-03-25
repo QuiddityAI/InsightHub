@@ -1,6 +1,15 @@
+# with the old / existing database configured:
 ./manage.py dumpdata --natural-foreign --natural-primary -e drf_social_oauth2 --indent 2 > db_export.json
+
+# then configure the new database settings, e.g. for postgres in settings.py
+
+# drop the database if there is an old / broken one:
 # psql -h localhost -U postgres
 # DROP DATABASE visdatamap;
 # CREATE DATABASE visdatamap;
+
+# create the new database structure:
 ./manage.py migrate
+
+# load the data:
 ./manage.py loaddata db_export.json
