@@ -2,4 +2,5 @@
 # psql -h localhost -U postgres
 # DROP DATABASE visdatamap;
 # CREATE DATABASE visdatamap;
+./manage.py migrate
 ./manage.py loaddata db_export.json
