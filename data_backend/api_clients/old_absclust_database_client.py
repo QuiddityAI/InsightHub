@@ -4,20 +4,21 @@ import os
 from copy import deepcopy
 import logging
 
-import typesense
-
 from utils.helpers import run_in_batches
 
+# import typesense
+# ts_client = typesense.Client({
+#     'api_key': os.getenv("ABSCLUST_TYPESENSE_DB_API_KEY"),
+#     'nodes': [{
+#         'host': os.getenv("ABSCLUST_TYPESENSE_DB_HOST"),
+#         'port': '443',
+#         'protocol': 'https'
+#     }],
+#     'connection_timeout_seconds': 2
+# })
 
-ts_client = typesense.Client({
-    'api_key': os.getenv("ABSCLUST_TYPESENSE_DB_API_KEY"),
-    'nodes': [{
-        'host': os.getenv("ABSCLUST_TYPESENSE_DB_HOST"),
-        'port': '443',
-        'protocol': 'https'
-    }],
-    'connection_timeout_seconds': 2
-})
+# removed this deprecated client for now to reduce dependencies
+ts_client = None
 
 
 app_config = {"TYPESENSE_PERPAGE": 100,
