@@ -63,21 +63,23 @@ export default {
       <!-- <p class="mt-2 text-xs leading-5 text-gray-700" v-if="rendering.url(item)">
         <a :href="rendering.url(item)">Link</a>
       </p> -->
-      <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
-        {{ item._reciprocal_rank_score.toFixed(2) }}
-      </span>
-      <span
-        v-for="origin in item._origins"
-        class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
-        {{ origin.score.toFixed(2) }}, {{ origin.type }}: {{ origin.field }}, q =
-        {{ origin.query }}
-      </span>
-      <span v-if="appState.settings.search.dataset_ids.length > 1" class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
-        {{ appState.datasets[item._dataset_id].name }}
-      </span>
-      <!-- <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
-        {{ item._highlights }}
-      </span> -->
+      <div v-if="appState.dev_mode">
+        <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+          {{ item._reciprocal_rank_score.toFixed(2) }}
+        </span>
+        <span
+          v-for="origin in item._origins"
+          class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+          {{ origin.score.toFixed(2) }}, {{ origin.type }}: {{ origin.field }}, q =
+          {{ origin.query }}
+        </span>
+        <span v-if="appState.settings.search.dataset_ids.length > 1" class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+          {{ appState.datasets[item._dataset_id].name }}
+        </span>
+        <!-- <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+          {{ item._highlights }}
+        </span> -->
+      </div>
     </div>
     <div v-if="rendering.image(item)" class="flex-none w-32 flex flex-col justify-center">
       <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />
