@@ -139,6 +139,10 @@ def combine_result_sets_and_calculate_scores(result_sets: list[dict], timings: T
                 total_items[item['_id']] = item
             else:
                 total_items[item['_id']]['_origins'] += item['_origins']
+                if '_relevant_parts' in item:
+                    if '_relevant_parts' not in total_items[item['_id']]:
+                        total_items[item['_id']]['_relevant_parts'] = []
+                    total_items[item['_id']]['_relevant_parts'] += item['_relevant_parts']
 
     for item in total_items.values():
         item['_reciprocal_rank_score'] = sum([1.0 / origin['rank'] for origin in item['_origins']])
