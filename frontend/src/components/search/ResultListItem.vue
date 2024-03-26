@@ -14,6 +14,8 @@ export default {
     return {
       item: this.initial_item,
       loading_item: false,
+      body_text_collapsed: true,
+      show_more_button: false,
     }
   },
   watch: {
@@ -40,6 +42,10 @@ export default {
             ...that.item,
             ...response.data,
           }
+          // height of text is only available after rendering:
+          setTimeout(() => {
+            that.show_more_button = that.$refs.body_text?.scrollHeight > that.$refs.body_text?.clientHeight
+          }, 100)
         })
         .finally(function () {
           that.loading_item = false
@@ -48,6 +54,7 @@ export default {
   },
   mounted() {
     this.getFullItem()
+    this.show_more_button = this.$refs.body_text?.scrollHeight > this.$refs.body_text?.clientHeight
   },
   computed: {
     ...mapStores(useAppStateStore),
@@ -61,7 +68,15 @@ export default {
       <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2 inline" />
       <p class="text-sm font-medium leading-normal text-gray-90 inline" v-html="rendering.title(item)"></p>
       <p class="mt-1 text-xs leading-relaxed text-gray-500" v-html="rendering.subtitle(item)"></p>
-      <p class="mt-2 text-xs text-gray-700" v-html="rendering.body(item)"></p>
+
+      <p ref="body_text" class="mt-2 text-xs text-gray-700" :class="{ 'line-clamp-[7]': body_text_collapsed }"
+       v-html="rendering.body(item)"></p>
+      <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
+        <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
+          {{ body_text_collapsed ? "Show more" : "Show less" }}
+        </button>
+      </div>
+
       <!-- <p class="mt-2 text-xs leading-5 text-gray-700" v-if="rendering.url(item)">
         <a :href="rendering.url(item)">Link</a>
       </p> -->

@@ -9,6 +9,7 @@ import { httpClient } from "../../api/httpClient"
 import { highlight_words_in_text } from "../../utils/utils"
 
 import { useToast } from "primevue/usetoast"
+import Image from "primevue/image"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
@@ -28,6 +29,8 @@ export default {
       checking_for_fulltext: false,
       checked_for_fulltext: false,
       fulltext_url: null,
+      body_text_collapsed: true,
+      show_more_button: false,
     }
   },
   methods: {
@@ -57,6 +60,10 @@ export default {
             ...that.item,
             ...response.data
           }
+          // height of text is only available after rendering:
+          setTimeout(() => {
+            that.show_more_button = that.$refs.body_text?.scrollHeight > that.$refs.body_text?.clientHeight
+          }, 100)
         })
         .finally(function () {
           that.loading_item = false
@@ -95,12 +102,13 @@ export default {
   },
   mounted() {
     this.updateItemAndRendering()
+    this.show_more_button = this.$refs.body_text?.scrollHeight > this.$refs.body_text?.clientHeight
   },
 }
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-md bg-white p-3 shadow-sm w-full">
+  <div class="overflow-scroll max-h-[90vh] rounded-md bg-white p-3 shadow-sm w-full">
     <div class="flex flex-row w-full">
       <div class="flex-1 flex min-w-0 flex-col w-full">
 
@@ -112,12 +120,18 @@ export default {
         </div>
         <p class="mt-1 flex-none text-xs leading-5 text-gray-500" v-html="rendering ? rendering.subtitle(item) : ''">
         </p>
-        <p class="mt-2 flex-1 overflow-y-auto text-xs text-gray-700"
+
+        <p ref="body_text" class="mt-2 text-xs text-gray-700" :class="{ 'line-clamp-[12]': body_text_collapsed }"
           v-html="loading_item ? 'loading...' : rendering ? highlight_words_in_text(rendering.body(item), mapState.map_parameters.search.all_field_query.split(' ')) : null"></p>
+        <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
+          <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
+            {{ body_text_collapsed ? "Show more" : "Show less" }}
+          </button>
+        </div>
 
       </div>
       <div v-if="rendering ? rendering.image(item) : false" class="flex-none w-32 flex flex-col justify-center ml-2">
-        <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />
+        <Image class="w-full rounded-lg shadow-md" :src="rendering.image(item)" preview />
       </div>
     </div>
 
