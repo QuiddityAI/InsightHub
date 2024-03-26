@@ -298,7 +298,7 @@ export default {
         <SearchArea
           @request_search_results="appState.request_search_results"
           @reset_search_box="appState.reset_search_box"
-          class="pointer-events-auto flex-none rounded-md bg-white p-3 shadow-sm"></SearchArea>
+          class="pointer-events-auto flex-none rounded-md bg-white shadow-sm"></SearchArea>
 
         <!-- tab box -->
         <div

@@ -76,11 +76,13 @@ export const useAppStateStore = defineStore("appState", {
         search: {
           dataset_ids: [],
           search_type: "external_input", // or cluster, collection or similar item
+          search_algorithm: "hybrid",  // "keyword", "vector", "hybrid"
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
           internal_input_weight: 0.7,
           use_similarity_thresholds: true,
+          order_by: { type: "score", parameter: "" },
           use_autocut: true,
           autocut_strategy: "knee_point",
           autocut_min_results: 10,

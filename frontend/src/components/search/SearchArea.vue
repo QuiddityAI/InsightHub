@@ -20,6 +20,8 @@ import CollectionAndVectorFieldSelection from "./CollectionAndVectorFieldSelecti
 import LoginButton from "../LoginButton.vue";
 import SearchHistoryDialog from "../history/SearchHistoryDialog.vue";
 import StoredMapsDialog from "../history/StoredMapsDialog.vue";
+import { useToast } from 'primevue/usetoast';
+const toast = useToast()
 
 const appState = useAppStateStore()
 const _window = window
@@ -124,6 +126,11 @@ export default {
         { id: "3d", title: "3D" },
         { id: "plotly", title: "Plotly" },
       ],
+      available_order_by_types: [
+        { id: "score", title: "Relevancy" },
+        // { id: "number_field", title: "Number Field" },
+        // { id: "classifier", title: "Classifier" },
+      ],
     }
   },
   mounted() {
@@ -160,7 +167,7 @@ export default {
 </script>
 
 <template>
-  <div>
+  <div class="px-3 pt-3 pb-2">
     <!-- Database Selection -->
     <div class="mb-2 flex items-center justify-between">
       <a
@@ -297,19 +304,6 @@ export default {
         <MinusCircleIcon></MinusCircleIcon>
       </button>
       <button
-        v-if="appState.logged_in"
-        @click="open_search_history_dialog()"
-        title="Search History"
-        class="ml-1 w-6 rounded px-1 hover:bg-gray-100 text-gray-400">
-        <ClockIcon></ClockIcon>
-      </button><button
-        v-if="appState.logged_in"
-        @click="open_stored_maps_dialog()"
-        title="Stored Views"
-        class="ml-1 w-6 rounded px-1 hover:bg-gray-100 text-gray-400">
-        <BookmarkIcon></BookmarkIcon>
-      </button>
-      <button
         v-if="appState.dev_mode"
         @click="show_settings = !show_settings"
         class="ml-1 w-8 rounded px-1 hover:bg-gray-100"
@@ -332,6 +326,61 @@ export default {
             : 'And less like this:'
         "
         class="h-full w-full rounded-md border-0 bg-red-100/50 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
+    </div>
+
+    <div class="mt-2 ml-0 flex flex-row gap-1 items-center">
+      <div class="h-6 flex flex-row items-center gap-0 pl-1 border border-gray-300 rounded-md">
+        <span class="pr-0 flex-none text-sm font-['Lexend'] font-normal text-gray-400">
+          Order: </span>
+        <div class="w-32">
+          <select
+            v-model="appState.settings.search.order_by.type"
+            class="w-full h-full rounded-md border-transparent bg-transparent pb-0 pl-1 pr-7 pt-0 text-ellipsis text-sm font-['Lexend'] font-normal text-gray-400 focus:border-blue-500 focus:ring-blue-500">
+            <option v-for="item in available_order_by_types" :value="item.id" selected>
+              {{ item.title }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="flex-1"></div>
+      <div class="flex flex-row items-center gap-0 h-6">
+        <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal"
+          @click="appState.settings.search.search_algorithm = 'keyword'"
+          :class="{'text-blue-500': appState.settings.search.search_algorithm === 'keyword', 'text-gray-400': appState.settings.search.search_algorithm != 'keyword'}">
+          Keyword
+        </button>
+        <button class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal"
+          @click="appState.settings.search.search_algorithm = 'vector'"
+          :class="{'text-blue-500': appState.settings.search.search_algorithm === 'vector', 'text-gray-400': appState.settings.search.search_algorithm != 'vector'}">
+          Meaning
+        </button>
+        <button class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal"
+          @click="appState.settings.search.search_algorithm = 'hybrid'"
+          :class="{'text-blue-500': appState.settings.search.search_algorithm === 'hybrid', 'text-gray-400': appState.settings.search.search_algorithm != 'hybrid'}">
+          Both
+        </button>
+      </div>
+      <div class="flex-1"></div>
+      <div class="flex flex-row items-center gap-0 h-6">
+        <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400"
+          @click="toast.add({severity:'info', summary:'Not yet implemented', detail:'This feature is coming soon'})">
+          + Filter
+        </button>
+      </div>
+      <div class="flex-1"></div>
+      <button
+        v-if="appState.logged_in"
+        @click="open_search_history_dialog()"
+        title="Search History"
+        class="h-6 w-6 ml-1 rounded px-1 hover:bg-gray-100 text-gray-400">
+        <ClockIcon></ClockIcon>
+      </button><button
+        v-if="appState.logged_in"
+        @click="open_stored_maps_dialog()"
+        title="Stored Views"
+        class="h-6 w-6 ml-1 rounded px-1 hover:bg-gray-100 text-gray-400">
+        <BookmarkIcon></BookmarkIcon>
+      </button>
     </div>
 
     <!-- Parameters Area -->
