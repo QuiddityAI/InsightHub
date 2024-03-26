@@ -59,41 +59,12 @@ def _scientific_article_pdf(paths, parameters):
         except:
             pub_year = None
 
-        full_text_original_chunks = []
-        for section in parsed_pdf.sections:
-            paragraphs = section.text  # 'section.text' is an array of texts
-            if isinstance(paragraphs, str):
-                paragraphs = [paragraphs]
-            if not paragraphs:
-                continue
-            max_paragraph_length = 1000  # characters
-            i = 0
-            while i < len(paragraphs):
-                if len(paragraphs[i]) > max_paragraph_length * 1.2:
-                    # split long paragraphs into smaller ones
-                    paragraphs.insert(i + 1, paragraphs[i][max_paragraph_length:])
-                    paragraphs[i] = paragraphs[i][:max_paragraph_length]
-                i += 1
-            if len(paragraphs) >= 2:
-                for i in range(len(paragraphs) - 1, 1, -1):
-                    if len(paragraphs[i]) < 100:
-                        # if the paragraph is too short, merge it with the previous one
-                        paragraphs[i - 1] = paragraphs[i - 1] + " " + paragraphs[i]
-            if len(paragraphs[0]) < 50:
-                if len(paragraphs) > 1:
-                    # if the first paragraph is too short, merge it with the second one
-                    paragraphs[1] = paragraphs[0] + " " + paragraphs[1]
-                    del paragraphs[0]
-                else:
-                    # if there is only one paragraph and it is too short, skip the section
-                    continue
-            if section.heading:
-                paragraphs[0] = section.heading + ": " + paragraphs[0]
-            full_text_original_chunks += paragraphs
+        full_text_original_chunks = _postprocess_pdf_chunks(parsed_pdf.sections)
         full_text = " ".join(full_text_original_chunks)
 
         items.append({
-            "doi": parsed_pdf.doi or str(uuid.uuid4()),
+            "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, path)),
+            "doi": parsed_pdf.doi,
             "title": parsed_pdf.title,
             "abstract": parsed_pdf.abstract,
             "authors": parsed_pdf.authors,
@@ -105,3 +76,40 @@ def _scientific_article_pdf(paths, parameters):
             "full_text_original_chunks": full_text_original_chunks,
         })
     return items
+
+
+def _postprocess_pdf_chunks(sections):
+    max_paragraph_length = 2000  # characters
+    full_text_original_chunks = []
+    for section in sections:
+        paragraphs = section.text  # 'section.text' is an array of texts
+        if isinstance(paragraphs, str):
+            paragraphs = [paragraphs]
+        assert isinstance(paragraphs, list)
+        if not paragraphs:
+            continue
+        i = 0
+        while i < len(paragraphs):
+            if len(paragraphs[i]) > max_paragraph_length * 1.2:
+                # split long paragraphs into smaller ones
+                paragraphs.insert(i + 1, paragraphs[i][max_paragraph_length:])
+                paragraphs[i] = paragraphs[i][:max_paragraph_length]
+            i += 1
+        if len(paragraphs) >= 2:
+            for i in range(len(paragraphs) - 1, 1, -1):
+                if len(paragraphs[i]) < 120:
+                    # if the paragraph is too short, merge it with the previous one
+                    paragraphs[i - 1] = paragraphs[i - 1] + " " + paragraphs[i]
+                    del paragraphs[i]
+        if len(paragraphs[0]) < 80:
+            if len(paragraphs) > 1:
+                # if the first paragraph is too short, merge it with the second one
+                paragraphs[1] = paragraphs[0] + " " + paragraphs[1]
+                del paragraphs[0]
+            else:
+                # if there is only one paragraph and it is too short, skip the section
+                continue
+        if section.heading:
+            paragraphs[0] = section.heading + ": " + paragraphs[0]
+        full_text_original_chunks += paragraphs
+    return full_text_original_chunks
