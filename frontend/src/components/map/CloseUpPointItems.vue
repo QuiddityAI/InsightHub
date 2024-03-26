@@ -47,7 +47,8 @@ export default {
         <button
           v-if="appState.get_hover_rendering_by_index(pointIndex) && mapState.hovered_point_idx !== pointIndex"
           @click="appState.show_document_details(mapState.per_point.item_id[pointIndex])"
-          class="flex max-w-[200px] flex-col rounded bg-white px-2 py-1 text-[10px] text-gray-500 hover:bg-gray-100 pointer-events-auto text-left">
+          class="flex max-w-[200px] flex-col rounded bg-white px-2 py-1 text-[10px] text-gray-500 hover:bg-gray-100 text-left"
+          :class="{'pointer-events-auto': mapState.show_html_points}">
           <div
             class="text-xs font-semibold"
             v-html="appState.get_hover_rendering_by_index(pointIndex).title(mapState.get_item_by_index(pointIndex))">
