@@ -465,6 +465,7 @@ export const useAppStateStore = defineStore("appState", {
       this.highlighted_cluster_id = null
       this.selected_cluster_id = null
       this.mapState.visited_point_indexes = []
+      this.mapState.map_parameters = null
 
       this.search_result_score_info = null
       if (this.score_info_chart) this.score_info_chart.destroy()
@@ -661,7 +662,6 @@ export const useAppStateStore = defineStore("appState", {
       // note: these may be needed in the future, pay attention to remove them in this case here
       const not_needed = [
         "raw_projections",
-        "parameters",
         "scores",
         "last_parameters",
       ]
@@ -722,6 +722,11 @@ export const useAppStateStore = defineStore("appState", {
         return
       }
 
+      if (data["parameters"]) {
+        that.mapState.map_parameters = data["parameters"]
+        that.fields_already_received.add("parameters")
+      }
+
       const progress = data["progress"]
 
       that.show_loading_bar = !progress.embeddings_available
@@ -765,7 +770,7 @@ export const useAppStateStore = defineStore("appState", {
             const attr_params = that.settings.rendering[attr]
             const is_hue_attr = ["hue", "secondary_hue"].includes(attr)
             const is_integer_attr_type = ["cluster_idx", "origin_query_idx"].includes(attr_params.type)
-            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.settings.search.dataset_ids[0]].object_fields[attr_params.parameter]?.field_type == FieldType.INTEGER
+            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.mapState.map_parameters?.search.dataset_ids[0]].object_fields[attr_params.parameter]?.field_type == FieldType.INTEGER
             if (is_hue_attr && (is_integer_attr_type || is_integer_field)) {
               // if an integer value is assigned to a hue value, we need to make sure that the last value doesn't have
               // the same hue as the first value:

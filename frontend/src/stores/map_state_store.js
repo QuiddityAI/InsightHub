@@ -8,6 +8,7 @@ export const useMapStateStore = defineStore("mapState", {
 
       passiveMarginsLRTB: [0, 0, 0, 0],
 
+      map_parameters: null,
       text_data: {},
       per_point: {
         item_id: [],
