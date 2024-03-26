@@ -5,13 +5,12 @@ import {
   ChevronLeftIcon,
   TrashIcon,
 } from "@heroicons/vue/24/outline"
-import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
-import InputGroup from 'primevue/inputgroup';
-import InputGroupAddon from 'primevue/inputgroupaddon';
 import FileUpload from 'primevue/fileupload';
 import Dropdown from 'primevue/dropdown';
 import Button from 'primevue/button';
+import Badge from 'primevue/badge';
+import Message from 'primevue/message';
+import ProgressBar from 'primevue/progressbar';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -29,6 +28,8 @@ export default {
   data() {
     return {
       selected_import_converter: null,
+      upload_in_progress: false,
+      visible_area: "upload_files",
     }
   },
   computed: {
@@ -62,6 +63,7 @@ export default {
       })
     },
     async custom_file_uploader(event) {
+      const that = this
       if (!this.selected_import_converter) {
         this.$toast.add({severity:'error', summary: 'Error', detail: 'Please select an import type.'})
         return
@@ -70,6 +72,11 @@ export default {
       let xhr = new XMLHttpRequest();
       let formData = new FormData();
       const fileUploaderComponent = this.$refs.fileUploader;
+      // the original component calls clear() right after this custom upload method which removes the files array
+      // we want to restore it after that:
+      setTimeout(() => {
+        fileUploaderComponent.files = event.files
+      }, 10);
 
       fileUploaderComponent.$emit('before-upload', {
         xhr: xhr,
@@ -100,22 +107,25 @@ export default {
 
           if (xhr.status >= 200 && xhr.status < 300) {
             if (fileUploaderComponent.fileLimit) {
-              fileUploaderComponent.uploadedFileCount += fileUploaderComponent.files.length;
+              fileUploaderComponent.uploadedFileCount += event.files.length;
             }
 
             fileUploaderComponent.$emit('upload', {
               xhr: xhr,
-              files: fileUploaderComponent.files
+              files: event.files
             });
           } else {
             fileUploaderComponent.$emit('error', {
               xhr: xhr,
-              files: fileUploaderComponent.files
+              files: event.files
             });
           }
 
-          fileUploaderComponent.uploadedFiles.push(...fileUploaderComponent.files);
+          fileUploaderComponent.uploadedFiles.push(...event.files);
           fileUploaderComponent.clear();
+
+          that.$toast.add({severity:'success', summary: 'Success', detail: 'Files uploaded successfully.'})
+          that.upload_in_progress = false
         }
       };
 
@@ -129,6 +139,7 @@ export default {
       xhr.withCredentials = fileUploaderComponent.withCredentials;
 
       xhr.send(formData);
+      that.upload_in_progress = true
     },
   },
 }
@@ -153,10 +164,12 @@ export default {
     </div>
 
     <div v-if="dataset.admins?.includes(appState.user.id)">
-      <h3 class="text-md text-gray-600 font-semibold">
-        Upload Files
-      </h3>
-      <div class="ml-2 mb-3 mt-2 flex flex-col gap-2">
+      <button class="w-full hover:bg-gray-100" @click="visible_area = 'upload_files'">
+        <h3 class="text-left text-md text-gray-600 font-semibold">
+          Upload Files
+        </h3>
+      </button>
+      <div v-if="visible_area == 'upload_files'" class="ml-2 mb-3 mt-2 flex flex-col gap-2">
         <label class="mr-2 text-sm text-gray-700" for="import_type">Import Type:</label>
         <Dropdown
           id="import_type"
@@ -165,6 +178,7 @@ export default {
           optionLabel="name"
           placeholder="Select an import type"/>
         <FileUpload
+          v-if="selected_import_converter"
           ref="fileUploader"
           name="files[]"
           url="/data_backend/upload_files"
@@ -174,18 +188,51 @@ export default {
           customUpload
           @uploader="custom_file_uploader"
           >
+          <template #content="{ files, uploadedFiles, removeFileCallback, messages, progress, onMessageClose }">
+            <div v-if="files.length > 0 || upload_in_progress">
+              <div class="flex flex-col gap-1">
+                <span v-if="files.length > 0" class="text-gray-700">Selected files: {{ files.length }} </span>
+                <ProgressBar v-if="progress > 0" :value="progress" :showValue="false" />
+                <Message v-for="msg of messages" :key="msg" severity="error" @close="onMessageClose">{{ msg }}</Message>
+                <div v-for="(file, index) of files" :key="file.name + file.type + file.size" class="card m-0 px-2 flex flex-row justify-between items-center gap-1">
+                  <span class="font-semibold">{{ file.name }}</span>
+                  <div class="flex-1"></div>
+                  <Badge value="Waiting" severity="warning" class="flex-none w-14" />
+                  <Button label="X" @click="removeFileCallback(index)" outlined rounded  severity="danger" />
+                </div>
+              </div>
+            </div>
+            <div v-if="upload_in_progress" class="mt-2">
+              <p class="text-gray-700">Uploading files...</p>
+            </div>
+
+            <div v-if="uploadedFiles.length > 0">
+              <span class="text-gray-700">Uploaded files: {{ uploadedFiles.length }} </span>
+              <!-- <div class="flex flex-col gap-1">
+                <div v-for="(file, index) of uploadedFiles" :key="file.name + file.type + file.size" class="card m-0 px-2 flex flex-row justify-between items-center gap-1">
+                  <span class="font-semibold">{{ file.name }}</span>
+                  <div class="flex-1"></div>
+                  <Badge value="Completed" severity="success" class="flex-none w-18" />
+                  <Button label="X" @click="removeUploadedFileCallback(index)" outlined rounded  severity="danger" />
+                </div>
+              </div> -->
+            </div>
+          </template>
           <template #empty>
-            <p>Drag and drop files to here to upload.<br>
-              You can upload individual files or zip files with multiple files.
-            </p>
+            <div v-if="!upload_in_progress">
+              <p>Drag and drop files here to upload.<br>
+              </p>
+            </div>
           </template>
         </FileUpload>
       </div>
-      <h3 class="text-md text-gray-600 font-semibold">
-        Upload using API
-      </h3>
-      <div class="ml-2">
-        <p class="mb-1 text-gray-700">
+      <button v-if="appState.dev_mode" class="mt-2 w-full hover:bg-gray-100" @click="visible_area = 'upload_using_api'">
+        <h3 class="text-left text-md text-gray-600 font-semibold">
+          Upload using API
+        </h3>
+      </button>
+      <div v-if="visible_area == 'upload_using_api'" class="ml-2">
+        <p class="mt-2 mb-1 text-gray-700">
           You can use the following command to upload data to this dataset:
         </p>
         <code class="text-sm text-gray-500 font-mono">
