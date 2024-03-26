@@ -157,10 +157,10 @@ export default {
       this.appStateStore.set_organization_id(this.internal_organization_id)
     },
     open_search_history_dialog() {
-      this.$dialog.open(SearchHistoryDialog, {props: {modal: true}});
+      this.$dialog.open(SearchHistoryDialog, {props: {header: "Search History", modal: true}});
     },
     open_stored_maps_dialog() {
-      this.$dialog.open(StoredMapsDialog, {props: {modal: true}});
+      this.$dialog.open(StoredMapsDialog, {props: {header: "Stored Maps", modal: true}});
     },
   },
 }

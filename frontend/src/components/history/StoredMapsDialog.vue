@@ -58,7 +58,7 @@ export default {
           <span class="font-medium text-gray-500">{{ stored_map.name }}</span>
           <div class="flex-1"></div>
           <button
-            @click="delete_stored_map(stored_map.id)"
+            @click="appState.delete_stored_map(stored_map.id)"
             class="text-sm font-light text-gray-500 hover:text-blue-500/50">
             Delete
           </button>
