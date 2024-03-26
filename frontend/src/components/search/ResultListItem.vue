@@ -2,7 +2,9 @@
 import { httpClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
+import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
+const mapState = useMapStateStore()
 </script>
 
 <script>
@@ -63,6 +65,9 @@ export default {
       <!-- <p class="mt-2 text-xs leading-5 text-gray-700" v-if="rendering.url(item)">
         <a :href="rendering.url(item)">Link</a>
       </p> -->
+      <span v-if="mapState.map_parameters?.search.dataset_ids.length > 1" class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+        {{ appState.datasets[item._dataset_id].name }}
+      </span>
       <div v-if="appState.dev_mode">
         <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
           {{ item._reciprocal_rank_score.toFixed(2) }}
@@ -72,9 +77,6 @@ export default {
           class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
           {{ origin.score.toFixed(2) }}, {{ origin.type }}: {{ origin.field }}, q =
           {{ origin.query }}
-        </span>
-        <span v-if="appState.settings.search.dataset_ids.length > 1" class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
-          {{ appState.datasets[item._dataset_id].name }}
         </span>
         <!-- <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
           {{ item._highlights }}
