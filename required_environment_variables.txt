@@ -10,6 +10,8 @@ SEMANTIC_SCHOLAR_API_KEY=?
 
 OPENAI_API_KEY=?
 
+PIPENV_VENV_IN_PROJECT=1
+
 
 credentials.json file with the following content:
 {

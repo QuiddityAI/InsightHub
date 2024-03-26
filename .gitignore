@@ -41,3 +41,5 @@ _pgbackup/
 
 notes.md
 list_view_template.json
+
+.venv/
