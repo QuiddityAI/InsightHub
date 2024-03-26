@@ -4,17 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-weaviate-client = "*"
 flask = "*"
 flask-cors = "*"
 torch = "*"
 transformers = "*"
 scikit-learn = "*"
-plotly = "*"
-pandas = "*"
 hdbscan = "*"
 umap-learn = "*"
-typesense = "*"
 openai = "*"
 spacy = "*"
 gensim = "*"
@@ -44,6 +40,8 @@ psycopg2-binary = "*"
 
 [dev-packages]
 ipykernel = "*"
+pandas = "*"
+plotly = "*"
 
 [requires]
 python_version = "3.11"
