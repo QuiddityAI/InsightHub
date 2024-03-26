@@ -5,6 +5,7 @@ import uuid
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
+import pypdfium2 as pdfium
 
 from utils.dotdict import DotDict
 from database_client.text_search_engine_client import TextSearchEngineClient
@@ -69,6 +70,16 @@ def _scientific_article_pdf(paths, parameters):
         full_text_original_chunks = _postprocess_pdf_chunks(parsed_pdf.sections)
         full_text = " ".join(full_text_original_chunks)
 
+        try:
+            pdf = pdfium.PdfDocument(f'{UPLOADED_FILES_FOLDER}/{sub_path}')
+            first_page = pdf[0]
+            image = first_page.render(scale=1).to_pil()
+            thumbnail_path = f'{sub_path}.thumbnail.jpg'
+            image.save(f'{UPLOADED_FILES_FOLDER}/{thumbnail_path}', 'JPEG', quality=60)
+        except Exception as e:
+            logging.warning(f"Failed to create thumbnail for {sub_path}: {e}")
+            thumbnail_path = None
+
         items.append({
             "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
             "doi": parsed_pdf.doi,
@@ -79,6 +90,7 @@ def _scientific_article_pdf(paths, parameters):
             "publication_year": pub_year,
             "cited_by": 0,
             "file_path": sub_path,  # relative to UPLOADED_FILES_FOLDER
+            "thumbnail_path": thumbnail_path,  # relative to UPLOADED_FILES_FOLDER
             "full_text": full_text,
             "full_text_original_chunks": full_text_original_chunks,
         })

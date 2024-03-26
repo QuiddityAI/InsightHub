@@ -37,6 +37,7 @@ beautifulsoup4 = "*"
 psycopg2-binary = "*"
 scipdf = {git = "https://github.com/Trel725/scipdf_parser"}
 umap-learn = {git = "https://github.com/luminosuslight/umap_with_progress_callback.git"}
+pypdfium2 = "*"
 
 [dev-packages]
 ipykernel = "*"
