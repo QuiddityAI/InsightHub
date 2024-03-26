@@ -34,9 +34,9 @@ django-object-actions = "*"
 cbor2 = "*"
 diskcache = "*"
 django-import-export = "*"
-scipdf-parser = "*"
 beautifulsoup4 = "*"
 psycopg2-binary = "*"
+scipdf = {git = "https://github.com/Trel725/scipdf_parser"}
 
 [dev-packages]
 ipykernel = "*"
