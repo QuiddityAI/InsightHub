@@ -296,6 +296,18 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAd
 
     readonly_fields = ('changed_at', 'created_at', 'items_having_value_count')
 
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        # only show fields of same dataset for source fields:
+        if db_field.name == "source_fields":
+            try:
+                field_id = int(request.path.split("/")[-3])  # type: ignore
+            except ValueError:
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
+            else:
+                dataset_id = ObjectField.objects.get(id = field_id).dataset_id  # type: ignore
+                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
+        return super(ObjectFieldAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
+
     @action(label="Delete Content", description="Delete field data and index")
     def delete_content(self, request, obj):
         # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
