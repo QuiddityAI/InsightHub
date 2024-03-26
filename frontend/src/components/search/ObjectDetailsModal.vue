@@ -106,7 +106,7 @@ export default {
         </div>
         <p class="mt-1 flex-none text-xs leading-5 text-gray-500" v-html="rendering ? rendering.subtitle(item) : ''">
         </p>
-        <p class="mt-2 flex-1 overflow-y-auto text-xs leading-relaxed text-gray-700"
+        <p class="mt-2 flex-1 overflow-y-auto text-xs text-gray-700"
           v-html="loading_item ? 'loading...' : rendering ? rendering.body(item) : null"></p>
 
       </div>

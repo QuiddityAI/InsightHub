@@ -59,7 +59,7 @@ export default {
       <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2 inline" />
       <p class="text-sm font-medium leading-normal text-gray-90 inline" v-html="rendering.title(item)"></p>
       <p class="mt-1 text-xs leading-relaxed text-gray-500" v-html="rendering.subtitle(item)"></p>
-      <p class="mt-2 text-xs leading-normal text-gray-700" v-html="rendering.body(item)"></p>
+      <p class="mt-2 text-xs text-gray-700" v-html="rendering.body(item)"></p>
       <!-- <p class="mt-2 text-xs leading-5 text-gray-700" v-if="rendering.url(item)">
         <a :href="rendering.url(item)">Link</a>
       </p> -->
