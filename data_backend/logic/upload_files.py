@@ -11,21 +11,28 @@ from database_client.text_search_engine_client import TextSearchEngineClient
 from database_client.django_client import get_dataset, get_import_converter
 from logic.insert_logic import insert_many, update_database_layout
 
+UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
+
 
 def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage]):
     import_converter = get_import_converter(import_converter_id)
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter}")
-    uploaded_files_folder = "/data/quiddity_data/uploaded_files"
-    if not os.path.exists(uploaded_files_folder):
-        os.makedirs(uploaded_files_folder)
+    if not os.path.exists(UPLOADED_FILES_FOLDER):
+        os.makedirs(UPLOADED_FILES_FOLDER)
     paths = []
     for file in files:
         logging.warning(f"saving file: {file.filename}")
         new_uuid = str(uuid.uuid4())
-        filename = f"{new_uuid}_{secure_filename(file.filename or '')}"
-        path = f"{uploaded_files_folder}/{filename}"
+        secure_name = secure_filename(file.filename or '')
+        suffix = secure_name.split('.')[-1]
+        filename = secure_name.replace(f".{suffix}", f"_{new_uuid}.{suffix}")
+        sub_folder = f"{dataset_id}/{new_uuid[:2]}"
+        if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
+            os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")
+        sub_path = f"{sub_folder}/{filename}"
+        path = f"{UPLOADED_FILES_FOLDER}/{sub_path}"
         file.save(path)
-        paths.append(path)
+        paths.append(sub_path)
 
     converter_func = get_import_converter_by_name(import_converter.module)
     items = converter_func(paths, import_converter.parameters)
@@ -50,9 +57,9 @@ def _scientific_article_pdf(paths, parameters):
     from pdfparser import grobid_parser # only load import here to improve startup time
 
     parser = grobid_parser.GROBIDParser(grobid_address='http://grobid:8070')
-    parsed = parser.fit_transform({path: path for path in paths})
+    parsed = parser.fit_transform({sub_path: f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths})
     items = []
-    for path, parsed_pdf in parsed.items():
+    for sub_path, parsed_pdf in parsed.items():
         parsed_pdf = DotDict(parsed_pdf)
         try:
             pub_year = int(parsed_pdf.pub_date.split("-")[0])
@@ -63,7 +70,7 @@ def _scientific_article_pdf(paths, parameters):
         full_text = " ".join(full_text_original_chunks)
 
         items.append({
-            "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, path)),
+            "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
             "doi": parsed_pdf.doi,
             "title": parsed_pdf.title,
             "abstract": parsed_pdf.abstract,
@@ -71,7 +78,7 @@ def _scientific_article_pdf(paths, parameters):
             "journal": "unknown",
             "publication_year": pub_year,
             "cited_by": 0,
-            "file_path": path,
+            "file_path": sub_path,  # relative to UPLOADED_FILES_FOLDER
             "full_text": full_text,
             "full_text_original_chunks": full_text_original_chunks,
         })

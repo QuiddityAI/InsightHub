@@ -18,7 +18,7 @@ from logic.search import get_search_results, get_search_results_for_stored_map, 
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from logic.classifiers import get_retraining_status, start_retrain
-from logic.upload_files import upload_files
+from logic.upload_files import upload_files, UPLOADED_FILES_FOLDER
 
 from database_client.django_client import add_stored_map
 
@@ -291,6 +291,15 @@ def retrieve_local_image(image_path):
         return "image not found", 404
 
     return send_from_directory('/data/', image_path.replace("/data/", ""))
+
+
+@app.route('/data_backend/download_file/<path:file_path>', methods=['GET'])
+def download_file(file_path):
+    path = f'{UPLOADED_FILES_FOLDER}/{file_path}'
+    if not os.path.exists(path):
+        return "file not found", 404
+
+    return send_from_directory(UPLOADED_FILES_FOLDER, file_path)
 
 
 @app.route('/data_backend/document/details_by_id', methods=['POST'])

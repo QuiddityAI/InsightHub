@@ -35,6 +35,9 @@ export default {
       for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon"]) {
         rendering[field] = rendering[field] ? eval(rendering[field]) : (item) => ""
       }
+      for (const link of rendering.links || []) {
+        link.url = link.url ? eval(link.url) : ""
+      }
       that.rendering = rendering
 
       const payload = {
@@ -122,6 +125,15 @@ export default {
           ({{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description }}
           {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}):</div>
         <div class="mt-1 text-gray-700 text-xs">{{ relevant_part.value }}</div>
+      </div>
+    </div>
+
+    <div class="mt-2 flex flex-none flex-row">
+      <div v-for="link in rendering ? rendering.links : []">
+        <button v-if="link.url(item)"
+          class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+          <a :href="link.url(item)" target="_blank">{{ link.label }}</a>
+        </button>
       </div>
     </div>
 
