@@ -98,22 +98,22 @@ class VectorSearchEngineClient(object):
         }
 
         # create payload indexes:
-        for field in dataset.object_fields.values():
-            if not field.is_available_for_filtering:
+        for other_field in dataset.object_fields.values():
+            if not other_field.is_available_for_filtering:
                 continue
-            if field.field_type not in indexable_field_type_to_qdrant_type:
+            if other_field.field_type not in indexable_field_type_to_qdrant_type:
                 continue
-            if field.is_array and field.field_type != FieldType.TAG:
+            if other_field.is_array and other_field.field_type != FieldType.TAG:
                 logging.warning("Array fields are not yet supported for indexing in Qdrant, must be flattened somehow")
                 continue
 
-            logging.info(f"Creating indexed payload field {field.identifier} with type {field.field_type}")
+            logging.warning(f"Creating indexed payload field {other_field.identifier} with type {other_field.field_type}")
             self.client.create_payload_index(collection_name=collection_name,
-                field_name=field.identifier,
-                field_schema=indexable_field_type_to_qdrant_type[field.field_type])
+                field_name=other_field.identifier,
+                field_schema=indexable_field_type_to_qdrant_type[other_field.field_type])
 
         if field.is_array:
-            logging.info(f"Creating payload index for parent_id field because this is an array field with sub-items")
+            logging.warning(f"Creating payload index for parent_id field because this is an array field with sub-items")
             self.client.create_payload_index(collection_name=collection_name,
                 field_name='parent_id',
                 field_schema=PayloadSchemaType.KEYWORD)
