@@ -45,3 +45,11 @@ export function ensureLength(x, size, fillValue, removeRest = false) {
   // the array length is in this case correct on-demand in the updateGeometry() method
   return x
 }
+
+export function highlight_words_in_text(text, words) {
+  if (!words || words.length === 0) return text
+  const stopWords = ["a", "an", "and", "the", "in", "on", "is", "are", "was", "were", "to", "for", "of"]
+  const filteredWords = words.filter(word => !stopWords.includes(word))
+  const regex = new RegExp(`\\b(${filteredWords.join("|")})\\b`, "gi")
+  return text.replace(regex, (match) => `<b>${match}</b>`)
+}

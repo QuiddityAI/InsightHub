@@ -6,10 +6,13 @@ import LoadingDotAnimation from "./LoadingDotAnimation.vue"
 import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
 
 import { httpClient } from "../../api/httpClient"
+import { highlight_words_in_text } from "../../utils/utils"
 
 import { useToast } from "primevue/usetoast"
 import { useAppStateStore } from "../../stores/app_state_store"
+import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
+const mapState = useMapStateStore()
 const toast = useToast()
 </script>
 
@@ -110,7 +113,7 @@ export default {
         <p class="mt-1 flex-none text-xs leading-5 text-gray-500" v-html="rendering ? rendering.subtitle(item) : ''">
         </p>
         <p class="mt-2 flex-1 overflow-y-auto text-xs text-gray-700"
-          v-html="loading_item ? 'loading...' : rendering ? rendering.body(item) : null"></p>
+          v-html="loading_item ? 'loading...' : rendering ? highlight_words_in_text(rendering.body(item), mapState.map_parameters.search.all_field_query.split(' ')) : null"></p>
 
       </div>
       <div v-if="rendering ? rendering.image(item) : false" class="flex-none w-32 flex flex-col justify-center ml-2">
@@ -124,7 +127,7 @@ export default {
         <div class="font-semibold text-gray-600 text-sm">Relevant Part
           ({{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description }}
           {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}):</div>
-        <div class="mt-1 text-gray-700 text-xs">{{ relevant_part.value }}</div>
+        <div class="mt-1 text-gray-700 text-xs" v-html="highlight_words_in_text(relevant_part.value, mapState.map_parameters.search.all_field_query.split(' '))"></div>
       </div>
     </div>
 
