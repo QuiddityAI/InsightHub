@@ -256,7 +256,11 @@ class TextSearchEngineClient(object):
         }
         if highlights:
             query['highlight'] = {
-                "fields": {field: {} for field in search_fields}
+                "fields": {field: {} for field in search_fields},
+                "number_of_fragments": 1,
+                "order": "score",
+                "pre_tags": ["<b>"],
+                "post_tags": ["</b>"],
             }
 
         response = self.client.search(

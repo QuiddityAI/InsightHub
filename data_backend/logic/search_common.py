@@ -225,7 +225,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
             '_dataset_id': dataset.id,
             '_origins': [{'type': 'fulltext', 'field': 'unknown',
                           'query': query.positive_query_str, 'score': item['_score'], 'rank': i+1}],
-            '_highlights': " ".join([" ".join(x) for x in item.get('highlight', {}).values()])
+            '_relevant_parts': [{'origin': 'keyword_search', 'field': field_name, 'index': None, 'value': " [...] ".join(highlights)} for field_name, highlights in item.get('highlight', {}).items()]
         }
     return items
 
@@ -298,7 +298,7 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
                           'query': query.positive_query_str, 'score': item.score, 'rank': i+1}],
         }
         if is_array_field:
-            items[item.id]['_relevant_parts'] = [{'field': array_source_field, 'index': item.array_index}]
+            items[item.id]['_relevant_parts'] = [{'origin': 'vector_array', 'field': array_source_field, 'index': item.array_index}]
 
     # TODO: if purpose is map, get vectors directly from vector DB:
     # result_item[map_vector_field] = vector_search_result.vector[search_vector_field]

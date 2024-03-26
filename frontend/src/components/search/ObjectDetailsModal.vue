@@ -135,13 +135,19 @@ export default {
       </div>
     </div>
 
-    <div v-if="item._extracted_relevant_parts">
-      <div v-for="relevant_part in item._extracted_relevant_parts"
+    <div v-if="item._relevant_parts">
+      <div v-for="relevant_part in item._relevant_parts"
         class="mt-2 rounded-md bg-gray-100 py-2 px-2">
-        <div class="font-semibold text-gray-600 text-sm">Relevant Part
-          ({{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description }}
-          {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}):</div>
-        <div class="mt-1 text-gray-700 text-xs" v-html="highlight_words_in_text(relevant_part.value, mapState.map_parameters.search.all_field_query.split(' '))"></div>
+        <div v-if="relevant_part.index" class="font-semibold text-gray-600 text-sm">Relevant Part in
+          {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description }}
+          (chunk {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}):</div>
+        <div v-else class="font-semibold text-gray-600 text-sm">Relevant Part in
+          {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description || appState.datasets[item._dataset_id].object_fields[relevant_part.field].identifier }}
+        </div>
+        <div v-if="relevant_part.value && relevant_part.origin === 'vector_array'" class="mt-1 text-gray-700 text-xs"
+          v-html="highlight_words_in_text(relevant_part.value, mapState.map_parameters.search.all_field_query.split(' '))"></div>
+        <div v-if="relevant_part.value && relevant_part.origin === 'keyword_search'" class="mt-1 text-gray-700 text-xs"
+          v-html="relevant_part.value"></div>
       </div>
     </div>
 

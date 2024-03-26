@@ -374,6 +374,10 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
         assert isinstance(relevant_parts, list)
         original_fields = fields
         for relevant_part in relevant_parts:
+            if relevant_part.get('origin') == 'keyword_search':  # type: ignore
+                # the relevant part comes from keyword search where the text is already present
+                # so we don't need to fetch any source fields
+                continue
             fields = tuple([*fields, relevant_part['field']])  # type: ignore
     search_engine_client = TextSearchEngineClient.get_instance()
     items = search_engine_client.get_items_by_ids(database_name, [item_id], fields=fields)
@@ -382,16 +386,16 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
     item = items[0]
 
     if relevant_parts:
-        item['_extracted_relevant_parts'] = []
         for relevant_part in relevant_parts:
-            item['_extracted_relevant_parts'].append({
-                'field': relevant_part['field'],  # type: ignore
-                'value': item[relevant_part['field']][relevant_part['index']],  # type: ignore
-                'index': relevant_part['index'],  # type: ignore
-                'array_size': len(item[relevant_part['field']])  # type: ignore
-            })
-            if relevant_part['field'] not in original_fields:  # type: ignore
-                del item[relevant_part['field']]  # type: ignore
+            if relevant_part['index'] is not None:  # type: ignore
+                try:
+                    relevant_part['value'] = item[relevant_part['field']][relevant_part['index']]  # type: ignore
+                except (IndexError, KeyError):
+                    relevant_part['value'] = None  # type: ignore
+                relevant_part['array_size'] = len(item.get(relevant_part['field'], []))  # type: ignore
+                if relevant_part['field'] not in original_fields:  # type: ignore
+                    del item[relevant_part['field']]  # type: ignore
+        item['_relevant_parts'] = relevant_parts
     return item
 
 

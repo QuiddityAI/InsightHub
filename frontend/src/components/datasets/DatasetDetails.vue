@@ -195,7 +195,7 @@ export default {
                 <ProgressBar v-if="progress > 0" :value="progress" :showValue="false" />
                 <Message v-for="msg of messages" :key="msg" severity="error" @close="onMessageClose">{{ msg }}</Message>
                 <div v-for="(file, index) of files" :key="file.name + file.type + file.size" class="card m-0 px-2 flex flex-row justify-between items-center gap-1">
-                  <span class="font-semibold">{{ file.name }}</span>
+                  <span class="max-w-[350px] font-semibold break-words">{{ file.name }}</span>
                   <div class="flex-1"></div>
                   <Badge value="Waiting" severity="warning" class="flex-none w-14" />
                   <Button label="X" @click="removeFileCallback(index)" outlined rounded  severity="danger" />
