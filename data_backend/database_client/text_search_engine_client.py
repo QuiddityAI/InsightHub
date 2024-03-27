@@ -267,4 +267,5 @@ class TextSearchEngineClient(object):
             body = query,
             index = index_name
         )
-        return response.get("hits", {}).get("hits", [])
+        total_matches = response.get("hits", {}).get("total", {}).get("value", 0)
+        return response.get("hits", {}).get("hits", []), total_matches

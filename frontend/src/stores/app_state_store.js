@@ -458,6 +458,7 @@ export const useAppStateStore = defineStore("appState", {
     reset_search_results_and_map(params = { leave_map_unchanged: false }) {
       // results:
       this.search_result_ids = []
+      this.search_result_total_matches = 0
       this.search_result_items = {}
       this.map_task_id = null
       this.map_item_details = []
@@ -618,6 +619,7 @@ export const useAppStateStore = defineStore("appState", {
     },
     show_received_search_results(response_data) {
       this.search_result_ids = response_data["sorted_ids"]
+      this.search_result_total_matches = response_data["total_matches"]
       this.search_result_items = response_data["items_by_dataset"]
       this.search_timings = response_data["timings"]
     },
@@ -748,6 +750,7 @@ export const useAppStateStore = defineStore("appState", {
         const results_per_point = results["per_point_data"]
         if (results_per_point["item_ids"]?.length > 0) {
           that.search_result_ids = results_per_point["item_ids"]
+          this.search_result_total_matches = results["total_matches"]
           that.mapState.per_point.item_id = results_per_point["item_ids"]
           that.fields_already_received.add("item_ids")
         }

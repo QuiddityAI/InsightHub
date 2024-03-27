@@ -212,6 +212,7 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
     sorted_ids = search_results_all['sorted_ids']
     items_by_dataset = search_results_all['items_by_dataset']
     map_data['results']['search_result_score_info'] = search_results_all['score_info']
+    map_data['results']['total_matches'] = search_results_all['total_matches']
     timings.log("database query")
 
     if not sorted_ids:
@@ -294,6 +295,7 @@ def reuse_search_phase(map_data: dict, similar_map: dict, params: DotDict, datas
     logging.warning("reusing search stage results")
     # copy the search stage results from the similar map to the current map:
     map_data['results']['search_result_score_info'] = deepcopy(similar_map['results']['search_result_score_info'])
+    map_data['results']['total_matches'] = deepcopy(similar_map['results']['total_matches'])
     map_data["results"]["thumbnail_atlas_filename"] = deepcopy(similar_map["results"].get("thumbnail_atlas_filename"))
     map_data["results"]["thumbnail_sprite_size"] = deepcopy(similar_map["results"].get("thumbnail_sprite_size"))
     map_data["results"]["per_point_data"]["thumbnail_aspect_ratios"] = deepcopy(similar_map["results"].get("per_point_data", {}).get("thumbnail_aspect_ratios"))
@@ -442,7 +444,7 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
             # might happend when there are too few points
             logging.warning(f"UMAP failed: {e}")
             raw_projections = np.zeros((len(vectors), umap_dimensions_required))
-        map_data["results"]["per_point_data"]["raw_projections"] = raw_projections.tolist()
+        map_data["results"]["per_point_data"]["raw_projections"] = raw_projections.tolist()  # type: ignore
         apply_projections_to_positions(raw_projections)
         timings.log("UMAP fit transform")
     else:
@@ -451,7 +453,7 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
 
     transform_coordinate_system_and_write_to_map()
     map_data["progress"]["embeddings_available"] = True
-    return raw_projections, final_positions
+    return raw_projections, final_positions  # type: ignore
 
 
 def reuse_projection_phase(map_data: dict, similar_map: dict) -> tuple[np.ndarray, np.ndarray]:

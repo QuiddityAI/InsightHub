@@ -216,7 +216,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
                                 required_fields: list[str], limit: int, page: int):
     text_db_client = TextSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    search_result = text_db_client.get_search_results(dataset.actual_database_name, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
+    search_result, total_matches = text_db_client.get_search_results(dataset.actual_database_name, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     for i, item in enumerate(search_result):
@@ -227,7 +227,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
                           'query': query.positive_query_str, 'score': item['_score'], 'rank': i+1}],
             '_relevant_parts': [{'origin': 'keyword_search', 'field': field_name, 'index': None, 'value': " [...] ".join(highlights)} for field_name, highlights in item.get('highlight', {}).items()]
         }
-    return items
+    return items, total_matches
 
 
 def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryInput,

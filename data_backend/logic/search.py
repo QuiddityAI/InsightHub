@@ -39,15 +39,17 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
     sorted_id_sets = []
     all_items_by_dataset = {}
     all_score_info = {}
+    total_matches_sum = 0
     for dataset_id in params.search.dataset_ids:
         dataset = get_dataset(dataset_id)
         score_info = {}
+        total_matches = 0
 
         if dataset.source_plugin == SourcePlugin.BING_WEB_API and params.search.search_type == "external_input":
             query = params.search.all_field_query
             limit = params.search.result_list_items_per_page if purpose == "list" else params.search.max_items_used_for_mapping
             limit = min(limit, dataset.source_plugin_parameters.get("max_results") or 300, 300)
-            sorted_ids, full_items = bing_web_search_formatted(dataset.id, query, limit=limit, website_filter=dataset.source_plugin_parameters.get("website_filter"))
+            sorted_ids, full_items, total_matches = bing_web_search_formatted(dataset.id, query, limit=limit, website_filter=dataset.source_plugin_parameters.get("website_filter"))
             sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
             all_items_by_dataset[dataset_id] = full_items
             continue
@@ -65,7 +67,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
             if params.search.use_separate_queries:
                 sorted_ids, full_items = get_search_results_using_separate_queries(dataset, params.search, params.vectorize, purpose, timings)
             else:
-                sorted_ids, full_items, score_info = get_search_results_using_combined_query(dataset, params.search, params.vectorize, purpose, timings)
+                sorted_ids, full_items, score_info, total_matches = get_search_results_using_combined_query(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "cluster":
             sorted_ids, full_items = get_search_results_for_cluster(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "collection":
@@ -75,7 +77,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         elif params.search.search_type == "similar_to_item":
             sorted_ids, full_items, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "global_map":
-            sorted_ids, full_items, score_info = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
+            sorted_ids, full_items, score_info, total_matches = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
         else:
             logging.error("Unsupported search type: " + params.search.search_type)
             sorted_ids = []
@@ -83,6 +85,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
         all_items_by_dataset[dataset_id] = full_items
         all_score_info.update(score_info)
+        total_matches_sum += total_matches
 
     # interleave results from different datasets:
     all_ids = [x for x in itertools.chain(*itertools.zip_longest(*sorted_id_sets)) if x is not None]
@@ -91,12 +94,13 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         "sorted_ids": all_ids,
         "items_by_dataset": all_items_by_dataset,
         "score_info": all_score_info,
+        "total_matches": total_matches_sum,
         "timings": timings.get_timestamps(),
     }
     return result
 
 
-def get_search_results_using_combined_query(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
+def get_search_results_using_combined_query(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict, int]:
     raw_query = search_settings.all_field_query
     negative_query = search_settings.all_field_query_negative
     image_query = ""  # TODO: search_settings.all_field_image_url
@@ -120,6 +124,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     #     return results, {}
 
     queries = QueryInput.from_raw_query(raw_query, negative_query, image_query, negative_image_query)
+    actual_total_matches = 0
     result_sets: list[dict] = []
     for query in queries:
         text_fields = []
@@ -133,19 +138,21 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
                                                     internal_input_weight=search_settings.internal_input_weight,
                                                     limit=limit, page=page, score_threshold=score_threshold)
                 result_sets.append(results)
+                actual_total_matches = max(actual_total_matches, len(results))
                 timings.log("vector database query")
             elif search_settings.search_algorithm in ['keyword', 'hybrid'] and field.field_type == FieldType.TEXT:
                 text_fields.append(field.identifier)
             else:
                 continue
         if text_fields:
-            results = get_fulltext_search_results(dataset, text_fields, query, required_fields=['_id'], limit=limit, page=page)
+            results, total_matches = get_fulltext_search_results(dataset, text_fields, query, required_fields=['_id'], limit=limit, page=page)
             result_sets.append(results)
+            actual_total_matches = max(actual_total_matches, total_matches)
             timings.log("fulltext database query")
 
     # TODO: boost fulltext search the more words with low document frequency appear in query?
 
-    return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
+    return *combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings), actual_total_matches
 
 
 def get_search_results_using_separate_queries(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
@@ -331,7 +338,7 @@ def get_search_results_for_stored_map(map_data):
     return result
 
 
-def get_search_results_for_global_map(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
+def get_search_results_for_global_map(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict, int]:
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
     if not all([limit, page is not None, dataset]):
@@ -351,8 +358,9 @@ def get_search_results_for_global_map(dataset, search_settings: DotDict, vectori
         }
     result_sets: list[dict] = [items]
 
+    total_matches = search_engine_client.get_item_count(dataset.actual_database_name)
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
-    return combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings)
+    return *combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings), total_matches
 
 
 def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_meta_info: dict, purpose: str, timings) -> tuple[list[str], dict[str, dict]]:

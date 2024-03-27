@@ -19,7 +19,7 @@ cache = Cache("/data/quiddity_data/bing_web_search_cache/")
 
 @cache.memoize(expire=3600*24*7*4)  # 4 weeks
 def bing_web_search_formatted(dataset_id: int, query: str, website_filter: str | None = None, limit: int = 300):
-    data = bing_web_search(query, website_filter, limit)
+    data, total_matches = bing_web_search(query, website_filter, limit)
     # TODO: remove unused and distracting fields (e.g. "id" that is only valid for this query)
     logging.warning(f"Inserting {len(data)} Bing web results into dataset {dataset_id}")
     # _id field is added in insert_many:
@@ -33,32 +33,34 @@ def bing_web_search_formatted(dataset_id: int, query: str, website_filter: str |
         item["_reciprocal_rank_score"] = score
     sorted_ids = [e["_id"] for e in data]
     full_items = {e["_id"]: e for e in data}
-    return sorted_ids, full_items
+    return sorted_ids, full_items, total_matches
 
 
-@lru_cache
 def bing_web_search(query: str, website_filter: str | None = None, limit: int = 50):
     per_page = 50  # maximum allowed by Bing
     results = []
+    actual_total_matches = 0
     while len(results) < limit:
         if len(results) > 0:
             # hacky workaround to avoid rate limit of 3 requests per second
             time.sleep(0.33)
         # the API doesn't always return the number of requested results even if there are more
         # (and it might also return more results than requested)
-        partial_results = bing_web_search_call(query, website_filter, min(per_page, limit - len(results)), len(results))
+        partial_results, total_matches = bing_web_search_call(query, website_filter, min(per_page, limit - len(results)), len(results))
         results += partial_results
+        actual_total_matches = total_matches
         logging.warning(f"bing_web_search: {len(results)} results so far")
         if len(partial_results) == 0:
+            actual_total_matches = len(results)
             break
     results = results[:limit]
     for item in results:
         # query needs to be part of id because snippet is query specific
         item["snippet_id"] = item["url"] + f"_{query}"
-    return results
+    return results, actual_total_matches
 
 
-def bing_web_search_call(query: str, website_filter: str | None = None, limit: int = 50, offset: int = 0) -> list:
+def bing_web_search_call(query: str, website_filter: str | None = None, limit: int = 50, offset: int = 0) -> tuple[list, int]:
     if website_filter:
         query = f'site:{website_filter} {query}'
     market = 'en-US'
@@ -77,11 +79,12 @@ def bing_web_search_call(query: str, website_filter: str | None = None, limit: i
     except requests.exceptions.HTTPError as err:
         logging.error(err)
         logging.error(err.response.text)
-        return []
+        return [], 0
     if 'webPages' not in response.json():
         logging.error(response.json())
-        return []
+        return [], 0
 
     logging.warning(f"Estimated number of results: {response.json()['webPages']['totalEstimatedMatches']}, {limit} {offset}")
+    total_matches = response.json()['webPages']['totalEstimatedMatches']
     data = response.json()['webPages']['value']
-    return data
+    return data, total_matches
