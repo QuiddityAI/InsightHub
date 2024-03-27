@@ -37,10 +37,24 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
+    this.get_dataset_additional_info()
   },
   watch: {
   },
   methods: {
+    get_dataset_additional_info() {
+      const that = this
+      httpClient
+        .post("/org/data_map/dataset", { dataset_id: this.dataset.id, additional_fields: ["item_count", "origin_template"]})
+        .then(function (response) {
+          // don't overwrite the whole dataset object as other fields need special handling
+          that.dataset.item_count = response.data.item_count
+          that.dataset.origin_template = response.data.origin_template
+        })
+        .catch(function (error) {
+          console.error(error)
+        })
+    },
     delete_dataset() {
       if (!this.dataset.created_in_ui) {
         this.$toast.add({severity:'info', summary: 'Info', detail: 'You cannot delete this dataset because it was not created from the UI. Use the backend to delete it.'})
@@ -161,6 +175,23 @@ export default {
         class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </button>
+    </div>
+
+    <div class="flex flex-col ml-2 mb-3 mt-2 gap-2">
+      <p v-if="dataset.origin_template" class="text-gray-700">
+        Template: {{ dataset.origin_template.name }}
+      </p>
+      <p class="text-gray-700">
+        Items in this dataset: {{ dataset.item_count !== undefined ? dataset.item_count.toLocaleString() : 'unknown' }}
+      </p>
+      <div>
+        <button
+          @click="appState.show_global_map([dataset.id])"
+          title="Show all items (or a representative subset if there are too many)"
+          class="ml-1 rounded-md px-2 h-7 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
+          {{ dataset.item_count < 2000 ? 'Show all items' : 'Show an overview of representative subset' }}
+        </button>
+      </div>
     </div>
 
     <div v-if="dataset.admins?.includes(appState.user.id)">

@@ -906,7 +906,11 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.origin_display_name = `${collection.name}: ${class_name}`
       this.request_search_results()
     },
-    show_global_map() {
+    show_global_map(dataset_ids = []) {
+      if (dataset_ids.length > 0) {
+        this.settings.search.dataset_ids = dataset_ids
+        this.on_selected_datasets_changed()
+      }
       this.settings.search.search_type = "global_map"
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
