@@ -167,7 +167,7 @@ export default {
 </script>
 
 <template>
-  <div class="px-3 pt-3 pb-2">
+  <div class="px-3 pt-3 pb-2 pointer-events-auto rounded-md bg-white shadow-sm">
     <!-- Database Selection -->
     <div class="mb-2 flex items-center justify-between">
       <a
@@ -275,15 +275,15 @@ export default {
           <input
             v-model.number="appState.settings.search.internal_input_weight"
             class="w-10 text-sm text-gray-500"
-            @keyup.enter="$emit('request_search_results')"
-            @submit="$emit('request_search_results')" />
+            @keyup.enter="appState.request_search_results"
+            @submit="appState.request_search_results" />
         </div>
       </div>
       <div v-if="['external_input', 'similar_to_item'].includes(appState.settings.search.search_type)" class="flex h-9 flex-1 flex-row items-center">
         <input
           type="search"
           name="search"
-          @keyup.enter="$emit('request_search_results')"
+          @keyup.enter="appState.request_search_results"
           v-model="appState.settings.search.all_field_query"
           :placeholder="
             appState.settings.search.search_type == 'external_input'
@@ -292,6 +292,14 @@ export default {
           "
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
       </div>
+      <button class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
+        @click="appState.request_search_results">
+        Search
+      </button>
+      <button class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
+        @click="appState.answer_question">
+        Answer Question
+      </button>
       <button
         v-if="appState.dev_mode"
         title="Negative Search"
@@ -318,7 +326,7 @@ export default {
       <input
         type="search"
         name="negative_search"
-        @keyup.enter="$emit('request_search_results')"
+        @keyup.enter="appState.request_search_results"
         v-model="appState.settings.search.all_field_query_negative"
         :placeholder="
           appState.settings.search.search_type == 'external_input'
@@ -845,13 +853,13 @@ export default {
         <input
           type="button"
           button
-          @click="$emit('request_search_results')"
+          @click="appState.request_search_results"
           class="rounded px-1 text-sm text-gray-500 shadow-sm hover:bg-blue-100 active:bg-blue-200"
           value="Rerun" />
         <input
           type="button"
           button
-          @click="$emit('reset_search_box')"
+          @click="appState.reset_search_box"
           class="rounded px-1 text-sm text-gray-500 shadow-sm hover:bg-blue-100 active:bg-blue-200"
           value="Reset" />
       </div>

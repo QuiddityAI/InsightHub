@@ -12,12 +12,37 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import CollectionItem, DataCollection, CollectionChat, Dataset, FieldType
-from .serializers import CollectionChatSerializer, CollectionSerializer
+from .models import CollectionItem, DataCollection, Chat, Dataset, FieldType
+from .serializers import ChatSerializer, CollectionSerializer
 from .data_backend_client import data_backend_url, get_item_by_id
 from .chatgpt_client import get_chatgpt_response_using_history
 
 from .views import is_from_backend
+
+
+@csrf_exempt
+def create_chat_from_search_settings(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        search_settings: dict = data["search_settings"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    chat = Chat.objects.create(
+        created_by=request.user,
+        search_settings=search_settings,
+        name=search_settings['all_field_query'],
+    )
+
+    chat.add_question(search_settings['all_field_query'])
+
+    data = ChatSerializer(chat).data
+    return HttpResponse(json.dumps(data), content_type="application/json", status=201)
 
 
 @csrf_exempt
@@ -42,13 +67,14 @@ def add_collection_class_chat(request):
     if item.created_by != request.user:
         return HttpResponse(status=401)
 
-    chat = CollectionChat.objects.create(
+    chat = Chat.objects.create(
+        created_by=request.user,
         collection=item,
         class_name=class_name,
-        name=chat_name
+        name=chat_name,
     )
 
-    data = CollectionChatSerializer(chat).data
+    data = ChatSerializer(chat).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=201)
 
 
@@ -67,16 +93,34 @@ def add_chat_question(request):
         return HttpResponse(status=400)
 
     try:
-        item = CollectionChat.objects.get(id=chat_id)
-    except CollectionChat.DoesNotExist:
+        item = Chat.objects.get(id=chat_id)
+    except Chat.DoesNotExist:
         return HttpResponse(status=404)
-    if item.collection.created_by != request.user:
+    if item.created_by != request.user:
         return HttpResponse(status=401)
 
     item.add_question(question)
 
-    data = CollectionChatSerializer(item).data
+    data = ChatSerializer(item).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=201)
+
+
+@csrf_exempt
+def get_chats(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    chats = Chat.objects.filter(created_by=request.user.id, collection__isnull=True)
+    chat_ids = [{'id': chat.id, 'name': chat.name} for chat in chats]  # type: ignore
+
+    return HttpResponse(json.dumps(chat_ids), content_type="application/json", status=200)
 
 
 @csrf_exempt
@@ -93,7 +137,7 @@ def get_collection_class_chats(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    chats = CollectionChat.objects.filter(collection_id=collection_id, class_name=class_name)
+    chats = Chat.objects.filter(created_by=request.user.id, collection_id=collection_id, class_name=class_name)
     chat_ids = [{'id': chat.id, 'name': chat.name} for chat in chats]  # type: ignore
 
     return HttpResponse(json.dumps(chat_ids), content_type="application/json", status=200)
@@ -113,13 +157,13 @@ def get_chat_by_id(request):
         return HttpResponse(status=400)
 
     try:
-        item = CollectionChat.objects.get(id=chat_id)
-    except CollectionChat.DoesNotExist:
+        item = Chat.objects.get(id=chat_id)
+    except Chat.DoesNotExist:
         return HttpResponse(status=404)
-    if item.collection.created_by != request.user:
+    if item.created_by != request.user:
         return HttpResponse(status=401)
 
-    data = CollectionChatSerializer(item).data
+    data = ChatSerializer(item).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
 
 

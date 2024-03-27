@@ -12,7 +12,7 @@ import InputGroupAddon from 'primevue/inputgroupaddon';
 import Button from 'primevue/button';
 
 import CollectionItemList from "./CollectionItemList.vue"
-import ChatList from "./ChatList.vue"
+import ChatList from "../chats/ChatList.vue"
 import CollectionTableView from "./CollectionTableView.vue"
 import { FieldType } from "../../utils/utils"
 

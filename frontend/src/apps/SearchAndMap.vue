@@ -30,6 +30,7 @@ import CollectionItem from "../components/collections/CollectionItem.vue"
 import AddToCollectionButtons from "../components/collections/AddToCollectionButtons.vue"
 import StatisticList from "../components/search/StatisticList.vue"
 import DatasetsArea from "../components/datasets/DatasetsArea.vue"
+import ChatList from "../components/chats/ChatList.vue"
 
 import { httpClient } from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
@@ -179,6 +180,9 @@ export default {
     this.eventBus.on("show_results_tab", () => {
       this.selected_tab = "results"
     })
+    this.eventBus.on("show_chat", () => {
+      this.selected_tab = "chats"
+    })
     this.eventBus.on("show_score_info_chart", () => {
       this.show_score_info_chart()
     })
@@ -295,10 +299,7 @@ export default {
       <!-- left column -->
       <div ref="left_column" class="pointer-events-none flex flex-col overflow-hidden h-[calc(100%-3em)]">
         <!-- search card -->
-        <SearchArea
-          @request_search_results="appState.request_search_results"
-          @reset_search_box="appState.reset_search_box"
-          class="pointer-events-auto flex-none rounded-md bg-white shadow-sm"></SearchArea>
+        <SearchArea class="flex-none"></SearchArea>
 
         <!-- tab box -->
         <div
@@ -315,6 +316,12 @@ export default {
               :class="{ 'text-blue-500': selected_tab === 'results' }"
               class="flex-1">
               Current View
+            </button>
+            <button
+              @click="selected_tab = 'chats'"
+              :class="{ 'text-blue-500': selected_tab === 'chats' }"
+              class="flex-1">
+              Questions
             </button>
             <button
               @click="selected_tab = 'collections'; eventBus.emit('collections_tab_is_clicked')"
@@ -391,7 +398,8 @@ export default {
               <ResultList></ResultList>
             </div>
 
-            <!-- collections -->
+            <ChatList v-if="selected_tab === 'chats'"></ChatList>
+
             <CollectionArea v-if="selected_tab === 'collections'"> </CollectionArea>
 
             <DatasetsArea v-if="selected_tab === 'datasets'"></DatasetsArea>

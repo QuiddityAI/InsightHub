@@ -14,7 +14,7 @@ import requests
 
 from simple_history.models import HistoricalRecords
 
-from .data_backend_client import data_backend_url, get_item_by_id, delete_dataset_content
+from .data_backend_client import data_backend_url, get_item_by_id, delete_dataset_content, get_question_context
 from .chatgpt_client import get_chatgpt_response_using_history
 
 
@@ -1162,18 +1162,35 @@ class TrainedClassifier(models.Model):
         unique_together = [['collection', 'class_name', 'embedding_space']]
 
 
-class CollectionChat(models.Model):
+class Chat(models.Model):
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=True,
+        null=True)
+    created_by = models.ForeignKey(
+        verbose_name="Created By",
+        to=User,
+        related_name='+',
+        on_delete=models.CASCADE,
+        blank=False,
+        null=False)
+    search_settings = models.JSONField(
+        verbose_name="Search Settings",
+        default=dict,
+        blank=True,
+        null=True)
     collection = models.ForeignKey(
         verbose_name="Collection",
         to=DataCollection,
         on_delete=models.CASCADE,
-        blank=False,
-        null=False)
+        blank=True,
+        null=True)
     class_name = models.CharField(
         verbose_name="Class",
         max_length=200,
-        blank=False,
-        null=False)
+        blank=True,
+        null=True)
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
@@ -1186,11 +1203,6 @@ class CollectionChat(models.Model):
         editable=False,
         blank=False,
         null=False)
-    name = models.CharField(
-        verbose_name="Name",
-        max_length=200,
-        blank=True,
-        null=True)
     chat_history = models.JSONField(
         verbose_name="Chat History",
         default=list,
@@ -1216,28 +1228,36 @@ class CollectionChat(models.Model):
         obj = self
 
         def answer_question():
+
             system_prompt = "You are a helpful assistant. You can answer questions based on the following items. " + \
-                "Answer in one concise sentence. Mention the item id you got the answer from in brackets after the sentence. If you need more information, ask for it."
-            collection_items = CollectionItem.objects.filter(collection=self.collection)
-            included_items = 0
-            for item in collection_items:
-                if obj.class_name not in item.classes:
-                    continue
-                text = None
-                if item.field_type == FieldType.TEXT:
-                    text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
-                if item.field_type == FieldType.IDENTIFIER:
-                    ds_id, item_id = json.loads(item.value)  # type: ignore
-                    fields = list(Dataset.objects.get(id=ds_id).descriptive_text_fields.all().values_list("identifier", flat=True))
-                    fields.append("_id")
-                    full_item = get_item_by_id(ds_id, item_id, fields)
-                    text = json.dumps(full_item, indent=2)
-                if not text:
-                    continue
-                included_items += 1
-                system_prompt += "\n" + text + "\n"
-                if included_items > 5:
-                    break
+                "Answer in one concise sentence. Mention the item identifier '[dataset_id, item_id]' you got the answer from after the sentence. If you need more information, ask for it."
+
+            if obj.collection is not None:
+                collection_items = CollectionItem.objects.filter(collection=self.collection)
+                included_items = 0
+                for item in collection_items:
+                    if obj.class_name not in item.classes:
+                        continue
+                    text = None
+                    if item.field_type == FieldType.TEXT:
+                        text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
+                    if item.field_type == FieldType.IDENTIFIER:
+                        ds_id, item_id = json.loads(item.value)  # type: ignore
+                        fields = list(Dataset.objects.get(id=ds_id).descriptive_text_fields.all().values_list("identifier", flat=True))
+                        fields.append("_id")
+                        full_item = get_item_by_id(ds_id, item_id, fields)
+                        text = json.dumps(full_item, indent=2)
+                    if not text:
+                        continue
+                    included_items += 1
+                    system_prompt += "\n" + text + "\n"
+                    if included_items > 5:
+                        break
+            else:
+                assert isinstance(obj.search_settings, dict)
+                context = get_question_context(obj.search_settings)
+                system_prompt += "\n\n" + context + "\n"
+            logging.warning(system_prompt)
 
             history = []
             history.append({"role": "system", "content": system_prompt})
@@ -1275,3 +1295,7 @@ class CollectionChat(models.Model):
             logging.error("Error in add_question", e)
             obj.is_processing = False
             obj.save()
+
+    class Meta:
+        verbose_name = "Chat"
+        verbose_name_plural = "Chats"

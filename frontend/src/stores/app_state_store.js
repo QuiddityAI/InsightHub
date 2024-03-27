@@ -71,6 +71,9 @@ export const useAppStateStore = defineStore("appState", {
       collections: [],
       last_used_collection_id: null,
 
+      // chats:
+      chats: [],
+
       search_history: [],
       stored_maps: [],
 
@@ -270,6 +273,14 @@ export const useAppStateStore = defineStore("appState", {
         .post("/org/data_map/get_stored_maps", get_stored_maps_body)
         .then(function (response) {
           that.stored_maps = response.data
+        })
+
+      this.chats = []
+      const get_chats_body = {}
+      httpClient
+        .post("/org/data_map/get_chats", get_chats_body)
+        .then(function (response) {
+          that.chats = response.data
         })
     },
     retrieve_available_organizations(on_success = null) {
@@ -557,6 +568,32 @@ export const useAppStateStore = defineStore("appState", {
         .then(function (response) {
           that.show_received_search_results(response.data)
           that.request_map()
+        })
+    },
+    answer_question() {
+      const that = this
+      if (this.settings.search.dataset_ids.length === 0) return
+      if (
+        this.settings.search.search_type == "external_input" &&
+        !this.settings.search.use_separate_queries &&
+        !this.settings.search.all_field_query
+      ) {
+        this.reset_search_results_and_map()
+        this.reset_search_box()
+        return
+      }
+
+      this.reset_search_results_and_map({ leave_map_unchanged: false })
+      this.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")  // is this needed?
+
+      const body = { search_settings: this.settings.search }
+      httpClient
+        .post(`/org/data_map/create_chat_from_search_settings`, body)
+        .then(function (response) {
+          const chat_data = response.data
+          that.chats.push(chat_data)
+          that.eventBus.emit("show_chat", {chat_id: chat_data.id})
+          that.reset_search_box()
         })
     },
     get_current_map_name() {

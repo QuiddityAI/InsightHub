@@ -174,6 +174,44 @@ def get_search_list_result_endpoint():
     return response
 
 
+@app.route('/data_backend/question_context', methods=['POST'])
+def get_question_context():
+    # turn params into string to make it cachable (aka hashable):
+    data: dict | None = request.json
+    if not data:
+        return "no data", 400
+    data["search_settings"]["result_list_items_per_page"] = 3
+    params_str = json.dumps({'search': data["search_settings"]}, indent=2)
+    # ignore_cache = request.args.get('ignore_cache') == "true"
+    # print(params_str)
+    try:
+        result = get_search_results(params_str, purpose='list')
+    except ValueError as e:
+        print(e)
+        import traceback
+        traceback.print_exc()
+        return str(e.args), 400  # TODO: there could be other reasons, e.g. dataset not found
+
+    sorted_ids = result["sorted_ids"]
+    items_by_dataset = result['items_by_dataset']
+
+    context = ""
+    for ds_id, item_id in sorted_ids:
+        item = items_by_dataset[ds_id][item_id]
+        context += f"Item: [{ds_id}, {item_id}]\n"
+        for field in item:
+            if field.startswith("_"):
+                continue
+            context += f"  {field}: {item[field]}\n"
+        context += "\n"
+
+    response = app.response_class(
+        response=json.dumps({'context': context}, cls=CustomJSONEncoder),  # type: ignore
+        mimetype='application/json'
+    )
+    return response
+
+
 @app.route('/data_backend/delete_dataset_content', methods=['POST'])
 def delete_dataset_content_endpoint():
     # FIXME: check permissions

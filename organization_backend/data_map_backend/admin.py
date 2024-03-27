@@ -17,7 +17,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import data_backend_url
 
-from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier, CollectionChat
+from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -526,10 +526,10 @@ class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     }
 
 
-@admin.register(CollectionChat)
-class CollectionChatAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+@admin.register(Chat)
+class ChatAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False
-    list_display = ('id', 'name')
+    list_display = ('id', 'created_by', 'name', 'collection')
     list_display_links = ('id', 'name')
     search_fields = ('id', 'name')
     ordering = ['id']

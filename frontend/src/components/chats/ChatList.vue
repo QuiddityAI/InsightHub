@@ -19,21 +19,32 @@ export default {
   emits: [],
   data() {
     return {
-      chats: [],
+      collection_chats: [],
       selected_chat_id: null,
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    chat_list() {
+      return this.collection_id ? this.collection_chats : this.appStateStore.chats
+    }
   },
   mounted() {
-    this.get_chat_ids()
+    // this could be the global chat list or one for a collection
+    if (this.collection_id && this.class_name) {
+      this.get_collection_chats()
+    } else {
+      // this is only relevant for the global chat list:
+      this.eventBus.on("show_chat", ({chat_id}) => {
+        this.selected_chat_id = chat_id
+      })
+    }
   },
   watch: {
   },
   methods: {
-    get_chat_ids() {
+    get_collection_chats() {
       const that = this
       const body = {
         collection_id: this.collection_id,
@@ -41,7 +52,7 @@ export default {
       }
       httpClient.post(`/org/data_map/get_collection_class_chats`, body)
       .then(function (response) {
-        that.chats = response.data
+        that.collection_chats = response.data
       })
       .catch(function (error) {
         console.error(error)
@@ -56,7 +67,7 @@ export default {
       }
       httpClient.post(`/org/data_map/add_collection_class_chat`, body)
       .then(function (response) {
-        that.chats.push(response.data)
+        that.collection_chats.push(response.data)
       })
       .catch(function (error) {
         console.error(error)
@@ -67,8 +78,8 @@ export default {
 </script>
 
 <template>
-  <div class="mb-2">
-    <div v-if="!selected_chat_id" class="my-2 flex items-stretch">
+  <div class="">
+    <div v-if="!selected_chat_id && collection_id" class="my-2 flex items-stretch">
       <input
         ref="new_chat_name"
         type="text"
@@ -83,10 +94,16 @@ export default {
       </button>
     </div>
 
-    <button v-if="!selected_chat_id" v-for="chat in chats" :key="chat.id" @click="selected_chat_id = chat.id"
-    class="bg-gray-100 hover:bg-blue-100/50 rounded-md w-full py-1 text-left pl-2 text-gray-600 mb-2">
+    <button v-if="!selected_chat_id" v-for="chat in chat_list" :key="chat.id" @click="selected_chat_id = chat.id"
+    class="mt-2 bg-gray-100 hover:bg-blue-100/50 rounded-md w-full py-1 text-left pl-2 text-gray-600 mb-2">
       {{ chat.name || 'Chat ' + chat.id }}
     </button>
+
+    <div
+      v-if="!selected_chat_id && !chat_list.length"
+      class="flex h-20 flex-col place-content-center text-center">
+      <p class="flex-none text-gray-400">No Chats</p>
+    </div>
 
     <button v-if="selected_chat_id" @click="selected_chat_id = null"
     class="hover:bg-gray-100 rounded-md p-1">

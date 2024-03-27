@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import CollectionChat, DataCollection, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier
+from .models import Chat, DataCollection, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier
 
 
 class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
@@ -117,7 +117,7 @@ class StoredMapSerializer(drf_serializers.ModelSerializer):
         exclude = ['map_data']
 
 
-class CollectionChatSerializer(drf_serializers.ModelSerializer):
+class ChatSerializer(drf_serializers.ModelSerializer):
     class Meta:
-        model = CollectionChat
+        model = Chat
         exclude = ['created_at', 'changed_at']
