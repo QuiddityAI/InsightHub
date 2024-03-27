@@ -138,7 +138,7 @@ export default {
       </div>
     </div>
 
-    <div v-if="item._relevant_parts">
+    <div v-if="item?._relevant_parts">
       <div v-for="relevant_part in item._relevant_parts"
         class="mt-2 rounded-md bg-gray-100 py-2 px-2">
         <div v-if="relevant_part.index" class="font-semibold text-gray-600 text-sm">Relevant Part in

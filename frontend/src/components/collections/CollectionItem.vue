@@ -22,7 +22,7 @@ export default {
   },
   mounted() {
     const that = this
-    this.rendering = this.appStateStore.datasets[this.dataset_id].collection_item_rendering
+    this.rendering = this.appStateStore.datasets[this.dataset_id].result_list_rendering
     const payload = {
       dataset_id: this.dataset_id,
       item_id: this.item_id,
@@ -36,19 +36,23 @@ export default {
 </script>
 
 <template>
-  <div
-    class="rounded px-3 py-2"
-    :class="{ 'bg-green-100/50': is_positive, 'bg-red-100/50': !is_positive }">
-    <p
-      class="text-sm font-medium leading-6 text-gray-900"
-      v-html="rendering?.title(item)"></p>
-    <p
-      class="truncate text-xs leading-5 text-gray-500"
-      v-html="rendering?.subtitle(item)"></p>
-    <img
-      v-if="rendering?.image(item)"
-      class="h-24"
-      :src="rendering?.image(item)" />
-    <button @click="$emit('remove')" class="text-sm text-gray-500">Remove</button>
+  <div v-if="rendering" class="rounded bg-gray-100/50 p-3 flex flex-row gap-2"
+    @click="appState.show_document_details([dataset_id, item_id])">
+    <div class="flex-1 flex flex-col">
+      <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2 inline" />
+      <p class="text-sm font-medium leading-normal text-gray-90 inline" v-html="rendering.title(item)"></p>
+      <p class="mt-1 text-xs leading-relaxed text-gray-500" v-html="rendering.subtitle(item)"></p>
+
+      <div class="flex-1"></div>
+      <div class="flex flex-row items-center">
+        <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+          {{ appState.datasets[dataset_id]?.name }}
+        </span>
+        <button @click.stop="$emit('remove')" class="text-sm text-gray-500">Remove</button>
+      </div>
+    </div>
+    <div v-if="rendering.image(item)" class="flex-none w-24 flex flex-col justify-center">
+      <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />
+    </div>
   </div>
 </template>

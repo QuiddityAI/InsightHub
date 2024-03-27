@@ -33,7 +33,7 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
-    if (this.last_used_collection_id === null) {
+    if (this.appStateStore.last_used_collection_id === null) {
       this.selected_collection_id = this.appStateStore.collections.length ? this.appStateStore.collections[0].id : null
     } else {
       this.selected_collection_id = this.appStateStore.last_used_collection_id

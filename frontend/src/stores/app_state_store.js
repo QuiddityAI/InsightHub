@@ -1,6 +1,7 @@
 import { defineStore } from "pinia"
 import { inject } from "vue"
 import cborJs from "https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/+esm"
+import { useToast } from "primevue/usetoast"
 
 import { httpClient } from "../api/httpClient"
 
@@ -12,6 +13,7 @@ export const useAppStateStore = defineStore("appState", {
     return {
       eventBus: inject("eventBus"),
       mapState: useMapStateStore(),
+      toast: useToast(),
 
       show_timings: false,
       store_search_history: true,
@@ -922,10 +924,12 @@ export const useAppStateStore = defineStore("appState", {
     show_document_details(dataset_and_item_id) {
       this.selected_document_ds_and_id = dataset_and_item_id
       const pointIdx = this.mapState.per_point.item_id.indexOf(dataset_and_item_id)
-      this.mapState.markedPointIdx = pointIdx
-      this.mapState.visited_point_indexes.push(pointIdx)
-      this.mapState.per_point.flatness[pointIdx] = 1.0
-      this.eventBus.emit("map_update_geometry")
+      if (pointIdx !== -1) {
+        this.mapState.markedPointIdx = pointIdx
+        this.mapState.visited_point_indexes.push(pointIdx)
+        this.mapState.per_point.flatness[pointIdx] = 1.0
+        this.eventBus.emit("map_update_geometry")
+      }
     },
     showSimilarItems() {
       this.settings.search.search_type = "similar_to_item"
@@ -950,7 +954,7 @@ export const useAppStateStore = defineStore("appState", {
     },
     get_item_by_ds_and_id(dataset_and_item_id) {
       const ds_items = this.map_item_details[dataset_and_item_id[0]]
-      return ds_items ? ds_items[dataset_and_item_id[1]] : null
+      return ds_items ? ds_items[dataset_and_item_id[1]] : {_id: dataset_and_item_id[1]}
     },
     get_dataset_by_index(item_index) {
       if (!this.mapState.per_point.item_id[item_index]) return undefined
@@ -1027,10 +1031,11 @@ export const useAppStateStore = defineStore("appState", {
       // TODO: implement more efficient way
       for (const point_index of this.mapState.selected_point_indexes) {
         const ds_and_item_id = this.mapState.per_point.item_id[point_index]
-        this.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive)
+        this.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, false)
       }
+      this.toast.add({severity: 'success', summary: 'Items added to collection', detail: `${this.mapState.selected_point_indexes.length} items added to the collection`, life: 3000})
     },
-    add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive) {
+    add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, show_toast=true) {
       const that = this
       this.last_used_collection_id = collection_id
       const add_item_to_collection_body = {
@@ -1056,6 +1061,9 @@ export const useAppStateStore = defineStore("appState", {
             is_positive,
             created_item: created_item.data,
           })
+          if (show_toast) {
+            that.toast.add({severity: 'success', summary: 'Item added to collection', detail: 'Item added to the collection', life: 3000})
+          }
         })
     },
     remove_selected_points_from_collection(collection_id, class_name) {

@@ -63,7 +63,7 @@ export default {
 </script>
 
 <template>
-  <div class="rounded bg-gray-100/50 p-3 flex flex-row">
+  <div class="rounded bg-gray-100/50 p-3 flex flex-row gap-2">
     <div class="flex-1">
       <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2 inline" />
       <p class="text-sm font-medium leading-normal text-gray-90 inline" v-html="rendering.title(item)"></p>
