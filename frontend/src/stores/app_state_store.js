@@ -311,7 +311,10 @@ export const useAppStateStore = defineStore("appState", {
             // convert strings to functions:
             const result_list_rendering = dataset.result_list_rendering
             for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
-              result_list_rendering[field] = eval(result_list_rendering[field]) || ((item) => null)
+              // eval?.('"use strict"; ' + code) prevents access to local variables and
+              // any new variable or function declarations are scoped instead of global
+              // (still a major security risk, more meant to prevent accidental bugs)
+              result_list_rendering[field] = eval?.('"use strict"; ' + result_list_rendering[field]) || ((item) => null)
             }
             dataset.result_list_rendering = result_list_rendering
 
@@ -324,7 +327,7 @@ export const useAppStateStore = defineStore("appState", {
             const hover_label_rendering = dataset.hover_label_rendering
             for (const field of ["title", "subtitle", "body", "image"]) {
               hover_label_rendering[field] = hover_label_rendering[field]
-                ? eval(hover_label_rendering[field])
+                ? eval?.('"use strict"; ' + hover_label_rendering[field])
                 : (item) => ""
             }
             dataset.hover_label_rendering = hover_label_rendering

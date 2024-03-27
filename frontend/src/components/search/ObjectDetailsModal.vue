@@ -39,7 +39,10 @@ export default {
       const that = this
       const rendering = this.dataset.detail_view_rendering
       for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon"]) {
-        rendering[field] = rendering[field] ? eval(rendering[field]) : (item) => ""
+        // eval?.('"use strict"; ' + code) prevents access to local variables and
+        // any new variable or function declarations are scoped instead of global
+        // (still a major security risk, more meant to prevent accidental bugs)
+        rendering[field] = rendering[field] ? eval?.('"use strict"; ' + rendering[field]) : (item) => ""
       }
       for (const link of rendering.links || []) {
         link.url = link.url ? eval(link.url) : ""

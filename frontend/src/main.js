@@ -10,6 +10,9 @@ import "inter-ui/inter.css";
 
 import "./style.css"
 import SearchAndMap from "./apps/SearchAndMap.vue"
+import { get_download_url } from "./utils/utils";  // used in item rendering definitions
+
+globalThis.get_download_url = get_download_url;
 
 const pinia = createPinia()
 const app = createApp(SearchAndMap)

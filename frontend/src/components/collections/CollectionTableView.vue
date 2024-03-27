@@ -167,7 +167,7 @@ export default {
     <div class="w-2/3">
       <div class="flex flex-col">
         <div v-for="question in collection.extraction_questions" class="">
-          • {{  question.name }}: {{ question.prompt }} ({{ question.source_fields.join(", ") }})
+          • {{  question.name }}: {{ question.prompt }} ({{ question.source_fields?.join(", ") }})
           <button @click="extract_question(question)" class="p-1 mr-2 bg-gray-100 hover:bg-blue-100/50 rounded">Extract now</button>
           <button @click="remove_results(question)" class="p-1 bg-gray-100 hover:bg-blue-100/50 rounded">Remove results</button>
         </div>

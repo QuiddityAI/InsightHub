@@ -53,3 +53,8 @@ export function highlight_words_in_text(text, words) {
   const regex = new RegExp(`\\b(${filteredWords.join("|")})\\b`, "gi")
   return text.replace(regex, (match) => `<b>${match}</b>`)
 }
+
+export function get_download_url(local_path) {
+  // meant to be used in item rendering definitions
+  return local_path ? `/data_backend/download_file/${local_path}` : null
+}
