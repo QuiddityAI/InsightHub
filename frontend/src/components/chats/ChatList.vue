@@ -67,7 +67,7 @@ export default {
       }
       httpClient.post(`/org/data_map/add_collection_class_chat`, body)
       .then(function (response) {
-        that.collection_chats.push(response.data)
+        that.collection_chats.unshift(response.data)
       })
       .catch(function (error) {
         console.error(error)

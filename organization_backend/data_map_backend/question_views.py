@@ -118,6 +118,7 @@ def get_chats(request):
         return HttpResponse(status=400)
 
     chats = Chat.objects.filter(created_by=request.user.id, collection__isnull=True)
+    chats = chats.order_by('-created_at')
     chat_ids = [{'id': chat.id, 'name': chat.name} for chat in chats]  # type: ignore
 
     return HttpResponse(json.dumps(chat_ids), content_type="application/json", status=200)
@@ -138,6 +139,7 @@ def get_collection_class_chats(request):
         return HttpResponse(status=400)
 
     chats = Chat.objects.filter(created_by=request.user.id, collection_id=collection_id, class_name=class_name)
+    chats = chats.order_by('-created_at')
     chat_ids = [{'id': chat.id, 'name': chat.name} for chat in chats]  # type: ignore
 
     return HttpResponse(json.dumps(chat_ids), content_type="application/json", status=200)

@@ -588,7 +588,7 @@ export const useAppStateStore = defineStore("appState", {
         .post(`/org/data_map/create_chat_from_search_settings`, body)
         .then(function (response) {
           const chat_data = response.data
-          that.chats.push(chat_data)
+          that.chats.unshift(chat_data)
           that.eventBus.emit("show_chat", {chat_id: chat_data.id})
           that.reset_search_box()
         })

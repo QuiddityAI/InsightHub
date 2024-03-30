@@ -180,7 +180,7 @@ export default {
     this.eventBus.on("show_results_tab", () => {
       this.selected_tab = "results"
     })
-    this.eventBus.on("show_chat", () => {
+    this.eventBus.on("show_chat", ({chat_id}) => {
       this.selected_tab = "chats"
     })
     this.eventBus.on("show_score_info_chart", () => {
