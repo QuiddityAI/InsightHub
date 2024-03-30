@@ -105,12 +105,7 @@ export default {
       <p class="flex-none text-gray-400">No Chats</p>
     </div>
 
-    <button v-if="selected_chat_id" @click="selected_chat_id = null"
-    class="hover:bg-gray-100 rounded-md p-1">
-      Back
-    </button>
-
-    <Chat v-if="selected_chat_id" :chat_id="selected_chat_id"></Chat>
+    <Chat v-if="selected_chat_id" @close="selected_chat_id = null" :chat_id="selected_chat_id"></Chat>
   </div>
 
 </template>

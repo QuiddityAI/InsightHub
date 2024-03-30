@@ -9,7 +9,7 @@ const appState = useAppStateStore()
 import { httpClient } from "../../api/httpClient"
 
 export default {
-  props: ["dataset_id", "item_id", "is_positive"],
+  props: ["dataset_id", "item_id", "is_positive", "show_remove_button"],
   emits: ["remove"],
   data() {
     return {
@@ -48,7 +48,7 @@ export default {
         <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
           {{ appState.datasets[dataset_id]?.name }}
         </span>
-        <button @click.stop="$emit('remove')" class="text-sm text-gray-500">Remove</button>
+        <button v-if="show_remove_button" @click.stop="$emit('remove')" class="text-sm text-gray-500">Remove</button>
       </div>
     </div>
     <div v-if="rendering.image(item)" class="flex-none w-24 flex flex-col justify-center">

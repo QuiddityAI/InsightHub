@@ -81,6 +81,7 @@ export default {
           :dataset_id="JSON.parse(example.value)[0]"
           :item_id="JSON.parse(example.value)[1]"
           :is_positive="example.is_positive"
+          :show_remove_button="true"
           @remove="remove_collection_item(example.id)">
         </CollectionItem>
       </li>
