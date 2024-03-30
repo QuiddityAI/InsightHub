@@ -180,7 +180,7 @@ def get_question_context():
     data: dict | None = request.json
     if not data:
         return "no data", 400
-    data["search_settings"]["result_list_items_per_page"] = 3
+    data["search_settings"]["result_list_items_per_page"] = 5
     params_str = json.dumps({'search': data["search_settings"]}, indent=2)
     # ignore_cache = request.args.get('ignore_cache') == "true"
     # print(params_str)
@@ -203,6 +203,7 @@ def get_question_context():
             if field.startswith("_"):
                 continue
             context += f"  {field}: {item[field]}\n"
+        # TODO: resolve relevant parts
         context += "\n"
 
     response = app.response_class(

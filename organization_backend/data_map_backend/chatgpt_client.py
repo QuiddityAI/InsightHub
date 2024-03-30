@@ -25,7 +25,7 @@ class OPENAI_MODELS:
     GPT4 = "gpt-4"
 
 
-def get_chatgpt_response(question: str, language: str, model: str = OPENAI_MODELS.GPT3_5) -> str:
+def get_chatgpt_response(question: str, language: str, model: str = OPENAI_MODELS.GPT4) -> str:
     logging.info(f"Sending question to ChatGPT: {question}")
     system_prompt = "You are a helpful assistant"
     system_prompt_de = "Du bist ein hilfreicher Assistent"
@@ -42,7 +42,7 @@ def get_chatgpt_response(question: str, language: str, model: str = OPENAI_MODEL
     return response_text
 
 
-def get_chatgpt_response_using_history(history, model: str = OPENAI_MODELS.GPT3_5) -> str:
+def get_chatgpt_response_using_history(history, model: str = OPENAI_MODELS.GPT4) -> str:
     logging.info(f"Sending prompt history to ChatGPT: {history[-1]}")
     response = client.chat.completions.create(
         model=model,
@@ -54,7 +54,7 @@ def get_chatgpt_response_using_history(history, model: str = OPENAI_MODELS.GPT3_
     return response_text
 
 
-def multi_step_chatgpt(prompts, system_prompt, model: str = OPENAI_MODELS.GPT3_5):
+def multi_step_chatgpt(prompts, system_prompt, model: str = OPENAI_MODELS.GPT4):
     history = []
     result = {}
     history.append({"role": "system", "content": system_prompt})
