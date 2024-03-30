@@ -24,7 +24,7 @@ def update_database_layout(dataset_id: int):
     search_engine_client.ensure_dataset_exists(dataset)
 
 
-def insert_many(dataset_id: int, elements: Iterable[dict]):
+def insert_many(dataset_id: int, elements: Iterable[dict]) -> list[tuple]:
     dataset = get_dataset(dataset_id)
 
     for element in elements:
@@ -121,6 +121,7 @@ def insert_many(dataset_id: int, elements: Iterable[dict]):
 
     search_engine_client = TextSearchEngineClient.get_instance()
     search_engine_client.upsert_items(dataset.actual_database_name, [item["_id"] for item in elements], elements)
+    return [(dataset.id, item["_id"]) for item in elements]
 
 
 def get_index_settings(dataset: DotDict):

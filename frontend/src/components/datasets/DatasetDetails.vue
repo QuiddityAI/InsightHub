@@ -11,6 +11,9 @@ import Button from 'primevue/button';
 import Badge from 'primevue/badge';
 import Message from 'primevue/message';
 import ProgressBar from 'primevue/progressbar';
+
+import CollectionItem from "../collections/CollectionItem.vue"
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -30,6 +33,7 @@ export default {
       selected_import_converter: null,
       upload_in_progress: false,
       visible_area: "upload_files",
+      recently_uploaded_file_ids: [],
     }
   },
   computed: {
@@ -120,6 +124,14 @@ export default {
           fileUploaderComponent.progress = 0;
 
           if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.errors) {
+              for (let error of data.errors) {
+                fileUploaderComponent.messages.push(error)
+              }
+            }
+            that.recently_uploaded_file_ids = data.inserted_ids
+
             if (fileUploaderComponent.fileLimit) {
               fileUploaderComponent.uploadedFileCount += event.files.length;
             }
@@ -138,7 +150,7 @@ export default {
           fileUploaderComponent.uploadedFiles.push(...event.files);
           fileUploaderComponent.clear();
 
-          that.$toast.add({severity:'success', summary: 'Success', detail: 'Files uploaded successfully.'})
+          that.$toast.add({severity:'success', summary: 'Success', detail: 'Files uploaded successfully.', life: 3000})
           that.upload_in_progress = false
         }
       };
@@ -256,6 +268,24 @@ export default {
             </div>
           </template>
         </FileUpload>
+
+        <p v-if="recently_uploaded_file_ids.length !== 0" class="text-gray-700">
+          Recently uploaded files:
+        </p>
+        <ul role="list" class="pt-1">
+          <li
+            v-for="ds_and_item_id in recently_uploaded_file_ids.slice(0, 10)"
+            :key="ds_and_item_id.join('_')"
+            class="justify-between pb-3">
+            <CollectionItem
+              :dataset_id="ds_and_item_id[0]"
+              :item_id="ds_and_item_id[1]"
+              :is_positive=true
+              @remove="recently_uploaded_file_ids.splice(recently_uploaded_file_ids.indexOf(ds_and_item_id), 1)">
+            </CollectionItem>
+          </li>
+        </ul>
+
       </div>
       <button v-if="appState.dev_mode" class="mt-2 w-full hover:bg-gray-100" @click="visible_area = 'upload_using_api'">
         <h3 class="text-left text-md text-gray-600 font-semibold">

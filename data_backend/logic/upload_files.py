@@ -15,7 +15,7 @@ from logic.insert_logic import insert_many, update_database_layout
 UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 
 
-def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage]):
+def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage]) -> list[tuple]:
     import_converter = get_import_converter(import_converter_id)
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter}")
     if not os.path.exists(UPLOADED_FILES_FOLDER):
@@ -44,8 +44,9 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
         logging.warning(f"Updating database layout for dataset {dataset_id} because there aren't any items in the database yet.")
         update_database_layout(dataset_id)
 
-    insert_many(dataset_id, items)
+    inserted_ids = insert_many(dataset_id, items)
     logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
+    return inserted_ids
 
 
 def get_import_converter_by_name(name: str) -> Callable:
