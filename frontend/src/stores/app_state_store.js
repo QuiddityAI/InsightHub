@@ -353,12 +353,6 @@ export const useAppStateStore = defineStore("appState", {
       }
       dataset.result_list_rendering = result_list_rendering
 
-      const collection_item_rendering = dataset.collection_item_rendering
-      for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
-        collection_item_rendering[field] = eval(collection_item_rendering[field]) || ((item) => null)
-      }
-      dataset.collection_item_rendering = collection_item_rendering
-
       const hover_label_rendering = dataset.hover_label_rendering
       for (const field of ["title", "subtitle", "body", "image"]) {
         hover_label_rendering[field] = hover_label_rendering[field]

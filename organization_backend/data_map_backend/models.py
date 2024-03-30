@@ -451,11 +451,6 @@ class Dataset(models.Model):
         default=get_default_result_list_rendering,
         blank=True,
         null=True)
-    collection_item_rendering =  models.JSONField(
-        verbose_name="Collection List Rendering",
-        default=get_default_collection_item_rendering,
-        blank=True,
-        null=True)
     hover_label_rendering =  models.JSONField(
         verbose_name="Hover Label Rendering",
         default=get_default_hover_label_rendering,
