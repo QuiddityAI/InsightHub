@@ -4,6 +4,7 @@ import os
 import uuid
 import tarfile
 import zipfile
+import hashlib
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -49,16 +50,9 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
 
 
 def _store_uploaded_file(file: FileStorage, dataset_id: int):
-    new_uuid = str(uuid.uuid4())
-    secure_name = secure_filename(file.filename or '')
-    suffix = secure_name.split('.')[-1]
-    filename = secure_name.replace(f".{suffix}", f"_{new_uuid}.{suffix}")
-    sub_folder = f"{dataset_id}/{new_uuid[:2]}"
-    if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
-        os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")
-    sub_path = f"{sub_folder}/{filename}"
-    path = f"{UPLOADED_FILES_FOLDER}/{sub_path}"
-    file.save(path)
+    temp_path = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}"
+    file.save(temp_path)
+    sub_path = _move_to_path_containing_md5(temp_path, file.filename or '', dataset_id)
     return sub_path
 
 
@@ -97,15 +91,6 @@ def _store_compressed_file(archive: tarfile.TarFile | zipfile.ZipFile, member: t
         return None
     if isinstance(member, zipfile.ZipInfo) and member.is_dir():
         return None
-    new_uuid = str(uuid.uuid4())
-    secure_name = secure_filename(member.name if isinstance(member, tarfile.TarInfo) else member.filename)
-    suffix = secure_name.split('.')[-1]
-    filename = secure_name.replace(f".{suffix}", f"_{new_uuid}.{suffix}")
-    sub_folder = f"{dataset_id}/{new_uuid[:2]}"
-    if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
-        os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")
-    sub_path = f"{sub_folder}/{filename}"
-    path = f"{UPLOADED_FILES_FOLDER}/{sub_path}"
     if isinstance(archive, tarfile.TarFile) and isinstance(member, tarfile.TarInfo):
         file = archive.extractfile(member)
     else:
@@ -114,9 +99,26 @@ def _store_compressed_file(archive: tarfile.TarFile | zipfile.ZipFile, member: t
     if file is None:
         logging.warning(f"failed to extract file: {member.name if isinstance(member, tarfile.TarInfo) else member.filename}")
         return None
+    temp_path = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}"
     with file:
-        with open(path, 'wb') as f:
+        with open(temp_path, 'wb') as f:
             f.write(file.read())
+    filename = member.name if isinstance(member, tarfile.TarInfo) else member.filename
+    sub_path = _move_to_path_containing_md5(temp_path, filename, dataset_id)
+    return sub_path
+
+
+def _move_to_path_containing_md5(temp_path: str, filename: str, dataset_id: int):
+    md5 = hashlib.md5(open(temp_path,'rb').read()).hexdigest()
+    secure_name = secure_filename(filename)
+    suffix = secure_name.split('.')[-1]
+    filename = secure_name[:-(len(suffix) + 1)] + f"_{md5}.{suffix}"
+    sub_folder = f"{dataset_id}/{md5[:2]}"
+    if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
+        os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")
+    sub_path = f"{sub_folder}/{filename}"
+    path = f"{UPLOADED_FILES_FOLDER}/{sub_path}"
+    os.rename(temp_path, path)
     return sub_path
 
 
@@ -155,7 +157,7 @@ def _scientific_article_pdf(paths, parameters):
         items.append({
             "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
             "doi": parsed_pdf.doi,
-            "title": parsed_pdf.title,
+            "title": parsed_pdf.title or sub_path.split("/")[-1],
             "abstract": parsed_pdf.abstract,
             "authors": parsed_pdf.authors,
             "journal": "unknown",

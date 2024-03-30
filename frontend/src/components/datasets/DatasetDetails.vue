@@ -131,6 +131,7 @@ export default {
               }
             }
             that.recently_uploaded_file_ids = data.inserted_ids
+            that.get_dataset_additional_info()
 
             if (fileUploaderComponent.fileLimit) {
               fileUploaderComponent.uploadedFileCount += event.files.length;
