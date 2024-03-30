@@ -235,8 +235,8 @@ def upload_files_endpoint():
         import_converter_id: int = int(request.form["import_converter_id"])
     except KeyError as e:
         return f"parameter missing: {e}", 400
-    inserted_ids: list[tuple] = upload_files(dataset_id, import_converter_id, request.files.getlist("files[]"))
-    return jsonify({"inserted_ids": inserted_ids}), 200
+    inserted_ids, failed_files = upload_files(dataset_id, import_converter_id, request.files.getlist("files[]"))
+    return jsonify({"inserted_ids": inserted_ids, "failed_files": failed_files}), 200
 
 
 # --- Old Routes: ---

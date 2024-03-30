@@ -19,23 +19,31 @@ from logic.local_map_cache import clear_local_map_cache
 UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 
 
-def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage]) -> list[tuple]:
+def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage]) -> tuple[list[tuple], list[str]]:
     import_converter = get_import_converter(import_converter_id)
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter}")
     if not os.path.exists(UPLOADED_FILES_FOLDER):
         os.makedirs(UPLOADED_FILES_FOLDER)
     paths = []
+    failed_files = []
     for file in files:
         if not file.filename: continue
         if file.filename.endswith(".tar.gz") or file.filename.endswith(".zip"):
-            paths += _unpack_archive(file, dataset_id)
+            new_paths, new_failed_files = _unpack_archive(file, dataset_id)
+            paths += new_paths
+            failed_files += new_failed_files
             continue
         logging.warning(f"saving file: {file.filename}")
-        sub_path = _store_uploaded_file(file, dataset_id)
-        paths.append(sub_path)
+        try:
+            sub_path = _store_uploaded_file(file, dataset_id)
+            paths.append(sub_path)
+        except Exception as e:
+            logging.warning(f"failed to save file: {e}")
+            failed_files.append({"filename": file.filename, "reason": str(e)})
 
     converter_func = get_import_converter_by_name(import_converter.module)
-    items = converter_func(paths, import_converter.parameters)
+    items, failed_ids = converter_func(paths, import_converter.parameters)
+    failed_files += failed_ids
 
     dataset = get_dataset(dataset_id)
     text_search_engine_client = TextSearchEngineClient()
@@ -46,7 +54,7 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
     inserted_ids = insert_many(dataset_id, items)
     logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
     clear_local_map_cache()
-    return inserted_ids
+    return inserted_ids, failed_files
 
 
 def _store_uploaded_file(file: FileStorage, dataset_id: int):
@@ -56,8 +64,9 @@ def _store_uploaded_file(file: FileStorage, dataset_id: int):
     return sub_path
 
 
-def _unpack_archive(file: FileStorage, dataset_id: int) -> list[str]:
+def _unpack_archive(file: FileStorage, dataset_id: int) -> tuple[list[str], list[str]]:
     assert file.filename
+    failed_files = []
     paths = []
     logging.warning(f"extracting archive file: {file.filename}")
     is_tar = file.filename.endswith(".tar.gz")
@@ -72,8 +81,14 @@ def _unpack_archive(file: FileStorage, dataset_id: int) -> list[str]:
             members = archive.infolist()
         logging.warning(f"contains {len(members)} files")
         for member in members:
-            logging.warning(f"extracting file: {member.name if isinstance(member, tarfile.TarInfo) else member.filename}")
-            sub_path = _store_compressed_file(archive, member, dataset_id)
+            filename = member.name if isinstance(member, tarfile.TarInfo) else member.filename
+            logging.warning(f"extracting file: {filename}")
+            try:
+                sub_path = _store_compressed_file(archive, member, dataset_id)
+            except Exception as e:
+                logging.warning(f"failed to extract file: {e}")
+                failed_files.append({"filename": filename, "reason": str(e)})
+                sub_path = None
             if sub_path:
                 paths.append(sub_path)
     except Exception as e:
@@ -81,9 +96,10 @@ def _unpack_archive(file: FileStorage, dataset_id: int) -> list[str]:
         # print stacktrace
         import traceback
         traceback.print_exc()
+        failed_files.append({"filename": file.filename, "reason": str(e)})
     finally:
         os.remove(tempfile)
-    return paths
+    return paths, failed_files
 
 
 def _store_compressed_file(archive: tarfile.TarFile | zipfile.ZipFile, member: tarfile.TarInfo | zipfile.ZipInfo, dataset_id: int) -> str | None:
@@ -91,19 +107,21 @@ def _store_compressed_file(archive: tarfile.TarFile | zipfile.ZipFile, member: t
         return None
     if isinstance(member, zipfile.ZipInfo) and member.is_dir():
         return None
+    filename = member.name if isinstance(member, tarfile.TarInfo) else member.filename
+    if "MACOSX_" in filename or "_MACOSX" in filename:
+        return None
     if isinstance(archive, tarfile.TarFile) and isinstance(member, tarfile.TarInfo):
         file = archive.extractfile(member)
     else:
         assert isinstance(archive, zipfile.ZipFile) and isinstance(member, zipfile.ZipInfo)
         file = archive.open(member)
     if file is None:
-        logging.warning(f"failed to extract file: {member.name if isinstance(member, tarfile.TarInfo) else member.filename}")
-        return None
+        logging.warning(f"failed to extract file: {filename}")
+        raise ValueError("failed to extract file")
     temp_path = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}"
     with file:
         with open(temp_path, 'wb') as f:
             f.write(file.read())
-    filename = member.name if isinstance(member, tarfile.TarInfo) else member.filename
     sub_path = _move_to_path_containing_md5(temp_path, filename, dataset_id)
     return sub_path
 
@@ -132,10 +150,13 @@ def _scientific_article_pdf(paths, parameters):
     from pdfparser import grobid_parser # only load import here to improve startup time
 
     parser = grobid_parser.GROBIDParser(grobid_address='http://grobid:8070')
-    parsed = parser.fit_transform({sub_path: f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths})
+    parsed, failed_files = parser.fit_transform({sub_path: f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths})
     items = []
     for sub_path, parsed_pdf in parsed.items():
         parsed_pdf = DotDict(parsed_pdf)
+        if not parsed_pdf.title:
+            failed_files.append({"filename": sub_path, "reason": "no title found"})
+            # add anyway because the rest of the data might be useful
         try:
             pub_year = int(parsed_pdf.pub_date.split("-")[0])
         except:
@@ -157,7 +178,7 @@ def _scientific_article_pdf(paths, parameters):
         items.append({
             "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
             "doi": parsed_pdf.doi,
-            "title": parsed_pdf.title or sub_path.split("/")[-1],
+            "title": parsed_pdf.title.strip() or sub_path.split("/")[-1],
             "abstract": parsed_pdf.abstract,
             "authors": parsed_pdf.authors,
             "journal": "unknown",
@@ -168,7 +189,7 @@ def _scientific_article_pdf(paths, parameters):
             "full_text": full_text,
             "full_text_original_chunks": full_text_original_chunks,
         })
-    return items
+    return items, failed_files
 
 
 def _postprocess_pdf_chunks(sections):

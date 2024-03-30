@@ -34,6 +34,7 @@ export default {
       upload_in_progress: false,
       visible_area: "upload_files",
       recently_uploaded_file_ids: [],
+      upload_failures: [],
     }
   },
   computed: {
@@ -131,6 +132,7 @@ export default {
               }
             }
             that.recently_uploaded_file_ids = data.inserted_ids
+            that.upload_failures = data.failed_files
             that.get_dataset_additional_info()
 
             if (fileUploaderComponent.fileLimit) {
@@ -270,6 +272,19 @@ export default {
             </div>
           </template>
         </FileUpload>
+
+        <p v-if="upload_failures.length !== 0" class="text-red-700">
+          Failed to process the following {{ upload_failures.length }} files:
+        </p>
+        <ul role="list" class="pt-1">
+          <li
+            v-for="failure in upload_failures"
+            :key="failure.filename"
+            class="justify-between pb-3">
+            <span class="text-red-700">{{ failure.filename }}</span><br>
+            <span class="text-gray-500">{{ failure.reason }}</span>
+          </li>
+        </ul>
 
         <p v-if="recently_uploaded_file_ids.length !== 0" class="text-gray-700">
           Recently uploaded files (max. 10 displayed):
