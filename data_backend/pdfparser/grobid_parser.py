@@ -7,7 +7,7 @@ class GROBIDParser(BasePDFParser):
     def __init__(
         self,
         grobid_address="http://localhost:8070",
-        batch_size=64,
+        batch_size=16,
         n_proc=8,
         fulltext=True,
         as_list=False,

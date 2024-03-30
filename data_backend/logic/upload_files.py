@@ -2,6 +2,8 @@ from typing import Callable, Iterable
 import logging
 import os
 import uuid
+import tarfile
+import zipfile
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -22,17 +24,12 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
         os.makedirs(UPLOADED_FILES_FOLDER)
     paths = []
     for file in files:
+        if not file.filename: continue
+        if file.filename.endswith(".tar.gz") or file.filename.endswith(".zip"):
+            paths += _unpack_archive(file, dataset_id)
+            continue
         logging.warning(f"saving file: {file.filename}")
-        new_uuid = str(uuid.uuid4())
-        secure_name = secure_filename(file.filename or '')
-        suffix = secure_name.split('.')[-1]
-        filename = secure_name.replace(f".{suffix}", f"_{new_uuid}.{suffix}")
-        sub_folder = f"{dataset_id}/{new_uuid[:2]}"
-        if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
-            os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")
-        sub_path = f"{sub_folder}/{filename}"
-        path = f"{UPLOADED_FILES_FOLDER}/{sub_path}"
-        file.save(path)
+        sub_path = _store_uploaded_file(file, dataset_id)
         paths.append(sub_path)
 
     converter_func = get_import_converter_by_name(import_converter.module)
@@ -47,6 +44,78 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
     inserted_ids = insert_many(dataset_id, items)
     logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
     return inserted_ids
+
+
+def _store_uploaded_file(file: FileStorage, dataset_id: int):
+    new_uuid = str(uuid.uuid4())
+    secure_name = secure_filename(file.filename or '')
+    suffix = secure_name.split('.')[-1]
+    filename = secure_name.replace(f".{suffix}", f"_{new_uuid}.{suffix}")
+    sub_folder = f"{dataset_id}/{new_uuid[:2]}"
+    if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
+        os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")
+    sub_path = f"{sub_folder}/{filename}"
+    path = f"{UPLOADED_FILES_FOLDER}/{sub_path}"
+    file.save(path)
+    return sub_path
+
+
+def _unpack_archive(file: FileStorage, dataset_id: int) -> list[str]:
+    assert file.filename
+    paths = []
+    logging.warning(f"extracting archive file: {file.filename}")
+    is_tar = file.filename.endswith(".tar.gz")
+    tempfile = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}" + (".tar.gz" if is_tar else f".zip")
+    file.save(tempfile)
+    try:
+        if is_tar:
+            archive = tarfile.open(tempfile, 'r:gz')
+            members = archive.getmembers()
+        else:
+            archive = zipfile.ZipFile(tempfile)
+            members = archive.infolist()
+        logging.warning(f"contains {len(members)} files")
+        for member in members:
+            logging.warning(f"extracting file: {member.name if isinstance(member, tarfile.TarInfo) else member.filename}")
+            sub_path = _store_compressed_file(archive, member, dataset_id)
+            if sub_path:
+                paths.append(sub_path)
+    except Exception as e:
+        logging.warning(f"failed to extract archive file: {e}")
+        # print stacktrace
+        import traceback
+        traceback.print_exc()
+    finally:
+        os.remove(tempfile)
+    return paths
+
+
+def _store_compressed_file(archive: tarfile.TarFile | zipfile.ZipFile, member: tarfile.TarInfo | zipfile.ZipInfo, dataset_id: int) -> str | None:
+    if isinstance(member, tarfile.TarInfo) and not member.isfile():
+        return None
+    if isinstance(member, zipfile.ZipInfo) and member.is_dir():
+        return None
+    new_uuid = str(uuid.uuid4())
+    secure_name = secure_filename(member.name if isinstance(member, tarfile.TarInfo) else member.filename)
+    suffix = secure_name.split('.')[-1]
+    filename = secure_name.replace(f".{suffix}", f"_{new_uuid}.{suffix}")
+    sub_folder = f"{dataset_id}/{new_uuid[:2]}"
+    if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
+        os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")
+    sub_path = f"{sub_folder}/{filename}"
+    path = f"{UPLOADED_FILES_FOLDER}/{sub_path}"
+    if isinstance(archive, tarfile.TarFile) and isinstance(member, tarfile.TarInfo):
+        file = archive.extractfile(member)
+    else:
+        assert isinstance(archive, zipfile.ZipFile) and isinstance(member, zipfile.ZipInfo)
+        file = archive.open(member)
+    if file is None:
+        logging.warning(f"failed to extract file: {member.name if isinstance(member, tarfile.TarInfo) else member.filename}")
+        return None
+    with file:
+        with open(path, 'wb') as f:
+            f.write(file.read())
+    return sub_path
 
 
 def get_import_converter_by_name(name: str) -> Callable:

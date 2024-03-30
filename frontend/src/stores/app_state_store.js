@@ -320,30 +320,7 @@ export const useAppStateStore = defineStore("appState", {
           .post("/org/data_map/dataset", { dataset_id: dataset_id })
           .then(function (response) {
             const dataset = response.data
-
-            // convert strings to functions:
-            const result_list_rendering = dataset.result_list_rendering
-            for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
-              // eval?.('"use strict"; ' + code) prevents access to local variables and
-              // any new variable or function declarations are scoped instead of global
-              // (still a major security risk, more meant to prevent accidental bugs)
-              result_list_rendering[field] = eval?.('"use strict"; ' + result_list_rendering[field]) || ((item) => null)
-            }
-            dataset.result_list_rendering = result_list_rendering
-
-            const collection_item_rendering = dataset.collection_item_rendering
-            for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
-              collection_item_rendering[field] = eval(collection_item_rendering[field]) || ((item) => null)
-            }
-            dataset.collection_item_rendering = collection_item_rendering
-
-            const hover_label_rendering = dataset.hover_label_rendering
-            for (const field of ["title", "subtitle", "body", "image"]) {
-              hover_label_rendering[field] = hover_label_rendering[field]
-                ? eval?.('"use strict"; ' + hover_label_rendering[field])
-                : (item) => ""
-            }
-            dataset.hover_label_rendering = hover_label_rendering
+            that.prepare_dataset_object(dataset)
 
             that.datasets[dataset_id] = dataset
             let selected = false
@@ -364,6 +341,32 @@ export const useAppStateStore = defineStore("appState", {
             }
           })
       }
+    },
+    prepare_dataset_object(dataset) {
+      // convert strings to functions:
+      const result_list_rendering = dataset.result_list_rendering
+      for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
+        // eval?.('"use strict"; ' + code) prevents access to local variables and
+        // any new variable or function declarations are scoped instead of global
+        // (still a major security risk, more meant to prevent accidental bugs)
+        result_list_rendering[field] = eval?.('"use strict"; ' + result_list_rendering[field]) || ((item) => null)
+      }
+      dataset.result_list_rendering = result_list_rendering
+
+      const collection_item_rendering = dataset.collection_item_rendering
+      for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
+        collection_item_rendering[field] = eval(collection_item_rendering[field]) || ((item) => null)
+      }
+      dataset.collection_item_rendering = collection_item_rendering
+
+      const hover_label_rendering = dataset.hover_label_rendering
+      for (const field of ["title", "subtitle", "body", "image"]) {
+        hover_label_rendering[field] = hover_label_rendering[field]
+          ? eval?.('"use strict"; ' + hover_label_rendering[field])
+          : (item) => ""
+      }
+      dataset.hover_label_rendering = hover_label_rendering
+      return dataset
     },
     on_selected_datasets_changed() {
       // store selected datasets in URL:

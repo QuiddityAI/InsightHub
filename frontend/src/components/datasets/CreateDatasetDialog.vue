@@ -60,7 +60,9 @@ export default {
       }
       httpClient.post(`/org/data_map/create_dataset_from_template`, body)
       .then(function (response) {
-        that.appStateStore.datasets[response.data.id] = response.data
+        const dataset = response.data
+        that.appStateStore.prepare_dataset_object(dataset)
+        that.appStateStore.datasets[response.data.id] = dataset
         that.$emit("update:visible", false)
       })
       .catch(function (error) {

@@ -226,7 +226,7 @@ export default {
           name="files[]"
           url="/data_backend/upload_files"
           :multiple="true"
-          :maxFileSize="100000000"
+          :maxFileSize="10000000000"
           :fileLimit="500"
           customUpload
           @uploader="custom_file_uploader"
@@ -264,13 +264,14 @@ export default {
           <template #empty>
             <div v-if="!upload_in_progress">
               <p>Drag and drop files here to upload.<br>
+                You can upload individual files or .zip / .tar.gz archives containing multiple files.
               </p>
             </div>
           </template>
         </FileUpload>
 
         <p v-if="recently_uploaded_file_ids.length !== 0" class="text-gray-700">
-          Recently uploaded files:
+          Recently uploaded files (max. 10 displayed):
         </p>
         <ul role="list" class="pt-1">
           <li
