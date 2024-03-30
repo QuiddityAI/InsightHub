@@ -13,6 +13,7 @@ from utils.dotdict import DotDict
 from database_client.text_search_engine_client import TextSearchEngineClient
 from database_client.django_client import get_dataset, get_import_converter
 from logic.insert_logic import insert_many, update_database_layout
+from logic.local_map_cache import clear_local_map_cache
 
 UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 
@@ -43,6 +44,7 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
 
     inserted_ids = insert_many(dataset_id, items)
     logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
+    clear_local_map_cache()
     return inserted_ids
 
 

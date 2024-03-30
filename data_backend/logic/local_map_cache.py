@@ -10,6 +10,15 @@ vectorize_stage_hash_to_map_id = defaultdict(list)
 projection_stage_hash_to_map_id = defaultdict(list)
 
 
+def clear_local_map_cache():
+    global local_maps
+    global vectorize_stage_hash_to_map_id
+    global projection_stage_hash_to_map_id
+    local_maps = {}
+    vectorize_stage_hash_to_map_id = defaultdict(list)
+    projection_stage_hash_to_map_id = defaultdict(list)
+
+
 def get_map_parameters_hash(parameters: dict) -> str:
     parameters_hash = md5(json.dumps(parameters).encode()).hexdigest()
     return parameters_hash
