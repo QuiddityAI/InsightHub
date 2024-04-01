@@ -133,6 +133,12 @@ services:
         limits:
           cpus: "20"
           memory: "5000mb"
+  # unstructured:
+  #   image: unstructured-io/unstructured-api:latest
+  #   ports:
+  #     - "8000:55005"
+  #   environment:
+  #     - UNSTRUCTURED_API_KEY="visual_data_map"
 volumes:
   model_server_cache:
   qdrant_storage:
