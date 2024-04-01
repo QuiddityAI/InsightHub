@@ -38,7 +38,7 @@ export default {
       if (!this.item || !this.item._id) return
       const that = this
       const rendering = this.dataset.detail_view_rendering
-      for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon"]) {
+      for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon", "full_text_pdf_url"]) {
         // eval?.('"use strict"; ' + code) prevents access to local variables and
         // any new variable or function declarations are scoped instead of global
         // (still a major security risk, more meant to prevent accidental bugs)
@@ -142,13 +142,15 @@ export default {
       <div v-for="relevant_part in item._relevant_parts"
         class="mt-2 rounded-md bg-gray-100 py-2 px-2">
         <div v-if="relevant_part.index" class="font-semibold text-gray-600 text-sm">Relevant Part in
-          {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description }}
-          (chunk {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}):</div>
+          {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field]?.description }}
+          (chunk {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}, page {{ relevant_part.value?.page }}):</div>
         <div v-else class="font-semibold text-gray-600 text-sm">Relevant Part in
           {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description || appState.datasets[item._dataset_id].object_fields[relevant_part.field].identifier }}
         </div>
         <div v-if="relevant_part.value && relevant_part.origin === 'vector_array'" class="mt-1 text-gray-700 text-xs"
-          v-html="highlight_words_in_text(relevant_part.value, mapState.map_parameters.search.all_field_query.split(' '))"></div>
+          v-html="highlight_words_in_text(relevant_part.value.text, mapState.map_parameters.search.all_field_query.split(' '))"></div>
+        <a :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_part.value.page}`" target="_blank" v-if="relevant_part.value && relevant_part.origin === 'vector_array' && rendering.full_text_pdf_url(item)" class="mt-1 text-gray-500 text-xs">
+          Open PDF at this page</a>
         <div v-if="relevant_part.value && relevant_part.origin === 'keyword_search'" class="mt-1 text-gray-700 text-xs"
           v-html="relevant_part.value"></div>
       </div>
