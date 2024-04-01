@@ -398,7 +398,8 @@ export default {
               <ResultList></ResultList>
             </div>
 
-            <ChatList v-if="selected_tab === 'chats'"></ChatList>
+            <!-- ChatList needs v-show instead of v-if to be able to react to show_chat signal -->
+            <ChatList v-show="selected_tab === 'chats'"></ChatList>
 
             <CollectionArea v-if="selected_tab === 'collections'"> </CollectionArea>
 

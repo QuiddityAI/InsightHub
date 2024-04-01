@@ -194,7 +194,7 @@ export default {
 
     <div class="flex flex-col ml-2 mb-3 mt-2 gap-2">
       <p v-if="dataset.origin_template" class="text-gray-700">
-        Template: {{ dataset.origin_template.name }}
+        Type: {{ dataset.origin_template.name }}
       </p>
       <p class="text-gray-700">
         Items in this dataset: {{ dataset.item_count !== undefined ? dataset.item_count.toLocaleString() : 'unknown' }}
