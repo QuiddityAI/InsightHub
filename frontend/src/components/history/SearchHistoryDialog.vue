@@ -14,7 +14,7 @@ const toast = useToast()
 <script>
 
 export default {
-  inject: ["eventBus"],
+  inject: ["eventBus", "dialogRef"],
   props: [],
   emits: [],
   data() {
@@ -48,7 +48,7 @@ export default {
           <span class="font-medium text-gray-500" v-html="history_item.display_name"></span>
           <div class="flex-1"></div>
           <button
-            @click="appState.run_search_from_history(history_item)"
+            @click="appState.run_search_from_history(history_item); dialogRef.close()"
             class="text-sm font-light text-gray-500 hover:text-blue-500/50">
             Run again
           </button>
