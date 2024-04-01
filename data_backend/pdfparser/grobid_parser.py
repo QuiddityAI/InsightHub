@@ -19,9 +19,9 @@ class GROBIDParser(BasePDFParser):
         self.grobid_address = grobid_address
         self.batch_size = batch_size
         self.n_proc = n_proc
-        self.fulltext = (fulltext,)
-        self.as_list = (as_list,)
-        self.return_coordinates = (return_coordinates,)
+        self.fulltext = fulltext
+        self.as_list = as_list
+        self.return_coordinates = return_coordinates
         self.parse_figures = parse_figures
 
     def _parse_fcn(self, pdf):
