@@ -180,7 +180,8 @@ def get_question_context():
     data: dict | None = request.json
     if not data:
         return "no data", 400
-    data["search_settings"]["result_list_items_per_page"] = 5
+    data["search_settings"]["result_list_items_per_page"] = 4
+    data["search_settings"]["search_algorithm"] = "vector"
     params_str = json.dumps({'search': data["search_settings"]}, indent=2)
     # ignore_cache = request.args.get('ignore_cache') == "true"
     # print(params_str)
@@ -203,7 +204,20 @@ def get_question_context():
             if field.startswith("_"):
                 continue
             context += f"  {field}: {item[field]}\n"
-        # TODO: resolve relevant parts
+        chunk_fields_with_relevant_parts = [part.get('field') for part in item.get("_relevant_parts", []) if part.get("index") is not None]
+        if chunk_fields_with_relevant_parts:
+            item_with_chunk_fields = get_document_details_by_id(ds_id, item_id, tuple(chunk_fields_with_relevant_parts), None)
+            assert item_with_chunk_fields is not None
+            for part in item["_relevant_parts"]:
+                if part.get("index") is None:
+                    # TODO: add relevant parts from keyword search, too (change to hybrid above and increase highlights length in OpenSearch)
+                    continue
+                chunk_before = item_with_chunk_fields.get(part.get("field"), [])[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
+                this_chunk = item_with_chunk_fields.get(part.get("field"), [])[part.get("index")].get('text', '')
+                chunk_after = item_with_chunk_fields.get(part.get("field"), [])[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
+                text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
+                context += f"  Potentially Relevant Snippet from {part.get('field')}:\n"
+                context += f"    {text}\n"
         context += "\n"
 
     response = app.response_class(

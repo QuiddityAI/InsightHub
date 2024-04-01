@@ -141,7 +141,7 @@ export default {
     <div v-if="item?._relevant_parts">
       <div v-for="relevant_part in item._relevant_parts"
         class="mt-2 rounded-md bg-gray-100 py-2 px-2">
-        <div v-if="relevant_part.index" class="font-semibold text-gray-600 text-sm">Relevant Part in
+        <div v-if="relevant_part.index !== undefined" class="font-semibold text-gray-600 text-sm">Relevant Part in
           {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field]?.description }}
           (chunk {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}, page {{ relevant_part.value?.page }}):</div>
         <div v-else class="font-semibold text-gray-600 text-sm">Relevant Part in

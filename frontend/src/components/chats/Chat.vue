@@ -124,8 +124,8 @@ export default {
       <div class="flex flex-col">
         <div v-for="message in chat_data.is_processing ? [...chat_data.chat_history, {content: 'Processing...', role: 'system'}] : chat_data.chat_history" class="flex" :class="{'flex-row-reverse': message.role == 'user', 'flex-row': message.role == 'system'}">
           <div
-            class="px-2 py-2 rounded-md bg-gray-100 mb-1 text-sm text-gray-700"
-            :class="{'text-right': message.role == 'user', 'bg-blue-100/50': message.role == 'user'}">
+            class="px-2 py-2 rounded-md mb-1 text-sm text-gray-700"
+            :class="{'text-right': message.role == 'user', 'bg-blue-100/50': message.role == 'user', 'bg-gray-100': message.role == 'system'}">
             <span v-for="part in list_of_text_and_citation_parts(message.content)">
               <span v-if="part.is_citation">
                 <button
