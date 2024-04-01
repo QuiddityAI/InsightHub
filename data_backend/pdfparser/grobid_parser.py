@@ -11,7 +11,7 @@ class GROBIDParser(BasePDFParser):
         n_proc=8,
         fulltext=True,
         as_list=False,
-        return_coordinates=False,
+        return_coordinates=True,
         parse_figures=False,
     ) -> None:
         super().__init__()
