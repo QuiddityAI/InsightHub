@@ -79,6 +79,7 @@ class TextSearchEngineClient(object):
             FieldType.VECTOR: "knn_vector",  # in ElasticSearch, its called "dense_vector"
             FieldType.ATTRIBUTES: "object",
             FieldType.ARBITRARY_OBJECT: "flat_object",
+            FieldType.CHUNK: "flat_object",
         })
 
         # almost all field types can be arrays in OpenSearch, except for a few which need a different type (e.g. rank_features)
@@ -95,7 +96,7 @@ class TextSearchEngineClient(object):
             open_search_type = array_field_type_to_open_search_type[field.field_type] if field.is_array else field_type_to_open_search_type[field.field_type]
             properties[field.identifier] = {"type": open_search_type}
             # all field types except for object and flat_object support the "index" parameter
-            if field.field_type not in (FieldType.ATTRIBUTES, FieldType.ARBITRARY_OBJECT):
+            if open_search_type not in ("object", "flat_object"):
                 indexed = (field.is_available_for_search or field.is_available_for_filtering) and field.field_type != FieldType.VECTOR
                 properties[field.identifier]["index"] = indexed
             if field.field_type == FieldType.TEXT and field.language_analysis:

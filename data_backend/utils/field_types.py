@@ -23,3 +23,4 @@ class FieldType():
     BOOL = "BOOL"
     ATTRIBUTES = "ATTRIBUTES"  # dict of attribute name -> attribute value, used for facets, attributes can be different per item but each is indexed
     ARBITRARY_OBJECT = "ARBITRARY_OBJECT"  # object that has arbritrary keys, won't be indexed per key
+    CHUNK = "CHUNK"  # text chunk, object with text and other attributes, not indexed

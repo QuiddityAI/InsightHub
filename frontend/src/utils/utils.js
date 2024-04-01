@@ -25,6 +25,7 @@ export class FieldType {
   static INTEGER = "INTEGER"
   static FLOAT = "FLOAT"
   static IDENTIFIER = "IDENTIFIER"
+  static CHUNK = "CHUNK"
 }
 
 export function ellipse(text, length) {
@@ -48,8 +49,8 @@ export function ensureLength(x, size, fillValue, removeRest = false) {
 
 export function highlight_words_in_text(text, words) {
   if (!words || words.length === 0) return text
-  const stopWords = ["a", "an", "and", "the", "in", "on", "is", "are", "was", "were", "to", "for", "of"]
-  const filteredWords = words.filter(word => !stopWords.includes(word))
+  const stopWords = ["a", "an", "and", "be", "the", "in", "on", "is", "are", "was", "were", "to", "for", "of", "can"]
+  const filteredWords = words.filter(word => !stopWords.includes(word.toLowerCase()))
   const regex = new RegExp(`\\b(${filteredWords.join("|")})\\b`, "gi")
   return text.replace(regex, (match) => `<b>${match}</b>`)
 }

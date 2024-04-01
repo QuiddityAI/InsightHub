@@ -39,6 +39,7 @@ class FieldType(models.TextChoices):
     BOOL = "BOOL", "Bool"
     ATTRIBUTES = "ATTRIBUTES", "Attributes (dict)"
     ARBITRARY_OBJECT = "ARBITRARY_OBJECT", "Non-indexed object"
+    CHUNK = "CHUNK", "Text Chunk with Metadata"
 
 
 class LanguageAnalysis(models.TextChoices):
