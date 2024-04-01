@@ -14,9 +14,9 @@ def clear_local_map_cache():
     global local_maps
     global vectorize_stage_hash_to_map_id
     global projection_stage_hash_to_map_id
-    local_maps = {}
-    vectorize_stage_hash_to_map_id = defaultdict(list)
-    projection_stage_hash_to_map_id = defaultdict(list)
+    local_maps.clear()
+    vectorize_stage_hash_to_map_id.clear()
+    projection_stage_hash_to_map_id.clear()
 
 
 def get_map_parameters_hash(parameters: dict) -> str:
