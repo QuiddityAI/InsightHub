@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Callable, Iterable
 import logging
 import os
@@ -162,8 +163,8 @@ def _scientific_article_pdf(paths, parameters):
         except:
             pub_year = None
 
-        full_text_original_chunks = _postprocess_pdf_chunks(parsed_pdf.sections)
-        full_text = " ".join(full_text_original_chunks)
+        full_text_original_chunks = _postprocess_pdf_chunks(parsed_pdf.sections, parsed_pdf.title.strip())
+        full_text = " ".join([chunk['text'] for chunk in full_text_original_chunks])
 
         try:
             pdf = pdfium.PdfDocument(f'{UPLOADED_FILES_FOLDER}/{sub_path}')
@@ -192,38 +193,55 @@ def _scientific_article_pdf(paths, parameters):
     return items, failed_files
 
 
-def _postprocess_pdf_chunks(sections):
+def _postprocess_pdf_chunks(sections, title: str) -> list[dict]:
     max_paragraph_length = 2000  # characters
     full_text_original_chunks = []
     for section in sections:
         paragraphs = section.text  # 'section.text' is an array of texts
-        if isinstance(paragraphs, str):
-            paragraphs = [paragraphs]
         assert isinstance(paragraphs, list)
         if not paragraphs:
             continue
         i = 0
+        section_first_parge = None
         while i < len(paragraphs):
             if len(paragraphs[i]) > max_paragraph_length * 1.2:
                 # split long paragraphs into smaller ones
-                paragraphs.insert(i + 1, paragraphs[i][max_paragraph_length:])
-                paragraphs[i] = paragraphs[i][:max_paragraph_length]
+                new_paragraph = deepcopy(paragraphs[i])
+                new_paragraph['text'] = new_paragraph['text'][max_paragraph_length:]
+                paragraphs.insert(i + 1, new_paragraph)
+                paragraphs[i]['text'] = paragraphs[i]['text'][:max_paragraph_length]
             i += 1
         if len(paragraphs) >= 2:
             for i in range(len(paragraphs) - 1, 1, -1):
                 if len(paragraphs[i]) < 120:
                     # if the paragraph is too short, merge it with the previous one
-                    paragraphs[i - 1] = paragraphs[i - 1] + " " + paragraphs[i]
+                    paragraphs[i - 1]['text'] = paragraphs[i - 1]['text'] + " " + paragraphs[i]['text']
+                    if 'coords' not in paragraphs[i - 1]:
+                        paragraphs[i - 1]['coords'] = paragraphs[i].get('coords')
                     del paragraphs[i]
         if len(paragraphs[0]) < 80:
             if len(paragraphs) > 1:
                 # if the first paragraph is too short, merge it with the second one
-                paragraphs[1] = paragraphs[0] + " " + paragraphs[1]
+                paragraphs[1]['text'] = paragraphs[0]['text'] + " " + paragraphs[1]['text']
+                if 'coords' not in paragraphs[1]:
+                    paragraphs[1]['coords'] = paragraphs[0].get('coords')
                 del paragraphs[0]
             else:
                 # if there is only one paragraph and it is too short, skip the section
                 continue
-        if section.heading:
-            paragraphs[0] = section.heading + ": " + paragraphs[0]
-        full_text_original_chunks += paragraphs
+        for paragraph in paragraphs:
+            if 'coords' in paragraph and paragraph['coords'] and paragraph['coords'][0]:
+                section_first_parge = paragraph['coords'][0][0]
+                break
+        for i, paragraph in enumerate(paragraphs):
+            coords = paragraph.get('coords')
+            chunk = {
+                'page': coords[0][0] if coords and coords[0] else section_first_parge,
+                'coordinates': coords[0] if coords else None,
+                'section': f'{section.heading}' + f' ({i + 1}/{len(paragraphs)})' if len(paragraphs) > 1 else '',
+                'prefix': f'{title}\n' + f'Section: {section.heading}\n' if section.heading else '',
+                'text': paragraph['text'],
+                'suffix': '',
+            }
+            full_text_original_chunks.append(chunk)
     return full_text_original_chunks
