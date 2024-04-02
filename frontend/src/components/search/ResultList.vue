@@ -59,7 +59,7 @@ export default {
       <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length"
       class="mt-[0px]"></Paginator>
       <div class="flex flex-row justify-center">
-        <div v-if="appState.search_result_ids.length && (!appState.search_result_total_matches || appState.search_result_ids.length === appState.search_result_total_matches)" class="text-xs text-gray-400">
+        <div v-if="appState.search_result_ids.length && (!appState.search_result_total_matches || appState.search_result_ids.length >= appState.search_result_total_matches)" class="text-xs text-gray-400">
           {{ appState.search_result_ids.length.toLocaleString() }} results found
         </div>
         <div v-else-if="appState.search_result_ids.length && appState.search_result_total_matches" class="text-xs text-gray-400">
