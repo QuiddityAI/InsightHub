@@ -145,7 +145,15 @@ def get_openai_embedding_batch(texts: dict):
 
 
 def get_infinity_embeddings(texts: list[str], model_name: str, prefix: str):
-    url = os.getenv('infinity_server_host', 'http://infinity-model-server:55181') + '/v1/embeddings'
+    batch_size = 256
+    embeddings = []
+    for i in range(0, len(texts), batch_size):
+        embeddings.extend(_get_infinity_embeddings(texts[i:i+batch_size], model_name, prefix))
+    return embeddings
+
+
+def _get_infinity_embeddings(texts: list[str], model_name: str, prefix: str):
+    url = os.getenv('infinity_server_host', 'http://infinity-model-server:55181') + '/embeddings'
     if model_name in ['intfloat/e5-base-v2', 'intfloat/e5-large-v2', 'intfloat/multilingual-e5-base']:
         prefix = prefix or "query:"
         # alternative: "passage: " for documents meant for retrieval
@@ -159,5 +167,6 @@ def get_infinity_embeddings(texts: list[str], model_name: str, prefix: str):
         embeddings = np.asarray([x["embedding"] for x in result.json()["data"]])
     except KeyError:
         logging.error("Batch of embeddings lost because at least one could not be processed by Infinity")
+        logging.error(result.json())
         return [np.zeros(768) for _ in range(len(texts))]
     return embeddings

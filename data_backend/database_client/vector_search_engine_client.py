@@ -193,10 +193,12 @@ class VectorSearchEngineClient(object):
                     sub_item_ids.append(sub_item_uuid)
                     sub_item_vectors.append(vector)
 
-            self.client.upsert(
-                collection_name=f'{collection_name}_sub_items',
-                points=models.Batch(ids=sub_item_ids, payloads=sub_item_payloads, vectors={vector_field: sub_item_vectors}),
-            )
+            # do in batches of 1024, otherwise it might time out:
+            for i in range(0, len(sub_item_ids), 1024):
+                self.client.upsert(
+                    collection_name=f'{collection_name}_sub_items',
+                    points=models.Batch(ids=sub_item_ids[i:i+1024], payloads=sub_item_payloads[i:i+1024], vectors={vector_field: sub_item_vectors[i:i+1024]}),
+                )
             # create empty payloads and vectors for the lookup collection:
             payloads = [{} for _ in ids]
             vectors = [[0] for _ in ids]
