@@ -194,9 +194,10 @@ def _scientific_article_pdf(paths, parameters):
 
 
 def _postprocess_pdf_chunks(sections, title: str) -> list[dict]:
-    max_paragraph_length = 2000  # characters
+    max_paragraph_length = 1500  # characters
     full_text_original_chunks = []
     for section in sections:
+        #logging.warning(f'Processing section: {section.heading}')
         paragraphs = section.text  # 'section.text' is an array of texts
         assert isinstance(paragraphs, list)
         if not paragraphs:
@@ -204,7 +205,7 @@ def _postprocess_pdf_chunks(sections, title: str) -> list[dict]:
         i = 0
         section_first_parge = None
         while i < len(paragraphs):
-            if len(paragraphs[i]) > max_paragraph_length * 1.2:
+            if len(paragraphs[i]['text']) > max_paragraph_length * 1.2:
                 # split long paragraphs into smaller ones
                 new_paragraph = deepcopy(paragraphs[i])
                 new_paragraph['text'] = new_paragraph['text'][max_paragraph_length:]
@@ -213,21 +214,33 @@ def _postprocess_pdf_chunks(sections, title: str) -> list[dict]:
             i += 1
         if len(paragraphs) >= 2:
             for i in range(len(paragraphs) - 1, 1, -1):
-                if len(paragraphs[i]) < 120:
+                if len(paragraphs[i]['text']) < 120:
+                    average_word_length = sum([len(word) for word in paragraphs[i]['text'].split()]) / len(paragraphs[i]['text'].split())
+                    if average_word_length < 3:
+                        # skip this paragraph, its probably a formula
+                        # logging.warning(f'Skipping paragraph with average word length {average_word_length:.2f}: {paragraphs[i]["text"]}')
+                        del paragraphs[i]
+                        continue
                     # if the paragraph is too short, merge it with the previous one
+                    # logging.warning(f'Merging short paragraph: {paragraphs[i]["text"]}')
                     paragraphs[i - 1]['text'] = paragraphs[i - 1]['text'] + " " + paragraphs[i]['text']
                     if 'coords' not in paragraphs[i - 1]:
                         paragraphs[i - 1]['coords'] = paragraphs[i].get('coords')
                     del paragraphs[i]
-        if len(paragraphs[0]) < 80:
+        if len(paragraphs[0]['text']) < 80:
             if len(paragraphs) > 1:
                 # if the first paragraph is too short, merge it with the second one
                 paragraphs[1]['text'] = paragraphs[0]['text'] + " " + paragraphs[1]['text']
                 if 'coords' not in paragraphs[1]:
                     paragraphs[1]['coords'] = paragraphs[0].get('coords')
                 del paragraphs[0]
+                if len(paragraphs[0]['text']) < 80:
+                    # if the merged paragraph is still too short, skip this section
+                    # logging.warning(f'Skipping section {section.text} because the first two paragraphs are too short')
+                    continue
             else:
                 # if there is only one paragraph and it is too short, skip the section
+                # logging.warning(f'Skipping section {section.text} because the first paragraph is too short')
                 continue
         for paragraph in paragraphs:
             if 'coords' in paragraph and paragraph['coords'] and paragraph['coords'][0]:
@@ -235,6 +248,8 @@ def _postprocess_pdf_chunks(sections, title: str) -> list[dict]:
                 break
         for i, paragraph in enumerate(paragraphs):
             coords = paragraph.get('coords')
+            # hot fix: there seems to be a space missing between sentences, so just add it here (should be fixed elsewhere)
+            paragraph['text'] = paragraph['text'].replace('.', '. ')
             chunk = {
                 'page': coords[0][0] if coords and coords[0] else section_first_parge,
                 'coordinates': coords[0] if coords else None,
