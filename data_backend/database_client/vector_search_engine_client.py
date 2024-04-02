@@ -229,7 +229,7 @@ class VectorSearchEngineClient(object):
 
     def get_items_near_vector(self, database_name: str, vector_field: str, query_vector: list,
                               filter_criteria: dict, return_vectors: bool, limit: int,
-                              score_threshold: float | None, min_results: int = 10, is_array_field: bool=False) -> list:
+                              score_threshold: float | None, min_results: int = 10, is_array_field: bool=False, max_sub_items: int = 1) -> list:
         collection_name = self._get_collection_name(database_name, vector_field)
         if is_array_field:
             group_hits = self.client.search_groups(
@@ -240,7 +240,7 @@ class VectorSearchEngineClient(object):
                 limit=limit,
                 score_threshold=score_threshold,
                 group_by='parent_id',
-                group_size=1,
+                group_size=max_sub_items,
             )
             # hits.groups is a list of {'id': parent_id, 'hits': [{'id': sub_id, 'score': score, 'payload': dict} ...]}
             hits = []
@@ -252,7 +252,7 @@ class VectorSearchEngineClient(object):
                 }))
             if min_results > 0 and len(hits) < min_results and score_threshold:
                 # try again without score threshold
-                return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results, is_array_field)
+                return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
             return hits  # type: ignore
 
         hits = self.client.search(
@@ -275,7 +275,7 @@ class VectorSearchEngineClient(object):
         )
         if min_results > 0 and len(hits) < min_results and score_threshold:
             # try again without score threshold
-            return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results, is_array_field)
+            return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
         return hits
 
 

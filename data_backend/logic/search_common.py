@@ -213,19 +213,21 @@ def separate_text_and_vector_fields(dataset: DotDict, fields: Iterable[str]):
 
 
 def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query: QueryInput,
-                                required_fields: list[str], limit: int, page: int):
+                                required_fields: list[str], limit: int, page: int,
+                                use_bolding_in_highlights: bool = True):
     text_db_client = TextSearchEngineClient.get_instance()
     criteria = {}  # TODO: add criteria
-    search_result, total_matches = text_db_client.get_search_results(dataset.actual_database_name, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True)
+    search_result, total_matches = text_db_client.get_search_results(dataset.actual_database_name, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True, use_bolding_in_highlights=use_bolding_in_highlights)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
+    ignored_keyword_highlight_fields = dataset.defaults.ignored_keyword_highlight_fields or []
     for i, item in enumerate(search_result):
         items[item['_id']] = {
             '_id': item['_id'],
             '_dataset_id': dataset.id,
             '_origins': [{'type': 'fulltext', 'field': 'unknown',
                           'query': query.positive_query_str, 'score': item['_score'], 'rank': i+1}],
-            '_relevant_parts': [{'origin': 'keyword_search', 'field': field_name, 'index': None, 'value': " [...] ".join(highlights)} for field_name, highlights in item.get('highlight', {}).items()]
+            '_relevant_parts': [{'origin': 'keyword_search', 'field': field_name, 'index': None, 'value': " [...] ".join(highlights)} for field_name, highlights in item.get('highlight', {}).items() if field_name not in ignored_keyword_highlight_fields]
         }
     return items, total_matches
 
@@ -233,7 +235,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
 def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryInput,
                               query_vector: list | None, required_fields: list[str],
                               internal_input_weight: float,
-                              limit: int, page: int, score_threshold: float | None) -> dict[str, dict]:
+                              limit: int, page: int, score_threshold: float | None, max_sub_items: int | None = 1) -> dict[str, dict]:
     def get_suitable_generator():
         generators: list[DotDict] = get_generators()
         field = dataset.object_fields[vector_field]
@@ -288,7 +290,8 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
     array_source_field = dataset.object_fields[vector_field].source_fields[0] if is_array_field and dataset.object_fields[vector_field].source_fields else None
     vector_search_result = vector_db_client.get_items_near_vector(dataset.actual_database_name, vector_field, query_vector,
                                                                   criteria, return_vectors=False, limit=limit,
-                                                                  score_threshold=score_threshold, is_array_field=is_array_field) # type: ignore
+                                                                  score_threshold=score_threshold, is_array_field=is_array_field,
+                                                                  max_sub_items=max_sub_items or 1) # type: ignore
     items = {}
     for i, item in enumerate(vector_search_result):
         items[item.id] = {

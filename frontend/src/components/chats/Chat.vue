@@ -130,6 +130,7 @@ export default {
               <span v-if="part.is_citation">
                 <button
                   @click="(event) => { selected_citation = part; $refs.citation_tooltip.toggle(event) }"
+                  title="Click to show reference"
                   class="text-blue-500 cursor-pointer"
                   type="button">
                   [{{ part.citation_index }}]

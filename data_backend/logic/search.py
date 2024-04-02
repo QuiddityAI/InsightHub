@@ -136,7 +136,8 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
                 score_threshold = score_threshold if search_settings.use_similarity_thresholds else None
                 results = get_vector_search_results(dataset, field.identifier, query, None, required_fields=[],
                                                     internal_input_weight=search_settings.internal_input_weight,
-                                                    limit=limit, page=page, score_threshold=score_threshold)
+                                                    limit=limit, page=page, score_threshold=score_threshold,
+                                                    max_sub_items=search_settings.max_sub_items_per_item)
                 result_sets.append(results)
                 actual_total_matches = max(actual_total_matches, len(results))
                 timings.log("vector database query")
@@ -145,7 +146,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
             else:
                 continue
         if text_fields:
-            results, total_matches = get_fulltext_search_results(dataset, text_fields, query, required_fields=['_id'], limit=limit, page=page)
+            results, total_matches = get_fulltext_search_results(dataset, text_fields, query, required_fields=['_id'], limit=limit, page=page, use_bolding_in_highlights=search_settings.use_bolding_in_highlights)
             result_sets.append(results)
             actual_total_matches = max(actual_total_matches, total_matches)
             timings.log("fulltext database query")

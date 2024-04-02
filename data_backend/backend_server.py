@@ -20,7 +20,7 @@ from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from logic.classifiers import get_retraining_status, start_retrain
 from logic.upload_files import upload_files, UPLOADED_FILES_FOLDER
 
-from database_client.django_client import add_stored_map
+from database_client.django_client import add_stored_map, get_dataset
 
 
 # --- Flask set up: ---
@@ -180,8 +180,10 @@ def get_question_context():
     data: dict | None = request.json
     if not data:
         return "no data", 400
-    data["search_settings"]["result_list_items_per_page"] = 4
-    data["search_settings"]["search_algorithm"] = "vector"
+    data["search_settings"]["result_list_items_per_page"] = 5
+    data["search_settings"]["search_algorithm"] = "hybrid"
+    data["search_settings"]["max_sub_items_per_item"] = 2
+    data["search_settings"]["use_bolding_in_highlights"] = False
     params_str = json.dumps({'search': data["search_settings"]}, indent=2)
     # ignore_cache = request.args.get('ignore_cache') == "true"
     # print(params_str)
@@ -198,10 +200,15 @@ def get_question_context():
 
     context = ""
     for ds_id, item_id in sorted_ids:
+        dataset = get_dataset(ds_id)
         item = items_by_dataset[ds_id][item_id]
         context += f"Item: [{ds_id}, {item_id}]\n"
         for field in item:
             if field.startswith("_"):
+                continue
+            if field not in dataset.default_search_fields:
+                continue
+            if item[field] is None or item[field] == "":
                 continue
             context += f"  {field}: {item[field]}\n"
         chunk_fields_with_relevant_parts = [part.get('field') for part in item.get("_relevant_parts", []) if part.get("index") is not None]
@@ -210,12 +217,12 @@ def get_question_context():
             assert item_with_chunk_fields is not None
             for part in item["_relevant_parts"]:
                 if part.get("index") is None:
-                    # TODO: add relevant parts from keyword search, too (change to hybrid above and increase highlights length in OpenSearch)
-                    continue
-                chunk_before = item_with_chunk_fields.get(part.get("field"), [])[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
-                this_chunk = item_with_chunk_fields.get(part.get("field"), [])[part.get("index")].get('text', '')
-                chunk_after = item_with_chunk_fields.get(part.get("field"), [])[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
-                text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
+                    text = f"[...] {part.get('value')} [...]"
+                else:
+                    chunk_before = item_with_chunk_fields.get(part.get("field"), [])[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
+                    this_chunk = item_with_chunk_fields.get(part.get("field"), [])[part.get("index")].get('text', '')
+                    chunk_after = item_with_chunk_fields.get(part.get("field"), [])[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
+                    text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
                 context += f"  Potentially Relevant Snippet from {part.get('field')}:\n"
                 context += f"    {text}\n"
         context += "\n"
@@ -368,6 +375,8 @@ def retrieve_document_details_by_id():
     if relevant_parts:
         # need to convert to json string to make it hashable for caching
         relevant_parts = json.dumps(relevant_parts)
+    else:
+        relevant_parts = None
     result = get_document_details_by_id(dataset_id, item_id, tuple(fields), relevant_parts)
 
     if result is None:

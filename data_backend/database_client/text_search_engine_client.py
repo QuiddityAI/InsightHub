@@ -244,7 +244,9 @@ class TextSearchEngineClient(object):
         logging.warning(f"Deleted field {field} from text search engine: {response}")
 
 
-    def get_search_results(self, index_name: str, search_fields, filter_criteria, query_positive, query_negative, page, limit, return_fields, highlights=False):
+    def get_search_results(self, index_name: str, search_fields, filter_criteria,
+                           query_positive, query_negative, page, limit, return_fields,
+                           highlights=False, use_bolding_in_highlights:bool=True):
         query = {
             'size': limit,
             'query': {
@@ -258,10 +260,11 @@ class TextSearchEngineClient(object):
         if highlights:
             query['highlight'] = {
                 "fields": {field: {} for field in search_fields},
-                "number_of_fragments": 1,
+                "number_of_fragments": 2,
                 "order": "score",
-                "pre_tags": ["<b>"],
-                "post_tags": ["</b>"],
+                "pre_tags": ["<b>"] if use_bolding_in_highlights else [""],
+                "post_tags": ["</b>"] if use_bolding_in_highlights else [""],
+                "fragment_size": 400,
             }
 
         response = self.client.search(
