@@ -37,6 +37,7 @@ export default {
     } else {
       // this is only relevant for the global chat list:
       this.eventBus.on("show_chat", ({chat_id}) => {
+        this.selected_chat_id = null  // close any open chat
         this.selected_chat_id = chat_id
       })
     }
