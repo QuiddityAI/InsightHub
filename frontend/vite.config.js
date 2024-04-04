@@ -8,7 +8,7 @@ export default defineConfig({
     port: 55140,
     proxy: {
       "/data_backend": {  // allows the browser to access endpoints of the data-backend directly
-        target: (process.env.data_backend_host || "http://127.0.0.1:55123"),
+        target: (process.env.organization_backend_host || "http://127.0.0.1:55125"),
         changeOrigin: true,
         secure: false,
       },

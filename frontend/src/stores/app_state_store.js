@@ -246,6 +246,10 @@ export const useAppStateStore = defineStore("appState", {
         console.log("organization_id is null, cannot retrieve stored maps, history and collections")
         return
       }
+      if (!this.is_logged_in) {
+        console.log("not logged in, cannot retrieve stored maps, history and collections")
+        return
+      }
       this.search_history = []
       // FIXME: refactor with organization_id
       const get_history_body = {
@@ -629,6 +633,7 @@ export const useAppStateStore = defineStore("appState", {
     add_search_history_item() {
       const that = this
       if (!this.store_search_history) return
+      if (!this.logged_in) return
 
       if (
         this.search_history.length > 0 &&

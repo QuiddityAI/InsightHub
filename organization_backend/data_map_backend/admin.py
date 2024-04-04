@@ -15,7 +15,7 @@ from jsonsuit.widgets import JSONSuit
 from django_object_actions import DjangoObjectActions, action
 from import_export.admin import ImportExportMixin
 
-from .data_backend_client import data_backend_url
+from .data_backend_client import DATA_BACKEND_HOST
 
 from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
 from .utils import get_vector_field_dimensions
@@ -252,7 +252,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     @action(label="Update Database Layout", description="Update Database Layout")
     def update_database_layout(self, request, obj):
-        url = data_backend_url + '/data_backend/update_database_layout'
+        url = DATA_BACKEND_HOST + '/data_backend/update_database_layout'
         data = {
             'dataset_id': obj.id,
         }
@@ -311,7 +311,7 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAd
     @action(label="Delete Content", description="Delete field data and index")
     def delete_content(self, request, obj):
         # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
-        url = data_backend_url + '/data_backend/delete_field'
+        url = DATA_BACKEND_HOST + '/data_backend/delete_field'
         data = {
             'dataset_id': obj.dataset_id,
             'field_identifier': obj.identifier,
@@ -321,7 +321,7 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAd
 
     @action(label="Generate Missing Values", description="Generate missing values")
     def generate_missing_values(self, request, obj):
-        url = data_backend_url + '/data_backend/generate_missing_values'
+        url = DATA_BACKEND_HOST + '/data_backend/generate_missing_values'
         data = {
             'dataset_id': obj.dataset_id,
             'field_identifier': obj.identifier,
@@ -446,7 +446,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHis
 
     def get_retraining_status(self, obj):
         try:
-            url = data_backend_url + f'/data_backend/classifier/retraining_status'  # type: ignore
+            url = DATA_BACKEND_HOST + f'/data_backend/classifier/retraining_status'  # type: ignore
             data = {
                 'collection_id': obj.collection_id,
                 'class_name': obj.class_name,
@@ -466,7 +466,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHis
 
     @action(label="(Re)train Classifier", description="Train classifier for this class and embedding space")
     def retrain_classifier(self, request, obj):
-        url = data_backend_url + f'/data_backend/classifier/retrain'
+        url = DATA_BACKEND_HOST + f'/data_backend/classifier/retrain'
         data = {
             'collection_id': obj.collection_id,
             'class_name': obj.class_name,
@@ -479,7 +479,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHis
 
     def retrain_multiple_classifiers(self, request, queryset):
         for obj in queryset:
-            url = data_backend_url + f'/data_backend/classifier/{obj.collection_id}/retrain'
+            url = DATA_BACKEND_HOST + f'/data_backend/classifier/{obj.collection_id}/retrain'
             data = {
                 'class_name': obj.class_name,
                 'embedding_space_id': obj.embedding_space_id,

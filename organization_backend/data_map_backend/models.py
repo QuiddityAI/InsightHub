@@ -14,7 +14,7 @@ import requests
 
 from simple_history.models import HistoricalRecords
 
-from .data_backend_client import data_backend_url, get_item_by_id, delete_dataset_content, get_question_context
+from .data_backend_client import DATA_BACKEND_HOST, get_item_by_id, delete_dataset_content, get_question_context
 from .chatgpt_client import get_chatgpt_response_using_history
 
 
@@ -474,7 +474,7 @@ class Dataset(models.Model):
     @property
     def item_count(self):
         try:
-            url = data_backend_url + f'/data_backend/dataset/{self.id}/item_count'  # type: ignore
+            url = DATA_BACKEND_HOST + f'/data_backend/dataset/{self.id}/item_count'  # type: ignore
             result = requests.get(url)
             return result.json()["count"]
         except Exception as e:
@@ -484,7 +484,7 @@ class Dataset(models.Model):
     @property
     def random_item(self):
         try:
-            url = data_backend_url + f'/data_backend/dataset/{self.id}/random_item'  # type: ignore
+            url = DATA_BACKEND_HOST + f'/data_backend/dataset/{self.id}/random_item'  # type: ignore
             result = requests.get(url)
             item = result.json()["item"]
             def replace_long_arrays(value):
@@ -677,11 +677,11 @@ class ObjectField(models.Model):
             # OpenSearch can't easily count values that are not indexed
             return "?"
         try:
-            url = data_backend_url + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/items_having_value_count'  # type: ignore
+            url = DATA_BACKEND_HOST + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/items_having_value_count'  # type: ignore
             result = requests.get(url)
             count = result.json()["count"]
             if self.field_type == FieldType.VECTOR and self.is_array:
-                url = data_backend_url + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/sub_items_having_value_count'  # type: ignore
+                url = DATA_BACKEND_HOST + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/sub_items_having_value_count'  # type: ignore
                 result = requests.get(url)
                 sub_count = result.json()["count"]
                 return f"{count} (~{sub_count / count:.0f} ppi)"

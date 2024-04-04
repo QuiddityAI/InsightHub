@@ -12,12 +12,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import CollectionItem, DataCollection, Chat, Dataset, FieldType
-from .serializers import ChatSerializer, CollectionSerializer
-from .data_backend_client import data_backend_url, get_item_by_id
-from .chatgpt_client import get_chatgpt_response_using_history
+from ..models import CollectionItem, DataCollection, Chat, Dataset, FieldType
+from ..serializers import ChatSerializer, CollectionSerializer
+from ..data_backend_client import DATA_BACKEND_HOST, get_item_by_id
+from ..chatgpt_client import get_chatgpt_response_using_history
 
-from .views import is_from_backend
+from .other_views import is_from_backend
 
 
 @csrf_exempt

@@ -19,8 +19,9 @@ from django.urls import path, include, re_path
 from django.shortcuts import redirect
 
 from django.contrib.auth import views as auth_views
-import data_map_backend
 from .views import login_from_app, signup_from_app
+from data_map_backend.views import data_backend_proxy_views
+from data_map_backend.views import other_views
 
 
 def redirect_to_admin(request):
@@ -35,7 +36,9 @@ urlpatterns = [
     path("org/data_map/", include('data_map_backend.urls')),
     path('org/api-auth/', include('rest_framework.urls')),
     re_path(r'^org/auth/', include('drf_social_oauth2.urls', namespace='drf')),
-    path('org/', data_map_backend.views.HomeView.as_view(), name='home'),
+    path('org/', other_views.HomeView.as_view(), name='home'),
+
+    path('data_backend/<path:sub_path>', data_backend_proxy_views.data_backend_proxy_view, name='data_backend_proxy_view'),
 
     # Login and Logout
     path('org/login/', auth_views.LoginView.as_view(), name='login'),

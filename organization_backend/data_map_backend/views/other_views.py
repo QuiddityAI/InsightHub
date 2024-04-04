@@ -11,8 +11,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import DataCollection, CollectionItem, Dataset, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
-from .serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
+from ..models import DataCollection, CollectionItem, Dataset, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
+from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
