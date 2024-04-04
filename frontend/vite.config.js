@@ -7,18 +7,18 @@ export default defineConfig({
     host: "::",
     port: 55140,
     proxy: {
-      "/data_backend": {
+      "/data_backend": {  // allows the browser to access endpoints of the data-backend directly
         target: (process.env.data_backend_host || "http://127.0.0.1:55123"),
         changeOrigin: true,
         secure: false,
       },
-      "/org": {
+      "/org": {  // allows the browser to access endpoints of the organization-backend directly
         target: (process.env.organization_backend_host || "http://127.0.0.1:55125"),
         changeOrigin: true,
         secure: false,
         //rewrite: (path) => path.replace(/^\/org/, '/'),
       },
-      "/static": {
+      "/static": {  // allows the browser to access static resources of the organization-backend directly
         target: (process.env.organization_backend_host || "http://127.0.0.1:55125"),
         changeOrigin: true,
         secure: false,
