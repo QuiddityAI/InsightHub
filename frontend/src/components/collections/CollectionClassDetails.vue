@@ -188,7 +188,7 @@ export default {
 
       <div class="flex-1"></div>
 
-      <div class="w-40 h-6">
+      <!-- <div class="w-40 h-6">
         <select
           v-model="target_vector_ds_and_field"
           class="w-full py-0 rounded border-transparent text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
@@ -205,7 +205,7 @@ export default {
         :title="`Last retraining: ${last_retraining_human_readable}, embedding space ${embedding_space_id}`">
         <div class="absolute h-full bg-blue-500/20 rounded-md" :style="{ width: `${retraining_progress * 100}%` }"></div>
         <span class="mx-2 hover:text-blue-500">{{ is_retraining ? "Retraining..." : (show_retrain_success_label ? "Retrained ✓": "Retrain") }}</span>
-      </button>
+      </button> -->
 
       <button
         @click="delete_collection_class"
@@ -214,11 +214,11 @@ export default {
       </button>
     </div>
 
-    <InputGroup class="mb-4 mt-4">
+    <!-- <InputGroup class="mb-4 mt-4">
       <InputGroupAddon>Search Intent:</InputGroupAddon>
       <InputText placeholder="Intent" v-model="collection.search_intent" />
       <Button label="Show Map" @click="show_map()"></Button>
-    </InputGroup>
+    </InputGroup> -->
 
     <div
       class="flex flex-row items-center justify-between text-center font-bold text-gray-400">
