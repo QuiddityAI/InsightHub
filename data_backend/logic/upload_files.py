@@ -180,7 +180,7 @@ def _scientific_article_pdf(paths, parameters):
             "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
             "doi": parsed_pdf.doi,
             "title": parsed_pdf.title.strip() or sub_path.split("/")[-1],
-            "abstract": parsed_pdf.abstract,
+            "abstract": parsed_pdf.abstract.replace(".", ". ") if parsed_pdf.abstract else "",
             "authors": parsed_pdf.authors,
             "journal": "unknown",
             "publication_year": pub_year,
@@ -204,6 +204,11 @@ def _postprocess_pdf_chunks(sections, title: str) -> list[dict]:
             continue
         i = 0
         section_first_parge = None
+        for i in range(len(paragraphs) - 1, 0, -1):
+            # if paragraph doesn't contain words and just numbers, remove it:
+            if not any(word.isalpha() for word in paragraphs[i]['text'].split() if len(word) > 1):
+                logging.warning(f'Removing paragraph with only numbers: {paragraphs[i]["text"]}')
+                del paragraphs[i]
         while i < len(paragraphs):
             if len(paragraphs[i]['text']) > max_paragraph_length * 1.2:
                 # split long paragraphs into smaller ones
