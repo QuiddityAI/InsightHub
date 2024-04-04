@@ -34,7 +34,7 @@ class OrganizationSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        exclude = ['created_at', 'changed_at']
+        exclude = ['created_at', 'changed_at', 'members']
 
 
 class ImportConverterSerializer(drf_serializers.ModelSerializer):

@@ -46,31 +46,18 @@ def get_available_organizations(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
-    try:
-        data = json.loads(request.body)
-    except (KeyError, ValueError):
-        return HttpResponse(status=400)
-
-    items = Organization.objects.all()
-
-    result = []
-    for item in items:
-        if not item.members.filter(id=request.user.id).exists():
-            continue
-        result.append(item)
-
-    serialized_data = OrganizationSerializer(items, many=True).data
+    is_authenticated = request.user.is_authenticated
+    organizations = Organization.objects.all()
+    serialized_data = OrganizationSerializer(organizations, many=True).data
 
     # replace list of all datasets of each organization with list of non-template datasets:
-    is_authenticated = request.user.is_authenticated
-    for item, serialized in zip(items, serialized_data):
+    for organization, serialized in zip(organizations, serialized_data):
         if is_authenticated:
-            serialized["datasets"] = [dataset.id for dataset in Dataset.objects.filter(organization_id=item.id, is_template=False)]  # type: ignore
+            serialized["datasets"] = [dataset.id for dataset in Dataset.objects.filter(organization_id=organization.id, is_template=False)]  # type: ignore
         else:
-            serialized["datasets"] = [dataset.id for dataset in Dataset.objects.filter(organization_id=item.id, is_template=False, is_public=True)]  # type: ignore
+            serialized["datasets"] = [dataset.id for dataset in Dataset.objects.filter(organization_id=organization.id, is_template=False, is_public=True)]  # type: ignore
 
     result = json.dumps(serialized_data)
-
     return HttpResponse(result, status=200, content_type='application/json')
 
 @csrf_exempt
