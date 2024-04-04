@@ -201,12 +201,12 @@ export default {
           @change="appState.on_selected_datasets_changed"
           class="w-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       </div>
-      <button
+      <!-- <button
         @click="appState.show_global_map()"
         title="Show all items (or a representative subset if there are too many)"
         class="ml-1 rounded-md px-2 h-7 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
         Overview
-      </button>
+      </button> -->
 
       <div class="flex-1"></div>
       <LoginButton></LoginButton>
@@ -337,7 +337,7 @@ export default {
     </div>
 
     <div class="mt-2 ml-0 flex flex-row gap-1 items-center">
-      <div class="h-6 flex flex-row items-center gap-0 pl-1 border border-gray-300 rounded-md">
+      <!-- <div class="h-6 flex flex-row items-center gap-0 pl-1 border border-gray-300 rounded-md">
         <span class="pr-0 flex-none text-sm font-['Lexend'] font-normal text-gray-400">
           Order: </span>
         <div class="w-32">
@@ -350,31 +350,31 @@ export default {
           </select>
         </div>
       </div>
-      <div class="flex-1"></div>
+      <div class="flex-1"></div> -->
       <div class="flex flex-row items-center gap-0 h-6">
-        <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal"
+        <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'keyword'"
           :class="{'text-blue-500': appState.settings.search.search_algorithm === 'keyword', 'text-gray-400': appState.settings.search.search_algorithm != 'keyword'}">
           Keyword
         </button>
-        <button class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal"
+        <button class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'vector'"
           :class="{'text-blue-500': appState.settings.search.search_algorithm === 'vector', 'text-gray-400': appState.settings.search.search_algorithm != 'vector'}">
           Meaning
         </button>
-        <button class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal"
+        <button class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'hybrid'"
           :class="{'text-blue-500': appState.settings.search.search_algorithm === 'hybrid', 'text-gray-400': appState.settings.search.search_algorithm != 'hybrid'}">
           Both
         </button>
       </div>
       <div class="flex-1"></div>
-      <div class="flex flex-row items-center gap-0 h-6">
+      <!-- <div class="flex flex-row items-center gap-0 h-6">
         <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400"
           @click="toast.add({severity:'info', summary:'Not yet implemented', detail:'This feature is coming soon'})">
           + Filter
         </button>
-      </div>
+      </div> -->
       <div class="flex-1"></div>
       <button
         v-if="appState.logged_in"
