@@ -142,10 +142,11 @@ export default {
       <div v-for="relevant_part in item._relevant_parts"
         class="mt-2 rounded-md bg-gray-100 py-2 px-2">
         <div v-if="relevant_part.index !== undefined && relevant_part.index !== null" class="font-semibold text-gray-600 text-sm">Relevant Part in
-          {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field]?.description }}
-          (chunk {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }}, page {{ relevant_part.value?.page }}):</div>
+          {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field]?.description }}, Page {{ relevant_part.value?.page }}
+          <span class="text-gray-400">(based on meaning, chunk {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }})</span></div>
         <div v-else class="font-semibold text-gray-600 text-sm">Relevant Part in
           {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description || appState.datasets[item._dataset_id].object_fields[relevant_part.field].identifier }}
+          <span class="text-gray-400">(based on keywords)</span>
         </div>
         <div v-if="relevant_part.value && relevant_part.origin === 'vector_array'" class="mt-1 text-gray-700 text-xs"
           v-html="highlight_words_in_text(relevant_part.value.text, mapState.map_parameters.search.all_field_query.split(' '))"></div>
