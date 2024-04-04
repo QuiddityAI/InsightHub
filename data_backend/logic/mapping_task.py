@@ -431,19 +431,34 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
         # Progress might only be available below 4096
 
         map_data['progress']['step_title'] = "UMAP Preparation"
-        import umap  # import it only when needed as it slows down the startup time
-        umap_task = umap.UMAP(n_components=umap_dimensions_required, random_state=99,
-                            min_dist=projection_parameters.get("min_dist", 0.17),
-                            n_epochs=projection_parameters.get("n_epochs", 500),
-                            n_neighbors=projection_parameters.get("n_neighbors", 15),
-                            metric=projection_parameters.get("metric", "euclidean"),
+        if len(vectors) >= 6:
+            import umap  # import it only when needed as it slows down the startup time
+            umap_task = umap.UMAP(n_components=umap_dimensions_required, random_state=99,
+                                min_dist=projection_parameters.get("min_dist", 0.17),
+                                n_epochs=projection_parameters.get("n_epochs", 500),
+                                n_neighbors=projection_parameters.get("n_neighbors", 15),
+                                metric=projection_parameters.get("metric", "euclidean"),
                             )
-        try:
-            raw_projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
-        except (TypeError, ValueError) as e:
-            # might happend when there are too few points
-            logging.warning(f"UMAP failed: {e}")
-            raw_projections = np.zeros((len(vectors), umap_dimensions_required))
+            try:
+                raw_projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
+            except (TypeError, ValueError) as e:
+                # might happend when there are too few points
+                logging.warning(f"UMAP failed: {e}")
+                raw_projections = np.zeros((len(vectors), umap_dimensions_required))
+        else:
+            if umap_dimensions_required == 1:
+                raw_projections = np.linspace(0, 1, len(vectors))
+            elif umap_dimensions_required == 2:
+                raw_projections = np.zeros((len(vectors), 2))
+                # generate a square grid:
+                size = int(np.ceil(np.sqrt(len(vectors))))
+                for i in range(size):
+                    for j in range(size):
+                        idx = i * size + j
+                        if idx < len(vectors):
+                            raw_projections[idx] = [i / size, 1 - (j / size)]
+            else:
+                raw_projections = np.zeros((len(vectors), umap_dimensions_required))
         map_data["results"]["per_point_data"]["raw_projections"] = raw_projections.tolist()  # type: ignore
         apply_projections_to_positions(raw_projections)
         timings.log("UMAP fit transform")
@@ -468,13 +483,19 @@ def reuse_projection_phase(map_data: dict, similar_map: dict) -> tuple[np.ndarra
 
 def clusterize_and_render_phase(map_data: dict, params: DotDict, datasets: dict, items_by_dataset: dict, sorted_ids: list[tuple[str, str]], raw_projections: np.ndarray, final_positions: np.ndarray, timings: Timings):
     map_data['progress']['step_title'] = "Clusterize results"
-    cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, params.rendering.clusterizer_parameters)
+    if len(sorted_ids) >= 6:
+        cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, params.rendering.clusterizer_parameters)
+    else:
+        cluster_id_per_point = np.zeros(len(sorted_ids), dtype=int) - 1
     map_data["results"]["per_point_data"]["cluster_ids"] = cluster_id_per_point.tolist()
     timings.log("clustering")
 
     map_data['progress']['step_title'] = "Find cluster titles"
     if any(datasets[ds_id].descriptive_text_fields for ds_id in datasets.keys()):
-        cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, timings)
+        if len(sorted_ids) >= 6:
+            cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, timings)
+        else:
+            cluster_data = {}
         map_data["results"]["clusters"] = cluster_data
     else:
         map_data["results"]["clusters"] = {}
