@@ -19,7 +19,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/map": _check_map_or_search_body,
         "/data_backend/map/result": lambda x: True,  # needs map_id, is ok
         "/data_backend/map/thumbnail_atlas": lambda x: True,  # needs thumbnail file name, is ok
-        "/data_backend/document/details_by_id": lambda x: True,  # needs item_id, is ok
+        "/data_backend/document/details_by_id": _check_details_by_id,
     }
     checks_for_routes_always_needing_authentication = {
         "/data_backend/classifier/retrain": lambda x: True,  # TODO, but not very harmful
@@ -66,5 +66,14 @@ def _check_download_request(request):
             return False
     except Exception as e:
         logging.error(f"Error in _check_download_request: {e}")
+        return False
+    return True
+
+
+def _check_details_by_id(request):
+    params = DotDict(json.loads(request.body))
+    # TODO: this might be a performance bottleneck if many items need to be retrieved
+    dataset = Dataset.objects.get(id=params.dataset_id)
+    if not dataset.is_public and request.user not in dataset.organization.members.all():
         return False
     return True
