@@ -12,13 +12,19 @@ from utils.custom_json_encoder import CustomJSONEncoder
 
 backend_url = os.getenv("organization_backend_host", "http://localhost:55125")
 
+BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
+
+# create requests session with BACKEND_AUTHENTICATION_SECRET as header:
+django_client = requests.Session()
+django_client.headers.update({'Authorization': BACKEND_AUTHENTICATION_SECRET})
+
 
 def get_dataset(dataset_id: int) -> DotDict:
     url = backend_url + '/org/data_map/dataset'
     data = {
         'dataset_id': dataset_id,
     }
-    result = requests.post(url, json=data)
+    result = django_client.post(url, json=data)
     return DotDict(result.json())
 
 
@@ -34,7 +40,7 @@ def add_stored_map(map_id, user_id, organization_id, name, display_name, map_dat
         'map_id': map_id,
         'map_data': encoded_map_data,
     }
-    result = requests.post(url, json=body)
+    result = django_client.post(url, json=body)
     return result.json()
 
 
@@ -43,7 +49,7 @@ def get_stored_map_data(map_id: str) -> dict | None:
     data = {
         'map_id': map_id,
     }
-    result = requests.post(url, json=data)
+    result = django_client.post(url, json=data)
     if result.status_code == 200:
         map_data = json.loads(base64.b64decode(result.content.decode()))
         return map_data
@@ -56,7 +62,7 @@ def get_collection(collection_id: int) -> DotDict | None:
     data = {
         'collection_id': collection_id,
     }
-    result = requests.post(url, json=data)
+    result = django_client.post(url, json=data)
     if result.status_code != 200:
         logging.warning("Couldn't find collection: " + str(collection_id))
         return None
@@ -71,7 +77,7 @@ def get_collection_items(collection_id: int, class_name: str, field_type: str | 
         'type': field_type,
         'is_positive': is_positive,
     }
-    result = requests.post(url, json=data)
+    result = django_client.post(url, json=data)
     if result.status_code != 200:
         logging.warning("Couldn't find collection items")
         return []
@@ -86,7 +92,7 @@ def get_trained_classifier(collection_id: int, class_name: str, embedding_space_
         'embedding_space_id': embedding_space_id,
         'include_vector': include_vector,
     }
-    result = requests.post(url, json=data)
+    result = django_client.post(url, json=data)
     if result.status_code != 200:
         logging.warning("Couldn't find classifier decision vector")
         return DotDict()
@@ -106,7 +112,7 @@ def set_trained_classifier(collection_id: int, class_name: str, embedding_space_
         'threshold': threshold,
         'metrics': metrics,
     }
-    result = requests.post(url, json=data)
+    result = django_client.post(url, json=data)
     if result.status_code != 204:
         logging.warning("Couldn't set trained classifier")
     return None
@@ -114,7 +120,7 @@ def set_trained_classifier(collection_id: int, class_name: str, embedding_space_
 
 def get_generators() -> list[DotDict]:
     url = backend_url + '/org/data_map/get_generators'
-    result = requests.post(url)
+    result = django_client.post(url)
     if result.status_code != 200:
         logging.warning("Couldn't get generators")
         return []
@@ -126,5 +132,5 @@ def get_import_converter(import_converter_id: int) -> DotDict:
     data = {
         'import_converter_id': import_converter_id,
     }
-    result = requests.post(url, json=data)
+    result = django_client.post(url, json=data)
     return DotDict(result.json())

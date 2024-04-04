@@ -29,6 +29,7 @@ services:
     environment:
       - data_backend_host=http://data-backend:55123
       - postgres_host=postgres
+      - BACKEND_AUTHENTICATION_SECRET
   data-backend:
     image: visual_data_map/data_backend
     build:
@@ -51,6 +52,7 @@ services:
       - search_engine_host=opensearch
       - ABSCLUST_TYPESENSE_DB_API_KEY
       - ABSCLUST_TYPESENSE_DB_HOST
+      - BACKEND_AUTHENTICATION_SECRET
   webserver:
     image: visual_data_map/webserver
     build:

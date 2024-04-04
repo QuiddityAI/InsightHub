@@ -1,11 +1,9 @@
-import datetime
 import json
 import logging
-import time
+import os
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
@@ -19,12 +17,11 @@ class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
 
+BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
+
+
 def is_from_backend(request):
-    # FIXME: this is not secure
-    possible_hosts = ('http://localhost:55125', 'http://home-server:55125',
-                      'http://localhost:55425', 'http://home-server:55425',
-                      None)
-    return request.META.get('HTTP_ORIGIN') in possible_hosts
+    return request.headers.get('Authorization') == BACKEND_AUTHENTICATION_SECRET
 
 
 @csrf_exempt

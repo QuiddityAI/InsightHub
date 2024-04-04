@@ -1,5 +1,8 @@
 .env file in the root of this repo with the following variables:
 
+
+BACKEND_AUTHENTICATION_SECRET= generate any random secret
+
 ABSCLUST_TYPESENSE_DB_API_KEY="?"  # deprecated but not removed yet
 ABSCLUST_TYPESENSE_DB_HOST="?"  # deprecated but not removed yet
 
