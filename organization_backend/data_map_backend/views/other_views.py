@@ -9,7 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from ..models import DataCollection, CollectionItem, Dataset, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
+from ..models import DataCollection, CollectionItem, Dataset, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
 from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
@@ -386,10 +386,9 @@ def delete_collection_class(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    all_items = CollectionItem.objects.filter(collection_id=collection_id)
+    all_items = CollectionItem.objects.filter(collection_id=collection_id, classes__contains=[class_name])
     for item in all_items:
-        if (class_name == "_default" and not item.classes) or class_name in item.classes:  # type: ignore
-            item.delete()
+        item.delete()
 
     classifiers = TrainedClassifier.objects.filter(collection_id=collection_id, class_name=class_name)
     classifiers.delete()
@@ -539,20 +538,18 @@ def get_collection_items(request):
         class_name = data["class_name"]
         field_type = data["type"]
         is_positive = data["is_positive"]
+        offset = data.get("offset", 0)
+        limit = data.get("limit", 25)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     if field_type or is_positive:
-        all_items = CollectionItem.objects.filter(collection_id=collection_id, field_type=field_type, is_positive=is_positive).order_by('-date_added')
+        all_items = CollectionItem.objects.filter(collection_id=collection_id, field_type=field_type, is_positive=is_positive, classes__contains=[class_name])
     else:
         # return all examples
-        all_items = CollectionItem.objects.filter(collection_id=collection_id).order_by('-date_added')
-    # FIXME: filter by class already above (not sure why it's not done in the query above already)
-    items = []
-    for item in all_items:
-        if (class_name == "_default" and not item.classes) or class_name in item.classes:  # type: ignore
-            items.append(item)
-    serialized_data = CollectionItemSerializer(items, many=True).data
+        all_items = CollectionItem.objects.filter(collection_id=collection_id, classes__contains=[class_name])
+    all_items = all_items.order_by('-date_added')[offset:offset + limit]
+    serialized_data = CollectionItemSerializer(all_items, many=True).data
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
@@ -572,8 +569,13 @@ def add_item_to_collection(request):
         class_name: str = data.get("class_name", '_default')
         field_type: str = data["field_type"]
         value: str = data["value"]
+        dataset_id: int = data["dataset_id"]
+        item_id: str = data["item_id"]
         weight: float = data["weight"]
     except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    if field_type == FieldType.IDENTIFIER and not (dataset_id is not None and item_id):
         return HttpResponse(status=400)
 
     try:
@@ -583,7 +585,7 @@ def add_item_to_collection(request):
     if collection.created_by != request.user and not is_from_backend(request):
         return HttpResponse(status=401)
 
-    items = CollectionItem.objects.filter(collection_id=collection_id, is_positive=is_positive, field_type=field_type, value=value)
+    items = CollectionItem.objects.filter(collection_id=collection_id, is_positive=is_positive, field_type=field_type, value=value, dataset_id=dataset_id, item_id=item_id)
     for item in items:
         if class_name in item.classes:  # type: ignore
             # the item exists already, but the weight might need to be updated:
@@ -597,6 +599,8 @@ def add_item_to_collection(request):
     item.classes = [class_name]  # type: ignore
     item.field_type = field_type
     item.value = value
+    item.dataset_id = dataset_id
+    item.item_id = item_id
     item.weight = weight
     item.save()
     dataset_dict = CollectionItemSerializer(instance=item).data
@@ -649,18 +653,18 @@ def remove_collection_item_by_value(request):
         collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
         value: str = data["value"]
+        dataset_id: int = data["dataset_id"]
+        item_id: str = data["item_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    collection_items = CollectionItem.objects.filter(collection_id=collection_id, value=value)
+    collection_items = CollectionItem.objects.filter(collection_id=collection_id, value=value, dataset_id=dataset_id, item_id=item_id, classes__contains=[class_name])
     if not collection_items:
         return HttpResponse(status=404)
 
     removed_items = []
     for item in collection_items:
         if item.collection.created_by != request.user:
-            return HttpResponse(status=401)
-        if class_name not in item.classes and not (class_name == '_default' and not item.classes):  # type: ignore
             continue
         item_dict = CollectionItemSerializer(instance=item).data
         removed_items.append(item_dict)

@@ -425,7 +425,7 @@ class CollectionItemInline(admin.TabularInline):
     max_num = 100
 
     formfield_overrides = {
-        models.TextField: {'widget': Textarea(attrs={'rows': 2, 'cols': 30})},
+        models.TextField: {'widget': Textarea(attrs={'rows': 2, 'cols': 20})},
         models.JSONField: {'widget': Textarea(attrs={'rows': 2, 'cols': 20})},
     }
 

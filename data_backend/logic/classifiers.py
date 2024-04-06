@@ -104,7 +104,8 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
         RETRAINING_TASKS[task_id]['progress'] = i / len(examples)
         vector = None
         if example['field_type'] == FieldType.IDENTIFIER:
-            dataset_id, item_id = json.loads(example['value'])
+            dataset_id = example['dataset_id']
+            item_id = example['item_id']
             # TODO: batch process
             dataset = get_dataset(dataset_id)
             source_fields = []

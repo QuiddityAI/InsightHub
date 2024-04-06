@@ -1050,9 +1050,18 @@ class CollectionItem(models.Model):
         default=FieldType.TEXT,
         blank=False,
         null=False)
+    dataset_id = models.IntegerField(
+        verbose_name="Dataset ID (in case this is an item reference aka IDENTIFIER)",
+        blank=True,
+        null=True)
+    item_id = models.CharField(
+        verbose_name="Item ID (in case this is an item reference aka IDENTIFIER)",
+        max_length=200,
+        blank=True,
+        null=True)
     value = models.TextField(
         verbose_name="Value",
-        help_text="Item ID, Text, Image URL",
+        help_text="Any non-identifier value, e.g. plain text or image URL",
         blank=True,
         null=True)
     weight = models.FloatField(
@@ -1229,19 +1238,18 @@ class Chat(models.Model):
                 "Answer in one concise sentence. Mention the item identifier '[dataset_id, item_id]' you got the answer from after the sentence. If you need more information, ask for it."
 
             if obj.collection is not None:
-                collection_items = CollectionItem.objects.filter(collection=self.collection)
+                collection_items = CollectionItem.objects.filter(collection=self.collection, classes__contains=[obj.class_name])
                 included_items = 0
                 for item in collection_items:
-                    if obj.class_name not in item.classes:
-                        continue
                     text = None
                     if item.field_type == FieldType.TEXT:
                         text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
                     if item.field_type == FieldType.IDENTIFIER:
-                        ds_id, item_id = json.loads(item.value)  # type: ignore
-                        fields = list(Dataset.objects.get(id=ds_id).descriptive_text_fields.all().values_list("identifier", flat=True))
+                        assert item.dataset_id is not None
+                        assert item.item_id is not None
+                        fields = list(Dataset.objects.get(id=item.dataset_id).descriptive_text_fields.all().values_list("identifier", flat=True))
                         fields.append("_id")
-                        full_item = get_item_by_id(ds_id, item_id, fields)
+                        full_item = get_item_by_id(item.dataset_id, item.item_id, fields)
                         text = json.dumps(full_item, indent=2)
                     if not text:
                         continue

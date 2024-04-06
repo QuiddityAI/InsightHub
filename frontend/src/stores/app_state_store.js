@@ -233,11 +233,14 @@ export const useAppStateStore = defineStore("appState", {
         this.enable_simplified_absclust_user_mode()
       }
     },
-    retrieve_current_user() {
+    retrieve_current_user(on_success = null) {
       const that = this
       httpClient.get("/org/data_map/get_current_user").then(function (response) {
         that.logged_in = response.data.logged_in
         that.user = response.data
+        if (on_success) {
+          on_success()
+        }
       })
     },
     retrieve_stored_maps_history_and_collections() {
@@ -246,7 +249,7 @@ export const useAppStateStore = defineStore("appState", {
         console.log("organization_id is null, cannot retrieve stored maps, history and collections")
         return
       }
-      if (!this.is_logged_in) {
+      if (!this.logged_in) {
         console.log("not logged in, cannot retrieve stored maps, history and collections")
         return
       }
@@ -1084,7 +1087,9 @@ export const useAppStateStore = defineStore("appState", {
         is_positive: is_positive,
         class_name: class_name,
         field_type: FieldType.IDENTIFIER,
-        value: JSON.stringify(ds_and_item_id),
+        value: null,
+        dataset_id: ds_and_item_id[0],
+        item_id: ds_and_item_id[1],
         weight: 1.0,
       }
       httpClient
@@ -1118,7 +1123,9 @@ export const useAppStateStore = defineStore("appState", {
       const body = {
         collection_id: collection_id,
         class_name: class_name,
-        value: JSON.stringify(ds_and_item_id),
+        value: null,
+        dataset_id: ds_and_item_id[0],
+        item_id: ds_and_item_id[1],
       }
       httpClient
         .post("/org/data_map/remove_collection_item_by_value", body)

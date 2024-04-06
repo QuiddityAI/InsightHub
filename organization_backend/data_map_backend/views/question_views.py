@@ -261,26 +261,23 @@ def _extract_question_from_collection_class_items(collection, class_name, questi
         "Answer in one concise sentence, word or list. If the document does not contain the answer, " + \
         "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\nQuestion:\n"
     system_prompt += question["prompt"] + "\n\nDocument:\n"
-    collection_items = CollectionItem.objects.filter(collection=collection)
+    collection_items = CollectionItem.objects.filter(collection=collection, is_positive=True, classes__contains=[class_name])
     included_items = 0
     for item in collection_items:
-        if not item.is_positive:
-            continue
-        if class_name not in item.classes:
-            continue
         text = None
         if item.field_type == FieldType.TEXT:
             text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
         if item.field_type == FieldType.IDENTIFIER:
-            ds_id, item_id = json.loads(item.value)  # type: ignore
-            dataset = Dataset.objects.get(id=ds_id)
+            assert item.dataset_id is not None
+            assert item.item_id is not None
+            dataset = Dataset.objects.get(id=item.dataset_id)
             fields = {'_id'}
             if "_descriptive_text_fields" in question["source_fields"]:
                 descriptive_text_fields = list(dataset.descriptive_text_fields.all().values_list("identifier", flat=True))
                 fields = fields.union(descriptive_text_fields)
             fields = fields.union([field for field in question["source_fields"] if not field.startswith("_")])
             fields = list(fields)
-            full_item = get_item_by_id(ds_id, item_id, fields)
+            full_item = get_item_by_id(item.dataset_id, item.item_id, fields)
             text = ""
             for source_field in question["source_fields"]:
                 if source_field == "_descriptive_text_fields":
@@ -346,10 +343,8 @@ def remove_collection_class_extraction_results(request):
         return HttpResponse(status=404)
     question = question[0]
 
-    collection_items = CollectionItem.objects.filter(collection=collection)
+    collection_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name], extraction_answers__contains=question_name)
     for item in collection_items:
-        if class_name not in item.classes:
-            continue
         if item.extraction_answers is None:
             continue
         if question_name in item.extraction_answers:

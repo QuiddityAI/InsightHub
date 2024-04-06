@@ -161,10 +161,11 @@ export default {
   mounted() {
     const that = this
     this.appStateStore.initialize()
-    this.appStateStore.retrieve_current_user()
-    this.appStateStore.retrieve_available_organizations(() => {
-      this.evaluate_url_query_parameters()
-      this.appStateStore.retrieve_stored_maps_history_and_collections()
+    this.appStateStore.retrieve_current_user(() => {
+      this.appStateStore.retrieve_available_organizations(() => {
+        this.evaluate_url_query_parameters()
+        // retrieving stored maps history and collections is done in callback when organization_id is set
+      })
     })
     this.eventBus.on("datasets_are_loaded", () => {
       const queryParams = new URLSearchParams(window.location.search)
