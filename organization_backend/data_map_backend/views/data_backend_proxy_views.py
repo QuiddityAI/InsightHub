@@ -28,18 +28,21 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/map/store": lambda x: True,  # TODO, but not very harmful
         "/data_backend/download_file": _check_download_request,
     }
+    path = request.path
+    if path.startswith("/data_backend/download_file"):
+        path = "/data_backend/download_file"
 
-    if request.path not in checks_for_routes_partially_available_without_log_in \
-        and request.path not in checks_for_routes_always_needing_authentication:
-        logging.error(f"Unexpected route: {request.path}")
+    if path not in checks_for_routes_partially_available_without_log_in \
+        and path not in checks_for_routes_always_needing_authentication:
+        logging.error(f"Unexpected route: {path}")
         return HttpResponse(status=404)
 
-    if request.path in checks_for_routes_partially_available_without_log_in and \
-        not checks_for_routes_partially_available_without_log_in[request.path](request):
+    if path in checks_for_routes_partially_available_without_log_in and \
+        not checks_for_routes_partially_available_without_log_in[path](request):
         return HttpResponse(status=401)
-    if request.path in checks_for_routes_always_needing_authentication and \
+    if path in checks_for_routes_always_needing_authentication and \
         (not request.user.is_authenticated or \
-        not checks_for_routes_always_needing_authentication[request.path](request)):
+        not checks_for_routes_always_needing_authentication[path](request)):
         return HttpResponse(status=401)
 
     # forward the request to the data backend
