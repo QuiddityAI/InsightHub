@@ -15,11 +15,13 @@ OPENAI_API_KEY=?
 
 PIPENV_VENV_IN_PROJECT=1
 
+OPENSEARCH_INITIAL_ADMIN_PASSWORD=?
+
 
 credentials.json file with the following content:
 {
   "open_search_user": "?",
-  "open_search_password": "?"
+  "open_search_password": "?"  # password from above
 }
 
 

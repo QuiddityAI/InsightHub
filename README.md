@@ -30,12 +30,12 @@ npm install
 ```
 
 - install docker >= v24.0 (and nvidia-docker if an Nvidia GPU is available, test the GPU setup with a simple container)
-- By default, the docker setup uses `/data/quiddity_data` as a folder to store app data. Make sure it exists or change the mounting point in the docker-compose.yaml file to something else.
+- By default, the docker setup uses `/data/quiddity_data` as a folder to store app data. Make sure it exists and is writable or change the mounting point in the docker-compose.yaml file to something else.
 - If no Nvidia GPU is available, remove the `deploy:` part about the GPU from the docker-compose file. The code _should_ work without a GPU, too.
 - Make sure the env variables and credential files described in `required_environment_variables.txt` exist
-- Copy an existing `db.sqlite3` file to the `organization_backend` folder if available, to not start from zero.
-  - Otherwise, run `python manage.py migrate` in the `organization_backend` folder to create a database.
-  - And `python manage.py createsuperuser` to create the first user
+- Organization-backend database: start the postgres container using `docker compose up -d postgres`, then run `./manage.py migrate` in the `organization_backend` folder
+  - If starting without a database backup, run `python manage.py createsuperuser` to create the first user
+  - To use a backup, run `./manage.py loaddata db_export.json` in the `organization_backend` folder
 - Run `python manage.py collectstatic` in the `organization_backend` folder
 - (optionally) Set up VSCode by installing recommended extensions in `vsc-extensions.txt` (can be installed using `VSC Export & Import` extensions, but should be done carefully)
 - run `docker compose up -d`
@@ -53,11 +53,9 @@ npm install
   - Please change and improve wherever needed!
   - And especially before we have any customers, make breaking changes and rename stuff as much as needed to improve the code quickly.
 - Parts that need to be improved the most (especially before any public deployment):
-  - [ ] Authentication + Security: the data-backend code doesn't use any authentication at all yet, the organization-backend only partially. Some ports are exposed without authentication / hardening. HTTPS proxy is missing.
   - [ ] User registration: currently, no e-mail verification is set up and access rights are not really managed.
   - [ ] docker files and docker compose setup (maybe create different ones for production and development, improve time to update dependencies)
   - [ ] Make sure computation power and OpenAI credits are used responsibly: currently, you could accidentially create millions of embeddings, using all of the CPU for ages, and you could also extract information from millions of items using the ChatGPT API -> we need to implement some sort of limits and / or display how much an action costs / needs CPU.
-  - [ ] switch from sqlite to Postgres for the organization backend
 - Other main TODOs:
   - [ ] De-duplicate and simplify code to generate missing fields of items
   - [ ] allow to export and import Dataset definitions from the Django admin page

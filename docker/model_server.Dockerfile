@@ -17,6 +17,7 @@ COPY docker/docker_container_base_python_packages.txt /app
 RUN pip install --no-cache-dir -r docker_container_base_python_packages.txt
 COPY Pipfile /app
 COPY Pipfile.lock /app
+RUN apt install -y git  # needed to install pip dependencies from git repos
 RUN pipenv requirements > requirements.txt \
     && pip install --no-cache-dir -r requirements.txt
 RUN chown -R appuser /app
