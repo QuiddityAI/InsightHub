@@ -1,3 +1,4 @@
+import json
 import logging
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.models import User
@@ -46,3 +47,27 @@ def signup_from_app(request):
     user = authenticate(username=email, password=password)
     login(request, user)
     return redirect(next_url)
+
+
+@csrf_exempt
+def change_password_from_app(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+    try:
+        old_password = data['old_password']
+        new_password = data['new_password']
+    except KeyError:
+        return HttpResponse(status=400)
+    logging.warning(f"Changing password for user {request.user.username}")
+    user = authenticate(username=request.user.username, password=old_password)
+    if user is None:
+        return HttpResponse(status=401)
+    user.set_password(new_password)
+    user.save()
+    return HttpResponse(status=200)

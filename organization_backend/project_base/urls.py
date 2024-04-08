@@ -19,7 +19,7 @@ from django.urls import path, include, re_path
 from django.shortcuts import redirect
 
 from django.contrib.auth import views as auth_views
-from .views import login_from_app, signup_from_app
+from .views import login_from_app, signup_from_app, change_password_from_app
 from data_map_backend.views import data_backend_proxy_views
 from data_map_backend.views import other_views
 
@@ -45,6 +45,7 @@ urlpatterns = [
     path('org/logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
     path('org/login_from_app/', login_from_app, name='login_from_app'),
     path('org/signup_from_app/', signup_from_app, name='signup_from_app'),
+    path('org/change_password_from_app/', change_password_from_app, name='change_password_from_app'),
 
     # OAuth toolkit
     path("org/o/", include('oauth2_provider.urls', namespace='oauth2_provider')),
