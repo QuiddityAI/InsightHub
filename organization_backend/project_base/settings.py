@@ -261,6 +261,9 @@ JAZZMIN_SETTINGS = {
 def skip_health_requests(record):
     return '/org/data_map/health' not in str(record.args[0])
 
+def skip_data_backend_proxy_request(record):
+    return '/data_backend/' not in str(record.args[0])
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -268,12 +271,16 @@ LOGGING = {
         'exclude_health': {
             '()': 'django.utils.log.CallbackFilter',
             'callback': skip_health_requests
-        }
+        },
+        'exclude_data_backend_proxy': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': skip_data_backend_proxy_request
+        },
     },
     'handlers': {
         'console': {
             'level': 'INFO',
-            'filters': ['exclude_health'],
+            'filters': ['exclude_health', 'exclude_data_backend_proxy'],
             'class': 'logging.StreamHandler',
         }
     },
@@ -281,6 +288,7 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
+            'propagate': False,
         }
     }
 }
