@@ -268,6 +268,8 @@ def _extract_question_from_collection_class_items(collection, class_name, questi
     collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
     included_items = 0
     for item in collection_items:
+        if (item.extraction_answers or {}).get(question["name"]):
+            continue
         text = None
         if item.field_type == FieldType.TEXT:
             text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
