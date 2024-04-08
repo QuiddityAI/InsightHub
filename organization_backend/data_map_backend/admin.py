@@ -161,7 +161,8 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     fields = [
         "id", "name", "entity_name", "entity_name_plural", "short_description",
-        "is_template", "origin_template", "created_in_ui", "organization", "is_public", "admins",
+        "is_template", "origin_template", "created_in_ui",
+        "organization", "is_public", "is_organization_wide", "admins",
         "source_plugin", "source_plugin_parameters",
         "database_name", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields", "defaults",

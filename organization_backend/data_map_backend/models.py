@@ -383,6 +383,13 @@ class Dataset(models.Model):
         null=False)
     is_public = models.BooleanField(
         verbose_name="Is public",
+        help_text="Whether this dataset is available to everyone on the internet",
+        default=False,
+        blank=False,
+        null=False)
+    is_organization_wide = models.BooleanField(
+        verbose_name="Is organization-wide",
+        help_text="Whether this dataset is available to all organization members. If not, its only available to admins.",
         default=False,
         blank=False,
         null=False)

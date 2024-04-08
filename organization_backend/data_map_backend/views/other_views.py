@@ -52,10 +52,29 @@ def get_available_organizations(request):
 
     # replace list of all datasets of each organization with list of non-template datasets:
     for organization, serialized in zip(organizations, serialized_data):
-        if is_authenticated:
-            serialized["datasets"] = [dataset.id for dataset in Dataset.objects.filter(organization_id=organization.id, is_template=False)]  # type: ignore
+        is_member = is_authenticated and organization.members.filter(id=request.user.id).exists()
+        if is_member:
+            serialized["datasets"] = [
+                dataset.id  # type: ignore
+                for dataset in Dataset.objects.filter(
+                    Q(organization_id=organization.id)  # type: ignore
+                    & Q(is_template=False)
+                    & (
+                        Q(is_public=True)
+                        | Q(is_organization_wide=True)
+                        | Q(admins=request.user)
+                    )
+                )
+            ]
         else:
-            serialized["datasets"] = [dataset.id for dataset in Dataset.objects.filter(organization_id=organization.id, is_template=False, is_public=True)]  # type: ignore
+            serialized["datasets"] = [
+                dataset.id  # type: ignore
+                for dataset in Dataset.objects.filter(
+                    Q(organization_id=organization.id)  # type: ignore
+                    & Q(is_template=False)
+                    & Q(is_public=True)
+                )
+            ]
 
     result = json.dumps(serialized_data)
     return HttpResponse(result, status=200, content_type='application/json')
@@ -74,10 +93,11 @@ def get_dataset(request):
 
     dataset: Dataset = Dataset.objects.get(id=dataset_id)
 
-    if not dataset.is_public and not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
-    elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists() and not is_from_backend(request):
-        return HttpResponse(status=401)
+    if not is_from_backend(request) and not dataset.is_public:
+        is_member = request.user.is_authenticated and dataset.organization.members.filter(id=request.user.id).exists()
+        is_admin = request.user.is_authenticated and dataset.admins.filter(id=request.user.id).exists()
+        if not ((dataset.is_organization_wide and is_member) or is_admin):
+            return HttpResponse(status=401)
 
     dataset_dict = DatasetSerializer(instance=dataset).data
     assert isinstance(dataset_dict, dict)
@@ -96,32 +116,34 @@ def get_dataset(request):
 
 @csrf_exempt
 def get_available_datasets(request):
-    if request.method != 'POST':
-        return HttpResponse(status=405)
+    # not used currently and outdated (permissions etc.)
+    return HttpResponse(status=405)
+    # if request.method != 'POST':
+    #     return HttpResponse(status=405)
 
-    try:
-        data = json.loads(request.body)
-        organization_id: int = data.get("organization_id")
-    except (KeyError, ValueError):
-        return HttpResponse(status=400)
+    # try:
+    #     data = json.loads(request.body)
+    #     organization_id: int = data.get("organization_id")
+    # except (KeyError, ValueError):
+    #     return HttpResponse(status=400)
 
-    datasets = Dataset.objects.filter(is_template=False)
-    # TODO: filter by organization_id later on:
-    # datasets = Dataset.objects.filter(Q(organization_id=organization_id))
+    # datasets = Dataset.objects.filter(is_template=False)
+    # # TODO: filter by organization_id later on:
+    # # datasets = Dataset.objects.filter(Q(organization_id=organization_id))
 
-    result = []
-    for dataset in datasets:
-        if not dataset.is_public and not request.user.is_authenticated:
-            continue
-        elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
-            continue
-        result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
-                       "entity_name": dataset.entity_name, "entity_name_plural": dataset.entity_name_plural,
-                       "short_description": dataset.short_description,
-                       })
+    # result = []
+    # for dataset in datasets:
+    #     if not dataset.is_public and not request.user.is_authenticated:
+    #         continue
+    #     elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
+    #         continue
+    #     result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
+    #                    "entity_name": dataset.entity_name, "entity_name_plural": dataset.entity_name_plural,
+    #                    "short_description": dataset.short_description,
+    #                    })
 
-    result = json.dumps(result)
-    return HttpResponse(result, status=200, content_type='application/json')
+    # result = json.dumps(result)
+    # return HttpResponse(result, status=200, content_type='application/json')
 
 
 @csrf_exempt
@@ -189,6 +211,42 @@ def create_dataset_from_template(request):
     dataset.created_in_ui = from_ui
     dataset.admins.add(request.user)
     dataset.is_public = False
+    dataset.save()
+
+    dataset_dict = DatasetSerializer(instance=dataset).data
+    result = json.dumps(dataset_dict)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def change_dataset(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        dataset_id: int = data["dataset_id"]
+        updates: dict = data["updates"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        dataset = Dataset.objects.get(id=dataset_id)
+    except Dataset.DoesNotExist:
+        return HttpResponse(status=404)
+    if not dataset.admins.filter(id=request.user.id).exists():
+        return HttpResponse(status=401)
+
+    allowed_fields = ["name", "short_description", "long_description", "entity_name", "entity_name_plural", "is_public", "is_organization_wide"]
+    for key in updates.keys():
+        if key not in allowed_fields:
+            return HttpResponse(status=400)
+
+    for key, value in updates.items():
+        setattr(dataset, key, value)
     dataset.save()
 
     dataset_dict = DatasetSerializer(instance=dataset).data

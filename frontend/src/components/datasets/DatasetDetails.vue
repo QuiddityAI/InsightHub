@@ -45,6 +45,12 @@ export default {
     this.get_dataset_additional_info()
   },
   watch: {
+    'dataset.is_public'() {
+      this.update_dataset()
+    },
+    'dataset.is_organization_wide'() {
+      this.update_dataset()
+    },
   },
   methods: {
     get_dataset_additional_info() {
@@ -59,6 +65,23 @@ export default {
         .catch(function (error) {
           console.error(error)
         })
+    },
+    update_dataset() {
+      const that = this
+      const body = {
+        dataset_id: that.dataset.id,
+        updates: {
+          is_public: that.dataset.is_public,
+          is_organization_wide: that.dataset.is_organization_wide,
+        },
+      }
+      httpClient.post(`/org/data_map/change_dataset`, body)
+      .then(function (response) {
+        that.$toast.add({severity:'success', summary: 'Success', detail: 'Dataset updated successfully.', life: 3000})
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
     },
     delete_dataset() {
       if (!this.dataset.created_in_ui) {
@@ -206,6 +229,16 @@ export default {
           class="ml-1 rounded-md px-2 h-7 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
           {{ dataset.item_count < 2000 ? 'Show all items' : 'Show an overview of representative subset' }}
         </button>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label class="flex items-center">
+          <input type="checkbox" v-model="dataset.is_public" :disabled="!dataset.admins?.includes(appState.user.id) || !appState.user.is_staff">
+          <span class="ml-2 text-sm text-gray-600">Public for everyone on the internet {{ !appState.user.is_staff ? '(can only be changed by staff)': '' }}</span>
+        </label>
+        <label class="flex items-center">
+          <input type="checkbox" v-model="dataset.is_organization_wide" :disabled="!dataset.admins?.includes(appState.user.id)">
+          <span class="ml-2 text-sm text-gray-600">Available to other organization members</span>
+        </label>
       </div>
     </div>
 
