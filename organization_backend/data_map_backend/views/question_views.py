@@ -212,35 +212,37 @@ def extract_question_from_collection_class_items(request):
         collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
         question_name: str = data["question_name"]
+        offset: int = data.get("offset", 0)
+        limit: int = data.get("limit", -1)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        item = DataCollection.objects.get(id=collection_id)
+        collection = DataCollection.objects.get(id=collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-    if item.created_by != request.user:
+    if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    if item.extraction_questions is None:
+    if collection.extraction_questions is None:
         return HttpResponse(status=400)
-    question = [q for q in item.extraction_questions if q['name'] == question_name]  # type: ignore
+    question = [q for q in collection.extraction_questions if q['name'] == question_name]  # type: ignore
     if len(question) == 0:
         return HttpResponse(status=404)
     question = question[0]
 
-    _extract_question_from_collection_class_items_thread(item, class_name, question)
+    _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit)
 
-    data = CollectionSerializer(item).data
+    data = CollectionSerializer(collection).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
 
 
-def _extract_question_from_collection_class_items_thread(collection, class_name, question):
+def _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit):
     collection.current_extraction_processes.append(question["name"])
     collection.save()
     def _run_safe():
         try:
-            _extract_question_from_collection_class_items(collection, class_name, question)
+            _extract_question_from_collection_class_items(collection, class_name, question, offset, limit)
         except Exception as e:
             logging.error(e)
         finally:
@@ -256,12 +258,14 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
         collection.save()
 
 
-def _extract_question_from_collection_class_items(collection, class_name, question):
+def _extract_question_from_collection_class_items(collection, class_name, question, offset, limit):
     system_prompt = "Answer the following question based on the following JSON document. " + \
         "Answer in one concise sentence, word or list. If the document does not contain the answer, " + \
         "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\nQuestion:\n"
     system_prompt += question["prompt"] + "\n\nDocument:\n"
     collection_items = CollectionItem.objects.filter(collection=collection, is_positive=True, classes__contains=[class_name])
+    collection_items = collection_items.order_by('-date_added')
+    collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
     included_items = 0
     for item in collection_items:
         text = None
@@ -308,8 +312,6 @@ def _extract_question_from_collection_class_items(collection, class_name, questi
         item.extraction_answers[question["name"]] = response_text
         item.save()
         included_items += 1
-        if included_items > 5:
-            break
 
     logging.warning("Done extracting question from collection class items.")
 
@@ -326,6 +328,8 @@ def remove_collection_class_extraction_results(request):
         collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
         question_name: str = data["question_name"]
+        offset: int = data.get("offset", 0)
+        limit: int = data.get("limit", -1)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -343,7 +347,9 @@ def remove_collection_class_extraction_results(request):
         return HttpResponse(status=404)
     question = question[0]
 
-    collection_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name], extraction_answers__contains=question_name)
+    collection_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
+    collection_items = collection_items.order_by('-date_added')
+    collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
     for item in collection_items:
         if item.extraction_answers is None:
             continue

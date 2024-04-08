@@ -20,20 +20,36 @@ export default {
   computed: {
     ...mapStores(useAppStateStore),
   },
+  watch: {
+    dataset_id() {
+      this.init()
+    },
+    item_id() {
+      this.init()
+    },
+  },
   mounted() {
-    const that = this
-    this.rendering = this.appStateStore.datasets[this.dataset_id]?.result_list_rendering
-    if (!this.rendering) {
-      return
-    }
-    const payload = {
-      dataset_id: this.dataset_id,
-      item_id: this.item_id,
-      fields: this.rendering.required_fields,
-    }
-    httpClient.post("/data_backend/document/details_by_id", payload).then(function (response) {
-      that.item = response.data
-    })
+    this.init()
+  },
+  methods: {
+    init() {
+      const that = this
+      if (!this.dataset_id || !this.item_id) return
+      if (this.item._dataset_id === this.dataset_id && this.item._id === this.item_id) return
+      this.rendering = this.appStateStore.datasets[this.dataset_id]?.result_list_rendering
+      if (!this.rendering) {
+        this.item = {}
+        return
+      }
+      const payload = {
+        dataset_id: this.dataset_id,
+        item_id: this.item_id,
+        fields: this.rendering.required_fields,
+      }
+      httpClient.post("/data_backend/document/details_by_id", payload).then(function (response) {
+        that.item = response.data
+      })
+    },
   },
 }
 </script>

@@ -393,6 +393,7 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
     if not items:
         return None
     item = items[0]
+    item['_dataset_id'] = dataset_id
 
     if relevant_parts:
         for relevant_part in relevant_parts:

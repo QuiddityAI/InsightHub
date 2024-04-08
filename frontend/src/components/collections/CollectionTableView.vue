@@ -4,6 +4,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import MultiSelect from 'primevue/multiselect';
+import Paginator from "primevue/paginator"
 
 import CollectionItem from "./CollectionItem.vue"
 import { FieldType } from "../../utils/utils"
@@ -24,10 +25,12 @@ export default {
   emits: [],
   data() {
     return {
-      items: [],
+      collection_items: [],
       collection: this.initial_collection,
       is_processing: false,
       selected_source_fields: ['_descriptive_text_fields'],
+      first_index: 0,
+      per_page: 10,
     }
   },
   computed: {
@@ -35,8 +38,8 @@ export default {
     ...mapStores(useAppStateStore),
     available_source_fields() {
       const dataset_ids = new Set()
-      for (const item of this.items) {
-        const [dataset_id, item_id] = JSON.parse(item.value)
+      for (const item of this.collection_items) {
+        const dataset_id = item.dataset_id
         dataset_ids.add(dataset_id)
       }
       const available_fields = {}
@@ -58,24 +61,33 @@ export default {
         name: 'Full Text Excerpts',
       }
       return Object.values(available_fields)
+    },
+    item_count() {
+      const class_details = this.collection.actual_classes.find((actual_class) => actual_class.name === this.class_name)
+      return class_details["positive_count"]
     }
   },
   mounted() {
-    this.load_items()
+    this.load_collection_items()
   },
   watch: {
+    first_index() {
+      this.load_collection_items()
+    },
   },
   methods: {
-    load_items(is_positive=true) {
+    load_collection_items() {
       const that = this
       const body = {
         collection_id: this.collection.id,
         class_name: this.class_name,
         type: FieldType.IDENTIFIER,
-        is_positive: is_positive,
+        is_positive: true,
+        offset: this.first_index,
+        limit: this.per_page,
       }
       httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
-        that.items = response.data
+        that.collection_items = response.data
       })
     },
     load_collection(on_success=null) {
@@ -114,12 +126,17 @@ export default {
       this.$refs.new_question_name.value = ''
       this.$refs.new_question_prompt.value = ''
     },
-    remove_results(question) {
+    remove_results(question, only_current_page=true) {
       const that = this
+      if (!only_current_page && !confirm("This will remove the extraction results for all items in the collection. Are you sure?")) {
+        return
+      }
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
         question_name: question.name,
+        offset: only_current_page ? this.first_index : 0,
+        limit: only_current_page ? this.per_page : -1,
       }
       httpClient.post(`/org/data_map/remove_collection_class_extraction_results`, body)
       .then(function (response) {
@@ -129,12 +146,17 @@ export default {
         console.error(error)
       })
     },
-    extract_question(question) {
+    extract_question(question, only_current_page=true) {
       const that = this
+      if (!only_current_page && !confirm("This will extract the question for all items in the collection. This might be long running and expensive. Are you sure?")) {
+        return
+      }
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
         question_name: question.name,
+        offset: only_current_page ? this.first_index : 0,
+        limit: only_current_page ? this.per_page : -1,
       }
       httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
       .then(function (response) {
@@ -147,7 +169,7 @@ export default {
       })
     },
     get_extraction_results(question_name) {
-      this.load_items()
+      this.load_collection_items()
       this.load_collection(() => {
         if (this.collection.current_extraction_processes.includes(question_name)) {
           setTimeout(() => {
@@ -166,10 +188,12 @@ export default {
   <div>
     <div class="w-2/3">
       <div class="flex flex-col">
-        <div v-for="question in collection.extraction_questions" class="">
+        <div v-for="question in collection.extraction_questions" class="flex flex-row gap-2">
           • {{  question.name }}: {{ question.prompt }} ({{ question.source_fields?.join(", ") }})
-          <button @click="extract_question(question)" class="p-1 mr-2 bg-gray-100 hover:bg-blue-100/50 rounded">Extract now</button>
-          <button @click="remove_results(question)" class="p-1 bg-gray-100 hover:bg-blue-100/50 rounded">Remove results</button>
+          <button @click="extract_question(question, true)" class="p-1 mr-2 bg-gray-100 hover:bg-blue-100/50 rounded">Extract (current page)</button>
+          <button @click="extract_question(question, false)" class="p-1 mr-2 bg-gray-100 hover:bg-blue-100/50 rounded">Extract (all)</button>
+          <button @click="remove_results(question, true)" class="p-1 bg-gray-100 hover:bg-blue-100/50 rounded">Remove results (current page)</button>
+          <button @click="remove_results(question, false)" class="p-1 bg-gray-100 hover:bg-blue-100/50 rounded">Remove results (all)</button>
         </div>
       </div>
 
@@ -208,15 +232,18 @@ export default {
       Processing...
     </div>
 
-    <DataTable :value="items" tableStyle="">
+    <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
+      class="mt-[0px]"></Paginator>
+
+    <DataTable :value="collection_items" tableStyle="">
         <Column header="Item">
           <template #body="slotProps">
             <CollectionItem
-              :dataset_id="JSON.parse(slotProps.data.value)[0]"
-              :item_id="JSON.parse(slotProps.data.value)[1]"
+              :dataset_id="slotProps.data.dataset_id"
+              :item_id="slotProps.data.item_id"
               :is_positive="slotProps.data.is_positive"
               @remove="remove_collection_item(slotProps.data.id)"
-              class="w-[600px]">
+              class="w-[520px]">
             </CollectionItem>
           </template>
         </Column>
@@ -227,6 +254,9 @@ export default {
         </Column>
 
     </DataTable>
+
+    <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
+      class="mt-[0px]"></Paginator>
 
   </div>
 
