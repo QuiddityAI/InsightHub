@@ -1242,7 +1242,9 @@ class Chat(models.Model):
         def answer_question():
 
             system_prompt = "You are a helpful assistant. You can answer questions based on the following items. " + \
-                "Answer in one concise sentence. Mention the item identifier '[dataset_id, item_id]' you got the answer from after the sentence. If you need more information, ask for it."
+                "Answer in one or two concise sentences. " + \
+                "Mention the item identifier '[dataset_id, item_id]' you got the answer from after the sentence. " + \
+                "If the provided information does not contain the answer, say that you couldn't find the information. "
 
             if obj.collection is not None:
                 collection_items = CollectionItem.objects.filter(collection=self.collection, classes__contains=[obj.class_name])
@@ -1279,7 +1281,7 @@ class Chat(models.Model):
                 })
 
             response_text = get_chatgpt_response_using_history(history)
-            #response_text = "I'm sorry, I can't answer that question yet."
+            # response_text = "I'm sorry, I can't answer that question yet."
 
             obj.chat_history.append({  # type: ignore
                 "role": "system",

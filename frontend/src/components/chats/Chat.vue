@@ -74,6 +74,7 @@ export default {
       })
     },
     list_of_text_and_citation_parts(text) {
+      text.replace(/(?:\r\n|\r|\n)/g, '<br>')
       const regex = /\[([0-9]+), ([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\]/ig;
 
       let i = 1
@@ -136,8 +137,7 @@ export default {
                   [{{ part.citation_index }}]
                 </button>
               </span>
-              <span v-else>
-                {{ part.content }}
+              <span v-else v-html="part.content">
               </span>
             </span>
           </div>

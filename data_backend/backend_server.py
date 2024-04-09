@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 from copy import deepcopy
@@ -19,8 +18,9 @@ from logic.generate_missing_values import delete_field_content, generate_missing
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from logic.classifiers import get_retraining_status, start_retrain
 from logic.upload_files import upload_files, UPLOADED_FILES_FOLDER
+from logic.chat_and_extraction import get_global_question_context
 
-from database_client.django_client import add_stored_map, get_dataset
+from database_client.django_client import add_stored_map
 
 
 # --- Flask set up: ---
@@ -175,60 +175,16 @@ def get_search_list_result_endpoint():
 
 
 @app.route('/data_backend/question_context', methods=['POST'])
-def get_question_context():
-    # turn params into string to make it cachable (aka hashable):
+def get_question_context_route():
     data: dict | None = request.json
-    if not data:
+    if not data or "search_settings" not in data:
         return "no data", 400
-    data["search_settings"]["result_list_items_per_page"] = 5
-    data["search_settings"]["search_algorithm"] = "hybrid"
-    data["search_settings"]["max_sub_items_per_item"] = 2
-    data["search_settings"]["use_bolding_in_highlights"] = False
-    params_str = json.dumps({'search': data["search_settings"]}, indent=2)
-    # ignore_cache = request.args.get('ignore_cache') == "true"
-    # print(params_str)
-    try:
-        result = get_search_results(params_str, purpose='list')
-    except ValueError as e:
-        print(e)
-        import traceback
-        traceback.print_exc()
-        return str(e.args), 400  # TODO: there could be other reasons, e.g. dataset not found
-
-    sorted_ids = result["sorted_ids"]
-    items_by_dataset = result['items_by_dataset']
-
-    context = ""
-    for ds_id, item_id in sorted_ids:
-        dataset = get_dataset(ds_id)
-        item = items_by_dataset[ds_id][item_id]
-        context += f"Item: [{ds_id}, {item_id}]\n"
-        for field in item:
-            if field.startswith("_"):
-                continue
-            if field not in dataset.default_search_fields:
-                continue
-            if item[field] is None or item[field] == "":
-                continue
-            context += f"  {field}: {item[field]}\n"
-        chunk_fields_with_relevant_parts = [part.get('field') for part in item.get("_relevant_parts", []) if part.get("index") is not None]
-        if chunk_fields_with_relevant_parts:
-            item_with_chunk_fields = get_document_details_by_id(ds_id, item_id, tuple(chunk_fields_with_relevant_parts), None)
-            assert item_with_chunk_fields is not None
-            for part in item["_relevant_parts"]:
-                if part.get("index") is None:
-                    text = f"[...] {part.get('value')} [...]"
-                else:
-                    chunk_before = item_with_chunk_fields.get(part.get("field"), [])[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
-                    this_chunk = item_with_chunk_fields.get(part.get("field"), [])[part.get("index")].get('text', '')
-                    chunk_after = item_with_chunk_fields.get(part.get("field"), [])[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
-                    text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
-                context += f"  Potentially Relevant Snippet from {part.get('field')}:\n"
-                context += f"    {text}\n"
-        context += "\n"
+    result = get_global_question_context(data["search_settings"])
+    if result is None or result.get("error"):
+        return result.get("error", "error"), 500
 
     response = app.response_class(
-        response=json.dumps({'context': context}, cls=CustomJSONEncoder),  # type: ignore
+        response=json.dumps(result),  # type: ignore
         mimetype='application/json'
     )
     return response
