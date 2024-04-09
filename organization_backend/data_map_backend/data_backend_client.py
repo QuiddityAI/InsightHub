@@ -19,10 +19,23 @@ def get_item_by_id(dataset_id: int, item_id: str, fields: Iterable[str]):
     return result.json()
 
 
-def get_question_context(search_settings: dict):
-    url = DATA_BACKEND_HOST + f'/data_backend/question_context'
+def get_global_question_context(search_settings: dict):
+    url = DATA_BACKEND_HOST + f'/data_backend/global_question_context'
     data = {
         'search_settings': search_settings,
+    }
+    result = requests.post(url, json=data)
+    result.raise_for_status()
+    return result.json()['context']
+
+
+def get_item_question_context(dataset_id: int, item_id: str, source_fields: list[str], question: str):
+    url = DATA_BACKEND_HOST + f'/data_backend/item_question_context'
+    data = {
+        'dataset_id': dataset_id,
+        'item_id': item_id,
+        'source_fields': source_fields,
+        'question': question,
     }
     result = requests.post(url, json=data)
     result.raise_for_status()

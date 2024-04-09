@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import json
 import logging
@@ -14,7 +15,7 @@ from django.utils import timezone
 
 from ..models import CollectionItem, DataCollection, Chat, Dataset, FieldType
 from ..serializers import ChatSerializer, CollectionSerializer
-from ..data_backend_client import DATA_BACKEND_HOST, get_item_by_id
+from ..data_backend_client import get_item_question_context
 from ..chatgpt_client import get_chatgpt_response_using_history
 
 from .other_views import is_from_backend
@@ -259,7 +260,7 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
 
 
 def _extract_question_from_collection_class_items(collection, class_name, question, offset, limit):
-    system_prompt = "Answer the following question based on the following JSON document. " + \
+    system_prompt = "Answer the following question based on the following document. " + \
         "Answer in one concise sentence, word or list. If the document does not contain the answer, " + \
         "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\nQuestion:\n"
     system_prompt += question["prompt"] + "\n\nDocument:\n"
@@ -267,55 +268,42 @@ def _extract_question_from_collection_class_items(collection, class_name, questi
     collection_items = collection_items.order_by('-date_added')
     collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
     included_items = 0
-    for item in collection_items:
+    batch_size = 10
+    for i in range(0, len(collection_items), batch_size):
+        batch = collection_items[i:i+batch_size]
+        _extract_question_from_collection_class_items_batch(batch, question, system_prompt)
+        included_items += len(batch)
+        if included_items % 100 == 0:
+            logging.warning(f"Extracted {included_items} items for question {question['name']}.")
+
+    logging.warning("Done extracting question from collection class items.")
+
+def _extract_question_from_collection_class_items_batch(collection_items, question, system_prompt):
+    def extract(item):
         if (item.extraction_answers or {}).get(question["name"]):
-            continue
+            return
         text = None
         if item.field_type == FieldType.TEXT:
             text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
         if item.field_type == FieldType.IDENTIFIER:
             assert item.dataset_id is not None
             assert item.item_id is not None
-            dataset = Dataset.objects.get(id=item.dataset_id)
-            fields = {'_id'}
-            if "_descriptive_text_fields" in question["source_fields"]:
-                descriptive_text_fields = list(dataset.descriptive_text_fields.all().values_list("identifier", flat=True))
-                fields = fields.union(descriptive_text_fields)
-            fields = fields.union([field for field in question["source_fields"] if not field.startswith("_")])
-            fields = list(fields)
-            full_item = get_item_by_id(item.dataset_id, item.item_id, fields)
-            text = ""
-            for source_field in question["source_fields"]:
-                if source_field == "_descriptive_text_fields":
-                    for field in descriptive_text_fields:
-                        text += f'{field}: {full_item.get(field, "n/a")}\n'
-                elif source_field == "_full_text_chunk_embeddings":
-                    # backend.get_relevant_parts_from_full_text(ds_id, item_id, question["name"], question["prompt"])
-                    # get vector array field from defaults.full_text_chunk_embeddings
-                    # get vectors from db and associated text field
-                    # convert query to same embedding space as this field
-                    # compute vector distance, get top-k matches
-                    # optionally: re-rank and re-evaluate matches using small LLM
-                    # expand context around chunks?
-                    # format chunks and return text
-                    # text += f'Full text snippets: {full_item.get(field, "n/a")}\n'
-                    pass
-                else:
-                    text += f'{source_field}: {full_item.get(source_field, "n/a")}\n'
+            text = get_item_question_context(item.dataset_id, item.item_id, question['source_fields'], question["prompt"])
         if not text:
-            continue
+            return
         prompt = system_prompt + text + "\n\nAnswer:\n"
-        logging.warning(prompt)
+        # logging.warning(prompt)
         history = [ { "role": "system", "content": prompt } ]
         response_text = get_chatgpt_response_using_history(history)
-        logging.warning(response_text)
+        #response_text = "n/a"
+        # logging.warning(response_text)
         if item.extraction_answers is None:
             item.extraction_answers = {}  # type: ignore
         item.extraction_answers[question["name"]] = response_text
         item.save()
-        included_items += 1
 
-    logging.warning("Done extracting question from collection class items.")
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        executor.map(extract, collection_items)
 
 
 @csrf_exempt

@@ -56,11 +56,11 @@ export default {
         identifier: '_descriptive_text_fields',
         name: 'Descriptive Text Fields',
       }
-      available_fields['_full_text_chunk_embeddings'] = {
-        identifier: '_full_text_chunk_embeddings',
+      available_fields['_full_text_snippets'] = {
+        identifier: '_full_text_snippets',
         name: 'Full Text Excerpts',
       }
-      return Object.values(available_fields)
+      return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
     item_count() {
       const class_details = this.collection.actual_classes.find((actual_class) => actual_class.name === this.class_name)

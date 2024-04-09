@@ -14,7 +14,7 @@ import requests
 
 from simple_history.models import HistoricalRecords
 
-from .data_backend_client import DATA_BACKEND_HOST, get_item_by_id, delete_dataset_content, get_question_context
+from .data_backend_client import DATA_BACKEND_HOST, get_item_by_id, delete_dataset_content, get_global_question_context
 from .chatgpt_client import get_chatgpt_response_using_history
 
 
@@ -1268,7 +1268,7 @@ class Chat(models.Model):
                         break
             else:
                 assert isinstance(obj.search_settings, dict)
-                context = get_question_context(obj.search_settings)
+                context = get_global_question_context(obj.search_settings)
                 system_prompt += "\n\n" + context + "\n"
             logging.warning(system_prompt)
 

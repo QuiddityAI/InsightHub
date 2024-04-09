@@ -3,6 +3,7 @@ import logging
 
 from utils.dotdict import DotDict
 from logic.search import get_search_results, get_document_details_by_id
+from logic.search_common import get_relevant_parts_of_item_using_query_vector, get_field_similarity_threshold, get_suitable_generator
 from database_client.django_client import get_dataset
 
 
@@ -47,13 +48,7 @@ def get_global_question_context(search_settings: dict) -> dict:
 
 def _item_to_context(item: dict, dataset: DotDict) -> str:
     always_included_fields = dataset.descriptive_text_fields
-    # if there is 'title' or 'name' in always_included_fields, it should be the first field
-    if 'title' in always_included_fields:
-        always_included_fields.remove('title')
-        always_included_fields.insert(0, 'title')
-    if 'name' in always_included_fields:
-        always_included_fields.remove('name')
-        always_included_fields.insert(0, 'name')
+    _sort_fields_logically(always_included_fields)
 
     missing_fields = [field for field in always_included_fields if field not in item]
 
@@ -88,3 +83,73 @@ def _item_to_context(item: dict, dataset: DotDict) -> str:
         context += f"    {relevant_text}\n"
 
     return context
+
+
+def get_item_question_context(dataset_id: int, item_id: str, source_fields: list[str], question: str) -> dict:
+    dataset = get_dataset(dataset_id)
+    required_fields = {'_id'}
+    source_fields_set = set(source_fields)
+    if "_descriptive_text_fields" in source_fields_set:
+        required_fields = required_fields.union(dataset.descriptive_text_fields)
+        source_fields_set.remove("_descriptive_text_fields")
+        source_fields_set.update(dataset.descriptive_text_fields)
+    if "_full_text_snippets" in source_fields:
+        chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
+        if chunk_vector_field_name:
+            chunk_vector_field = DotDict(dataset.object_fields.get(chunk_vector_field_name))
+            chunk_field = chunk_vector_field.source_fields[0]
+            required_fields.add(chunk_field)
+    required_fields.update([field for field in source_fields if not field.startswith("_")])
+
+    full_item = get_document_details_by_id(dataset_id, item_id, tuple(required_fields), None) or {}
+
+    text = ""
+    max_characters_per_field = 5000
+    source_fields = list(source_fields_set)
+    _sort_fields_logically(source_fields)
+
+    for source_field in source_fields:
+        if source_field == "_full_text_snippets":
+            continue
+        else:
+            value = full_item.get(source_field, "n/a")
+            value = str(value)[:max_characters_per_field]
+            text += f'{source_field}: {value}\n'
+
+    max_chunks_to_show_all = 20
+    max_selected_chunks = 5
+    if "_full_text_snippets" in source_fields:
+        chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
+        if chunk_vector_field_name:
+            chunk_vector_field = DotDict(dataset.object_fields.get(chunk_vector_field_name))
+            chunk_field = chunk_vector_field.source_fields[0]
+            chunks = full_item.get(chunk_field, [])
+            if len(chunks) <= max_chunks_to_show_all:
+                full_text = " ".join([chunk.get('text', '') for chunk in chunks])
+                text += f'Full Text:\n'
+                text += f'{full_text}\n'
+            else:
+                generator_function = get_suitable_generator(dataset, chunk_vector_field_name)
+                assert generator_function is not None
+                query_vector = generator_function([[question]])[0]
+                score_threshold = get_field_similarity_threshold(chunk_vector_field, input_is_image=False)
+                result = get_relevant_parts_of_item_using_query_vector(dataset, chunk_vector_field_name, item_id, query_vector, score_threshold, max_selected_chunks)
+                for part in result.get('_relevant_parts', []):
+                    chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
+                    this_chunk = chunks[part.get("index")].get('text', '')
+                    chunk_after = chunks[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
+                    relevant_text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
+                    text += f"\nPotentially Relevant Snippet from {chunk_field}:\n"
+                    text += f"    {relevant_text}\n\n"
+
+    return {'context': text}
+
+
+def _sort_fields_logically(fields: list[str]):
+    # if there is 'title' or 'name' in always_included_fields, it should be the first field
+    if 'title' in fields:
+        fields.remove('title')
+        fields.insert(0, 'title')
+    if 'name' in fields:
+        fields.remove('name')
+        fields.insert(0, 'name')

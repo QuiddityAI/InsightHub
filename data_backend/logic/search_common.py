@@ -232,36 +232,38 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
     return items, total_matches
 
 
+def get_suitable_generator(dataset, vector_field: str):
+    generators: list[DotDict] = get_generators()
+    field = dataset.object_fields[vector_field]
+    embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
+
+    # for text query:
+    suitable_generator = None
+    for generator in generators:
+        if generator.embedding_space and generator.embedding_space.id == embedding_space_id \
+            and generator.input_type == FieldType.TEXT:
+            suitable_generator = generator
+
+    if not suitable_generator:
+        return None
+
+    if field.generator and field.generator.input_type == FieldType.TEXT \
+        and not (suitable_generator and suitable_generator.is_preferred_for_search):
+        generator_function = get_generator_function_from_field(dataset.object_fields[vector_field], always_return_single_value_per_item=True)
+    else:
+        generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters, False)
+    return generator_function
+
+
 def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryInput,
                               query_vector: list | None, required_fields: list[str],
                               internal_input_weight: float,
                               limit: int, page: int, score_threshold: float | None, max_sub_items: int | None = 1) -> dict[str, dict]:
-    def get_suitable_generator():
-        generators: list[DotDict] = get_generators()
-        field = dataset.object_fields[vector_field]
-        embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
-
-        # for text query:
-        suitable_generator = None
-        for generator in generators:
-            if generator.embedding_space and generator.embedding_space.id == embedding_space_id \
-                and generator.input_type == FieldType.TEXT:
-                suitable_generator = generator
-
-        if not suitable_generator:
-            return None
-
-        if field.generator and field.generator.input_type == FieldType.TEXT \
-            and not (suitable_generator and suitable_generator.is_preferred_for_search):
-            generator_function = get_generator_function_from_field(dataset.object_fields[vector_field], always_return_single_value_per_item=True)
-        else:
-            generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters, False)
-        return generator_function
 
     positive_query_vector = None
     negative_query_vector = None
     if query.positive_query_str or query.negative_query_str:
-        generator_function = get_suitable_generator()
+        generator_function = get_suitable_generator(dataset, vector_field)
         if not generator_function:
             return {}
         if query.positive_query_str:
@@ -373,7 +375,7 @@ def fill_in_vector_data(dataset: DotDict, items: dict[str, dict], required_vecto
             items[result.id][vector_field] = result.vector[vector_field]
 
 
-def get_field_similarity_threshold(field, input_is_image: bool | None=None):
+def get_field_similarity_threshold(field: DotDict, input_is_image: bool | None=None):
     if input_is_image is None:
         # if not determined by other means, use same type as this field:
         input_is_image = field.generator.input_type == FieldType.IMAGE if field.generator else False
@@ -381,3 +383,19 @@ def get_field_similarity_threshold(field, input_is_image: bool | None=None):
     if score_threshold is None and field.generator:
         score_threshold = field.generator.image_similarity_threshold if input_is_image else field.generator.text_similarity_threshold
     return score_threshold
+
+
+def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str, vector_field: str,
+                           query_vector: list, score_threshold: float | None = None,
+                           limit: int = 5, min_results: int = 2) -> dict:
+    vector_db_client = VectorSearchEngineClient.get_instance()
+    vector_search_results = vector_db_client.get_best_sub_items(dataset.actual_database_name, vector_field, item_id, query_vector, score_threshold, limit, min_results)
+    item = {
+        '_id': item_id,
+        '_dataset_id': dataset.id,
+        '_origins': [{'type': 'vector', 'field': vector_field,
+                    'query': 'unknown', 'score': max(*(item.score for item in vector_search_results), 0.0), 'rank': 1}],
+    }
+    array_source_field = dataset.object_fields[vector_field].source_fields[0] if dataset.object_fields[vector_field].source_fields else None
+    item['_relevant_parts'] = [{'origin': 'vector_array', 'field': array_source_field, 'index': item.payload['array_index'], 'score': item.score} for item in vector_search_results]
+    return item

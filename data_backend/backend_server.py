@@ -18,7 +18,7 @@ from logic.generate_missing_values import delete_field_content, generate_missing
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from logic.classifiers import get_retraining_status, start_retrain
 from logic.upload_files import upload_files, UPLOADED_FILES_FOLDER
-from logic.chat_and_extraction import get_global_question_context
+from logic.chat_and_extraction import get_global_question_context, get_item_question_context
 
 from database_client.django_client import add_stored_map
 
@@ -174,12 +174,29 @@ def get_search_list_result_endpoint():
     return response
 
 
-@app.route('/data_backend/question_context', methods=['POST'])
-def get_question_context_route():
+@app.route('/data_backend/global_question_context', methods=['POST'])
+def get_global_question_context_route():
     data: dict | None = request.json
     if not data or "search_settings" not in data:
         return "no data", 400
     result = get_global_question_context(data["search_settings"])
+    if result is None or result.get("error"):
+        return result.get("error", "error"), 500
+
+    response = app.response_class(
+        response=json.dumps(result),  # type: ignore
+        mimetype='application/json'
+    )
+    return response
+
+
+@app.route('/data_backend/item_question_context', methods=['POST'])
+def get_item_question_context_route():
+    data: dict | None = request.json
+    if not data:
+        return "no data", 400
+    data = DotDict(data)
+    result = get_item_question_context(data.dataset_id, data.item_id, data.source_fields, data.question)
     if result is None or result.get("error"):
         return result.get("error", "error"), 500
 

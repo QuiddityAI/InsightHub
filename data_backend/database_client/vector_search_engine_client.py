@@ -321,3 +321,31 @@ class VectorSearchEngineClient(object):
             with_vectors=return_vectors
         )
         return hits
+
+
+    def get_best_sub_items(self, database_name: str, vector_field: str, parent_id: str,
+                           query_vector: list, score_threshold: float | None = None,
+                           limit: int = 5, min_results: int = 2) -> list:
+        collection_name = self._get_collection_name(database_name, vector_field)
+        hits = self.client.search(
+            collection_name=f'{collection_name}_sub_items',
+            query_vector=NamedVector(name=vector_field, vector=query_vector),
+            query_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key='parent_id',
+                        match=models.MatchValue(value=parent_id)
+                    )
+                ]
+            ),
+            with_payload=['array_index'],
+            with_vectors=False,
+            limit=limit,
+            score_threshold=None,
+        )
+        if score_threshold is not None:
+            for i in range(min_results, len(hits)):
+                if hits[i].score < score_threshold:
+                    hits = hits[:i]
+                    break
+        return hits
