@@ -13,7 +13,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from ..models import CollectionItem, DataCollection, Chat, Dataset, FieldType
+from ..models import CollectionItem, DataCollection, Chat, Dataset, ServiceUsage, FieldType
 from ..serializers import ChatSerializer, CollectionSerializer
 from ..data_backend_client import get_item_question_context
 from ..chatgpt_client import get_chatgpt_response_using_history
@@ -40,7 +40,7 @@ def create_chat_from_search_settings(request):
         name=search_settings['all_field_query'],
     )
 
-    chat.add_question(search_settings['all_field_query'])
+    chat.add_question(search_settings['all_field_query'], request.user.id)
 
     data = ChatSerializer(chat).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=201)
@@ -100,7 +100,7 @@ def add_chat_question(request):
     if item.created_by != request.user:
         return HttpResponse(status=401)
 
-    item.add_question(question)
+    item.add_question(question, request.user.id)
 
     data = ChatSerializer(item).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=201)
@@ -232,18 +232,18 @@ def extract_question_from_collection_class_items(request):
         return HttpResponse(status=404)
     question = question[0]
 
-    _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit)
+    _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit, request.user.id)
 
     data = CollectionSerializer(collection).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
 
 
-def _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit):
+def _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit, user_id):
     collection.current_extraction_processes.append(question["name"])
     collection.save()
     def _run_safe():
         try:
-            _extract_question_from_collection_class_items(collection, class_name, question, offset, limit)
+            _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, user_id)
         except Exception as e:
             logging.error(e)
         finally:
@@ -259,7 +259,7 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
         collection.save()
 
 
-def _extract_question_from_collection_class_items(collection, class_name, question, offset, limit):
+def _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, user_id):
     system_prompt = "Answer the following question based on the following document. " + \
         "Answer in one concise sentence, word or list. If the document does not contain the answer, " + \
         "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\nQuestion:\n"
@@ -271,14 +271,15 @@ def _extract_question_from_collection_class_items(collection, class_name, questi
     batch_size = 10
     for i in range(0, len(collection_items), batch_size):
         batch = collection_items[i:i+batch_size]
-        _extract_question_from_collection_class_items_batch(batch, question, system_prompt)
+        _extract_question_from_collection_class_items_batch(batch, question, system_prompt, user_id)
         included_items += len(batch)
         if included_items % 100 == 0:
             logging.warning(f"Extracted {included_items} items for question {question['name']}.")
 
     logging.warning("Done extracting question from collection class items.")
 
-def _extract_question_from_collection_class_items_batch(collection_items, question, system_prompt):
+
+def _extract_question_from_collection_class_items_batch(collection_items, question, system_prompt, user_id):
     def extract(item):
         if (item.extraction_answers or {}).get(question["name"]):
             return
@@ -294,7 +295,12 @@ def _extract_question_from_collection_class_items_batch(collection_items, questi
         prompt = system_prompt + text + "\n\nAnswer:\n"
         # logging.warning(prompt)
         history = [ { "role": "system", "content": prompt } ]
-        response_text = get_chatgpt_response_using_history(history)
+        usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
+        result = usage_tracker.request_usage(1)
+        if result["approved"]:
+            response_text = get_chatgpt_response_using_history(history)
+        else:
+            response_text = "AI usage limit exceeded."
         #response_text = "n/a"
         # logging.warning(response_text)
         if item.extraction_answers is None:
@@ -348,3 +354,23 @@ def remove_collection_class_extraction_results(request):
             item.save()
 
     return HttpResponse(None, status=204)
+
+
+def request_service_usage(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]
+        service_name: str = data["service_name"]
+        amount: int = data["amount"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    usage_tracker = ServiceUsage.get_usage_tracker(user_id, service_name)
+    result = usage_tracker.request_usage(amount)
+
+    return HttpResponse(json.dumps(result), content_type="application/json", status=200)

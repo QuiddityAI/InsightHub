@@ -17,7 +17,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import DATA_BACKEND_HOST
 
-from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
+from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -535,6 +535,31 @@ class ChatAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     search_fields = ('id', 'name')
     ordering = ['id']
     readonly_fields = ('changed_at', 'created_at')
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit }
+    }
+
+
+class ServiceUsagePeriodInline(admin.TabularInline):
+    model = ServiceUsagePeriod
+    readonly_fields = ('changed_at',)
+    ordering = ['period']
+    extra = 0
+
+
+@admin.register(ServiceUsage)
+class ServiceUsageAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False
+    list_display = ('id', 'user', 'service', 'period_type', 'limit_per_period')
+    list_display_links = ('id', 'user', 'service')
+    search_fields = ('id', 'user', 'service')
+    ordering = ['id']
+    readonly_fields = ('changed_at', 'created_at')
+    inlines = [
+        ServiceUsagePeriodInline,
+    ]
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},

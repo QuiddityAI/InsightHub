@@ -42,4 +42,5 @@ urlpatterns=[
     path("change_dataset", other_views.change_dataset),
     path("delete_dataset", other_views.delete_dataset),
     path("get_import_converter", other_views.get_import_converter),
+    path("request_service_usage", question_views.request_service_usage),
 ]

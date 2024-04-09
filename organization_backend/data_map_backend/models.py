@@ -1227,7 +1227,7 @@ class Chat(models.Model):
         null=False)
 
 
-    def add_question(self, question: str):
+    def add_question(self, question: str, user_id: int):
         assert isinstance(self.chat_history, list)
         self.chat_history.append({
             "role": "user",
@@ -1280,7 +1280,12 @@ class Chat(models.Model):
                     "content": chat_item["content"],
                 })
 
-            response_text = get_chatgpt_response_using_history(history)
+            usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
+            result = usage_tracker.request_usage(1)
+            if result["approved"]:
+                response_text = get_chatgpt_response_using_history(history)
+            else:
+                response_text = "AI usage limit exceeded."
             # response_text = "I'm sorry, I can't answer that question yet."
 
             obj.chat_history.append({  # type: ignore
@@ -1312,3 +1317,133 @@ class Chat(models.Model):
     class Meta:
         verbose_name = "Chat"
         verbose_name_plural = "Chats"
+
+
+class PeriodType(models.TextChoices):
+    DAY = "day", "Day"
+    WEEK = "week", "Week"
+    MONTH = "month", "Month"
+    YEAR = "year", "Year"
+
+
+class ServiceUsagePeriod(models.Model):
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    service_usage = models.ForeignKey(
+        verbose_name="Service Usage",
+        to="ServiceUsage",
+        on_delete=models.CASCADE,
+        related_name='usage_periods',
+        blank=False,
+        null=False)
+    period = models.CharField(
+        verbose_name="Period",
+        max_length=50,
+        blank=False,
+        null=False)
+    usage = models.IntegerField(
+        verbose_name="Usage",
+        default=0,
+        blank=False,
+        null=False)
+
+    class Meta:
+        verbose_name = "Service Usage Period"
+        verbose_name_plural = "Service Usage Periods"
+        unique_together = [['service_usage', 'period']]
+
+
+class ServiceUsage(models.Model):
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    user = models.ForeignKey(
+        verbose_name="User",
+        to=User,
+        on_delete=models.CASCADE,
+        related_name='+',
+        blank=False,
+        null=False)
+    service = models.CharField(
+        verbose_name="Service",
+        max_length=200,
+        blank=False,
+        null=False)
+    limit_per_period = models.IntegerField(
+        verbose_name="Limit per Period",
+        default=50,
+        blank=False,
+        null=False)
+    period_type = models.CharField(
+        verbose_name="Period Type",
+        max_length=50,
+        choices=PeriodType.choices,
+        default=PeriodType.MONTH,
+        blank=False,
+        null=False)
+    warning_ratio = models.FloatField(
+        verbose_name="Warning Ratio",
+        default=0.8,
+        blank=False,
+        null=False)
+
+    def request_usage(self, amount: int):
+        logging.warning(f'Requesting usage for {self.user} {self.service} {amount}')
+        if self.period_type == PeriodType.DAY:
+            period = timezone.now().strftime("%Y-%m-%d")
+        elif self.period_type == PeriodType.WEEK:
+            period = timezone.now().strftime("%Y-%W")
+        elif self.period_type == PeriodType.MONTH:
+            period = timezone.now().strftime("%Y-%m")
+        elif self.period_type == PeriodType.YEAR:
+            period = timezone.now().strftime("%Y")
+        else:
+            logging.warning(f"Unknown period type {self.period_type}")
+            return {"approved": False, "error": "Unknown period type"}
+        usage_period = ServiceUsagePeriod.objects.filter(service_usage=self, period=period).first()
+        if usage_period is None:
+            usage_period = ServiceUsagePeriod.objects.create(
+                service_usage=self,
+                period=period,
+                usage=0)
+            usage_period.save()
+        assert usage_period is not None
+
+        if usage_period.usage + amount > self.limit_per_period:
+            return {"approved": False, "error": "Limit exceeded"}
+        usage_period.usage = models.F('usage') + amount
+        usage_period.save()
+        usage_period.refresh_from_db()
+
+        warning_threshold = self.limit_per_period * self.warning_ratio
+        should_warn = usage_period.usage > warning_threshold  # type: ignore
+        return {"approved": True, "should_warn": should_warn}
+
+    @staticmethod
+    def get_usage_tracker(user_id: int, service: str):
+        try:
+            return ServiceUsage.objects.get(user_id=user_id, service=service)
+        except ServiceUsage.DoesNotExist:
+            return ServiceUsage.objects.create(user_id=user_id, service=service)
+
+    class Meta:
+        verbose_name = "Service Usage"
+        verbose_name_plural = "Service Usages"
+        unique_together = [['user', 'service']]

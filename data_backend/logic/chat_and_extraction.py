@@ -75,9 +75,13 @@ def _item_to_context(item: dict, dataset: DotDict) -> str:
             relevant_text = f"[...] {part.get('value')} [...]"
         else:
             # the relevant part comes from a chunk field
-            chunk_before = item.get(part.get("field"), [])[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
-            this_chunk = item.get(part.get("field"), [])[part.get("index")].get('text', '')
-            chunk_after = item.get(part.get("field"), [])[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
+            chunks = item.get(part.get('field'), [])
+            if len(chunks) <= part.get("index"):
+                logging.warning(f"Chunk field {part.get('field')} has less chunks than expected.")
+                continue
+            chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
+            this_chunk = chunks[part.get("index")].get('text', '')
+            chunk_after = chunks[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
             relevant_text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
         context += f"  Potentially Relevant Snippet from {part.get('field')}:\n"
         context += f"    {relevant_text}\n"
