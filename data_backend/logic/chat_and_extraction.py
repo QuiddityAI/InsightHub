@@ -137,7 +137,7 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
                 assert generator_function is not None
                 query_vector = generator_function([[question]])[0]
                 score_threshold = get_field_similarity_threshold(chunk_vector_field, input_is_image=False)
-                result = get_relevant_parts_of_item_using_query_vector(dataset, chunk_vector_field_name, item_id, query_vector, score_threshold, max_selected_chunks)
+                result = get_relevant_parts_of_item_using_query_vector(dataset, item_id, chunk_vector_field_name, query_vector, score_threshold, max_selected_chunks)
                 for part in result.get('_relevant_parts', []):
                     chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
                     this_chunk = chunks[part.get("index")].get('text', '')
