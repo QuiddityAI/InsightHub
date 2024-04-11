@@ -59,3 +59,16 @@ export function get_download_url(local_path) {
   // meant to be used in item rendering definitions
   return local_path ? `/data_backend/download_file/${local_path}` : null
 }
+
+export const available_filter_operators = [
+  { id: "contains", title: "contains" },
+  { id: "does_not_contain", title: "does not contain" },
+  { id: "is", title: "is exact" },
+  { id: "is_not", title: "is not" },
+  // { id: "is_empty", title: "is empty" },
+  // { id: "is_not_empty", title: "is not empty" },
+  { id: "lt", title: "<" },
+  { id: "lte", title: "<=" },
+  { id: "gt", title: ">" },
+  { id: "gte", title: ">=" },
+]

@@ -19,6 +19,8 @@ import { FieldType, ellipse } from "../../utils/utils"
 import { useAppStateStore } from "../../stores/app_state_store"
 import CollectionAndVectorFieldSelection from "./CollectionAndVectorFieldSelection.vue";
 import LoginButton from "../LoginButton.vue";
+import AddFilterMenu from "./AddFilterMenu.vue";
+import SearchFilterList from "./SearchFilterList.vue";
 import SearchHistoryDialog from "../history/SearchHistoryDialog.vue";
 import StoredMapsDialog from "../history/StoredMapsDialog.vue";
 import { useToast } from 'primevue/usetoast';
@@ -126,11 +128,6 @@ export default {
       available_styles: [
         { id: "3d", title: "3D" },
         { id: "plotly", title: "Plotly" },
-      ],
-      available_order_by_types: [
-        { id: "score", title: "Relevancy" },
-        // { id: "number_field", title: "Number Field" },
-        // { id: "classifier", title: "Classifier" },
       ],
     }
   },
@@ -379,20 +376,6 @@ export default {
     </div>
 
     <div class="mt-2 ml-0 flex flex-row gap-1 items-center">
-      <!-- <div class="h-6 flex flex-row items-center gap-0 pl-1 border border-gray-300 rounded-md">
-        <span class="pr-0 flex-none text-sm font-['Lexend'] font-normal text-gray-400">
-          Order: </span>
-        <div class="w-32">
-          <select
-            v-model="appState.settings.search.order_by.type"
-            class="w-full h-full rounded-md border-transparent bg-transparent pb-0 pl-1 pr-7 pt-0 text-ellipsis text-sm font-['Lexend'] font-normal text-gray-400 focus:border-blue-500 focus:ring-blue-500">
-            <option v-for="item in available_order_by_types" :value="item.id" selected>
-              {{ item.title }}
-            </option>
-          </select>
-        </div>
-      </div>
-      <div class="flex-1"></div> -->
       <div class="flex flex-row items-center gap-0 h-6">
         <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'keyword'"
@@ -411,12 +394,16 @@ export default {
         </button>
       </div>
       <div class="flex-1"></div>
-      <!-- <div class="flex flex-row items-center gap-0 h-6">
+      <div class="flex flex-row items-center gap-0 h-6">
         <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400"
-          @click="toast.add({severity:'info', summary:'Not yet implemented', detail:'This feature is coming soon'})">
-          + Filter
+          @click="(event) => { $refs.add_filter_menu.toggle(event) }">
+          + Filter / Option
         </button>
-      </div> -->
+        <OverlayPanel ref="add_filter_menu">
+          <AddFilterMenu @close="$refs.add_filter_menu.hide()">
+          </AddFilterMenu>
+        </OverlayPanel>
+      </div>
       <div class="flex-1"></div>
       <button
         v-if="appState.logged_in"
@@ -432,6 +419,7 @@ export default {
         <BookmarkIcon></BookmarkIcon>
       </button>
     </div>
+    <SearchFilterList></SearchFilterList>
 
     <!-- Parameters Area -->
     <div v-show="show_settings" class="mt-3">

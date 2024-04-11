@@ -101,6 +101,15 @@ export const useAppStateStore = defineStore("appState", {
             // threshold_offset: 0.0,
             // use_for_combined_search: that.dataset.default_search_fields.includes(field.identifier),
           },
+          filters: [
+            // for each filter:
+            // {
+            //   field: "",  // _descriptive_text_field or any other "filterable" field name
+            //   dataset_id: "",  // dataset_id of the field, for now filters are applied to all datasets, but dataset_id is needed to get the field description
+            //   operator: "",  // one of is, is_not, contains, does_not_contain, gt, gte, lt, lte
+            //   value: "",  // str or number value
+            // },
+          ],
 
           origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
           cluster_origin_map_id: null,
@@ -524,6 +533,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.search.origin_display_name = ""
+      this.settings.search.filters = []
 
       this.settings.search.cluster_origin_map_id = null
       this.settings.search.cluster_id = null
@@ -553,7 +563,8 @@ export const useAppStateStore = defineStore("appState", {
       if (
         this.settings.search.search_type == "external_input" &&
         !this.settings.search.use_separate_queries &&
-        !this.settings.search.all_field_query
+        !this.settings.search.all_field_query &&
+        !this.settings.search.filters.length
       ) {
         this.reset_search_results_and_map()
         this.reset_search_box()
@@ -582,7 +593,8 @@ export const useAppStateStore = defineStore("appState", {
       if (
         this.settings.search.search_type == "external_input" &&
         !this.settings.search.use_separate_queries &&
-        !this.settings.search.all_field_query
+        !this.settings.search.all_field_query &&
+        !this.settings.search.filters.length
       ) {
         this.reset_search_results_and_map()
         this.reset_search_box()
