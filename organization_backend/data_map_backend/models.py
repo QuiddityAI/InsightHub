@@ -1405,7 +1405,6 @@ class ServiceUsage(models.Model):
         null=False)
 
     def request_usage(self, amount: int):
-        logging.warning(f'Requesting usage for {self.user} {self.service} {amount}')
         if self.period_type == PeriodType.DAY:
             period = timezone.now().strftime("%Y-%m-%d")
         elif self.period_type == PeriodType.WEEK:
