@@ -173,7 +173,7 @@ STATIC_ROOT = 'static_root/'  # should be changed to where the static files will
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 70000000  # 70 MB max upload of e.g. map data
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5000000000  # 5 GB max upload of e.g. map data
 
 # Rest Framework
 
@@ -259,9 +259,13 @@ JAZZMIN_SETTINGS = {
 # see https://stackoverflow.com/a/41620949
 
 def skip_health_requests(record):
+    if not record.args:
+        return True
     return '/org/data_map/health' not in str(record.args[0])
 
 def skip_data_backend_proxy_request(record):
+    if not record.args:
+        return True
     return '/data_backend/' not in str(record.args[0])
 
 LOGGING = {
