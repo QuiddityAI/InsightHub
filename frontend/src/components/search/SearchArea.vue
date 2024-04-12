@@ -13,6 +13,8 @@ import {
 import MultiSelect from 'primevue/multiselect';
 import Chip from 'primevue/chip';
 import OverlayPanel from 'primevue/overlaypanel';
+import InputSwitch from 'primevue/inputswitch';
+import ProgressSpinner from 'primevue/progressspinner';
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
@@ -54,11 +56,15 @@ const _history = history
 // cluster id of map id
 
 export default {
+  inject: ["eventBus"],
   emits: ["request_search_results", "reset_search_box"],
   data() {
     return {
       internal_organization_id: null,
 
+      smart_query: "",
+      use_smart_search: true,
+      processing_smart_search: false,
       show_negative_query_field: false,
       show_settings: false,
 
@@ -134,6 +140,9 @@ export default {
   mounted() {
     const that = this
     this.internal_organization_id = this.appStateStore.organization_id
+    this.eventBus.on("show_results_tab", () => {
+      that.use_smart_search = false
+    })
   },
   computed: {
     ...mapStores(useAppStateStore),
@@ -182,7 +191,33 @@ export default {
       this.$refs.old_password.value = ""
       this.$refs.new_password.value = ""
       this.$refs.new_password_repeat.value = ""
-    }
+    },
+    run_smart_search() {
+      if (this.processing_smart_search) return
+      djangoClient.post(`/org/data_map/convert_smart_query_to_parameters`, {
+        user_id: this.appStateStore.user.id,
+        query: this.smart_query,
+      }).then((response) => {
+        this.processing_smart_search = false
+        const search_parameters = response.data.search_parameters
+        this.appStateStore.settings.search.all_field_query = search_parameters.query
+        for (const filter of search_parameters.filters) {
+          filter.dataset_id = this.appStateStore.settings.search.dataset_ids[0]
+        }
+        this.appStateStore.settings.search.filters = search_parameters.filters || []
+        if (search_parameters.search_type == "meaning") {
+          search_parameters.search_type = "vector"
+        }
+        this.appStateStore.settings.search.search_algorithm = search_parameters.search_type
+        this.use_smart_search = false
+        this.appStateStore.request_search_results()
+      }).catch((error) => {
+        console.log(error)
+        this.processing_smart_search = false
+        this.$toast.add({severity: 'error', summary: 'Error', detail: 'Smart search failed', life: 5000})
+      })
+      this.processing_smart_search = true
+    },
   },
 }
 </script>
@@ -228,6 +263,10 @@ export default {
         class="ml-1 rounded-md px-2 h-7 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
         Overview
       </button> -->
+
+      <div class="flex-1"></div>
+      <InputSwitch v-model="use_smart_search" class="" />
+      <span class="ml-2 text-sm text-gray-500">Smart</span>
 
       <div class="flex-1"></div>
       <LoginButton></LoginButton>
@@ -277,7 +316,23 @@ export default {
     </div>
 
     <!-- Search Field -->
-    <div class="flex flex-row">
+    <div v-if="use_smart_search && appState.settings.search.search_type == 'external_input'" class="flex flex-row items-center">
+      <div class="flex h-9 flex-1 flex-row items-center">
+        <input
+          type="search"
+          name="search"
+          @keyup.enter="run_smart_search()"
+          v-model="smart_query"
+          :placeholder="`Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.entity_name || '' : ''} you want to find`"
+          class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
+      </div>
+      <button v-if="!processing_smart_search" class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
+        @click="run_smart_search()">
+        Go
+      </button>
+      <ProgressSpinner v-if="processing_smart_search" class="ml-1 w-5 h-5"></ProgressSpinner>
+    </div>
+    <div v-if="!use_smart_search" class="flex flex-row items-center">
       <div
         v-if="appState.settings.search.search_type != 'external_input'"
         class="flex h-9 flex-1 flex-row items-center">
@@ -375,7 +430,7 @@ export default {
         class="h-full w-full rounded-md border-0 bg-red-100/50 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
     </div>
 
-    <div class="mt-2 ml-0 flex flex-row gap-1 items-center">
+    <div v-if="!use_smart_search" class="mt-2 ml-0 flex flex-row gap-1 items-center">
       <div class="flex flex-row items-center gap-0 h-6">
         <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'keyword'"
@@ -419,7 +474,7 @@ export default {
         <BookmarkIcon></BookmarkIcon>
       </button>
     </div>
-    <SearchFilterList></SearchFilterList>
+    <SearchFilterList v-if="!use_smart_search"></SearchFilterList>
 
     <!-- Parameters Area -->
     <div v-show="show_settings" class="mt-3">

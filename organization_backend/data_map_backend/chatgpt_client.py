@@ -23,6 +23,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 class OPENAI_MODELS:
     GPT3_5 = "gpt-3.5-turbo"
     GPT4 = "gpt-4"
+    GPT4_TURBO = "gpt-4-turbo"
 
 
 def get_chatgpt_response(question: str, language: str, model: str = OPENAI_MODELS.GPT4) -> str:

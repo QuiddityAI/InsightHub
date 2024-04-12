@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import other_views
 from .views import question_views
-from .views import data_backend_proxy_views
+from .views import smart_search_views
 
 urlpatterns=[
     path("health", other_views.get_health),
@@ -43,4 +43,5 @@ urlpatterns=[
     path("delete_dataset", other_views.delete_dataset),
     path("get_import_converter", other_views.get_import_converter),
     path("request_service_usage", question_views.request_service_usage),
+    path("convert_smart_query_to_parameters", smart_search_views.convert_smart_query_to_parameters),
 ]
