@@ -89,7 +89,13 @@ class VectorSearchEngineClient(object):
                 )
 
         indexable_field_type_to_qdrant_type = {
-            FieldType.TEXT: PayloadSchemaType.TEXT,  # TODO: fulltext indexes can have special parameters
+            FieldType.TEXT: models.TextIndexParams(
+                    type=models.TextIndexType.TEXT,
+                    tokenizer=models.TokenizerType.WORD,
+                    min_token_len=2,
+                    max_token_len=20,
+                    lowercase=True,
+                ),
             FieldType.TAG: PayloadSchemaType.KEYWORD,  # TODO: check if this works
             FieldType.INTEGER: PayloadSchemaType.INTEGER,
             FieldType.FLOAT: PayloadSchemaType.FLOAT,
@@ -230,9 +236,11 @@ class VectorSearchEngineClient(object):
 
 
     def get_items_near_vector(self, database_name: str, vector_field: str, query_vector: list,
-                              filter_criteria: dict, return_vectors: bool, limit: int,
+                              filters: list[dict] | None, return_vectors: bool, limit: int,
                               score_threshold: float | None, min_results: int = 10, is_array_field: bool=False, max_sub_items: int = 1) -> list:
         collection_name = self._get_collection_name(database_name, vector_field)
+        qdrant_filters = self._convert_to_qdrant_filters(filters)
+
         if is_array_field:
             group_hits = self.client.search_groups(
                 collection_name=f'{collection_name}_sub_items',
@@ -243,6 +251,7 @@ class VectorSearchEngineClient(object):
                 score_threshold=score_threshold,
                 group_by='parent_id',
                 group_size=max_sub_items,
+                query_filter=qdrant_filters,
             )
             # hits.groups is a list of {'id': parent_id, 'hits': [{'id': sub_id, 'score': score, 'payload': dict} ...]}
             hits = []
@@ -254,31 +263,61 @@ class VectorSearchEngineClient(object):
                 }))
             if min_results > 0 and len(hits) < min_results and score_threshold:
                 # try again without score threshold
-                return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
+                return self.get_items_near_vector(database_name, vector_field, query_vector, filters, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
             return hits  # type: ignore
 
         hits = self.client.search(
             collection_name=collection_name,
             query_vector=NamedVector(name=vector_field, vector=query_vector),
-            # query_filter=Filter(
-            #     must=[
-            #         FieldCondition(
-            #             key='rand_number',
-            #             range=Range(
-            #                 gte=3
-            #             )
-            #         )
-            #     ]
-            # ),
             with_payload=False,
             with_vectors=return_vectors,
             limit=limit,
             score_threshold=score_threshold,
+            query_filter=qdrant_filters,
         )
         if min_results > 0 and len(hits) < min_results and score_threshold:
             # try again without score threshold
-            return self.get_items_near_vector(database_name, vector_field, query_vector, filter_criteria, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
+            return self.get_items_near_vector(database_name, vector_field, query_vector, filters, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
         return hits
+
+
+    def _convert_to_qdrant_filters(self, filters: list[dict] | None) -> Filter | None:
+        if not filters:
+            return None
+        filter_types = { 'must': [], 'must_not': [] }
+        for filter_ in filters:
+            filter_ = DotDict(filter_)
+            if filter_.operator == "contains":
+                filter_types['must'].append(models.FieldCondition(
+                    key=filter_.field, match=models.MatchText(text=filter_.value)))
+            elif filter_.operator == "does_not_contain":
+                filter_types['must_not'].append(models.FieldCondition(
+                    key=filter_.field, match=models.MatchText(text=filter_.value)))
+            elif filter_.operator == "is":
+                # Note: also works to check if an element is in an array
+                filter_types['must'].append(models.FieldCondition(
+                    key=filter_.field, match=models.MatchValue(value=filter_.value)))
+            elif filter_.operator == "is_not":
+                # Note: also works to check if an element is not in an array
+                filter_types['must_not'].append(models.FieldCondition(
+                    key=filter_.field, match=models.MatchValue(value=filter_.value)))
+            elif filter_.operator == "is_empty":
+                filter_types['must'].append(models.Filter(should=[
+                    models.IsEmptyCondition(is_empty=models.PayloadField(key=filter_.field)),
+                    # the empty string is considered "not empty" by Qdrant, so we need to filter it out explicitly
+                    models.FieldCondition(key=filter_.field, match=models.MatchValue(value=""))
+                ]))
+            elif filter_.operator == "is_not_empty":
+                filter_types['must_not'].append(models.Filter(should=[
+                    models.IsEmptyCondition(is_empty=models.PayloadField(key=filter_.field)),
+                    # the empty string is considered "not empty" by Qdrant, so we need to filter it out explicitly
+                    models.FieldCondition(key=filter_.field, match=models.MatchValue(value=""))
+                ]))
+            elif filter_.operator in ["gt", "gte", "lt", "lte"]:
+                filter_types['must'].append(models.FieldCondition(
+                    key=filter_.field, range=models.Range(**{filter_.operator: filter_.value})))
+        qdrant_filters = models.Filter(must=filter_types['must'], must_not=filter_types['must_not'])
+        return qdrant_filters
 
 
     def get_items_matching_collection(self, database_name: str, vector_field: str, positive_ids: list[str],

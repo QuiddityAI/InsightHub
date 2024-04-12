@@ -1,5 +1,6 @@
 import logging
 import math
+import copy
 from typing import Iterable
 
 import numpy as np
@@ -212,12 +213,11 @@ def separate_text_and_vector_fields(dataset: DotDict, fields: Iterable[str]):
     return text_felds, vector_fields
 
 
-def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query: QueryInput,
+def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query: QueryInput, filters: list[dict],
                                 required_fields: list[str], limit: int, page: int,
                                 use_bolding_in_highlights: bool = True):
     text_db_client = TextSearchEngineClient.get_instance()
-    criteria = {}  # TODO: add criteria
-    search_result, total_matches = text_db_client.get_search_results(dataset.actual_database_name, text_fields, criteria, query.positive_query_str, "", page, limit, required_fields, highlights=True, use_bolding_in_highlights=use_bolding_in_highlights)
+    search_result, total_matches = text_db_client.get_search_results(dataset.actual_database_name, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=True, use_bolding_in_highlights=use_bolding_in_highlights)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     ignored_keyword_highlight_fields = dataset.defaults.ignored_keyword_highlight_fields or []
@@ -256,7 +256,7 @@ def get_suitable_generator(dataset, vector_field: str):
 
 
 def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryInput,
-                              query_vector: list | None, required_fields: list[str],
+                              query_vector: list | None, filters: list[dict] | None, required_fields: list[str],
                               internal_input_weight: float,
                               limit: int, page: int, score_threshold: float | None, max_sub_items: int | None = 1) -> dict[str, dict]:
 
@@ -286,12 +286,11 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
         query_vector = query_vector - negative_query_vector * (1.0 - internal_input_weight)
 
     vector_db_client = VectorSearchEngineClient.get_instance()
-    criteria = {}  # TODO: add criteria
     assert query_vector is not None
     is_array_field = dataset.object_fields[vector_field].is_array
     array_source_field = dataset.object_fields[vector_field].source_fields[0] if is_array_field and dataset.object_fields[vector_field].source_fields else None
     vector_search_result = vector_db_client.get_items_near_vector(dataset.actual_database_name, vector_field, query_vector,
-                                                                  criteria, return_vectors=False, limit=limit,
+                                                                  filters, return_vectors=False, limit=limit,
                                                                   score_threshold=score_threshold, is_array_field=is_array_field,
                                                                   max_sub_items=max_sub_items or 1) # type: ignore
     items = {}
@@ -399,3 +398,35 @@ def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str
     array_source_field = dataset.object_fields[vector_field].source_fields[0] if dataset.object_fields[vector_field].source_fields else None
     item['_relevant_parts'] = [{'origin': 'vector_array', 'field': array_source_field, 'index': item.payload['array_index'], 'score': item.score} for item in vector_search_results]
     return item
+
+
+def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
+    filters = copy.deepcopy(filters)
+    additional_filters = []
+    removed_filters = []
+    for filter_ in filters:
+        if filter_['field'] == '_descriptive_text_fields':
+            for field in dataset.descriptive_text_fields:
+                additional_filters.append({'field': field, 'value': filter_['value'], 'operator': filter_['operator']})
+            removed_filters.append(filter_)
+    filters.extend(additional_filters)
+    for filter_ in filters:
+        if filter_ in removed_filters:
+            continue
+        if filter_['field'] in dataset.object_fields:
+            field = dataset.object_fields[filter_['field']]
+            if field.field_type == FieldType.INTEGER:
+                try:
+                    filter_['value'] = int(filter_['value'])
+                except ValueError:
+                    logging.warning(f"Could not convert filter value '{filter_['value']}' to integer for field '{field.name}'")
+                    removed_filters.append(filter_)
+            elif field.field_type == FieldType.FLOAT:
+                try:
+                    filter_['value'] = float(filter_['value'])
+                except ValueError:
+                    logging.warning(f"Could not convert filter value '{filter_['value']}' to float for field '{field.name}'")
+                    removed_filters.append(filter_)
+    for filter_ in removed_filters:
+        filters.remove(filter_)
+    return filters

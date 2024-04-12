@@ -63,7 +63,11 @@ export default {
         }
         for (const field_name of dataset.descriptive_text_fields) {
           const field = dataset.object_fields[field_name]
+          if (!field.is_available_for_filtering) continue
           details.descriptive_text_field_names.push(field.description || field.identifier)
+        }
+        if (details.descriptive_text_field_names.length === 0) {
+          details.descriptive_text_field_names.push('None')
         }
         all_details.push(details)
       }
@@ -153,6 +157,8 @@ export default {
           - {{ ds_fields.dataset_name }}: <em>{{ ds_fields.descriptive_text_field_names.join(", ") }}</em>
         </li>
       </ul>
+
+      <!-- <p class="mt-3 text-sm text-gray-400">To check if a list has a certain value (e.g. if a tag is in a list of tags), use the 'is exact' or 'is not' operator.</p> -->
 
   </div>
 

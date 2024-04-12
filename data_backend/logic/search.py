@@ -22,7 +22,7 @@ from logic.local_map_cache import local_maps
 from logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
     get_vector_search_results_matching_collection, get_fulltext_search_results, \
     combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold, \
-    fill_in_vector_data_list
+    fill_in_vector_data_list, adapt_filters_to_dataset
 
 from database_client.django_client import get_dataset
 
@@ -110,7 +110,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
         enabled_fields = [field_identifier for field_identifier, field_settings in search_settings.separate_queries.items() if field_settings['use_for_combined_search']]
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     page = search_settings.result_list_current_page if purpose == "list" else 0
-    if not all([raw_query, limit, page is not None, dataset]):
+    if not all([limit, page is not None, dataset]):
         raise ValueError("a parameter is missing")
 
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
@@ -124,6 +124,9 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     #     return results, {}
 
     queries = QueryInput.from_raw_query(raw_query, negative_query, image_query, negative_image_query)
+    filters = adapt_filters_to_dataset(search_settings.filters, dataset)
+    if not (filters or queries):
+        raise ValueError("No search queries or filters provided")
     actual_total_matches = 0
     result_sets: list[dict] = []
     for query in queries:
@@ -134,7 +137,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
             if search_settings.search_algorithm in ['vector', 'hybrid'] and field.field_type == FieldType.VECTOR:
                 score_threshold = get_field_similarity_threshold(field, input_is_image=bool(query.positive_image_url or query.negative_image_url))
                 score_threshold = score_threshold if search_settings.use_similarity_thresholds else None
-                results = get_vector_search_results(dataset, field.identifier, query, None, required_fields=[],
+                results = get_vector_search_results(dataset, field.identifier, query, None, filters, required_fields=[],
                                                     internal_input_weight=search_settings.internal_input_weight,
                                                     limit=limit, page=page, score_threshold=score_threshold,
                                                     max_sub_items=search_settings.max_sub_items_per_item)
@@ -146,7 +149,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
             else:
                 continue
         if text_fields:
-            results, total_matches = get_fulltext_search_results(dataset, text_fields, query, required_fields=['_id'], limit=limit, page=page, use_bolding_in_highlights=search_settings.use_bolding_in_highlights)
+            results, total_matches = get_fulltext_search_results(dataset, text_fields, query, filters, required_fields=['_id'], limit=limit, page=page, use_bolding_in_highlights=search_settings.use_bolding_in_highlights)
             result_sets.append(results)
             actual_total_matches = max(actual_total_matches, total_matches)
             timings.log("fulltext database query")
@@ -223,7 +226,7 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
     for field in vector_fields:
         query_vector = item[field.identifier]
         score_threshold = get_field_similarity_threshold(field) if search_settings.use_similarity_thresholds else None
-        results = get_vector_search_results(dataset, field.identifier, QueryInput(search_settings.all_field_query, search_settings.all_field_query_negative), query_vector, required_fields=[],
+        results = get_vector_search_results(dataset, field.identifier, QueryInput(search_settings.all_field_query, search_settings.all_field_query_negative), query_vector, None, required_fields=[],
                                             internal_input_weight=search_settings.internal_input_weight,
                                             limit=limit, page=page, score_threshold=score_threshold)
         result_sets.append(results)
@@ -269,7 +272,7 @@ def get_search_results_matching_a_collection(dataset, search_settings: DotDict, 
     score_threshold = decision_vector_data.threshold
 
     results = get_vector_search_results(dataset, vector_field, QueryInput(search_settings.all_field_query, search_settings.all_field_query_negative),
-                                        decision_vector.tolist(), required_fields=[],
+                                        decision_vector.tolist(), None, required_fields=[],
                                         internal_input_weight=search_settings.internal_input_weight,
                                         limit=limit, page=page, score_threshold=score_threshold)
     result_sets = [results]

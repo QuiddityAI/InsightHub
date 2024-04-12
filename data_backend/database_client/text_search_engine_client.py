@@ -243,20 +243,37 @@ class TextSearchEngineClient(object):
         response = self.client.update_by_query(index=index_name, body=body)
         logging.warning(f"Deleted field {field} from text search engine: {response}")
 
-
-    def get_search_results(self, index_name: str, search_fields, filter_criteria,
+    def get_search_results(self, index_name: str, search_fields, filters: list[dict],
                            query_positive, query_negative, page, limit, return_fields,
                            highlights=False, use_bolding_in_highlights:bool=True):
-        query = {
-            'size': limit,
-            'query': {
-                'multi_match': {
-                    'query': query_positive,
-                    'fields': search_fields,
+        if filters:
+            query = {
+                'size': limit,
+                'query': {
+                    'bool': {
+                        'filter': self._convert_to_opensearch_filters(filters),
+                    }
+                },
+                '_source': return_fields,
+            }
+            if query_positive:
+                query['query']['bool']['must'] = {
+                    'multi_match': {
+                        'query': query_positive,
+                        'fields': search_fields,
+                    }
                 }
-            },
-            '_source': return_fields,
-        }
+        else:
+            query = {
+                'size': limit,
+                'query': {
+                    'multi_match': {
+                        'query': query_positive,
+                        'fields': search_fields,
+                    }
+                },
+                '_source': return_fields,
+            }
         if highlights:
             query['highlight'] = {
                 "fields": {field: {} for field in search_fields},
@@ -273,3 +290,64 @@ class TextSearchEngineClient(object):
         )
         total_matches = response.get("hits", {}).get("total", {}).get("value", 0)
         return response.get("hits", {}).get("hits", []), total_matches
+
+    def _convert_to_opensearch_filters(self, filters: list[dict]):
+        query_filter = {
+            'bool': {
+                'must': [],
+                'must_not': [],
+            },
+        }
+        for filter_ in filters:
+            filter_ = DotDict(filter_)
+            if filter_.operator == "contains":
+                query_filter['bool']['must'].append({
+                    "match_phrase": {
+                        filter_.field: filter_.value
+                    }
+                })
+            elif filter_.operator == "does_not_contain":
+                query_filter['bool']['must_not'].append({
+                    "match_phrase": {
+                        filter_.field: filter_.value
+                    }
+                })
+            elif filter_.operator in ("is", "is_not"):
+                # Note: also works to check if an element is in an array
+                query_filter['bool']['must' if filter_.operator == "is" else 'must_not'].append({
+                    "term": {
+                        filter_.field: {
+                            "value": filter_.value,
+                            "case_insensitive": True
+                        }
+                    }
+                })
+            elif filter_.operator == "is_empty":
+                query_filter["bool"]["must"].append(
+                    {
+                        "bool": {
+                            "should": [
+                                {
+                                    "bool": {
+                                        "must_not": [
+                                            {"exists": {"field": filter_.field}}
+                                        ]
+                                    }
+                                },
+                                {"term": {filter_.field: ""}},
+                            ]
+                        }
+                    }
+                )
+            elif filter_.operator == "is_not_empty":
+                query_filter["bool"]["must"].append({"exists": {"field": filter_.field}})
+                query_filter["bool"]["must"].append({"bool": {"must_not": [{"term": {filter_.field: ""}}]}})
+            elif filter_.operator in ("lt", "lte", "gt", "gte"):
+                query_filter['bool']['must'].append({
+                    "range": {
+                        filter_.field: {
+                            filter_.operator: filter_.value
+                        }
+                    }
+                })
+        return query_filter
