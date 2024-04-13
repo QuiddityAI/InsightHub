@@ -63,7 +63,7 @@ export default {
       internal_organization_id: null,
 
       smart_query: "",
-      use_smart_search: true,
+      use_smart_search: false,
       processing_smart_search: false,
       show_negative_query_field: false,
       show_settings: false,
