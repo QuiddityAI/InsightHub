@@ -28,7 +28,7 @@ from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.extract_pipeline import get_pipeline_steps
 from logic.generate_missing_values import generate_missing_values_for_given_elements
-from logic.search import get_document_details_by_id
+from logic.search_common import get_document_details_by_id
 
 
 def get_embedding_space_from_ds_and_field(ds_and_field: tuple[int, str]) -> DotDict:

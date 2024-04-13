@@ -2,6 +2,8 @@ import logging
 import math
 import copy
 from typing import Iterable
+from functools import lru_cache
+import json
 
 import numpy as np
 
@@ -10,8 +12,8 @@ from utils.collect_timings import Timings
 from utils.dotdict import DotDict
 from utils.source_plugin_types import SourcePlugin
 
-from api_clients.old_absclust_database_client import get_absclust_items_by_ids
-from database_client.django_client import get_generators
+from api_clients.old_absclust_database_client import get_absclust_items_by_ids, get_absclust_item_by_id
+from database_client.django_client import get_generators, get_dataset
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 
@@ -430,3 +432,43 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
     for filter_ in removed_filters:
         filters.remove(filter_)
     return filters
+
+
+@lru_cache
+def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str], relevant_parts: str | None=None, database_name: str | None = None) -> dict | None:
+    if dataset_id == ABSCLUST_DATASET_ID:
+        return get_absclust_item_by_id(item_id)
+
+    if not database_name:
+        dataset = get_dataset(dataset_id)
+        database_name = dataset.actual_database_name
+        assert database_name is not None
+    if relevant_parts:
+        relevant_parts = json.loads(relevant_parts)
+        assert isinstance(relevant_parts, list)
+        original_fields = fields
+        for relevant_part in relevant_parts:
+            if relevant_part.get('origin') == 'keyword_search':  # type: ignore
+                # the relevant part comes from keyword search where the text is already present
+                # so we don't need to fetch any source fields
+                continue
+            fields = tuple([*fields, relevant_part['field']])  # type: ignore
+    search_engine_client = TextSearchEngineClient.get_instance()
+    items = search_engine_client.get_items_by_ids(database_name, [item_id], fields=fields)
+    if not items:
+        return None
+    item = items[0]
+    item['_dataset_id'] = dataset_id
+
+    if relevant_parts:
+        for relevant_part in relevant_parts:
+            if relevant_part['index'] is not None:  # type: ignore
+                try:
+                    relevant_part['value'] = item[relevant_part['field']][relevant_part['index']]  # type: ignore
+                except (IndexError, KeyError):
+                    relevant_part['value'] = None  # type: ignore
+                relevant_part['array_size'] = len(item.get(relevant_part['field'], []))  # type: ignore
+                if relevant_part['field'] not in original_fields:  # type: ignore
+                    del item[relevant_part['field']]  # type: ignore
+        item['_relevant_parts'] = relevant_parts
+    return item

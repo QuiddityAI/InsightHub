@@ -3,7 +3,6 @@ import copy
 import itertools
 import json
 import logging
-from functools import lru_cache
 
 import numpy as np
 
@@ -14,7 +13,6 @@ from utils.source_plugin_types import SourcePlugin
 
 from api_clients.bing_web_search import bing_web_search_formatted
 from api_clients.semantic_scholar_client import semantic_scholar_search_formatted
-from api_clients.old_absclust_database_client import get_absclust_search_results, get_absclust_item_by_id, save_search_cache
 from database_client.django_client import get_trained_classifier, get_dataset, get_collection
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
@@ -370,46 +368,6 @@ def get_search_results_for_global_map(dataset, search_settings: DotDict, vectori
 def get_full_results_from_meta_info(dataset, vectorize_settings, search_result_meta_info: dict, purpose: str, timings) -> tuple[list[str], dict[str, dict]]:
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
     return sort_items_and_complete_them(dataset, search_result_meta_info, required_fields, len(search_result_meta_info), timings)
-
-
-@lru_cache
-def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str], relevant_parts: str | None=None, database_name: str | None = None) -> dict | None:
-    if dataset_id == ABSCLUST_DATASET_ID:
-        return get_absclust_item_by_id(item_id)
-
-    if not database_name:
-        dataset = get_dataset(dataset_id)
-        database_name = dataset.actual_database_name
-        assert database_name is not None
-    if relevant_parts:
-        relevant_parts = json.loads(relevant_parts)
-        assert isinstance(relevant_parts, list)
-        original_fields = fields
-        for relevant_part in relevant_parts:
-            if relevant_part.get('origin') == 'keyword_search':  # type: ignore
-                # the relevant part comes from keyword search where the text is already present
-                # so we don't need to fetch any source fields
-                continue
-            fields = tuple([*fields, relevant_part['field']])  # type: ignore
-    search_engine_client = TextSearchEngineClient.get_instance()
-    items = search_engine_client.get_items_by_ids(database_name, [item_id], fields=fields)
-    if not items:
-        return None
-    item = items[0]
-    item['_dataset_id'] = dataset_id
-
-    if relevant_parts:
-        for relevant_part in relevant_parts:
-            if relevant_part['index'] is not None:  # type: ignore
-                try:
-                    relevant_part['value'] = item[relevant_part['field']][relevant_part['index']]  # type: ignore
-                except (IndexError, KeyError):
-                    relevant_part['value'] = None  # type: ignore
-                relevant_part['array_size'] = len(item.get(relevant_part['field'], []))  # type: ignore
-                if relevant_part['field'] not in original_fields:  # type: ignore
-                    del item[relevant_part['field']]  # type: ignore
-        item['_relevant_parts'] = relevant_parts
-    return item
 
 
 def get_item_count(dataset_id: int) -> int:
