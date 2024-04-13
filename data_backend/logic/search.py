@@ -21,6 +21,7 @@ from logic.search_common import QueryInput, get_required_fields, get_vector_sear
     get_vector_search_results_matching_collection, get_fulltext_search_results, \
     combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold, \
     fill_in_vector_data_list, adapt_filters_to_dataset
+from logic.reranking import rerank
 
 from database_client.django_client import get_dataset
 
@@ -88,6 +89,9 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
     # interleave results from different datasets:
     all_ids = [x for x in itertools.chain(*itertools.zip_longest(*sorted_id_sets)) if x is not None]
 
+    if params.search.use_reranking and params.search.search_type == "external_input":
+        all_ids = rerank(params.search, all_ids, all_items_by_dataset)
+
     result = {
         "sorted_ids": all_ids,
         "items_by_dataset": all_items_by_dataset,
@@ -150,7 +154,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
             results, total_matches = get_fulltext_search_results(dataset, text_fields, query, filters, required_fields=['_id'], limit=limit, page=page, use_bolding_in_highlights=search_settings.use_bolding_in_highlights)
             result_sets.append(results)
             actual_total_matches = max(actual_total_matches, total_matches)
-            timings.log("fulltext database query")
+            timings.log("keyword database query")
 
     # TODO: boost fulltext search the more words with low document frequency appear in query?
 

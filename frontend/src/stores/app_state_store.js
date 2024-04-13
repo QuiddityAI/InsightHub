@@ -88,6 +88,7 @@ export const useAppStateStore = defineStore("appState", {
           internal_input_weight: 0.7,
           use_similarity_thresholds: true,
           order_by: { type: "score", parameter: "" },
+          use_reranking: true,
           use_autocut: true,
           autocut_strategy: "knee_point",
           autocut_min_results: 10,
@@ -133,8 +134,8 @@ export const useAppStateStore = defineStore("appState", {
           tokenizer: "default",
         },
         projection: {
-          x_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
-          y_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score
+          x_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score
+          y_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score
           n_neighbors: 15,
           min_dist: 0.17,
           n_epochs: 500,
@@ -144,7 +145,7 @@ export const useAppStateStore = defineStore("appState", {
           invert_x_axis: false,
         },
         rendering: {
-          size: { type: "score", parameter: "" }, // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], fulltext_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
+          size: { type: "score", parameter: "" }, // type options: fixed / static, number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score, origin_query_idx, cluster_idx, contains (field, tag / class), is_empty (field)
           hue: { type: "cluster_idx", parameter: "" },
           sat: { type: "fixed", parameter: "" },
           val: { type: "fixed", parameter: "" },

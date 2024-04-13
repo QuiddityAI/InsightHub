@@ -83,15 +83,13 @@ export default {
       <span v-if="mapState.map_parameters?.search.dataset_ids.length > 1" class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
         {{ appState.datasets[item._dataset_id].name }}
       </span>
-      <div v-if="appState.dev_mode">
-        <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
-          {{ item._reciprocal_rank_score.toFixed(2) }}
-        </span>
+      <div v-if="appState.dev_mode" class="flex flex-col gap-1">
         <span
           v-for="origin in item._origins"
           class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
-          {{ origin.score.toFixed(2) }}, {{ origin.type }}: {{ origin.field }}, q =
-          {{ origin.query }}
+          r: {{ origin.rank }}, s: {{ origin.score.toFixed(2) }},
+          {{ origin.type }}<span v-if="origin.field">: {{ origin.field }}</span>
+          <span v-if="origin.query">, q: {{ origin.query }}</span>
         </span>
         <!-- <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
           {{ item._highlights }}

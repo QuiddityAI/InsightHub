@@ -93,7 +93,7 @@ export default {
         { id: "classifier", title: "Classifier" },
         { id: "rank", title: "Rank" },
         { id: "score", title: "Score" },
-        { id: "fulltext_score", title: "Score (Fulltext)" },
+        { id: "keyword_score", title: "Score (Keyword)" },
       ],
       rendering_type_options: [
         { id: "fixed", title: "Fixed" },
@@ -104,7 +104,7 @@ export default {
         { id: "classifier", title: "Classifier" },
         { id: "rank", title: "Rank" },
         { id: "score", title: "Score" },
-        { id: "fulltext_score", title: "Score (Fulltext)" },
+        { id: "keyword_score", title: "Score (Keyword)" },
         { id: "cluster_idx", title: "Cluster Id" },
         { id: "origin_query_idx", title: "Origin Query" },
         { id: "contains", title: "Contains" },
@@ -531,6 +531,10 @@ export default {
           <input
             v-model="appState.settings.search.use_similarity_thresholds"
             type="checkbox" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Use Reranking:</span>
+          <input v-model="appState.settings.search.use_reranking" type="checkbox" />
         </div>
       </div>
       <div

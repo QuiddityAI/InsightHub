@@ -167,6 +167,13 @@ def sort_items_and_complete_them(dataset:DotDict, total_items:dict, required_fie
     for id_to_remove in sorted_ids[limit:]:
         del total_items[id_to_remove]
     sorted_ids = sorted_ids[:limit]
+    # adding reciprocal rank scores to the items to be able to compare it in the UI with reranked results:
+    for rank, item_id in enumerate(sorted_ids):
+        item = total_items[item_id]
+        if '_origins' not in item:
+            item['_origins'] = []
+        item['_origins'].append({'type': 'reciprocal_rank_score', 'field': None,
+                          'query': None, 'score': item['_reciprocal_rank_score'], 'rank': rank + 1})
     timings.log("sort items")
     required_text_fields, required_vector_fields = separate_text_and_vector_fields(dataset, required_fields)
     fill_in_details_from_text_storage(dataset, total_items, required_text_fields)
@@ -227,7 +234,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
         items[item['_id']] = {
             '_id': item['_id'],
             '_dataset_id': dataset.id,
-            '_origins': [{'type': 'fulltext', 'field': 'unknown',
+            '_origins': [{'type': 'keyword', 'field': None,
                           'query': query.positive_query_str, 'score': item['_score'], 'rank': i+1}],
             '_relevant_parts': [{'origin': 'keyword_search', 'field': field_name, 'index': None, 'value': " [...] ".join(highlights)} for field_name, highlights in item.get('highlight', {}).items() if field_name not in ignored_keyword_highlight_fields]
         }
