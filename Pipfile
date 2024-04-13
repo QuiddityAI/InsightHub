@@ -39,6 +39,8 @@ scipdf = {git = "https://github.com/Trel725/scipdf_parser"}
 umap-learn = {git = "https://github.com/luminosuslight/umap_with_progress_callback.git"}
 pypdfium2 = "*"
 unstructured-client = "*"
+cohere = "*"
+scipy = "==1.10.1"
 
 [dev-packages]
 ipykernel = "*"
