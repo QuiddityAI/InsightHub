@@ -38,7 +38,8 @@ paths_excluded_from_logging = ['/data_backend/map/result',
                                ]
 
 def log_request(self, *args, **kwargs):
-    if self.path in paths_excluded_from_logging or self.path.startswith("/data_backend/local_image/"):
+    if self.path in paths_excluded_from_logging or self.path.startswith("/data_backend/local_image/") or \
+            self.path.startswith("/data_backend/download_file/"):
         return
 
     parent_log_request(self, *args, **kwargs)
