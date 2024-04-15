@@ -172,7 +172,6 @@ export default {
     },
     show_table() {
       this.table_visible = true
-      console.log(this.$refs.table_dialog)
       if (!this.$refs.table_dialog.maximized) {
         this.$refs.table_dialog.maximize()
       }

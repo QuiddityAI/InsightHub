@@ -1,10 +1,14 @@
 <script setup>
+import {
+  TrashIcon,
+} from "@heroicons/vue/24/outline"
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import MultiSelect from 'primevue/multiselect';
 import Paginator from "primevue/paginator"
+import OverlayPanel from 'primevue/overlaypanel';
 
 import CollectionItem from "./CollectionItem.vue"
 import { FieldType } from "../../utils/utils"
@@ -31,6 +35,7 @@ export default {
       selected_source_fields: ['_descriptive_text_fields'],
       first_index: 0,
       per_page: 10,
+      selected_extraction_question: null,
     }
   },
   computed: {
@@ -126,9 +131,28 @@ export default {
       this.$refs.new_question_name.value = ''
       this.$refs.new_question_prompt.value = ''
     },
-    remove_results(question, only_current_page=true) {
+    delete_extraction_question(question) {
       const that = this
-      if (!only_current_page && !confirm("This will remove the extraction results for all items in the collection. Are you sure?")) {
+      if (!confirm("Are you sure you want to delete this question and all of the extraction results and notes?")) {
+        return
+      }
+      this.remove_results(question, false, true, () => {
+        const body = {
+          collection_id: this.collection_id,
+          question_name: question.name,
+        }
+        httpClient.post(`/org/data_map/delete_collection_extraction_question`, body)
+        .then(function (response) {
+          that.collection.extraction_questions = that.collection.extraction_questions.filter((other_question) => other_question.name !== question.name)
+        })
+        .catch(function (error) {
+          console.error(error)
+        })
+      })
+    },
+    remove_results(question, only_current_page=true, force=false, on_success=null) {
+      const that = this
+      if (!only_current_page && !force && !confirm("This will remove the extraction results for all items in the collection. Are you sure?")) {
         return
       }
       const body = {
@@ -140,6 +164,9 @@ export default {
       }
       httpClient.post(`/org/data_map/remove_collection_class_extraction_results`, body)
       .then(function (response) {
+        if (on_success) {
+          on_success()
+        }
         that.get_extraction_results(question.name)
       })
       .catch(function (error) {
@@ -179,25 +206,19 @@ export default {
           this.is_processing = false
         }
       })
-    }
+    },
+    human_readable_source_fields(fields) {
+      return fields.map((field) => this.available_source_fields.find((f) => f.identifier === field).name).join(", ")
+    },
   },
 }
 </script>
 
 <template>
   <div>
-    <div class="w-2/3">
-      <div class="flex flex-col">
-        <div v-for="question in collection.extraction_questions" class="flex flex-row gap-2">
-          • {{  question.name }}: {{ question.prompt }} ({{ question.source_fields?.join(", ") }})
-          <button @click="extract_question(question, true)" class="p-1 mr-2 bg-gray-100 hover:bg-blue-100/50 rounded">Extract (current page)</button>
-          <button @click="extract_question(question, false)" class="p-1 mr-2 bg-gray-100 hover:bg-blue-100/50 rounded">Extract (all)</button>
-          <button @click="remove_results(question, true)" class="p-1 bg-gray-100 hover:bg-blue-100/50 rounded">Remove results (current page)</button>
-          <button @click="remove_results(question, false)" class="p-1 bg-gray-100 hover:bg-blue-100/50 rounded">Remove results (all)</button>
-        </div>
-      </div>
 
-      <div class="my-2 flex items-stretch">
+    <div class="w-full flex flex-row mb-3">
+      <div class="flex-initial w-2/3 flex flex-row">
         <input
           ref="new_question_name"
           type="text"
@@ -226,6 +247,11 @@ export default {
           Add Question
         </button>
       </div>
+      <div class="flex-1"></div>
+      <button @click="toast.add({severity: 'info', summary: 'Exporting', detail: 'Coming soon', life: 3000})"
+        class="py-1 px-2 rounded-md bg-gray-100 hover:bg-blue-100/50">
+        Export as .xlsx
+      </button>
     </div>
 
     <div v-if="is_processing">
@@ -247,13 +273,50 @@ export default {
             </CollectionItem>
           </template>
         </Column>
-        <Column v-for="question in collection.extraction_questions" :header="question.name">
+        <Column v-for="question in collection.extraction_questions" :header="false">
+          <template #header="slotProps">
+            <button class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2"
+              @click="event => {selected_extraction_question = question; $refs.column_options.toggle(event)}">
+              {{ question.name }}
+            </button>
+          </template>
           <template #body="slotProps">
             {{ slotProps.data.extraction_answers[question.name] || "" }}
           </template>
         </Column>
-
     </DataTable>
+
+    <OverlayPanel ref="column_options">
+        <div class="w-[400px] flex flex-col gap-2">
+          <!-- <h3 class="font-bold">{{ selected_extraction_question.name }}</h3> -->
+          <div class="flex flex-row">
+            <p class="flex-1">{{ selected_extraction_question.prompt }}</p>
+            <button
+              @click="delete_extraction_question(selected_extraction_question); $refs.column_options.hide()"
+              class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+              <TrashIcon class="h-4 w-4"></TrashIcon>
+            </button>
+          </div>
+          <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_extraction_question.source_fields) }}</p>
+          <div class="flex flex-row gap-2">
+            <button @click="extract_question(selected_extraction_question, true)"
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
+              Extract <span class="text-gray-500">(current page)</span></button>
+            <button @click="extract_question(selected_extraction_question, false)"
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
+              Extract <span class="text-gray-500">(all)</span></button>
+          </div>
+
+          <div class="flex flex-row gap-2">
+            <button @click="remove_results(selected_extraction_question, true)"
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
+              Remove results<br><span class="text-gray-500">(current page)</span></button>
+            <button @click="remove_results(selected_extraction_question, false)"
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
+              Remove results<br><span class="text-gray-500">(all)</span></button>
+          </div>
+        </div>
+    </OverlayPanel>
 
     <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
       class="mt-[0px]"></Paginator>

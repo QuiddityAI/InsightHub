@@ -200,6 +200,32 @@ def add_collection_extraction_question(request):
 
     return HttpResponse(None, status=204)
 
+@csrf_exempt
+def delete_collection_extraction_question(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        collection_id: int = data["collection_id"]
+        question_name: str = data["question_name"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    collection.extraction_questions = [q for q in collection.extraction_questions if q['name'] != question_name]  # type: ignore
+    collection.save()
+
+    return HttpResponse(None, status=204)
+
 
 @csrf_exempt
 def extract_question_from_collection_class_items(request):
