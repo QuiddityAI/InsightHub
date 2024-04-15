@@ -32,7 +32,7 @@ export default {
       collection_items: [],
       collection: this.initial_collection,
       is_processing: false,
-      selected_source_fields: ['_descriptive_text_fields'],
+      selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
       first_index: 0,
       per_page: 10,
       selected_extraction_question: null,
@@ -59,7 +59,7 @@ export default {
       }
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
-        name: 'Descriptive Text Fields',
+        name: 'Descriptive Text',
       }
       available_fields['_full_text_snippets'] = {
         identifier: '_full_text_snippets',
