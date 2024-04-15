@@ -154,7 +154,8 @@ export default {
 
     </div>
 
-    <div class="my-2 flex items-stretch">
+    <br>
+    <!-- <div class="my-2 flex items-stretch">
       <input
         ref="new_question_name"
         type="text"
@@ -167,7 +168,7 @@ export default {
         @click="add_question($refs.new_question_name.value); $refs.new_question_name.value = ''">
         Ask
       </button>
-    </div>
+    </div> -->
   </div>
 
 </template>
