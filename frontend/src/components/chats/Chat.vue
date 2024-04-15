@@ -75,7 +75,7 @@ export default {
     },
     list_of_text_and_citation_parts(text) {
       text.replace(/(?:\r\n|\r|\n)/g, '<br>')
-      const regex = /\[([0-9]+), ([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\]/ig;
+      const regex = /\[([0-9]+), "?([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})"?\]/ig;
 
       let i = 1
       const citations = []
@@ -155,7 +155,7 @@ export default {
     </div>
 
     <br>
-    <!-- <div class="my-2 flex items-stretch">
+    <div v-if="chat_data?.chat_history?.length == 0" class="my-2 flex items-stretch">
       <input
         ref="new_question_name"
         type="text"
@@ -168,7 +168,7 @@ export default {
         @click="add_question($refs.new_question_name.value); $refs.new_question_name.value = ''">
         Ask
       </button>
-    </div> -->
+    </div>
   </div>
 
 </template>
