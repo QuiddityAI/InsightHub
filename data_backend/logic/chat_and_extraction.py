@@ -1,6 +1,7 @@
 import json
 import logging
 
+from api_clients.cohere_reranking import get_reranking_results
 from utils.dotdict import DotDict
 from logic.search import get_search_results
 from logic.search_common import get_relevant_parts_of_item_using_query_vector, get_field_similarity_threshold, get_suitable_generator, get_document_details_by_id
@@ -20,7 +21,11 @@ def get_global_question_context(search_settings: dict) -> dict:
     # If there is full text available, the keyword results should have the provided snippet as context
     # and the chunk vector results the (max 2) best chunks with extended context.
 
-    search_settings["result_list_items_per_page"] = 5
+    num_results_in_context = 5
+    item_rerank = True
+    chunk_rerank = True
+    oversample_for_reranking = 3 if item_rerank else 0
+    search_settings["result_list_items_per_page"] = num_results_in_context + oversample_for_reranking
     search_settings["search_algorithm"] = "hybrid"
     search_settings["max_sub_items_per_item"] = 2
     search_settings["use_bolding_in_highlights"] = False
@@ -37,7 +42,12 @@ def get_global_question_context(search_settings: dict) -> dict:
     sorted_ids = result["sorted_ids"]
     items_by_dataset = result['items_by_dataset']
 
-    contexts = get_context_for_each_item_in_search_results(sorted_ids, items_by_dataset)
+    question = search_settings.get('all_field_query', '')
+    contexts = get_context_for_each_item_in_search_results(sorted_ids, items_by_dataset,
+                                                           reranked_chunks=2 if chunk_rerank else 0, question=question)
+    if item_rerank:
+        reranking = get_reranking_results(question, tuple(contexts), num_results_in_context)
+        contexts = [contexts[reranking_result.index] for reranking_result in reranking.results]
     context = "\n".join(contexts)
 
     return {'context': context}

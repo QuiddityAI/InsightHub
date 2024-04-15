@@ -1,3 +1,4 @@
+import json
 import logging
 
 from utils.dotdict import DotDict
@@ -5,17 +6,18 @@ from logic.search_common import get_document_details_by_id
 from database_client.django_client import get_dataset
 
 
-def get_context_for_each_item_in_search_results(sorted_ids: list[tuple[int, str]], items_by_dataset) -> list[str]:
+def get_context_for_each_item_in_search_results(sorted_ids: list[tuple[int, str]], items_by_dataset,
+                                                reranked_chunks: int=0, question: str | None=None) -> list[str]:
     contexts = []
     datasets = {ds_id: get_dataset(ds_id) for ds_id in items_by_dataset.keys()}
     for ds_id, item_id in sorted_ids:
         dataset = datasets[ds_id]
         item = items_by_dataset[ds_id][item_id]
-        contexts.append(_item_to_context(item, dataset))
+        contexts.append(_item_to_context(item, dataset, reranked_chunks, question))
     return contexts
 
 
-def _item_to_context(item: dict, dataset: DotDict) -> str:
+def _item_to_context(item: dict, dataset: DotDict, reranked_chunks: int=0, question: str | None=None) -> str:
     always_included_fields = dataset.descriptive_text_fields
     _sort_fields_logically(always_included_fields)
 
@@ -24,8 +26,19 @@ def _item_to_context(item: dict, dataset: DotDict) -> str:
     chunk_fields_with_relevant_parts: list[str] = [part.get('field') for part in item.get("_relevant_parts", []) if part.get("index") is not None]
     missing_fields += [field for field in chunk_fields_with_relevant_parts if field not in item]
 
-    if missing_fields:
-        full_item = get_document_details_by_id(item['_dataset_id'], item['_id'], tuple(missing_fields), None) or {}
+    if question and reranked_chunks > 0:
+        # oversample chunks and rerank:
+        relevant_parts_json = json.dumps(item.get("_relevant_parts", []))
+        full_item = get_document_details_by_id(
+            item['_dataset_id'], item['_id'], tuple(missing_fields), relevant_parts_json,
+            top_n_full_text_chunks=reranked_chunks, query=question) or {}
+        item["_relevant_parts"] = full_item['_relevant_parts']
+        for field in missing_fields:
+            item[field] = full_item.get(field)
+    elif missing_fields:
+        # just get missing fields:
+        full_item = get_document_details_by_id(
+            item['_dataset_id'], item['_id'], tuple(missing_fields)) or {}
         for field in missing_fields:
             item[field] = full_item.get(field)
 
