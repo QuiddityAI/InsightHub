@@ -43,3 +43,4 @@ notes.md
 list_view_template.json
 
 .venv/
+data_backend/pdferret.log

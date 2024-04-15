@@ -6,6 +6,7 @@ import uuid
 import tarfile
 import zipfile
 import hashlib
+from dataclasses import asdict
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -148,13 +149,14 @@ def get_import_converter_by_name(name: str) -> Callable:
 
 
 def _scientific_article_pdf(paths, parameters):
-    from pdfparser import grobid_parser # only load import here to improve startup time
+    from pdferret import PDFerret
 
-    parser = grobid_parser.GROBIDParser(grobid_address='http://grobid:8070')
-    parsed, failed_files = parser.fit_transform({sub_path: f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths})
+    extractor = PDFerret(text_extractor="unstructured")
+    parsed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
+    failed_files = []
     items = []
-    for sub_path, parsed_pdf in parsed.items():
-        parsed_pdf = DotDict(parsed_pdf)
+    for parsed_pdf_, sub_path in zip(parsed, paths):
+        parsed_pdf = parsed_pdf_.metainfo
         if not parsed_pdf.title:
             failed_files.append({"filename": sub_path, "reason": "no title found"})
             # add anyway because the rest of the data might be useful
@@ -163,7 +165,8 @@ def _scientific_article_pdf(paths, parameters):
         except:
             pub_year = None
 
-        full_text_original_chunks = _postprocess_pdf_chunks(parsed_pdf.sections, parsed_pdf.title.strip())
+        #full_text_original_chunks = _postprocess_pdf_chunks(parsed_pdf.chunks, parsed_pdf.title.strip())
+        full_text_original_chunks = [asdict(chunk) for chunk in parsed_pdf_.chunks]
         full_text = " ".join([chunk['text'] for chunk in full_text_original_chunks])
 
         try:
@@ -180,9 +183,9 @@ def _scientific_article_pdf(paths, parameters):
             "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
             "doi": parsed_pdf.doi,
             "title": parsed_pdf.title.strip() or sub_path.split("/")[-1],
-            "abstract": parsed_pdf.abstract.replace(".", ". ") if parsed_pdf.abstract else "",
+            "abstract": parsed_pdf.abstract,
             "authors": parsed_pdf.authors,
-            "journal": "unknown",
+            "journal": "",
             "publication_year": pub_year,
             "cited_by": 0,
             "file_path": sub_path,  # relative to UPLOADED_FILES_FOLDER
