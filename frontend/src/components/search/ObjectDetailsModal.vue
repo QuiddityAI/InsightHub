@@ -151,7 +151,7 @@ export default {
       </div>
     </div>
 
-    <div v-for="relevant_chunk in [relevant_chunks[vector_chunk_index]]" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
+    <div v-if="relevant_chunks.length" v-for="relevant_chunk in [relevant_chunks[vector_chunk_index]]" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
       <div v-if="relevant_chunk.value">
         <div class="flex flex-row items-center">
           <div class="font-semibold text-gray-600 text-sm">Relevant Part in
