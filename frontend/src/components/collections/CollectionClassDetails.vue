@@ -170,6 +170,13 @@ export default {
       this.appStateStore.settings.search.all_field_query = this.collection.search_intent
       this.appStateStore.request_search_results()
     },
+    show_table() {
+      this.table_visible = true
+      console.log(this.$refs.table_dialog)
+      if (!this.$refs.table_dialog.maximized) {
+        this.$refs.table_dialog.maximize()
+      }
+    }
   },
 }
 </script>
@@ -207,6 +214,11 @@ export default {
         <span class="mx-2 hover:text-blue-500">{{ is_retraining ? "Retraining..." : (show_retrain_success_label ? "Retrained ✓": "Retrain") }}</span>
       </button> -->
 
+      <button @click="show_table"
+        class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold text-sm">
+          Show Table
+      </button>
+
       <button
         @click="delete_collection_class"
         class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
@@ -220,7 +232,15 @@ export default {
       <Button label="Show Map" @click="show_map()"></Button>
     </InputGroup> -->
 
-    <div
+    <Dialog ref="table_dialog" v-model:visible="table_visible" maximizable modal header="Collection Table View">
+      <CollectionTableView
+        :collection_id="collection_id"
+        :class_name="class_name"
+        :initial_collection="collection">
+      </CollectionTableView>
+    </Dialog>
+
+    <!-- <div
       class="flex flex-row items-center justify-between text-center font-bold text-gray-400">
       <button
         v-for="item in [['positives', `Items (${class_details.positive_count})`], ['negatives', `Negatives (${class_details.negative_count})`], ['recommend', 'Recom.'], ['chat', 'Chat'], ['table', 'Table']]"
@@ -230,7 +250,7 @@ export default {
         {{ item[1] }}
       </button>
     </div>
-    <hr />
+    <hr /> -->
 
     <CollectionItemList
       v-if="selected_tab === 'positives'"
@@ -282,14 +302,6 @@ export default {
         </button>
       </div>
       <br>
-
-      <Dialog ref="table_dialog" v-model:visible="table_visible" maximizable modal header="Collection Table View">
-        <CollectionTableView
-          :collection_id="collection_id"
-          :class_name="class_name"
-          :initial_collection="collection">
-        </CollectionTableView>
-      </Dialog>
 
     </div>
 
