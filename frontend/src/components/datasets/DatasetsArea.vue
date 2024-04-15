@@ -1,6 +1,7 @@
 <script setup>
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
+import Message from 'primevue/message';
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -48,6 +49,10 @@ export default {
 
 <template>
   <div class="mt-2 mb-2 flex flex-col gap-2">
+    <Message v-if="!appState.logged_in" severity="warn">
+      Log in to create your own dataset
+    </Message>
+
     <div
       v-if="!selected_dataset"
       v-for="category in [{items: your_datasets, name: 'Your Datasets'}, {items: organization_datasets, name: 'Organization'}, {items: public_datasets, name: 'Public'}]"
@@ -70,7 +75,7 @@ export default {
       <div v-if="category.items.length === 0" class="mb-2 text-sm text-gray-500">
         No datasets yet
       </div>
-      <Button v-if="category.items === your_datasets" class="h-6 mb-2 mt-1"
+      <Button v-if="category.items === your_datasets && appState.logged_in" class="h-6 mb-2 mt-1"
         @click="create_dataset_dialog_visible = true"
         label="Create new dataset">
       </Button>
