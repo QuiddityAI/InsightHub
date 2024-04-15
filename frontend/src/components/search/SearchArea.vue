@@ -23,6 +23,7 @@ import CollectionAndVectorFieldSelection from "./CollectionAndVectorFieldSelecti
 import LoginButton from "../LoginButton.vue";
 import AddFilterMenu from "./AddFilterMenu.vue";
 import SearchFilterList from "./SearchFilterList.vue";
+import UserMenu from "./UserMenu.vue";
 import SearchHistoryDialog from "../history/SearchHistoryDialog.vue";
 import StoredMapsDialog from "../history/StoredMapsDialog.vue";
 import { useToast } from 'primevue/usetoast';
@@ -227,6 +228,7 @@ export default {
     <!-- Database Selection -->
     <div class="mb-2 flex items-center justify-between">
       <a
+        title="Home"
         :href="`?organization_id=${appState.organization_id}`"
         class="w-8 rounded p-2 text-gray-500 hover:bg-gray-100">
         <HomeIcon></HomeIcon>
@@ -277,41 +279,7 @@ export default {
       </button>
 
       <OverlayPanel ref="user_menu">
-        <div class="flex flex-col gap-1">
-          <div class="flex flex-row items-center gap-1">
-            <button
-              v-if="appState.logged_in"
-              @click="djangoClient.post(`/org/logout/`).then(() => { _window.location.reload() })"
-              title="Logout"
-              class="rounded p-2 text-sm text-gray-500 hover:bg-gray-100">
-              Logout <ArrowRightOnRectangleIcon class="w-4 inline"></ArrowRightOnRectangleIcon>
-            </button>
-          </div>
-          <hr>
-          <input ref="old_password" type="password" placeholder="Old Password" class="w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
-          <input ref="new_password" type="password" placeholder="New Password" class="w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
-          <input ref="new_password_repeat" type="password" placeholder="Repeat New Password" @keyup.enter="change_password($refs.old_password.value, $refs.new_password.value, $refs.new_password_repeat.value)"
-            class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
-          <button @click="change_password($refs.old_password.value, $refs.new_password.value, $refs.new_password_repeat.value)"
-            class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6 bg-gray-100 hover:bg-blue-100/50">
-            Change Password
-          </button>
-          <div class="flex flex-row items-center gap-1"
-            v-if="appState.logged_in && appState.user?.is_staff">
-            <a
-              :href="`org/admin/`"
-              title="Manage Datasets"
-              class="w-8 rounded p-2 text-sm text-gray-500 hover:bg-gray-100">
-              <CircleStackIcon></CircleStackIcon>
-            </a>
-            <button
-              @click="appState.toggle_dev_mode()"
-              class="rounded px-1 py-2 text-xs text-gray-500 hover:bg-gray-100"
-              :class="{'ring-1 ring-green-200': appState.dev_mode}">
-              Dev
-            </button>
-          </div>
-        </div>
+        <UserMenu></UserMenu>
       </OverlayPanel>
     </div>
 
