@@ -65,6 +65,7 @@ export default {
       </option>
     </select>
     <button
+      title="Add to collection"
       @click="
         $emit('addToCollection', selected_collection_id, selected_collection_class, true)
       "
@@ -84,7 +85,7 @@ export default {
         $emit('removeFromCollection', selected_collection_id, selected_collection_class)
       "
       class="w-8 rounded-md px-2 text-gray-400 ring-1 ring-gray-300 hover:bg-red-100"
-      title="Remove items from this class">
+      title="Remove from collection">
       <NoSymbolIcon></NoSymbolIcon>
     </button>
   </div>
