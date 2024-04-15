@@ -151,22 +151,22 @@ def get_import_converter_by_name(name: str) -> Callable:
 def _scientific_article_pdf(paths, parameters):
     from pdferret import PDFerret
 
-    extractor = PDFerret(text_extractor="unstructured")
+    extractor = PDFerret(text_extractor="grobid")
     parsed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
     failed_files = []
     items = []
-    for parsed_pdf_, sub_path in zip(parsed, paths):
-        parsed_pdf = parsed_pdf_.metainfo
-        if not parsed_pdf.title:
+    for parsed_pdf, sub_path in zip(parsed, paths):
+        pdf_metainfo = parsed_pdf.metainfo
+        if not pdf_metainfo.title:
             failed_files.append({"filename": sub_path, "reason": "no title found"})
             # add anyway because the rest of the data might be useful
         try:
-            pub_year = int(parsed_pdf.pub_date.split("-")[0])
+            pub_year = int(pdf_metainfo.pub_date.split("-")[0])
         except:
             pub_year = None
 
         #full_text_original_chunks = _postprocess_pdf_chunks(parsed_pdf.chunks, parsed_pdf.title.strip())
-        full_text_original_chunks = [asdict(chunk) for chunk in parsed_pdf_.chunks]
+        full_text_original_chunks = [asdict(chunk) for chunk in parsed_pdf.chunks]
         full_text = " ".join([chunk['text'] for chunk in full_text_original_chunks])
 
         try:
@@ -180,11 +180,11 @@ def _scientific_article_pdf(paths, parameters):
             thumbnail_path = None
 
         items.append({
-            "id": parsed_pdf.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
-            "doi": parsed_pdf.doi,
-            "title": parsed_pdf.title.strip() or sub_path.split("/")[-1],
-            "abstract": parsed_pdf.abstract,
-            "authors": parsed_pdf.authors,
+            "id": pdf_metainfo.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
+            "doi": pdf_metainfo.doi,
+            "title": pdf_metainfo.title.strip() or sub_path.split("/")[-1],
+            "abstract": pdf_metainfo.abstract,
+            "authors": pdf_metainfo.authors,
             "journal": "",
             "publication_year": pub_year,
             "cited_by": 0,
