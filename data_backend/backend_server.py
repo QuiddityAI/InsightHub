@@ -344,6 +344,8 @@ def retrieve_document_details_by_id():
     item_id = params.get("item_id")
     fields: list[str] = params.get("fields") # type: ignore
     relevant_parts = params.get("relevant_parts")
+    top_n_full_text_chunks = params.get("top_n_full_text_chunks")
+    query = params.get("query")
     if not all([dataset_id is not None, item_id is not None, fields is not None]):
         return "a parameter is missing", 400
 
@@ -352,7 +354,8 @@ def retrieve_document_details_by_id():
         relevant_parts = json.dumps(relevant_parts)
     else:
         relevant_parts = None
-    result = get_document_details_by_id(dataset_id, item_id, tuple(fields), relevant_parts)
+    result = get_document_details_by_id(dataset_id, item_id, tuple(fields), relevant_parts,
+                                        top_n_full_text_chunks=top_n_full_text_chunks, query=query)
 
     if result is None:
         return "document not found", 404

@@ -1,17 +1,11 @@
-import os
 import logging
 import json
 
 import cohere
 from diskcache import Cache
 
+from api_clients.cohere_reranking import get_reranking_results
 from logic.chat_and_extraction_common import get_context_for_each_item_in_search_results
-from utils.helpers import load_env_file, DotDict
-
-load_env_file()
-
-
-co = cohere.Client(os.environ.get('COHERE_API_KEY', "no_api_key"))
 
 cache = Cache("/data/quiddity_data/reranking_cache/")
 
@@ -24,7 +18,7 @@ def rerank(query: str, sorted_ids: list[tuple[int, str]], items_by_dataset: dict
         assert isinstance(response, cohere.RerankResponse)
     else:
         contexts = get_context_for_each_item_in_search_results(sorted_ids[:top_n], items_by_dataset)
-        response = _get_reranking_results(query, tuple(contexts), top_n)
+        response = get_reranking_results(query, tuple(contexts), top_n)
         cache.set(cache_key, response, expire=3600*24*7*4)  # 4 weeks
 
     new_indicies = [rerank_result.index for rerank_result in response.results]
@@ -38,15 +32,3 @@ def rerank(query: str, sorted_ids: list[tuple[int, str]], items_by_dataset: dict
 
     sorted_ids[:top_n] = [sorted_ids[i] for i in new_indicies]
     return sorted_ids
-
-
-def _get_reranking_results(query: str, texts: tuple[str, ...], top_n=10):
-    # logging.warning(f"Using Cohere API to rerank {top_n} results for query: {query}")
-    response = co.rerank(
-        model = 'rerank-english-v3.0',  # multi-lingual is also available
-        query = query,
-        documents = texts,
-        top_n = top_n,
-        return_documents=False
-    )
-    return response

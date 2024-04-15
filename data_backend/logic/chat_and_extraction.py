@@ -89,9 +89,12 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
             else:
                 generator_function = get_suitable_generator(dataset, chunk_vector_field_name)
                 assert generator_function is not None
+                # TODO: the query vector should ideally be only generated once for all items
                 query_vector = generator_function([[question]])[0]
                 score_threshold = get_field_similarity_threshold(chunk_vector_field, input_is_image=False)
-                result = get_relevant_parts_of_item_using_query_vector(dataset, item_id, chunk_vector_field_name, query_vector, score_threshold, max_selected_chunks)
+                result = get_relevant_parts_of_item_using_query_vector(
+                    dataset, item_id, chunk_vector_field_name, query_vector, score_threshold,
+                    max_selected_chunks, rerank=True, query=question, source_texts=chunks)
                 for part in result.get('_relevant_parts', []):
                     chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
                     this_chunk = chunks[part.get("index")].get('text', '')

@@ -13,6 +13,8 @@ from utils.dotdict import DotDict
 from utils.source_plugin_types import SourcePlugin
 
 from api_clients.old_absclust_database_client import get_absclust_items_by_ids, get_absclust_item_by_id
+from api_clients.cohere_reranking import get_reranking_results
+
 from database_client.django_client import get_generators, get_dataset
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
@@ -395,9 +397,16 @@ def get_field_similarity_threshold(field: DotDict, input_is_image: bool | None=N
 
 def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str, vector_field: str,
                            query_vector: list, score_threshold: float | None = None,
-                           limit: int = 5, min_results: int = 2) -> dict:
+                           limit: int = 5, min_results: int = 2,
+                           rerank: bool=False, query: str | None=None, source_texts: list[str] | None=None,
+                           oversample_for_reranking: int=3) -> dict:
     vector_db_client = VectorSearchEngineClient.get_instance()
-    vector_search_results = vector_db_client.get_best_sub_items(dataset.actual_database_name, vector_field, item_id, query_vector, score_threshold, limit, min_results)
+    num_results = limit + oversample_for_reranking if rerank else limit
+    vector_search_results = vector_db_client.get_best_sub_items(dataset.actual_database_name, vector_field, item_id, query_vector, score_threshold, num_results, min_results)
+    if rerank and query and source_texts:
+        texts = [source_texts[item.payload['array_index']] for item in vector_search_results]
+        reranking = get_reranking_results(query, tuple(texts), limit)
+        vector_search_results = [vector_search_results[rerank_result.index] for rerank_result in reranking.results]
     item = {
         '_id': item_id,
         '_dataset_id': dataset.id,
@@ -442,7 +451,9 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
 
 
 @lru_cache
-def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str], relevant_parts: str | None=None, database_name: str | None = None) -> dict | None:
+def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str],
+                               relevant_parts: str | None=None, database_name: str | None = None,
+                               top_n_full_text_chunks: int | None=None, query: str | None=None) -> dict | None:
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
 
@@ -450,32 +461,63 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
         dataset = get_dataset(dataset_id)
         database_name = dataset.actual_database_name
         assert database_name is not None
+    additional_fields = []
+    relevant_parts_list = []
+    original_fields = fields
     if relevant_parts:
-        relevant_parts = json.loads(relevant_parts)
-        assert isinstance(relevant_parts, list)
-        original_fields = fields
-        for relevant_part in relevant_parts:
+        relevant_parts_list = json.loads(relevant_parts)
+        assert isinstance(relevant_parts_list, list)
+        for relevant_part in relevant_parts_list:
+            assert isinstance(relevant_part, dict)
             if relevant_part.get('origin') == 'keyword_search':  # type: ignore
                 # the relevant part comes from keyword search where the text is already present
                 # so we don't need to fetch any source fields
                 continue
-            fields = tuple([*fields, relevant_part['field']])  # type: ignore
+            additional_fields.append(relevant_part.get('field'))
+    get_new_full_text_chunks = False
+    if top_n_full_text_chunks and query:
+        chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
+        if chunk_vector_field_name:
+            chunk_vector_field = DotDict(dataset.object_fields.get(chunk_vector_field_name))
+            chunk_field = chunk_vector_field.source_fields[0]
+            additional_fields.append(chunk_field)
+            get_new_full_text_chunks = True
+
     search_engine_client = TextSearchEngineClient.get_instance()
-    items = search_engine_client.get_items_by_ids(database_name, [item_id], fields=fields)
+    all_fields = list(set(list(fields) + additional_fields))
+    items = search_engine_client.get_items_by_ids(database_name, [item_id], fields=all_fields)
     if not items:
         return None
     item = items[0]
     item['_dataset_id'] = dataset_id
 
-    if relevant_parts:
-        for relevant_part in relevant_parts:
+    if get_new_full_text_chunks:
+        generator_function = get_suitable_generator(dataset, chunk_vector_field_name)
+        assert generator_function is not None and isinstance(top_n_full_text_chunks, int)
+        query_vector = generator_function([[query]])[0]
+        score_threshold = get_field_similarity_threshold(chunk_vector_field, input_is_image=False)
+        chunks = item.get(chunk_field, [])
+        new_relevant_parts = get_relevant_parts_of_item_using_query_vector(
+            dataset, item_id, chunk_vector_field_name, query_vector, score_threshold, top_n_full_text_chunks,
+            rerank=True, query=query, source_texts=chunks).get('_relevant_parts', [])
+        for i in range(len(relevant_parts_list) - 1, -1, -1):
+            if relevant_parts_list[i].get('field') == chunk_field:
+                del relevant_parts_list[i]
+        relevant_parts_list.extend(new_relevant_parts)
+
+    if relevant_parts_list:
+        for relevant_part in relevant_parts_list:
             if relevant_part['index'] is not None:  # type: ignore
+                # materialize chunk text:
                 try:
                     relevant_part['value'] = item[relevant_part['field']][relevant_part['index']]  # type: ignore
                 except (IndexError, KeyError):
                     relevant_part['value'] = None  # type: ignore
                 relevant_part['array_size'] = len(item.get(relevant_part['field'], []))  # type: ignore
-                if relevant_part['field'] not in original_fields:  # type: ignore
-                    del item[relevant_part['field']]  # type: ignore
-        item['_relevant_parts'] = relevant_parts
+        item['_relevant_parts'] = relevant_parts_list
+
+    for field in additional_fields:
+        if field not in original_fields and field in item:  # type: ignore
+            del item[field]  # type: ignore
+
     return item

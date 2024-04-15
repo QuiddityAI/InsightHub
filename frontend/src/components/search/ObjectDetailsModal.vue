@@ -10,6 +10,7 @@ import { highlight_words_in_text } from "../../utils/utils"
 
 import { useToast } from "primevue/usetoast"
 import Image from "primevue/image"
+import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
@@ -31,7 +32,17 @@ export default {
       fulltext_url: null,
       body_text_collapsed: true,
       show_more_button: false,
+      vector_chunk_index: 0,
     }
+  },
+  computed: {
+    ...mapStores(useMapStateStore),
+    relevant_chunks() {
+      return this.item?._relevant_parts?.filter((part) => part.origin === "vector_array") || []
+    },
+    relevant_keyword_highlights() {
+      return this.item?._relevant_parts?.filter((part) => part.origin === "keyword_search") || []
+    },
   },
   methods: {
     updateItemAndRendering() {
@@ -54,6 +65,8 @@ export default {
         item_id: this.item._id,
         fields: this.dataset.detail_view_rendering.required_fields,
         relevant_parts: this.item._relevant_parts,
+        top_n_full_text_chunks: 3,
+        query: this.mapStateStore.map_parameters?.search.all_field_query,
       }
       this.loading_item = true
       httpClient
@@ -138,23 +151,39 @@ export default {
       </div>
     </div>
 
-    <div v-if="item?._relevant_parts">
-      <div v-for="relevant_part in item._relevant_parts"
-        class="mt-2 rounded-md bg-gray-100 py-2 px-2">
-        <div v-if="relevant_part.index !== undefined && relevant_part.index !== null" class="font-semibold text-gray-600 text-sm">Relevant Part in
-          {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field]?.description }}, Page {{ relevant_part.value?.page }}
-          <span class="text-gray-400">(based on meaning, chunk {{ relevant_part.index + 1 }} of {{ relevant_part.array_size }})</span></div>
-        <div v-else class="font-semibold text-gray-600 text-sm">Relevant Part in
-          {{ appState.datasets[item._dataset_id].object_fields[relevant_part.field].description || appState.datasets[item._dataset_id].object_fields[relevant_part.field].identifier }}
-          <span class="text-gray-400">(based on keywords)</span>
+    <div v-for="relevant_chunk in [relevant_chunks[vector_chunk_index]]" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
+      <div v-if="relevant_chunk.value">
+        <div class="flex flex-row items-center">
+          <div class="font-semibold text-gray-600 text-sm">Relevant Part in
+            {{ appState.datasets[item._dataset_id].object_fields[relevant_chunk.field]?.description }}, Page {{ relevant_chunk.value?.page }}
+            <span class="text-gray-400">(based on meaning)</span>
+          </div>
+          <div class="flex-1"></div>
+          <div v-if="relevant_chunks.length > 1" class="flex flex-row items-center">
+            <button class="mr-1 rounded-md px-1 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100"
+              @click="vector_chunk_index = (vector_chunk_index - 1 + relevant_chunks.length) % relevant_chunks.length">
+              &lt;</button>
+            <span class="text-gray-500 text-xs">
+              {{ vector_chunk_index + 1 }} / {{ relevant_chunks.length }}
+            </span>
+            <button class="ml-1 rounded-md px-1 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100"
+              @click="vector_chunk_index = (vector_chunk_index + 1) % relevant_chunks.length">
+              &gt;</button>
+          </div>
         </div>
-        <div v-if="relevant_part.value && relevant_part.origin === 'vector_array'" class="mt-1 text-gray-700 text-xs"
-          v-html="highlight_words_in_text(relevant_part.value.text, mapState.map_parameters.search.all_field_query.split(' '))"></div>
-        <a :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_part.value.page}`" target="_blank" v-if="relevant_part.value && relevant_part.origin === 'vector_array' && rendering.full_text_pdf_url(item)" class="mt-1 text-gray-500 text-xs">
-          Open PDF at this page</a>
-        <div v-if="relevant_part.value && relevant_part.origin === 'keyword_search'" class="mt-1 text-gray-700 text-xs"
-          v-html="relevant_part.value"></div>
+        <div class="mt-1 text-gray-700 text-xs"
+          v-html="highlight_words_in_text(relevant_chunk.value.text, mapState.map_parameters.search.all_field_query.split(' '))"></div>
+        <a :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_chunk.value.page}`" target="_blank"
+          class="mt-1 text-gray-500 text-xs">Open PDF at this page</a>
       </div>
+    </div>
+
+    <div v-for="highlight in relevant_keyword_highlights" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
+      <div class="font-semibold text-gray-600 text-sm">Relevant Part in
+        {{ appState.datasets[item._dataset_id].object_fields[highlight.field].description || appState.datasets[item._dataset_id].object_fields[highlight.field].identifier }}
+        <span class="text-gray-400">(based on keywords)</span>
+      </div>
+      <div class="mt-1 text-gray-700 text-xs" v-html="highlight.value"></div>
     </div>
 
     <div class="mt-2 flex flex-none flex-row">
