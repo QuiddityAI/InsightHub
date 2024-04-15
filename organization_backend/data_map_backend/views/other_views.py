@@ -47,7 +47,11 @@ def get_available_organizations(request):
         return HttpResponse(status=405)
 
     is_authenticated = request.user.is_authenticated
-    organizations = Organization.objects.filter(Q(is_public=True) | Q(members=request.user)).distinct().order_by('name')
+    if is_authenticated:
+        organizations = Organization.objects.filter(Q(is_public=True) | Q(members=request.user))
+    else:
+        organizations = Organization.objects.filter(is_public=True)
+    organizations = organizations.distinct().order_by('name')
     serialized_data = OrganizationSerializer(organizations, many=True).data
 
     # replace list of all datasets of each organization with list of non-template datasets:
