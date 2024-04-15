@@ -42,6 +42,7 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
+    this.selected_import_converter = this.dataset.applicable_import_converters.length ? this.dataset.applicable_import_converters[0] : null
     this.get_dataset_additional_info()
   },
   watch: {
@@ -206,7 +207,14 @@ export default {
         <ChevronLeftIcon></ChevronLeftIcon>
       </button>
       <span class="font-bold text-gray-600">{{ dataset.name }}</span>
+      <span class="font-normal text-gray-400" v-if="dataset.origin_template">({{ dataset.origin_template.name }})</span>
       <div class="flex-1"></div>
+      <button
+          @click="appState.show_global_map([dataset.id])"
+          title="Show all items (or a representative subset if there are too many)"
+          class="ml-1 rounded-md px-2 h-7 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
+          {{ dataset.item_count < 2000 ? 'Show all items' : 'Show representative overview' }}
+        </button>
       <button
         v-if="dataset.admins?.includes(appState.user.id)"
         @click="delete_dataset"
@@ -215,23 +223,15 @@ export default {
       </button>
     </div>
 
-    <div class="flex flex-col ml-2 mb-3 mt-2 gap-2">
-      <p v-if="dataset.origin_template" class="text-gray-700">
-        Type: {{ dataset.origin_template.name }}
-      </p>
-      <p class="text-gray-700">
-        Items in this dataset: {{ dataset.item_count !== undefined ? dataset.item_count.toLocaleString() : 'unknown' }}
+    <div class="flex flex-col ml-2 mb-4 mt-2 gap-1">
+      <p class="text-gray-600 text-sm">
+        Items in this dataset: <b>{{ dataset.item_count !== undefined ? dataset.item_count.toLocaleString() : 'unknown' }}</b>
       </p>
       <div>
-        <button
-          @click="appState.show_global_map([dataset.id])"
-          title="Show all items (or a representative subset if there are too many)"
-          class="ml-1 rounded-md px-2 h-7 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
-          {{ dataset.item_count < 2000 ? 'Show all items' : 'Show an overview of representative subset' }}
-        </button>
+
       </div>
       <div class="flex flex-col gap-2">
-        <label class="flex items-center">
+        <label class="flex items-center" v-if="appState.user.is_staff || dataset.is_public">
           <input type="checkbox" v-model="dataset.is_public" :disabled="!dataset.admins?.includes(appState.user.id) || !appState.user.is_staff">
           <span class="ml-2 text-sm text-gray-600">Public for everyone on the internet {{ !appState.user.is_staff ? '(can only be changed by staff)': '' }}</span>
         </label>
@@ -249,13 +249,15 @@ export default {
         </h3>
       </button>
       <div v-if="visible_area == 'upload_files'" class="ml-2 mb-3 mt-2 flex flex-col gap-2">
-        <label class="mr-2 text-sm text-gray-700" for="import_type">Import Type:</label>
-        <Dropdown
-          id="import_type"
-          v-model="selected_import_converter"
-          :options="dataset.applicable_import_converters"
-          optionLabel="name"
-          placeholder="Select an import type"/>
+        <div class="flex flex-row items-center">
+          <label class="mr-2 text-sm text-gray-700" for="import_type">Import Type:</label>
+          <Dropdown
+            id="import_type"
+            v-model="selected_import_converter"
+            :options="dataset.applicable_import_converters"
+            optionLabel="name"
+            placeholder="Select an import type"/>
+        </div>
         <FileUpload
           v-if="selected_import_converter"
           ref="fileUploader"
@@ -299,7 +301,7 @@ export default {
           </template>
           <template #empty>
             <div v-if="!upload_in_progress">
-              <p>Drag and drop files here to upload.<br>
+              <p class="text-sm text-gray-600">Drag and drop files here to upload.<br><br>
                 You can upload individual files or .zip / .tar.gz archives containing multiple files.
               </p>
             </div>
