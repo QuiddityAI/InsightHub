@@ -72,6 +72,7 @@ export default {
       <HandThumbUpIcon></HandThumbUpIcon>
     </button>
     <button
+      v-if="appState.dev_mode"
       @click="
         $emit('addToCollection', selected_collection_id, selected_collection_class, false)
       "
