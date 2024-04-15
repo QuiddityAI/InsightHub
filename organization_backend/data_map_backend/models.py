@@ -217,6 +217,12 @@ class Organization(models.Model):
         verbose_name="Members",
         to=User,
         blank=True)
+    is_public = models.BooleanField(
+        verbose_name="Is public",
+        help_text="Whether this organization is visible to everyone on the internet",
+        default=False,
+        blank=False,
+        null=False)
     default_dataset_selection = models.ManyToManyField(
         verbose_name="Default Dataset Selection",
         help_text="",

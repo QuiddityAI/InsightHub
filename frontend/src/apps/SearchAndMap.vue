@@ -74,7 +74,20 @@ export default {
       }
 
       if (queryParams.get("organization_id") === null) {
-        this.appStateStore.set_organization_id(1, /* change_history */ false)
+        const default_organization = this.appStateStore.available_organizations.find(
+          (item) => item.name === "AbsClust"
+        ) || this.appStateStore.available_organizations[0]
+        let best_organization_id = default_organization.id
+        if (!default_organization || !default_organization.is_member) {
+          for (const organization of this.appStateStore.available_organizations) {
+            // get first organization where user is member
+            if (organization.is_member) {
+              best_organization_id = organization.id
+              break
+            }
+          }
+        }
+        this.appStateStore.set_organization_id(best_organization_id, /* change_history */ false)
         const emptyQueryParams = new URLSearchParams()
         emptyQueryParams.set("organization_id", this.appStateStore.organization_id)
         history.replaceState(null, null, "?" + emptyQueryParams.toString())

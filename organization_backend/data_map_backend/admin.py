@@ -74,7 +74,7 @@ class DatasetInline(admin.TabularInline):
 @admin.register(Organization)
 class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name')
+    list_display = ('id', 'name', 'is_public')
     list_display_links = ('id', 'name')
     search_fields = ('name',)
     ordering = ['name']

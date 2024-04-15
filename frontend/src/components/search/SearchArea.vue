@@ -234,14 +234,7 @@ export default {
         <HomeIcon></HomeIcon>
       </a>
 
-      <span
-        v-if="!appState.dev_mode"
-        class="pb-1 pl-2 pr-8 pt-1 text-sm ml-1 font-['Lexend'] font-bold text-black ">
-        {{ appState.organization?.name }}
-      </span>
-
       <select
-        v-if="appState.dev_mode"
         v-model="internal_organization_id"
         @change="organization_id_changed_by_user"
         class="rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm ml-1 font-['Lexend'] font-bold text-black focus:border-blue-500 focus:ring-blue-500">
@@ -273,6 +266,7 @@ export default {
       <div class="flex-1"></div>
       <LoginButton></LoginButton>
       <button v-if="appState.logged_in" class="mr-2 p-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
+        title="Open user menu (logout etc.)"
         @click="(event) => $refs.user_menu.toggle(event)">
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
         {{ appState.user.username }}
@@ -402,16 +396,19 @@ export default {
       <div class="flex flex-row items-center gap-0 h-6">
         <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'keyword'"
+          title="Search using keywords"
           :class="{'text-blue-500': appState.settings.search.search_algorithm === 'keyword', 'text-gray-400': appState.settings.search.search_algorithm != 'keyword'}">
           Keyword
         </button>
         <button class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'vector'"
+          title="Search using vector similarity"
           :class="{'text-blue-500': appState.settings.search.search_algorithm === 'vector', 'text-gray-400': appState.settings.search.search_algorithm != 'vector'}">
           Meaning
         </button>
         <button class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'hybrid'"
+          title="Search using both keywords and vector similarity"
           :class="{'text-blue-500': appState.settings.search.search_algorithm === 'hybrid', 'text-gray-400': appState.settings.search.search_algorithm != 'hybrid'}">
           Both
         </button>
@@ -419,6 +416,7 @@ export default {
       <div class="flex-1"></div>
       <div class="flex flex-row items-center gap-0 h-6">
         <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400"
+          title="Add filters and change search options"
           @click="(event) => { $refs.add_filter_menu.toggle(event) }">
           + Filter / Option
         </button>
