@@ -150,12 +150,15 @@ def get_import_converter_by_name(name: str) -> Callable:
 
 def _scientific_article_pdf(paths, parameters):
     from pdferret import PDFerret
+    import nltk
+    nltk.download('punkt')
 
     extractor = PDFerret(text_extractor="grobid")
-    parsed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
-    failed_files = []
+    parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
+    failed_files = [{"filename": pdferror.file, "reason": pdferror.exc} for pdferror in failed]
     items = []
-    for parsed_pdf, sub_path in zip(parsed, paths):
+    for parsed_pdf in parsed:
+        sub_path = parsed_pdf.metainfo.file_features.filename.replace(UPLOADED_FILES_FOLDER + "/", "")
         pdf_metainfo = parsed_pdf.metainfo
         if not pdf_metainfo.title:
             failed_files.append({"filename": sub_path, "reason": "no title found"})
