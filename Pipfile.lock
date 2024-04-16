@@ -2116,7 +2116,7 @@
         },
         "pdferret": {
             "git": "https://trel725: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@github.com/Trel725/pdferret.git",
-            "ref": "cdcd4ee8a03bafccb1a0c4c377222971c9ab70d1"
+            "ref": "d5cfb648686a5a3cf4c411a8530471cf86115e44"
         },
         "pdfminer.six": {
             "hashes": [
