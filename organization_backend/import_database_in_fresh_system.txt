@@ -4,6 +4,7 @@
 # then configure the new database settings, e.g. for postgres in settings.py
 
 # drop the database if there is an old / broken one:
+# sudo apt install postgresql-client
 # psql -h localhost -U postgres
 # DROP DATABASE visdatamap;
 # CREATE DATABASE visdatamap;
