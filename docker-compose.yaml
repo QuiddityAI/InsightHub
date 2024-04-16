@@ -10,12 +10,6 @@ services:
       - model_server_cache:/home/appuser/.cache/
     # ports:  # expose port outside of this virtual network
     #   - "55180:55180"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [gpu]
   organization-backend:
     image: visual_data_map/organization_backend
     build:
@@ -111,12 +105,6 @@ services:
     volumes:
       - infinity_model_cache:/app/.cache/torch
     command: --model-name-or-path intfloat/e5-base-v2 --port 55181 --engine ctranslate2
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [gpu]
   grobid:
     image: lfoppiano/grobid:latest-develop
     init: true
@@ -128,7 +116,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "20"
+          #cpus: "20"
           memory: "8192mb"
   # unstructured:
   #   image: unstructured-io/unstructured-api:latest
@@ -136,12 +124,37 @@ services:
   #     - "8000:55005"
   #   environment:
   #     - UNSTRUCTURED_API_KEY="visual_data_map"
+  swag:
+    image: lscr.io/linuxserver/swag:latest
+    container_name: swag
+    profiles:
+      - production_server  # the container only starts if env variable COMPOSE_PROFILES=production_server
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - URL=${SERVER_URL}
+      - VALIDATION=http
+      # - SUBDOMAINS=www, #optional
+      # - CERTPROVIDER= #optional
+      # - DNSPLUGIN=cloudflare #optional
+      # - PROPAGATION= #optional
+      - EMAIL=${SSL_CERT_EMAIL}
+    volumes:
+      - swag_data:/config
+    ports:
+      - 443:443
+      - 80:80 #optional
+    restart: unless-stopped
 volumes:
   model_server_cache:
   qdrant_storage:
   opensearch_data:
   postgres_data:
   infinity_model_cache:
+  swag_data:
 networks:
   default:
     name: visualdatamapnetwork

@@ -31,7 +31,7 @@ npm install
 
 - install docker >= v24.0 (and nvidia-docker if an Nvidia GPU is available, test the GPU setup with a simple container)
 - By default, the docker setup uses `/data/quiddity_data` as a folder to store app data. Make sure it exists and is writable or change the mounting point in the docker-compose.yaml file to something else.
-- If no Nvidia GPU is available, remove the `deploy:` part about the GPU from the docker-compose file. The code _should_ work without a GPU, too.
+- If an Nvidia GPU is available, copy the `docker-compose.override.gpu_template.yaml` file to `docker-compose.override.yaml`
 - Make sure the env variables and credential files described in `required_environment_variables.txt` exist
 - Organization-backend database: start the postgres container using `docker compose up -d postgres`, then run `./manage.py migrate` in the `organization_backend` folder
   - If starting without a database backup, run `python manage.py createsuperuser` to create the first user
