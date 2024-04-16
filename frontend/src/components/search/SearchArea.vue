@@ -267,7 +267,7 @@ export default {
 
       <div class="flex-1"></div>
       <LoginButton></LoginButton>
-      <button v-if="appState.logged_in" class="mr-2 w-12 text-ellipsis p-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
+      <button v-if="appState.logged_in" class="mr-2 p-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
         title="Open user menu (logout etc.)"
         @click="(event) => $refs.user_menu.toggle(event)">
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
