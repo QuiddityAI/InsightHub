@@ -180,7 +180,7 @@ export default {
 
     <div v-for="highlight in relevant_keyword_highlights" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
       <div class="font-semibold text-gray-600 text-sm">Relevant Part in
-        {{ appState.datasets[item._dataset_id].object_fields[highlight.field].description || appState.datasets[item._dataset_id].object_fields[highlight.field].identifier }}
+        {{ appState.datasets[item._dataset_id].object_fields[highlight.field]?.description || appState.datasets[item._dataset_id].object_fields[highlight.field]?.identifier }}
         <span class="text-gray-400">(based on keywords)</span>
       </div>
       <div class="mt-1 text-gray-700 text-xs" v-html="highlight.value"></div>
