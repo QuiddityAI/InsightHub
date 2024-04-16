@@ -234,14 +234,16 @@ export default {
         <HomeIcon></HomeIcon>
       </a>
 
-      <select
-        v-model="internal_organization_id"
-        @change="organization_id_changed_by_user"
-        class="rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm ml-1 font-['Lexend'] font-bold text-black focus:border-blue-500 focus:ring-blue-500">
-        <option v-for="item in appState.available_organizations" :value="item.id" selected>
-          {{ item.name }}
-        </option>
-      </select>
+      <div class="ml-1 flex-initial w-28">
+        <select
+          v-model="internal_organization_id"
+          @change="organization_id_changed_by_user"
+          class="w-full rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black focus:border-blue-500 focus:ring-blue-500">
+          <option v-for="item in appState.available_organizations" :value="item.id" selected>
+            {{ item.name }}
+          </option>
+        </select>
+      </div>
 
       <div class="flex-initial w-48">
         <MultiSelect v-model="appState.settings.search.dataset_ids"
@@ -265,11 +267,11 @@ export default {
 
       <div class="flex-1"></div>
       <LoginButton></LoginButton>
-      <button v-if="appState.logged_in" class="mr-2 p-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
+      <button v-if="appState.logged_in" class="mr-2 w-12 text-ellipsis p-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
         title="Open user menu (logout etc.)"
         @click="(event) => $refs.user_menu.toggle(event)">
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
-        {{ appState.user.username }}
+        {{ appState.user.username.substring(0, 6) + (appState.user.username.length > 6 ? '...' : '') }}
       </button>
 
       <OverlayPanel ref="user_menu">
