@@ -22,5 +22,5 @@ def get_reranking_results(query: str, texts: tuple[str, ...], top_n=10):
         )
     except Exception as e:
         logging.error(f"Failed to rerank query: {query} with error: {e}")
-        response = cohere.RerankResponse(results=[cohere.RerankResponseResultsItem(index=i, relevance_score=0.0) for i in range(top_n)])
+        response = cohere.RerankResponse(results=[cohere.RerankResponseResultsItem(index=i, relevance_score=0.0) for i in range(min(len(texts), top_n))])
     return response
