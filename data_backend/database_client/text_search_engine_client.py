@@ -301,11 +301,25 @@ class TextSearchEngineClient(object):
         for filter_ in filters:
             filter_ = DotDict(filter_)
             if filter_.operator == "contains":
-                query_filter['bool']['must'].append({
-                    "match_phrase": {
-                        filter_.field: filter_.value
+                if isinstance(filter_.field, list):
+                    f = {
+                        "bool": {
+                            "should": []
+                        }
                     }
-                })
+                    for field in filter_.field:
+                        f["bool"]["should"].append({
+                            "match_phrase": {
+                                field: filter_.value
+                            }
+                        })
+                    query_filter['bool']['must'].append(f)
+                else:
+                    query_filter['bool']['must'].append({
+                        "match_phrase": {
+                            filter_.field: filter_.value
+                        }
+                    })
             elif filter_.operator == "does_not_contain":
                 query_filter['bool']['must_not'].append({
                     "match_phrase": {

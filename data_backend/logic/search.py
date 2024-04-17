@@ -89,7 +89,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
     # interleave results from different datasets:
     all_ids = [x for x in itertools.chain(*itertools.zip_longest(*sorted_id_sets)) if x is not None]
 
-    if params.search.use_reranking and params.search.search_type == "external_input":
+    if params.search.use_reranking and params.search.search_type == "external_input" and len(all_ids):
         all_ids = rerank(params.search.all_field_query, all_ids, items_by_dataset=all_items_by_dataset, top_n=10)
 
     result = {

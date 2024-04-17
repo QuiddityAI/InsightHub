@@ -288,8 +288,14 @@ class VectorSearchEngineClient(object):
         for filter_ in filters:
             filter_ = DotDict(filter_)
             if filter_.operator == "contains":
-                filter_types['must'].append(models.FieldCondition(
-                    key=filter_.field, match=models.MatchText(text=filter_.value)))
+                if isinstance(filter_.field, list):
+                    filter_types['must'].append(models.Filter(should=[
+                        models.FieldCondition(key=field, match=models.MatchText(text=filter_.value))
+                        for field in filter_.field
+                    ]))
+                else:
+                    filter_types['must'].append(models.FieldCondition(
+                        key=filter_.field, match=models.MatchText(text=filter_.value)))
             elif filter_.operator == "does_not_contain":
                 filter_types['must_not'].append(models.FieldCondition(
                     key=filter_.field, match=models.MatchText(text=filter_.value)))

@@ -286,7 +286,7 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
         # TODO: same thing again, average both vectors
 
     if query_vector is None and positive_query_vector is None:
-        # search using only negative query isn't supported at the moment
+        # search using only negative query or only filters isn't supported at the moment
         return {}
     if query_vector is None:
         query_vector = positive_query_vector
@@ -424,14 +424,18 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
     removed_filters = []
     for filter_ in filters:
         if filter_['field'] == '_descriptive_text_fields':
-            for field in dataset.descriptive_text_fields:
-                additional_filters.append({'field': field, 'value': filter_['value'], 'operator': filter_['operator']})
-            removed_filters.append(filter_)
+            if filter_['operator'] == 'contains':
+                # only in this case a list of fields is allowed, as it needs to be concatenated as OR filters (aka 'should')
+                filter_['field'] = dataset.descriptive_text_fields
+            else:
+                for field in dataset.descriptive_text_fields:
+                    additional_filters.append({'field': field, 'value': filter_['value'], 'operator': filter_['operator']})
+                removed_filters.append(filter_)
     filters.extend(additional_filters)
     for filter_ in filters:
         if filter_ in removed_filters:
             continue
-        if filter_['field'] in dataset.object_fields:
+        if not isinstance(filter_['field'], list) and filter_['field'] in dataset.object_fields:
             field = dataset.object_fields[filter_['field']]
             if field.field_type == FieldType.INTEGER:
                 try:
