@@ -417,7 +417,7 @@ export default {
       </div>
       <div class="flex-1"></div>
       <div class="flex flex-row items-center gap-0 h-6">
-        <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400"
+        <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
           title="Add filters and change search options"
           @click="(event) => { $refs.add_filter_menu.toggle(event) }">
           + Filter / Option
