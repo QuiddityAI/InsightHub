@@ -200,7 +200,7 @@ export default {
           that.upload_tasks = response.data
           // if any task is still in progress, check again in 500ms
           if (that.upload_tasks.filter(task => task.is_running).length > 0) {
-            setTimeout(that.get_upload_task_status, 500)
+            setTimeout(that.get_upload_task_status, 1000)
           } else {
             that.get_dataset_additional_info()
           }
@@ -334,7 +334,7 @@ export default {
           <p v-if="task.failed_files.length !== 0" class="text-red-700">
             Some files could not be processed ({{ task.failed_files.length }} errors in total):
           </p>
-          <ul role="list" class="mt-1">
+          <ul role="list" class="mt-1 text-sm">
             <li
               v-for="failure in task.failed_files"
               :key="failure.filename"
