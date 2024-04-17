@@ -1,7 +1,7 @@
 FROM --platform=$BUILDPLATFORM python:3.11 AS python_env
 RUN pip install pipenv
 RUN apt update && apt install -y libgl1  # for pdfferret (and there for cv2)
-RUN apt update && apt install -y tesseract-ocr tesseract-ocr-eng  # for pytesseract in pdferret
+RUN apt update && apt install -y tesseract-ocr tesseract-ocr-eng ghostscript  # for pytesseract in pdferret
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
 #COPY docker/docker_container_base_python_packages.txt /app
