@@ -41,6 +41,29 @@ export default {
   watch: {
   },
   methods: {
+    change_password(old_password, new_password, new_password_repeat) {
+      if (!old_password || !new_password || !new_password_repeat) {
+        this.$toast.add({severity:'error', summary:'Error', detail:'Please fill out all fields'})
+        return
+      }
+      if (new_password !== new_password_repeat) {
+        this.$toast.add({severity:'error', summary:'Error', detail:'New passwords do not match'})
+        return
+      }
+      djangoClient.post(`/org/change_password_from_app/`, {
+        old_password: old_password,
+        new_password: new_password,
+      }).then(() => {
+        this.$toast.add({severity: 'success', summary: 'Success', detail: 'Password changed', life: 5000})
+        alert("Password changed. Please log in again.")
+        window.location.reload()
+      }).catch((error) => {
+        this.$toast.add({severity: 'error', summary: 'Error', detail: 'Password change failed', life: 5000})
+      })
+      this.$refs.old_password.value = ""
+      this.$refs.new_password.value = ""
+      this.$refs.new_password_repeat.value = ""
+    },
   },
 }
 </script>
