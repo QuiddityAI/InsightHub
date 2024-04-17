@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug import serving
 import cbor2
+import werkzeug
 
 from utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
 from utils.dotdict import DotDict
@@ -18,7 +19,7 @@ from logic.search_common import get_document_details_by_id
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from logic.classifiers import get_retraining_status, start_retrain
-from logic.upload_files import upload_files, UPLOADED_FILES_FOLDER
+from logic.upload_files import upload_files, get_upload_task_status, UPLOADED_FILES_FOLDER
 from logic.chat_and_extraction import get_global_question_context, get_item_question_context
 
 from database_client.django_client import add_stored_map
@@ -34,6 +35,7 @@ parent_log_request = serving.WSGIRequestHandler.log_request
 
 paths_excluded_from_logging = ['/data_backend/map/result',
                                '/data_backend/document/details_by_id',
+                               '/data_backend/upload_files/status',
                                '/health',
                                ]
 
@@ -232,8 +234,23 @@ def upload_files_endpoint():
         import_converter_id: int = int(request.form["import_converter_id"])
     except KeyError as e:
         return f"parameter missing: {e}", 400
-    inserted_ids, failed_files = upload_files(dataset_id, import_converter_id, request.files.getlist("files[]"))
-    return jsonify({"inserted_ids": inserted_ids, "failed_files": failed_files}), 200
+    task_id = upload_files(dataset_id, import_converter_id, request.files.getlist("files[]"))
+    # usually, all in-memory files of the request would be closed and deleted after the request is done
+    # in this case, we want to keep them open and close them manually in the background thread
+    # so we need to remove the files from the request object:
+    request.__dict__["files"] = werkzeug.datastructures.MultiDict()
+    return jsonify({"task_id": task_id}), 200
+
+
+@app.route('/data_backend/upload_files/status', methods=['POST'])
+def upload_files_status_endpoint():
+    try:
+        params = request.json or {}
+        dataset_id: int = params["dataset_id"]
+    except KeyError as e:
+        return f"parameter missing: {e}", 400
+    status = get_upload_task_status(dataset_id)
+    return jsonify(status)
 
 
 # --- Old Routes: ---

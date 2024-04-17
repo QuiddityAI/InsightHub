@@ -27,6 +27,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/upload_files": lambda x: True,  # TODO, but not very harmful
         "/data_backend/map/store": lambda x: True,  # TODO, but not very harmful
         "/data_backend/download_file": _check_download_request,
+        "/data_backend/upload_files/status": lambda x: True,  # TODO, but not very harmful
     }
     path = request.path
     if path.startswith("/data_backend/download_file"):

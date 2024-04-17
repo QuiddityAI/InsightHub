@@ -6,13 +6,14 @@ import uuid
 import tarfile
 import zipfile
 import hashlib
+import threading
+import datetime
 from dataclasses import asdict
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 import pypdfium2 as pdfium
 
-from utils.dotdict import DotDict
 from database_client.text_search_engine_client import TextSearchEngineClient
 from database_client.django_client import get_dataset, get_import_converter
 from logic.insert_logic import insert_many, update_database_layout
@@ -21,14 +22,75 @@ from logic.local_map_cache import clear_local_map_cache
 UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 
 
-def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage]) -> tuple[list[tuple], list[str]]:
+upload_tasks = {}
+
+
+def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage]) -> str:
+    global upload_tasks
+
+    # delete any finished tasks from upload_tasks[dataset_id]:
+    if dataset_id not in upload_tasks:
+        upload_tasks[dataset_id] = {}
+    for task_id in list(upload_tasks[dataset_id].keys()):
+        if not upload_tasks[dataset_id][task_id]["is_running"]:
+            del upload_tasks[dataset_id][task_id]
+
+    task_id = str(uuid.uuid4())
+    upload_tasks[dataset_id][task_id] = {
+        "task_id": task_id,
+        "started_at": datetime.datetime.now().isoformat(),
+        "finished_at": None,
+        "is_running": True,
+        "status": "started",
+        "progress": 0.0,
+        "inserted_ids": [],
+        "failed_files": [],
+    }
+
+    def run():
+        try:
+            inserted_ids, failed_files = _upload_files(dataset_id, import_converter_id, files, task_id)
+            upload_tasks[dataset_id][task_id]["is_running"] = False
+            upload_tasks[dataset_id][task_id]["status"] = "finished"
+            upload_tasks[dataset_id][task_id]["finished_at"] = datetime.datetime.now().isoformat()
+            upload_tasks[dataset_id][task_id]["progress"] = 1.0
+            upload_tasks[dataset_id][task_id]["inserted_ids"] = inserted_ids
+            upload_tasks[dataset_id][task_id]["failed_files"] = failed_files
+        except Exception as e:
+            logging.warning(f"upload_files failed: {e}")
+            # print traceback
+            import traceback
+            traceback.print_exc()
+            upload_tasks[dataset_id][task_id]["is_running"] = False
+            upload_tasks[dataset_id][task_id]["status"] = f"failed ({str(e)})"
+            upload_tasks[dataset_id][task_id]["finished_at"] = datetime.datetime.now().isoformat()
+        finally:
+            for file in files:
+                file.close()
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    return task_id
+
+
+def get_upload_task_status(dataset_id: int) -> list[dict]:
+    return list(upload_tasks.get(dataset_id, {}).values())
+
+
+def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float):
+    upload_tasks[dataset_id][task_id]["status"] = status
+    upload_tasks[dataset_id][task_id]["progress"] = progress
+
+
+def _upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage], task_id: str) -> tuple[list[tuple], list[str]]:
     import_converter = get_import_converter(import_converter_id)
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter}")
     if not os.path.exists(UPLOADED_FILES_FOLDER):
         os.makedirs(UPLOADED_FILES_FOLDER)
+    _set_task_status(dataset_id, task_id, "storing files", 0.0)
     paths = []
     failed_files = []
-    for file in files:
+    for i, file in enumerate(files):
         if not file.filename: continue
         if file.filename.endswith(".tar.gz") or file.filename.endswith(".zip"):
             new_paths, new_failed_files = _unpack_archive(file, dataset_id)
@@ -41,18 +103,24 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
             paths.append(sub_path)
         except Exception as e:
             logging.warning(f"failed to save file: {e}")
+            # print traceback
+            import traceback
+            traceback.print_exc()
             failed_files.append({"filename": file.filename, "reason": str(e)})
+        _set_task_status(dataset_id, task_id, "storing files", i / len(files))  # type: ignore
 
     converter_func = get_import_converter_by_name(import_converter.module)
-    items, failed_ids = converter_func(paths, import_converter.parameters)
+    items, failed_ids = converter_func(paths, import_converter.parameters, lambda progress: _set_task_status(dataset_id, task_id, "converting files", progress))
     failed_files += failed_ids
 
+    _set_task_status(dataset_id, task_id, "inserting into DB", 0.0)
     dataset = get_dataset(dataset_id)
     text_search_engine_client = TextSearchEngineClient()
     if text_search_engine_client.get_item_count(dataset.actual_database_name) == 0:
         logging.warning(f"Updating database layout for dataset {dataset_id} because there aren't any items in the database yet.")
         update_database_layout(dataset_id)
 
+    _set_task_status(dataset_id, task_id, "inserting into DB", 0.1)
     inserted_ids = insert_many(dataset_id, items)
     logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
     clear_local_map_cache()
@@ -148,19 +216,26 @@ def get_import_converter_by_name(name: str) -> Callable:
     raise ValueError(f"import converter {name} not found")
 
 
-def _scientific_article_pdf(paths, parameters):
+def _scientific_article_pdf(paths, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
     from pdferret import PDFerret
     import nltk
     nltk.download('punkt')
 
     extractor = PDFerret(text_extractor="grobid")
+    if on_progress:
+        on_progress(0.1)
     parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
+    if on_progress:
+        on_progress(0.5)
     failed_files = [{"filename": pdferror.file, "reason": pdferror.exc} for pdferror in failed]
     items = []
     for parsed_pdf, sub_path in zip(parsed, paths):
         pdf_metainfo = parsed_pdf.metainfo
+        if not pdf_metainfo.title and not len(parsed_pdf.chunks):
+            failed_files.append({"filename": sub_path, "reason": "no title and text found, skipping"})
+            continue
         if not pdf_metainfo.title:
-            failed_files.append({"filename": sub_path, "reason": "no title found"})
+            failed_files.append({"filename": sub_path, "reason": "no title found, still adding to database"})
             # add anyway because the rest of the data might be useful
         try:
             pub_year = int(pdf_metainfo.pub_date.split("-")[0])
@@ -195,6 +270,8 @@ def _scientific_article_pdf(paths, parameters):
             "full_text": full_text,
             "full_text_original_chunks": full_text_original_chunks,
         })
+        if on_progress:
+            on_progress(0.5 + (len(items) / len(paths)) * 0.5)
     return items, failed_files
 
 

@@ -33,8 +33,7 @@ export default {
       selected_import_converter: null,
       upload_in_progress: false,
       visible_area: "upload_files",
-      recently_uploaded_file_ids: [],
-      upload_failures: [],
+      upload_tasks: [],
     }
   },
   computed: {
@@ -44,6 +43,7 @@ export default {
   mounted() {
     this.selected_import_converter = this.dataset.applicable_import_converters.length ? this.dataset.applicable_import_converters[0] : null
     this.get_dataset_additional_info()
+    this.get_upload_task_status()
   },
   watch: {
     'dataset.is_public'() {
@@ -155,9 +155,7 @@ export default {
                 fileUploaderComponent.messages.push(error)
               }
             }
-            that.recently_uploaded_file_ids = data.inserted_ids
-            that.upload_failures = data.failed_files
-            that.get_dataset_additional_info()
+            that.get_upload_task_status()
 
             if (fileUploaderComponent.fileLimit) {
               fileUploaderComponent.uploadedFileCount += event.files.length;
@@ -193,6 +191,23 @@ export default {
 
       xhr.send(formData);
       that.upload_in_progress = true
+    },
+    get_upload_task_status() {
+      const that = this
+      httpClient
+        .post("/data_backend/upload_files/status", { dataset_id: this.dataset.id })
+        .then(function (response) {
+          that.upload_tasks = response.data
+          // if any task is still in progress, check again in 500ms
+          if (that.upload_tasks.filter(task => task.is_running).length > 0) {
+            setTimeout(that.get_upload_task_status, 500)
+          } else {
+            that.get_dataset_additional_info()
+          }
+        })
+        .catch(function (error) {
+          console.error(error)
+        })
     },
   },
 }
@@ -308,35 +323,44 @@ export default {
           </template>
         </FileUpload>
 
-        <p v-if="upload_failures.length !== 0" class="text-red-700">
-          Failed to process the following {{ upload_failures.length }} files:
+        <p v-if="upload_tasks.length !== 0" class="text-gray-700">
+          Recent uploads:
         </p>
-        <ul role="list" class="pt-1">
-          <li
-            v-for="failure in upload_failures"
-            :key="failure.filename"
-            class="justify-between pb-3">
-            <span class="text-red-700">{{ failure.filename }}</span><br>
-            <span class="text-gray-500">{{ failure.reason }}</span>
-          </li>
-        </ul>
 
-        <p v-if="recently_uploaded_file_ids.length !== 0" class="text-gray-700">
-          Recently uploaded files (max. 10 displayed):
-        </p>
-        <ul role="list" class="pt-1">
-          <li
-            v-for="ds_and_item_id in recently_uploaded_file_ids.slice(0, 10)"
-            :key="ds_and_item_id.join('_')"
-            class="justify-between pb-3">
-            <CollectionItem
-              :dataset_id="ds_and_item_id[0]"
-              :item_id="ds_and_item_id[1]"
-              :is_positive=true
-              @remove="recently_uploaded_file_ids.splice(recently_uploaded_file_ids.indexOf(ds_and_item_id), 1)">
-            </CollectionItem>
-          </li>
-        </ul>
+        <div v-for="task in upload_tasks" :key="task.task_id" class="py-1 px-2 rounded-md border-2 border-gray-100">
+          <p class="text-gray-700">
+            Status: {{ task.status }} ({{ (task.progress * 100).toFixed(0) }}%)
+          </p>
+          <p v-if="task.failed_files.length !== 0" class="text-red-700">
+            Some files could not be processed ({{ task.failed_files.length }} errors in total):
+          </p>
+          <ul role="list" class="mt-1">
+            <li
+              v-for="failure in task.failed_files"
+              :key="failure.filename"
+              class="justify-between pb-3">
+              <span class="text-red-700">{{ failure.filename }}</span><br>
+              <span class="text-gray-500">{{ failure.reason }}</span>
+            </li>
+          </ul>
+          <p v-if="task.inserted_ids.length !== 0" class="text-gray-700 text-sm">
+            Items successfully uploaded: {{ task.inserted_ids.length }} (showing max. 10)<br>
+            Duration: {{ (((new Date(task.finished_at)).getTime() - (new Date(task.started_at)).getTime()) / (60*1000)).toFixed(1) }} min
+          </p>
+          <ul role="list" class="mt-1">
+            <li
+              v-for="ds_and_item_id in task.inserted_ids.slice(0, 10)"
+              :key="ds_and_item_id.join('_')"
+              class="justify-between pb-3">
+              <CollectionItem
+                :dataset_id="ds_and_item_id[0]"
+                :item_id="ds_and_item_id[1]"
+                :is_positive="true"
+                :show_remove_button="false">
+              </CollectionItem>
+            </li>
+          </ul>
+        </div>
 
       </div>
       <button v-if="appState.dev_mode" class="mt-2 w-full hover:bg-gray-100" @click="visible_area = 'upload_using_api'">
