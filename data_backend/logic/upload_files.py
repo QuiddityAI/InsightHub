@@ -232,10 +232,10 @@ def _scientific_article_pdf(paths, parameters, on_progress=None) -> tuple[list[d
     for parsed_pdf, sub_path in zip(parsed, paths):
         pdf_metainfo = parsed_pdf.metainfo
         if not pdf_metainfo.title and not len(parsed_pdf.chunks):
-            failed_files.append({"filename": sub_path, "reason": "no title and text found, skipping"})
+            failed_files.append({"filename": sub_path, "reason": "no title or text found, skipping"})
             continue
-        if not pdf_metainfo.title:
-            failed_files.append({"filename": sub_path, "reason": "no title found, still adding to database"})
+        # if not pdf_metainfo.title:
+            # failed_files.append({"filename": sub_path, "reason": "no title found, still adding to database"})
             # add anyway because the rest of the data might be useful
         try:
             pub_year = int(pdf_metainfo.pub_date.split("-")[0])
