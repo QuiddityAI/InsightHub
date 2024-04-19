@@ -94,6 +94,8 @@ def generate_map_safe(map_id: str, ignore_cache: bool):
         generate_map(map_id, ignore_cache)
     except Exception as e:
         logging.error(f"Error while generating map {map_id}: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
         if map_id in local_maps:
             local_maps[map_id]["errors"].append(f"Error while generating map: {e}")
             local_maps[map_id]["finished"] = True
