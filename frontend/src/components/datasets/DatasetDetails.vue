@@ -11,8 +11,10 @@ import Button from 'primevue/button';
 import Badge from 'primevue/badge';
 import Message from 'primevue/message';
 import ProgressBar from 'primevue/progressbar';
+import Checkbox from 'primevue/checkbox';
 
-import CollectionItem from "../collections/CollectionItem.vue"
+import CollectionItem from "../collections/CollectionItem.vue";
+import SelectCollection from '../collections/SelectCollection.vue';
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -31,6 +33,7 @@ export default {
   data() {
     return {
       selected_import_converter: null,
+      add_to_collection: false,
       upload_in_progress: false,
       visible_area: "upload_files",
       upload_tasks: [],
@@ -128,6 +131,13 @@ export default {
 
       formData.append("dataset_id", this.dataset.id);
       formData.append("import_converter_id", this.selected_import_converter.id);
+      if (this.add_to_collection) {
+        const collection_selection = this.$refs.collection_selection
+        if (collection_selection.selected_collection_id) {
+          formData.append("collection_id", collection_selection.selected_collection_id);
+          formData.append("collection_class", collection_selection.selected_collection_class);
+        }
+      }
 
       for (let file of event.files) {
         formData.append(fileUploaderComponent.name, file, file.name);
@@ -272,6 +282,14 @@ export default {
             :options="dataset.applicable_import_converters"
             optionLabel="name"
             placeholder="Select an import type"/>
+        </div>
+        <div class="flex flex-row items-center">
+          <label class="mr-2 text-sm text-gray-700" for="target_collection">
+            Add to Collection (optional):
+          </label>
+          <Checkbox v-model="add_to_collection" :binary="true" class="mr-2"></Checkbox>
+          <SelectCollection v-show="add_to_collection" ref="collection_selection">
+          </SelectCollection>
         </div>
         <FileUpload
           v-if="selected_import_converter"

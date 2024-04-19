@@ -84,6 +84,27 @@ def get_collection_items(collection_id: int, class_name: str, field_type: str | 
     return result.json()
 
 
+def add_item_to_collection(collection_id: int, class_name: str, is_positive: bool,
+                           field_type: str, value: str | None, dataset_id: int | None, item_id: str | None,
+                           weight: float | None) -> dict | None:
+    url = backend_url + '/org/data_map/add_item_to_collection'
+    data = {
+        'collection_id': collection_id,
+        'class_name': class_name,
+        'is_positive': is_positive,
+        'field_type': field_type,
+        'value': value,
+        'dataset_id': dataset_id,
+        'item_id': item_id,
+        'weight': weight if isinstance(weight, float) else 1.0,
+    }
+    result = django_client.post(url, json=data)
+    if result.status_code != 200:
+        logging.warning("Couldn't add collection item")
+        return None
+    return result.json()
+
+
 def get_trained_classifier(collection_id: int, class_name: str, embedding_space_id: int, include_vector: bool) -> DotDict:
     url = backend_url + '/org/data_map/get_trained_classifier'
     data = {

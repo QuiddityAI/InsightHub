@@ -14,8 +14,9 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 import pypdfium2 as pdfium
 
+from utils.field_types import FieldType
 from database_client.text_search_engine_client import TextSearchEngineClient
-from database_client.django_client import get_dataset, get_import_converter
+from database_client.django_client import get_dataset, get_import_converter, add_item_to_collection
 from logic.insert_logic import insert_many, update_database_layout
 from logic.local_map_cache import clear_local_map_cache
 
@@ -25,7 +26,8 @@ UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 upload_tasks = {}
 
 
-def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage]) -> str:
+def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage],
+                 collection_id: int | None, collection_class: str | None) -> str:
     global upload_tasks
 
     # delete any finished tasks from upload_tasks[dataset_id]:
@@ -49,7 +51,8 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
 
     def run():
         try:
-            inserted_ids, failed_files = _upload_files(dataset_id, import_converter_id, files, task_id)
+            inserted_ids, failed_files = _upload_files(dataset_id, import_converter_id, files,
+                 collection_id, collection_class, task_id)
             upload_tasks[dataset_id][task_id]["is_running"] = False
             upload_tasks[dataset_id][task_id]["status"] = "finished"
             upload_tasks[dataset_id][task_id]["finished_at"] = datetime.datetime.now().isoformat()
@@ -82,7 +85,8 @@ def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float
     upload_tasks[dataset_id][task_id]["progress"] = progress
 
 
-def _upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage], task_id: str) -> tuple[list[tuple], list[str]]:
+def _upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage],
+                 collection_id: int | None, collection_class: str | None, task_id: str) -> tuple[list[tuple], list[str]]:
     import_converter = get_import_converter(import_converter_id)
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter}")
     if not os.path.exists(UPLOADED_FILES_FOLDER):
@@ -124,6 +128,14 @@ def _upload_files(dataset_id: int, import_converter_id: int, files: Iterable[Fil
     inserted_ids = insert_many(dataset_id, items)
     logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
     clear_local_map_cache()
+
+    if collection_id is not None and collection_class is not None:
+        _set_task_status(dataset_id, task_id, "adding to collection", 0.0)
+        for i, ds_and_item_id in enumerate(inserted_ids):
+            _set_task_status(dataset_id, task_id, "adding to collection", i / len(inserted_ids))
+            ds_id, item_id = ds_and_item_id
+            add_item_to_collection(collection_id, collection_class, True, FieldType.IDENTIFIER, None, ds_id, item_id, 1.0)
+
     return inserted_ids, failed_files
 
 

@@ -628,17 +628,19 @@ def add_item_to_collection(request):
     try:
         data = json.loads(request.body)
         collection_id: int = data["collection_id"]
-        is_positive: bool = data["is_positive"]
         class_name: str = data.get("class_name", '_default')
+        is_positive: bool = data["is_positive"]
         field_type: str = data["field_type"]
-        value: str = data["value"]
-        dataset_id: int = data["dataset_id"]
-        item_id: str = data["item_id"]
-        weight: float = data["weight"]
+        value: str | None = data.get("value")
+        dataset_id: int | None = data.get("dataset_id")
+        item_id: str | None = data.get("item_id")
+        weight: float = data.get("weight", 1.0)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    if field_type == FieldType.IDENTIFIER and not (dataset_id is not None and item_id):
+    if value is None and dataset_id is None:
+        return HttpResponse(status=400)
+    if field_type == FieldType.IDENTIFIER and not (dataset_id is not None and item_id is not None):
         return HttpResponse(status=400)
 
     try:
