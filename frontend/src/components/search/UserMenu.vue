@@ -56,7 +56,7 @@ export default {
       }).then(() => {
         this.$toast.add({severity: 'success', summary: 'Success', detail: 'Password changed', life: 5000})
         alert("Password changed. Please log in again.")
-        window.location.reload()
+        window.location.assign('/')
       }).catch((error) => {
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'Password change failed', life: 5000})
       })
