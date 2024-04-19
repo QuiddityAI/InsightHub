@@ -80,7 +80,7 @@ export default {
     <Dialog v-model:visible="dialog_visible" modal header="Login / Register">
       <Accordion :activeIndex="0" class="mb-2">
         <AccordionTab header="Login">
-          <form ref="login_form" :action="`/org/login_from_app/?next=${_window.location}`" method="post" class="flex flex-col gap-3">
+          <form ref="login_form" :action="`/org/login_from_app/?next=/`" method="post" class="flex flex-col gap-3">
             <InputGroup>
               <InputGroupAddon>
                 <UserIcon class="h-4 w-4" />
@@ -99,7 +99,7 @@ export default {
           </form>
         </AccordionTab>
         <AccordionTab header="Register">
-          <form ref="register_form" :action="`/org/signup_from_app/?next=${_window.location}`" method="post" class="flex flex-col gap-3">
+          <form ref="register_form" :action="`/org/signup_from_app/?next=/`" method="post" class="flex flex-col gap-3">
             <InputGroup>
               <InputGroupAddon>
                 <UserIcon class="h-4 w-4" />

@@ -72,7 +72,7 @@ export default {
   <div class="flex flex-col gap-1">
       <button
         v-if="appState.logged_in"
-        @click="djangoClient.post(`/org/logout/`).then(() => { _window.location.reload() })"
+        @click="djangoClient.post(`/org/logout/`).then(() => { _window.location.assign('/') })"
         title="Logout"
         class="rounded p-2 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
         Logout <ArrowRightOnRectangleIcon class="w-4 inline"></ArrowRightOnRectangleIcon>
