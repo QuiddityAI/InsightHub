@@ -153,6 +153,11 @@ export default {
       const uses_operators = operators.some((op) => this.appStateStore.settings.search.all_field_query.includes(op))
       return uses_operators && uses_meaning
     },
+    query_includes_other_quotes() {
+      const other_quotes = ["'", "`", "´", "‘", "’", "“", "”", "„", "‟", "❛", "❜", "❝", "❞", "＇", "＂"]
+      const query = this.appStateStore.settings.search.all_field_query
+      return other_quotes.some((quote) => query.includes(" " + quote) || query.includes(quote + " "))
+    },
   },
   watch: {
     "appStateStore.organization_id": function (newValue, oldValue) {
@@ -380,6 +385,10 @@ export default {
     <div v-if="query_uses_operators_and_meaning" class="mt-1 text-xs text-gray-400">
       The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br>
       Please use filters and quoted phrases here or switch to 'keyword' search.
+    </div>
+
+    <div v-if="query_includes_other_quotes" class="mt-1 text-xs text-gray-400">
+      Note: use double quotes instead of single quotes to search for phrases.
     </div>
 
     <div v-if="!use_smart_search" class="mt-2 ml-0 flex flex-row gap-1 items-center">
