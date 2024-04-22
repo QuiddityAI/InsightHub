@@ -261,6 +261,7 @@ class TextSearchEngineClient(object):
                     'multi_match': {
                         'query': query_positive,
                         'fields': search_fields,
+                        'operator': 'and',
                     }
                 }
         else:
@@ -270,6 +271,7 @@ class TextSearchEngineClient(object):
                     'multi_match': {
                         'query': query_positive,
                         'fields': search_fields,
+                        'operator': 'and',
                     }
                 },
                 '_source': return_fields,
