@@ -147,6 +147,12 @@ export default {
   },
   computed: {
     ...mapStores(useAppStateStore),
+    query_uses_operators_and_meaning() {
+      const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.search_algorithm)
+      const operators = [" AND ", " OR ", " NOT "]
+      const uses_operators = operators.some((op) => this.appStateStore.settings.search.all_field_query.includes(op))
+      return uses_operators && uses_meaning
+    },
   },
   watch: {
     "appStateStore.organization_id": function (newValue, oldValue) {
@@ -369,6 +375,11 @@ export default {
             : 'And less like this:'
         "
         class="h-full w-full rounded-md border-0 bg-red-100/50 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
+    </div>
+
+    <div v-if="query_uses_operators_and_meaning" class="mt-1 text-xs text-gray-400">
+      The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br>
+      Please use filters and quoted phrases here or switch to 'keyword' search.
     </div>
 
     <div v-if="!use_smart_search" class="mt-2 ml-0 flex flex-row gap-1 items-center">
