@@ -250,8 +250,12 @@ export default {
       </button> -->
 
       <div class="flex-1"></div>
-      <InputSwitch v-model="use_smart_search" class="" />
-      <span class="ml-2 text-sm text-gray-500">Smart</span>
+      <div class="flex flex-row items-center" v-tooltip="{value: 'Auto-detect best search type and required filters from a natural language query', showDelay: 400}">
+        <InputSwitch v-model="use_smart_search" class="" />
+        <span class="ml-2 text-sm text-gray-500">
+          Smart
+        </span>
+      </div>
 
       <div class="flex-1"></div>
       <LoginButton></LoginButton>
@@ -401,13 +405,13 @@ export default {
         </button>
         <button class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'vector'"
-          v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this will return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
+          v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
           :class="{'text-blue-500': appState.settings.search.search_algorithm === 'vector', 'text-gray-400': appState.settings.search.search_algorithm != 'vector'}">
           Meaning
         </button>
         <button class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
           @click="appState.settings.search.search_algorithm = 'hybrid'"
-          v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this will return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
+          v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
           :class="{'text-blue-500': appState.settings.search.search_algorithm === 'hybrid', 'text-gray-400': appState.settings.search.search_algorithm != 'hybrid'}">
           Both
         </button>
