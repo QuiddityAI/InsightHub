@@ -10,9 +10,30 @@ export default {
             }
         ]
     }),
-    arrow: {
-        class: 'hidden'
-    },
+    arrow: ({ context, props }) => ({
+        class: [
+          // Position
+          'absolute',
+          // Size
+          'w-0',
+          'h-0',
+          // Shape
+          'border-transparent',
+          'border-solid',
+          {
+            'border-y-[0.25rem] border-r-[0.25rem] border-l-0 border-r-surface-600': (context == null ? void 0 : context.right) || !(context != null && context.right) && !(context != null && context.left) && !(context != null && context.top) && !(context != null && context.bottom),
+            'border-y-[0.25rem] border-l-[0.25rem] border-r-0 border-l-surface-600': context == null ? void 0 : context.left,
+            'border-x-[0.25rem] border-t-[0.25rem] border-b-0 border-t-surface-600': context == null ? void 0 : context.top,
+            'border-x-[0.25rem] border-b-[0.25rem] border-t-0 border-b-surface-600': context == null ? void 0 : context.bottom
+          },
+          // Spacing
+          {
+            '-mt-1 ': (context == null ? void 0 : context.right) || !(context != null && context.right) && !(context != null && context.left) && !(context != null && context.top) && !(context != null && context.bottom),
+            '-mt-1': context == null ? void 0 : context.left,
+            '-ml-1': (context == null ? void 0 : context.top) || (context == null ? void 0 : context.bottom)
+          }
+        ]
+    }),
     text: {
         class: [
             // Size
@@ -31,7 +52,10 @@ export default {
 
             // Misc
             'whitespace-pre-line',
-            'break-words'
+            'break-words',
+
+            // Style
+            'shadow-[0px_5px_20px_0px_rgba(0,0,0,0.15)]'
         ]
     }
 };

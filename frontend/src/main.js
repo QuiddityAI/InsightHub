@@ -5,6 +5,7 @@ import PrimeVue from 'primevue/config';
 import Wind from './prime_vue_presets/wind';
 import ToastService from 'primevue/toastservice';
 import DialogService from 'primevue/dialogservice';
+import Tooltip from 'primevue/tooltip';
 import VueApexCharts from "vue3-apexcharts";
 import "inter-ui/inter.css";
 
@@ -26,6 +27,7 @@ app.use(PrimeVue, {
 });
 app.use(ToastService);
 app.use(DialogService);
+app.directive('tooltip', Tooltip);
 
 app.use(VueApexCharts)
 
