@@ -2,6 +2,7 @@ from collections import defaultdict
 import os
 import json
 import logging
+import re
 from typing import Generator, Iterable, Optional
 
 from opensearchpy import OpenSearch
@@ -258,20 +259,20 @@ class TextSearchEngineClient(object):
             }
             if query_positive:
                 query['query']['bool']['must'] = {
-                    'multi_match': {
-                        'query': query_positive,
+                    'simple_query_string': {
+                        'query': self._convert_to_simple_query_language(query_positive),
                         'fields': search_fields,
-                        'operator': 'and',
+                        'default_operator': 'and',
                     }
                 }
         else:
             query = {
                 'size': limit,
                 'query': {
-                    'multi_match': {
-                        'query': query_positive,
+                    'simple_query_string': {
+                        'query': self._convert_to_simple_query_language(query_positive),
                         'fields': search_fields,
-                        'operator': 'and',
+                        'default_operator': 'and',
                     }
                 },
                 '_source': return_fields,
@@ -367,3 +368,9 @@ class TextSearchEngineClient(object):
                     }
                 })
         return query_filter
+
+    def _convert_to_simple_query_language(self, query: str):
+        conversion = {"AND": "+", "OR": "|", r"NOT\s+": "-"}
+        for old, new in conversion.items():
+            query = re.sub(old, new, query)
+        return query
