@@ -431,28 +431,7 @@ export default {
           class="pointer-events-auto flex w-full flex-initial overflow-hidden">
           <ObjectDetailsModal
             :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
-            :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
-            @addToCollection="
-              (collection_id, class_name, is_positive) => {
-                appState.add_item_to_collection(
-                  appState.selected_document_ds_and_id,
-                  collection_id,
-                  class_name,
-                  is_positive
-                )
-              }
-            "
-            @removeFromCollection="
-              (collection_id, class_name) => {
-                appState.remove_item_from_collection(
-                  appState.selected_document_ds_and_id,
-                  collection_id,
-                  class_name
-                )
-              }
-            "
-            @showSimilarItems="appState.showSimilarItems"
-            @close="appState.close_document_details"></ObjectDetailsModal>
+            :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"></ObjectDetailsModal>
         </div>
 
         <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center items-center">

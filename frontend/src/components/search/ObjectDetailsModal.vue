@@ -21,7 +21,6 @@ const toast = useToast()
 <script>
 export default {
   props: ["dataset", "initial_item"],
-  emits: ["addToCollection", "removeFromCollection", "showSimilarItems", "close"],
   data() {
     return {
       rendering: null,
@@ -197,14 +196,23 @@ export default {
 
     <div class="mt-2 flex flex-none flex-row">
       <AddToCollectionButtons v-if="appState.collections?.length" class="mr-3" @addToCollection="(collection_id, class_name, is_positive) =>
-              $emit('addToCollection', collection_id, class_name, is_positive)
+              appState.add_item_to_collection(
+                  appState.selected_document_ds_and_id,
+                  collection_id,
+                  class_name,
+                  is_positive
+                )
             " @removeFromCollection="(collection_id, class_name) =>
-              $emit('removeFromCollection', collection_id, class_name)
+              appState.remove_item_from_collection(
+                  appState.selected_document_ds_and_id,
+                  collection_id,
+                  class_name
+                )
             ">
       </AddToCollectionButtons>
       <button
         v-if="appState.dev_mode"
-        @click="toast.add({ severity: 'info', summary: 'Under construction', detail: 'This feature is currently under construction.' })"
+        @click="appState.showSimilarItems"
         class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         Similar Items
       </button>
@@ -234,7 +242,7 @@ export default {
       </button>
 
       <div class="flex-1"></div>
-      <button @click="$emit('close')" class="w-10 rounded-md px-2 text-gray-500 hover:bg-gray-100">
+      <button @click="appState.close_document_details" class="w-10 rounded-md px-2 text-gray-500 hover:bg-gray-100">
         <XMarkIcon></XMarkIcon>
       </button>
     </div>
