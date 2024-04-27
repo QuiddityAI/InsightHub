@@ -223,6 +223,32 @@ export default {
     <MapWithLabels class="absolute top-0 h-screen w-screen"/>
 
     <div
+      v-if="appState.map_id"
+      class="absolute bottom-6 right-[200px] flex flex-row items-center gap-2 rounded-md bg-white p-2 shadow-sm">
+      <button
+        v-tooltip.top="'Normal map with items arranged in island-like clusters'"
+        @click="appState.set_two_dimensional_projection(); appState.request_search_results()"
+        class="h-6 px-1 rounded hover:bg-gray-100"
+        :class="{
+          'text-blue-600': !appState.settings.projection.use_polar_coordinates,
+          'text-gray-400': appState.settings.projection.use_polar_coordinates,
+        }">
+        Normal
+      </button>
+      <button
+        v-tooltip.top="'Arrange items in a star shape around the most relevant one in the center'"
+        @click="appState.set_polar_projection(); appState.request_search_results()"
+        class="h-6 px-1 rounded hover:bg-gray-100"
+        :class="{
+          'text-blue-600': appState.settings.projection.use_polar_coordinates,
+          'text-gray-400': !appState.settings.projection.use_polar_coordinates,
+        }">
+        Star-Shape
+      </button>
+    </div>
+
+
+    <div
       v-if="mapState.selected_map_tool === 'lasso'"
       class="absolute bottom-6 right-4 flex flex-row justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <button

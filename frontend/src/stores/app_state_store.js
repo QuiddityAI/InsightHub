@@ -1008,6 +1008,29 @@ export const useAppStateStore = defineStore("appState", {
         this.eventBus.emit("map_update_geometry")
       }
     },
+    close_document_details() {
+      this.selected_document_ds_and_id = null
+      this.mapState.markedPointIdx = -1
+    },
+    set_polar_projection() {
+      this.settings.projection.use_polar_coordinates = true
+      this.settings.projection.x_axis = { type: "score", parameter: "" }
+      this.settings.projection.y_axis = {
+        type: "umap",
+        parameter: "primary",
+      }
+    },
+    set_two_dimensional_projection() {
+      this.settings.projection.use_polar_coordinates = false
+      this.settings.projection.x_axis = {
+        type: "umap",
+        parameter: "primary",
+      }
+      this.settings.projection.y_axis = {
+        type: "umap",
+        parameter: "primary",
+      }
+    },
     show_similar_items(item_ds_and_id) {
       this.settings.search.search_type = "similar_to_item"
       this.settings.search.similar_to_item_id = item_ds_and_id
@@ -1015,24 +1038,15 @@ export const useAppStateStore = defineStore("appState", {
       // use currently selected datasets, no need to change them
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
-      this.settings.projection.use_polar_coordinates = true
-      this.settings.projection.x_axis = { type: "score", parameter: "" }
-      this.settings.projection.y_axis = {
-        type: "umap",
-        parameter: "primary",
-      }
       const title_func = this.datasets[item_ds_and_id[0]].hover_label_rendering.title
       this.settings.search.origin_display_name = title_func(
         this.map_item_details[item_ds_and_id[0]][item_ds_and_id[1]]
       )
+      this.set_polar_projection()
       // keep the map, but indexes will change, so reset them:
       this.mapState.selected_point_indexes = []
       this.mapState.markedPointIdx = -1
       this.request_search_results()
-    },
-    close_document_details() {
-      this.selected_document_ds_and_id = null
-      this.mapState.markedPointIdx = -1
     },
     get_item_by_ds_and_id(dataset_and_item_id) {
       const ds_items = this.map_item_details[dataset_and_item_id[0]]
