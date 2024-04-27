@@ -211,8 +211,7 @@ export default {
             ">
       </AddToCollectionButtons>
       <button
-        v-if="appState.dev_mode"
-        @click="appState.showSimilarItems"
+        @click="appState.show_similar_items(appState.selected_document_ds_and_id)"
         class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         Similar Items
       </button>

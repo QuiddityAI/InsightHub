@@ -39,6 +39,9 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
     all_items_by_dataset = {}
     all_score_info = {}
     total_matches_sum = 0
+    if params.search.search_type == "similar_to_item":
+        similar_item_info = _get_item_for_similarity_search(params.search)
+
     for dataset_id in params.search.dataset_ids:
         dataset = get_dataset(dataset_id)
         score_info = {}
@@ -74,7 +77,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         elif params.search.search_type == "recommended_for_collection":
             sorted_ids, full_items, score_info = get_search_results_matching_a_collection(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "similar_to_item":
-            sorted_ids, full_items, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings)
+            sorted_ids, full_items, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings, similar_item_info)
         elif params.search.search_type == "global_map":
             sorted_ids, full_items, score_info, total_matches = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
         else:
@@ -202,31 +205,39 @@ def get_search_results_for_cluster(dataset, search_settings: DotDict, vectorize_
     return sort_items_and_complete_them(dataset, total_items, required_fields, limit, timings)
 
 
-def get_search_results_similar_to_item(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict, dict]:
+def _get_item_for_similarity_search(search_settings):
+    dataset_id, item_id = search_settings.similar_to_item_id
+    dataset = get_dataset(dataset_id)
+    vector_fields = [field for field in dataset.object_fields.values() if field.identifier in dataset.default_search_fields and field.field_type == FieldType.VECTOR and field.is_array == False]
+    search_engine_client = TextSearchEngineClient.get_instance()
+    items = search_engine_client.get_items_by_ids(dataset.actual_database_name, [item_id], fields=[field.identifier for field in vector_fields])
+    fill_in_vector_data_list(dataset, items, [field.identifier for field in vector_fields])
+    item = items[0]
+    return item, vector_fields
+
+
+def get_search_results_similar_to_item(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings, similar_item_info: list) -> tuple[list, dict, dict]:
     if dataset.id == ABSCLUST_DATASET_ID:
         # similar item functionality doesn't work with AbsClust database as it doesn't contain vectors
         return [], {}, {}
-    dataset_id, similar_to_item_id = search_settings.similar_to_item_id
-    if dataset_id != dataset.id:
-        return [], {}, {}
+    origin_item, origin_vector_fields = similar_item_info
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
+    limit = min(limit, 50)
     page = search_settings.result_list_current_page if purpose == "list" else 0
-    if not all([similar_to_item_id is not None, limit, page is not None, dataset]):
+    if not all([origin_item is not None, limit, page is not None, dataset]):
         raise ValueError("a parameter is missing")
 
     timings.log("search preparation")
 
-    vector_fields = [field for field in dataset.object_fields.values() if field.identifier in dataset.default_search_fields and field.field_type == FieldType.VECTOR]
-
-    search_engine_client = TextSearchEngineClient.get_instance()
-    items = search_engine_client.get_items_by_ids(dataset.actual_database_name, [similar_to_item_id], fields=[field.identifier for field in vector_fields])
-    fill_in_vector_data_list(dataset, items, [field.identifier for field in vector_fields])
-    item = items[0]
-    timings.log("getting original item")
+    vector_fields = [field for field in dataset.object_fields.values() if field.identifier in dataset.default_search_fields and field.field_type == FieldType.VECTOR and field.is_array == False]
 
     result_sets: list[dict] = []
     for field in vector_fields:
-        query_vector = item[field.identifier]
+        # for now, we only consider non-array default vector fields that exist in the same way in the origin item
+        # (when mostly using templates for datasets, this should cover most of the cases)
+        if not [field for field in origin_vector_fields if field.identifier == field.identifier and field.actual_embedding_space == field.actual_embedding_space]:
+            continue
+        query_vector = origin_item[field.identifier]
         score_threshold = get_field_similarity_threshold(field) if search_settings.use_similarity_thresholds else None
         results = get_vector_search_results(dataset, field.identifier, QueryInput(search_settings.all_field_query, search_settings.all_field_query_negative), query_vector, None, required_fields=[],
                                             internal_input_weight=search_settings.internal_input_weight,

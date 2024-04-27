@@ -1008,9 +1008,11 @@ export const useAppStateStore = defineStore("appState", {
         this.eventBus.emit("map_update_geometry")
       }
     },
-    showSimilarItems() {
+    show_similar_items(item_ds_and_id) {
       this.settings.search.search_type = "similar_to_item"
-      this.settings.search.similar_to_item_id = this.selected_document_ds_and_id
+      this.settings.search.similar_to_item_id = item_ds_and_id
+      this.settings.search.search_algorithm = "vector"
+      // use currently selected datasets, no need to change them
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.projection.use_polar_coordinates = true
@@ -1019,10 +1021,13 @@ export const useAppStateStore = defineStore("appState", {
         type: "umap",
         parameter: "primary",
       }
-      const title_func = this.mapState.hover_label_rendering.title
+      const title_func = this.datasets[item_ds_and_id[0]].hover_label_rendering.title
       this.settings.search.origin_display_name = title_func(
-        this.map_item_details[this.selected_document_ds_and_id[0]][this.selected_document_ds_and_id[1]]
+        this.map_item_details[item_ds_and_id[0]][item_ds_and_id[1]]
       )
+      // keep the map, but indexes will change, so reset them:
+      this.mapState.selected_point_indexes = []
+      this.mapState.markedPointIdx = -1
       this.request_search_results()
     },
     close_document_details() {

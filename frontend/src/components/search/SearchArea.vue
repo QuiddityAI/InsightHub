@@ -320,7 +320,7 @@ export default {
           Overview
         </Chip>
         <div class="flex-1"></div>
-        <div v-if="appState.settings.search.search_type == 'similar_to_item'">
+        <div v-if="appState.settings.search.search_type == 'similar_to_item' && appState.dev_mode">
           <span class="pr-2 text-sm text-gray-500">Weight:</span>
           <input
             v-model.number="appState.settings.search.internal_input_weight"
@@ -329,7 +329,7 @@ export default {
             @submit="appState.request_search_results" />
         </div>
       </div>
-      <div v-if="['external_input', 'similar_to_item'].includes(appState.settings.search.search_type)" class="flex h-9 flex-1 flex-row items-center">
+      <div v-if="['external_input'].includes(appState.settings.search.search_type)" class="flex h-9 flex-1 flex-row items-center">
         <input
           type="search"
           name="search"
