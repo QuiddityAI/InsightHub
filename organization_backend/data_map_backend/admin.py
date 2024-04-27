@@ -154,6 +154,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
     list_display = ('id', 'organization', 'name', 'is_public', 'is_template', 'created_in_ui')
     list_display_links = ('id', 'name')
     search_fields = ('name', 'organization')
+    list_filter = ('created_in_ui',)
     ordering = ['organization', 'name']
 
     readonly_fields = ('id', 'changed_at', 'created_at', 'get_field_overview_table_html',
@@ -334,12 +335,13 @@ class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAd
 
 
 @admin.register(SearchHistoryItem)
-class SearchHistoryItemAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+class SearchHistoryItemAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name')
-    list_display_links = ('id', 'name')
+    list_display = ('created_at', 'name', 'user')
+    list_display_links = ('name',)
     search_fields = ('name',)
-    ordering = ['name']
+    list_filter = ('user',)
+    ordering = ['-created_at']
     readonly_fields = ('changed_at', 'created_at')
 
     formfield_overrides = {
@@ -348,7 +350,7 @@ class SearchHistoryItemAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
 
 @admin.register(StoredMap)
-class StoredMapAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+class StoredMapAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ('id', 'name')
     list_display_links = ('id', 'name')
@@ -432,7 +434,7 @@ class CollectionItemInline(admin.TabularInline):
 
 
 @admin.register(TrainedClassifier)
-class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
+class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ('id', 'collection', 'class_name', 'embedding_space')
     list_display_links = ('id', 'collection', 'class_name', 'embedding_space')
@@ -530,10 +532,11 @@ class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 @admin.register(Chat)
 class ChatAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False
-    list_display = ('id', 'created_by', 'name', 'collection')
-    list_display_links = ('id', 'name')
+    list_display = ('created_at', 'created_by', 'name', 'collection')
+    list_display_links = ('name',)
     search_fields = ('id', 'name')
-    ordering = ['id']
+    list_filter = ('created_by',)
+    ordering = ['-created_at']
     readonly_fields = ('changed_at', 'created_at')
 
     formfield_overrides = {

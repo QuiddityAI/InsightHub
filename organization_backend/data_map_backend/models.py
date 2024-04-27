@@ -759,8 +759,6 @@ class SearchHistoryItem(models.Model):
         blank=True,
         null=True)
 
-    history = HistoricalRecords()
-
     def __str__(self):
         return f"{self.name}"
 
@@ -816,8 +814,6 @@ class StoredMap(models.Model):
         verbose_name="Data",
         blank=True,
         null=True)
-
-    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.name}"
@@ -1152,8 +1148,6 @@ class TrainedClassifier(models.Model):
         default=dict,
         blank=True,
         null=True)
-
-    history = HistoricalRecords()
 
     def decision_vector_stats(self):
         if self.decision_vector is None:
