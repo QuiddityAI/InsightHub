@@ -27,7 +27,11 @@ class VectorSearchEngineClient(object):
 
 
     def __init__(self):
-        self.client = QdrantClient(qdrant_host, port=qdrant_port)  # , grpc_port=6334, prefer_grpc=True
+        self.client = QdrantClient(
+            qdrant_host,
+            port=qdrant_port,
+            timeout=30,  # seconds, especially on AWS EBS volumes, requests can take very long
+            )  # , grpc_port=6334, prefer_grpc=True
         # self.client = QdrantClient(":memory:")
 
 

@@ -37,6 +37,7 @@ class TextSearchEngineClient(object):
             verify_certs = False,
             ssl_assert_hostname = False,
             ssl_show_warn = False,
+            timeout = 30,  # seconds, especially on AWS EBS volumes, requests can take very long
         )
 
 
