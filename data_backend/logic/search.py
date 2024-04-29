@@ -114,6 +114,8 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     if search_settings.separate_queries:
         enabled_fields = [field_identifier for field_identifier, field_settings in search_settings.separate_queries.items() if field_settings['use_for_combined_search']]
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
+    if dataset.created_in_ui:
+        limit = min(limit, 300)
     page = search_settings.result_list_current_page if purpose == "list" else 0
     if not all([limit, page is not None, dataset]):
         raise ValueError("a parameter is missing")
