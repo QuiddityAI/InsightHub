@@ -125,7 +125,11 @@ def _upload_files(dataset_id: int, import_converter_id: int, files: Iterable[Fil
         update_database_layout(dataset_id)
 
     _set_task_status(dataset_id, task_id, "inserting into DB", 0.1)
-    inserted_ids = insert_many(dataset_id, items)
+    batch_size = 128
+    inserted_ids = []
+    for i in range(0, len(items), batch_size):
+        _set_task_status(dataset_id, task_id, "inserting into DB", 0.1 + i / len(items) * 0.9)
+        inserted_ids += insert_many(dataset_id, items[i:i + batch_size])
     logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
     clear_local_map_cache()
 
