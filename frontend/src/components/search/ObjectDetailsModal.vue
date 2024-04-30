@@ -154,7 +154,7 @@ export default {
       <div v-if="relevant_chunk.value">
         <div class="flex flex-row items-center">
           <div class="font-semibold text-gray-600 text-sm">Relevant Part in
-            {{ appState.datasets[item._dataset_id].object_fields[relevant_chunk.field]?.description }}, Page {{ relevant_chunk.value?.page }}
+            {{ appState.datasets[item._dataset_id].object_fields[relevant_chunk.field]?.description }}{{ relevant_chunk.value?.page ? `, Page ${relevant_chunk.value.page}` : "" }}
             <span class="text-gray-400">(based on meaning)</span>
           </div>
           <div class="flex-1"></div>
