@@ -77,6 +77,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         elif params.search.search_type == "recommended_for_collection":
             sorted_ids, full_items, score_info = get_search_results_matching_a_collection(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "similar_to_item":
+            assert isinstance(similar_item_info, tuple)
             sorted_ids, full_items, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings, similar_item_info)
         elif params.search.search_type == "global_map":
             sorted_ids, full_items, score_info, total_matches = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
@@ -218,7 +219,7 @@ def _get_item_for_similarity_search(search_settings):
     return item, vector_fields
 
 
-def get_search_results_similar_to_item(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings, similar_item_info: list) -> tuple[list, dict, dict]:
+def get_search_results_similar_to_item(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings, similar_item_info: tuple) -> tuple[list, dict, dict]:
     if dataset.id == ABSCLUST_DATASET_ID:
         # similar item functionality doesn't work with AbsClust database as it doesn't contain vectors
         return [], {}, {}
