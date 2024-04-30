@@ -1034,7 +1034,7 @@ export const useAppStateStore = defineStore("appState", {
         parameter: "primary",
       }
     },
-    show_similar_items(item_ds_and_id) {
+    show_similar_items(item_ds_and_id, full_item=null) {
       this.settings.search.search_type = "similar_to_item"
       this.settings.search.similar_to_item_id = item_ds_and_id
       this.settings.search.search_algorithm = "vector"
@@ -1042,9 +1042,11 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       const title_func = this.datasets[item_ds_and_id[0]].hover_label_rendering.title
-      this.settings.search.origin_display_name = title_func(
-        this.map_item_details[item_ds_and_id[0]][item_ds_and_id[1]]
-      )
+      if (!full_item) {
+        const ds_items = this.map_item_details[item_ds_and_id[0]]
+        full_item = ds_items ? ds_items[item_ds_and_id[1]] : null
+      }
+      this.settings.search.origin_display_name = full_item ? title_func(full_item) : "Seed Item"
       this.set_polar_projection()
       // keep the map, but indexes will change, so reset them:
       this.mapState.selected_point_indexes = []
@@ -1053,7 +1055,8 @@ export const useAppStateStore = defineStore("appState", {
     },
     get_item_by_ds_and_id(dataset_and_item_id) {
       const ds_items = this.map_item_details[dataset_and_item_id[0]]
-      return ds_items ? ds_items[dataset_and_item_id[1]] : {_dataset_id: dataset_and_item_id[0], _id: dataset_and_item_id[1]}
+      const item = ds_items ? ds_items[dataset_and_item_id[1]] : null
+      return item || {_dataset_id: dataset_and_item_id[0], _id: dataset_and_item_id[1]}
     },
     get_dataset_by_index(item_index) {
       if (!this.mapState.per_point.item_id[item_index]) return undefined
