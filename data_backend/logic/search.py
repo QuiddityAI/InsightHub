@@ -216,6 +216,7 @@ def _get_item_for_similarity_search(search_settings):
     items = search_engine_client.get_items_by_ids(dataset.actual_database_name, [item_id], fields=[field.identifier for field in vector_fields])
     fill_in_vector_data_list(dataset, items, [field.identifier for field in vector_fields])
     item = items[0]
+    item['_dataset_id'] = dataset.id
     return item, vector_fields
 
 
@@ -245,6 +246,14 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
         results = get_vector_search_results(dataset, field.identifier, QueryInput(search_settings.all_field_query, search_settings.all_field_query_negative), query_vector, None, required_fields=[],
                                             internal_input_weight=search_settings.internal_input_weight,
                                             limit=limit, page=page, score_threshold=score_threshold)
+        if origin_item['_dataset_id'] == dataset.id and origin_item['_id'] in results:
+            # if the original item is in the results, it will have a score of 1.0,
+            # whereas the other items will typically have a score in a small range between 0.81 and 0.89
+            # this leads to a uneven distribution of scores, which can be problematic for the UI
+            # instead, we set the score of the original item to 10% above the maximum score of the other items
+            min_score = min([item['_origins'][0]['score'] for item in results.values()])
+            max_score = max([item['_origins'][0]['score'] for item in results.values() if item['_id'] != origin_item['_id']])
+            results[origin_item['_id']]['_origins'][0]['score'] = min(1.0, max_score + (max_score - min_score) * 0.1)
         result_sets.append(results)
         timings.log("vector database query")
 
