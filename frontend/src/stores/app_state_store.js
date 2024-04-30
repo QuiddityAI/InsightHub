@@ -1053,7 +1053,7 @@ export const useAppStateStore = defineStore("appState", {
     },
     get_item_by_ds_and_id(dataset_and_item_id) {
       const ds_items = this.map_item_details[dataset_and_item_id[0]]
-      return ds_items ? ds_items[dataset_and_item_id[1]] : {_id: dataset_and_item_id[1]}
+      return ds_items ? ds_items[dataset_and_item_id[1]] : {_dataset_id: dataset_and_item_id[0], _id: dataset_and_item_id[1]}
     },
     get_dataset_by_index(item_index) {
       if (!this.mapState.per_point.item_id[item_index]) return undefined
