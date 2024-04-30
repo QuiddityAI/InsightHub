@@ -970,6 +970,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.search.origin_display_name = cluster_item.title
+      this.set_two_dimensional_projection()
       this.request_search_results()
     },
     show_collection_as_map(collection, class_name) {
@@ -978,6 +979,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.search.origin_display_name = `${collection.name}: ${class_name}`
+      this.set_two_dimensional_projection()
       this.request_search_results()
     },
     recommend_items_for_collection(collection, class_name) {
@@ -996,6 +998,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.search_type = "global_map"
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
+      this.set_two_dimensional_projection()
       this.request_search_results()
     },
     show_document_details(dataset_and_item_id) {

@@ -211,8 +211,7 @@ export default {
             ">
       </AddToCollectionButtons>
       <button
-        v-if="appState.dev_mode"
-        v-tooltip.bottom="{ value: `Show similar ${dataset.entity_name_plural} (based on 'meaning')`, showDelay: 500 }"
+        v-tooltip.bottom="{ value: `Show similar ${dataset.entity_name_plural} in currently selected datasets\n(based on 'meaning')`, showDelay: 500 }"
         @click="appState.show_similar_items(appState.selected_document_ds_and_id)"
         class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         Similar Items
