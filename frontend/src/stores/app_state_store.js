@@ -489,7 +489,7 @@ export const useAppStateStore = defineStore("appState", {
       this.search_result_ids = []
       this.search_result_total_matches = 0
       this.search_result_items = {}
-      this.map_task_id = null
+      this.map_id = null
       this.map_item_details = []
       this.cluster_data = []
       this.clusterIdsPerPoint = []
@@ -1093,12 +1093,13 @@ export const useAppStateStore = defineStore("appState", {
       // console.log("showing stored map", stored_map_id)
       const that = this
 
+      this.reset_search_results_and_map()
+      this.eventBus.emit("show_results_tab")
+
       that.map_id = stored_map_id
       const body = {
         map_id: this.map_id,
       }
-      this.reset_search_results_and_map()
-      this.eventBus.emit("show_results_tab")
 
       httpClient
         .post("/data_backend/stored_map/parameters_and_search_results", body)
