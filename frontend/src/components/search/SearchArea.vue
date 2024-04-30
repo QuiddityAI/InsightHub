@@ -293,34 +293,44 @@ export default {
         v-if="appState.settings.search.search_type != 'external_input'"
         class="flex h-9 flex-1 flex-row items-center">
         <Chip v-if="appState.settings.search.search_type == 'cluster'"
-          removable class="text-sm font-semibold"
-          @remove="_history.back()">
+          class="text-sm font-semibold">
           Cluster '{{ ellipse(appState.settings.search.origin_display_name, 15) }}'
+          <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for page before -->
+          <button @click="_history.back()" v-tooltip="{value: 'Go to previous view', showDelay: 400}"
+            class="ml-1 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
         </Chip>
         <Chip v-if="appState.settings.search.search_type == 'similar_to_item'"
-          removable class="text-sm font-semibold"
-          @remove="_history.back()">
+          class="text-sm font-semibold">
           Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}'
+          <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for page before -->
+          <button @click="_history.back()" v-tooltip="{value: 'Go to previous view', showDelay: 400}"
+            class="ml-1 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
         </Chip>
         <Chip v-if="appState.settings.search.search_type == 'collection'"
-          removable class="text-sm font-semibold"
-          @remove="appState.reset_search_box(); appState.reset_search_results_and_map()">
+          class="text-sm font-semibold">
           Collection '{{ ellipse(appState.settings.search.origin_display_name, 15) }}'
+          <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for page before -->
+          <button @click="appState.reset_search_box(); appState.reset_search_results_and_map()"
+            class="ml-1 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
         </Chip>
         <Chip v-if="appState.settings.search.search_type == 'recommended_for_collection'"
-          removable class="text-sm font-semibold"
-          @remove="appState.reset_search_box(); appState.reset_search_results_and_map()">
+          class="text-sm font-semibold">
           Recommended for Collection '{{
             ellipse(appState.settings.search.origin_display_name, 15)
           }}'
+          <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for page before -->
+          <button @click="appState.reset_search_box(); appState.reset_search_results_and_map()"
+            class="ml-1 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
         </Chip>
         <Chip v-if="appState.settings.search.search_type == 'global_map'"
-          removable class="text-sm font-semibold"
-          @remove="appState.reset_search_box(); appState.reset_search_results_and_map()">
+          class="text-sm font-semibold">
           Overview
+          <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for page before -->
+          <button @click="appState.reset_search_box(); appState.reset_search_results_and_map()"
+            class="ml-1 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
         </Chip>
         <div class="flex-1"></div>
-        <div v-if="appState.settings.search.search_type == 'similar_to_item' && appState.dev_mode">
+        <div v-if="appState.settings.search.search_type == 'similar_to_item' && appState.dev_mode && false">
           <span class="pr-2 text-sm text-gray-500">Weight:</span>
           <input
             v-model.number="appState.settings.search.internal_input_weight"
@@ -342,11 +352,11 @@ export default {
           "
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
       </div>
-      <button class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
+      <button v-if="appState.settings.search.search_type == 'external_input'" class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
         @click="appState.request_search_results">
         Search
       </button>
-      <button class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
+      <button v-if="appState.settings.search.search_type == 'external_input'" class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
         @click="appState.answer_question">
         Answer Question
       </button>
