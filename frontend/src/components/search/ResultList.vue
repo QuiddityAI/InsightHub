@@ -32,9 +32,14 @@ export default {
   mounted() {
     this.eventBus.on("visibility_filters_changed", () => {
       this.appStateStore.update_visible_result_ids()
+      this.first_index = 0
     })
     this.eventBus.on("search_results_cleared", () => {
       this.appStateStore.update_visible_result_ids()
+      this.first_index = 0
+    })
+    this.eventBus.on("show_results_tab", () => {
+      this.first_index = 0
     })
   },
   watch: {
