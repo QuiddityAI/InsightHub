@@ -402,8 +402,11 @@ def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str
                            oversample_for_reranking: int=3) -> dict:
     vector_db_client = VectorSearchEngineClient.get_instance()
     num_results = limit + oversample_for_reranking if rerank else limit
-    vector_search_results = vector_db_client.get_best_sub_items(dataset.actual_database_name, vector_field, item_id, query_vector, score_threshold, num_results, min_results)
-    if rerank and query and source_texts:
+    if source_texts and len(source_texts) == 1:
+        vector_search_results = [DotDict({'score': 1.0, 'payload': {'array_index': 0}})]
+    else:
+        vector_search_results = vector_db_client.get_best_sub_items(dataset.actual_database_name, vector_field, item_id, query_vector, score_threshold, num_results, min_results)
+    if rerank and query and source_texts and len(vector_search_results) > 1:
         texts = [source_texts[item.payload['array_index']] for item in vector_search_results]
         reranking = get_reranking_results(query, tuple(texts), limit)
         vector_search_results = [vector_search_results[rerank_result.index] for rerank_result in reranking.results]

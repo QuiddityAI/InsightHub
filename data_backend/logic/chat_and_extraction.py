@@ -108,7 +108,7 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
                 for part in result.get('_relevant_parts', []):
                     chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
                     this_chunk = chunks[part.get("index")].get('text', '')
-                    chunk_after = chunks[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
+                    chunk_after = chunks[part.get("index") + 1].get('text', '') if part.get("index") + 1 < len(chunks) else ""
                     relevant_text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
                     text += f"\nPotentially Relevant Snippet from {chunk_field}:\n"
                     text += f"    {relevant_text}\n\n"

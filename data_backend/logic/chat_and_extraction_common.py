@@ -28,17 +28,22 @@ def _item_to_context(item: dict, dataset: DotDict, reranked_chunks: int=0, quest
 
     if question and reranked_chunks > 0:
         # oversample chunks and rerank:
+        chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
+        chunk_source_field = dataset.object_fields[chunk_vector_field_name].source_fields[0] if dataset.object_fields[chunk_vector_field_name].source_fields else None
+        missing_fields += [chunk_source_field]
+        missing_fields = tuple(set(missing_fields))
         relevant_parts_json = json.dumps(item.get("_relevant_parts", []))
         full_item = get_document_details_by_id(
-            item['_dataset_id'], item['_id'], tuple(missing_fields), relevant_parts_json,
+            item['_dataset_id'], item['_id'], missing_fields, relevant_parts_json,
             top_n_full_text_chunks=reranked_chunks, query=question) or {}
         item["_relevant_parts"] = full_item['_relevant_parts']
         for field in missing_fields:
             item[field] = full_item.get(field)
     elif missing_fields:
         # just get missing fields:
+        missing_fields = tuple(set(missing_fields))
         full_item = get_document_details_by_id(
-            item['_dataset_id'], item['_id'], tuple(missing_fields)) or {}
+            item['_dataset_id'], item['_id'], missing_fields) or {}
         for field in missing_fields:
             item[field] = full_item.get(field)
 
