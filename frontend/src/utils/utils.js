@@ -49,6 +49,8 @@ export function ensureLength(x, size, fillValue, removeRest = false) {
 
 export function highlight_words_in_text(text, words) {
   if (!words || words.length === 0) return text
+  // strip quotation marks at the beginning or end from words
+  words = words.map(word => word.replace(/^["']|["']$/g, ""))
   const stopWords = ["a", "an", "and", "be", "the", "in", "on", "is", "are", "was", "were", "to", "for", "of", "can"]
   const filteredWords = words.filter(word => !stopWords.includes(word.toLowerCase()))
   const regex = new RegExp(`\\b(${filteredWords.join("|")})\\b`, "gi")
