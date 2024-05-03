@@ -1,5 +1,6 @@
 <script setup>
 import Paginator from 'primevue/paginator';
+import Message from 'primevue/message';
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -66,6 +67,9 @@ export default {
           First {{ appState.search_result_ids.length.toLocaleString() }} of ~{{  appState.search_result_total_matches.toLocaleString() }} results are included
         </div>
       </div>
+      <Message v-if="appState.search_result_ids.length && appState.extended_search_results_are_loading" severity="info" :closable="false">
+        Preview of the results (loading more...)
+      </Message>
       <ul role="list" class="pt-1">
         <li
           v-for="ds_and_item_id in result_ids_for_this_page"

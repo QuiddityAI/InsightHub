@@ -57,6 +57,7 @@ export const useAppStateStore = defineStore("appState", {
 
       // mapping progress:
       map_is_in_progess: false,
+      extended_search_results_are_loading: false,
       show_loading_bar: false,
       map_viewport_is_adjusted: false,
       progress: 0.0,
@@ -508,6 +509,7 @@ export const useAppStateStore = defineStore("appState", {
 
       // mapping progress:
       this.map_is_in_progess = false
+      this.extended_search_results_are_loading = false
       this.map_viewport_is_adjusted = false
       this.show_loading_bar = false
       this.map_viewport_is_adjusted = false
@@ -729,6 +731,7 @@ export const useAppStateStore = defineStore("appState", {
           that.map_id = response.data["map_id"]
           that.map_viewport_is_adjusted = false
           that.map_is_in_progess = true
+          that.extended_search_results_are_loading = true
           that.request_mapping_progress()
         })
     },
@@ -774,6 +777,7 @@ export const useAppStateStore = defineStore("appState", {
           if (error.response && error.response.status === 404) {
             // no more data for this task, stop polling:
             that.map_is_in_progess = false
+            that.extended_search_results_are_loading = false
           } else {
             console.log(error)
           }
@@ -797,6 +801,7 @@ export const useAppStateStore = defineStore("appState", {
       if (data["finished"]) {
         // no need to get further results:
         that.map_is_in_progess = false
+        that.extended_search_results_are_loading = false
       }
 
       if (data["errors"] && data["errors"].length > 0) {
@@ -832,6 +837,7 @@ export const useAppStateStore = defineStore("appState", {
           this.search_result_total_matches = results["total_matches"]
           that.mapState.per_point.item_id = results_per_point["item_ids"]
           that.fields_already_received.add("item_ids")
+          that.extended_search_results_are_loading = false
         }
 
         // TODO: restore good gamma corrections:
@@ -1119,6 +1125,7 @@ export const useAppStateStore = defineStore("appState", {
 
           that.map_viewport_is_adjusted = false
           that.map_is_in_progess = true
+          that.extended_search_results_are_loading = true
           that.request_mapping_progress()
         })
         .catch(function (error) {
