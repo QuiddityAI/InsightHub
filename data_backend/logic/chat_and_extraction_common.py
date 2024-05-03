@@ -63,7 +63,7 @@ def _item_to_context(item: dict, dataset: DotDict, reranked_chunks: int=0, quest
                 continue
             chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
             this_chunk = chunks[part.get("index")].get('text', '')
-            chunk_after = chunks[part.get("index") + 1].get('text', '') if part.get("index") < part.get('array_size', 0) else ""
+            chunk_after = chunks[part.get("index") + 1].get('text', '') if part.get("index") + 1 < len(chunks) else ""
             relevant_text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
         context += f"  Potentially Relevant Snippet from {part.get('field')}:\n"
         context += f"    {relevant_text}\n"
