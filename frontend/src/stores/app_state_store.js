@@ -581,34 +581,7 @@ export const useAppStateStore = defineStore("appState", {
       // postprocess search query:
       if (this.settings.search.search_type == "external_input"
           && ["vector", "hybrid"].includes(this.settings.search.search_algorithm)) {
-        // convert quoted phrases to filters if using meaning or hybrid search:
-        // (keyword search supports it through 'simple query string' syntax)
-        const negative_quoted_phrases = this.settings.search.all_field_query.match(/\-"([^"]*)"/g)
-        if (negative_quoted_phrases) {
-          for (const match of negative_quoted_phrases) {
-            this.settings.search.all_field_query = this.settings.search.all_field_query.replace(match, "")
-            const phrase = match.slice(2, -1)
-            this.settings.search.filters.push({
-              field: "_descriptive_text_fields",
-              dataset_id: this.settings.search.dataset_ids[0],
-              operator: "does_not_contain",
-              value: phrase,
-            })
-          }
-        }
-        const quoted_phrases = this.settings.search.all_field_query.match(/"([^"]*)"/g)
-        if (quoted_phrases) {
-          for (const match of quoted_phrases) {
-            //this.settings.search.all_field_query = this.settings.search.all_field_query.replace(match, "")
-            const phrase = match.slice(1, -1)
-            this.settings.search.filters.push({
-              field: "_descriptive_text_fields",
-              dataset_id: this.settings.search.dataset_ids[0],
-              operator: "contains",
-              value: phrase,
-            })
-          }
-        }
+        this.convert_quoted_parts_to_filter()
       }
 
       this.add_search_history_item()
@@ -622,6 +595,40 @@ export const useAppStateStore = defineStore("appState", {
           that.show_received_search_results(response.data)
           that.request_map()
         })
+    },
+    convert_quoted_parts_to_filter() {
+      // convert quoted phrases to filters if using meaning or hybrid search:
+        // (keyword search supports it through 'simple query string' syntax)
+        const negative_quoted_phrases = this.settings.search.all_field_query.match(/\-"([^"]*)"/g)
+        if (negative_quoted_phrases) {
+          for (const match of negative_quoted_phrases) {
+            this.settings.search.all_field_query = this.settings.search.all_field_query.replace(match, "")
+            const phrase = match.slice(2, -1)
+            let already_exists = this.settings.search.filters.some(filter => filter.value === phrase)
+            if (already_exists) continue
+            this.settings.search.filters.push({
+              field: "_descriptive_text_fields",
+              dataset_id: this.settings.search.dataset_ids[0],
+              operator: "does_not_contain",
+              value: phrase,
+            })
+          }
+        }
+        const quoted_phrases = this.settings.search.all_field_query.match(/"([^"]*)"/g)
+        if (quoted_phrases) {
+          for (const match of quoted_phrases) {
+            //this.settings.search.all_field_query = this.settings.search.all_field_query.replace(match, "")
+            const phrase = match.slice(1, -1)
+            let already_exists = this.settings.search.filters.some(filter => filter.value === phrase)
+            if (already_exists) continue
+            this.settings.search.filters.push({
+              field: "_descriptive_text_fields",
+              dataset_id: this.settings.search.dataset_ids[0],
+              operator: "contains",
+              value: phrase,
+            })
+          }
+        }
     },
     answer_question() {
       const that = this
@@ -639,6 +646,8 @@ export const useAppStateStore = defineStore("appState", {
 
       this.reset_search_results_and_map({ leave_map_unchanged: false })
       this.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")  // is this needed?
+
+      this.convert_quoted_parts_to_filter()
 
       const body = { search_settings: this.settings.search }
       httpClient
