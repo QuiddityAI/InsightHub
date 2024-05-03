@@ -51,7 +51,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
     is_vector_field = dataset.object_fields[field_identifier].field_type == FieldType.VECTOR
     is_array_field = dataset.object_fields[field_identifier].is_array
     if is_vector_field:
-        total_items_estimated -= vector_db_client.get_item_count(dataset.actual_database_name, field_identifier)
+        total_items_estimated -= vector_db_client.get_item_count(dataset, field_identifier)
     logging.warning(f"Total items with missing value: {total_items_estimated}")
     if total_items_estimated == 0:
         logging.warning(f"Nothing to do")
@@ -82,7 +82,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
         if len(elements) % batch_size == 0:
             if is_vector_field:
                 items_where_vector_already_exists = vector_db_client.get_items_by_ids(
-                    dataset.actual_database_name, [x["_id"] for x in elements], field_identifier, is_array_field, return_payloads=False, return_vectors=False)
+                    dataset, [x["_id"] for x in elements], field_identifier, is_array_field, return_payloads=False, return_vectors=False)
                 if len(items_where_vector_already_exists) == len(elements):
                     skipped_items += len(elements)
                     elements = []

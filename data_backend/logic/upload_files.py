@@ -120,7 +120,7 @@ def _upload_files(dataset_id: int, import_converter_id: int, files: Iterable[Fil
     _set_task_status(dataset_id, task_id, "inserting into DB", 0.0)
     dataset = get_dataset(dataset_id)
     text_search_engine_client = TextSearchEngineClient()
-    if text_search_engine_client.get_item_count(dataset.actual_database_name) == 0:
+    if text_search_engine_client.get_item_count(dataset) == 0:
         logging.warning(f"Updating database layout for dataset {dataset_id} because there aren't any items in the database yet.")
         update_database_layout(dataset_id)
 

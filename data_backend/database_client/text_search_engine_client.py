@@ -8,10 +8,13 @@ from typing import Generator, Iterable, Optional
 from opensearchpy import OpenSearch
 import opensearchpy.helpers
 
+from database_client.remote_instance_client import use_remote_db
+
 from utils.dotdict import DotDict
 from utils.field_types import FieldType
 from utils.custom_json_encoder import CustomJSONEncoder
 from utils.helpers import run_in_batches_without_result
+from utils.source_plugin_types import SourcePlugin
 
 
 with open("../credentials.json", "rb") as f:
@@ -53,6 +56,9 @@ class TextSearchEngineClient(object):
         # create indexes
         # check if dataset is still valid, update if necessary
         dataset = DotDict(dataset)
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            # for remote instances, we assume the database already exists
+            return
 
         index_name = dataset.actual_database_name
         index_body = {}
@@ -116,11 +122,22 @@ class TextSearchEngineClient(object):
             logging.info(f"Successfully changed text search engine mapping: {response}")
 
 
-    def remove_dataset(self, index_name: str):
+    def remove_dataset(self, dataset: DotDict):
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return
+        index_name = dataset.actual_database_name
         self.client.indices.delete(index=index_name, ignore_unavailable=True)  # type: ignore
 
 
-    def get_item_count(self, index_name: str):
+    def get_item_count(self, dataset: DotDict) -> int:
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return use_remote_db(
+                dataset=dataset,
+                db_type="text_search_engine",
+                function_name="get_item_count",
+                arguments={}
+            )
+        index_name = dataset.actual_database_name
         response = self.client.count(index=index_name, ignore_unavailable=True)  # type: ignore
         return response["count"]
 
@@ -177,10 +194,18 @@ class TextSearchEngineClient(object):
         pass
 
 
-    def get_items_by_ids(self, index_name: str, ids: Iterable[str], fields: Iterable[str]) -> list:
+    def get_items_by_ids(self, dataset: DotDict, ids: Iterable[str], fields: Iterable[str]) -> list:
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return use_remote_db(
+                dataset=dataset,
+                db_type="text_search_engine",
+                function_name="get_items_by_ids",
+                arguments={"ids": ids, "fields": fields}
+            )
         body = {
             "ids": ids,
         }
+        index_name = dataset.actual_database_name
         response = self.client.mget(body=body, index=index_name, params={"_source_includes": ",".join(fields)})
         items = []
         for doc in response['docs']:
@@ -245,9 +270,19 @@ class TextSearchEngineClient(object):
         response = self.client.update_by_query(index=index_name, body=body)
         logging.warning(f"Deleted field {field} from text search engine: {response}")
 
-    def get_search_results(self, index_name: str, search_fields, filters: list[dict],
+
+    def get_search_results(self, dataset: DotDict, search_fields, filters: list[dict],
                            query_positive, query_negative, page, limit, return_fields,
                            highlights=False, use_bolding_in_highlights:bool=True):
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return use_remote_db(
+                dataset=dataset,
+                db_type="text_search_engine",
+                function_name="get_search_results",
+                arguments={"search_fields": search_fields, "filters": filters, "query_positive": query_positive,
+                            "query_negative": query_negative, "page": page, "limit": limit, "return_fields": return_fields,
+                            "highlights": highlights, "use_bolding_in_highlights": use_bolding_in_highlights}
+            )
         if filters:
             query = {
                 'size': limit,
@@ -290,10 +325,11 @@ class TextSearchEngineClient(object):
 
         response = self.client.search(
             body = query,
-            index = index_name
+            index = dataset.actual_database_name,
         )
         total_matches = response.get("hits", {}).get("total", {}).get("value", 0)
         return response.get("hits", {}).get("hits", []), total_matches
+
 
     def _convert_to_opensearch_filters(self, filters: list[dict]):
         query_filter = {
@@ -369,6 +405,7 @@ class TextSearchEngineClient(object):
                     }
                 })
         return query_filter
+
 
     def _convert_to_simple_query_language(self, query: str):
         conversion = {"AND": "+", "OR": "|", r"NOT\s+": "-"}

@@ -228,7 +228,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
                                 required_fields: list[str], limit: int, page: int,
                                 use_bolding_in_highlights: bool = True):
     text_db_client = TextSearchEngineClient.get_instance()
-    search_result, total_matches = text_db_client.get_search_results(dataset.actual_database_name, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=True, use_bolding_in_highlights=use_bolding_in_highlights)
+    search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=True, use_bolding_in_highlights=use_bolding_in_highlights)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     ignored_keyword_highlight_fields = dataset.defaults.ignored_keyword_highlight_fields or []
@@ -300,7 +300,7 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
     assert query_vector is not None
     is_array_field = dataset.object_fields[vector_field].is_array
     array_source_field = dataset.object_fields[vector_field].source_fields[0] if is_array_field and dataset.object_fields[vector_field].source_fields else None
-    vector_search_result = vector_db_client.get_items_near_vector(dataset.actual_database_name, vector_field, query_vector,
+    vector_search_result = vector_db_client.get_items_near_vector(dataset, vector_field, query_vector,
                                                                   filters, return_vectors=False, limit=limit,
                                                                   score_threshold=score_threshold, is_array_field=is_array_field,
                                                                   max_sub_items=max_sub_items or 1) # type: ignore
@@ -346,7 +346,7 @@ def get_vector_search_results_matching_collection(dataset: DotDict, vector_field
 def fill_in_details_from_text_storage(dataset: DotDict, items: dict[str, dict], required_fields: list[str]):
     if not items:
         return
-    if dataset.source_plugin != SourcePlugin.INTERNAL_OPENSEARCH_QDRANT:
+    if dataset.source_plugin != SourcePlugin.INTERNAL_OPENSEARCH_QDRANT and dataset.source_plugin != SourcePlugin.REMOTE_DATASET:
         return
     if all(all(field in item for field in required_fields) for item in items.values()):
         # all required fields are already present
@@ -356,7 +356,7 @@ def fill_in_details_from_text_storage(dataset: DotDict, items: dict[str, dict], 
         full_items = get_absclust_items_by_ids(ids)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
-        full_items = search_engine_client.get_items_by_ids(dataset.actual_database_name, ids, fields=required_fields)
+        full_items = search_engine_client.get_items_by_ids(dataset, ids, fields=required_fields)
     for full_item in full_items:
         items[full_item['_id']].update(full_item)
 
@@ -369,7 +369,7 @@ def fill_in_vector_data_list(dataset: DotDict, items: list[dict], required_vecto
 def fill_in_vector_data(dataset: DotDict, items: dict[str, dict], required_vector_fields: list[str]):
     if not items or not required_vector_fields:
         return
-    if dataset.source_plugin != SourcePlugin.INTERNAL_OPENSEARCH_QDRANT:
+    if dataset.source_plugin != SourcePlugin.INTERNAL_OPENSEARCH_QDRANT and dataset.source_plugin != SourcePlugin.REMOTE_DATASET:
         return
     if all(all(field in item for field in required_vector_fields) for item in items.values()):
         # all required fields are already present
@@ -380,7 +380,7 @@ def fill_in_vector_data(dataset: DotDict, items: dict[str, dict], required_vecto
     vector_db_client = VectorSearchEngineClient.get_instance()
     for vector_field in required_vector_fields:
         is_array_field = dataset.object_fields[vector_field].is_array
-        results = vector_db_client.get_items_by_ids(dataset.actual_database_name, ids, vector_field, is_array_field, return_vectors=True, return_payloads=False)
+        results = vector_db_client.get_items_by_ids(dataset, ids, vector_field, is_array_field, return_vectors=True, return_payloads=False)
         for result in results:
             items[result.id][vector_field] = result.vector[vector_field]
 
@@ -461,8 +461,8 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
 
+    dataset = get_dataset(dataset_id)
     if not database_name:
-        dataset = get_dataset(dataset_id)
         database_name = dataset.actual_database_name
         assert database_name is not None
     additional_fields = []
@@ -489,7 +489,7 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
 
     search_engine_client = TextSearchEngineClient.get_instance()
     all_fields = list(set(list(fields) + additional_fields))
-    items = search_engine_client.get_items_by_ids(database_name, [item_id], fields=all_fields)
+    items = search_engine_client.get_items_by_ids(dataset, [item_id], fields=all_fields)
     if not items:
         return None
     item = items[0]

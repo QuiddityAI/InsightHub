@@ -8,9 +8,12 @@ from qdrant_client.http import models
 from qdrant_client.models import Filter, FieldCondition, Range, PayloadSchemaType, NamedVector, HnswConfigDiff
 from qdrant_client.http.exceptions import UnexpectedResponse
 
+from database_client.remote_instance_client import use_remote_db
+
 from utils.dotdict import DotDict
 from utils.field_types import FieldType
 from utils.helpers import get_vector_field_dimensions
+from utils.source_plugin_types import SourcePlugin
 
 
 qdrant_host = os.getenv("vector_database_host", "localhost")
@@ -159,8 +162,15 @@ class VectorSearchEngineClient(object):
                 print(e)
 
 
-    def get_item_count(self, database_name: str, vector_field: str, count_sub_items_of_array_field: bool = False) -> int:
-        collection_name = self._get_collection_name(database_name, vector_field)
+    def get_item_count(self, dataset: DotDict, vector_field: str, count_sub_items_of_array_field: bool = False) -> int:
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return use_remote_db(
+                dataset=dataset,
+                db_type="vector_search_engine",
+                function_name="get_item_count",
+                arguments={"vector_field": vector_field, "count_sub_items_of_array_field": count_sub_items_of_array_field}
+            )
+        collection_name = self._get_collection_name(dataset.actual_database_name, vector_field)
         if count_sub_items_of_array_field:
             collection_name = f'{collection_name}_sub_items'
         try:
@@ -239,10 +249,21 @@ class VectorSearchEngineClient(object):
             )
 
 
-    def get_items_near_vector(self, database_name: str, vector_field: str, query_vector: list,
+    def get_items_near_vector(self, dataset: DotDict, vector_field: str, query_vector: list,
                               filters: list[dict] | None, return_vectors: bool, limit: int,
-                              score_threshold: float | None, min_results: int = 10, is_array_field: bool=False, max_sub_items: int = 1) -> list:
-        collection_name = self._get_collection_name(database_name, vector_field)
+                              score_threshold: float | None, min_results: int = 10,
+                              is_array_field: bool=False, max_sub_items: int = 1) -> list:
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return use_remote_db(
+                dataset=dataset,
+                db_type="vector_search_engine",
+                function_name="get_items_near_vector",
+                arguments={"vector_field": vector_field, "query_vector": query_vector,
+                           "filters": filters, "return_vectors": return_vectors, "limit": limit,
+                           "score_threshold": score_threshold, "min_results": min_results,
+                           "is_array_field": is_array_field, "max_sub_items": max_sub_items}
+            )
+        collection_name = self._get_collection_name(dataset.actual_database_name, vector_field)
         qdrant_filters = self._convert_to_qdrant_filters(filters)
 
         if is_array_field:
@@ -267,7 +288,7 @@ class VectorSearchEngineClient(object):
                 }))
             if min_results > 0 and len(hits) < min_results and score_threshold:
                 # try again without score threshold
-                return self.get_items_near_vector(database_name, vector_field, query_vector, filters, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
+                return self.get_items_near_vector(dataset, vector_field, query_vector, filters, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
             return hits  # type: ignore
 
         hits = self.client.search(
@@ -281,7 +302,7 @@ class VectorSearchEngineClient(object):
         )
         if min_results > 0 and len(hits) < min_results and score_threshold:
             # try again without score threshold
-            return self.get_items_near_vector(database_name, vector_field, query_vector, filters, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
+            return self.get_items_near_vector(dataset, vector_field, query_vector, filters, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
         return hits
 
 
@@ -358,13 +379,21 @@ class VectorSearchEngineClient(object):
         return hits
 
 
-    def get_items_by_ids(self, database_name: str, ids: List[str], vector_field: str, is_array_field: bool,
+    def get_items_by_ids(self, dataset: DotDict, ids: List[str], vector_field: str, is_array_field: bool,
                          return_vectors: bool = False, return_payloads: bool = False) -> list:
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return use_remote_db(
+                dataset=dataset,
+                db_type="vector_search_engine",
+                function_name="get_items_by_ids",
+                arguments={"ids": ids, "vector_field": vector_field, "is_array_field": is_array_field,
+                           "return_vectors": return_vectors, "return_payloads": return_payloads}
+            )
         if is_array_field and return_vectors:
             logging.warning("Returning vectors for array fields is not supported yet")
             # TODO: return sub-items vectors by iterating over ids and fetch vectors for each parent item
         hits = self.client.retrieve(
-            collection_name=self._get_collection_name(database_name, vector_field),
+            collection_name=self._get_collection_name(dataset.actual_database_name, vector_field),
             ids=ids, # type: ignore
             with_payload=return_payloads,
             with_vectors=return_vectors

@@ -130,7 +130,7 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
                 try:
                     logging.warning(f'Getting vector for {dataset_id} {item_id} {vector_field}')
                     is_array_field = dataset.object_fields[vector_field].is_array
-                    results = vector_db_client.get_items_by_ids(dataset.actual_database_name, [item_id], vector_field, is_array_field, return_vectors=True, return_payloads=False)
+                    results = vector_db_client.get_items_by_ids(dataset, [item_id], vector_field, is_array_field, return_vectors=True, return_payloads=False)
                 except Exception as e:
                     logging.warning(e)
                     results = []
@@ -172,7 +172,7 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
                 dataset = get_dataset(dataset_id)
                 random_items = text_search_engine_client.get_random_items(dataset.actual_database_name, negative_items_per_dataset, [])
                 is_array_field = dataset.object_fields[vector_field].is_array
-                results = vector_db_client.get_items_by_ids(dataset.actual_database_name, [e['_id'] for e in random_items], vector_field, is_array_field, return_vectors=True, return_payloads=False)
+                results = vector_db_client.get_items_by_ids(dataset, [e['_id'] for e in random_items], vector_field, is_array_field, return_vectors=True, return_payloads=False)
                 for result in results:
                     vector = result.vector[vector_field]
                     random_negative_vectors.append(vector)

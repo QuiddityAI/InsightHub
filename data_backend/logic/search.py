@@ -213,7 +213,7 @@ def _get_item_for_similarity_search(search_settings):
     dataset = get_dataset(dataset_id)
     vector_fields = [field for field in dataset.object_fields.values() if field.identifier in dataset.default_search_fields and field.field_type == FieldType.VECTOR and field.is_array == False]
     search_engine_client = TextSearchEngineClient.get_instance()
-    items = search_engine_client.get_items_by_ids(dataset.actual_database_name, [item_id], fields=[field.identifier for field in vector_fields])
+    items = search_engine_client.get_items_by_ids(dataset, [item_id], fields=[field.identifier for field in vector_fields])
     fill_in_vector_data_list(dataset, items, [field.identifier for field in vector_fields])
     item = items[0]
     item['_dataset_id'] = dataset.id
@@ -387,7 +387,7 @@ def get_search_results_for_global_map(dataset, search_settings: DotDict, vectori
         }
     result_sets: list[dict] = [items]
 
-    total_matches = search_engine_client.get_item_count(dataset.actual_database_name)
+    total_matches = search_engine_client.get_item_count(dataset)
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
     return *combine_and_sort_result_sets(result_sets, required_fields, dataset, search_settings, limit, timings), total_matches
 
@@ -401,7 +401,7 @@ def get_item_count(dataset_id: int) -> int:
     dataset = get_dataset(dataset_id)
     search_engine_client = TextSearchEngineClient.get_instance()
     try:
-        count = search_engine_client.get_item_count(dataset.actual_database_name)
+        count = search_engine_client.get_item_count(dataset)
         return count
     except Exception as e:
         logging.error(e)
@@ -412,11 +412,11 @@ def get_items_having_value_count(dataset_id: int, field: str, count_sub_items: b
     dataset = get_dataset(dataset_id)
     if dataset.object_fields[field].field_type == FieldType.VECTOR:
         vector_db_client = VectorSearchEngineClient.get_instance()
-        return vector_db_client.get_item_count(dataset.actual_database_name, field, count_sub_items_of_array_field=count_sub_items)
+        return vector_db_client.get_item_count(dataset, field, count_sub_items_of_array_field=count_sub_items)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
         try:
-            count = search_engine_client.get_item_count(dataset.actual_database_name)
+            count = search_engine_client.get_item_count(dataset)
             return count - search_engine_client.get_all_items_with_missing_field_count(dataset.actual_database_name, field)
         except Exception as e:
             logging.error(e)

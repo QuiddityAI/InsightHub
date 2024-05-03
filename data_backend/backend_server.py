@@ -23,6 +23,7 @@ from logic.upload_files import upload_files, get_upload_task_status, UPLOADED_FI
 from logic.chat_and_extraction import get_global_question_context, get_item_question_context
 
 from database_client.django_client import add_stored_map
+from database_client.forward_local_db import forward_local_db
 
 
 # --- Flask set up: ---
@@ -420,6 +421,18 @@ def start_retrain_route():
     params = DotDict(params)
     start_retrain(params.collection_id, params.class_name, params.embedding_space_id, params.deep_train)
     return "", 204
+
+
+# -------------------- Remote DB Access --------------------
+
+
+@app.route('/data_backend/remote_db_access', methods=['POST'])
+def remote_db_access_route():
+    # permissions were already checked in the organization backend
+    params = request.json or {}
+    params = DotDict(params)
+    result = forward_local_db(params)
+    return jsonify({'result': result})
 
 
 if __name__ == "__main__":

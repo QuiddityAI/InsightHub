@@ -20,6 +20,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/map/result": lambda x: True,  # needs map_id, is ok
         "/data_backend/map/thumbnail_atlas": lambda x: True,  # needs thumbnail file name, is ok
         "/data_backend/document/details_by_id": _check_details_by_id,
+        "/data_backend/remote_db_access": _check_remote_db_access,
     }
     checks_for_routes_always_needing_authentication = {
         "/data_backend/classifier/retrain": lambda x: True,  # TODO, but not very harmful
@@ -79,5 +80,15 @@ def _check_details_by_id(request):
     # TODO: this might be a performance bottleneck if many items need to be retrieved
     dataset = Dataset.objects.get(id=params.dataset_id)
     if not dataset.is_public and request.user not in dataset.organization.members.all():
+        return False
+    return True
+
+
+def _check_remote_db_access(request):
+    params = DotDict(json.loads(request.body))
+    dataset = Dataset.objects.get(id=params.dataset_id)
+    access_token = params.access_token
+    assert isinstance(dataset.defaults, dict)
+    if access_token not in dataset.defaults.get('access_tokens', {}):
         return False
     return True
