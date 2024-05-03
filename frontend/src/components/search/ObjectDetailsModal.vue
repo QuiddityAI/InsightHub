@@ -112,6 +112,7 @@ export default {
       this.checking_for_fulltext = false
       this.checked_for_fulltext = false
       this.fulltext_url = false
+      this.vector_chunk_index = 0
       this.updateItemAndRendering()
     },
   },
