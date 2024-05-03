@@ -599,7 +599,7 @@ export const useAppStateStore = defineStore("appState", {
         const quoted_phrases = this.settings.search.all_field_query.match(/"([^"]*)"/g)
         if (quoted_phrases) {
           for (const match of quoted_phrases) {
-            this.settings.search.all_field_query = this.settings.search.all_field_query.replace(match, "")
+            //this.settings.search.all_field_query = this.settings.search.all_field_query.replace(match, "")
             const phrase = match.slice(1, -1)
             this.settings.search.filters.push({
               field: "_descriptive_text_fields",
