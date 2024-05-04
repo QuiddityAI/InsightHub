@@ -12,7 +12,7 @@ import werkzeug
 from utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
 from utils.dotdict import DotDict
 
-from logic.mapping_task import get_or_create_map, get_map_results
+from logic.mapping_task import get_map_selection_statistics, get_or_create_map, get_map_results
 from logic.insert_logic import insert_many, update_database_layout, delete_dataset_content
 from logic.search import get_search_results, get_search_results_for_stored_map, get_item_count, get_random_items, get_items_having_value_count
 from logic.search_common import get_document_details_by_id
@@ -313,6 +313,19 @@ def retrive_map_results():
         resp = app.make_response(cbor2.dumps(result))
         resp.mimetype = "application/cbor"
         return resp
+    return result
+
+
+@app.route('/data_backend/map/selection_statistics', methods=['POST'])
+def get_map_selection_statistics_route():
+    params = request.json or {}
+    map_id = params.get("map_id")
+    selected_ids = params.get("selected_ids", [])
+    if not map_id or not selected_ids:
+        return "map_id or selection missing", 400
+    result = get_map_selection_statistics(map_id, selected_ids)
+    if result is None:
+        return "map_id not found", 404
     return result
 
 

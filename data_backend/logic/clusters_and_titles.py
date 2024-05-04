@@ -80,22 +80,25 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
     except ValueError as e:
         # this might happend when there are no terms appearing in more than 70% of the clusters (?)
         logging.warning(f"Error in TfidfVectorizer: {e}")
-        vectorizer = TfidfVectorizer(tokenizer=context_specific_tokenize, lowercase=False, strip_accents=None, ngram_range=(1, 2), max_df=0.7)
-    else:
-        # To prevent the generation of n-grams across different source fields, a specific token
-        # is inserted between the fields ("_stop_", see join_text_source_fields() ).
-        # We now remove any 2-grams from the vocabulary that contain the field boundary indicator "_stop_":
-        for voc in list(vectorizer.vocabulary_.keys()):
-            if field_boundary_indicator in voc:
-                del vectorizer.vocabulary_[voc]
-        # recreate the TfidfVectorizer object with the cleaned-up vocabulary:
-        vectorizer = TfidfVectorizer(tokenizer=context_specific_tokenize, lowercase=False, strip_accents=None, ngram_range=(1, 2), max_df=0.7, vocabulary=vectorizer.vocabulary_.keys())
+        # try again without max_df limit:
+        vectorizer = TfidfVectorizer(tokenizer=context_specific_tokenize, lowercase=False, strip_accents=None, ngram_range=(1, 2))
+        vectorizer.fit(texts_per_cluster)
+
+    # To prevent the generation of n-grams across different source fields, a specific token
+    # is inserted between the fields ("_stop_", see join_text_source_fields() ).
+    # We now remove any 2-grams from the vocabulary that contain the field boundary indicator "_stop_":
+    for voc in list(vectorizer.vocabulary_.keys()):
+        if field_boundary_indicator in voc:
+            del vectorizer.vocabulary_[voc]
+    # recreate the TfidfVectorizer object with the cleaned-up vocabulary:
+    vectorizer = TfidfVectorizer(tokenizer=context_specific_tokenize, lowercase=False, strip_accents=None, ngram_range=(1, 2), max_df=0.7, vocabulary=vectorizer.vocabulary_.keys())
 
     cluster_data = []
 
     try:
         tf_idf_matrix = vectorizer.fit_transform(texts_per_cluster)  # not numpy but scipy sparse array
     except ValueError as e:
+        logging.warning(f"Error in TfidfVectorizer.fit_transform: {e}")
         # this might happen when there are clusters without common words (?)
         for cluster_id in range(num_clusters):
             title = f"Cluster {cluster_id + 1}"

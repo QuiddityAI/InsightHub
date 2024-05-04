@@ -740,6 +740,7 @@ export const useAppStateStore = defineStore("appState", {
             return visible
           }
         )
+      this.eventBus.emit("visible_result_ids_updated")
     },
     // ------------------------------------------------------
     request_map() {

@@ -547,6 +547,31 @@ def clusterize_and_render_phase(map_data: dict, params: DotDict, datasets: dict,
             map_data["results"]["per_point_data"][attr] = scores.tolist()
 
 
+def get_map_selection_statistics(map_id: str, selected_ids: list[tuple[int, str]]) -> dict | None:
+    if map_id not in local_maps:
+        # map is not in cache anymore, try to get it from storage again:
+        map_data = get_stored_map_data(map_id)
+        if map_data:
+            local_maps[map_id] = map_data
+    map_data = local_maps.get(map_id)
+    if not map_data:
+        return None
+    timings: Timings = Timings()
+    params: DotDict = DotDict(map_data["parameters"])
+    datasets = {dataset_id: get_dataset(dataset_id) for dataset_id in params.search.dataset_ids}
+    sorted_ids = map_data["results"]["per_point_data"]["item_ids"]
+    slimmed_items_per_dataset = map_data['results']['slimmed_items_per_dataset']
+    items_by_dataset = {}
+    for ds_id, ds_items in slimmed_items_per_dataset.items():
+        dataset = datasets[ds_id]
+        _, ds_full_items = get_full_results_from_meta_info(dataset, params.vectorize, ds_items, 'map', timings)
+        items_by_dataset[ds_id] = ds_full_items
+    final_positions = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
+    cluster_id_per_point = [0 if any(ds_id == s[0] and item_id == s[1] for s in selected_ids) else 1 for ds_id, item_id in sorted_ids]
+    cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, timings)
+    return cluster_data[0] if cluster_data else None
+
+
 def get_map_results(map_id) -> dict | None:
     if map_id not in local_maps:
         map_data = get_stored_map_data(map_id)

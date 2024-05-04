@@ -26,7 +26,7 @@ export default {
   },
   mounted() {
     this.create_plot()
-    this.eventBus.on("visibility_filters_changed", () => {
+    this.eventBus.on("visible_result_ids_updated", () => {
       this.create_plot()
     })
   },
@@ -38,34 +38,29 @@ export default {
   methods: {
     create_plot() {
       var begin = new Date().getTime() / 1000;
-      const item_ids = this.mapStateStore.per_point.item_id
       const item_details = this.appStateStore.map_item_details
 
       const y_counts = {}
       const y_values = {}
-      for (const ds_id in item_details) {
-        for (const item_id in item_details[ds_id]) {
-          const item = item_details[ds_id][item_id]
-          const include = this.mapStateStore.visibility_filters.every(filter_item => filter_item.filter_fn(item))
-          if (!include) {
-            continue
-          }
+      for (const ds_and_item_id of this.appStateStore.visible_result_ids) {
+        const ds_items = item_details[ds_and_item_id[0]]
+        if (!ds_items) continue
+        const item = ds_items[ds_and_item_id[1]]
 
-          const categories = this.statistic.x_type === "array_item_category" ? item[this.statistic.x] : [item[this.statistic.x]]
-          if (categories === undefined) {
-            continue
-          }
+        const categories = this.statistic.x_type === "array_item_category" ? item[this.statistic.x] : [item[this.statistic.x]]
+        if (categories === undefined) {
+          continue
+        }
+        for (const category of categories) {
+          y_counts[category] = (y_counts[category] || 0) + 1
+        }
+        for (const y_params of this.statistic.y) {
+          const value = y_params.field ? item[y_params.field] : null
           for (const category of categories) {
-            y_counts[category] = (y_counts[category] || 0) + 1
-          }
-          for (const y_params of this.statistic.y) {
-            const value = y_params.field ? item[y_params.field] : null
-            for (const category of categories) {
-              if (!y_values.hasOwnProperty(category)) {
-                y_values[category] = {}
-              }
-              y_values[category][y_params.name] = (y_values[category][y_params.name] || 0) + value
+            if (!y_values.hasOwnProperty(category)) {
+              y_values[category] = {}
             }
+            y_values[category][y_params.name] = (y_values[category][y_params.name] || 0) + value
           }
         }
       }
