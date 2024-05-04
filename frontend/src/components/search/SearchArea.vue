@@ -4,11 +4,11 @@ import {
   AdjustmentsHorizontalIcon,
   MinusCircleIcon,
   HomeIcon,
-  ArrowRightOnRectangleIcon,
-  UserCircleIcon,
-  CircleStackIcon,
   ClockIcon,
-  BookmarkIcon
+  BookmarkIcon,
+  MagnifyingGlassIcon,
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/vue/24/outline"
 import MultiSelect from 'primevue/multiselect';
 import Chip from 'primevue/chip';
@@ -216,13 +216,14 @@ export default {
     <!-- Database Selection -->
     <div class="mb-2 flex items-center justify-between">
       <a
-        title="Home"
+        v-tooltip.right="{ value: 'Reset search', showDelay: 400 }"
         :href="`?organization_id=${appState.organization_id}`"
         class="w-8 rounded p-2 text-gray-500 hover:bg-gray-100">
         <HomeIcon></HomeIcon>
       </a>
 
-      <div class="ml-1 flex-initial w-28">
+      <div class="ml-1 flex-initial w-28"
+        v-tooltip.bottom="{ value: 'Select the organization', showDelay: 400 }">
         <select
           v-model="internal_organization_id"
           @change="organization_id_changed_by_user"
@@ -233,7 +234,8 @@ export default {
         </select>
       </div>
 
-      <div class="flex-initial w-48">
+      <div class="flex-initial w-48"
+        v-tooltip.bottom="{ value: 'Datasets to search in', showDelay: 400 }">
         <MultiSelect v-model="appState.settings.search.dataset_ids"
           :options="Object.values(appState.datasets)"
           optionLabel="name"
@@ -260,7 +262,7 @@ export default {
       <div class="flex-1"></div>
       <LoginButton></LoginButton>
       <button v-if="appState.logged_in" class="mr-2 p-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
-        title="Open user menu (logout etc.)"
+        v-tooltip.bottom="{ value: 'User Menu (logout etc.)', showDelay: 400 }"
         @click="(event) => $refs.user_menu.toggle(event)">
         <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
         {{ appState.user.username.substring(0, 6) + (appState.user.username.length > 6 ? '...' : '') }}
@@ -282,9 +284,11 @@ export default {
           :placeholder="`Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.entity_name || '' : ''} you want to find`"
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
       </div>
-      <button v-if="!processing_smart_search" class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
+      <button v-if="!processing_smart_search"
+        v-tooltip.bottom="{value: 'Submit (auto search or chat)', showDelay: 400}"
+        class="ml-2 px-2 h-9 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
         @click="run_smart_search()">
-        Go
+        <PaperAirplaneIcon class="h-5 w-5"></PaperAirplaneIcon>
       </button>
       <ProgressSpinner v-if="processing_smart_search" class="ml-1 w-5 h-5"></ProgressSpinner>
     </div>
@@ -352,13 +356,17 @@ export default {
           "
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
       </div>
-      <button v-if="appState.settings.search.search_type == 'external_input'" class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
+      <button v-if="appState.settings.search.search_type == 'external_input'"
+        v-tooltip.bottom="{value: 'Search (list & map)', showDelay: 400}"
+        class="ml-2 px-2 h-9 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
         @click="appState.request_search_results">
-        Search
+        <MagnifyingGlassIcon class="h-5 w-5"></MagnifyingGlassIcon>
       </button>
-      <button v-if="appState.settings.search.search_type == 'external_input'" class="ml-1 bg-gray-100 hover:bg-blue-100/50 rounded-md px-2 h-9 text-sm text-gray-500"
+      <button v-if="appState.settings.search.search_type == 'external_input'"
+        v-tooltip.bottom="{value: 'Answer question in a chat', showDelay: 400}"
+        class="ml-2 px-2 h-9 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
         @click="appState.answer_question">
-        Answer Question
+        <ChatBubbleLeftIcon class="h-5 w-5"></ChatBubbleLeftIcon>
       </button>
       <button
         v-if="appState.dev_mode"
@@ -429,7 +437,7 @@ export default {
       <div class="flex-1"></div>
       <div class="flex flex-row items-center gap-0 h-6">
         <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
-          title="Add filters and change search options"
+          v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
           @click="(event) => { $refs.add_filter_menu.toggle(event) }">
           + Filter / Option
         </button>
@@ -442,13 +450,13 @@ export default {
       <button
         v-if="appState.logged_in"
         @click="open_search_history_dialog()"
-        title="Search History"
+        v-tooltip.bottom="{ value: 'Search History', showDelay: 400 }"
         class="h-6 w-6 ml-1 rounded px-1 hover:bg-gray-100 text-gray-400">
         <ClockIcon></ClockIcon>
       </button><button
         v-if="appState.logged_in"
         @click="open_stored_maps_dialog()"
-        title="Stored Views"
+        v-tooltip.bottom="{ value: 'Stored Views', showDelay: 400 }"
         class="h-6 w-6 ml-1 rounded px-1 hover:bg-gray-100 text-gray-400">
         <BookmarkIcon></BookmarkIcon>
       </button>
