@@ -223,7 +223,7 @@ export default {
     <MapWithLabels class="absolute top-0 h-screen w-screen"/>
 
     <div
-      v-if="appState.map_id && appState.settings.search.search_type !== 'global_map'"
+      v-if="appState.map_id && appState.settings.search.search_type === 'similar_to_item'"
       class="absolute bottom-6 right-[200px] flex flex-row items-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <button
         v-tooltip.top="'Normal map with items arranged in island-like clusters'"
