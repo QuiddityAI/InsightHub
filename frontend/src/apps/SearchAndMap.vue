@@ -308,7 +308,7 @@ export default {
     </div>
 
     <div
-      v-if="mapState.selected_point_indexes.length"
+      v-if="mapState.visibility_filters.length"
       class="absolute bottom-6 right-48 flex flex-row items-center justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <span class="mr-2 text-sm text-gray-400">Selection:</span>
       <AddToCollectionButtons
@@ -316,7 +316,7 @@ export default {
         @removeFromCollection="appState.remove_selected_points_from_collection">
       </AddToCollectionButtons>
       <button
-        @click="mapState.selected_point_indexes = []"
+        @click="mapState.reset_visibility_filters()"
         class="h-6 w-6 rounded text-gray-400 hover:bg-red-100">
         <XMarkIcon></XMarkIcon>
       </button>

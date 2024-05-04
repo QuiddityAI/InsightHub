@@ -35,7 +35,6 @@ export const useMapStateStore = defineStore("mapState", {
 
       selected_map_tool: "drag", // one of 'drag' or 'lasso'
       selection_merging_mode: "replace", // one of 'replace', 'add', 'remove'
-      selected_point_indexes: [],
       visited_point_indexes: [],
       lasso_points: [],
       markedPointIdx: -1,
@@ -117,5 +116,43 @@ export const useMapStateStore = defineStore("mapState", {
       const notNormalizedY = notShiftedToActiveAreaY / this.baseScale[1] - this.baseOffset[1]
       return notNormalizedY
     },
+    // -------- Visibility Filters & Lasso Selection --------
+    reset_visibility_filters() {
+      this.visibility_filters = []
+      this.eventBus.emit("visibility_filters_changed")
+    },
+    get_lasso_selection() {
+      const existing_selection = this.visibility_filters.find(
+        (filter_item) => filter_item.is_lasso_selection
+      )
+      return existing_selection ? existing_selection.selected_point_ids : []
+    },
+    modify_lasso_selection(ds_and_item_ids, mode="replace") {
+      const existing_selection = this.get_lasso_selection()
+      // remove existing lasso selection filter:
+      this.visibility_filters = this.visibility_filters.filter(
+        (filter_item) => !filter_item.is_lasso_selection
+      )
+      if (mode == "replace") {
+        // pass
+      } else if (mode == "add") {
+        ds_and_item_ids = [
+          ...new Set([...existing_selection, ...ds_and_item_ids]),
+        ]
+      } else if (mode == "remove") {
+        ds_and_item_ids =
+          existing_selection.filter(
+            (x) => !ds_and_item_ids.some(selected_id => selected_id[0] == x[0] && selected_id[1] == x[1])
+          )
+      }
+      this.visibility_filters.push({
+        display_name: "Lasso Selection",
+        is_lasso_selection: true,
+        selected_point_ids: ds_and_item_ids,
+        filter_fn: (item) => ds_and_item_ids.some(selected_id => selected_id[0] == item._dataset_id && selected_id[1] == item._id),
+      })
+      this.eventBus.emit("visibility_filters_changed")
+    },
+    // ------------------------------------------------------
   },
 })

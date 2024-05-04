@@ -726,6 +726,7 @@ export const useAppStateStore = defineStore("appState", {
       this.search_result_items = response_data["items_by_dataset"]
       this.search_timings = response_data["timings"]
     },
+    // -------- Visibility Filters & Lasso Selection (see mapStateStore for more) --------
     update_visible_result_ids() {
       this.visible_result_ids = this.search_result_ids
         .filter(
@@ -740,6 +741,7 @@ export const useAppStateStore = defineStore("appState", {
           }
         )
     },
+    // ------------------------------------------------------
     request_map() {
       const that = this
       if (this.settings.search.dataset_ids.length === 0) return
@@ -1077,7 +1079,6 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.origin_display_name = full_item ? title_func(full_item) : "Seed Item"
       this.set_polar_projection()
       // keep the map, but indexes will change, so reset them:
-      this.mapState.selected_point_indexes = []
       this.mapState.markedPointIdx = -1
       this.request_search_results()
     },
@@ -1161,11 +1162,10 @@ export const useAppStateStore = defineStore("appState", {
     },
     add_selected_points_to_collection(collection_id, class_name, is_positive) {
       // TODO: implement more efficient way
-      for (const point_index of this.mapState.selected_point_indexes) {
-        const ds_and_item_id = this.mapState.per_point.item_id[point_index]
+      for (const ds_and_item_id of this.visible_result_ids) {
         this.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, false)
       }
-      this.toast.add({severity: 'success', summary: 'Items added to collection', detail: `${this.mapState.selected_point_indexes.length} items added to the collection`, life: 3000})
+      this.toast.add({severity: 'success', summary: 'Items added to collection', detail: `${this.visible_result_ids.length} items added to the collection`, life: 3000})
     },
     add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, show_toast=true) {
       const that = this
@@ -1202,11 +1202,12 @@ export const useAppStateStore = defineStore("appState", {
     },
     remove_selected_points_from_collection(collection_id, class_name) {
       // TODO: implement more efficient way
-      for (const point_index of this.mapState.selected_point_indexes) {
-        this.remove_item_from_collection(point_index, collection_id, class_name)
+      for (const ds_and_item_id of this.visible_result_ids) {
+        this.remove_item_from_collection(ds_and_item_id, collection_id, class_name, false)
       }
+      this.toast.add({severity: 'success', summary: 'Items removed from collection', detail: `${this.visible_result_ids.length} items removed from the collection`, life: 3000})
     },
-    remove_item_from_collection(ds_and_item_id, collection_id, class_name) {
+    remove_item_from_collection(ds_and_item_id, collection_id, class_name, show_toast=true) {
       const that = this
       const body = {
         collection_id: collection_id,
@@ -1232,6 +1233,9 @@ export const useAppStateStore = defineStore("appState", {
               (actual_class) => actual_class.name === class_name
             )
             class_details[item.is_positive ? "positive_count" : "negative_count"] -= 1
+          }
+          if (show_toast) {
+            that.toast.add({severity: 'success', summary: 'Item removed from collection', detail: 'Item removed from the collection', life: 3000})
           }
         })
     },

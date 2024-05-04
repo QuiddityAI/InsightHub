@@ -110,9 +110,6 @@ export default {
     })
   },
   watch: {
-    "mapStateStore.selected_point_indexes"() {
-      this.updateGeometry()
-    },
     "appStateStore.selected_cluster_id"() {
       this.updateUniforms()
     },
@@ -627,10 +624,6 @@ export default {
           per_point_val[i] = 0.7
         }
       }
-      for (const i of this.mapStateStore.selected_point_indexes) {
-        per_point_hue[i] = 0.0
-        per_point_sat[i] = 1.0
-      }
 
       const pointsGeometry = new Geometry(this.glContext, {
         position: {
@@ -843,13 +836,11 @@ export default {
       ])
       if (mouseMovementDistance > 5) return
       if (event.shiftKey) {
-        if (this.mapStateStore.selected_point_indexes.includes(this.mapStateStore.hovered_point_idx)) {
-          this.mapStateStore.selected_point_indexes =
-            this.mapStateStore.selected_point_indexes.filter((x) => x !== this.mapStateStore.hovered_point_idx)
+        const ds_and_item_id = this.mapStateStore.per_point.item_id[this.mapStateStore.hovered_point_idx]
+        if (this.mapStateStore.get_lasso_selection().includes(ds_and_item_id)) {
+          this.mapStateStore.modify_lasso_selection([ds_and_item_id], "remove")
         } else {
-          this.mapStateStore.selected_point_indexes.push(this.mapStateStore.hovered_point_idx)
-          // the array object is still the same, so we need to trigger a change event manually:
-          this.updateGeometry()
+          this.mapStateStore.modify_lasso_selection([ds_and_item_id], "add")
         }
       } else {
         const dataset_and_item_id = this.mapStateStore.per_point.item_id[this.mapStateStore.hovered_point_idx]
@@ -908,25 +899,15 @@ export default {
     executeLassoSelection(mode = "replace") {
       const polygonPoints = this.mapStateStore.lasso_points
       const pointPositions = this.mapStateStore.per_point.x.map((x, i) => [x, this.mapStateStore.per_point.y[i]])
-      const selectedPointIndexes = []
+      const selectedPointIds = []
       for (const i of Array(pointPositions.length).keys()) {
         const point = pointPositions[i]
         if (pointInPolygon(point, polygonPoints)) {
-          selectedPointIndexes.push(i)
+          const ds_and_item_id = this.mapStateStore.per_point.item_id[i]
+          selectedPointIds.push(ds_and_item_id)
         }
       }
-      if (mode == "replace") {
-        this.mapStateStore.selected_point_indexes = selectedPointIndexes
-      } else if (mode == "add") {
-        this.mapStateStore.selected_point_indexes = [
-          ...new Set([...this.mapStateStore.selected_point_indexes, ...selectedPointIndexes]),
-        ]
-      } else if (mode == "remove") {
-        this.mapStateStore.selected_point_indexes =
-          this.mapStateStore.selected_point_indexes.filter(
-            (x) => !selectedPointIndexes.includes(x)
-          )
-      }
+      this.mapStateStore.modify_lasso_selection(selectedPointIds, mode)
       this.mapStateStore.lasso_points = []
       this.updateGeometry()
     },
