@@ -65,7 +65,8 @@ export default {
         :removable="!filter.is_text_filter" @remove="remove_filter(index)">
       </Chip>
     </div>
-    <div class="ml-1 mt-2 text-sm text-gray-500">
+    <div v-if="selection_statistics.title"
+      class="ml-1 mt-2 text-sm text-gray-500">
       <b>Important keywords in selected items:</b><br>
       {{ selection_statistics.title }}
     </div>
