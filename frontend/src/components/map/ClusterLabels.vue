@@ -34,6 +34,7 @@ export default {
     <div
       v-for="cluster_label in mapState.clusterData"
       class="pointer-events-auto fixed"
+      v-tooltip.bottom="{ value: 'Click to narrow down on this cluster', showDelay: 600 }"
       :style="{
         left: mapState.screenLeftFromRelative(cluster_label.center[0]) + 'px',
         bottom: mapState.screenBottomFromRelative(cluster_label.center[1]) + 'px',
