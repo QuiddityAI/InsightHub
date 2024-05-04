@@ -95,3 +95,40 @@ def load_env_file():
                 continue
             key, value = line.strip().split("=")
             os.environ[key] = value
+
+
+# a decorator to profile a function using cProfile and print the results to stdout:
+def profile(func):
+    import cProfile
+    import pstats
+    import io
+
+    def wrapper(*args, **kwargs):
+        pr = cProfile.Profile()
+        pr.enable()
+        ret = func(*args, **kwargs)
+        pr.disable()
+        s = io.StringIO()
+        ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
+        ps.print_stats()
+        print(s.getvalue())
+        return ret
+
+    return wrapper
+
+
+def profile_with_viztracer(func):
+    from viztracer import VizTracer
+
+    def wrapper(*args, **kwargs):
+        with VizTracer(
+            output_file=f"trace_{func.__name__}.json",
+            max_stack_depth=6,
+            ) as tracer:
+            ret = func(*args, **kwargs)
+        return ret
+
+    # if it seems that only the last part was recorded, there were problably too many events, try to reduce the max_stack_depth
+    # open in https://ui.perfetto.dev
+
+    return wrapper

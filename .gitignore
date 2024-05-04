@@ -47,3 +47,5 @@ data_backend/pdferret.log
 
 swag_https_proxy_config/
 !swag_https_proxy_config/nginx/site-confs/default.conf
+
+trace_*.json
