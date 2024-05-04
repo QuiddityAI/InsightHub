@@ -36,10 +36,10 @@ export default {
 </script>
 
 <template>
-  <div v-if="mapState.visibility_filters.length" class="mt-3 flex flex-row flex-wrap gap-2">
+  <div v-if="mapState.visibility_filters.length" class="mt-3 mb-1 flex flex-row flex-wrap gap-2">
     <Chip v-for="filter, index in mapState.visibility_filters"
       :label="filter.display_name"
-      removable @remove="remove_filter(index)">
+      :removable="!filter.is_text_filter" @remove="remove_filter(index)">
     </Chip>
   </div>
 

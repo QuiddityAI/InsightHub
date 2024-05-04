@@ -121,11 +121,37 @@ export const useMapStateStore = defineStore("mapState", {
       this.visibility_filters = []
       this.eventBus.emit("visibility_filters_changed")
     },
+    modify_text_filter(new_text_query, appStateStore) {
+      // remove any existing text filter:
+      this.visibility_filters = this.visibility_filters.filter(
+        (filter_item) => !filter_item.is_text_filter
+      )
+      if (new_text_query == "") {
+        this.eventBus.emit("visibility_filters_changed")
+        return
+      }
+      this.visibility_filters.push({
+        display_name: `Contains: "${new_text_query}"`,
+        is_text_filter: true,
+        text_query: new_text_query,
+        filter_fn: (item) => {
+          const dataset = appStateStore.datasets[item._dataset_id]
+          for (const field of dataset.default_search_fields) {
+            const value = item[field]
+            const is_string = typeof value === "string" || value instanceof String
+            if (value && is_string && value.toLowerCase().includes(new_text_query.toLowerCase())) {
+              return true
+            }
+          }
+        }
+      })
+      this.eventBus.emit("visibility_filters_changed")
+    },
     get_lasso_selection() {
-      const existing_selection = this.visibility_filters.find(
+      const existing_filter = this.visibility_filters.find(
         (filter_item) => filter_item.is_lasso_selection
       )
-      return existing_selection ? existing_selection.selected_point_ids : []
+      return existing_filter ? existing_filter.selected_point_ids : []
     },
     modify_lasso_selection(ds_and_item_ids, mode="replace") {
       const existing_selection = this.get_lasso_selection()
@@ -144,6 +170,10 @@ export const useMapStateStore = defineStore("mapState", {
           existing_selection.filter(
             (x) => !ds_and_item_ids.some(selected_id => selected_id[0] == x[0] && selected_id[1] == x[1])
           )
+      }
+      if (ds_and_item_ids.length == 0) {
+        this.eventBus.emit("visibility_filters_changed")
+        return
       }
       this.visibility_filters.push({
         display_name: "Lasso Selection",

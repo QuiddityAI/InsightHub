@@ -74,3 +74,12 @@ export const available_filter_operators = [
   { id: "gt", title: ">" },
   { id: "gte", title: ">=" },
 ]
+
+
+export function debounce(func, timeout = 300) {
+  let timer
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
+}
