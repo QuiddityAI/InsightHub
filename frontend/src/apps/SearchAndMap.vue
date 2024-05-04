@@ -253,6 +253,7 @@ export default {
       class="absolute bottom-6 right-4 flex flex-row justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <button
         @click="mapState.selection_merging_mode = 'replace'"
+        v-tooltip.top="{ value: 'Replace current selection with new one', showDelay: 400 }"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
           'text-blue-600': mapState.selection_merging_mode === 'replace',
@@ -262,6 +263,7 @@ export default {
       </button>
       <button
         @click="mapState.selection_merging_mode = 'add'"
+        v-tooltip.top="{ value: 'Add new selection to current one', showDelay: 400 }"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
           'text-blue-600': mapState.selection_merging_mode === 'add',
@@ -271,6 +273,7 @@ export default {
       </button>
       <button
         @click="mapState.selection_merging_mode = 'remove'"
+        v-tooltip.left="{ value: 'Remove new selection from current one', showDelay: 400 }"
         class="mr-2 h-6 w-6 rounded hover:bg-gray-100"
         :class="{
           'text-blue-600': mapState.selection_merging_mode === 'remove',
@@ -284,6 +287,7 @@ export default {
       class="absolute bottom-6 right-4 flex flex-col justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <button
         @click="mapState.selected_map_tool = 'drag'; mapState.selection_merging_mode = 'replace'"
+        v-tooltip.left="{ value: 'Navigate map by click and drag (normal mode)', showDelay: 400 }"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
           'text-blue-600': mapState.selected_map_tool === 'drag',
@@ -293,6 +297,7 @@ export default {
       </button>
       <button
         @click="mapState.selected_map_tool = 'lasso'"
+        v-tooltip.left="{ value: 'Select items by drawing a line around them', showDelay: 400 }"
         class="h-6 w-6 rounded hover:bg-gray-100"
         :class="{
           'text-blue-600': mapState.selected_map_tool === 'lasso',
