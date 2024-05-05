@@ -102,6 +102,7 @@ def profile(func):
     import cProfile
     import pstats
     import io
+    import logging
 
     def wrapper(*args, **kwargs):
         pr = cProfile.Profile()
@@ -110,8 +111,9 @@ def profile(func):
         pr.disable()
         s = io.StringIO()
         ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
-        ps.print_stats()
-        print(s.getvalue())
+        ps.sort_stats('cumulative')
+        ps.print_stats(10)
+        logging.warning(s.getvalue())
         return ret
 
     return wrapper
@@ -123,7 +125,7 @@ def profile_with_viztracer(func):
     def wrapper(*args, **kwargs):
         with VizTracer(
             output_file=f"trace_{func.__name__}.json",
-            max_stack_depth=6,
+            max_stack_depth=7,
             ) as tracer:
             ret = func(*args, **kwargs)
         return ret

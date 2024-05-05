@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from hashlib import md5
 import json
 
@@ -49,3 +49,18 @@ def get_projection_stage_hash(parameters: dict) -> str:
     }
     projection_stage_hash = md5(json.dumps(projection_stage_parameters).encode()).hexdigest()
     return projection_stage_hash
+
+
+full_item_data_cache = OrderedDict()
+
+
+def cache_full_item_data(data, key):
+    global full_item_data_cache
+    full_item_data_cache[key] = data
+    if len(full_item_data_cache) > 5:
+        full_item_data_cache.popitem(last=False)
+
+
+def get_cached_full_item_data(key):
+    global full_item_data_cache
+    return full_item_data_cache.get(key)

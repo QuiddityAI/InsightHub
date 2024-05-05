@@ -23,7 +23,7 @@ from logic.search import get_search_results, get_full_results_from_meta_info
 from logic.search_common import fill_in_details_from_text_storage
 from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
     projection_stage_hash_to_map_id, get_map_parameters_hash, get_search_stage_hash, \
-    get_vectorize_stage_hash, get_projection_stage_hash
+    get_vectorize_stage_hash, get_projection_stage_hash, cache_full_item_data, get_cached_full_item_data
 from logic.thumbnail_atlas import generate_thumbnail_atlas, THUMBNAIL_ATLAS_DIR
 from logic.extract_pipeline import get_pipeline_steps
 from logic.generate_missing_values import generate_missing_values_for_given_elements
@@ -148,6 +148,7 @@ def generate_map(map_id: str, ignore_cache: bool):
             # no results were found, later stages would fail
             return
 
+    cache_full_item_data(items_by_dataset, map_id)
     assert len(sorted_ids)
     assert items_by_dataset != {}
 
@@ -561,11 +562,13 @@ def get_map_selection_statistics(map_id: str, selected_ids: list[tuple[int, str]
     datasets = {dataset_id: get_dataset(dataset_id) for dataset_id in params.search.dataset_ids}
     sorted_ids = map_data["results"]["per_point_data"]["item_ids"]
     slimmed_items_per_dataset = map_data['results']['slimmed_items_per_dataset']
-    items_by_dataset = {}
-    for ds_id, ds_items in slimmed_items_per_dataset.items():
-        dataset = datasets[ds_id]
-        _, ds_full_items = get_full_results_from_meta_info(dataset, params.vectorize, ds_items, 'map', timings)
-        items_by_dataset[ds_id] = ds_full_items
+    items_by_dataset = get_cached_full_item_data(map_id)
+    if not items_by_dataset:
+        items_by_dataset = {}
+        for ds_id, ds_items in slimmed_items_per_dataset.items():
+            dataset = datasets[ds_id]
+            _, ds_full_items = get_full_results_from_meta_info(dataset, params.vectorize, ds_items, 'map', timings)
+            items_by_dataset[ds_id] = ds_full_items
     final_positions = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
     cluster_id_per_point = [0 if any(ds_id == s[0] and item_id == s[1] for s in selected_ids) else 1 for ds_id, item_id in sorted_ids]
     cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, timings)
