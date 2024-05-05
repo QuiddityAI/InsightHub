@@ -69,7 +69,7 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
 
     if field_boundary_indicator in context_specific_ignore_words:
         context_specific_ignore_words.remove(field_boundary_indicator)
-    context_specific_ignore_words = [x.lower() for x in context_specific_ignore_words]
+    context_specific_ignore_words = set(x.lower() for x in context_specific_ignore_words)
 
     # using "tokenizer" instead of "analyzer" keeps the default preprocessor but also enables generation of ngrams
     # the default preprocessor only does lowercase conversion and accent stripping, so we can just disable those:
