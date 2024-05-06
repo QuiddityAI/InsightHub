@@ -83,7 +83,7 @@ export default {
         class="text-sm">
         {{ filter.display_name }}
         <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for future filter list -->
-        <button v-if="!filter.is_text_filter" @click="remove_filter(index)" v-tooltip="{value: 'Remove Filter', showDelay: 400}"
+        <button v-if="!filter.hide_remove_button" @click="remove_filter(index)" v-tooltip="{value: 'Remove Filter', showDelay: 400}"
             class="ml-2 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
       </Chip>
     </div>

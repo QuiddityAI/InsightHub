@@ -133,6 +133,7 @@ export const useMapStateStore = defineStore("mapState", {
       this.visibility_filters.push({
         display_name: `Contains: "${new_text_query}"`,
         is_text_filter: true,
+        hide_remove_button: true,
         text_query: new_text_query,
         filter_fn: (item) => {
           const dataset = appStateStore.datasets[item._dataset_id]

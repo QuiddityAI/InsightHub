@@ -23,6 +23,7 @@ import DynamicDialog from 'primevue/dynamicdialog'
 import MapWithLabels from "../components/map/MapWithLabels.vue"
 import SearchArea from "../components/search/SearchArea.vue"
 import FilterList from "../components/search/FilterList.vue"
+import RangeFilterList from "../components/search/RangeFilterList.vue"
 import ResultList from "../components/search/ResultList.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
 import CollectionArea from "../components/collections/CollectionArea.vue"
@@ -423,6 +424,8 @@ export default {
               <FilterList></FilterList>
 
               <StatisticList></StatisticList>
+
+              <RangeFilterList></RangeFilterList>
 
               <div
                 v-if="appState.search_result_ids.length !== 0 && appState.cluster_data.length !== 0"
