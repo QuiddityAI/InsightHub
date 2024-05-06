@@ -159,6 +159,7 @@ export const useAppStateStore = defineStore("appState", {
           enable_clustering: true,
           clusterizer_parameters: {
             min_cluster_size: -1,
+            max_cluster_size: 0.5,
             min_samples: 5,
             leaf_mode: false,
             clusterizer: "hdbscan",

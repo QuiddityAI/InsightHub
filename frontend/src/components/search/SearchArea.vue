@@ -112,10 +112,6 @@ export default {
         { id: "is_empty", title: "Is empty" },
       ],
       available_clusterizer: [{ id: "hdbscan", title: "HDBSCAN" }],
-      clusterizer_parameters: {
-        min_cluster_size: { title: "min_cluster_size", default: "auto", value: "auto" },
-        min_samples: { title: "min_samples", default: 5, value: 5 },
-      },
       available_cluster_title_strategies: [
         { id: "tf_idf_top_3", title: "tf_idf_top_3" },
         { id: "generative_ai", title: "generative_ai" },
@@ -815,6 +811,16 @@ export default {
               appState.settings.rendering.clusterizer_parameters.min_cluster_size
             "
             class="w-1/2 text-sm text-gray-500" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Cluster max. size:</span>
+          <input
+            v-model.number="appState.settings.rendering.clusterizer_parameters.max_cluster_size"
+            type="range"
+            min="0.01"
+            max="1.0"
+            step="0.01"
+            class="h-2 w-1/2 cursor-pointer appearance-none rounded-lg bg-gray-100" />
         </div>
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-500">Cluster 'leaf' mode (smaller clusters):</span>

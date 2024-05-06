@@ -13,7 +13,9 @@ from utils.helpers import normalize_array, join_text_source_fields, get_field_fr
 
 def clusterize_results(projections, clusterizer_parameters: DotDict):
     min_cluster_size = max(3, len(projections) // 50) if clusterizer_parameters.get("min_cluster_size", -1) <= 0 else clusterizer_parameters.min_cluster_size
+    max_cluster_size = clusterizer_parameters.get("max_cluster_size", 0.5) * len(projections)
     clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size,
+                                max_cluster_size=max_cluster_size,
                                 min_samples=clusterizer_parameters.get("min_samples", 5),
                                 cluster_selection_method="leaf" if clusterizer_parameters.get("leaf_mode", False) else "eom",
                                 )
