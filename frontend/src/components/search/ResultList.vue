@@ -96,7 +96,7 @@ export default {
           v-model="appState.result_search_query"
           @input="event => apply_text_filter(event)"
           class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm text-gray-600"
-          placeholder="Search within results">
+          placeholder="Search within results (titles only)">
       </div>
       <Message v-if="appState.search_result_ids.length && appState.extended_search_results_are_loading" severity="info" :closable="false">
         Preview of the results (loading more...)

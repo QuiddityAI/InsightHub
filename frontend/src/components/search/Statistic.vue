@@ -209,7 +209,7 @@ export default {
     type="bar"
     :options="options"
     :series="series"
-    height="250px"
+    height="220px"
     @click="clickHandler">
   </apexchart>
 </template>

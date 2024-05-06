@@ -113,7 +113,8 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
 
     for cluster_id in range(num_clusters):
         # converting scipy sparse array to numpy using toarray() and selecting the only row [0]
-        sort_indexes_of_important_words = np.argsort(tf_idf_matrix[cluster_id].toarray()[0])  # type: ignore
+        word_weights = tf_idf_matrix[cluster_id].toarray()[0]  # type: ignore
+        sort_indexes_of_important_words = np.argsort(word_weights)  # type: ignore
         # oversample 6 instead of 3, remove near duplicates, then take first 3:
         most_important_words_idx = list(sort_indexes_of_important_words[-6:][::-1])
         for i in range(len(most_important_words_idx) - 1, -1, -1):
@@ -144,7 +145,8 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
         cluster_title_html = f'<span style="font-weight: bold;">{most_important_words[0]}</span>, '
         cluster_title_html += ", ".join(list(most_important_words[1:])) + f" ({len(point_positions_per_cluster[cluster_id])}x, {avg_score * 100:.0f}%)"
         cluster_data.append({"id": cluster_id, "title": cluster_title, "title_html": cluster_title_html, "center": cluster_center,
-                             "min_score": min_score, "max_score": max_score, "avg_score": avg_score})
+                             "min_score": min_score, "max_score": max_score, "avg_score": avg_score,
+                             "important_words": list(zip(words[most_important_words_idx[:5]], word_weights[most_important_words_idx[:5]]))})
     cluster_data = sorted(cluster_data, key=lambda cluster: cluster["avg_score"], reverse=True)
     timings.log("Tf-Idf for cluster titles")
 

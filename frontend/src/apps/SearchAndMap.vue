@@ -428,10 +428,10 @@ export default {
                 v-if="appState.search_result_ids.length !== 0 && appState.cluster_data.length !== 0"
                 class="ml-2 mt-1 flex flex-row items-center">
                 <span class="mr-2 flex-none text-gray-500">Cluster:</span>
-                <div class="h-10">
+                <div class="flex-1 h-10">
                   <select
                     v-model="appState.selected_cluster_id"
-                    class="h-[90%] text-md flex-1 rounded border-transparent text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+                    class="w-full h-[90%] text-md flex-1 rounded border-transparent text-gray-500 focus:border-blue-500 focus:ring-blue-500">
                     <option :value="null" selected>All</option>
                     <option v-for="cluster in appState.cluster_data" :value="cluster.id" selected>
                       {{ cluster.title }}
