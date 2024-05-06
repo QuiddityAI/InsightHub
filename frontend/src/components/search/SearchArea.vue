@@ -299,6 +299,13 @@ export default {
           <button @click="_history.back()" v-tooltip="{value: 'Go to previous view', showDelay: 400}"
             class="ml-1 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
         </Chip>
+        <Chip v-if="appState.settings.search.search_type == 'map_subset'"
+          class="text-sm font-semibold">
+          Custom Selection
+          <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for page before -->
+          <button @click="_history.back()" v-tooltip="{value: 'Go to previous view', showDelay: 400}"
+            class="ml-1 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
+        </Chip>
         <Chip v-if="appState.settings.search.search_type == 'similar_to_item'"
           class="text-sm font-semibold">
           Similar to item '{{ ellipse(appState.settings.search.origin_display_name, 15) }}'

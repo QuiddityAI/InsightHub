@@ -677,6 +677,9 @@ export const useAppStateStore = defineStore("appState", {
       } else if (this.settings.search.search_type == "cluster") {
         name = `Cluster '${this.settings.search.cluster_id}'`
         display_name = `<i>Cluster</i> '${this.settings.search.origin_display_name}'`
+      } else if (this.settings.search.search_type == "map_subset") {
+        name = `Custom Selection`
+        display_name = `Custom Selection`
       } else if (this.settings.search.search_type == "similar_to_item") {
         name = `Similar to '${this.settings.search.origin_display_name}'`
         display_name = `<i>Similar to</i> '${this.settings.search.origin_display_name}'`
@@ -1003,6 +1006,18 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query_negative = ""
       this.settings.search.origin_display_name = cluster_item.title
       this.set_two_dimensional_projection()
+      this.request_search_results()
+    },
+    narrow_down_on_selection(selected_items) {
+      this.settings.search.search_type = "map_subset"
+      this.settings.search.cluster_origin_map_id = this.map_id
+      this.settings.search.selected_items = selected_items
+      this.settings.search.all_field_query = ""
+      this.settings.search.all_field_query_negative = ""
+      this.settings.search.origin_display_name = "Custom Selection"
+      this.set_two_dimensional_projection()
+      this.mapState.visibility_filters = []
+      this.eventBus.emit("visibility_filters_updated")
       this.request_search_results()
     },
     show_collection_as_map(collection, class_name) {

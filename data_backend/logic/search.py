@@ -72,6 +72,8 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
                 sorted_ids, full_items, score_info, total_matches = get_search_results_using_combined_query(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "cluster":
             sorted_ids, full_items = get_search_results_for_cluster(dataset, params.search, params.vectorize, purpose, timings)
+        elif params.search.search_type == "map_subset":
+            sorted_ids, full_items = get_search_results_for_map_subset(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "collection":
             sorted_ids, full_items = get_search_results_included_in_collection(dataset, params.search, params.vectorize, purpose, timings)
         elif params.search.search_type == "recommended_for_collection":
@@ -192,6 +194,38 @@ def get_search_results_for_cluster(dataset, search_settings: DotDict, vectorize_
             continue
         if cluster_ids[i] == cluster_id:
             cluster_item_ids.append(item_ds_and_ids[i][1])
+
+    meta_info = origin_map['results']['slimmed_items_per_dataset'][dataset.id]
+    if dataset.source_plugin == SourcePlugin.BING_WEB_API:
+        # because web snippets are unique each time, the full results are stored in the map_data:
+        meta_info = origin_map['results']['full_items_per_dataset'][dataset.id]
+    total_items = {}
+    for i, item_id in enumerate(cluster_item_ids):
+        total_items[item_id] = copy.deepcopy(meta_info[item_id])
+
+    required_fields = get_required_fields(dataset, vectorize_settings, purpose)
+    limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
+    page = search_settings.result_list_current_page if purpose == "list" else 0
+    # TODO: use page
+    return sort_items_and_complete_them(dataset, total_items, required_fields, limit, timings)
+
+
+def get_search_results_for_map_subset(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings) -> tuple[list, dict]:
+    origin_map_id: str = search_settings.cluster_origin_map_id
+    selected_items: list = search_settings.selected_items
+
+    if origin_map_id not in local_maps:
+        # TODO: check persisted maps, too?
+        # But the map should already be local if someone clicks on a cluster
+        raise ValueError("Map ID not found")
+
+    origin_map: dict = local_maps[origin_map_id]
+
+    cluster_item_ids = []
+    for ds_and_item_id in selected_items:
+        if ds_and_item_id[0] != dataset.id:
+            continue
+        cluster_item_ids.append(ds_and_item_id[1])
 
     meta_info = origin_map['results']['slimmed_items_per_dataset'][dataset.id]
     if dataset.source_plugin == SourcePlugin.BING_WEB_API:

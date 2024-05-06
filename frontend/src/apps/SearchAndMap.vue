@@ -19,6 +19,7 @@ import Toast from 'primevue/toast';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import DynamicDialog from 'primevue/dynamicdialog'
+import OverlayPanel from "primevue/overlaypanel";
 
 import MapWithLabels from "../components/map/MapWithLabels.vue"
 import SearchArea from "../components/search/SearchArea.vue"
@@ -311,17 +312,30 @@ export default {
     <div
       v-if="mapState.visibility_filters.length"
       class="absolute bottom-6 right-48 flex flex-row items-center justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
-      <span class="mr-2 text-sm text-gray-400">Selection:</span>
-      <AddToCollectionButtons
-        @addToCollection="appState.add_selected_points_to_collection"
-        @removeFromCollection="appState.remove_selected_points_from_collection">
-      </AddToCollectionButtons>
+      <span class="mr-2 text-md text-gray-400">Selection:</span>
+      <button
+        @click="(event) => { $refs.add_selection_to_collection_overlay.toggle(event) }"
+        class="px-2 rounded bg-gray-100 text-gray-400 hover:bg-blue-100/50">
+        Add to Collection
+      </button>
+      <button
+        @click="appState.narrow_down_on_selection(appState.visible_result_ids)"
+        class="px-2 rounded bg-gray-100 text-gray-400 hover:bg-blue-100/50">
+        Recluster
+      </button>
       <button
         @click="mapState.reset_visibility_filters()"
         class="h-6 w-6 rounded text-gray-400 hover:bg-red-100">
         <XMarkIcon></XMarkIcon>
       </button>
     </div>
+    <OverlayPanel ref="add_selection_to_collection_overlay">
+      <AddToCollectionButtons
+        @addToCollection="appState.add_selected_points_to_collection"
+        @removeFromCollection="appState.remove_selected_points_from_collection">
+      </AddToCollectionButtons>
+    </OverlayPanel>
+
 
     <div v-if="appState.show_timings" class="absolute bottom-0 right-0 text-right">
       <!-- timings -->

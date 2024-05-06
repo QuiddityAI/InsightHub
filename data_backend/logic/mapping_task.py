@@ -318,7 +318,7 @@ def add_missing_vectors(map_data: dict, params: DotDict, datasets: dict, items_b
     query = params.search.all_field_query
     # TODO: query might be something else when using separate queries etc.
     origin_map = None
-    if params.search.search_type == 'cluster':
+    if params.search.search_type == 'cluster' or params.search.search_type == 'map_subset':
         origin_map_id: str = params.search.cluster_origin_map_id
 
         if origin_map_id not in local_maps:
