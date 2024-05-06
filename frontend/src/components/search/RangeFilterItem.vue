@@ -5,7 +5,7 @@ import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 import { httpClient } from "../../api/httpClient"
-import { debounce } from "../../utils/utils"
+import { FieldType, debounce } from "../../utils/utils"
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
@@ -46,9 +46,18 @@ export default {
     value(new_val, old_val) {
       this.update_filter_debounced()
     },
+    "appStateStore.search_result_ids": "update_boundaries",
   },
   methods: {
     update_boundaries() {
+      if (this.appStateStore.search_result_ids.length === 0) {
+        this.max_value = 10
+        this.min_value = 0
+        this.value = [0, 10]
+        this.use_integers = true
+        this.step_size = 1
+        return
+      }
       let max_value = -Infinity
       let min_value = Infinity
       const item_details = this.appStateStore.map_item_details
@@ -67,7 +76,10 @@ export default {
       this.max_value = max_value
       this.min_value = min_value
       this.value = [min_value, max_value]
-      this.use_integers = (max_value - min_value) > 5
+      const any_ds_field_is_integer = this.appStateStore.settings.search.dataset_ids.some(
+        (ds_id) => this.appStateStore.datasets[ds_id]?.object_fields[this.range_filter.field]?.field_type === FieldType.INTEGER
+      )
+      this.use_integers = any_ds_field_is_integer || (max_value - min_value) > 5
       this.step_size = this.use_integers ? 1 : (max_value - min_value) / 100
     },
     remove_filter(index) {
