@@ -183,7 +183,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         "source_plugin", "source_plugin_parameters",
         "database_name", "primary_key", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields", "defaults",
-        "applicable_import_converters",
+        "applicable_import_converters", "applicable_export_converters",
         "item_count", "get_field_overview_table_html",
         "result_list_rendering",
         "hover_label_rendering", "detail_view_rendering", "statistics",

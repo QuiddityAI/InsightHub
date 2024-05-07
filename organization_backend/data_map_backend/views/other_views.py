@@ -9,8 +9,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from ..models import DataCollection, CollectionItem, Dataset, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
-from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
+from ..models import DataCollection, CollectionItem, Dataset, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
+from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, ExportConverterSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -302,6 +302,26 @@ def get_import_converter(request):
         return HttpResponse(status=404)
 
     serialized_data = json.dumps(ImportConverterSerializer(instance=converter).data)
+    return HttpResponse(serialized_data, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def get_export_converter(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        data = json.loads(request.body)
+        identifier: int = data["identifier"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        converter = ExportConverter.objects.get(identifier=identifier)
+    except ExportConverter.DoesNotExist:
+        return HttpResponse(status=404)
+
+    serialized_data = json.dumps(ExportConverterSerializer(instance=converter).data)
     return HttpResponse(serialized_data, status=200, content_type='application/json')
 
 

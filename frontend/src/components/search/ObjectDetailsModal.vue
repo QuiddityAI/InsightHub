@@ -4,12 +4,14 @@ import axios from "axios"
 
 import LoadingDotAnimation from "./LoadingDotAnimation.vue"
 import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
+import SingleItemExport from "./SingleItemExport.vue"
 
 import { httpClient } from "../../api/httpClient"
 import { highlight_words_in_text } from "../../utils/utils"
 
 import { useToast } from "primevue/usetoast"
 import Image from "primevue/image"
+import Dialog from 'primevue/dialog';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -32,6 +34,7 @@ export default {
       body_text_collapsed: true,
       show_more_button: false,
       vector_chunk_index: 0,
+      show_export_dialog: false,
     }
   },
   computed: {
@@ -187,13 +190,24 @@ export default {
     </div>
 
     <div class="mt-2 flex flex-none flex-row">
+      <button
+        v-tooltip.bottom="{ value: `Export this item in different formats`, showDelay: 500 }"
+        @click="show_export_dialog = true"
+        class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+        {{ dataset.defaults.export_button_name || "Export" }}
+      </button>
       <div v-for="link in rendering ? rendering.links : []">
         <button v-if="link.url(item)"
-          class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+          class="h-full mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
           <a :href="link.url(item)" target="_blank">{{ link.label }}</a>
         </button>
       </div>
     </div>
+
+    <Dialog v-model:visible="show_export_dialog" modal :header="dataset.defaults.export_button_name || 'Export'">
+      <SingleItemExport :dataset="dataset" :item="item">
+      </SingleItemExport>
+    </Dialog>
 
     <div class="mt-2 flex flex-none flex-row">
       <AddToCollectionButtons v-if="appState.collections?.length" class="mr-3" @addToCollection="(collection_id, class_name, is_positive) =>

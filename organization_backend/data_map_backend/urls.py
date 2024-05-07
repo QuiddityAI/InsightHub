@@ -43,6 +43,7 @@ urlpatterns=[
     path("change_dataset", other_views.change_dataset),
     path("delete_dataset", other_views.delete_dataset),
     path("get_import_converter", other_views.get_import_converter),
+    path("get_export_converter", other_views.get_export_converter),
     path("request_service_usage", question_views.request_service_usage),
     path("convert_smart_query_to_parameters", smart_search_views.convert_smart_query_to_parameters),
 ]

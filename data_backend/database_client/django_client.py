@@ -155,3 +155,12 @@ def get_import_converter(import_converter_identifier: str) -> DotDict:
     }
     result = django_client.post(url, json=data)
     return DotDict(result.json())
+
+
+def get_export_converter(export_converter_identifier: str) -> DotDict:
+    url = backend_url + '/org/data_map/get_export_converter'
+    data = {
+        'identifier': export_converter_identifier,
+    }
+    result = django_client.post(url, json=data)
+    return DotDict(result.json())

@@ -21,6 +21,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/map/selection_statistics": lambda x: True,  # needs map_id, is ok
         "/data_backend/map/thumbnail_atlas": lambda x: True,  # needs thumbnail file name, is ok
         "/data_backend/document/details_by_id": _check_details_by_id,
+        "/data_backend/document/export": _check_details_by_id,
         "/data_backend/remote_db_access": _check_remote_db_access,
     }
     checks_for_routes_always_needing_authentication = {
