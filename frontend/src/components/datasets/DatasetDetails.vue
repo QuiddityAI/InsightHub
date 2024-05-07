@@ -130,7 +130,7 @@ export default {
       });
 
       formData.append("dataset_id", this.dataset.id);
-      formData.append("import_converter_id", this.selected_import_converter.id);
+      formData.append("import_converter", this.selected_import_converter.identifier);
       if (this.add_to_collection) {
         const collection_selection = this.$refs.collection_selection
         if (collection_selection.selected_collection_id) {
@@ -280,7 +280,7 @@ export default {
             id="import_type"
             v-model="selected_import_converter"
             :options="dataset.applicable_import_converters"
-            optionLabel="name"
+            optionLabel="display_name"
             placeholder="Select an import type"/>
         </div>
         <div class="flex flex-row items-center">

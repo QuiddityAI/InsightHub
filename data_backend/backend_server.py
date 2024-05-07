@@ -232,13 +232,13 @@ def upload_files_endpoint():
     # TODO: check auth
     try:
         dataset_id: int = int(request.form["dataset_id"])
-        import_converter_id: int = int(request.form["import_converter_id"])
+        import_converter: str = request.form["import_converter"]
         collection_id_str: str | None = request.form.get("collection_id")
         collection_class: str | None = request.form.get("collection_class")
     except KeyError as e:
         return f"parameter missing: {e}", 400
     collection_id: int | None = int(collection_id_str) if collection_id_str else None
-    task_id = upload_files(dataset_id, import_converter_id, request.files.getlist("files[]"), collection_id, collection_class)
+    task_id = upload_files(dataset_id, import_converter, request.files.getlist("files[]"), collection_id, collection_class)
     # usually, all in-memory files of the request would be closed and deleted after the request is done
     # in this case, we want to keep them open and close them manually in the background thread
     # so we need to remove the files from the request object:

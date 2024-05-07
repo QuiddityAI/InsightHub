@@ -319,6 +319,13 @@ class ExportConverter(models.Model):
     identifier = models.CharField(
         verbose_name="Identifier",
         max_length=200,
+        unique=True,
+        blank=False,
+        null=False)
+    universally_applicable = models.BooleanField(
+        verbose_name="Universally Applicable",
+        help_text="Whether this converter is applicable to all datasets",
+        default=False,
         blank=False,
         null=False)
     created_at = models.DateTimeField(
@@ -592,6 +599,7 @@ class Dataset(models.Model):
         original_default_search_fields = object.default_search_fields.all()
         original_admins = object.admins.all()
         original_import_converters = object.applicable_import_converters.all()
+        original_export_converters = object.applicable_export_converters.all()
         object.id = None  # type: ignore
         object.save()
         field_name_to_sink = {}
@@ -623,6 +631,8 @@ class Dataset(models.Model):
             object.admins.add(admin)
         for converter in original_import_converters:
             object.applicable_import_converters.add(converter)
+        for converter in original_export_converters:
+            object.applicable_export_converters.add(converter)
         return object
 
     def delete_content(self):

@@ -292,12 +292,12 @@ def get_import_converter(request):
 
     try:
         data = json.loads(request.body)
-        import_converter_id: int = data["import_converter_id"]
+        identifier: int = data["identifier"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        converter = ImportConverter.objects.get(id=import_converter_id)
+        converter = ImportConverter.objects.get(identifier=identifier)
     except ImportConverter.DoesNotExist:
         return HttpResponse(status=404)
 

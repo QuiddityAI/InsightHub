@@ -26,7 +26,7 @@ UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 upload_tasks = {}
 
 
-def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage],
+def upload_files(dataset_id: int, import_converter: str, files: Iterable[FileStorage],
                  collection_id: int | None, collection_class: str | None) -> str:
     global upload_tasks
 
@@ -51,7 +51,7 @@ def upload_files(dataset_id: int, import_converter_id: int, files: Iterable[File
 
     def run():
         try:
-            inserted_ids, failed_files = _upload_files(dataset_id, import_converter_id, files,
+            inserted_ids, failed_files = _upload_files(dataset_id, import_converter, files,
                  collection_id, collection_class, task_id)
             upload_tasks[dataset_id][task_id]["is_running"] = False
             upload_tasks[dataset_id][task_id]["status"] = "finished"
@@ -85,9 +85,9 @@ def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float
     upload_tasks[dataset_id][task_id]["progress"] = progress
 
 
-def _upload_files(dataset_id: int, import_converter_id: int, files: Iterable[FileStorage],
+def _upload_files(dataset_id: int, import_converter_identifier: str, files: Iterable[FileStorage],
                  collection_id: int | None, collection_class: str | None, task_id: str) -> tuple[list[tuple], list[str]]:
-    import_converter = get_import_converter(import_converter_id)
+    import_converter = get_import_converter(import_converter_identifier)
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter}")
     if not os.path.exists(UPLOADED_FILES_FOLDER):
         os.makedirs(UPLOADED_FILES_FOLDER)

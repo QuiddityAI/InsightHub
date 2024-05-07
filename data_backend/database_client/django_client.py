@@ -148,10 +148,10 @@ def get_generators() -> list[DotDict]:
     return [DotDict(generator) for generator in result.json()]
 
 
-def get_import_converter(import_converter_id: int) -> DotDict:
+def get_import_converter(import_converter_identifier: str) -> DotDict:
     url = backend_url + '/org/data_map/get_import_converter'
     data = {
-        'import_converter_id': import_converter_id,
+        'identifier': import_converter_identifier,
     }
     result = django_client.post(url, json=data)
     return DotDict(result.json())
