@@ -224,6 +224,8 @@ JAZZMIN_SETTINGS = {
                               "data_map_backend.dataset", "data_map_backend.objectfield", "data_map_backend.generator",
                               "data_map_backend.embeddingspace", "data_map_backend.searchhistoryitem", "data_map_backend.storedmap",
                               "data_map_backend.datacollection", "data_map_backend.collectionitem", "data_map_backend.trainedclassifier",
+                              "data_map_backend.chat", "data_map_backend.serviceusage",
+                              "data_map_backend.importconverter", "data_map_backend.exportconverter",
                               ],
 
     # Custom icons for side menu apps/models See https://fontawesome.com/icons?d=gallery&m=free&v=5.0.0,5.0.1,5.0.10,5.0.11,5.0.12,5.0.13,5.0.2,5.0.3,5.0.4,5.0.5,5.0.6,5.0.7,5.0.8,5.0.9,5.1.0,5.1.1,5.2.0,5.3.0,5.3.1,5.4.0,5.4.1,5.4.2,5.13.0,5.12.0,5.11.2,5.11.1,5.10.0,5.9.0,5.8.2,5.8.1,5.7.2,5.7.1,5.7.0,5.6.3,5.5.0,5.4.2
@@ -242,6 +244,10 @@ JAZZMIN_SETTINGS = {
         "data_map_backend.datacollection": "fas fa-list",
         "data_map_backend.collectionitem": "fas fa-file",
         "data_map_backend.trainedclassifier": "fas fa-filter",
+        "data_map_backend.chat": "fas fa-comments",
+        "data_map_backend.serviceusage": "fas fa-chart-line",
+        "data_map_backend.importconverter": "fas fa-file-import",
+        "data_map_backend.exportconverter": "fas fa-file-export",
     },
 
     "show_ui_builder": True,

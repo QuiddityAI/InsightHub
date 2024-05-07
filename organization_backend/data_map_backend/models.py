@@ -259,8 +259,13 @@ class Organization(models.Model):
 
 
 class ImportConverter(models.Model):
-    name = models.CharField(
+    display_name = models.CharField(
         verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    identifier = models.CharField(
+        verbose_name="Identifier",
         max_length=200,
         blank=False,
         null=False)
@@ -298,11 +303,64 @@ class ImportConverter(models.Model):
     history = HistoricalRecords()
 
     def __str__(self):
-        return f"{self.name}"
+        return f"{self.display_name}"
 
     class Meta:
         verbose_name = "Import Converter"
         verbose_name_plural = "Import Converters"
+
+
+class ExportConverter(models.Model):
+    display_name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    identifier = models.CharField(
+        verbose_name="Identifier",
+        max_length=200,
+        blank=False,
+        null=False)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=True,
+        null=True)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    description = models.TextField(
+        verbose_name="Description",
+        blank=True,
+        null=True)
+    module = models.CharField(
+        verbose_name="Code Module Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    parameters = models.JSONField(
+        verbose_name="Parameters",
+        default=dict,
+        blank=True,
+        null=True)
+    preview_as_text = models.BooleanField(
+        verbose_name="Preview as text",
+        help_text="If the result should be shown in the UI as text in addition to a download link",
+        default=False,
+        blank=False,
+        null=False)
+
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"{self.display_name}"
+
+    class Meta:
+        verbose_name = "Export Converter"
+        verbose_name_plural = "Export Converters"
 
 
 def get_rendering_json_field_default(fields: list):
@@ -459,6 +517,11 @@ class Dataset(models.Model):
     applicable_import_converters = models.ManyToManyField(
         verbose_name="Applicable Import Converters",
         to=ImportConverter,
+        related_name='+',
+        blank=True)
+    applicable_export_converters = models.ManyToManyField(
+        verbose_name="Applicable Export Converters",
+        to=ExportConverter,
         related_name='+',
         blank=True)
     result_list_rendering = models.JSONField(

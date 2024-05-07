@@ -17,7 +17,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import DATA_BACKEND_HOST
 
-from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
+from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -97,10 +97,26 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 @admin.register(ImportConverter)
 class ImportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name')
-    list_display_links = ('id', 'name')
-    search_fields = ('name', 'description')
-    ordering = ['name']
+    list_display = ('id', 'display_name', 'identifier')
+    list_display_links = ('id', 'display_name')
+    search_fields = ('display_name', 'description', 'identifier')
+    ordering = ['display_name']
+
+    readonly_fields = ('changed_at', 'created_at')
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit },
+    }
+
+
+@admin.register(ExportConverter)
+class ExportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'display_name', 'identifier')
+    list_display_links = ('id', 'display_name')
+    search_fields = ('display_name', 'description', 'identifier')
+    ordering = ['display_name']
 
     readonly_fields = ('changed_at', 'created_at')
 
