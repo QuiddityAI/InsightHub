@@ -31,7 +31,6 @@ export default {
   },
   mounted() {
     this.selected_converter = this.dataset.applicable_export_converters[0]
-    this.get_exported_data()
   },
   watch: {
     selected_converter() {

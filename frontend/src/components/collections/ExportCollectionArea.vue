@@ -1,5 +1,8 @@
 <script setup>
 import { useToast } from 'primevue/usetoast';
+import {
+  ArrowDownOnSquareIcon,
+} from "@heroicons/vue/24/outline"
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -40,10 +43,6 @@ export default {
     this.selected_converter = null
   },
   watch: {
-    selected_converter() {
-      if (!this.selected_converter) return
-      this.get_exported_data()
-    },
   },
   methods: {
     get_exported_data() {
@@ -76,25 +75,33 @@ export default {
 
 <template>
   <div class="mb-2 flex flex-col gap-2">
-    <div class="w-40">
-      <select v-model="selected_converter"
-        class="w-full h-full mr-4 text-sm text-gray-500 border-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-        <option :value="null">
-          Select Export Type
-        </option>
-        <option v-for="converter in available_converters" :value="converter">
-          {{ converter.display_name }}
-        </option>
-      </select>
+    <div class="flex flex-row gap-2">
+      <div class="w-48">
+        <select v-model="selected_converter"
+          class="w-full h-full text-sm text-gray-500 rounded border-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+          <option :value="null">
+            Select Export Type
+          </option>
+          <option v-for="converter in available_converters" :value="converter">
+            {{ converter.display_name }}
+          </option>
+        </select>
+      </div>
+      <button v-if="selected_converter"
+        class="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
+        @click="get_exported_data()">
+        Export
+      </button>
     </div>
 
     <p v-if="is_loading" class="text-sm text-gray-500">Loading...</p>
 
-    <div v-if="exported_data?.value" class="">
+    <div v-if="exported_data?.value" class="mt-2">
       <button v-if="exported_data"
-        class="px-2 py-1 rounded bg-gray-100 hover:bg-blue-100/50"
+        class="px-2 py-2 flex flex-row items-center rounded bg-green-300 font-semibold hover:bg-blue-100/50"
         @click="download_file(exported_data.filename, exported_data.value)">
         Download {{ exported_data.filename }}
+        <ArrowDownOnSquareIcon class="ml-2 h-5 w-5 inline"></ArrowDownOnSquareIcon>
       </button>
     </div>
 

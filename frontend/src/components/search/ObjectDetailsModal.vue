@@ -4,7 +4,7 @@ import axios from "axios"
 
 import LoadingDotAnimation from "./LoadingDotAnimation.vue"
 import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
-import SingleItemExport from "./SingleItemExport.vue"
+import ExportSingleItem from "./ExportSingleItem.vue"
 
 import { httpClient } from "../../api/httpClient"
 import { highlight_words_in_text } from "../../utils/utils"
@@ -205,8 +205,8 @@ export default {
     </div>
 
     <Dialog v-model:visible="show_export_dialog" modal :header="dataset.defaults.export_button_name || 'Export'">
-      <SingleItemExport :dataset="dataset" :item="item">
-      </SingleItemExport>
+      <ExportSingleItem :dataset="dataset" :item="item">
+      </ExportSingleItem>
     </Dialog>
 
     <div class="mt-2 flex flex-none flex-row">
