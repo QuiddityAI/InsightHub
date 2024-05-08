@@ -283,6 +283,12 @@ export default {
             optionLabel="display_name"
             placeholder="Select an import type"/>
         </div>
+        <div v-if="selected_import_converter?.description" class="ml-3 mr-2 mb-2 text-sm text-gray-500"
+          v-html="selected_import_converter?.description.replaceAll('\n', '<br>')">
+        </div>
+        <div v-if="selected_import_converter?.example_file_url" class="ml-3 mr-2 mb-2 text-sm text-gray-500">
+          <a :href="selected_import_converter.example_file_url" target="_blank" class="text-blue-500">Example file</a>
+        </div>
         <div class="flex flex-row items-center">
           <label class="mr-2 text-sm text-gray-700" for="target_collection">
             Add to Collection (optional):
