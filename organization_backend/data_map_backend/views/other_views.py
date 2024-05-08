@@ -107,6 +107,11 @@ def get_dataset(request):
     dataset_dict = DatasetSerializer(instance=dataset).data
     assert isinstance(dataset_dict, dict)
     dataset_dict["object_fields"] = {item['identifier']: item for item in dataset_dict["object_fields"]}
+    if "applicable_export_converters" not in dataset_dict:
+        dataset_dict["applicable_export_converters"] = []
+    universal_exporters = ExportConverter.objects.filter(universally_applicable=True)
+    serialized_exporters = ExportConverterSerializer(universal_exporters, many=True).data
+    dataset_dict["applicable_export_converters"].extend(serialized_exporters)
     if "item_count" in additional_fields:
         dataset_dict["item_count"] = dataset.item_count
     if "origin_template" in additional_fields:

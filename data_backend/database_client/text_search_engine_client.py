@@ -211,6 +211,7 @@ class TextSearchEngineClient(object):
         for doc in response['docs']:
             item = doc["_source"]
             item["_id"] = doc["_id"]
+            item["_dataset_id"] = dataset.id
             items.append(item)
         return items
 

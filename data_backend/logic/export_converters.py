@@ -1,4 +1,5 @@
 import io
+import json
 import logging
 from typing import Iterable
 import csv
@@ -18,7 +19,7 @@ def export_item(dataset_id: int, item_id: int, export_converter_identifier: str)
     required_fields = converter.required_fields()
     if "__all__" in required_fields:
         dataset = get_dataset(dataset_id)
-        required_fields = dataset.object_fields.keys()
+        required_fields = tuple(dataset.object_fields.keys())
     item = get_document_details_by_id(dataset_id, item_id, required_fields)
     if not item:
         return { "value": None, "error": "Item not found"}
@@ -33,7 +34,7 @@ def export_collection(collection_id: int, class_name: str, export_converter_iden
     required_fields = converter.required_fields()
 
     items, collection_entries = _get_exportable_collection_items(collection_id, class_name,
-                                                 export_converter_identifier, required_fields)
+                                                 converter_definition, required_fields)
 
     exported_data = converter.export_multiple(items)
     return exported_data
@@ -50,7 +51,7 @@ def export_collection_table(collection_id: int, class_name: str,
         return { "value": None, "error": "Collection not found"}
 
     items, collection_entries = _get_exportable_collection_items(collection_id, class_name,
-                                                 export_converter_identifier, required_fields)
+                                                 converter_definition, required_fields)
 
     export_format = get_table_export_format(format_identifier)
     exported_data = export_format.export(collection, items, collection_entries, converter)
@@ -58,7 +59,7 @@ def export_collection_table(collection_id: int, class_name: str,
 
 
 def _get_exportable_collection_items(collection_id: int, class_name: str,
-                                     export_converter_identifier: str, required_fields: tuple[str]) -> tuple[list, list]:
+                                     converter_definition: DotDict, required_fields: tuple[str]) -> tuple[list, list]:
     collection_items = get_collection_items(collection_id, class_name,
                                             field_type=FieldType.IDENTIFIER, is_positive=True)
     collection_items_per_dataset = {}
@@ -76,7 +77,9 @@ def _get_exportable_collection_items(collection_id: int, class_name: str,
 
     for ds_id in collection_items_per_dataset:
         dataset = get_dataset(ds_id)
-        if not any(converter for converter in dataset.applicable_export_converters if converter.identifier == export_converter_identifier):
+        if not converter_definition.universally_applicable and \
+            not any(converter for converter in dataset.applicable_export_converters
+                   if converter.identifier == converter_definition.identifier):
             continue
 
         if "__all__" in required_fields:
@@ -106,6 +109,9 @@ class ExportConverter():
 
 def get_export_converter_module(name: str, params: dict) -> ExportConverter:
     converters = {
+        "internal_id": InternalIdExport,
+        "json": JsonExport,
+        "csv": CSVExport,
         "bibtex": BibtexExport,
         "apa": ApaExport,
         "ris": RisExport,
@@ -113,6 +119,76 @@ def get_export_converter_module(name: str, params: dict) -> ExportConverter:
     if name in converters:
         return converters[name](params)
     raise ValueError(f"export converter {name} not found")
+
+
+class InternalIdExport(ExportConverter):
+    def required_fields(self) -> tuple:
+        return tuple()
+
+    def export_single(self, item: DotDict) -> dict:
+        value = str([item._dataset_id, item._id])
+        return { "value": value, "filename": "internal_id.txt" }
+
+    def export_multiple(self, items: Iterable[dict]) -> dict:
+        values = [str([item['_dataset_id'], item['_id']]) for item in items]
+        content = "\n".join([str(value) for value in values])
+        return { "value": content, "filename": "internal_ids.txt" }
+
+
+class JsonExport(ExportConverter):
+    def required_fields(self) -> tuple:
+        return tuple(self.params.get("fields", ['__all__']))
+
+    def export_single(self, item: DotDict) -> dict:
+        # the 'include_vector' parameter is ignored for now, vectors are currently never
+        # included in the export (because only the text database is queried, not the vector database)
+        if "__all__" in self.required_fields():
+            value = json.dumps(item, indent=2)
+        else:
+            value = json.dumps({field: item[field] for field in self.required_fields()}, indent=2)
+        return { "value": value, "filename": "item.json" }
+
+    def export_multiple(self, items: Iterable[dict]) -> dict:
+        if "__all__" in self.required_fields():
+            value = json.dumps(items, indent=2)
+        else:
+            value = json.dumps([{field: item[field] for field in self.required_fields()} for item in items], indent=2)
+        return { "value": value, "filename": "items.json" }
+
+
+class CSVExport(ExportConverter):
+    def required_fields(self) -> tuple:
+        return tuple(self.params.get("fields", ['__all__']))
+
+    def export_single(self, item: DotDict) -> dict:
+        # the 'include_vector' parameter is ignored for now, vectors are currently never
+        # included in the export (because only the text database is queried, not the vector database)
+        buffer = io.StringIO()
+        csv_writer = csv.writer(buffer)
+        if "__all__" in self.required_fields():
+            header = item.keys()
+            csv_writer.writerow(header)
+            csv_writer.writerow([item[field] for field in header])
+        else:
+            header = self.required_fields()
+            csv_writer.writerow(header)
+            csv_writer.writerow([item[field] for field in header])
+        return { "value": buffer.getvalue(), "filename": "item.csv" }
+
+    def export_multiple(self, items: Iterable[dict]) -> dict:
+        buffer = io.StringIO()
+        csv_writer = csv.writer(buffer)
+        if "__all__" in self.required_fields():
+            header = next(iter(items)).keys()
+            csv_writer.writerow(header)
+            for item in items:
+                csv_writer.writerow([item[field] for field in header])
+        else:
+            header = self.required_fields()
+            csv_writer.writerow(header)
+            for item in items:
+                csv_writer.writerow([item[field] for field in header])
+        return { "value": buffer.getvalue(), "filename": "items.csv" }
 
 
 class BibtexExport(ExportConverter):
