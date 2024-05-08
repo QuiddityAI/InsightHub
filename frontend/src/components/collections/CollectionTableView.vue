@@ -11,6 +11,7 @@ import Paginator from "primevue/paginator"
 import OverlayPanel from 'primevue/overlaypanel';
 
 import CollectionItem from "./CollectionItem.vue"
+import ExportTableArea from "./ExportTableArea.vue";
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -248,10 +249,15 @@ export default {
         </button>
       </div>
       <div class="flex-1"></div>
-      <button @click="toast.add({severity: 'info', summary: 'Exporting', detail: 'Coming soon', life: 3000})"
+      <button @click="event => {$refs.export_dialog.toggle(event)}"
         class="py-1 px-2 rounded-md bg-gray-100 hover:bg-blue-100/50">
-        Export as .xlsx
+        Export
       </button>
+
+      <OverlayPanel ref="export_dialog">
+        <ExportTableArea :collection_id="collection_id" :class_name="class_name">
+        </ExportTableArea>
+      </OverlayPanel>
     </div>
 
     <div v-if="is_processing">

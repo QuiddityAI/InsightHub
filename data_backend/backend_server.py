@@ -21,7 +21,7 @@ from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from logic.classifiers import get_retraining_status, start_retrain
 from logic.upload_files import upload_files, get_upload_task_status, UPLOADED_FILES_FOLDER
 from logic.chat_and_extraction import get_global_question_context, get_item_question_context
-from logic.export_converters import export_collection, export_item
+from logic.export_converters import export_collection, export_collection_table, export_item
 
 from database_client.django_client import add_stored_map
 from database_client.forward_local_db import forward_local_db
@@ -412,6 +412,16 @@ def export_collection_route():
     params = request.json or {}
     params = DotDict(params)
     exported_data = export_collection(params.collection_id, params.class_name, params.converter_identifier)
+
+    return exported_data
+
+
+@app.route('/data_backend/collection/table/export', methods=['POST'])
+def export_collection_table_route():
+    params = request.json or {}
+    params = DotDict(params)
+    exported_data = export_collection_table(params.collection_id, params.class_name,
+                                            params.converter_identifier, params.format_identifier)
 
     return exported_data
 

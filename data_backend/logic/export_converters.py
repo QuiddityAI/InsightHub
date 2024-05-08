@@ -1,5 +1,7 @@
+import io
 import logging
 from typing import Iterable
+import csv
 
 from utils.field_types import FieldType
 from utils.dotdict import DotDict
@@ -30,24 +32,49 @@ def export_collection(collection_id: int, class_name: str, export_converter_iden
     converter = get_export_converter_module(converter_definition.module, converter_definition.parameters)
     required_fields = converter.required_fields()
 
+    items, collection_entries = _get_exportable_collection_items(collection_id, class_name,
+                                                 export_converter_identifier, required_fields)
+
+    exported_data = converter.export_multiple(items)
+    return exported_data
+
+
+def export_collection_table(collection_id: int, class_name: str,
+                            export_converter_identifier: str, format_identifier: str) -> dict:
+    converter_definition = get_export_converter(export_converter_identifier)
+    converter = get_export_converter_module(converter_definition.module, converter_definition.parameters)
+    required_fields = converter.required_fields()
+
     collection = get_collection(collection_id)
     if not collection:
         return { "value": None, "error": "Collection not found"}
-    collection_items = get_collection_items(collection_id, class_name, field_type=None, is_positive=None)
-    item_ids_by_dataset = {}
-    for i, item in enumerate(collection_items):
-        if item['field_type'] != FieldType.IDENTIFIER:
+
+    items, collection_entries = _get_exportable_collection_items(collection_id, class_name,
+                                                 export_converter_identifier, required_fields)
+
+    export_format = get_table_export_format(format_identifier)
+    exported_data = export_format.export(collection, items, collection_entries, converter)
+    return exported_data
+
+
+def _get_exportable_collection_items(collection_id: int, class_name: str,
+                                     export_converter_identifier: str, required_fields: tuple[str]) -> tuple[list, list]:
+    collection_items = get_collection_items(collection_id, class_name,
+                                            field_type=FieldType.IDENTIFIER, is_positive=True)
+    collection_items_per_dataset = {}
+    for i, collection_item in enumerate(collection_items):
+        if collection_item['field_type'] != FieldType.IDENTIFIER:
             continue
-        dataset_id = item['dataset_id']
-        item_id = item['item_id']
-        if dataset_id not in item_ids_by_dataset:
-            item_ids_by_dataset[dataset_id] = []
-        item_ids_by_dataset[dataset_id].append(item_id)
+        dataset_id = collection_item['dataset_id']
+        if dataset_id not in collection_items_per_dataset:
+            collection_items_per_dataset[dataset_id] = []
+        collection_items_per_dataset[dataset_id].append(collection_item)
 
     all_items = []
+    all_collection_items = []
     search_engine_client = TextSearchEngineClient.get_instance()
 
-    for ds_id in item_ids_by_dataset:
+    for ds_id in collection_items_per_dataset:
         dataset = get_dataset(ds_id)
         if not any(converter for converter in dataset.applicable_export_converters if converter.identifier == export_converter_identifier):
             continue
@@ -55,11 +82,11 @@ def export_collection(collection_id: int, class_name: str, export_converter_iden
         if "__all__" in required_fields:
             required_fields = dataset.object_fields.keys()
 
-        items = search_engine_client.get_items_by_ids(dataset, item_ids_by_dataset[ds_id], fields=required_fields)
+        item_ids = [collection_item['item_id'] for collection_item in collection_items_per_dataset[ds_id]]
+        items = search_engine_client.get_items_by_ids(dataset, item_ids, fields=required_fields)
         all_items.extend(items)
-
-    exported_data = converter.export_multiple(all_items)
-    return exported_data
+        all_collection_items.extend(collection_items_per_dataset[ds_id])
+    return all_items, all_collection_items
 
 
 class ExportConverter():
@@ -133,4 +160,64 @@ AU  - {item.authors}
 PY  - {item.publication_year}
 TI  - {item.title}"""
         return { "value": value, "filename": "citation.ris" }
+
+
+class TableExportFormat():
+
+    def export(self, collection: DotDict, items: list, collection_entries: list,
+               converter: ExportConverter) -> dict:
+        raise NotImplementedError
+
+    def _get_rows(self, collection: DotDict, items: list, collection_entries: list,
+               converter: ExportConverter) -> tuple[list, list]:
+        questions = collection.extraction_questions
+        header = ["item_reference", *[question["name"] for question in questions]]
+        rows = []
+        for item, collection_entry in zip(items, collection_entries):
+            row = []
+            item_data = converter.export_single(DotDict(item))
+            row.append(item_data["value"])
+            for question in questions:
+                value = collection_entry.get("extraction_answers", {}).get(question["name"], "")
+                row.append(value)
+            rows.append(row)
+        return header, rows
+
+
+def get_table_export_format(name: str) -> TableExportFormat:
+    converters = {
+        "xlsx": XlsxTableFormat,
+        "csv": CsvTableFormat,
+        "json": JsonTableFormat,
+    }
+    if name in converters:
+        return converters[name]()
+    raise ValueError(f"export format {name} not found")
+
+
+class XlsxTableFormat(TableExportFormat):
+
+    def export(self, collection: DotDict, items: list, collection_entries: list,
+               converter: ExportConverter) -> dict:
+        return {}
+
+
+class CsvTableFormat(TableExportFormat):
+
+    def export(self, collection: DotDict, items: list, collection_entries: list,
+               converter: ExportConverter) -> dict:
+        header, rows = self._get_rows(collection, items, collection_entries, converter)
+        buffer = io.StringIO()
+        csv_writer = csv.writer(buffer)
+        csv_writer.writerow(header)
+        for row in rows:
+            csv_writer.writerow(row)
+        return { "value": buffer.getvalue(), "filename": "table.csv" }
+
+
+class JsonTableFormat(TableExportFormat):
+
+    def export(self, collection: DotDict, items: list, collection_entries: list,
+               converter: ExportConverter) -> dict:
+        return {}
 

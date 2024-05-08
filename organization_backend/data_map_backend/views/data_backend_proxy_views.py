@@ -23,6 +23,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/document/details_by_id": _check_details_by_id,
         "/data_backend/document/export": _check_details_by_id,
         "/data_backend/collection/export": _check_collection_export,
+        "/data_backend/collection/table/export": _check_collection_export,
         "/data_backend/remote_db_access": _check_remote_db_access,
     }
     checks_for_routes_always_needing_authentication = {
