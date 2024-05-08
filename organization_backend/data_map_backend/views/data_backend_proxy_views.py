@@ -4,7 +4,7 @@ import logging
 import requests
 
 from ..utils import DotDict
-from ..models import Dataset
+from ..models import Dataset, DataCollection
 from ..data_backend_client import DATA_BACKEND_HOST
 
 from django.http import HttpResponse
@@ -22,6 +22,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/map/thumbnail_atlas": lambda x: True,  # needs thumbnail file name, is ok
         "/data_backend/document/details_by_id": _check_details_by_id,
         "/data_backend/document/export": _check_details_by_id,
+        "/data_backend/collection/export": _check_collection_export,
         "/data_backend/remote_db_access": _check_remote_db_access,
     }
     checks_for_routes_always_needing_authentication = {
@@ -82,6 +83,14 @@ def _check_details_by_id(request):
     # TODO: this might be a performance bottleneck if many items need to be retrieved
     dataset = Dataset.objects.get(id=params.dataset_id)
     if not dataset.is_public and request.user not in dataset.organization.members.all():
+        return False
+    return True
+
+
+def _check_collection_export(request):
+    params = DotDict(json.loads(request.body))
+    collection = DataCollection.objects.get(id=params.collection_id)
+    if not collection.is_public and request.user != collection.created_by:
         return False
     return True
 

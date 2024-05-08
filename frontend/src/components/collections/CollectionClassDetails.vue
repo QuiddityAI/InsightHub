@@ -14,6 +14,7 @@ import Button from 'primevue/button';
 import CollectionItemList from "./CollectionItemList.vue"
 import ChatList from "../chats/ChatList.vue"
 import CollectionTableView from "./CollectionTableView.vue"
+import ExportCollectionArea from "./ExportCollectionArea.vue";
 import { FieldType } from "../../utils/utils"
 
 import { mapStores } from "pinia"
@@ -35,6 +36,7 @@ export default {
       retraining_progress: 0.0,
       show_retrain_success_label: false,
       table_visible: false,
+      show_export_dialog: false,
     }
   },
   watch: {
@@ -212,6 +214,16 @@ export default {
         <div class="absolute h-full bg-blue-500/20 rounded-md" :style="{ width: `${retraining_progress * 100}%` }"></div>
         <span class="mx-2 hover:text-blue-500">{{ is_retraining ? "Retraining..." : (show_retrain_success_label ? "Retrained ✓": "Retrain") }}</span>
       </button> -->
+
+      <button @click="show_export_dialog = true"
+        class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold text-sm">
+          Export
+      </button>
+
+      <Dialog v-model:visible="show_export_dialog" modal header="Export">
+        <ExportCollectionArea :collection_id="collection_id" :class_name="class_name">
+        </ExportCollectionArea>
+      </Dialog>
 
       <button @click="show_table"
         class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold text-sm">

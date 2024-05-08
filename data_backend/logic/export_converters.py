@@ -1,13 +1,18 @@
+import logging
+from typing import Iterable
+
+from utils.field_types import FieldType
 from utils.dotdict import DotDict
 
-from database_client.django_client import get_dataset, get_export_converter
+from database_client.django_client import get_collection, get_collection_items, get_dataset, get_export_converter
+from database_client.text_search_engine_client import TextSearchEngineClient
 
 from logic.search_common import get_document_details_by_id
 
 
 def export_item(dataset_id: int, item_id: int, export_converter_identifier: str) -> dict:
-    import_converter = get_export_converter(export_converter_identifier)
-    converter = get_export_converter_module(import_converter.module, import_converter.parameters)
+    converter_definition = get_export_converter(export_converter_identifier)
+    converter = get_export_converter_module(converter_definition.module, converter_definition.parameters)
     required_fields = converter.required_fields()
     if "__all__" in required_fields:
         dataset = get_dataset(dataset_id)
@@ -20,6 +25,43 @@ def export_item(dataset_id: int, item_id: int, export_converter_identifier: str)
     return exported_data
 
 
+def export_collection(collection_id: int, class_name: str, export_converter_identifier: str) -> dict:
+    converter_definition = get_export_converter(export_converter_identifier)
+    converter = get_export_converter_module(converter_definition.module, converter_definition.parameters)
+    required_fields = converter.required_fields()
+
+    collection = get_collection(collection_id)
+    if not collection:
+        return { "value": None, "error": "Collection not found"}
+    collection_items = get_collection_items(collection_id, class_name, field_type=None, is_positive=None)
+    item_ids_by_dataset = {}
+    for i, item in enumerate(collection_items):
+        if item['field_type'] != FieldType.IDENTIFIER:
+            continue
+        dataset_id = item['dataset_id']
+        item_id = item['item_id']
+        if dataset_id not in item_ids_by_dataset:
+            item_ids_by_dataset[dataset_id] = []
+        item_ids_by_dataset[dataset_id].append(item_id)
+
+    all_items = []
+    search_engine_client = TextSearchEngineClient.get_instance()
+
+    for ds_id in item_ids_by_dataset:
+        dataset = get_dataset(ds_id)
+        if not any(converter for converter in dataset.applicable_export_converters if converter.identifier == export_converter_identifier):
+            continue
+
+        if "__all__" in required_fields:
+            required_fields = dataset.object_fields.keys()
+
+        items = search_engine_client.get_items_by_ids(dataset, item_ids_by_dataset[ds_id], fields=required_fields)
+        all_items.extend(items)
+
+    exported_data = converter.export_multiple(all_items)
+    return exported_data
+
+
 class ExportConverter():
 
     def __init__(self, params: dict):
@@ -29,6 +71,9 @@ class ExportConverter():
         return ("__all__",)
 
     def export_single(self, item: DotDict) -> dict:
+        raise NotImplementedError
+
+    def export_multiple(self, items: Iterable[dict]) -> dict:
         raise NotImplementedError
 
 
@@ -62,6 +107,11 @@ class BibtexExport(ExportConverter):
     year={item.publication_year if item.publication_year else "n.d."},
 }}"""
         return { "value": value, "filename": "citation.bib" }
+
+    def export_multiple(self, items: Iterable[dict]) -> dict:
+        values = [self.export_single(DotDict(item))["value"] for item in items]
+        content = "\n\n".join(values)
+        return { "value": content, "filename": "citations.bib" }
 
 
 class ApaExport(ExportConverter):
