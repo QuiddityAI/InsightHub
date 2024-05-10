@@ -212,7 +212,8 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 CSRF_TRUSTED_ORIGINS = ['http://localhost:55140', 'http://home-server:55140',
                         'http://localhost:55440', 'http://home-server:55440',
-                        'http://www.luminosus.org:55440', 'https://bondiq.absclust.com']
+                        'http://www.luminosus.org:55440', 'https://bondiq.absclust.com',
+                        'https://v2.absclust.com',]
 
 
 JAZZMIN_SETTINGS = {
