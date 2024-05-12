@@ -50,6 +50,8 @@ lingua-language-detector = "*"
 ocrmypdf = "*"
 pdferret = {git = "https://trel725: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@github.com/Trel725/pdferret.git"}
 viztracer = "*"
+groq = "*"
+ratelimit = "*"
 
 [dev-packages]
 ipykernel = "*"

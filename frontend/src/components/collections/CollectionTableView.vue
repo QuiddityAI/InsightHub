@@ -9,6 +9,7 @@ import Button from 'primevue/button';
 import MultiSelect from 'primevue/multiselect';
 import Paginator from "primevue/paginator"
 import OverlayPanel from 'primevue/overlaypanel';
+import Dropdown from 'primevue/dropdown';
 
 import CollectionItem from "./CollectionItem.vue"
 import ExportTableArea from "./ExportTableArea.vue";
@@ -34,6 +35,15 @@ export default {
       collection: this.initial_collection,
       is_processing: false,
       selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
+      selected_module: 'groq_llama_3_70b',
+      available_modules: [
+        { identifier: 'openai_gpt_3_5', name: 'GPT 3.5 (medium accuracy and cost)' },
+        { identifier: 'openai_gpt_4_turbo', name: 'GPT 4 Turbo (highest accuracy and cost, slow)' },
+        { identifier: 'groq_llama_3_8b', name: 'Llama 3 (B (lowest cost, low accuracy, super fast)' },
+        { identifier: 'groq_llama_3_70b', name: 'Llama 3 70B (low cost, medium accuracy, fast)' },
+        { identifier: 'python_expression', name: 'Python Expression' },
+        { identifier: 'website_scraping', name: 'Website Text Extraction' },
+      ],
       first_index: 0,
       per_page: 10,
       selected_extraction_question: null,
@@ -118,6 +128,7 @@ export default {
         name: name,
         prompt: prompt,
         source_fields: this.selected_source_fields,
+        module: this.selected_module,
       }
       httpClient.post(`/org/data_map/add_collection_extraction_question`, body)
       .then(function (response) {
@@ -224,12 +235,12 @@ export default {
           ref="new_question_name"
           type="text"
           class="flex-none w-40 rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-          placeholder="Question Name"/>
+          placeholder="Column Name"/>
         <input
           ref="new_question_prompt"
           type="text"
           class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-          placeholder="Prompt"
+          placeholder="Question / Prompt"
           @keyup.enter="add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value)"/>
         <div class="flex-initial w-40">
           <MultiSelect v-model="selected_source_fields"
@@ -239,6 +250,14 @@ export default {
             placeholder="Select Sources..."
             :maxSelectedLabels="0"
             selectedItemsLabel="{0} Source(s)"
+            class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+        </div>
+        <div class="flex-initial w-36">
+          <Dropdown v-model="selected_module"
+            :options="available_modules"
+            optionLabel="name"
+            optionValue="identifier"
+            placeholder="Select Module.."
             class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
         </div>
         <button
@@ -304,6 +323,7 @@ export default {
             </button>
           </div>
           <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_extraction_question.source_fields) }}</p>
+          <p class="text-xs text-gray-500">{{ available_modules.find((m) => m.identifier === selected_extraction_question.module)?.name }}</p>
           <div class="flex flex-row gap-2">
             <button @click="extract_question(selected_extraction_question, true)"
               class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">

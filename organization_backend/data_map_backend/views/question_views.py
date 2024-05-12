@@ -16,7 +16,8 @@ from django.utils import timezone
 from ..models import CollectionItem, DataCollection, Chat, Dataset, ServiceUsage, FieldType
 from ..serializers import ChatSerializer, CollectionSerializer
 from ..data_backend_client import get_item_question_context
-from ..chatgpt_client import get_chatgpt_response_using_history
+from ..chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
+from ..groq_client import GROQ_MODELS, get_groq_response_using_history
 
 from .other_views import is_from_backend
 
@@ -183,6 +184,7 @@ def add_collection_extraction_question(request):
         name: str = data["name"]
         prompt: str = data["prompt"]
         source_fields: list = data["source_fields"]
+        module: str = data["module"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -195,7 +197,8 @@ def add_collection_extraction_question(request):
 
     if item.extraction_questions is None:
         item.extraction_questions = []  # type: ignore
-    item.extraction_questions.append({'name': name, 'prompt': prompt, 'source_fields': source_fields})
+    item.extraction_questions.append({'name': name, 'prompt': prompt,
+                                      'source_fields': source_fields, 'module': module})
     item.save()
 
     return HttpResponse(None, status=204)
@@ -272,6 +275,8 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
             _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, user_id)
         except Exception as e:
             logging.error(e)
+            import traceback
+            logging.error(traceback.format_exc())
         finally:
             collection.current_extraction_processes.remove(question["name"])
             collection.save()
@@ -321,10 +326,37 @@ def _extract_question_from_collection_class_items_batch(collection_items, questi
         prompt = system_prompt + text + "\n\nAnswer:\n"
         # logging.warning(prompt)
         history = [ { "role": "system", "content": prompt } ]
+        cost_per_module = {
+            'openai_gpt_3_5': 1.0,
+            'openai_gpt_4_turbo': 5.0,
+            'groq_llama_3_8b': 0.2,
+            'groq_llama_3_70b': 0.5,
+            'python_expression': 0.0,
+            'website_scraping': 0.0,
+        }
+        module = question.get("module", "openai_gpt_3_5")
+
         usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
-        result = usage_tracker.request_usage(1)
+        result = usage_tracker.request_usage(cost_per_module.get(module, 1.0))
         if result["approved"]:
-            response_text = get_chatgpt_response_using_history(history)
+            if module == "python_expression":
+                response_text = "n/a"
+            elif module == "website_scraping":
+                response_text = "n/a"
+            elif module.startswith("openai_gpt"):
+                openai_model = {
+                    "openai_gpt_3_5": OPENAI_MODELS.GPT3_5,
+                    "openai_gpt_4_turbo": OPENAI_MODELS.GPT4_TURBO,
+                }
+                response_text = get_chatgpt_response_using_history(history, openai_model[module])
+            elif module.startswith("groq_"):
+                groq_models = {
+                    "groq_llama_3_8b": GROQ_MODELS.LLAMA_3_8B,
+                    "groq_llama_3_70b": GROQ_MODELS.LLAMA_3_70B,
+                }
+                response_text = get_groq_response_using_history(history, groq_models[module])
+            else:
+                response_text = "AI module not found."
         else:
             response_text = "AI usage limit exceeded."
         #response_text = "n/a"

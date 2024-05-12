@@ -1424,7 +1424,7 @@ class ServiceUsagePeriod(models.Model):
         max_length=50,
         blank=False,
         null=False)
-    usage = models.IntegerField(
+    usage = models.FloatField(
         verbose_name="Usage",
         default=0,
         blank=False,
@@ -1460,9 +1460,9 @@ class ServiceUsage(models.Model):
         max_length=200,
         blank=False,
         null=False)
-    limit_per_period = models.IntegerField(
+    limit_per_period = models.FloatField(
         verbose_name="Limit per Period",
-        default=50,
+        default=50.0,
         blank=False,
         null=False)
     period_type = models.CharField(
@@ -1478,7 +1478,7 @@ class ServiceUsage(models.Model):
         blank=False,
         null=False)
 
-    def request_usage(self, amount: int):
+    def request_usage(self, amount: float):
         if self.period_type == PeriodType.DAY:
             period = timezone.now().strftime("%Y-%m-%d")
         elif self.period_type == PeriodType.WEEK:
