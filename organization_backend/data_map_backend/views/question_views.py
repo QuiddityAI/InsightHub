@@ -244,6 +244,7 @@ def extract_question_from_collection_class_items(request):
         question_name: str = data["question_name"]
         offset: int = data.get("offset", 0)
         limit: int = data.get("limit", -1)
+        order_by = data.get("order_by", '-date_added')
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -261,18 +262,18 @@ def extract_question_from_collection_class_items(request):
         return HttpResponse(status=404)
     question = question[0]
 
-    _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit, request.user.id)
+    _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit, order_by, request.user.id)
 
     data = CollectionSerializer(collection).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
 
 
-def _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit, user_id):
+def _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit, order_by, user_id):
     collection.current_extraction_processes.append(question["name"])
     collection.save()
     def _run_safe():
         try:
-            _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, user_id)
+            _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, order_by, user_id)
         except Exception as e:
             logging.error(e)
             import traceback
@@ -290,13 +291,13 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
         collection.save()
 
 
-def _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, user_id):
+def _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, order_by, user_id):
     system_prompt = "Answer the following question based on the following document. " + \
         "Answer in one concise sentence, word or list. If the document does not contain the answer, " + \
         "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\nQuestion:\n"
     system_prompt += question["prompt"] + "\n\nDocument:\n"
     collection_items = CollectionItem.objects.filter(collection=collection, is_positive=True, classes__contains=[class_name])
-    collection_items = collection_items.order_by('-date_added')
+    collection_items = collection_items.order_by(order_by)
     collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
     included_items = 0
     batch_size = 10
@@ -384,6 +385,7 @@ def remove_collection_class_extraction_results(request):
         question_name: str = data["question_name"]
         offset: int = data.get("offset", 0)
         limit: int = data.get("limit", -1)
+        order_by = data.get("order_by", '-date_added')
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -402,7 +404,7 @@ def remove_collection_class_extraction_results(request):
     question = question[0]
 
     collection_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
-    collection_items = collection_items.order_by('-date_added')
+    collection_items = collection_items.order_by(order_by)
     collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
     for item in collection_items:
         if item.extraction_answers is None:

@@ -628,6 +628,7 @@ def get_collection_items(request):
         is_positive = data["is_positive"]
         offset = data.get("offset", 0)
         limit = data.get("limit", 25)
+        order_by = data.get("order_by", '-date_added')
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -636,7 +637,7 @@ def get_collection_items(request):
     else:
         # return all examples
         all_items = CollectionItem.objects.filter(collection_id=collection_id, classes__contains=[class_name])
-    all_items = all_items.order_by('-date_added')[offset:offset + limit]
+    all_items = all_items.order_by(order_by)[offset:offset + limit]
     serialized_data = CollectionItemSerializer(all_items, many=True).data
     result = json.dumps(serialized_data)
 

@@ -47,20 +47,24 @@ export default {
       first_index: 0,
       per_page: 10,
       selected_extraction_question: null,
+      order_by_field: 'date_added',
+      order_descending: true,
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
-    available_source_fields() {
+    included_datasets() {
       const dataset_ids = new Set()
       for (const item of this.collection_items) {
         const dataset_id = item.dataset_id
         dataset_ids.add(dataset_id)
       }
+      return Array.from(dataset_ids).map((dataset_id) => this.appStateStore.datasets[dataset_id])
+    },
+    available_source_fields() {
       const available_fields = {}
-      for (const dataset_id of dataset_ids) {
-        const dataset = this.appStateStore.datasets[dataset_id]
+      for (const dataset of this.included_datasets) {
         for (const field of Object.values(dataset.object_fields)) {
           available_fields[field.identifier] = {
             identifier: field.identifier,
@@ -78,6 +82,24 @@ export default {
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
+    available_order_by_fields() {
+      const available_fields = {}
+      // for (const question of this.collection.extraction_questions) {
+      //   available_fields[question.name] = {
+      //     identifier: question.name,
+      //     name: question.name,
+      //   }
+      // }
+      available_fields['date_added'] = {
+        identifier: 'date_added',
+        name: 'Date Added',
+      }
+      available_fields['changed_at'] = {
+        identifier: 'changed_at',
+        name: 'Last Changed',
+      }
+      return Object.values(available_fields)
+    },
     item_count() {
       const class_details = this.collection.actual_classes.find((actual_class) => actual_class.name === this.class_name)
       return class_details["positive_count"]
@@ -88,6 +110,12 @@ export default {
   },
   watch: {
     first_index() {
+      this.load_collection_items()
+    },
+    order_by_field() {
+      this.load_collection_items()
+    },
+    order_descending() {
       this.load_collection_items()
     },
   },
@@ -101,6 +129,7 @@ export default {
         is_positive: true,
         offset: this.first_index,
         limit: this.per_page,
+        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
       }
       httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
         that.collection_items = response.data
@@ -173,6 +202,7 @@ export default {
         question_name: question.name,
         offset: only_current_page ? this.first_index : 0,
         limit: only_current_page ? this.per_page : -1,
+        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
       }
       httpClient.post(`/org/data_map/remove_collection_class_extraction_results`, body)
       .then(function (response) {
@@ -196,6 +226,7 @@ export default {
         question_name: question.name,
         offset: only_current_page ? this.first_index : 0,
         limit: only_current_page ? this.per_page : -1,
+        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
       }
       httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
       .then(function (response) {
@@ -283,8 +314,20 @@ export default {
       Processing...
     </div>
 
-    <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
-      class="mt-[0px]"></Paginator>
+    <div class="flex flex-row items-center justify-center">
+      <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
+        class="mt-[0px]"></Paginator>
+      <Dropdown v-model="order_by_field"
+        :options="available_order_by_fields"
+        optionLabel="name"
+        optionValue="identifier"
+        placeholder="Order By.."
+        class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+      <button @click="order_descending = !order_descending"
+        class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
+        {{ order_descending ? '▼' : '▲' }}
+      </button>
+    </div>
 
     <DataTable :value="collection_items" tableStyle="">
         <Column header="Item">
