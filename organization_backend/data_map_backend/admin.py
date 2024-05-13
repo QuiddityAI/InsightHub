@@ -17,7 +17,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import DATA_BACKEND_HOST
 
-from .models import DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
+from .models import CollectionColumn, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -421,6 +421,33 @@ class DatasetSpecificSettingsOfCollectionInline(admin.StackedInline):
     link_to_change_view.short_description='Details'
 
 
+@admin.register(CollectionColumn)
+class CollectionColumnAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'collection', 'name')
+    list_display_links = ('id', 'name',)
+    search_fields = ('collection', 'name')
+    ordering = ['collection', '_order']
+    readonly_fields = ('changed_at', 'created_at')
+
+    formfield_overrides = {
+        models.JSONField: {'widget': JSONSuit },
+    }
+
+
+class CollectionColumnInline(admin.TabularInline):
+    model = CollectionColumn
+    show_change_link = True
+    readonly_fields = ('link_to_change_view',)
+    exclude = ('field_type', 'expression', 'source_fields', 'module', 'parameters', 'changed_at', 'created_at')
+    extra = 0
+
+    def link_to_change_view(self, obj):
+        return mark_safe(f'<a href="/org/admin/data_map_backend/collectioncolumn/{obj.id}/change/">Open Details</a>')
+
+    link_to_change_view.short_description='Details'
+
+
 @admin.register(CollectionItem)
 class CollectionItemAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False
@@ -535,6 +562,7 @@ class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     inlines = [
         DatasetSpecificSettingsOfCollectionInline,
+        CollectionColumnInline,
         CollectionItemInline,
         TrainedClassifierInline,
     ]

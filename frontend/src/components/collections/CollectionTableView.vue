@@ -46,7 +46,7 @@ export default {
       ],
       first_index: 0,
       per_page: 10,
-      selected_extraction_question: null,
+      selected_column: null,
       order_by_field: 'date_added',
       order_descending: true,
     }
@@ -84,12 +84,12 @@ export default {
     },
     available_order_by_fields() {
       const available_fields = {}
-      // for (const question of this.collection.extraction_questions) {
-      //   available_fields[question.name] = {
-      //     identifier: question.name,
-      //     name: question.name,
-      //   }
-      // }
+      for (const column of this.collection.columns) {
+        available_fields[column.identifier] = {
+          identifier: 'column_data__' + column.identifier,
+          name: column.name,
+        }
+      }
       available_fields['date_added'] = {
         identifier: 'date_added',
         name: 'Date Added',
@@ -155,16 +155,16 @@ export default {
       const body = {
         collection_id: this.collection_id,
         name: name,
-        prompt: prompt,
+        expression: prompt,
         source_fields: this.selected_source_fields,
         module: this.selected_module,
       }
-      httpClient.post(`/org/data_map/add_collection_extraction_question`, body)
+      httpClient.post(`/org/data_map/add_collection_column`, body)
       .then(function (response) {
-        if (!that.collection.extraction_questions) {
-          that.collection.extraction_questions = []
+        if (!that.collection.columns) {
+          that.collection.columns = []
         }
-        that.collection.extraction_questions.push({name, prompt, source_fields: that.selected_source_fields})
+        that.collection.columns.push(response.data)
       })
       .catch(function (error) {
         console.error(error)
@@ -172,58 +172,53 @@ export default {
       this.$refs.new_question_name.value = ''
       this.$refs.new_question_prompt.value = ''
     },
-    delete_extraction_question(question) {
+    delete_column(column_id) {
       const that = this
-      if (!confirm("Are you sure you want to delete this question and all of the extraction results and notes?")) {
-        return
-      }
-      this.remove_results(question, false, true, () => {
-        const body = {
-          collection_id: this.collection_id,
-          question_name: question.name,
-        }
-        httpClient.post(`/org/data_map/delete_collection_extraction_question`, body)
-        .then(function (response) {
-          that.collection.extraction_questions = that.collection.extraction_questions.filter((other_question) => other_question.name !== question.name)
-        })
-        .catch(function (error) {
-          console.error(error)
-        })
-      })
-    },
-    remove_results(question, only_current_page=true, force=false, on_success=null) {
-      const that = this
-      if (!only_current_page && !force && !confirm("This will remove the extraction results for all items in the collection. Are you sure?")) {
+      if (!confirm("Are you sure you want to delete this column and all of the extraction results and notes?")) {
         return
       }
       const body = {
-        collection_id: this.collection_id,
-        class_name: this.class_name,
-        question_name: question.name,
-        offset: only_current_page ? this.first_index : 0,
-        limit: only_current_page ? this.per_page : -1,
-        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
+        column_id: column_id,
       }
-      httpClient.post(`/org/data_map/remove_collection_class_extraction_results`, body)
+      httpClient.post(`/org/data_map/delete_collection_column`, body)
       .then(function (response) {
-        if (on_success) {
-          on_success()
-        }
-        that.get_extraction_results(question.name)
+        that.collection.columns = that.collection.columns.filter((column) => column.id !== column_id)
       })
       .catch(function (error) {
         console.error(error)
       })
     },
-    extract_question(question, only_current_page=true) {
+    remove_results(column_id, only_current_page=true, force=false, on_success=null) {
+      const that = this
+      if (!only_current_page && !force && !confirm("This will remove the column content for all items in the collection. Are you sure?")) {
+        return
+      }
+      const body = {
+        column_id: column_id,
+        class_name: this.class_name,
+        offset: only_current_page ? this.first_index : 0,
+        limit: only_current_page ? this.per_page : -1,
+        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
+      }
+      httpClient.post(`/org/data_map/remove_collection_class_column_data`, body)
+      .then(function (response) {
+        if (on_success) {
+          on_success()
+        }
+        that.get_extraction_results(column_id)
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    extract_question(column_id, only_current_page=true) {
       const that = this
       if (!only_current_page && !confirm("This will extract the question for all items in the collection. This might be long running and expensive. Are you sure?")) {
         return
       }
       const body = {
-        collection_id: this.collection_id,
+        column_id: column_id,
         class_name: this.class_name,
-        question_name: question.name,
         offset: only_current_page ? this.first_index : 0,
         limit: only_current_page ? this.per_page : -1,
         order_by: (this.order_descending ? "-" : "") + this.order_by_field,
@@ -232,18 +227,19 @@ export default {
       .then(function (response) {
         that.is_processing = true
         that.collection = response.data
-        that.get_extraction_results(question.name)
+        that.get_extraction_results(column_id)
       })
       .catch(function (error) {
         console.error(error)
       })
     },
-    get_extraction_results(question_name) {
+    get_extraction_results(column_id) {
+      const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
       this.load_collection_items()
       this.load_collection(() => {
-        if (this.collection.current_extraction_processes.includes(question_name)) {
+        if (this.collection.current_extraction_processes.includes(column_identifier)) {
           setTimeout(() => {
-            this.get_extraction_results(question_name)
+            this.get_extraction_results(column_id)
           }, 1000)
         } else {
           this.is_processing = false
@@ -321,7 +317,7 @@ export default {
         :options="available_order_by_fields"
         optionLabel="name"
         optionValue="identifier"
-        placeholder="Order By.."
+        placeholder="Order By..."
         class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       <button @click="order_descending = !order_descending"
         class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
@@ -341,46 +337,46 @@ export default {
             </CollectionItem>
           </template>
         </Column>
-        <Column v-for="question in collection.extraction_questions" :header="false">
+        <Column v-for="column in collection.columns" :header="false">
           <template #header="slotProps">
             <button class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2"
-              @click="event => {selected_extraction_question = question; $refs.column_options.toggle(event)}">
-              {{ question.name }}
+              @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
+              {{ column.name }}
             </button>
           </template>
           <template #body="slotProps">
-            {{ slotProps.data.extraction_answers[question.name] || "" }}
+            {{ slotProps.data.column_data[column.identifier]?.value || "" }}
           </template>
         </Column>
     </DataTable>
 
     <OverlayPanel ref="column_options">
         <div class="w-[400px] flex flex-col gap-2">
-          <!-- <h3 class="font-bold">{{ selected_extraction_question.name }}</h3> -->
+          <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
           <div class="flex flex-row">
-            <p class="flex-1">{{ selected_extraction_question.prompt }}</p>
+            <p class="flex-1">{{ selected_column.expression }}</p>
             <button
-              @click="delete_extraction_question(selected_extraction_question); $refs.column_options.hide()"
+              @click="delete_column(selected_column.id); $refs.column_options.hide()"
               class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
               <TrashIcon class="h-4 w-4"></TrashIcon>
             </button>
           </div>
-          <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_extraction_question.source_fields) }}</p>
-          <p class="text-xs text-gray-500">{{ available_modules.find((m) => m.identifier === selected_extraction_question.module)?.name }}</p>
+          <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
+          <p class="text-xs text-gray-500">{{ available_modules.find((m) => m.identifier === selected_column.module)?.name }}</p>
           <div class="flex flex-row gap-2">
-            <button @click="extract_question(selected_extraction_question, true)"
+            <button @click="extract_question(selected_column.id, true)"
               class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
               Extract <span class="text-gray-500">(current page)</span></button>
-            <button @click="extract_question(selected_extraction_question, false)"
+            <button @click="extract_question(selected_column.id, false)"
               class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
               Extract <span class="text-gray-500">(all)</span></button>
           </div>
 
           <div class="flex flex-row gap-2">
-            <button @click="remove_results(selected_extraction_question, true)"
+            <button @click="remove_results(selected_column.id, true)"
               class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
               Remove results<br><span class="text-gray-500">(current page)</span></button>
-            <button @click="remove_results(selected_extraction_question, false)"
+            <button @click="remove_results(selected_column.id, false)"
               class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
               Remove results<br><span class="text-gray-500">(all)</span></button>
           </div>

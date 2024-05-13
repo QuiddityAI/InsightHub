@@ -3,6 +3,8 @@ import copy
 import datetime
 import json
 import logging
+import random
+import string
 import threading
 
 import numpy as np
@@ -1095,6 +1097,79 @@ class DatasetSpecificSettingsOfCollection(models.Model):
         unique_together = [['collection', 'dataset']]
 
 
+def get_random_string():
+    return ''.join(random.choices(string.ascii_lowercase, k=9))
+
+
+class CollectionColumn(models.Model):
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=True,
+        null=True)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    collection = models.ForeignKey(
+        verbose_name="Collection",
+        to=DataCollection,
+        on_delete=models.CASCADE,
+        related_name='columns',
+        blank=False,
+        null=False)
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    identifier = models.CharField(
+        verbose_name="Identifier",
+        max_length=200,
+        default=get_random_string,
+        blank=False,
+        null=False)
+    field_type = models.CharField(
+        verbose_name="Type",
+        max_length=50,
+        choices=FieldType.choices,
+        default=FieldType.TEXT,
+        blank=False,
+        null=False)
+    expression = models.TextField(
+        verbose_name="Expression",
+        help_text="Question / Prompt / Math / Code expression to generate this column",
+        blank=True,
+        null=True)
+    source_fields = models.JSONField(
+        verbose_name="Source Fields",
+        help_text="List of source fields to be used for this column",
+        default=list,
+        blank=True,
+        null=True)
+    module = models.CharField(
+        verbose_name="Code Module Name",
+        max_length=200,
+        blank=True,
+        null=True)
+    parameters = models.JSONField(
+        verbose_name="Parameters",
+        default=dict,
+        blank=True,
+        null=True)
+
+    def __str__(self):
+        return f"{self.collection.name} - {self.name}"
+
+    class Meta:
+        verbose_name = "Collection Column"
+        verbose_name_plural = "Collection Columns"
+        unique_together = [['collection', 'identifier']]
+        order_with_respect_to = "collection"
+
+
 class CollectionItem(models.Model):
     collection = models.ForeignKey(
         verbose_name="Collection",
@@ -1153,9 +1228,9 @@ class CollectionItem(models.Model):
         default=1.0,
         blank=False,
         null=False)
-    extraction_answers = models.JSONField(
-        verbose_name="Extraction Answers",
-        help_text="",
+    column_data = models.JSONField(
+        verbose_name="Column Data",
+        help_text="Extracted answers, notes, etc.",
         default=dict,
         blank=True,
         null=True)

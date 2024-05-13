@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import Chat, DataCollection, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier
+from .models import Chat, CollectionColumn, DataCollection, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier
 
 
 class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
@@ -85,11 +85,18 @@ class DatasetSpecificSettingsOfCollectionSerializer(drf_serializers.ModelSeriali
         exclude = ['created_at', 'changed_at']
 
 
+class CollectionColumnSerializer(drf_serializers.ModelSerializer):
+    class Meta:
+        model = CollectionColumn
+        exclude = ['created_at', 'changed_at']
+
+
 class CollectionSerializer(drf_serializers.ModelSerializer):
     user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
     related_organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
     parent_collection = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     dataset_specific_settings = DatasetSpecificSettingsOfCollectionSerializer(many=True, read_only=True)
+    columns = CollectionColumnSerializer(many=True, read_only=True)
     actual_classes = drf_serializers.ReadOnlyField()
 
     class Meta:

@@ -13,8 +13,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from ..models import CollectionItem, DataCollection, Chat, Dataset, ServiceUsage, FieldType
-from ..serializers import ChatSerializer, CollectionSerializer
+from ..models import CollectionItem, DataCollection, CollectionColumn, Chat, ServiceUsage, FieldType
+from ..serializers import ChatSerializer, CollectionColumnSerializer, CollectionSerializer
 from ..data_backend_client import get_item_question_context
 from ..chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
 from ..groq_client import GROQ_MODELS, get_groq_response_using_history
@@ -172,7 +172,7 @@ def get_chat_by_id(request):
 
 
 @csrf_exempt
-def add_collection_extraction_question(request):
+def add_collection_column(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -182,40 +182,27 @@ def add_collection_extraction_question(request):
         data = json.loads(request.body)
         collection_id: int = data["collection_id"]
         name: str = data["name"]
-        prompt: str = data["prompt"]
-        source_fields: list = data["source_fields"]
-        module: str = data["module"]
+        identifier: str | None = data.get("identifier", None)
+        field_type: str = data["field_type"]
+        expression: str | None = data.get("expression")
+        source_fields: list = data.get("source_fields", [])
+        module: str | None = data.get("module")
+        parameters: dict = data.get("parameters", {})
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    try:
-        item = DataCollection.objects.get(id=collection_id)
-    except DataCollection.DoesNotExist:
-        return HttpResponse(status=404)
-    if item.created_by != request.user:
-        return HttpResponse(status=401)
-
-    if item.extraction_questions is None:
-        item.extraction_questions = []  # type: ignore
-    item.extraction_questions.append({'name': name, 'prompt': prompt,
-                                      'source_fields': source_fields, 'module': module})
-    item.save()
-
-    return HttpResponse(None, status=204)
-
-@csrf_exempt
-def delete_collection_extraction_question(request):
-    if request.method != 'POST':
-        return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
-
-    try:
-        data = json.loads(request.body)
-        collection_id: int = data["collection_id"]
-        question_name: str = data["question_name"]
-    except (KeyError, ValueError):
+    if not name.strip():
         return HttpResponse(status=400)
+
+    if not identifier:
+        identifier = name.replace(" ", "_").lower()
+        tries = 0
+        while CollectionColumn.objects.filter(collection_id=collection_id, identifier=identifier).exists():
+            identifier += "_"
+            tries += 1
+            if tries > 10:
+                logging.error("Could not create unique identifier for collection column.")
+                return HttpResponse(status=400)
 
     try:
         collection = DataCollection.objects.get(id=collection_id)
@@ -224,8 +211,47 @@ def delete_collection_extraction_question(request):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    collection.extraction_questions = [q for q in collection.extraction_questions if q['name'] != question_name]  # type: ignore
-    collection.save()
+    column = CollectionColumn.objects.create(
+        collection_id=collection_id,
+        name=name,
+        identifier=identifier,
+        field_type=field_type,
+        expression=expression,
+        source_fields=source_fields,
+        module=module,
+        parameters=parameters,
+    )
+
+    data = CollectionColumnSerializer(column).data
+    return HttpResponse(json.dumps(data), content_type="application/json", status=200)
+
+
+@csrf_exempt
+def delete_collection_column(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        column_id: int = data["column_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        column = CollectionColumn.objects.get(id=column_id)
+    except CollectionColumn.DoesNotExist:
+        return HttpResponse(status=404)
+    if column.collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    for item in CollectionItem.objects.filter(collection=column.collection):
+        if item.column_data and column.identifier in item.column_data:
+            del item.column_data[column.identifier]
+            item.save()
+
+    column.delete()
 
     return HttpResponse(None, status=204)
 
@@ -239,9 +265,8 @@ def extract_question_from_collection_class_items(request):
 
     try:
         data = json.loads(request.body)
-        collection_id: int = data["collection_id"]
+        column_id: str = data["column_id"]
         class_name: str = data["class_name"]
-        question_name: str = data["question_name"]
         offset: int = data.get("offset", 0)
         limit: int = data.get("limit", -1)
         order_by = data.get("order_by", '-date_added')
@@ -249,37 +274,30 @@ def extract_question_from_collection_class_items(request):
         return HttpResponse(status=400)
 
     try:
-        collection = DataCollection.objects.get(id=collection_id)
-    except DataCollection.DoesNotExist:
+        column = CollectionColumn.objects.get(id=column_id)
+    except CollectionColumn.DoesNotExist:
         return HttpResponse(status=404)
-    if collection.created_by != request.user:
+    if column.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    if collection.extraction_questions is None:
-        return HttpResponse(status=400)
-    question = [q for q in collection.extraction_questions if q['name'] == question_name]  # type: ignore
-    if len(question) == 0:
-        return HttpResponse(status=404)
-    question = question[0]
+    _extract_question_from_collection_class_items_thread(column.collection, class_name, column, offset, limit, order_by, request.user.id)
 
-    _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit, order_by, request.user.id)
-
-    data = CollectionSerializer(collection).data
+    data = CollectionSerializer(column.collection).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
 
 
-def _extract_question_from_collection_class_items_thread(collection, class_name, question, offset, limit, order_by, user_id):
-    collection.current_extraction_processes.append(question["name"])
+def _extract_question_from_collection_class_items_thread(collection, class_name, column, offset, limit, order_by, user_id):
+    collection.current_extraction_processes.append(column.identifier)
     collection.save()
     def _run_safe():
         try:
-            _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, order_by, user_id)
+            _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, user_id)
         except Exception as e:
             logging.error(e)
             import traceback
             logging.error(traceback.format_exc())
         finally:
-            collection.current_extraction_processes.remove(question["name"])
+            collection.current_extraction_processes.remove(column.identifier)
             collection.save()
 
     try:
@@ -287,15 +305,15 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
         thread.start()
     except Exception as e:
         logging.error(e)
-        collection.current_extraction_processes.remove(question["name"])
+        collection.current_extraction_processes.remove(column.identifier)
         collection.save()
 
 
-def _extract_question_from_collection_class_items(collection, class_name, question, offset, limit, order_by, user_id):
+def _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, user_id):
     system_prompt = "Answer the following question based on the following document. " + \
         "Answer in one concise sentence, word or list. If the document does not contain the answer, " + \
         "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\nQuestion:\n"
-    system_prompt += question["prompt"] + "\n\nDocument:\n"
+    system_prompt += column.expression + "\n\nDocument:\n"
     collection_items = CollectionItem.objects.filter(collection=collection, is_positive=True, classes__contains=[class_name])
     collection_items = collection_items.order_by(order_by)
     collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
@@ -303,17 +321,18 @@ def _extract_question_from_collection_class_items(collection, class_name, questi
     batch_size = 10
     for i in range(0, len(collection_items), batch_size):
         batch = collection_items[i:i+batch_size]
-        _extract_question_from_collection_class_items_batch(batch, question, system_prompt, user_id)
+        _extract_question_from_collection_class_items_batch(batch, column, system_prompt, user_id)
         included_items += len(batch)
         if included_items % 100 == 0:
-            logging.warning(f"Extracted {included_items} items for question {question['name']}.")
+            logging.warning(f"Extracted {included_items} items for question {column.name}.")
 
     logging.warning("Done extracting question from collection class items.")
 
 
-def _extract_question_from_collection_class_items_batch(collection_items, question, system_prompt, user_id):
+def _extract_question_from_collection_class_items_batch(collection_items, column, system_prompt, user_id):
     def extract(item):
-        if (item.extraction_answers or {}).get(question["name"]):
+        if (item.column_data or {}).get(column.identifier):
+            # already extracted (only empty fields are extracted again)
             return
         text = None
         if item.field_type == FieldType.TEXT:
@@ -321,7 +340,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, questi
         if item.field_type == FieldType.IDENTIFIER:
             assert item.dataset_id is not None
             assert item.item_id is not None
-            text = get_item_question_context(item.dataset_id, item.item_id, question['source_fields'], question["prompt"])
+            text = get_item_question_context(item.dataset_id, item.item_id, column.source_fields, column.expression)
         if not text:
             return
         prompt = system_prompt + text + "\n\nAnswer:\n"
@@ -335,7 +354,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, questi
             'python_expression': 0.0,
             'website_scraping': 0.0,
         }
-        module = question.get("module", "openai_gpt_3_5")
+        module = column.module or "openai_gpt_3_5"
 
         usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
         result = usage_tracker.request_usage(cost_per_module.get(module, 1.0))
@@ -362,9 +381,13 @@ def _extract_question_from_collection_class_items_batch(collection_items, questi
             response_text = "AI usage limit exceeded."
         #response_text = "n/a"
         # logging.warning(response_text)
-        if item.extraction_answers is None:
-            item.extraction_answers = {}  # type: ignore
-        item.extraction_answers[question["name"]] = response_text
+        if item.column_data is None:
+            item.column_data = {}  # type: ignore
+        item.column_data[column.identifier] = {
+            'value': response_text,
+            'changed_at': timezone.now().isoformat(),
+            # potential other fields: used_prompt, used_tokens, used_snippets, fact_checked, edited, ...
+        }
         item.save()
 
     with ThreadPoolExecutor(max_workers=10) as executor:
@@ -372,7 +395,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, questi
 
 
 @csrf_exempt
-def remove_collection_class_extraction_results(request):
+def remove_collection_class_column_data(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -380,9 +403,8 @@ def remove_collection_class_extraction_results(request):
 
     try:
         data = json.loads(request.body)
-        collection_id: int = data["collection_id"]
+        column_id: str = data["column_id"]
         class_name: str = data["class_name"]
-        question_name: str = data["question_name"]
         offset: int = data.get("offset", 0)
         limit: int = data.get("limit", -1)
         order_by = data.get("order_by", '-date_added')
@@ -390,27 +412,18 @@ def remove_collection_class_extraction_results(request):
         return HttpResponse(status=400)
 
     try:
-        collection = DataCollection.objects.get(id=collection_id)
-    except DataCollection.DoesNotExist:
+        column = CollectionColumn.objects.get(id=column_id)
+    except CollectionColumn.DoesNotExist:
         return HttpResponse(status=404)
-    if collection.created_by != request.user:
+    if column.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    if collection.extraction_questions is None:
-        return HttpResponse(status=400)
-    question = [q for q in collection.extraction_questions if q['name'] == question_name]  # type: ignore
-    if len(question) == 0:
-        return HttpResponse(status=404)
-    question = question[0]
-
-    collection_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
+    collection_items = CollectionItem.objects.filter(collection=column.collection, classes__contains=[class_name])
     collection_items = collection_items.order_by(order_by)
     collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
     for item in collection_items:
-        if item.extraction_answers is None:
-            continue
-        if question_name in item.extraction_answers:
-            del item.extraction_answers[question_name]
+        if item.column_data and column.identifier in item.column_data:
+            del item.column_data[column.identifier]
             item.save()
 
     return HttpResponse(None, status=204)
