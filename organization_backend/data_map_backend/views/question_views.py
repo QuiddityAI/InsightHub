@@ -280,7 +280,10 @@ def extract_question_from_collection_class_items(request):
     if column.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    _extract_question_from_collection_class_items_thread(column.collection, class_name, column, offset, limit, order_by, request.user.id)
+    if not column.module or column.module == "notes":
+        pass
+    else:
+        _extract_question_from_collection_class_items_thread(column.collection, class_name, column, offset, limit, order_by, request.user.id)
 
     data = CollectionSerializer(column.collection).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
@@ -353,6 +356,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
             'groq_llama_3_70b': 0.5,
             'python_expression': 0.0,
             'website_scraping': 0.0,
+            'notes': 0.0,
         }
         module = column.module or "openai_gpt_3_5"
 
@@ -386,6 +390,8 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
         item.column_data[column.identifier] = {
             'value': response_text,
             'changed_at': timezone.now().isoformat(),
+            'is_ai_generated': True,
+            'is_manually_edited': False,
             # potential other fields: used_prompt, used_tokens, used_snippets, fact_checked, edited, ...
         }
         item.save()

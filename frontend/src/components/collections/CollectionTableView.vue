@@ -43,8 +43,9 @@ export default {
         { identifier: 'openai_gpt_4_turbo', name: 'GPT 4 Turbo (highest accuracy and cost, slow)' },
         { identifier: 'groq_llama_3_8b', name: 'Llama 3 8B (lowest cost, low accuracy, super fast)' },
         { identifier: 'groq_llama_3_70b', name: 'Llama 3 70B (low cost, medium accuracy, fast)' },
-        { identifier: 'python_expression', name: 'Python Expression' },
-        { identifier: 'website_scraping', name: 'Website Text Extraction' },
+        // { identifier: 'python_expression', name: 'Python Expression' },
+        // { identifier: 'website_scraping', name: 'Website Text Extraction' },
+        { identifier: 'notes', name: 'No AI, just notes' },
       ],
 
       first_index: 0,
@@ -385,21 +386,21 @@ export default {
           </div>
           <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
           <p class="text-xs text-gray-500">{{ available_modules.find((m) => m.identifier === selected_column.module)?.name }}</p>
-          <div class="flex flex-row gap-2">
+          <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
             <button @click="extract_question(selected_column.id, true)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
               Extract <span class="text-gray-500">(current page)</span></button>
             <button @click="extract_question(selected_column.id, false)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
               Extract <span class="text-gray-500">(all)</span></button>
           </div>
 
           <div class="flex flex-row gap-2">
             <button @click="remove_results(selected_column.id, true)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
               Remove results<br><span class="text-gray-500">(current page)</span></button>
             <button @click="remove_results(selected_column.id, false)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm">
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
               Remove results<br><span class="text-gray-500">(all)</span></button>
           </div>
         </div>

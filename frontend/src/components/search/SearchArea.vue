@@ -352,6 +352,7 @@ export default {
           name="search"
           @keyup.enter="appState.request_search_results"
           v-model="appState.settings.search.all_field_query"
+          autocomplete="off"
           :placeholder="
             appState.settings.search.search_type == 'external_input'
               ? `Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.entity_name || '' : ''} you want to find`
