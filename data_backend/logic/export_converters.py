@@ -196,6 +196,8 @@ class BibtexExport(ExportConverter):
         return ("title", "authors", "publication_year")
 
     def export_single(self, item: DotDict) -> dict:
+        if isinstance(item.authors, list):
+            item.authors = "; ".join(item.authors)
         first_author = item.authors.split(" ")[0] if item.authors else ""
         if not first_author:
             first_author = "_".join(item.title.lower().split(" "))[:10]
@@ -222,6 +224,8 @@ class ApaExport(ExportConverter):
         return ("title", "authors", "publication_year")
 
     def export_single(self, item: DotDict) -> dict:
+        if isinstance(item.authors, list):
+            item.authors = "; ".join(item.authors)
         value = f"""{item.authors} ({item.publication_year}). {item.title}."""
         return { "value": value, "filename": "citation.txt" }
 
