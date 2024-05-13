@@ -21,6 +21,7 @@ export function normalizeArrayMedianGamma(a, gamma_factor, max_default = 1.0) {
 }
 
 export class FieldType {
+  static TEXT = "TEXT"
   static VECTOR = "VECTOR"
   static INTEGER = "INTEGER"
   static FLOAT = "FLOAT"

@@ -10,9 +10,11 @@ import MultiSelect from 'primevue/multiselect';
 import Paginator from "primevue/paginator"
 import OverlayPanel from 'primevue/overlaypanel';
 import Dropdown from 'primevue/dropdown';
+import Message from 'primevue/message';
 
 import CollectionItem from "./CollectionItem.vue"
 import ExportTableArea from "./ExportTableArea.vue";
+import CollectionTableCell from "./CollectionTableCell.vue";
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -31,9 +33,9 @@ export default {
   emits: [],
   data() {
     return {
-      collection_items: [],
       collection: this.initial_collection,
-      is_processing: false,
+      collection_items: [],
+
       selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
       selected_module: 'groq_llama_3_70b',
       available_modules: [
@@ -44,11 +46,13 @@ export default {
         { identifier: 'python_expression', name: 'Python Expression' },
         { identifier: 'website_scraping', name: 'Website Text Extraction' },
       ],
+
       first_index: 0,
       per_page: 10,
-      selected_column: null,
       order_by_field: 'date_added',
       order_descending: true,
+
+      selected_column: null,
     }
   },
   computed: {
@@ -100,6 +104,9 @@ export default {
       }
       return Object.values(available_fields)
     },
+    show_full_text_issue_hint() {
+      return this.selected_source_fields.find((field) => field !== "_full_text_snippets" && field.includes("full_text"))
+    },
     item_count() {
       const class_details = this.collection.actual_classes.find((actual_class) => actual_class.name === this.class_name)
       return class_details["positive_count"]
@@ -120,7 +127,7 @@ export default {
     },
   },
   methods: {
-    load_collection_items() {
+    load_collection_items(only_update_specific_columns=null) {
       const that = this
       const body = {
         collection_id: this.collection.id,
@@ -130,18 +137,33 @@ export default {
         offset: this.first_index,
         limit: this.per_page,
         order_by: (this.order_descending ? "-" : "") + this.order_by_field,
+        include_column_data: true,
       }
       httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
-        that.collection_items = response.data
+        if (only_update_specific_columns) {
+          for (const item of response.data) {
+            const existing_item = that.collection_items.find((i) => i.id === item.id)
+            if (!existing_item) continue
+            for (const column_identifier of only_update_specific_columns) {
+              existing_item.column_data[column_identifier] = item.column_data[column_identifier]
+            }
+          }
+        } else {
+          that.collection_items = response.data
+        }
       })
     },
-    load_collection(on_success=null) {
+    update_collection(on_success=null) {
       const that = this
       const body = {
         collection_id: this.collection.id,
       }
       httpClient.post("/org/data_map/get_collection", body).then(function (response) {
-        that.collection = response.data
+        if (JSON.stringify(response.data.columns) !== JSON.stringify(that.collection.columns)) {
+          that.collection.columns = response.data.columns
+        }
+        that.collection.current_extraction_processes = response.data.current_extraction_processes
+
         if (on_success) {
           on_success()
         }
@@ -154,6 +176,7 @@ export default {
       const that = this
       const body = {
         collection_id: this.collection_id,
+        field_type: FieldType.TEXT,
         name: name,
         expression: prompt,
         source_fields: this.selected_source_fields,
@@ -225,8 +248,7 @@ export default {
       }
       httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
       .then(function (response) {
-        that.is_processing = true
-        that.collection = response.data
+        that.collection.current_extraction_processes = response.data.current_extraction_processes
         that.get_extraction_results(column_id)
       })
       .catch(function (error) {
@@ -235,14 +257,12 @@ export default {
     },
     get_extraction_results(column_id) {
       const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
-      this.load_collection_items()
-      this.load_collection(() => {
+      this.load_collection_items([column_identifier])
+      this.update_collection(() => {
         if (this.collection.current_extraction_processes.includes(column_identifier)) {
           setTimeout(() => {
             this.get_extraction_results(column_id)
           }, 1000)
-        } else {
-          this.is_processing = false
         }
       })
     },
@@ -305,10 +325,11 @@ export default {
         </ExportTableArea>
       </OverlayPanel>
     </div>
-
-    <div v-if="is_processing">
-      Processing...
-    </div>
+    <Message v-if="show_full_text_issue_hint" class="text-sm text-gray-500">
+      Using the full text of an item might be slow and expensive. The full text will also be limited to the maximum text length of the AI module, which might lead to unpredictable results.
+      <br>
+      Consider using 'Full Text Excerpts' instead, which selects only the most relevant parts of the full text.
+    </Message>
 
     <div class="flex flex-row items-center justify-center">
       <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
@@ -332,7 +353,6 @@ export default {
               :dataset_id="slotProps.data.dataset_id"
               :item_id="slotProps.data.item_id"
               :is_positive="slotProps.data.is_positive"
-              @remove="remove_collection_item(slotProps.data.id)"
               class="w-[520px]">
             </CollectionItem>
           </template>
@@ -345,7 +365,9 @@ export default {
             </button>
           </template>
           <template #body="slotProps">
-            {{ slotProps.data.column_data[column.identifier]?.value || "" }}
+            <CollectionTableCell :item="slotProps.data" :column="column"
+              :current_extraction_processes="collection.current_extraction_processes">
+            </CollectionTableCell>
           </template>
         </Column>
     </DataTable>

@@ -629,6 +629,7 @@ def get_collection_items(request):
         offset = data.get("offset", 0)
         limit = data.get("limit", 25)
         order_by = data.get("order_by", '-date_added')
+        include_column_data = data.get("include_column_data", False)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -639,6 +640,9 @@ def get_collection_items(request):
         all_items = CollectionItem.objects.filter(collection_id=collection_id, classes__contains=[class_name])
     all_items = all_items.order_by(order_by)[offset:offset + limit]
     serialized_data = CollectionItemSerializer(all_items, many=True).data
+    if not include_column_data:
+        for item in serialized_data:
+            item.pop('column_data', None)
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type='application/json')
