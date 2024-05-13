@@ -61,7 +61,7 @@ def export_collection_table(collection_id: int, class_name: str,
 def _get_exportable_collection_items(collection_id: int, class_name: str,
                                      converter_definition: DotDict, required_fields: tuple[str]) -> tuple[list, list]:
     collection_items = get_collection_items(collection_id, class_name,
-                                            field_type=FieldType.IDENTIFIER, is_positive=True)
+                                            field_type=FieldType.IDENTIFIER, is_positive=True, include_column_data=True)
     collection_items_per_dataset = {}
     for i, collection_item in enumerate(collection_items):
         if collection_item['field_type'] != FieldType.IDENTIFIER:
@@ -250,15 +250,14 @@ class TableExportFormat():
 
     def _get_rows(self, collection: DotDict, items: list, collection_entries: list,
                converter: ExportConverter) -> tuple[list, list]:
-        questions = collection.extraction_questions
-        header = ["item_reference", *[question["name"] for question in questions]]
+        header = ["item_reference", *[column["name"] for column in collection.columns]]
         rows = []
         for item, collection_entry in zip(items, collection_entries):
             row = []
             item_data = converter.export_single(DotDict(item))
             row.append(item_data["value"])
-            for question in questions:
-                value = collection_entry.get("extraction_answers", {}).get(question["name"], "")
+            for column in collection.columns:
+                value = collection_entry.get("column_data", {}).get(column["identifier"], {}).get("value", "")
                 row.append(value)
             rows.append(row)
         return header, rows

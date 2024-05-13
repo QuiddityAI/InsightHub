@@ -69,13 +69,15 @@ def get_collection(collection_id: int) -> DotDict | None:
     return DotDict(result.json())
 
 
-def get_collection_items(collection_id: int, class_name: str, field_type: str | None = None, is_positive: bool | None = None) -> list[dict]:
+def get_collection_items(collection_id: int, class_name: str, field_type: str | None = None, is_positive: bool | None = None,
+                         include_column_data: bool = False) -> list[dict]:
     url = backend_url + '/org/data_map/get_collection_items'
     data = {
         'collection_id': collection_id,
         'class_name': class_name,
         'type': field_type,
         'is_positive': is_positive,
+        'include_column_data': include_column_data,
     }
     result = django_client.post(url, json=data)
     if result.status_code != 200:
