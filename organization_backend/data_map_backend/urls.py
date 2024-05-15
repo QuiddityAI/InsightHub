@@ -36,6 +36,7 @@ urlpatterns=[
     path("get_chat_by_id", question_views.get_chat_by_id),
     path("add_collection_column", question_views.add_collection_column),
     path("delete_collection_column", question_views.delete_collection_column),
+    path("set_collection_cell_data", question_views.set_collection_cell_data),
     path("extract_question_from_collection_class_items", question_views.extract_question_from_collection_class_items),
     path("remove_collection_class_column_data", question_views.remove_collection_class_column_data),
     path("get_dataset_templates", other_views.get_dataset_templates),

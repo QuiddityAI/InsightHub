@@ -275,7 +275,7 @@ export default {
 </script>
 
 <template>
-  <div>
+  <div class="h-full flex flex-col">
 
     <div class="w-full flex flex-row mb-3">
       <div class="flex-initial w-2/3 flex flex-row">
@@ -347,7 +347,7 @@ export default {
       </button>
     </div>
 
-    <DataTable :value="collection_items" tableStyle="">
+    <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" class="min-h-0">
         <Column header="Item">
           <template #body="slotProps">
             <CollectionItem
@@ -405,9 +405,6 @@ export default {
           </div>
         </div>
     </OverlayPanel>
-
-    <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
-      class="mt-[0px]"></Paginator>
 
   </div>
 

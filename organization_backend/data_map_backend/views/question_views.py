@@ -257,6 +257,37 @@ def delete_collection_column(request):
 
 
 @csrf_exempt
+def set_collection_cell_data(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        item_id: int = data["item_id"]
+        column_identifier: int = data["column_identifier"]
+        cell_data = data["cell_data"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        item = CollectionItem.objects.get(id=item_id)
+    except CollectionItem.DoesNotExist:
+        return HttpResponse(status=404)
+    if item.collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    if not item.column_data:
+        item.column_data = {}  # type: ignore
+
+    item.column_data[column_identifier] = cell_data
+    item.save()
+
+    return HttpResponse(None, status=204)
+
+
+@csrf_exempt
 def extract_question_from_collection_class_items(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
@@ -334,7 +365,7 @@ def _extract_question_from_collection_class_items(collection, class_name, column
 
 def _extract_question_from_collection_class_items_batch(collection_items, column, system_prompt, user_id):
     def extract(item):
-        if (item.column_data or {}).get(column.identifier):
+        if (item.column_data or {}).get(column.identifier, {}).get('value'):
             # already extracted (only empty fields are extracted again)
             return
         text = None
