@@ -25,7 +25,7 @@ def combine_names(apps, schema_editor):
                 identifier=question["name"].replace(" ", "_").lower(),
                 field_type=FieldType.TEXT,
                 expression=question["prompt"],
-                source_fields=question["source_fields"],
+                source_fields=question.get("source_fields", []),
                 module=question.get("module"),
                 parameters={},
             )
