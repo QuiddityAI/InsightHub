@@ -46,7 +46,6 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
                 preprocessed_texts = [join_extracted_text_sources(t) for t in batch]
                 preprocessed_texts = add_e5_prefix(preprocessed_texts, parameters.prefix)
                 if GPU_IS_AVAILABLE or len(batch) == 1:
-                    logging.warning("Using infinity embeddings")
                     return get_infinity_embeddings(preprocessed_texts, parameters.model_name)
                 return deepinfra_client.get_embeddings(preprocessed_texts, parameters.model_name)
             generator = generator_fn
