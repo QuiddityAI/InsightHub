@@ -17,7 +17,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import DATA_BACKEND_HOST
 
-from .models import CollectionColumn, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat
+from .models import CollectionColumn, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -551,6 +551,33 @@ class TrainedClassifierInline(admin.StackedInline):
     link_to_change_view.short_description='Details'
 
 
+@admin.register(WritingTask)
+class WritingTaskAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
+    list_display = ('id', 'collection', 'class_name', 'name')
+    list_display_links = ('id', 'name')
+    search_fields = ('id', 'name')
+    ordering = ['collection', 'class_name', 'name']
+    readonly_fields = ('changed_at', 'created_at')
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2, 'cols': 30})},
+        models.JSONField: {'widget': Textarea(attrs={'rows': 2, 'cols': 20})},
+    }
+
+
+class WritingTaskInline(admin.TabularInline):
+    model = WritingTask
+    readonly_fields = ('changed_at', 'created_at')
+    ordering = ['class_name', 'name']
+    extra = 0
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2, 'cols': 20})},
+        models.JSONField: {'widget': Textarea(attrs={'rows': 2, 'cols': 20})},
+    }
+
+
 @admin.register(DataCollection)
 class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
@@ -565,6 +592,7 @@ class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         CollectionColumnInline,
         CollectionItemInline,
         TrainedClassifierInline,
+        WritingTaskInline,
     ]
 
     formfield_overrides = {

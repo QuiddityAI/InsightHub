@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import Chat, CollectionColumn, DataCollection, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier
+from .models import Chat, CollectionColumn, DataCollection, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier, WritingTask
 
 
 class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
@@ -120,6 +120,12 @@ class TrainedClassifierSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = TrainedClassifier
         exclude = []
+
+
+class WritingTaskSerializer(drf_serializers.ModelSerializer):
+    collection = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+    class Meta:
+        model = WritingTask
 
 
 class StoredMapSerializer(drf_serializers.ModelSerializer):

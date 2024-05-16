@@ -1323,6 +1323,83 @@ class TrainedClassifier(models.Model):
         unique_together = [['collection', 'class_name', 'embedding_space']]
 
 
+class WritingTask(models.Model):
+    name = models.CharField(
+        verbose_name="Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    collection = models.ForeignKey(
+        verbose_name="Collection",
+        to=DataCollection,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True)
+    class_name = models.CharField(
+        verbose_name="Class",
+        max_length=200,
+        blank=False,
+        null=False)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        editable=False,
+        blank=False,
+        null=False)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    is_processing = models.BooleanField(
+        verbose_name="Is Processing",
+        default=False,
+        blank=False,
+        null=False)
+    source_fields = models.JSONField(
+        verbose_name="Source Fields",
+        default=list,
+        blank=True,
+        null=True)
+    selected_item_ids = models.JSONField(
+        verbose_name="Selected Item IDs",
+        default=list,
+        blank=True,
+        null=True)
+    module = models.CharField(
+        verbose_name="Code Module Name",
+        max_length=200,
+        blank=True,
+        null=True)
+    parameters = models.JSONField(
+        verbose_name="Parameters",
+        default=dict,
+        blank=True,
+        null=True)
+    prompt = models.TextField(
+        verbose_name="Prompt",
+        blank=True,
+        null=True)
+    text = models.TextField(
+        verbose_name="Text",
+        blank=True,
+        null=True)
+    previous_versions = models.JSONField(
+        verbose_name="Previous Versions",
+        default=list,
+        blank=True,
+        null=True)
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name = "Writing Task"
+        verbose_name_plural = "Writing Tasks"
+
+
+
 class Chat(models.Model):
     name = models.CharField(
         verbose_name="Name",
