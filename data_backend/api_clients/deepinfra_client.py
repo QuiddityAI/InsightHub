@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
+import logging
 from typing import Iterable
 
 from utils.helpers import load_env_file
@@ -45,6 +46,8 @@ def _get_embeddings_batch(texts: Iterable[str], model_name: str):
     result = response.json()
     #compute_time = int(result.get("inference_status", {}).get("runtime_ms", 0)) / 1000
     #logging.warning(f"Deepinfra compute time vs request time: {compute_time:.2f} vs {actual_time:.2f} s")
+    if "error" in result:
+        logging.error(f"Deepinfra error: {result['error']}")
     #for key in result:
     #    if key not in ["embeddings"]:
     #        logging.warning(f"Deepinfra result: {key}: {result[key]}")
