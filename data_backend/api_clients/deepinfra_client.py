@@ -52,4 +52,9 @@ def _get_embeddings_batch(texts: Iterable[str], model_name: str):
     #    if key not in ["embeddings"]:
     #        logging.warning(f"Deepinfra result: {key}: {result[key]}")
     #logging.warning(f"Result size in MB: {len(json.dumps(result)) / 1024 / 1024:.2f} MB")
-    return result["embeddings"]
+    try:
+        embeddings = result["embeddings"]
+    except KeyError:
+        logging.error(f"Deepinfra response: {result}")
+        return []
+    return embeddings
