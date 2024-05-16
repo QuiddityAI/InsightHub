@@ -1,14 +1,20 @@
 import logging
 from typing import Callable
 import json
+import os
 
 import openai
 
 from utils.dotdict import DotDict
 from utils.helpers import join_extracted_text_sources
 
-from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings, get_infinity_embeddings
+from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings, get_infinity_embeddings, add_e5_prefix
 from logic.chunking import chunk_text_generator
+
+from api_clients import deepinfra_client
+
+
+GPU_IS_AVAILABLE = os.getenv('GPU_IS_AVAILABLE', "False") == "True"
 
 
 def get_generator_function_from_field(field: DotDict, always_return_single_value_per_item: bool = False) -> Callable:
@@ -29,14 +35,21 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
     # if one array and one simple field is assigned as source fields, the input is [ [ ["text1", "text2"], "text3" ] ]
     # the same applies to non-text fields, just with e.g. image paths instead of text
     parameters = DotDict(parameters)
-    generator = None
+    generator: Callable | None = None
     if module == 'pubmedbert':
         generator = lambda batch: get_pubmedbert_embeddings([join_extracted_text_sources(source_fields_list) for source_fields_list in batch])
     elif module == 'open_ai_text_embedding_ada_002':
         generator = lambda batch: get_openai_embedding_batch([join_extracted_text_sources(t) for t in batch])
     elif module == 'sentence_transformer':
         if parameters.model_name == 'intfloat/e5-base-v2':
-            generator = lambda batch: get_infinity_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name, parameters.prefix)
+            def generator_fn(batch):
+                preprocessed_texts = [join_extracted_text_sources(t) for t in batch]
+                preprocessed_texts = add_e5_prefix(preprocessed_texts, parameters.prefix)
+                if GPU_IS_AVAILABLE or len(batch) == 1:
+                    logging.warning("Using infinity embeddings")
+                    return get_infinity_embeddings(preprocessed_texts, parameters.model_name)
+                return deepinfra_client.get_embeddings(preprocessed_texts, parameters.model_name)
+            generator = generator_fn
         else:
             generator = lambda batch: get_sentence_transformer_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name, parameters.prefix)
     elif module == 'clip_text':

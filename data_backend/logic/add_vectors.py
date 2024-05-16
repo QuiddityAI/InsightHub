@@ -110,7 +110,7 @@ def add_missing_map_vectors(items: dict[str, dict], query, params: DotDict, map_
 
     if not all([item.get(map_vector_field.identifier) is not None for item in items.values()]):
         # if some or all vectors are still missing, generate them:
-        batch_size = 128
+        batch_size = 2048
         pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[map_vector_field.identifier])
         available_fields = get_required_fields(dataset, params.vectorize, "map")
         missing_fields = required_fields - set(available_fields)

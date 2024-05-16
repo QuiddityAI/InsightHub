@@ -144,20 +144,23 @@ def get_openai_embedding_batch(texts: dict):
     return results
 
 
-def get_infinity_embeddings(texts: list[str], model_name: str, prefix: str):
+def add_e5_prefix(texts: list[str], prefix: str, max_text_length: int = 1000):
+    prefix = prefix or "query:"
+    # alternative: "passage: " for documents meant for retrieval
+    texts = [prefix + " " + t[:max_text_length] for t in texts]
+    return texts
+
+
+def get_infinity_embeddings(texts: list[str], model_name: str):
     batch_size = 256
     embeddings = []
     for i in range(0, len(texts), batch_size):
-        embeddings.extend(_get_infinity_embeddings(texts[i:i+batch_size], model_name, prefix))
+        embeddings.extend(_get_infinity_embeddings(texts[i:i+batch_size], model_name))
     return embeddings
 
 
-def _get_infinity_embeddings(texts: list[str], model_name: str, prefix: str):
+def _get_infinity_embeddings(texts: list[str], model_name: str):
     url = os.getenv('infinity_server_host', 'http://infinity-model-server:55181') + '/embeddings'
-    if model_name in ['intfloat/e5-base-v2', 'intfloat/e5-large-v2', 'intfloat/multilingual-e5-base']:
-        prefix = prefix or "query:"
-        # alternative: "passage: " for documents meant for retrieval
-        texts = [prefix + " " + t[:1000] for t in texts]
     data = {
         "input": texts,
         "model": model_name
