@@ -389,6 +389,8 @@ export const useAppStateStore = defineStore("appState", {
       queryParams.set("dataset_ids", this.settings.search.dataset_ids.join(","))
       history.replaceState(null, null, "?" + queryParams.toString())
       this.populate_search_fields_based_on_selected_datasets()
+      // update default search settings:
+      this.settings.search.search_algorithm = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].defaults.search_algorithm).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
     },
     populate_search_fields_based_on_selected_datasets() {
       const that = this
