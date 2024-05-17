@@ -381,6 +381,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
         cost_per_module = {
             'openai_gpt_3_5': 1.0,
             'openai_gpt_4_turbo': 5.0,
+            'openai_gpt_4_o': 2.5,
             'groq_llama_3_8b': 0.2,
             'groq_llama_3_70b': 0.5,
             'python_expression': 0.0,
@@ -400,6 +401,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
                 openai_model = {
                     "openai_gpt_3_5": OPENAI_MODELS.GPT3_5,
                     "openai_gpt_4_turbo": OPENAI_MODELS.GPT4_TURBO,
+                    "openai_gpt_4_o": OPENAI_MODELS.GPT4_O,
                 }
                 response_text = get_chatgpt_response_using_history(history, openai_model[module])
             elif module.startswith("groq_"):
@@ -717,6 +719,7 @@ Your text:
     cost_per_module = {
         'openai_gpt_3_5': 1.0,
         'openai_gpt_4_turbo': 5.0,
+        'openai_gpt_4_o': 2.5,
         'groq_llama_3_8b': 0.2,
         'groq_llama_3_70b': 0.5,
         'python_expression': 0.0,
@@ -732,6 +735,7 @@ Your text:
             openai_model = {
                 "openai_gpt_3_5": OPENAI_MODELS.GPT3_5,
                 "openai_gpt_4_turbo": OPENAI_MODELS.GPT4_TURBO,
+                "openai_gpt_4_o": OPENAI_MODELS.GPT4_O,
             }
             response_text = get_chatgpt_response_using_history(history, openai_model[module])
         elif module.startswith("groq_"):

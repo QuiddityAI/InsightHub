@@ -24,6 +24,7 @@ class OPENAI_MODELS:
     GPT3_5 = "gpt-3.5-turbo"
     GPT4 = "gpt-4"
     GPT4_TURBO = "gpt-4-turbo"
+    GPT4_O = "gpt-4o"
 
 
 def get_chatgpt_response(question: str, language: str, model: str = OPENAI_MODELS.GPT4) -> str:

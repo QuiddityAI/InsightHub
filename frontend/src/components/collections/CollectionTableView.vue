@@ -48,7 +48,8 @@ export default {
       selected_module: 'groq_llama_3_70b',
       available_modules: [
         { identifier: 'openai_gpt_3_5', name: 'GPT 3.5 (medium accuracy and cost)' },
-        { identifier: 'openai_gpt_4_turbo', name: 'GPT 4 Turbo (highest accuracy and cost, slow)' },
+        { identifier: 'openai_gpt_4_turbo', name: 'GPT 4 Turbo (highest accuracy and cost, very slow)' },
+        { identifier: 'openai_gpt_4_o', name: 'GPT 4o (highest accuracy and cost, slow)' },
         { identifier: 'groq_llama_3_8b', name: 'Llama 3 8B (lowest cost, low accuracy, super fast)' },
         { identifier: 'groq_llama_3_70b', name: 'Llama 3 70B (low cost, medium accuracy, fast)' },
         // { identifier: 'python_expression', name: 'Python Expression' },
