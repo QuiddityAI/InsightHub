@@ -15,9 +15,10 @@ If the document does not contain the answer, answer with 'n/a'.
 If the answer is unclear, answer with '?'.
 
 Use markdown to format your answer.
-Highlight important words or phrases using two asterisks.
-Write chemical and math formulas using Latex syntax and wrap them in dollar signs.
-Write any numbers that have a unit using Latex syntax and wrap them in dollar signs, too.
+In long sentences, highlight important words or phrases using two asterisks.
+Write chemical and math formulas using LaTeX math syntax and wrap them in dollar signs.
+For example, a math expression like e = mc^2 should be written as $e = mc^2$.
+A chemical formula like water (H2O) should be written as $H_2O$ (this is not part of the document, it is just an example).
 Do not use any headings.
 
 Respond directly with the answer. Do not summarize the question again.
