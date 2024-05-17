@@ -108,7 +108,7 @@ export default {
       const available_fields = {}
       for (const column of this.collection.columns) {
         available_fields[column.identifier] = {
-          identifier: 'column_data__' + column.identifier,
+          identifier: 'column_data__' + column.identifier + '__value',
           name: column.name,
         }
       }
