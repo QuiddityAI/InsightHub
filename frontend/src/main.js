@@ -8,12 +8,20 @@ import DialogService from 'primevue/dialogservice';
 import Tooltip from 'primevue/tooltip';
 import VueApexCharts from "vue3-apexcharts";
 import "inter-ui/inter.css";
+import {marked} from "marked";
+import markedKatex from "marked-katex-extension";
 
 import "./style.css"
 import SearchAndMap from "./apps/SearchAndMap.vue"
 import { get_download_url } from "./utils/utils";  // used in item rendering definitions
 
 globalThis.get_download_url = get_download_url;
+
+const options = {
+  throwOnError: false
+};
+
+marked.use(markedKatex(options));
 
 const pinia = createPinia()
 const app = createApp(SearchAndMap)

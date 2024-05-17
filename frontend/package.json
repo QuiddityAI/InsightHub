@@ -16,6 +16,8 @@
     "chart.js": "^4.4.0",
     "chartjs-plugin-annotation": "^3.0.1",
     "inter-ui": "^4.0.2",
+    "marked": "^12.0.2",
+    "marked-katex-extension": "^5.0.1",
     "mathjs": "^11.9.1",
     "mitt": "^3.0.1",
     "panzoom": "^9.4.3",

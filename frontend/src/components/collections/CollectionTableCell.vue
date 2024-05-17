@@ -5,6 +5,7 @@ import {
   CheckIcon,
   UserIcon,
  } from "@heroicons/vue/24/outline"
+ import {marked} from "marked";
 
 import ProgressSpinner from 'primevue/progressspinner';
 import Dialog from "primevue/dialog";
@@ -37,7 +38,7 @@ export default {
     ...mapStores(useAppStateStore),
     value_as_html() {
       const value = this.item.column_data[this.column.identifier]?.value || ""
-      return value.replace(/(?:\r\n|\r|\n)/g, '<br>')
+      return marked.parse(value)
     },
   },
   mounted() {
@@ -111,7 +112,7 @@ export default {
         class="w-6 h-6"></ProgressSpinner>
       </div>
       <div v-else>
-        <div v-if="!edit_mode" v-html="value_as_html"></div>
+        <div v-if="!edit_mode" v-html="value_as_html" class="use-default-html-styles"></div>
         <textarea v-if="edit_mode"
           class="w-full h-[150px] p-1 border border-gray-300 rounded"
           :value="item.column_data[column.identifier]?.value"
@@ -156,6 +157,31 @@ export default {
     </div>
   </div>
 </template>
+
+<style>
+.use-default-html-styles h1 {
+  font-size: 1.2em;
+  margin: 0.67em 0;
+}
+
+.use-default-html-styles h2 {
+  font-size: 1.17em;
+  margin: 0.83em 0;
+}
+
+.use-default-html-styles ul {
+  list-style-type: disc;
+  margin: 0;
+  padding: 0 0 0 1.4em;
+}
+
+.use-default-html-styles ol {
+  list-style-type: decimal;
+  margin: 0;
+  padding: 0 0 0 1.4em;
+}
+
+</style>
 
 <style scoped>
 #editicon {
