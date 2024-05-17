@@ -13,8 +13,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from ..models import CollectionItem, DataCollection, CollectionColumn, Chat, ServiceUsage, FieldType
-from ..serializers import ChatSerializer, CollectionColumnSerializer, CollectionSerializer
+from ..models import CollectionItem, DataCollection, CollectionColumn, Chat, ServiceUsage, FieldType, WritingTask
+from ..serializers import ChatSerializer, CollectionColumnSerializer, CollectionSerializer, WritingTaskSerializer
 from ..data_backend_client import get_item_question_context
 from ..chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
 from ..groq_client import GROQ_MODELS, get_groq_response_using_history
@@ -484,3 +484,278 @@ def request_service_usage(request):
     result = usage_tracker.request_usage(amount)
 
     return HttpResponse(json.dumps(result), content_type="application/json", status=200)
+
+
+@csrf_exempt
+def get_writing_tasks(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        collection_id: int = data['collection_id']
+        class_name: str = data['class_name']
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    tasks = WritingTask.objects.filter(collection_id=collection_id, class_name=class_name)
+    tasks = tasks.order_by('-created_at')
+
+    task_ids = [{'id': task.id, 'name': task.name} for task in tasks]  # type: ignore
+
+    return HttpResponse(json.dumps(task_ids), content_type="application/json", status=200)
+
+
+@csrf_exempt
+def add_writing_task(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        collection_id: int = data['collection_id']
+        class_name: str = data['class_name']
+        name: str = data['name']
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    task = WritingTask.objects.create(
+        collection_id=collection_id,
+        class_name=class_name,
+        name=name,
+    )
+
+    data = WritingTaskSerializer(task).data
+    return HttpResponse(json.dumps(data), content_type="application/json", status=201)
+
+
+@csrf_exempt
+def get_writing_task_by_id(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        task_id: int = data['task_id']
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        task = WritingTask.objects.get(id=task_id)
+    except WritingTask.DoesNotExist:
+        return HttpResponse(status=404)
+    if task.collection.created_by != request.user:  # type: ignore
+        return HttpResponse(status=401)
+
+    data = WritingTaskSerializer(task).data
+    return HttpResponse(json.dumps(data), content_type="application/json", status=200)
+
+
+@csrf_exempt
+def delete_writing_task(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        task_id: int = data['task_id']
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        task = WritingTask.objects.get(id=task_id)
+    except WritingTask.DoesNotExist:
+        return HttpResponse(status=404)
+    if task.collection.created_by != request.user:  # type: ignore
+        return HttpResponse(status=401)
+
+    task.delete()
+    return HttpResponse(None, status=204)
+
+
+@csrf_exempt
+def update_writing_task(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        task_id: int = data['task_id']
+        name: str = data['name']
+        source_fields: list = data.get('source_fields', [])
+        selected_item_ids: list = data.get('selected_item_ids', [])
+        module: str | None = data.get('module', None)
+        parameters: dict = data.get('parameters', {})
+        prompt: str | None = data.get('prompt', None)
+        text: str | None = data.get('text', None)
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        task = WritingTask.objects.get(id=task_id)
+    except WritingTask.DoesNotExist:
+        return HttpResponse(status=404)
+    if task.collection.created_by != request.user:  # type: ignore
+        return HttpResponse(status=401)
+
+    task.name = name
+    task.source_fields = source_fields  # type: ignore
+    task.selected_item_ids = selected_item_ids  # type: ignore
+    task.module = module
+    task.parameters = parameters  # type: ignore
+    if prompt is not None:
+        task.prompt = prompt
+    if text is not None:
+        if not task.previous_versions:
+            task.previous_versions = []  # type: ignore
+        task.previous_versions.append({
+            'created_at': task.changed_at.isoformat(),
+            'text': task.text,
+        })
+        if len(task.previous_versions) > 3:
+            task.previous_versions = task.previous_versions[-3:]  # type: ignore
+        task.text = text
+    task.save()
+
+    return HttpResponse(None, status=204)
+
+
+@csrf_exempt
+def execute_writing_task(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        task_id: int = data['task_id']
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        task = WritingTask.objects.get(id=task_id)
+    except WritingTask.DoesNotExist:
+        return HttpResponse(status=404)
+    if task.collection.created_by != request.user:  # type: ignore
+        return HttpResponse(status=401)
+
+    _execute_writing_task_safe(task)
+
+    return HttpResponse(None, status=204)
+
+
+def _execute_writing_task_safe(task):
+    task.is_processing = True
+    task.save()
+    try:
+        _execute_writing_task(task)
+    except Exception as e:
+        logging.error(e)
+        import traceback
+        logging.error(traceback.format_exc())
+    finally:
+        task.is_processing = False
+        task.save()
+
+
+def _execute_writing_task(task):
+    contexts = []
+    for item_id in task.selected_item_ids:
+        item = CollectionItem.objects.get(id=item_id)
+        text = None
+        if item.field_type == FieldType.TEXT:
+            # TODO: use same format as for other items
+            text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
+        if item.field_type == FieldType.IDENTIFIER:
+            assert item.dataset_id is not None
+            assert item.item_id is not None
+            text = get_item_question_context(item.dataset_id, item.item_id, task.source_fields, task.prompt)
+        if not text:
+            continue
+        contexts.append(text)
+
+    context = "\n\n".join(contexts)
+
+    full_prompt = f"""\
+You are an expert in writing.
+Your task is: "{task.prompt}"
+Follow the task exactly.
+Write the text based on the following documents.
+Mention the source where a statement is taken from behind the sentence with the document id in square brackets, like this: [dataset_id, item_id].
+
+{context}
+
+Reply only with the requested text, without introductory sentence.
+Your text:
+"""
+    # logging.warning(prompt)
+    history = [ { "role": "system", "content": full_prompt } ]
+    cost_per_module = {
+        'openai_gpt_3_5': 1.0,
+        'openai_gpt_4_turbo': 5.0,
+        'groq_llama_3_8b': 0.2,
+        'groq_llama_3_70b': 0.5,
+        'python_expression': 0.0,
+        'website_scraping': 0.0,
+        'notes': 0.0,
+    }
+    module = task.module or "openai_gpt_3_5"
+
+    usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by, "External AI")
+    result = usage_tracker.request_usage(cost_per_module.get(module, 1.0))
+    if result["approved"]:
+        if module.startswith("openai_gpt"):
+            openai_model = {
+                "openai_gpt_3_5": OPENAI_MODELS.GPT3_5,
+                "openai_gpt_4_turbo": OPENAI_MODELS.GPT4_TURBO,
+            }
+            response_text = get_chatgpt_response_using_history(history, openai_model[module])
+        elif module.startswith("groq_"):
+            groq_models = {
+                "groq_llama_3_8b": GROQ_MODELS.LLAMA_3_8B,
+                "groq_llama_3_70b": GROQ_MODELS.LLAMA_3_70B,
+            }
+            response_text = get_groq_response_using_history(history, groq_models[module])
+        else:
+            response_text = "AI module not found."
+    else:
+        response_text = "AI usage limit exceeded."
+    #response_text = "n/a"
+    # logging.warning(response_text)
+
+    if not task.previous_versions:
+        task.previous_versions = []  # type: ignore
+    task.previous_versions.append({
+        'created_at': task.changed_at.isoformat(),
+        'text': task.text,
+    })
+    if len(task.previous_versions) > 3:
+        task.previous_versions = task.previous_versions[-3:]  # type: ignore
+    task.text = response_text
+    task.is_processing = False
+    task.save()

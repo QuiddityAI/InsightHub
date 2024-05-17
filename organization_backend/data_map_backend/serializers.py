@@ -126,6 +126,7 @@ class WritingTaskSerializer(drf_serializers.ModelSerializer):
     collection = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
     class Meta:
         model = WritingTask
+        exclude = []
 
 
 class StoredMapSerializer(drf_serializers.ModelSerializer):
