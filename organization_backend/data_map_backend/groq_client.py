@@ -31,7 +31,6 @@ class GROQ_MODELS:
 @sleep_and_retry
 @limits(calls=29, period=60)
 def get_groq_response_using_history(history, model: str = GROQ_MODELS.LLAMA_3_70B) -> str:
-    #logging.info(f"Sending prompt history to Groq: {history[-1]}")
     response = client.chat.completions.create(
         model=model,
         messages=history
@@ -39,7 +38,7 @@ def get_groq_response_using_history(history, model: str = GROQ_MODELS.LLAMA_3_70
     #logging.warning(f"Groq response: {response}")
 
     response_text = response.choices[0].message.content
-    if response_text == "":
+    if not response_text or not response_text.strip():
         logging.warning("Groq response is empty")
         logging.warning(f"Groq response: {response}")
     return response_text

@@ -226,7 +226,7 @@ export default {
       </Dialog>
 
       <button @click="show_table"
-        class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold text-sm">
+        class="rounded-md bg-green-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold text-sm">
           Show Table
       </button>
 
@@ -243,7 +243,7 @@ export default {
       <Button label="Show Map" @click="show_map()"></Button>
     </InputGroup> -->
 
-    <Dialog ref="table_dialog" v-model:visible="table_visible" maximizable modal header="Collection Table View">
+    <Dialog ref="table_dialog" v-model:visible="table_visible" maximizable modal :header="`Table: ${collection.name}`">
       <CollectionTableView
         :collection_id="collection_id"
         :class_name="class_name"

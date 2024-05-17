@@ -1,6 +1,8 @@
 <script setup>
 import {
   TrashIcon,
+  PlusIcon,
+  ChevronRightIcon,
 } from "@heroicons/vue/24/outline"
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
@@ -11,6 +13,10 @@ import Paginator from "primevue/paginator"
 import OverlayPanel from 'primevue/overlaypanel';
 import Dropdown from 'primevue/dropdown';
 import Message from 'primevue/message';
+import InputText from 'primevue/inputtext';
+import InputGroup from 'primevue/inputgroup';
+import Dialog from "primevue/dialog";
+import Textarea from 'primevue/textarea';
 
 import CollectionItem from "./CollectionItem.vue"
 import ExportTableArea from "./ExportTableArea.vue";
@@ -36,6 +42,7 @@ export default {
       collection: this.initial_collection,
       collection_items: [],
 
+      show_add_column_dialog: false,
       selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
       selected_module: 'groq_llama_3_70b',
       available_modules: [
@@ -54,6 +61,13 @@ export default {
       order_descending: true,
 
       selected_column: null,
+
+      show_writing_tasks: false,
+      writing_task_ids: [],
+      selected_writing_task_id: null,
+      selected_writing_task: null,
+      new_writing_task_name: '',
+
     }
   },
   computed: {
@@ -115,6 +129,7 @@ export default {
   },
   mounted() {
     this.load_collection_items()
+    this.get_writing_tasks()
   },
   watch: {
     first_index() {
@@ -125,6 +140,9 @@ export default {
     },
     order_descending() {
       this.load_collection_items()
+    },
+    selected_writing_task_id() {
+      this.get_writing_task()
     },
   },
   methods: {
@@ -170,7 +188,7 @@ export default {
         }
       })
     },
-    add_extraction_question(name, prompt) {
+    add_extraction_question(name, prompt, process_current_page=false) {
       if (!name || !prompt || !this.selected_source_fields.length) {
         return
       }
@@ -188,7 +206,11 @@ export default {
         if (!that.collection.columns) {
           that.collection.columns = []
         }
-        that.collection.columns.push(response.data)
+        const column = response.data
+        that.collection.columns.push(column)
+        if (process_current_page) {
+          that.extract_question(column.id, true)
+        }
       })
       .catch(function (error) {
         console.error(error)
@@ -270,142 +292,280 @@ export default {
     human_readable_source_fields(fields) {
       return fields.map((field) => this.available_source_fields.find((f) => f.identifier === field).name).join(", ")
     },
+    get_writing_tasks() {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+      }
+      httpClient.post(`/org/data_map/get_writing_tasks`, body)
+      .then(function (response) {
+        that.writing_task_ids = response.data
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    get_writing_task() {
+      const that = this
+      const body = {
+        task_id: this.selected_writing_task_id,
+      }
+      httpClient.post(`/org/data_map/get_writing_task_by_id`, body)
+      .then(function (response) {
+        that.selected_writing_task = response.data
+        if (that.selected_writing_task.is_processing) {
+          setTimeout(() => {
+            that.get_writing_task()
+          }, 1000)
+        }
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    add_writing_task(name) {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+        name: name,
+      }
+      httpClient.post(`/org/data_map/add_writing_task`, body)
+      .then(function (response) {
+        const task = response.data
+        that.writing_task_ids.push({id: task.id, name: task.name})
+        that.selected_writing_task = task
+        that.new_writing_task_name = ''
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    update_writing_task() {
+      const that = this
+      this.selected_writing_task.selected_item_ids = this.collection_items.map((item) => item.id)
+      this.selected_writing_task.source_fields = this.selected_source_fields
+      const body = {
+        task_id: this.selected_writing_task_id,
+        name: this.selected_writing_task.name,
+        source_fields: this.selected_writing_task.source_fields,
+        selected_item_ids: this.selected_writing_task.selected_item_ids,
+        module: this.selected_writing_task.module,
+        parameters: this.selected_writing_task.parameters,
+        prompt: this.selected_writing_task.prompt,
+        text: this.selected_writing_task.text,
+      }
+      httpClient.post(`/org/data_map/update_writing_task`, body)
+      .then(function (response) {
+
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    execute_writing_task() {
+      const that = this
+      const body = {
+        task_id: this.selected_writing_task_id,
+      }
+      httpClient.post(`/org/data_map/execute_writing_task`, body)
+      .then(function (response) {
+        setTimeout(() => {
+          that.get_writing_task()
+        }, 1000)
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
   },
 }
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <div class="h-full w-full flex flex-row">
+    <div class="flex-1 flex flex-col overflow-x-hidden">
 
-    <div class="w-full flex flex-row mb-3">
-      <div class="flex-initial w-2/3 flex flex-row">
-        <input
-          ref="new_question_name"
-          type="text"
-          class="flex-none w-40 rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-          placeholder="Column Name"/>
-        <input
-          ref="new_question_prompt"
-          type="text"
-          class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-          placeholder="Question / Prompt"
-          @keyup.enter="add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value)"/>
-        <div class="flex-initial w-40">
-          <MultiSelect v-model="selected_source_fields"
-            :options="available_source_fields"
-            optionLabel="name"
-            optionValue="identifier"
-            placeholder="Select Sources..."
-            :maxSelectedLabels="0"
-            selectedItemsLabel="{0} Source(s)"
-            class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-        </div>
-        <div class="flex-initial w-36">
-          <Dropdown v-model="selected_module"
-            :options="available_modules"
-            optionLabel="name"
-            optionValue="identifier"
-            placeholder="Select Module.."
-            class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-        </div>
-        <button
-          class="rounded-r-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-          type="button"
-          @click="add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value)">
-          Add Question
+      <div class="w-full flex flex-row mb-3">
+        <button @click="show_add_column_dialog = true" class="py-1 px-2 rounded-md bg-green-100 font-semibold hover:bg-blue-100/50">
+          Add Column <PlusIcon class="inline h-4 w-4"></PlusIcon>
+        </button>
+        <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
+          <div class="flex flex-col gap-3">
+            <div class="flex flex-row items-center">
+              <input
+                ref="new_question_name"
+                type="text"
+                class="flex-none w-2/3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+                placeholder="Column Name"/>
+            </div>
+            <div class="flex flex-row gap-2 items-center">
+              <div class="flex-1 min-w-0">
+                <MultiSelect v-model="selected_source_fields"
+                  :options="available_source_fields"
+                  optionLabel="name"
+                  optionValue="identifier"
+                  placeholder="Select Sources..."
+                  :maxSelectedLabels="0"
+                  selectedItemsLabel="{0} Source(s)"
+                  class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <Dropdown v-model="selected_module"
+                  :options="available_modules"
+                  optionLabel="name"
+                  optionValue="identifier"
+                  placeholder="Select Module.."
+                  class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+              </div>
+            </div>
+            <Message v-if="show_full_text_issue_hint" class="text-gray-500">
+              Using the full text of an item might be slow and expensive. The full text will also be limited to the maximum text length of the AI module, which might lead to unpredictable results.
+              <br>
+              Consider using 'Full Text Excerpts' instead, which selects only the most relevant parts of the full text.
+            </Message>
+            <div class="flex flex-row items-center">
+              <textarea
+                ref="new_question_prompt"
+                type="text"
+                class="flex-auto rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+                placeholder="Question / Prompt"/>
+            </div>
+            <div class="flex flex-row gap-3">
+              <button
+                class="rounded-md border-0 px-2 py-1.5 bg-green-100 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+                type="button"
+                @click="show_add_column_dialog = false; add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, true)">
+                Add Question & Process Current Page
+              </button>
+              <button
+                class="rounded-md border-0 px-2 py-1.5 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+                type="button"
+                @click="show_add_column_dialog = false; add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, false)">
+                Add without Processing
+              </button>
+            </div>
+          </div>
+        </Dialog>
+
+        <div class="flex-1"></div>
+        <button @click="event => {$refs.export_dialog.toggle(event)}"
+          class="py-1 px-2 rounded-md bg-gray-100 hover:bg-blue-100/50">
+          Export
+        </button>
+        <button @click="show_writing_tasks = !show_writing_tasks"
+          class="ml-2 py-1 px-2 rounded-md bg-green-100 font-semibold hover:bg-blue-100/50">
+          {{ show_writing_tasks ? 'Hide' : 'Show' }} Writing Tasks <ChevronRightIcon class="inline h-4 w-4"></ChevronRightIcon>
+        </button>
+
+        <OverlayPanel ref="export_dialog">
+          <ExportTableArea :collection_id="collection_id" :class_name="class_name">
+          </ExportTableArea>
+        </OverlayPanel>
+      </div>
+
+      <div class="flex flex-row items-center justify-center">
+        <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
+          class="mt-[0px]"></Paginator>
+        <Dropdown v-model="order_by_field"
+          :options="available_order_by_fields"
+          optionLabel="name"
+          optionValue="identifier"
+          placeholder="Order By..."
+          class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+        <button @click="order_descending = !order_descending"
+          class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
+          {{ order_descending ? '▼' : '▲' }}
         </button>
       </div>
-      <div class="flex-1"></div>
-      <button @click="event => {$refs.export_dialog.toggle(event)}"
-        class="py-1 px-2 rounded-md bg-gray-100 hover:bg-blue-100/50">
-        Export
-      </button>
 
-      <OverlayPanel ref="export_dialog">
-        <ExportTableArea :collection_id="collection_id" :class_name="class_name">
-        </ExportTableArea>
+      <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" class="min-h-0 overflow-x-auto">
+          <Column header="Item">
+            <template #body="slotProps">
+              <CollectionItem
+                :dataset_id="slotProps.data.dataset_id"
+                :item_id="slotProps.data.item_id"
+                :is_positive="slotProps.data.is_positive"
+                class="w-[520px]">
+              </CollectionItem>
+            </template>
+          </Column>
+          <Column v-for="column in collection.columns" :header="false">
+            <template #header="slotProps">
+              <button class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2"
+                @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
+                {{ column.name }}
+              </button>
+            </template>
+            <template #body="slotProps">
+              <CollectionTableCell :item="slotProps.data" :column="column"
+                :current_extraction_processes="collection.current_extraction_processes">
+              </CollectionTableCell>
+            </template>
+          </Column>
+      </DataTable>
+
+      <OverlayPanel ref="column_options">
+          <div class="w-[400px] flex flex-col gap-2">
+            <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
+            <div class="flex flex-row">
+              <p class="flex-1">{{ selected_column.expression }}</p>
+              <button
+                @click="delete_column(selected_column.id); $refs.column_options.hide()"
+                class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+                <TrashIcon class="h-4 w-4"></TrashIcon>
+              </button>
+            </div>
+            <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
+            <p class="text-xs text-gray-500">{{ available_modules.find((m) => m.identifier === selected_column.module)?.name }}</p>
+            <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
+              <button @click="extract_question(selected_column.id, true); $refs.column_options.hide()"
+                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
+                Extract <span class="text-gray-500">(current page)</span></button>
+              <button @click="extract_question(selected_column.id, false); $refs.column_options.hide()"
+                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
+                Extract <span class="text-gray-500">(all)</span></button>
+            </div>
+
+            <div class="flex flex-row gap-2">
+              <button @click="remove_results(selected_column.id, true)"
+                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
+                Remove results<br><span class="text-gray-500">(current page)</span></button>
+              <button @click="remove_results(selected_column.id, false)"
+                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
+                Remove results<br><span class="text-gray-500">(all)</span></button>
+            </div>
+          </div>
       </OverlayPanel>
-    </div>
-    <Message v-if="show_full_text_issue_hint" class="text-sm text-gray-500">
-      Using the full text of an item might be slow and expensive. The full text will also be limited to the maximum text length of the AI module, which might lead to unpredictable results.
-      <br>
-      Consider using 'Full Text Excerpts' instead, which selects only the most relevant parts of the full text.
-    </Message>
 
-    <div class="flex flex-row items-center justify-center">
-      <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
-        class="mt-[0px]"></Paginator>
-      <Dropdown v-model="order_by_field"
-        :options="available_order_by_fields"
+    </div>
+    <div v-if="show_writing_tasks" class="flex-none w-[500px] flex flex-col">
+      <div class="flex flex-row items-center justify-center">
+        <InputGroup>
+          <InputText placeholder="New Writing Task" v-model="new_writing_task_name" />
+          <Button label="Add" @click="add_writing_task(new_writing_task_name)"></Button>
+        </InputGroup>
+      </div>
+      <Dropdown
+        v-model="selected_writing_task_id"
+        :options="writing_task_ids"
         optionLabel="name"
-        optionValue="identifier"
-        placeholder="Order By..."
-        class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-      <button @click="order_descending = !order_descending"
-        class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
-        {{ order_descending ? '▼' : '▲' }}
-      </button>
+        optionValue="id"
+        placeholder="Select Writing Task..."
+        class="w-full h-8 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+      <div v-if="selected_writing_task" class="flex-1 overflow-y-auto">
+        <pre>{{ selected_writing_task.name }}</pre>
+
+        <InputText v-model="selected_writing_task.name" placeholder="name" />
+        <InputText v-model="selected_writing_task.prompt" placeholder="prompt" />
+        <InputText v-model="selected_writing_task.module" placeholder="module" />
+        <textarea v-model="selected_writing_task.text" />
+
+        <button @click="update_writing_task()">Update</button>
+        <button @click="execute_writing_task()">Run</button>
+      </div>
     </div>
-
-    <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" class="min-h-0">
-        <Column header="Item">
-          <template #body="slotProps">
-            <CollectionItem
-              :dataset_id="slotProps.data.dataset_id"
-              :item_id="slotProps.data.item_id"
-              :is_positive="slotProps.data.is_positive"
-              class="w-[520px]">
-            </CollectionItem>
-          </template>
-        </Column>
-        <Column v-for="column in collection.columns" :header="false">
-          <template #header="slotProps">
-            <button class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2"
-              @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
-              {{ column.name }}
-            </button>
-          </template>
-          <template #body="slotProps">
-            <CollectionTableCell :item="slotProps.data" :column="column"
-              :current_extraction_processes="collection.current_extraction_processes">
-            </CollectionTableCell>
-          </template>
-        </Column>
-    </DataTable>
-
-    <OverlayPanel ref="column_options">
-        <div class="w-[400px] flex flex-col gap-2">
-          <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
-          <div class="flex flex-row">
-            <p class="flex-1">{{ selected_column.expression }}</p>
-            <button
-              @click="delete_column(selected_column.id); $refs.column_options.hide()"
-              class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
-              <TrashIcon class="h-4 w-4"></TrashIcon>
-            </button>
-          </div>
-          <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
-          <p class="text-xs text-gray-500">{{ available_modules.find((m) => m.identifier === selected_column.module)?.name }}</p>
-          <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
-            <button @click="extract_question(selected_column.id, true)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-              Extract <span class="text-gray-500">(current page)</span></button>
-            <button @click="extract_question(selected_column.id, false)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-              Extract <span class="text-gray-500">(all)</span></button>
-          </div>
-
-          <div class="flex flex-row gap-2">
-            <button @click="remove_results(selected_column.id, true)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-              Remove results<br><span class="text-gray-500">(current page)</span></button>
-            <button @click="remove_results(selected_column.id, false)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-              Remove results<br><span class="text-gray-500">(all)</span></button>
-          </div>
-        </div>
-    </OverlayPanel>
-
   </div>
 
 </template>

@@ -7,6 +7,8 @@ import {
  } from "@heroicons/vue/24/outline"
 
 import ProgressSpinner from 'primevue/progressspinner';
+import Dialog from "primevue/dialog";
+
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -27,6 +29,7 @@ export default {
     return {
       show_more_indicator: false,
       edit_mode: false,
+      show_used_prompt: false,
     }
   },
   computed: {
@@ -85,6 +88,14 @@ export default {
         console.error(error)
       })
     },
+    convert_to_html(text) {
+      // escape html
+      text = text.replace(/&/g, "&amp;")
+      text = text.replace(/</g, "&lt;")
+      text = text.replace(/>/g, "&gt;")
+      // convert newlines to <br>
+      return text.replace(/(?:\r\n|\r|\n)/g, '<br>')
+    },
   },
 }
 </script>
@@ -94,13 +105,21 @@ export default {
     :class="{'min-w-[120px]': item.column_data[column.identifier]?.value.length > 5 && item.column_data[column.identifier]?.value.length <= 100,
                 'min-w-[250px]': item.column_data[column.identifier]?.value.length > 100}">
     <div ref="scroll_area" class="min-h-[70px] max-h-[210px] overflow-y-scroll">
-      <ProgressSpinner v-if="!item.column_data[column.identifier]?.value && current_extraction_processes.includes(column.identifier)"
+      <div v-if="!item.column_data[column.identifier]?.value && current_extraction_processes.includes(column.identifier)"
+        class="flex flex-col items-center justify-center">
+        <ProgressSpinner
         class="w-6 h-6"></ProgressSpinner>
+      </div>
       <div v-else>
         <div v-if="!edit_mode" v-html="value_as_html"></div>
-        <textarea v-if="edit_mode" :value="item.column_data[column.identifier]?.value" ref="edit_text_area"></textarea>
+        <textarea v-if="edit_mode"
+          class="w-full h-[150px] p-1 border border-gray-300 rounded"
+          :value="item.column_data[column.identifier]?.value"
+          ref="edit_text_area">
+        </textarea>
       </div>
     </div>
+
     <div v-if="show_more_indicator" class="absolute bottom-6 right-0 h-6 w-6 rounded-full bg-white text-gray-400"
       v-tooltip="{'value': 'Scroll down for more'}">
       <ArrowDownCircleIcon></ArrowDownCircleIcon>
@@ -110,6 +129,16 @@ export default {
       class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500">
       <PencilIcon class="m-1"></PencilIcon>
     </button>
+    <button v-if="appState.user.is_staff && !edit_mode && item.column_data[column.identifier]?.used_prompt" @click="show_used_prompt = true" id="prompticon"
+      v-tooltip.right="{'value': 'Show the used prompt', showDelay: 500}"
+      class="absolute top-8 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500">
+      P
+    </button>
+    <Dialog v-model:visible="show_used_prompt" modal header="Used Prompt">
+      <div class="overflow-y-auto max-h-[400px]"
+        v-html="convert_to_html(item.column_data[column.identifier]?.used_prompt)" />
+    </Dialog>
+
     <button v-if="edit_mode" @click="submit_changes()"
       v-tooltip.right="{'value': 'Save changes', showDelay: 500}"
       class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-green-500">
@@ -133,7 +162,15 @@ export default {
   display: none;
 }
 
+#prompticon {
+  display: none;
+}
+
 #cell:hover > #editicon {
+  display: block;
+}
+
+#cell:hover > #prompticon {
   display: block;
 }
 </style>

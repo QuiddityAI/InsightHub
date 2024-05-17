@@ -18,6 +18,7 @@ from ..serializers import ChatSerializer, CollectionColumnSerializer, Collection
 from ..data_backend_client import get_item_question_context
 from ..chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
 from ..groq_client import GROQ_MODELS, get_groq_response_using_history
+from ..prompts import table_cell_prompt
 
 from .other_views import is_from_backend
 
@@ -344,10 +345,6 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
 
 
 def _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, user_id):
-    system_prompt = "Answer the following question based on the following document. " + \
-        "Answer in one concise sentence, word or list. If the document does not contain the answer, " + \
-        "answer with 'n/a'. If the answer is unclear, answer with '?'. \n\nQuestion:\n"
-    system_prompt += column.expression + "\n\nDocument:\n"
     collection_items = CollectionItem.objects.filter(collection=collection, is_positive=True, classes__contains=[class_name])
     collection_items = collection_items.order_by(order_by)
     collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
@@ -355,7 +352,7 @@ def _extract_question_from_collection_class_items(collection, class_name, column
     batch_size = 10
     for i in range(0, len(collection_items), batch_size):
         batch = collection_items[i:i+batch_size]
-        _extract_question_from_collection_class_items_batch(batch, column, system_prompt, user_id)
+        _extract_question_from_collection_class_items_batch(batch, column, user_id)
         included_items += len(batch)
         if included_items % 100 == 0:
             logging.warning(f"Extracted {included_items} items for question {column.name}.")
@@ -363,7 +360,7 @@ def _extract_question_from_collection_class_items(collection, class_name, column
     logging.warning("Done extracting question from collection class items.")
 
 
-def _extract_question_from_collection_class_items_batch(collection_items, column, system_prompt, user_id):
+def _extract_question_from_collection_class_items_batch(collection_items, column, user_id):
     def extract(item):
         if (item.column_data or {}).get(column.identifier, {}).get('value'):
             # already extracted (only empty fields are extracted again)
@@ -376,10 +373,11 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
             assert item.item_id is not None
             text = get_item_question_context(item.dataset_id, item.item_id, column.source_fields, column.expression)
         if not text:
+            logging.warning(f"Could not extract question for item {item.id}.")
             return
-        prompt = system_prompt + text + "\n\nAnswer:\n"
+        prompt = table_cell_prompt.replace("{{ document }}", text)
         # logging.warning(prompt)
-        history = [ { "role": "system", "content": prompt } ]
+        history = [ { "role": "system", "content": prompt }, { "role": "user", "content": column.expression } ]
         cost_per_module = {
             'openai_gpt_3_5': 1.0,
             'openai_gpt_4_turbo': 5.0,
@@ -423,6 +421,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
             'changed_at': timezone.now().isoformat(),
             'is_ai_generated': True,
             'is_manually_edited': False,
+            'used_prompt': prompt,
             # potential other fields: used_prompt, used_tokens, used_snippets, fact_checked, edited, ...
         }
         item.save()
