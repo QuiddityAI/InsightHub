@@ -21,6 +21,7 @@ import Textarea from 'primevue/textarea';
 import CollectionItem from "./CollectionItem.vue"
 import ExportTableArea from "./ExportTableArea.vue";
 import CollectionTableCell from "./CollectionTableCell.vue";
+import ObjectDetailsModal from "../search/ObjectDetailsModal.vue";
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -61,6 +62,8 @@ export default {
       order_descending: true,
 
       selected_column: null,
+
+      show_details_dialog: false,
 
       show_writing_tasks: false,
       writing_task_ids: [],
@@ -143,6 +146,9 @@ export default {
     },
     selected_writing_task_id() {
       this.get_writing_task()
+    },
+    'appStateStore.selected_document_ds_and_id'() {
+      this.show_details_dialog = !!this.appStateStore.selected_document_ds_and_id
     },
   },
   methods: {
@@ -566,6 +572,16 @@ export default {
         <button @click="execute_writing_task()">Run</button>
       </div>
     </div>
+
+    <Dialog
+      v-model:visible="show_details_dialog"
+      :style="{'max-width': '650px', width: '650px'}"
+      @hide="appState.selected_document_ds_and_id = null">
+      <ObjectDetailsModal
+        :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
+        :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
+        :show_action_buttons="false"></ObjectDetailsModal>
+    </Dialog>
   </div>
 
 </template>

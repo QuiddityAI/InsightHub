@@ -22,7 +22,7 @@ const toast = useToast()
 
 <script>
 export default {
-  props: ["dataset", "initial_item"],
+  props: ["dataset", "initial_item", "show_action_buttons"],
   data() {
     return {
       rendering: null,
@@ -209,7 +209,7 @@ export default {
       </ExportSingleItem>
     </Dialog>
 
-    <div class="mt-2 flex flex-none flex-row">
+    <div v-if="show_action_buttons" class="mt-2 flex flex-none flex-row">
       <AddToCollectionButtons v-if="appState.collections?.length" class="mr-3" @addToCollection="(collection_id, class_name, is_positive) =>
               appState.add_item_to_collection(
                   appState.selected_document_ds_and_id,

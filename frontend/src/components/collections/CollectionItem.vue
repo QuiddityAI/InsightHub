@@ -55,7 +55,7 @@ export default {
 </script>
 
 <template>
-  <div v-if="rendering" class="rounded bg-gray-100/50 p-3 flex flex-row gap-2"
+  <div v-if="rendering" class="rounded bg-gray-100/50 p-3 flex flex-row gap-2 cursor-pointer"
     @click="appState.show_document_details([dataset_id, item_id])">
     <div class="flex-1 flex flex-col">
       <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2 inline" />
@@ -63,7 +63,7 @@ export default {
       <p class="mt-1 text-xs leading-relaxed text-gray-500" v-html="rendering.subtitle(item)"></p>
 
       <div class="flex-1"></div>
-      <div class="flex flex-row items-center">
+      <div class="mt-2 flex flex-row items-center">
         <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
           {{ appState.datasets[dataset_id]?.name }}
         </span>

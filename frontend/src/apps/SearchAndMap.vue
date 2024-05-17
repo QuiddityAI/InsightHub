@@ -479,7 +479,8 @@ export default {
           class="pointer-events-auto flex w-full flex-initial overflow-hidden">
           <ObjectDetailsModal
             :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
-            :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"></ObjectDetailsModal>
+            :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
+            :show_action_buttons="true"></ObjectDetailsModal>
         </div>
 
         <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center items-center">
