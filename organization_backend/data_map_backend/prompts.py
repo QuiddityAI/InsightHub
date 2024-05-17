@@ -16,7 +16,8 @@ If the answer is unclear, answer with '?'.
 
 Use markdown to format your answer.
 Highlight important words or phrases using two asterisks.
-Write chemical or math formulas using Latex syntax and wrap them in dollar signs.
+Write chemical and math formulas using Latex syntax and wrap them in dollar signs.
+Write any numbers that have a unit using Latex syntax and wrap them in dollar signs, too.
 Do not use any headings.
 
 Respond directly with the answer. Do not summarize the question again.

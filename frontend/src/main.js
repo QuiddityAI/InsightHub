@@ -17,11 +17,11 @@ import { get_download_url } from "./utils/utils";  // used in item rendering def
 
 globalThis.get_download_url = get_download_url;
 
-const options = {
+const katex_options = {
   throwOnError: false
 };
 
-marked.use(markedKatex(options));
+marked.use(markedKatex(katex_options))
 
 const pinia = createPinia()
 const app = createApp(SearchAndMap)

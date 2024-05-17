@@ -4,8 +4,10 @@ import {
   PencilIcon,
   CheckIcon,
   UserIcon,
+  DocumentDuplicateIcon,
  } from "@heroicons/vue/24/outline"
- import {marked} from "marked";
+ import {Marked, marked} from "marked";
+import markedKatex from "marked-katex-extension";
 
 import ProgressSpinner from 'primevue/progressspinner';
 import Dialog from "primevue/dialog";
@@ -18,6 +20,8 @@ import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
+
+const _window = window
 </script>
 
 <script>
@@ -39,6 +43,21 @@ export default {
     value_as_html() {
       const value = this.item.column_data[this.column.identifier]?.value || ""
       return marked.parse(value)
+    },
+    value_as_plain_text() {
+      const value = this.item.column_data[this.column.identifier]?.value || ""
+      const katex_options = {
+        output: "html",  // otherwise MathML is included for accesibility, but messes with copyable text
+      }
+      const marked_custom = new Marked().use(markedKatex(katex_options))
+      const html = marked_custom.parse(value)
+      function extractContent(s) {
+        // gets copyable plain text from html
+        var span = document.createElement('span');
+        span.innerHTML = s;
+        return span.textContent || span.innerText;
+      }
+      return extractContent(html)
     },
   },
   mounted() {
@@ -125,20 +144,25 @@ export default {
       v-tooltip="{'value': 'Scroll down for more'}">
       <ArrowDownCircleIcon></ArrowDownCircleIcon>
     </div>
-    <button v-if="!edit_mode" @click="edit_mode = true" id="editicon"
+    <button v-if="!edit_mode" @click="edit_mode = true"
       v-tooltip.right="{'value': 'Edit', showDelay: 500}"
-      class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500">
+      class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
       <PencilIcon class="m-1"></PencilIcon>
     </button>
-    <button v-if="appState.user.is_staff && !edit_mode && item.column_data[column.identifier]?.used_prompt" @click="show_used_prompt = true" id="prompticon"
+    <button v-if="appState.user.is_staff && !edit_mode && item.column_data[column.identifier]?.used_prompt" @click="show_used_prompt = true"
       v-tooltip.right="{'value': 'Show the used prompt', showDelay: 500}"
-      class="absolute top-8 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500">
+      class="absolute top-8 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
       P
     </button>
     <Dialog v-model:visible="show_used_prompt" modal header="Used Prompt">
       <div class="overflow-y-auto max-h-[400px]"
         v-html="convert_to_html(item.column_data[column.identifier]?.used_prompt)" />
     </Dialog>
+    <button v-if="!edit_mode" @click="_window.isSecureContext ? _navigator.clipboard.writeText(value_as_plain_text) : _window.prompt('Copy to clipboard: Ctrl+C, Enter', value_as_plain_text)"
+      v-tooltip.right="{'value': 'Copy plain text to clipboard', showDelay: 500}"
+      class="absolute top-0 right-8 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
+      <DocumentDuplicateIcon class="m-1"></DocumentDuplicateIcon>
+    </button>
 
     <button v-if="edit_mode" @click="submit_changes()"
       v-tooltip.right="{'value': 'Save changes', showDelay: 500}"
@@ -184,19 +208,11 @@ export default {
 </style>
 
 <style scoped>
-#editicon {
+.show-when-parent-is-hovered {
   display: none;
 }
 
-#prompticon {
-  display: none;
-}
-
-#cell:hover > #editicon {
-  display: block;
-}
-
-#cell:hover > #prompticon {
+#cell:hover > .show-when-parent-is-hovered{
   display: block;
 }
 </style>
