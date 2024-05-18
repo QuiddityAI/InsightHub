@@ -25,7 +25,7 @@ export default {
             {
                 'bg-surface-0 dark:bg-surface-900': !context.active,
                 'text-surface-700 dark:text-white/80': !context.active,
-                'bg-surface-100 dark:bg-surface-700': context.active
+                'bg-blue-100 dark:bg-surface-700': context.active
             },
 
             // Invalid State
@@ -44,6 +44,6 @@ export default {
         ]
     }),
     label: {
-        class: 'font-semibold'
+        class: 'font-normal'
     }
 };

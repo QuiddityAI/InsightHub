@@ -13,11 +13,10 @@ import Paginator from "primevue/paginator"
 import OverlayPanel from 'primevue/overlaypanel';
 import Dropdown from 'primevue/dropdown';
 import Message from 'primevue/message';
-import InputText from 'primevue/inputtext';
-import InputGroup from 'primevue/inputgroup';
 import Dialog from "primevue/dialog";
 import Textarea from 'primevue/textarea';
 
+import WritingTaskArea from "./WritingTaskArea.vue";
 import CollectionItem from "./CollectionItem.vue"
 import ExportTableArea from "./ExportTableArea.vue";
 import CollectionTableCell from "./CollectionTableCell.vue";
@@ -46,16 +45,6 @@ export default {
       show_add_column_dialog: false,
       selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
       selected_module: 'groq_llama_3_70b',
-      available_modules: [
-        { identifier: 'openai_gpt_3_5', name: 'GPT 3.5 (medium accuracy and cost)' },
-        { identifier: 'openai_gpt_4_turbo', name: 'GPT 4 Turbo (highest accuracy and cost, very slow)' },
-        { identifier: 'openai_gpt_4_o', name: 'GPT 4o (highest accuracy and cost, slow)' },
-        { identifier: 'groq_llama_3_8b', name: 'Llama 3 8B (lowest cost, low accuracy, super fast)' },
-        { identifier: 'groq_llama_3_70b', name: 'Llama 3 70B (low cost, medium accuracy, fast)' },
-        // { identifier: 'python_expression', name: 'Python Expression' },
-        // { identifier: 'website_scraping', name: 'Website Text Extraction' },
-        { identifier: 'notes', name: 'No AI, just notes' },
-      ],
 
       first_index: 0,
       per_page: 10,
@@ -67,11 +56,6 @@ export default {
       show_details_dialog: false,
 
       show_writing_tasks: false,
-      writing_task_ids: [],
-      selected_writing_task_id: null,
-      selected_writing_task: null,
-      new_writing_task_name: '',
-
     }
   },
   computed: {
@@ -133,7 +117,6 @@ export default {
   },
   mounted() {
     this.load_collection_items()
-    this.get_writing_tasks()
   },
   watch: {
     first_index() {
@@ -144,9 +127,6 @@ export default {
     },
     order_descending() {
       this.load_collection_items()
-    },
-    selected_writing_task_id() {
-      this.get_writing_task()
     },
     'appStateStore.selected_document_ds_and_id'() {
       this.show_details_dialog = !!this.appStateStore.selected_document_ds_and_id
@@ -299,93 +279,6 @@ export default {
     human_readable_source_fields(fields) {
       return fields.map((field) => this.available_source_fields.find((f) => f.identifier === field).name).join(", ")
     },
-    get_writing_tasks() {
-      const that = this
-      const body = {
-        collection_id: this.collection_id,
-        class_name: this.class_name,
-      }
-      httpClient.post(`/org/data_map/get_writing_tasks`, body)
-      .then(function (response) {
-        that.writing_task_ids = response.data
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    get_writing_task() {
-      const that = this
-      const body = {
-        task_id: this.selected_writing_task_id,
-      }
-      httpClient.post(`/org/data_map/get_writing_task_by_id`, body)
-      .then(function (response) {
-        that.selected_writing_task = response.data
-        if (that.selected_writing_task.is_processing) {
-          setTimeout(() => {
-            that.get_writing_task()
-          }, 1000)
-        }
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    add_writing_task(name) {
-      const that = this
-      const body = {
-        collection_id: this.collection_id,
-        class_name: this.class_name,
-        name: name,
-      }
-      httpClient.post(`/org/data_map/add_writing_task`, body)
-      .then(function (response) {
-        const task = response.data
-        that.writing_task_ids.push({id: task.id, name: task.name})
-        that.selected_writing_task = task
-        that.new_writing_task_name = ''
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    update_writing_task() {
-      const that = this
-      this.selected_writing_task.selected_item_ids = this.collection_items.map((item) => item.id)
-      this.selected_writing_task.source_fields = this.selected_source_fields
-      const body = {
-        task_id: this.selected_writing_task_id,
-        name: this.selected_writing_task.name,
-        source_fields: this.selected_writing_task.source_fields,
-        selected_item_ids: this.selected_writing_task.selected_item_ids,
-        module: this.selected_writing_task.module,
-        parameters: this.selected_writing_task.parameters,
-        prompt: this.selected_writing_task.prompt,
-        text: this.selected_writing_task.text,
-      }
-      httpClient.post(`/org/data_map/update_writing_task`, body)
-      .then(function (response) {
-
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    execute_writing_task() {
-      const that = this
-      const body = {
-        task_id: this.selected_writing_task_id,
-      }
-      httpClient.post(`/org/data_map/execute_writing_task`, body)
-      .then(function (response) {
-        setTimeout(() => {
-          that.get_writing_task()
-        }, 1000)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
   },
 }
 </script>
@@ -420,7 +313,7 @@ export default {
               </div>
               <div class="flex-1 min-w-0">
                 <Dropdown v-model="selected_module"
-                  :options="available_modules"
+                  :options="appState.available_ai_modules + appState.additional_column_modules"
                   optionLabel="name"
                   optionValue="identifier"
                   placeholder="Select Module.."
@@ -545,34 +438,11 @@ export default {
             </div>
           </div>
       </OverlayPanel>
-
     </div>
-    <div v-if="show_writing_tasks" class="flex-none w-[500px] flex flex-col">
-      <div class="flex flex-row items-center justify-center">
-        <InputGroup>
-          <InputText placeholder="New Writing Task" v-model="new_writing_task_name" />
-          <Button label="Add" @click="add_writing_task(new_writing_task_name)"></Button>
-        </InputGroup>
-      </div>
-      <Dropdown
-        v-model="selected_writing_task_id"
-        :options="writing_task_ids"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Select Writing Task..."
-        class="w-full h-8 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-      <div v-if="selected_writing_task" class="flex-1 overflow-y-auto">
-        <pre>{{ selected_writing_task.name }}</pre>
 
-        <InputText v-model="selected_writing_task.name" placeholder="name" />
-        <InputText v-model="selected_writing_task.prompt" placeholder="prompt" />
-        <InputText v-model="selected_writing_task.module" placeholder="module" />
-        <textarea v-model="selected_writing_task.text" />
-
-        <button @click="update_writing_task()">Update</button>
-        <button @click="execute_writing_task()">Run</button>
-      </div>
-    </div>
+    <WritingTaskArea v-if="show_writing_tasks" class="flex-none w-[500px]"
+      :collection_id="collection_id" :class_name="class_name">
+    </WritingTaskArea>
 
     <Dialog
       v-model:visible="show_details_dialog"
@@ -583,6 +453,7 @@ export default {
         :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
         :show_action_buttons="false"></ObjectDetailsModal>
     </Dialog>
+
   </div>
 
 </template>

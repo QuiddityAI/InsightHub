@@ -1362,6 +1362,11 @@ class WritingTask(models.Model):
         default=list,
         blank=True,
         null=True)
+    use_all_items = models.BooleanField(
+        verbose_name="Use All Items",
+        default=True,
+        blank=False,
+        null=False)
     selected_item_ids = models.JSONField(
         verbose_name="Selected Item IDs",
         default=list,
@@ -1383,6 +1388,11 @@ class WritingTask(models.Model):
         null=True)
     text = models.TextField(
         verbose_name="Text",
+        blank=True,
+        null=True)
+    additional_results = models.JSONField(
+        verbose_name="Additional Results",
+        default=dict,
         blank=True,
         null=True)
     previous_versions = models.JSONField(

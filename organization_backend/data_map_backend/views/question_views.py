@@ -542,6 +542,7 @@ def add_writing_task(request):
         collection_id=collection_id,
         class_name=class_name,
         name=name,
+        module='openai_gpt_4_o',
     )
 
     data = WritingTaskSerializer(task).data
@@ -608,6 +609,7 @@ def update_writing_task(request):
         task_id: int = data['task_id']
         name: str = data['name']
         source_fields: list = data.get('source_fields', [])
+        use_all_items: bool = data.get('use_all_items', True)
         selected_item_ids: list = data.get('selected_item_ids', [])
         module: str | None = data.get('module', None)
         parameters: dict = data.get('parameters', {})
@@ -625,6 +627,7 @@ def update_writing_task(request):
 
     task.name = name
     task.source_fields = source_fields  # type: ignore
+    task.use_all_items = use_all_items
     task.selected_item_ids = selected_item_ids  # type: ignore
     task.module = module
     task.parameters = parameters  # type: ignore
@@ -636,6 +639,7 @@ def update_writing_task(request):
         task.previous_versions.append({
             'created_at': task.changed_at.isoformat(),
             'text': task.text,
+            'additional_results': task.additional_results,
         })
         if len(task.previous_versions) > 3:
             task.previous_versions = task.previous_versions[-3:]  # type: ignore
@@ -686,8 +690,9 @@ def _execute_writing_task_safe(task):
 
 def _execute_writing_task(task):
     contexts = []
-    for item_id in task.selected_item_ids:
-        item = CollectionItem.objects.get(id=item_id)
+    items = task.collection.collectionitem_set.all() if task.use_all_items else [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
+    references = []
+    for item in items:
         text = None
         if item.field_type == FieldType.TEXT:
             # TODO: use same format as for other items
@@ -695,7 +700,8 @@ def _execute_writing_task(task):
         if item.field_type == FieldType.IDENTIFIER:
             assert item.dataset_id is not None
             assert item.item_id is not None
-            text = get_item_question_context(item.dataset_id, item.item_id, task.source_fields, task.prompt)
+            text = f"Document ID: {len(references) + 1}\n" + get_item_question_context(item.dataset_id, item.item_id, task.source_fields, task.prompt)
+            references.append((item.dataset_id, item.item_id))
         if not text:
             continue
         contexts.append(text)
@@ -707,7 +713,7 @@ You are an expert in writing.
 Your task is: "{task.prompt}"
 Follow the task exactly.
 Write the text based on the following documents.
-Mention the source where a statement is taken from behind the sentence with the document id in square brackets, like this: [dataset_id, item_id].
+Mention the document ID where a statement is taken from behind the sentence with the document id in square brackets, like this: [3].
 
 {context}
 
@@ -756,9 +762,14 @@ Your text:
     task.previous_versions.append({
         'created_at': task.changed_at.isoformat(),
         'text': task.text,
+        'additional_results': task.additional_results,
     })
     if len(task.previous_versions) > 3:
         task.previous_versions = task.previous_versions[-3:]  # type: ignore
     task.text = response_text
+    task.additional_results = {
+        'used_prompt': full_prompt,
+        'references': references,
+    }
     task.is_processing = False
     task.save()
