@@ -79,10 +79,14 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
     for source_field in source_fields:
         if source_field == "_full_text_snippets":
             continue
+        elif source_field.startswith("_"):
+            continue
         else:
             value = full_item.get(source_field, "n/a")
             value = str(value)[:max_characters_per_field]
-            text += f'{source_field}: {value}\n'
+            # currently, field.description is basically a readable name, not a description
+            name = dataset.object_fields.get(source_field, {}).get('description', None) or source_field
+            text += f'{name}: {value}\n'
 
     max_chunks_to_show_all = 20
     max_selected_chunks = 5

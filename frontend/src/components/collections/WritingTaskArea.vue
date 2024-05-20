@@ -29,6 +29,7 @@ export default {
   emits: [],
   data() {
     return {
+      collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       writing_task_ids: [],
       new_writing_task_name: '',
       item_selection_options: [
@@ -64,6 +65,12 @@ export default {
       //     }
       //   }
       // }
+      for (const column of this.collection.columns) {
+        available_fields[column.identifier] = {
+          identifier: '_column__' + column.identifier,
+          name: column.name,
+        }
+      }
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
         name: 'Descriptive Text',

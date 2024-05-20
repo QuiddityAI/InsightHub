@@ -79,6 +79,12 @@ export default {
           }
         }
       }
+      for (const column of this.collection.columns) {
+        available_fields[column.identifier] = {
+          identifier: '_column__' + column.identifier,
+          name: column.name,
+        }
+      }
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
         name: 'Descriptive Text',
