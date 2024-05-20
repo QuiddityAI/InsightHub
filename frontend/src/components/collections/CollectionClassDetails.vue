@@ -246,8 +246,7 @@ export default {
     <Dialog ref="table_dialog" v-model:visible="table_visible" maximizable modal :header="`Table: ${collection.name}`">
       <CollectionTableView
         :collection_id="collection_id"
-        :class_name="class_name"
-        :initial_collection="collection">
+        :class_name="class_name">
       </CollectionTableView>
     </Dialog>
 
@@ -303,18 +302,6 @@ export default {
       :collection_id="collection_id"
       :class_name="class_name">
     </ChatList>
-
-    <div v-if="selected_tab === 'table'">
-      <br>
-      <div class="flex flex-row justify-center">
-        <button @click="table_visible = true; $refs.table_dialog.maximize()"
-        class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold">
-          Show Table
-        </button>
-      </div>
-      <br>
-
-    </div>
 
   </div>
 </template>

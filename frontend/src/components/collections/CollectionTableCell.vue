@@ -195,13 +195,11 @@ export default {
 
 .use-default-html-styles ul {
   list-style-type: disc;
-  margin: 0;
   padding: 0 0 0 1.4em;
 }
 
 .use-default-html-styles ol {
   list-style-type: decimal;
-  margin: 0;
   padding: 0 0 0 1.4em;
 }
 

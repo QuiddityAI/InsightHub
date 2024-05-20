@@ -44,6 +44,7 @@ urlpatterns=[
     path("get_writing_task_by_id", question_views.get_writing_task_by_id),
     path("delete_writing_task", question_views.delete_writing_task),
     path("update_writing_task", question_views.update_writing_task),
+    path("revert_writing_task", question_views.revert_writing_task),
     path("execute_writing_task", question_views.execute_writing_task),
     path("get_dataset_templates", other_views.get_dataset_templates),
     path("create_dataset_from_template", other_views.create_dataset_from_template),

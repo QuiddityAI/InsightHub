@@ -36,6 +36,7 @@ export default {
         .post("/org/data_map/add_collection", create_collection_body)
         .then(function (response) {
           that.appStateStore.collections.push(response.data)
+          that.appStateStore.last_used_collection_id = response.data.id
         })
     },
   },

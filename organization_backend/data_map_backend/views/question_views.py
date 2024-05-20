@@ -18,7 +18,7 @@ from ..serializers import ChatSerializer, CollectionColumnSerializer, Collection
 from ..data_backend_client import get_item_question_context
 from ..chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
 from ..groq_client import GROQ_MODELS, get_groq_response_using_history
-from ..prompts import table_cell_prompt
+from ..prompts import table_cell_prompt, writing_task_prompt
 
 from .other_views import is_from_backend
 
@@ -352,7 +352,7 @@ def _extract_question_from_collection_class_items(collection, class_name, column
     batch_size = 10
     for i in range(0, len(collection_items), batch_size):
         batch = collection_items[i:i+batch_size]
-        _extract_question_from_collection_class_items_batch(batch, column, user_id)
+        _extract_question_from_collection_class_items_batch(batch, column, collection, user_id)
         included_items += len(batch)
         if included_items % 100 == 0:
             logging.warning(f"Extracted {included_items} items for question {column.name}.")
@@ -360,7 +360,9 @@ def _extract_question_from_collection_class_items(collection, class_name, column
     logging.warning("Done extracting question from collection class items.")
 
 
-def _extract_question_from_collection_class_items_batch(collection_items, column, user_id):
+def _extract_question_from_collection_class_items_batch(collection_items, column, collection, user_id):
+    source_column_identifiers = [name.replace("_column__", "") for name in column.source_fields if name.startswith("_column__")]
+    source_columns = CollectionColumn.objects.filter(collection=collection, identifier__in=source_column_identifiers)
     def extract(item):
         if (item.column_data or {}).get(column.identifier, {}).get('value'):
             # already extracted (only empty fields are extracted again)
@@ -372,6 +374,12 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
             assert item.dataset_id is not None
             assert item.item_id is not None
             text = get_item_question_context(item.dataset_id, item.item_id, column.source_fields, column.expression)
+            for additional_source_column in source_columns:
+                if not item.column_data:
+                    continue
+                column_data = item.column_data.get(additional_source_column.identifier)
+                if column_data and column_data.get('value'):
+                    text += f"{additional_source_column.name}: {column_data['value']}\n"
         if not text:
             logging.warning(f"Could not extract question for item {item.id}.")
             return
@@ -633,7 +641,7 @@ def update_writing_task(request):
     task.parameters = parameters  # type: ignore
     if prompt is not None:
         task.prompt = prompt
-    if text is not None:
+    if text is not None and text != task.text:
         if not task.previous_versions:
             task.previous_versions = []  # type: ignore
         task.previous_versions.append({
@@ -644,6 +652,37 @@ def update_writing_task(request):
         if len(task.previous_versions) > 3:
             task.previous_versions = task.previous_versions[-3:]  # type: ignore
         task.text = text
+    task.save()
+
+    return HttpResponse(None, status=204)
+
+
+@csrf_exempt
+def revert_writing_task(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        task_id: int = data['task_id']
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        task = WritingTask.objects.get(id=task_id)
+    except WritingTask.DoesNotExist:
+        return HttpResponse(status=404)
+    if task.collection.created_by != request.user:  # type: ignore
+        return HttpResponse(status=401)
+
+    if not task.previous_versions:
+        return HttpResponse(status=400)
+
+    last_version = task.previous_versions.pop()
+    task.text = last_version['text']
+    task.additional_results = last_version['additional_results']
     task.save()
 
     return HttpResponse(None, status=204)
@@ -669,26 +708,37 @@ def execute_writing_task(request):
     if task.collection.created_by != request.user:  # type: ignore
         return HttpResponse(status=401)
 
-    _execute_writing_task_safe(task)
+    _execute_writing_task_thread(task)
 
     return HttpResponse(None, status=204)
 
 
-def _execute_writing_task_safe(task):
+def _execute_writing_task_thread(task):
     task.is_processing = True
     task.save()
+
+    def execute_writing_task_safe():
+        try:
+            _execute_writing_task(task)
+        except Exception as e:
+            logging.error(e)
+            import traceback
+            logging.error(traceback.format_exc())
+            task.is_processing = False
+            task.save()
+
     try:
-        _execute_writing_task(task)
+        thread = threading.Thread(target=execute_writing_task_safe)
+        thread.start()
     except Exception as e:
         logging.error(e)
-        import traceback
-        logging.error(traceback.format_exc())
-    finally:
         task.is_processing = False
         task.save()
 
 
 def _execute_writing_task(task):
+    source_column_identifiers = [name.replace("_column__", "") for name in task.source_fields if name.startswith("_column__")]
+    source_columns = CollectionColumn.objects.filter(collection=task.collection, identifier__in=source_column_identifiers)
     contexts = []
     items = task.collection.collectionitem_set.all() if task.use_all_items else [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
     references = []
@@ -701,6 +751,15 @@ def _execute_writing_task(task):
             assert item.dataset_id is not None
             assert item.item_id is not None
             text = f"Document ID: {len(references) + 1}\n" + get_item_question_context(item.dataset_id, item.item_id, task.source_fields, task.prompt)
+            for additional_source_column in source_columns:
+                if not item.column_data:
+                    continue
+                column_data = item.column_data.get(additional_source_column.identifier)
+                if column_data and column_data.get('value'):
+                    if "\n" in column_data['value']:
+                        text += f"{additional_source_column.name}:\n{column_data['value']}\n"
+                    else:
+                        text += f"{additional_source_column.name}: {column_data['value']}\n"
             references.append((item.dataset_id, item.item_id))
         if not text:
             continue
@@ -708,20 +767,9 @@ def _execute_writing_task(task):
 
     context = "\n\n".join(contexts)
 
-    full_prompt = f"""\
-You are an expert in writing.
-Your task is: "{task.prompt}"
-Follow the task exactly.
-Write the text based on the following documents.
-Mention the document ID where a statement is taken from behind the sentence with the document id in square brackets, like this: [3].
-
-{context}
-
-Reply only with the requested text, without introductory sentence.
-Your text:
-"""
+    full_prompt = writing_task_prompt.replace("{{ context }}", context)
     # logging.warning(prompt)
-    history = [ { "role": "system", "content": full_prompt } ]
+    history = [ { "role": "system", "content": full_prompt }, { "role": "user", "content": task.prompt }]
     cost_per_module = {
         'openai_gpt_3_5': 1.0,
         'openai_gpt_4_turbo': 5.0,

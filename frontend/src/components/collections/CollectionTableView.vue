@@ -35,11 +35,11 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: ["collection_id", "class_name", "initial_collection"],
+  props: ["collection_id", "class_name"],
   emits: [],
   data() {
     return {
-      collection: this.initial_collection,
+      collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       collection_items: [],
 
       show_add_column_dialog: false,
@@ -112,6 +112,9 @@ export default {
         name: 'Last Changed',
       }
       return Object.values(available_fields)
+    },
+    available_modules() {
+      return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
     },
     show_full_text_issue_hint() {
       return this.selected_source_fields.find((field) => field !== "_full_text_snippets" && field.includes("full_text"))
@@ -285,6 +288,9 @@ export default {
     human_readable_source_fields(fields) {
       return fields.map((field) => this.available_source_fields.find((f) => f.identifier === field).name).join(", ")
     },
+    human_readable_module_name(module_identifier) {
+      return this.available_modules.find((m) => m.identifier === module_identifier)?.name
+    },
   },
 }
 </script>
@@ -319,7 +325,7 @@ export default {
               </div>
               <div class="flex-1 min-w-0">
                 <Dropdown v-model="selected_module"
-                  :options="appState.available_ai_modules + appState.additional_column_modules"
+                  :options="available_modules"
                   optionLabel="name"
                   optionValue="identifier"
                   placeholder="Select Module.."
@@ -360,7 +366,7 @@ export default {
           class="py-1 px-2 rounded-md bg-gray-100 hover:bg-blue-100/50">
           Export
         </button>
-        <button @click="show_writing_tasks = !show_writing_tasks"
+        <button v-if="appState.user.is_staff" @click="show_writing_tasks = !show_writing_tasks"
           class="ml-2 py-1 px-2 rounded-md bg-green-100 font-semibold hover:bg-blue-100/50">
           {{ show_writing_tasks ? 'Hide' : 'Show' }} Writing Tasks <ChevronRightIcon class="inline h-4 w-4"></ChevronRightIcon>
         </button>
@@ -369,21 +375,6 @@ export default {
           <ExportTableArea :collection_id="collection_id" :class_name="class_name">
           </ExportTableArea>
         </OverlayPanel>
-      </div>
-
-      <div class="flex flex-row items-center justify-center">
-        <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
-          class="mt-[0px]"></Paginator>
-        <Dropdown v-model="order_by_field"
-          :options="available_order_by_fields"
-          optionLabel="name"
-          optionValue="identifier"
-          placeholder="Order By..."
-          class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-        <button @click="order_descending = !order_descending"
-          class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
-          {{ order_descending ? '▼' : '▲' }}
-        </button>
       </div>
 
       <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" class="min-h-0 overflow-x-auto">
@@ -412,6 +403,21 @@ export default {
           </Column>
       </DataTable>
 
+      <div class="flex flex-row items-center justify-center">
+        <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
+          class="mt-[0px]"></Paginator>
+        <Dropdown v-model="order_by_field"
+          :options="available_order_by_fields"
+          optionLabel="name"
+          optionValue="identifier"
+          placeholder="Order By..."
+          class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+        <button @click="order_descending = !order_descending"
+          class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
+          {{ order_descending ? '▼' : '▲' }}
+        </button>
+      </div>
+
       <OverlayPanel ref="column_options">
           <div class="w-[400px] flex flex-col gap-2">
             <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
@@ -424,7 +430,7 @@ export default {
               </button>
             </div>
             <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
-            <p class="text-xs text-gray-500">{{ available_modules.find((m) => m.identifier === selected_column.module)?.name }}</p>
+            <p class="text-xs text-gray-500">{{ human_readable_module_name(selected_column.module) }}</p>
             <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
               <button @click="extract_question(selected_column.id, true); $refs.column_options.hide()"
                 class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">

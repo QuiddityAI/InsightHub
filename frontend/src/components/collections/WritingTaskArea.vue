@@ -1,6 +1,8 @@
 <script setup>
 import {
   TrashIcon,
+  PencilIcon,
+  BackwardIcon,
 } from "@heroicons/vue/24/outline"
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
@@ -11,6 +13,8 @@ import InputGroup from 'primevue/inputgroup';
 import Dialog from "primevue/dialog";
 import Textarea from 'primevue/textarea';
 import SelectButton from 'primevue/selectbutton';
+import Message from "primevue/message";
+ import {marked} from "marked";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -36,6 +40,7 @@ export default {
         {label: 'All Items', value: true},
         {label: 'Selected Items', value: false},
       ],
+      edit_mode: false,
       show_used_prompt: false,
     }
   },
@@ -151,7 +156,6 @@ export default {
     update_writing_task(on_success=null) {
       const that = this
       const task = this.appStateStore.selected_writing_task
-      task.source_fields = ['_descriptive_text_fields']
       const body = {
         task_id: this.appStateStore.selected_writing_task_id,
         name: task.name,
@@ -204,6 +208,28 @@ export default {
         })
       })
     },
+    revert_changes() {
+      if (!confirm('Are you sure you want to revert to the last version? This cannot be undone.')) {
+        return
+      }
+      const that = this
+      const last_version = that.appStateStore.selected_writing_task.previous_versions?.pop()
+      if (!last_version) {
+        return
+      }
+      that.appStateStore.selected_writing_task.text = last_version.text
+      that.appStateStore.selected_writing_task.additional_results = last_version.additional_results
+      const body = {
+        task_id: this.appStateStore.selected_writing_task_id,
+      }
+      httpClient.post(`/org/data_map/revert_writing_task`, body)
+      .then(function (response) {
+        // pass
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
     convert_to_html(text) {
       // escape html
       text = text.replace(/&/g, "&amp;")
@@ -217,25 +243,25 @@ export default {
 </script>
 
 <template>
-  <div class="ml-4 flex flex-col gap-2">
+  <div class=" ml-2 pl-2 flex flex-col gap-2 border-l">
 
-    <div class="flex w-2/3 flex-row items-center justify-center">
-      <InputGroup>
+    <div class="flex flex-row gap-2 items-center justify-center">
+      <Dropdown
+        v-model="appState.selected_writing_task_id"
+        :options="writing_task_ids"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Select Writing Task..."
+        class="flex-1 h-full text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+      <InputGroup class="flex-1">
         <InputText placeholder="New Writing Task" v-model="new_writing_task_name" />
         <Button label="Add" @click="add_writing_task(new_writing_task_name)"></Button>
       </InputGroup>
     </div>
-    <Dropdown
-      v-model="appState.selected_writing_task_id"
-      :options="writing_task_ids"
-      optionLabel="name"
-      optionValue="id"
-      placeholder="Select Writing Task..."
-      class="mt-2 w-full h-8 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
 
     <div v-if="appState.selected_writing_task" class="flex-1 flex flex-col gap-2 overflow-y-auto">
 
-      <div class="flex flex-row">
+      <div class="flex flex-row items-center">
         Prompt:
         <div class="flex-1"></div>
         <button
@@ -273,16 +299,35 @@ export default {
         <SelectButton v-model="appState.selected_writing_task.use_all_items"
           :options="item_selection_options" optionLabel="label" optionValue="value"
           class="ml-[2px]" />
-        <button @click="update_writing_task()" class="px-2 py-1 rounded bg-gray-100 hover:bg-blue-100/50">Update</button>
-        <button @click="execute_writing_task()" class="px-2 py-1 rounded bg-green-100 hover:bg-blue-100/50">Run</button>
-        <span v-if="appState.selected_writing_task.is_processing" class="text-sm text-gray-500">Processing...</span>
+        <button @click="update_writing_task()" class="px-2 py-1 rounded bg-gray-100 hover:bg-blue-100/50">Save Changes</button>
+        <button @click="execute_writing_task()" class="px-2 py-1 rounded bg-green-100 hover:bg-blue-100/50">(Re-)generate</button>
+        <div class="flex-1"></div>
+        <button v-if="appState.selected_writing_task.previous_versions?.length > 0"
+          @click="revert_changes()"
+          v-tooltip.left="{'value': 'Go back to last version', showDelay: 500}"
+          class="h-6 w-6 rounded bg-gray-100 hover:text-blue-500">
+          <BackwardIcon class="m-1"></BackwardIcon>
+        </button>
       </div>
+      <p v-if="appState.selected_writing_task.is_processing" class="text-sm text-gray-500">Processing...</p>
 
-      <textarea v-model="appState.selected_writing_task.text"
-        class="flex-1 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
+      <Message v-if="!appState.selected_writing_task.use_all_items" severity="warn">Using selected items is not yet implemented</Message>
 
-      <textarea v-model="references" readonly
-        class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
+      <div class="relative flex-1 mt-2 flex flex-col overflow-hidden">
+        <textarea v-if="edit_mode"
+          v-model="appState.selected_writing_task.text"
+          class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
+        <div v-if="!edit_mode" class="w-full h-full">
+          <div v-html="marked.parse(appState.selected_writing_task.text)"
+            class="w-full h-full use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
+        </div>
+        <button @click="edit_mode = !edit_mode"
+          v-tooltip.left="{'value': 'Edit', showDelay: 500}"
+          class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 hover:text-blue-500"
+          :class="{'text-gray-500': !edit_mode, 'text-blue-500': edit_mode}">
+          <PencilIcon class="m-1"></PencilIcon>
+        </button>
+      </div>
 
       <div class="flex flex-row gap-2">
         <div class="flex-1"></div>
@@ -296,10 +341,29 @@ export default {
             v-html="convert_to_html(appState.selected_writing_task.additional_results.used_prompt)" />
         </Dialog>
       </div>
+
+      <textarea v-model="references" readonly
+        class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
+
     </div>
   </div>
 
 </template>
+
+<style>
+
+.use-default-html-styles-large p {
+  margin: 0 0 1em 0;
+}
+
+.use-default-html-styles-large ul {
+  margin: 0 0 1em 0;
+}
+
+.use-default-html-styles-large ol {
+  margin: 0 0 1em 0;
+}
+</style>
 
 <style scoped>
 </style>
