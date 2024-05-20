@@ -76,9 +76,13 @@ export default {
         No datasets yet
       </div>
       <Button v-if="category.items === your_datasets && appState.logged_in" class="h-6 mb-2 mt-1"
+        :disabled="!appState.organization.is_member"
         @click="create_dataset_dialog_visible = true"
         label="Create new dataset">
       </Button>
+      <Message v-if="category.items === your_datasets && !appState.organization.is_member" severity="warn">
+        You need to be a member of the organization {{ appState.organization.name }} to create a dataset
+      </Message>
       <CreateDatasetDialog v-if="category.items === your_datasets && create_dataset_dialog_visible" v-model:visible="create_dataset_dialog_visible" />
     </div>
 
