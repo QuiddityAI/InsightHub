@@ -383,11 +383,11 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
         # TODO
         pass
 
-    umap_dimensions_required = 0
-    if projection_parameters.x_axis.type == "umap" and projection_parameters.y_axis.type == "umap":
-        umap_dimensions_required = 2
-    elif projection_parameters.x_axis.type == "umap" or projection_parameters.y_axis.type == "umap":
-        umap_dimensions_required = 1
+    reduced_dimensions_required = 0
+    if projection_parameters.x_axis.type == "embedding" and projection_parameters.y_axis.type == "embedding":
+        reduced_dimensions_required = 2
+    elif projection_parameters.x_axis.type == "embedding" or projection_parameters.y_axis.type == "embedding":
+        reduced_dimensions_required = 1
 
     def transform_coordinate_system_and_write_to_map():
         nonlocal cartesian_positions, final_positions
@@ -400,7 +400,7 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
         map_data["results"]["per_point_data"]["positions_y"] = final_positions[:, 1].tolist()
         map_data["results"]["last_position_update"] = time.time()
 
-    if umap_dimensions_required:
+    if reduced_dimensions_required:
         map_vector_field = params.vectorize.map_vector_field
 
         cluster_hints = params.projection.get("cluster_hints", "")
@@ -437,11 +437,11 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
 
         def apply_projections_to_positions(raw_projections):
             nonlocal cartesian_positions, final_positions
-            if projection_parameters.x_axis.type == "umap" and projection_parameters.y_axis.type == "umap":
+            if projection_parameters.x_axis.type == "embedding" and projection_parameters.y_axis.type == "embedding":
                 cartesian_positions = raw_projections
-            elif projection_parameters.x_axis.type == "umap":
+            elif projection_parameters.x_axis.type == "embedding":
                 cartesian_positions[:, 0] = raw_projections[:, 0]
-            else:  # projection_parameters.y_axis.type == "umap"
+            else:  # projection_parameters.y_axis.type == "embedding"
                 cartesian_positions[:, 1] = raw_projections[:, 0]
 
         def on_umap_progress(working_in_embedding_space, current_iteration, total_iterations, projections):
@@ -461,23 +461,37 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
 
         map_data['progress']['step_title'] = "UMAP Preparation"
         if len(vectors) >= 6:
-            import umap  # import it only when needed as it slows down the startup time
-            umap_task = umap.UMAP(n_components=umap_dimensions_required, random_state=99,
-                                min_dist=projection_parameters.get("min_dist", 0.17),
-                                n_epochs=projection_parameters.get("n_epochs", 500),
-                                n_neighbors=projection_parameters.get("n_neighbors", 15),
-                                metric=projection_parameters.get("metric", "euclidean"),
-                            )
-            try:
-                raw_projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
-            except (TypeError, ValueError) as e:
-                # might happend when there are too few points
-                logging.warning(f"UMAP failed: {e}")
-                raw_projections = np.zeros((len(vectors), umap_dimensions_required))
+            dim_reducer = projection_parameters.get("dim_reducer", "umap")
+            if dim_reducer == "umap":
+                import umap  # import it only when needed as it slows down the startup time
+                umap_task = umap.UMAP(n_components=reduced_dimensions_required, random_state=99,
+                                    min_dist=projection_parameters.get("min_dist", 0.17),
+                                    n_epochs=projection_parameters.get("n_epochs", 500),
+                                    n_neighbors=projection_parameters.get("n_neighbors", 15),
+                                    metric=projection_parameters.get("metric", "euclidean"),
+                                )
+                try:
+                    raw_projections = umap_task.fit_transform(vectors, on_progress_callback=on_umap_progress)  # type: ignore
+                except (TypeError, ValueError) as e:
+                    # might happend when there are too few points
+                    logging.warning(f"UMAP failed: {e}")
+                    raw_projections = np.zeros((len(vectors), reduced_dimensions_required))
+            elif dim_reducer == "pacmap":
+                import pacmap
+                reducer = pacmap.PaCMAP(n_components=2, n_neighbors=None, MN_ratio=0.5, FP_ratio=2.0)  # type: ignore
+                try:
+                    raw_projections = reducer.fit_transform(vectors, init="pca")
+                except (TypeError, ValueError) as e:
+                    # might happend when there are too few points
+                    logging.warning(f"PaCMAP failed: {e}")
+                    raw_projections = np.zeros((len(vectors), reduced_dimensions_required))
+            else:
+                logging.warning(f"Unknown dim reducer: {dim_reducer}")
+                raw_projections = np.zeros((len(vectors), reduced_dimensions_required))
         else:
-            if umap_dimensions_required == 1:
+            if reduced_dimensions_required == 1:
                 raw_projections = np.linspace(0, 1, len(vectors))
-            elif umap_dimensions_required == 2:
+            elif reduced_dimensions_required == 2:
                 raw_projections = np.zeros((len(vectors), 2))
                 # generate a square grid:
                 size = int(np.ceil(np.sqrt(len(vectors))))
@@ -487,12 +501,12 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
                         if idx < len(vectors):
                             raw_projections[idx] = [i / size, 1 - (j / size)]
             else:
-                raw_projections = np.zeros((len(vectors), umap_dimensions_required))
+                raw_projections = np.zeros((len(vectors), reduced_dimensions_required))
         map_data["results"]["per_point_data"]["raw_projections"] = raw_projections.tolist()  # type: ignore
         apply_projections_to_positions(raw_projections)
-        timings.log("UMAP fit transform")
+        timings.log("Dim. Reduction fit transform")
     else:
-        # no umap required:
+        # no dim reduction required:
         raw_projections = cartesian_positions
 
     transform_coordinate_system_and_write_to_map()

@@ -87,8 +87,12 @@ export default {
         { id: "absclust", title: "AbsClust Tokenizer" },
         { id: "simple", title: "simple" },
       ],
-      axis_type_options: [
+      available_dim_reducers: [
         { id: "umap", title: "UMAP" },
+        { id: "pacmap", title: "PaCMAP" },
+      ],
+      axis_type_options: [
+        { id: "embedding", title: "Embedding" },
         { id: "number_field", title: "Number Field" },
         { id: "count", title: "Array / Word Count" },
         { id: "classifier", title: "Classifier" },
@@ -98,7 +102,7 @@ export default {
       ],
       rendering_type_options: [
         { id: "fixed", title: "Fixed" },
-        { id: "umap", title: "UMAP" },
+        { id: "embedding", title: "Embedding" },
         { id: "umap_perplexity", title: "UMAP Perplexity" },
         { id: "number_field", title: "Number Field" },
         { id: "count", title: "Array / Word Count" },
@@ -664,12 +668,12 @@ export default {
               (no parameters)
             </option>
             <option
-              v-if="appState.settings.projection[axis[0]].type === 'umap'"
+              v-if="appState.settings.projection[axis[0]].type === 'embedding'"
               value="primary">
               Primary
             </option>
             <option
-              v-if="appState.settings.projection[axis[0]].type === 'umap'"
+              v-if="appState.settings.projection[axis[0]].type === 'embedding'"
               value="secondary">
               Secondary
             </option>
@@ -696,6 +700,16 @@ export default {
           <input
             v-model.number="appState.settings.projection.cluster_hints"
             class="w-1/2 text-sm text-gray-500" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Dim. Reducer:</span>
+          <select
+            v-model="appState.settings.projection.dim_reducer"
+            class="w-1/2 rounded border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <option v-for="item in available_dim_reducers" :value="item.id" selected>
+              {{ item.title }}
+            </option>
+          </select>
         </div>
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-500">UMAP n_neighbors:</span>
@@ -784,7 +798,7 @@ export default {
               </option>
               <option
                 v-if="
-                  ['umap', 'umap_perplexity'].includes(
+                  ['embedding', 'umap_perplexity'].includes(
                     appState.settings.rendering[param[0]].type
                   )
                 "
@@ -793,7 +807,7 @@ export default {
               </option>
               <option
                 v-if="
-                  ['umap', 'umap_perplexity'].includes(
+                  ['embedding', 'umap_perplexity'].includes(
                     appState.settings.rendering[param[0]].type
                   )
                 ">

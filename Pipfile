@@ -52,6 +52,7 @@ pdferret = {git = "https://trel725:github_pat_11AC2YM2Q0TaS7Ny1241m1_ddrtUU2U3oP
 viztracer = "*"
 groq = "*"
 ratelimit = "*"
+pacmap = "*"
 
 [dev-packages]
 ipykernel = "*"

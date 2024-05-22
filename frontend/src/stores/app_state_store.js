@@ -151,8 +151,8 @@ export const useAppStateStore = defineStore("appState", {
           tokenizer: "default",
         },
         projection: {
-          x_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score
-          y_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score
+          x_axis: { type: "embedding", parameter: "primary" }, // type options: embedding (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score
+          y_axis: { type: "embedding", parameter: "primary" }, // type options: embedding (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score
           cluster_hints: "",
           n_neighbors: 15,
           min_dist: 0.17,
@@ -1085,18 +1085,18 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.projection.use_polar_coordinates = true
       this.settings.projection.x_axis = { type: "score", parameter: "" }
       this.settings.projection.y_axis = {
-        type: "umap",
+        type: "embedding",
         parameter: "primary",
       }
     },
     set_two_dimensional_projection() {
       this.settings.projection.use_polar_coordinates = false
       this.settings.projection.x_axis = {
-        type: "umap",
+        type: "embedding",
         parameter: "primary",
       }
       this.settings.projection.y_axis = {
-        type: "umap",
+        type: "embedding",
         parameter: "primary",
       }
     },
