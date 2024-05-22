@@ -6,6 +6,13 @@ services:
           devices:
             - driver: nvidia
               capabilities: [gpu]
+  data-backend:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
   infinity-model-server:
     deploy:
       resources:

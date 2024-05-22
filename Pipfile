@@ -3,6 +3,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[[source]]
+url = "https://pypi.nvidia.com"
+verify_ssl = true
+name = "nvidia"
+
 [packages]
 flask = "*"
 flask-cors = "*"
@@ -53,6 +58,7 @@ viztracer = "*"
 groq = "*"
 ratelimit = "*"
 pacmap = "*"
+cuml-cu12 = {version="24.4.0", index="nvidia"}
 
 [dev-packages]
 ipykernel = "*"

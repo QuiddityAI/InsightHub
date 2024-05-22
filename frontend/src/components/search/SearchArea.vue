@@ -89,6 +89,7 @@ export default {
       ],
       available_dim_reducers: [
         { id: "umap", title: "UMAP" },
+        { id: "umap_cuml_gpu", title: "UMAP (GPU)" },
         { id: "pacmap", title: "PaCMAP" },
       ],
       axis_type_options: [

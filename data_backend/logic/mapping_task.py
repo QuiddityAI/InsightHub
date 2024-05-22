@@ -485,6 +485,20 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
                     # might happend when there are too few points
                     logging.warning(f"PaCMAP failed: {e}")
                     raw_projections = np.zeros((len(vectors), reduced_dimensions_required))
+            elif dim_reducer == "umap_cuml_gpu":
+                import cuml
+                reducer = cuml.manifold.umap.UMAP(n_components=reduced_dimensions_required, random_state=99,
+                                    min_dist=projection_parameters.get("min_dist", 0.17),
+                                    n_epochs=projection_parameters.get("n_epochs", 500),
+                                    n_neighbors=projection_parameters.get("n_neighbors", 15),
+                                    metric=projection_parameters.get("metric", "euclidean"),
+                )
+                try:
+                    raw_projections = reducer.fit_transform(vectors)
+                except (TypeError, ValueError) as e:
+                    # might happend when there are too few points
+                    logging.warning(f"UMAP failed: {e}")
+                    raw_projections = np.zeros((len(vectors), reduced_dimensions_required))
             else:
                 logging.warning(f"Unknown dim reducer: {dim_reducer}")
                 raw_projections = np.zeros((len(vectors), reduced_dimensions_required))
