@@ -402,11 +402,37 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
 
     if umap_dimensions_required:
         map_vector_field = params.vectorize.map_vector_field
-        example_dataset = datasets[sorted_ids[0][0]]
-        vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(example_dataset.object_fields[map_vector_field])
-        # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
-        dummy_vector = np.zeros(vector_size)
-        vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, dummy_vector))
+
+        cluster_hints = params.projection.get("cluster_hints", "")
+        if cluster_hints:
+            cluster_hints = [hint.strip() for hint in cluster_hints.split(",")]
+            logging.warning(f"cluster hints: {cluster_hints}")
+            example_dataset = datasets[sorted_ids[0][0]]
+            # generator_function = get_generator_function_from_field(example_dataset.object_fields[map_vector_field])
+            # cluster_hint_embeddings = np.asarray(generator_function(cluster_hints))
+            # dummy_vector = np.zeros(len(cluster_hints))
+            # org_vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, dummy_vector))
+            # vectors = np.dot(org_vectors, cluster_hint_embeddings.T)
+            # # vectors has 2000 rows and 7 columns, normalize each column separately to 0-1:
+            # #vectors = (vectors - vectors.min(axis=0)) / (vectors.max(axis=0) - vectors.min(axis=0))
+
+            vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(example_dataset.object_fields[map_vector_field])
+            # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
+            dummy_vector = np.zeros(vector_size)
+            vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, dummy_vector))
+
+            for i, ds_and_item_id in enumerate(sorted_ids):
+                ds_id, item_id = ds_and_item_id
+                item = items_by_dataset[ds_id][item_id]
+                title_abstract = item.get("title", "") + " " + item.get("abstract", "")
+                vectors[i][:len(cluster_hints)] = [1 if hint.lower() in title_abstract.lower() else 0 for hint in cluster_hints]
+
+        else:
+            example_dataset = datasets[sorted_ids[0][0]]
+            vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(example_dataset.object_fields[map_vector_field])
+            # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
+            dummy_vector = np.zeros(vector_size)
+            vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, dummy_vector))
         timings.log("convert to numpy")
 
         def apply_projections_to_positions(raw_projections):

@@ -26,7 +26,7 @@ const _history = history
 export default {
   inject: ["eventBus"],
   props: [],
-  emits: [],
+  emits: ["hide"],
   data() {
     return {
       show_change_password: false,
@@ -101,7 +101,7 @@ export default {
         <CircleStackIcon></CircleStackIcon>
       </a>
       <button
-        @click="appState.toggle_dev_mode()"
+        @click="appState.toggle_dev_mode(); $emit('hide');"
         class="rounded px-1 py-2 text-xs text-gray-500 hover:bg-gray-100"
         :class="{'ring-1 ring-green-200': appState.dev_mode}">
         Dev

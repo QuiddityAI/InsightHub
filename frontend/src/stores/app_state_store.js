@@ -153,6 +153,7 @@ export const useAppStateStore = defineStore("appState", {
         projection: {
           x_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score
           y_axis: { type: "umap", parameter: "primary" }, // type options: umap (primary / secondary), number_field (field), classifier (name), count (array field), rank, score [to query, similar item, group centroid], keyword_score
+          cluster_hints: "",
           n_neighbors: 15,
           min_dist: 0.17,
           n_epochs: 500,

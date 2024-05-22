@@ -265,7 +265,7 @@ export default {
       </button>
 
       <OverlayPanel ref="user_menu">
-        <UserMenu></UserMenu>
+        <UserMenu @hide="$refs.user_menu.hide()"></UserMenu>
       </OverlayPanel>
     </div>
 
@@ -690,6 +690,12 @@ export default {
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-500">Invert X-Axis:</span>
           <input v-model="appState.settings.projection.invert_x_axis" type="checkbox" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Cluster hints:</span>
+          <input
+            v-model.number="appState.settings.projection.cluster_hints"
+            class="w-1/2 text-sm text-gray-500" />
         </div>
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-500">UMAP n_neighbors:</span>
