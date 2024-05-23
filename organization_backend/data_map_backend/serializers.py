@@ -14,7 +14,7 @@ class GeneratorSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = Generator
-        exclude = ['created_at', 'changed_at']
+        exclude = ['created_at', 'changed_at', 'parameter_description']
 
 
 class ObjectFieldSerializer(drf_serializers.ModelSerializer):

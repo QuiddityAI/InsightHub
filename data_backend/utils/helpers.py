@@ -119,18 +119,23 @@ def profile(func):
     return wrapper
 
 
-def profile_with_viztracer(func):
+def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, **d_kwargs):
     from viztracer import VizTracer
+    if max_stack_depth:
+        d_kwargs['max_stack_depth'] = max_stack_depth
 
-    def wrapper(*args, **kwargs):
-        with VizTracer(
-            output_file=f"trace_{func.__name__}.json",
-            max_stack_depth=7,
-            ) as tracer:
-            ret = func(*args, **kwargs)
-        return ret
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            with VizTracer(
+                *d_args,
+                output_file=f"trace_{func.__name__}.json",
+                **d_kwargs,
+                ) as tracer:
+                ret = func(*args, **kwargs)
+            return ret
 
-    # if it seems that only the last part was recorded, there were problably too many events, try to reduce the max_stack_depth
-    # open in https://ui.perfetto.dev
+        # if it seems that only the last part was recorded, there were problably too many events, try to reduce the max_stack_depth
+        # open in https://ui.perfetto.dev
 
-    return wrapper
+        return wrapper
+    return decorator

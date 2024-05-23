@@ -50,3 +50,47 @@ class DotDict(dict):
     def __deepcopy__(self, memo=None):
         # see here: https://stackoverflow.com/a/49902096
         return DotDict(deepcopy(dict(self), memo=memo))
+
+
+# a decorator to profile a function using cProfile and print the results to stdout:
+def profile(func):
+    import cProfile
+    import pstats
+    import io
+    import logging
+
+    def wrapper(*args, **kwargs):
+        pr = cProfile.Profile()
+        pr.enable()
+        ret = func(*args, **kwargs)
+        pr.disable()
+        s = io.StringIO()
+        ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
+        ps.sort_stats('cumulative')
+        ps.print_stats(10)
+        logging.warning(s.getvalue())
+        return ret
+
+    return wrapper
+
+
+def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, **d_kwargs):
+    from viztracer import VizTracer
+    if max_stack_depth:
+        d_kwargs['max_stack_depth'] = max_stack_depth
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            with VizTracer(
+                *d_args,
+                output_file=f"trace_{func.__name__}.json",
+                **d_kwargs,
+                ) as tracer:
+                ret = func(*args, **kwargs)
+            return ret
+
+        # if it seems that only the last part was recorded, there were problably too many events, try to reduce the max_stack_depth
+        # open in https://ui.perfetto.dev
+
+        return wrapper
+    return decorator

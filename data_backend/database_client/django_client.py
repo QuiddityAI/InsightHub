@@ -6,6 +6,8 @@ import os
 import json
 import base64
 
+import cachetools.func
+
 from utils.dotdict import DotDict
 from utils.custom_json_encoder import CustomJSONEncoder
 
@@ -19,6 +21,7 @@ django_client = requests.Session()
 django_client.headers.update({'Authorization': BACKEND_AUTHENTICATION_SECRET})
 
 
+@cachetools.func.ttl_cache(maxsize=128, ttl=10)  # seconds
 def get_dataset(dataset_id: int) -> DotDict:
     url = backend_url + '/org/data_map/dataset'
     data = {

@@ -59,6 +59,7 @@ groq = "*"
 ratelimit = "*"
 pacmap = "*"
 cuml-cu12 = {version="24.4.0", index="nvidia"}
+cachetools = "*"
 
 [dev-packages]
 ipykernel = "*"
