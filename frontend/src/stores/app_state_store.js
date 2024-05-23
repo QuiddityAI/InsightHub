@@ -21,6 +21,7 @@ export const useAppStateStore = defineStore("appState", {
       debug_autocut: false,
       show_error_dialog: false,
       error_dialog_message: "",
+      load_map_after_search: true,
 
       highlighted_item_id: null,
       selected_item_id: null,
@@ -613,7 +614,9 @@ export const useAppStateStore = defineStore("appState", {
         )
         .then(function (response) {
           that.show_received_search_results(response.data)
-          that.request_map()
+          if (that.load_map_after_search) {
+            that.request_map()
+          }
         })
     },
     convert_quoted_parts_to_filter() {

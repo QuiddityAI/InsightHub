@@ -956,6 +956,10 @@ export default {
           <input v-model="appState.store_search_history" type="checkbox" />
         </div>
         <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Always load map:</span>
+          <input v-model="appState.load_map_after_search" type="checkbox" />
+        </div>
+        <div class="flex items-center justify-between">
           <span class="text-sm text-gray-500">Show timings:</span>
           <input v-model="appState.show_timings" type="checkbox" />
         </div>
