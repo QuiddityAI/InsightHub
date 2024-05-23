@@ -225,10 +225,10 @@ def separate_text_and_vector_fields(dataset: DotDict, fields: Iterable[str]):
 
 
 def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query: QueryInput, filters: list[dict],
-                                required_fields: list[str], limit: int, page: int,
+                                required_fields: list[str], limit: int, page: int, return_highlights: bool = False,
                                 use_bolding_in_highlights: bool = True):
     text_db_client = TextSearchEngineClient.get_instance()
-    search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=True, use_bolding_in_highlights=use_bolding_in_highlights)
+    search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     ignored_keyword_highlight_fields = dataset.defaults.ignored_keyword_highlight_fields or []
@@ -460,7 +460,8 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
 @lru_cache
 def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str],
                                relevant_parts: str | None=None, database_name: str | None = None,
-                               top_n_full_text_chunks: int | None=None, query: str | None=None) -> dict | None:
+                               top_n_full_text_chunks: int | None=None, get_text_search_highlights: bool = False,
+                               query: str | None=None) -> dict | None:
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
 
@@ -497,6 +498,16 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
         return None
     item = items[0]
     item['_dataset_id'] = dataset_id
+
+    if get_text_search_highlights:
+        filters = [{'field': '_id', 'value': [item_id], 'operator': 'ids'}]
+        ignored_keyword_highlight_fields = dataset.defaults.ignored_keyword_highlight_fields or []
+        results, total = search_engine_client.get_search_results(dataset, dataset.default_search_fields, filters,
+                                                                 "", "", 0, 1, ['_id'],
+                                                                 highlights=True, use_bolding_in_highlights=True,
+                                                                 highlight_query=query,
+                                                                 ignored_highlight_fields=ignored_keyword_highlight_fields)
+        relevant_parts_list.extend([{'origin': 'keyword_search', 'field': field_name, 'index': None, 'value': " [...] ".join(highlights)} for field_name, highlights in results[0].get('highlight', {}).items() if field_name not in ignored_keyword_highlight_fields])
 
     if get_new_full_text_chunks:
         generator_function = get_suitable_generator(dataset, chunk_vector_field_name)

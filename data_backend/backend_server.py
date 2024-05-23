@@ -379,6 +379,7 @@ def retrieve_document_details_by_id():
     item_id = params.get("item_id")
     fields: list[str] = params.get("fields") # type: ignore
     relevant_parts = params.get("relevant_parts")
+    get_text_search_highlights = params.get("get_text_search_highlights", False)
     top_n_full_text_chunks = params.get("top_n_full_text_chunks")
     query = params.get("query")
     if not all([dataset_id is not None, item_id is not None, fields is not None]):
@@ -390,7 +391,8 @@ def retrieve_document_details_by_id():
     else:
         relevant_parts = None
     result = get_document_details_by_id(dataset_id, item_id, tuple(fields), relevant_parts,
-                                        top_n_full_text_chunks=top_n_full_text_chunks, query=query)
+                                        top_n_full_text_chunks=top_n_full_text_chunks,
+                                        get_text_search_highlights=get_text_search_highlights, query=query)
 
     if result is None:
         return "document not found", 404

@@ -28,6 +28,7 @@ def get_global_question_context(search_settings: dict) -> dict:
     search_settings["result_list_items_per_page"] = num_results_in_context + oversample_for_reranking
     search_settings["search_algorithm"] = "hybrid"
     search_settings["max_sub_items_per_item"] = 2
+    search_settings["return_highlights"] = True
     search_settings["use_bolding_in_highlights"] = False
 
     try:

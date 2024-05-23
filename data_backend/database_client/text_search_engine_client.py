@@ -274,7 +274,8 @@ class TextSearchEngineClient(object):
 
     def get_search_results(self, dataset: DotDict, search_fields, filters: list[dict],
                            query_positive, query_negative, page, limit, return_fields,
-                           highlights=False, use_bolding_in_highlights:bool=True):
+                           highlights=False, use_bolding_in_highlights:bool=True,
+                           highlight_query: str | None = None, ignored_highlight_fields: list | None = None):
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
             return use_remote_db(
                 dataset=dataset,
@@ -315,14 +316,24 @@ class TextSearchEngineClient(object):
                 '_source': return_fields,
             }
         if highlights:
+            # profiling results: on a very fast SSD, getting 2k items with highlights takes about 360ms, without only 60ms
+            highlight_fields = [field for field in search_fields if field not in (ignored_highlight_fields or [])]
             query['highlight'] = {
-                "fields": {field: {} for field in search_fields},
+                "fields": {field: {} for field in highlight_fields},
                 "number_of_fragments": 2,
                 "order": "score",
                 "pre_tags": ["<b>"] if use_bolding_in_highlights else [""],
                 "post_tags": ["</b>"] if use_bolding_in_highlights else [""],
                 "fragment_size": 400,
             }
+            if highlight_query:
+                query['highlight']['highlight_query'] = {
+                    'simple_query_string': {
+                        'query': self._convert_to_simple_query_language(highlight_query),
+                        'fields': highlight_fields,
+                        'default_operator': 'and',
+                    }
+                }
 
         response = self.client.search(
             body = query,
@@ -403,6 +414,12 @@ class TextSearchEngineClient(object):
                         filter_.field: {
                             filter_.operator: filter_.value
                         }
+                    }
+                })
+            elif filter_.operator == "ids":
+                query_filter['bool']['must'].append({
+                    "ids": {
+                        "values": filter_.value
                     }
                 })
         return query_filter

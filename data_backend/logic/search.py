@@ -31,6 +31,7 @@ ABSCLUST_DATASET_ID = 1
 
 #@lru_cache()
 def get_search_results(params_str: str, purpose: str, timings: Timings | None = None) -> dict:
+    # profiling results: for a short list, most time is spent getting the dataset (60ms) and only 10ms on the search
     if timings is None:
         timings = Timings()
     params = DotDict(json.loads(params_str))
@@ -159,7 +160,10 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
             else:
                 continue
         if text_fields:
-            results, total_matches = get_fulltext_search_results(dataset, text_fields, query, filters, required_fields=['_id'], limit=limit, page=page, use_bolding_in_highlights=search_settings.use_bolding_in_highlights)
+            results, total_matches = get_fulltext_search_results(dataset, text_fields, query, filters,
+                                                                 required_fields=['_id'], limit=limit, page=page,
+                                                                 return_highlights=search_settings.return_highlights,
+                                                                 use_bolding_in_highlights=search_settings.use_bolding_in_highlights)
             result_sets.append(results)
             actual_total_matches = max(actual_total_matches, total_matches)
             timings.log("keyword database query")

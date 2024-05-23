@@ -140,6 +140,7 @@ export const useAppStateStore = defineStore("appState", {
           result_list_items_per_page: 10,
           result_list_current_page: 0,
           max_sub_items_per_item: 1,  // aka number of relevant chunks per item
+          return_highlights: false,
           use_bolding_in_highlights: true,
 
           // map results:
