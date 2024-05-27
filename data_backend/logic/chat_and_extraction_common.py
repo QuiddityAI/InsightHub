@@ -26,7 +26,7 @@ def _item_to_context(item: dict, dataset: DotDict, reranked_chunks: int=0, quest
     chunk_fields_with_relevant_parts: list[str] = [part.get('field') for part in item.get("_relevant_parts", []) if part.get("index") is not None]
     missing_fields += [field for field in chunk_fields_with_relevant_parts if field not in item]
 
-    if question and reranked_chunks > 0:
+    if question and reranked_chunks > 0 and dataset.defaults.get("full_text_chunk_embeddings"):
         # oversample chunks and rerank:
         chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
         chunk_source_field = dataset.object_fields[chunk_vector_field_name].source_fields[0] if dataset.object_fields[chunk_vector_field_name].source_fields else None
