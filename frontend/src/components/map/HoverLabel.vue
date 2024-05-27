@@ -50,10 +50,12 @@ export default {
           v-show="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).subtitle(mapState.get_item_by_index(mapState.hovered_point_idx))"
           v-html="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).subtitle(mapState.get_item_by_index(mapState.hovered_point_idx))">
         </div>
-        <img
-          v-if="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).image(mapState.get_item_by_index(mapState.hovered_point_idx))"
-          :src="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).image(mapState.get_item_by_index(mapState.hovered_point_idx))"
-          class="h-24" />
+        <div class="flex flex-row justify-center">
+          <img
+            v-if="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).image(mapState.get_item_by_index(mapState.hovered_point_idx))"
+            :src="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).image(mapState.get_item_by_index(mapState.hovered_point_idx))"
+            class="h-24 w-auto" />
+        </div>
       </div>
       <div
         v-if="!appState.get_hover_rendering_by_index(mapState.hovered_point_idx)"

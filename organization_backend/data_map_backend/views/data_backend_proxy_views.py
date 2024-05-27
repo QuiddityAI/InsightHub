@@ -25,6 +25,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/collection/export": _check_collection_export,
         "/data_backend/collection/table/export": _check_collection_export,
         "/data_backend/remote_db_access": _check_remote_db_access,
+        "/data_backend/local_image": lambda x: True,  # TODO, but not very harmful, need to know file name
     }
     checks_for_routes_always_needing_authentication = {
         "/data_backend/classifier/retrain": lambda x: True,  # TODO, but not very harmful
@@ -37,6 +38,10 @@ def data_backend_proxy_view(request, sub_path: str):
     path = request.path
     if path.startswith("/data_backend/download_file"):
         path = "/data_backend/download_file"
+    elif path.startswith("/data_backend/local_image"):
+        path = "/data_backend/local_image"
+    elif path.startswith("/data_backend/map/thumbnail_atlas"):
+        path = "/data_backend/map/thumbnail_atlas"
 
     if path not in checks_for_routes_partially_available_without_log_in \
         and path not in checks_for_routes_always_needing_authentication:
