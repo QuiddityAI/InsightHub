@@ -119,8 +119,9 @@ def profile(func):
     return wrapper
 
 
-def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, **d_kwargs):
+def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, store_each_call:bool=False, **d_kwargs):
     from viztracer import VizTracer
+    import time
     if max_stack_depth:
         d_kwargs['max_stack_depth'] = max_stack_depth
 
@@ -128,7 +129,7 @@ def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, **d_kwargs):
         def wrapper(*args, **kwargs):
             with VizTracer(
                 *d_args,
-                output_file=f"trace_{func.__name__}.json",
+                output_file=f"trace_{func.__name__}_{time.time()}.json" if store_each_call else f"trace_{func.__name__}.json",
                 **d_kwargs,
                 ) as tracer:
                 ret = func(*args, **kwargs)

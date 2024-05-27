@@ -487,12 +487,12 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
                     raw_projections = np.zeros((len(vectors), reduced_dimensions_required))
             elif dim_reducer == "umap_cuml_gpu":
                 import cuml
-                reducer = cuml.manifold.umap.UMAP(n_components=reduced_dimensions_required, random_state=99,
+                reducer = cuml.manifold.umap.UMAP(n_components=reduced_dimensions_required, random_state=99,  # type: ignore
                                     min_dist=projection_parameters.get("min_dist", 0.17),
                                     n_epochs=projection_parameters.get("n_epochs", 500),
                                     n_neighbors=projection_parameters.get("n_neighbors", 15),
-                                    metric=projection_parameters.get("metric", "euclidean"),
-                )
+                                    metric=projection_parameters.get("metric", "euclidean"),)
+                map_data['progress']['step_title'] = "UMAP fit_transform"
                 try:
                     raw_projections = reducer.fit_transform(vectors)
                 except (TypeError, ValueError) as e:

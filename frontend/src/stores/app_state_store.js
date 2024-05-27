@@ -821,7 +821,7 @@ export const useAppStateStore = defineStore("appState", {
         headers: { Accept: "application/json" },
       }
       httpClient
-        .post("/data_backend/map/result", payload, jsonConfig)
+        .post("/data_backend/map/result", payload, cborConfig)
         .then(function (response) {
           that.process_map_update(response)
         })
