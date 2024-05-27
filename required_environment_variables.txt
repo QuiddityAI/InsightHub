@@ -21,7 +21,7 @@ PIPENV_VENV_IN_PROJECT=1
 
 OPENSEARCH_INITIAL_ADMIN_PASSWORD=?
 
-COMPOSE_PROFILES= e.g. production_server to also start the SWAG reverse proxy
+COMPOSE_PROFILES=development_webserver  # also production_webserver, https_proxy to also start the SWAG reverse proxy
 SERVER_URL= e.g. something.absclust.com
 SSL_CERT_EMAIL= email to notify about SSL certificate expiration
 

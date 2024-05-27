@@ -53,6 +53,22 @@ services:
     build:
       context: ./frontend
       dockerfile: ../docker/webserver.Dockerfile
+    profiles:
+      - development_webserver  # the container only starts if env variable COMPOSE_PROFILES=development_server
+    volumes:
+      - ./:/source_code/
+    ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
+      - "55140:55140"
+    environment:
+      - organization_backend_host=http://organization-backend:55125
+      - data_backend_host=http://data-backend:55123
+  webserver_prod:
+    image: visual_data_map/webserver_prod
+    build:
+      context: ./frontend
+      dockerfile: ../docker/webserver_prod.Dockerfile
+    profiles:
+      - production_webserver  # the container only starts if env variable COMPOSE_PROFILES=production_server
     volumes:
       - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
@@ -128,7 +144,7 @@ services:
     image: lscr.io/linuxserver/swag:latest
     container_name: swag
     profiles:
-      - production_server  # the container only starts if env variable COMPOSE_PROFILES=production_server
+      - https_proxy  # the container only starts if env variable COMPOSE_PROFILES=https_proxy
     cap_add:
       - NET_ADMIN
     environment:
