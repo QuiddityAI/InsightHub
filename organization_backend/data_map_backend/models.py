@@ -1479,7 +1479,7 @@ class Chat(models.Model):
 
             system_prompt = "You are a helpful assistant. You can answer questions based on the following items. " + \
                 "Answer in one or two concise sentences. " + \
-                "Mention the item identifier '[dataset_id, item_id]' you got the answer from after the sentence. " + \
+                "Mention the item identifier '[dataset_id, item_id]' you got the answer from after the sentence (only one identifier pair per square bracket). " + \
                 "If the provided information does not contain the answer, say that you couldn't find the information. "
 
             if obj.collection is not None:
