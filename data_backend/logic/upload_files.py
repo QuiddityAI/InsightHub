@@ -227,12 +227,14 @@ def _move_to_path_containing_md5(temp_path: str, filename: str, dataset_id: int)
     return sub_path
 
 
-def get_import_converter_by_name(name: str) -> Callable:
-    if name == "scientific_article_pdf":
+def get_import_converter_by_name(code_module_name: str) -> Callable:
+    if code_module_name == "scientific_article_pdf":
         return _scientific_article_pdf
-    elif name == "scientific_article_csv":
+    elif code_module_name == "scientific_article_csv":
         return _scientific_article_csv
-    raise ValueError(f"import converter {name} not found")
+    elif code_module_name == "csv":
+        return _import_csv
+    raise ValueError(f"import converter {code_module_name} not found")
 
 
 def _scientific_article_pdf(paths, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
@@ -326,6 +328,23 @@ def _scientific_article_csv(paths, parameters, on_progress=None) -> tuple[list[d
                 })
             except Exception as e:
                 logging.warning(f"Failed to parse row {i} in {sub_path}: {e}")
+        if on_progress:
+            on_progress(0.5 + (len(items) / len(paths)) * 0.5)
+
+    return items, []
+
+
+def _import_csv(paths, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+    items = []
+    if '__all__' not in parameters.get("fields", []):
+        # TODO: implement custom field set
+        raise ValueError("custom field set not yet implemented for csv import")
+
+    for sub_path in paths:
+        csv_reader = csv.DictReader(open(f'{UPLOADED_FILES_FOLDER}/{sub_path}', 'r'))
+        for i, row in enumerate(csv_reader):
+            row = {k.strip().lower(): v.strip() for k, v in row.items()}
+            items.append(row)
         if on_progress:
             on_progress(0.5 + (len(items) / len(paths)) * 0.5)
 
