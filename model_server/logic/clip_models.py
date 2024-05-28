@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import torch
 from transformers import AutoTokenizer, AutoProcessor, CLIPModel
 from PIL import Image, UnidentifiedImageError
 
@@ -18,20 +19,22 @@ model = None
 tokenizer = None
 processor = None
 
+compute_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 def get_clip_text_embeddings(texts, model_name):
     global last_used_model, model, tokenizer, processor
     if last_used_model != model_name:
         model = CLIPModel.from_pretrained(model_name)
         model.eval()
-        model.to('cuda')
+        model.to(compute_device)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         processor = AutoProcessor.from_pretrained(model_name)
         last_used_model = model_name
     assert model is not None and tokenizer is not None
 
     inputs = tokenizer(texts, padding=True, return_tensors="pt")
-    inputs.to('cuda')
+    inputs.to(compute_device)
     text_features = model.get_text_features(**inputs).to('cpu').detach()
     return text_features
 
@@ -41,7 +44,7 @@ def get_clip_image_embeddings(image_paths, model_name):
     if last_used_model != model_name:
         model = CLIPModel.from_pretrained(model_name)
         model.eval()
-        model.to('cuda')
+        model.to(compute_device)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         processor = AutoProcessor.from_pretrained(model_name)
         last_used_model = model_name
@@ -64,7 +67,7 @@ def get_clip_image_embeddings(image_paths, model_name):
         images.append(img)
 
     inputs = processor(images=images, return_tensors="pt")
-    inputs.to('cuda')
+    inputs.to(compute_device)
     image_features = model.get_image_features(**inputs).to('cpu').detach()
     return image_features
 

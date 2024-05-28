@@ -1,5 +1,6 @@
 import time
 from sentence_transformers import SentenceTransformer
+import torch
 
 
 last_used_model: str | None = None
@@ -18,7 +19,7 @@ def get_sentence_transformer_embeddings(texts, model_name, prefix: str = ""):
     if model_name != last_used_model:
         model = SentenceTransformer(model_name)
         model.eval()
-        model.to('cuda')
+        model.to('cuda' if torch.cuda.is_available() else 'cpu')
         last_used_model = model_name
     assert model is not None
 
