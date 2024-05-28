@@ -44,7 +44,7 @@ export default {
 
       show_add_column_dialog: false,
       selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
-      selected_module: 'groq_llama_3_70b',
+      selected_module: 'openai_gpt_4_o',
 
       first_index: 0,
       per_page: 10,
