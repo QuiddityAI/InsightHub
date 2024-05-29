@@ -38,7 +38,7 @@ export default {
         field_name = 'Descriptive Text'
       } else {
         const field_details = this.appStateStore.datasets[filter.dataset_id].object_fields[filter.field]
-        field_name = field_details.description || field_details.identifier
+        field_name = field_details.name || field_details.identifier
       }
       const operator = available_filter_operators.find(op => op.id === filter.operator)
       return `${field_name} ${operator.title} '${filter.value}'`

@@ -85,8 +85,7 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
         else:
             value = full_item.get(source_field, "n/a")
             value = str(value)[:max_characters_per_field]
-            # currently, field.description is basically a readable name, not a description
-            name = dataset.object_fields.get(source_field, {}).get('description', None) or source_field
+            name = dataset.object_fields.get(source_field, {}).get('name', None) or source_field
             text += f'{name}: {value}\n'
 
     max_chunks_to_show_all = 20

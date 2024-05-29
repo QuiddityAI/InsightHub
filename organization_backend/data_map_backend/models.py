@@ -63,8 +63,13 @@ class SourcePlugin(models.TextChoices):
 
 
 class EmbeddingSpace(models.Model):
+    identifier = models.CharField(
+        verbose_name="Identifier",
+        max_length=200,
+        blank=False,
+        null=False)
     name = models.CharField(
-        verbose_name="Name",
+        verbose_name="Display Name",
         max_length=200,
         blank=False,
         null=False)
@@ -96,8 +101,13 @@ class EmbeddingSpace(models.Model):
 
 
 class Generator(models.Model):
+    identifier = models.CharField(
+        verbose_name="Identifier",
+        max_length=200,
+        blank=False,
+        null=False)
     name = models.CharField(
-        verbose_name="Name",
+        verbose_name="Display Name",
         max_length=200,
         blank=False,
         null=False)
@@ -658,6 +668,11 @@ class ObjectField(models.Model):
         max_length=200,
         blank=False,
         null=False)
+    name = models.CharField(
+        verbose_name="Display Name",
+        max_length=200,
+        blank=True,
+        null=True)
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
@@ -750,6 +765,12 @@ class ObjectField(models.Model):
         to='self',
         symmetrical=False,
         blank=True)
+    source_fields_plain = models.JSONField(
+        verbose_name="Source Fields Plain",
+        help_text="List of source field identifiers",
+        default=list,
+        blank=True,
+        null=True)
     should_be_generated = models.BooleanField(
         verbose_name="Generate on insert / change",
         help_text="Should be generated for new elements and when "\

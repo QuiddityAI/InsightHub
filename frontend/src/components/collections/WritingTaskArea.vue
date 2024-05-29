@@ -66,7 +66,7 @@ export default {
       //   for (const field of Object.values(dataset.object_fields)) {
       //     available_fields[field.identifier] = {
       //       identifier: field.identifier,
-      //       name: field.description || field.identifier,
+      //       name: field.name || field.identifier,
       //     }
       //   }
       // }

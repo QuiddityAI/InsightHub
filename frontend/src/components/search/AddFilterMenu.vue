@@ -41,7 +41,7 @@ export default {
           available_fields[field.identifier] = {
             identifier: field.identifier,
             dataset_id: dataset_id,  // for now, filters are applied to all matching fields in any dataset, but we need one dataset as a reference for the field description
-            name: field.description || field.identifier,
+            name: field.name || field.identifier,
           }
         }
       }
@@ -64,7 +64,7 @@ export default {
         for (const field_name of dataset.descriptive_text_fields) {
           const field = dataset.object_fields[field_name]
           if (!field.is_available_for_filtering) continue
-          details.descriptive_text_field_names.push(field.description || field.identifier)
+          details.descriptive_text_field_names.push(field.name || field.identifier)
         }
         if (details.descriptive_text_field_names.length === 0) {
           details.descriptive_text_field_names.push('None')

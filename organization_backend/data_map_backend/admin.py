@@ -36,23 +36,23 @@ admin.site.register(User, UserAdmin)
 @admin.register(EmbeddingSpace)
 class EmbeddingSpaceAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name', 'dimensions')
-    list_display_links = ('id', 'name')
-    search_fields = ('name',)
-    ordering = ['name']
+    list_display = ('id', 'identifier', 'name', 'dimensions')
+    list_display_links = ('id', 'identifier', 'name')
+    search_fields = ('name', 'identifier')
+    ordering = ['identifier']
 
     readonly_fields = ('changed_at', 'created_at')
 
-    fields = ["name", "dimensions", "created_at", "changed_at"]
+    fields = ["identifier", "name", "dimensions", "created_at", "changed_at"]
 
 
 @admin.register(Generator)
 class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'name', 'embedding_space', 'requires_context', 'text_similarity_threshold', 'image_similarity_threshold')
-    list_display_links = ('id', 'name')
-    search_fields = ('name',)
-    ordering = ['name']
+    list_display = ('id', 'identifier', 'name', 'embedding_space', 'text_similarity_threshold', 'image_similarity_threshold')
+    list_display_links = ('id', 'identifier', 'name')
+    search_fields = ('name', 'identifier')
+    ordering = ['identifier']
 
     readonly_fields = ('changed_at', 'created_at')
 
@@ -132,12 +132,12 @@ class ObjectFieldInline(admin.StackedInline):
     extra = 0
 
     fields = [
-        "identifier", "description",
+        "identifier", "name",
         "field_type", "is_array", "language_analysis", "embedding_space", "index_parameters",
         "is_available_for_search", "text_similarity_threshold", "image_similarity_threshold",
         "is_available_for_filtering",
         "generator", "generator_parameters", "generating_condition",
-        "source_fields", "should_be_generated",
+        "source_fields", "source_fields_plain", "should_be_generated",
         'items_having_value_count',
         'action_buttons',
     ]
@@ -307,9 +307,9 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 @admin.register(ObjectField)
 class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'dataset', 'identifier', 'field_type', 'description')
-    list_display_links = ('id', 'identifier')
-    search_fields = ('identifier', 'description')
+    list_display = ('id', 'dataset', 'identifier', 'field_type', 'name')
+    list_display_links = ('id', 'identifier', 'name')
+    search_fields = ('identifier', 'name')
     ordering = ['dataset', 'identifier']
 
     readonly_fields = ('changed_at', 'created_at', 'items_having_value_count')
