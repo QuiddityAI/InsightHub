@@ -410,6 +410,17 @@ export const useAppStateStore = defineStore("appState", {
       this.populate_search_fields_based_on_selected_datasets()
       // update default search settings:
       this.settings.search.search_algorithm = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].defaults.search_algorithm).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
+      this.settings.frontend.rendering.max_opacity = this.default_settings.frontend.rendering.max_opacity
+      this.settings.frontend.rendering.point_size_factor = this.default_settings.frontend.rendering.point_size_factor
+      for (const dataset_id of this.settings.search.dataset_ids) {
+        const dataset = this.datasets[dataset_id]
+        if (dataset.defaults.max_opacity != undefined) {
+          this.settings.frontend.rendering.max_opacity = dataset.defaults.max_opacity
+        }
+        if (dataset.defaults.point_size_factor != undefined) {
+          this.settings.frontend.rendering.point_size_factor = dataset.defaults.point_size_factor
+        }
+      }
     },
     populate_search_fields_based_on_selected_datasets() {
       const that = this
