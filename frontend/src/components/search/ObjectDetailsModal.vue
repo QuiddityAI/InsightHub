@@ -195,7 +195,7 @@ export default {
         v-tooltip.bottom="{ value: `Export this item in different formats`, showDelay: 500 }"
         @click="show_export_dialog = true"
         class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
-        {{ dataset.schema.advanced_options.export_button_name || "Export" }}
+        {{ dataset.merged_advanced_options.export_button_name || "Export" }}
       </button>
       <div v-for="link in rendering ? rendering.links : []">
         <button v-if="link.url(item)"
@@ -205,7 +205,7 @@ export default {
       </div>
     </div>
 
-    <Dialog v-model:visible="show_export_dialog" modal :header="dataset.schema.advanced_options.export_button_name || 'Export'">
+    <Dialog v-model:visible="show_export_dialog" modal :header="dataset.merged_advanced_options.export_button_name || 'Export'">
       <ExportSingleItem :dataset="dataset" :item="item">
       </ExportSingleItem>
     </Dialog>

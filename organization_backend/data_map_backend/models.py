@@ -693,33 +693,9 @@ class Dataset(models.Model):
         related_name='datasets',
         blank=False,
         null=False)
-    entity_name = models.CharField(
-        verbose_name="Entity Name",
-        help_text="The type of the entity, e.g. 'Product' or 'Article'",
-        max_length=40,
-        blank=True,
-        null=True)
-    entity_name_plural = models.CharField(
-        verbose_name="Entity Name (Plural)",
-        max_length=40,
-        blank=True,
-        null=True)
     short_description = models.CharField(
         verbose_name="Short Description",
         max_length=200,
-        blank=True,
-        null=True)
-    is_template = models.BooleanField(
-        verbose_name="Template",
-        help_text="Whether this dataset is a schema for creating new datasets in the UI. Templates are not used for data storage.",
-        default=False,
-        blank=False,
-        null=False)
-    origin_template = models.ForeignKey(
-        verbose_name="Origin Template",
-        to='self',
-        on_delete=models.SET_NULL,
-        related_name='+',
         blank=True,
         null=True)
     created_in_ui = models.BooleanField(
@@ -782,66 +758,9 @@ class Dataset(models.Model):
         max_length=100,
         blank=True,
         null=True)
-    primary_key = models.ForeignKey(
-        verbose_name="Primary Key",
-        to='ObjectField',
-        related_name='+',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True)
-    thumbnail_image = models.ForeignKey(
-        verbose_name="Thumbnail Image",
-        to='ObjectField',
-        related_name='+',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True)
-    descriptive_text_fields = models.ManyToManyField(
-        verbose_name="Descriptive Text Fields",
-        help_text="For Word2Vec and Cluster Titles",
-        to='ObjectField',
-        related_name='+',
-        blank=True)
-    default_search_fields = models.ManyToManyField(
-        verbose_name="Default Search Fields",
-        help_text="For combined search",
-        to='ObjectField',
-        related_name='+',
-        blank=True)
-    defaults = models.JSONField(
-        verbose_name="Other Defaults",
-        help_text="Default values for map parameters",
-        default=dict,
-        blank=True,
-        null=True)
-    applicable_import_converters = models.ManyToManyField(
-        verbose_name="Applicable Import Converters",
-        to=ImportConverter,
-        related_name='+',
-        blank=True)
-    applicable_export_converters = models.ManyToManyField(
-        verbose_name="Applicable Export Converters",
-        to=ExportConverter,
-        related_name='+',
-        blank=True)
-    result_list_rendering = models.JSONField(
-        verbose_name="Result List Rendering",
-        default=get_default_result_list_rendering,
-        blank=True,
-        null=True)
-    hover_label_rendering =  models.JSONField(
-        verbose_name="Hover Label Rendering",
-        default=get_default_hover_label_rendering,
-        blank=True,
-        null=True)
-    detail_view_rendering =  models.JSONField(
-        verbose_name="Detail View Rendering",
-        default=get_default_detail_view_rendering,
-        blank=True,
-        null=True)
-    statistics = models.JSONField(
-        verbose_name="Statistics",
-        help_text="Statistics shown for the search results",
+    advanced_options = models.JSONField(
+        verbose_name="Advanced Options",
+        help_text="Remote access tokens etc., also overrides schema advanced options",
         default=dict,
         blank=True,
         null=True)
@@ -884,49 +803,9 @@ class Dataset(models.Model):
         return self.database_name or f"dataset_{self.id}"  # type: ignore
     actual_database_name.fget.short_description = "Actual Database Name"  # type: ignore
 
-
-    def create_copy(self):
-        object = copy.copy(self)
-        original_id = object.id  # type: ignore
-        original_descriptive_text_fields = object.descriptive_text_fields.all()
-        original_default_search_fields = object.default_search_fields.all()
-        original_admins = object.admins.all()
-        original_import_converters = object.applicable_import_converters.all()
-        original_export_converters = object.applicable_export_converters.all()
-        object.id = None  # type: ignore
-        object.save()
-        field_name_to_sink = {}
-        for field in ObjectField.objects.filter(dataset = original_id):
-            is_pk = field == object.primary_key
-            is_thumbnail =  field == object.thumbnail_image
-            is_descriptive = field in original_descriptive_text_fields
-            is_default = field in original_default_search_fields
-            source_fields = field.source_fields.all()
-            field.id = None  # type: ignore
-            field.dataset = object
-            field.save()
-            for source_field in source_fields:
-                field_name_to_sink[source_field.identifier] = field
-            if is_pk:
-                object.primary_key = field
-            if is_thumbnail:
-                object.thumbnail_image = field
-            if is_descriptive:
-                object.descriptive_text_fields.add(field)
-            if is_default:
-                object.default_search_fields.add(field)
-        for field in ObjectField.objects.filter(dataset = object):
-            if field.identifier in field_name_to_sink:
-                sink_field = field_name_to_sink[field.identifier]
-                sink_field.source_fields.add(field)
-                sink_field.save()
-        for admin in original_admins:
-            object.admins.add(admin)
-        for converter in original_import_converters:
-            object.applicable_import_converters.add(converter)
-        for converter in original_export_converters:
-            object.applicable_export_converters.add(converter)
-        return object
+    @property
+    def merged_advanced_options(self):
+        return {**self.schema.advanced_options, **self.advanced_options}  # type: ignore
 
     def delete_content(self):
         delete_dataset_content(self.id)  # type: ignore
@@ -941,160 +820,6 @@ class Dataset(models.Model):
     class Meta:
         verbose_name = "Dataset"
         verbose_name_plural = "Datasets"
-
-
-class ObjectField(models.Model):
-    identifier = models.CharField(
-        verbose_name="Identifier",
-        max_length=200,
-        blank=False,
-        null=False)
-    name = models.CharField(
-        verbose_name="Display Name",
-        max_length=200,
-        blank=True,
-        null=True)
-    created_at = models.DateTimeField(
-        verbose_name="Created at",
-        default=timezone.now,
-        blank=True,
-        null=True)
-    changed_at = models.DateTimeField(
-        verbose_name="Changed at",
-        auto_now=True,
-        editable=False,
-        blank=False,
-        null=False)
-    dataset = models.ForeignKey(
-        verbose_name="Dataset",
-        to=Dataset,
-        on_delete=models.CASCADE,
-        related_name='object_fields',
-        blank=False,
-        null=False)
-    description = models.CharField(
-        verbose_name="Description",
-        max_length=200,
-        blank=True,
-        null=True)
-    field_type = models.CharField(
-        verbose_name="Type",
-        max_length=50,
-        choices=FieldType.choices,
-        default=FieldType.TEXT,
-        blank=False,
-        null=False)
-    is_array = models.BooleanField(
-        verbose_name="Is array",
-        default=False,
-        blank=False,
-        null=False)
-    language_analysis = models.CharField(
-        verbose_name="Language Processing",
-        help_text="Only applicable for 'Text' fields",
-        max_length=50,
-        choices=LanguageAnalysis.choices,
-        blank=True,
-        null=True)
-    embedding_space = models.ForeignKey(
-        verbose_name="Embedding Space",
-        help_text="If not set, embedding space of generator will be used",
-        to=EmbeddingSpace,
-        on_delete=models.PROTECT,
-        blank=True,
-        null=True)
-    is_available_for_search = models.BooleanField(
-        verbose_name="Available for fulltext or vector search",
-        default=False,
-        blank=False,
-        null=False)
-    text_similarity_threshold = models.FloatField(
-        verbose_name="Text Similarity Threshold",
-        help_text="The minimum score / similarity a text query must have compared to this field to be considered relevant / similar (overriding the generators value)",
-        blank=True,
-        null=True)
-    image_similarity_threshold = models.FloatField(
-        verbose_name="Image Similarity Threshold",
-        help_text="The minimum score / similarity an image query must have compared to this field to be considered relevant / similar (overriding the generators value)",
-        blank=True,
-        null=True)
-    is_available_for_filtering = models.BooleanField(
-        verbose_name="Available for filtering",
-        default=False,
-        blank=False,
-        null=False)
-    index_parameters = models.JSONField(
-        verbose_name="Index Parameters",
-        blank=True,
-        null=True)
-    generator = models.ForeignKey(
-        verbose_name="Generator",
-        to=Generator,
-        on_delete=models.PROTECT,
-        blank=True,
-        null=True)
-    generator_parameters = models.JSONField(
-        verbose_name="Generator Parameters",
-        blank=True,
-        null=True)
-    generating_condition = models.TextField(
-        verbose_name="Generating Condition",
-        blank=True,
-        null=True)
-    source_fields = models.ManyToManyField(
-        verbose_name="Source Fields",
-        to='self',
-        symmetrical=False,
-        blank=True)
-    source_fields_plain = models.JSONField(
-        verbose_name="Source Fields Plain",
-        help_text="List of source field identifiers",
-        default=list,
-        blank=True,
-        null=True)
-    should_be_generated = models.BooleanField(
-        verbose_name="Generate on insert / change",
-        help_text="Should be generated for new elements and when "\
-        "source fields are updated, not automatically generated for exisitng elements",
-        default=False,
-        blank=False,
-        null=False)
-
-    history = HistoricalRecords()
-
-    @property
-    def items_having_value_count(self):
-        if not self.is_available_for_search and not self.is_available_for_filtering:
-            # OpenSearch can't easily count values that are not indexed
-            return "?"
-        try:
-            url = DATA_BACKEND_HOST + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/items_having_value_count'  # type: ignore
-            result = requests.get(url)
-            count = result.json()["count"]
-            if self.field_type == FieldType.VECTOR and self.is_array:
-                url = DATA_BACKEND_HOST + f'/data_backend/dataset/{self.dataset.id}/{self.identifier}/sub_items_having_value_count'  # type: ignore
-                result = requests.get(url)
-                sub_count = result.json()["count"]
-                return f"{count} (~{sub_count / count:.0f} ppi)"
-            else:
-                return count
-        except Exception as e:
-            return repr(e)
-    items_having_value_count.fget.short_description = "Items having this value"  # type: ignore
-
-    @property
-    def actual_embedding_space(self):
-        return self.embedding_space or self.generator.embedding_space if self.generator else None
-    actual_embedding_space.fget.short_description = "Actual Embedding Space"  # type: ignore
-
-    def __str__(self):
-        return f"{self.identifier}"
-
-    class Meta:
-        unique_together = [['dataset', 'identifier']]
-        verbose_name = "Object Field"
-        verbose_name_plural = "Object Fields"
-        order_with_respect_to = "dataset"
 
 
 class SearchHistoryItem(models.Model):
@@ -1369,13 +1094,13 @@ class DatasetSpecificSettingsOfCollection(models.Model):
     relevant_object_fields = models.ManyToManyField(
         verbose_name="Relevant Object Fields",
         help_text="The 'source' fields (text or image) for items from this dataset, using default search fields (or their sources for vectors) if empty",
-        to='ObjectField',
+        to='DatasetField',
         related_name='+',
         blank=True)
     positive_annotation_field = models.ForeignKey(
         verbose_name="Positive Annotation Field",
         help_text="binary: bool field, exclusive: single tag, non-exclusive: tag array field",  # or class probability field (not yet, only makes sense if regression is supported)
-        to='ObjectField',
+        to='DatasetField',
         related_name='+',
         on_delete=models.SET_NULL,
         blank=True,
@@ -1383,7 +1108,7 @@ class DatasetSpecificSettingsOfCollection(models.Model):
     negative_annotation_field = models.ForeignKey(
         verbose_name="Negative Annotation Field",
         help_text="binary: bool field, exclusive: single tag, non-exclusive: tag array field",
-        to='ObjectField',
+        to='DatasetField',
         related_name='+',
         on_delete=models.SET_NULL,
         blank=True,

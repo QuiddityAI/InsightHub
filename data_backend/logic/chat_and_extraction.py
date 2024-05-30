@@ -64,7 +64,7 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
         source_fields_set.remove("_descriptive_text_fields")
         source_fields_set.update(dataset.schema.descriptive_text_fields)
     if "_full_text_snippets" in source_fields:
-        chunk_vector_field_name = dataset.schema.advanced_options.get("full_text_chunk_embeddings")
+        chunk_vector_field_name = dataset.merged_advanced_options.get("full_text_chunk_embeddings")
         if chunk_vector_field_name:
             chunk_vector_field = DotDict(dataset.schema.object_fields.get(chunk_vector_field_name))
             chunk_field = chunk_vector_field.source_fields[0]
@@ -92,7 +92,7 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
     max_chunks_to_show_all = 20
     max_selected_chunks = 5
     if "_full_text_snippets" in source_fields:
-        chunk_vector_field_name = dataset.schema.advanced_options.get("full_text_chunk_embeddings")
+        chunk_vector_field_name = dataset.merged_advanced_options.get("full_text_chunk_embeddings")
         if chunk_vector_field_name:
             chunk_vector_field = DotDict(dataset.schema.object_fields.get(chunk_vector_field_name))
             chunk_field = chunk_vector_field.source_fields[0]

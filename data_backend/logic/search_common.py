@@ -233,7 +233,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
         search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, default_operator='or')
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
-    ignored_keyword_highlight_fields = dataset.schema.advanced_options.ignored_keyword_highlight_fields or []
+    ignored_keyword_highlight_fields = dataset.merged_advanced_options.ignored_keyword_highlight_fields or []
     for i, item in enumerate(search_result):
         items[item['_id']] = {
             '_id': item['_id'],
@@ -486,7 +486,7 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
             additional_fields.append(relevant_part.get('field'))
     get_new_full_text_chunks = False
     if top_n_full_text_chunks and query:
-        chunk_vector_field_name = dataset.schema.advanced_options.get("full_text_chunk_embeddings")
+        chunk_vector_field_name = dataset.merged_advanced_options.get("full_text_chunk_embeddings")
         if chunk_vector_field_name:
             chunk_vector_field = DotDict(dataset.schema.object_fields.get(chunk_vector_field_name))
             chunk_field = chunk_vector_field.source_fields[0]
@@ -503,7 +503,7 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
 
     if get_text_search_highlights:
         filters = [{'field': '_id', 'value': [item_id], 'operator': 'ids'}]
-        ignored_keyword_highlight_fields = dataset.schema.advanced_options.ignored_keyword_highlight_fields or []
+        ignored_keyword_highlight_fields = dataset.merged_advanced_options.ignored_keyword_highlight_fields or []
         results, total = search_engine_client.get_search_results(dataset, dataset.schema.default_search_fields, filters,
                                                                  "", "", 0, 1, ['_id'],
                                                                  highlights=True, use_bolding_in_highlights=True,

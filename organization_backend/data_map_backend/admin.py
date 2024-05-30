@@ -18,7 +18,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import DATA_BACKEND_HOST
 
-from .models import CollectionColumn, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask
+from .models import CollectionColumn, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -271,7 +271,7 @@ class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAd
 
     def get_field_overview_table_html(self, obj):
         try:
-            header = ["Type", "Identifier", "Search / Filter / Generated", "Generator", "#"]
+            header = ["Type", "Identifier", "Search / Filter / Generated", "Generator"]
             html = """<table style='border: 1px solid; border-collapse: collapse;'>\n<tr>"""
             for item in header:
                 html += f"<th style='border: 1px solid;'>{item}</th>\n"
@@ -286,24 +286,9 @@ class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAd
                 attributes = f"{'s' if field.is_available_for_search else '-'} {thresholds} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
                 html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
                 html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
-                html += f"<td style='border: 1px solid;' align='right'>{'TODO'}</td>\n"  # field.items_having_value_count}</td>\n"
                 html += "</tr>\n"
 
             html += "</table>"
-
-            total_items = 0  # obj.item_count
-            if total_items:
-                for field in obj.object_fields.all():
-                    if field.field_type != FieldType.VECTOR:
-                        continue
-                    dimensions = get_vector_field_dimensions(field)
-                    if not dimensions:
-                        continue
-                    bytes_per_vector = 4
-                    space_needed_gb = (dimensions * bytes_per_vector * total_items) / 1024 / 1024 / 1024
-                    html += f"<br>TODO: Space needed for field '{field.identifier}': {space_needed_gb:.1f} GB"
-                    if field.is_array:
-                        html += " (with one array element per item)"
         except Exception as e:
             return repr(e)
         return mark_safe(html)
@@ -341,44 +326,6 @@ class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAd
         js = ('hide_objectfield_parameters.js',)
 
 
-class ObjectFieldInline(admin.StackedInline):
-    model = ObjectField
-    readonly_fields = ('changed_at', 'created_at', 'action_buttons', 'items_having_value_count')
-    extra = 0
-
-    fields = [
-        "identifier", "name",
-        "field_type", "is_array", "language_analysis", "embedding_space", "index_parameters",
-        "is_available_for_search", "text_similarity_threshold", "image_similarity_threshold",
-        "is_available_for_filtering",
-        "generator", "generator_parameters", "generating_condition",
-        "source_fields", "source_fields_plain", "should_be_generated",
-        'items_having_value_count',
-        'action_buttons',
-    ]
-
-    formfield_overrides = {
-        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit },
-    }
-
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        # only show fields of same dataset for source fields:
-        if db_field.name == "source_fields":
-            try:
-                dataset_id = int(request.path.split("/")[-3])  # type: ignore
-            except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
-            else:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
-        return super(ObjectFieldInline, self).formfield_for_manytomany(db_field, request, **kwargs)
-
-    def action_buttons(self, obj):
-        return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button> \
-                         <button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
-    action_buttons.short_description = "Actions"
-
-
 @admin.register(Dataset)
 class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
@@ -392,51 +339,21 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
                        'item_count', 'random_item', 'action_buttons')
 
     fields = [
-        "id", "name", "schema", "entity_name", "entity_name_plural", "short_description",
-        "is_template", "origin_template", "created_in_ui",
+        "id", "name", "schema", "short_description",
+        "created_in_ui",
         "organization", "is_public", "is_organization_wide", "admins",
         "source_plugin", "source_plugin_parameters",
-        "database_name", "primary_key", "thumbnail_image",
-        "descriptive_text_fields", "default_search_fields", "defaults",
-        "applicable_import_converters", "applicable_export_converters",
+        "database_name", "advanced_options",
         "item_count", "get_field_overview_table_html",
-        "result_list_rendering",
-        "hover_label_rendering", "detail_view_rendering", "statistics",
         "random_item",
         "created_at", "changed_at",
         'action_buttons',
-    ]
-
-    inlines = [
-        ObjectFieldInline,
     ]
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
         models.JSONField: {'widget': JSONSuit }
     }
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # only show fields of same dataset for source fields:
-        if db_field.name in ["primary_key", "thumbnail_image"]:
-            try:
-                dataset_id = int(request.path.split("/")[-3])  # type: ignore
-            except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
-            else:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
-        return super(DatasetAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
-
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        # only show fields of same dataset for source fields:
-        if db_field.name in ["descriptive_text_fields", "default_search_fields"]:
-            try:
-                dataset_id = int(request.path.split("/")[-3])  # type: ignore
-            except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
-            else:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
-        return super(DatasetAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_field_overview_table_html(self, obj):
         try:
@@ -446,23 +363,23 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
                 html += f"<th style='border: 1px solid;'>{item}</th>\n"
             html += "</tr>\n"
 
-            for field in obj.object_fields.all():
+            for field in obj.schema.object_fields.all():
                 html += "<tr style='border: 1px solid;'>\n"
                 html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.field_type + ('[]' if field.is_array else '') + (' ' + field.language_analysis if field.language_analysis else '')}</td>\n"
-                html += f"<td style='border: 1px solid; padding-right: 4px;'><a href=\"/org/admin/data_map_backend/objectfield/{field.id}/change/\">{field.identifier} {'<i>(PK)</i>' if obj.primary_key == field else ''}</a></td>\n"
+                html += f"<td style='border: 1px solid; padding-right: 4px;'><a href=\"/org/admin/data_map_backend/objectfield/{field.id}/change/\">{field.identifier} {'<i>(PK)</i>' if obj.schema.primary_key == field else ''}</a></td>\n"
                 thresholds = f"{field.text_similarity_threshold if field.text_similarity_threshold is not None else ''}"
                 thresholds += f" {field.image_similarity_threshold if field.image_similarity_threshold is not None else ''}"
                 attributes = f"{'s' if field.is_available_for_search else '-'} {thresholds} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
                 html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
                 html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
-                html += f"<td style='border: 1px solid;' align='right'>{field.items_having_value_count}</td>\n"
+                html += f"<td style='border: 1px solid;' align='right'>{field.items_having_value_count(obj)}</td>\n"
                 html += "</tr>\n"
 
             html += "</table>"
 
             total_items = obj.item_count
             if total_items:
-                for field in obj.object_fields.all():
+                for field in obj.schema.object_fields.all():
                     if field.field_type != FieldType.VECTOR:
                         continue
                     dimensions = get_vector_field_dimensions(field)
@@ -497,52 +414,6 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         obj.delete_content()
 
     @takes_instance_or_queryset
-    def export_as_schema(self, request, queryset):
-        for obj in queryset:
-            try:
-                data = json.loads(serializers.serialize("json", [obj], indent=2))[0]['fields']
-                ignored_fields = ["is_template", "is_public", "is_organization_wide",
-                                  "organization", "origin_template", "created_in_ui",
-                                  "source_plugin", "source_plugin_parameters", "database_name",
-                                  "admins", "schema"]
-                for ignored_field in ignored_fields:
-                    data.pop(ignored_field, None)
-
-                data['primary_key'] = ObjectField.objects.get(id=data['primary_key']).identifier if data['primary_key'] else None
-                data['thumbnail_image'] = ObjectField.objects.get(id=data['thumbnail_image']).identifier if data['thumbnail_image'] else None
-
-                data['descriptive_text_fields'] = [ObjectField.objects.get(id=pk).identifier for pk in data['descriptive_text_fields']]
-                data['default_search_fields'] = [ObjectField.objects.get(id=pk).identifier for pk in data['default_search_fields']]
-
-                data['advanced_options'] = data['defaults']
-                del data['defaults']
-
-                data['identifier'] = obj.name.replace("/", "_").replace(" ", "_").lower()
-
-                data['object_fields'] = []
-                for field in obj.object_fields.all():
-                    field_data = json.loads(serializers.serialize("json", [field], indent=2))[0]['fields']
-                    ignored_fields = ["dataset"]
-                    for ignored_field in ignored_fields:
-                        field_data.pop(ignored_field, None)
-                    field_data['source_fields'] = field_data['source_fields_plain']
-                    del field_data['source_fields_plain']
-                    data['object_fields'].append(field_data)
-
-                json_data = json.dumps(data, indent=2)
-                path = "./data_map_backend/base_model_definitions/orig_schemas"
-                os.makedirs(path, exist_ok=True)
-                safe_identifier = obj.name.replace("/", "_").replace(" ", "_")
-                with open(os.path.join(path, f'{safe_identifier}.json'), 'w') as f:
-                    f.write(json_data)
-            except Exception as e:
-                logging.error(e)
-                self.message_user(request, "Failed to store definition")
-                return
-        self.message_user(request, "Stored definitions as schema")
-    export_as_schema.short_description = "Export as schema"
-
-    @takes_instance_or_queryset
     def store_definition_as_code(self, request, queryset):
         for obj in queryset:
             try:
@@ -560,70 +431,47 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         self.message_user(request, "Stored definitions as code")
     store_definition_as_code.short_description = "Store definition in source code folder"
 
-    def duplicate_datasets(self, request, queryset):
-        for object in queryset:
-            new_object = object.create_copy()
-            new_object.name = f"{object.name} (copy)"
-            new_object.origin_template = object
-            new_object.save()
-    duplicate_datasets.short_description = "Duplicate Datasets"
-
     def delete_with_content(self, request, queryset):
         for object in queryset:
             object.delete_with_content()
     delete_with_content.short_description = "Delete and remove all items from database"
 
-    change_actions = ('export_as_schema', 'store_definition_as_code', 'update_database_layout', 'delete_content')
-    actions = ['export_as_schema', 'store_definition_as_code', 'duplicate_datasets', 'delete_with_content']
+    change_actions = ('store_definition_as_code', 'update_database_layout', 'delete_content')
+    actions = ['store_definition_as_code', 'delete_with_content']
 
     class Media:
         js = ('hide_objectfield_parameters.js',)
 
+    # TODO: remaining functions from ObjectField, need to be ported to Dataset and get parameter for field:
 
-@admin.register(ObjectField)
-class ObjectFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
-    djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'dataset', 'identifier', 'field_type', 'name')
-    list_display_links = ('id', 'identifier', 'name')
-    search_fields = ('identifier', 'name')
-    ordering = ['dataset', 'identifier']
+    # @action(label="Delete Content", description="Delete field data and index")
+    # def delete_content(self, request, obj):
+    #     # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
+    #     url = DATA_BACKEND_HOST + '/data_backend/delete_field'
+    #     data = {
+    #         'dataset_id': obj.dataset_id,
+    #         'field_identifier': obj.identifier,
+    #     }
+    #     requests.post(url, json=data)
+    #     self.message_user(request, "Deleted this fields content")
 
-    readonly_fields = ('changed_at', 'created_at', 'items_having_value_count')
+    # @action(label="Generate Missing Values", description="Generate missing values")
+    # def generate_missing_values(self, request, obj):
+    #     url = DATA_BACKEND_HOST + '/data_backend/generate_missing_values'
+    #     data = {
+    #         'dataset_id': obj.dataset_id,
+    #         'field_identifier': obj.identifier,
+    #     }
+    #     requests.post(url, json=data)
+    #     self.message_user(request, "Now generating missing values...")
 
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        # only show fields of same dataset for source fields:
-        if db_field.name == "source_fields":
-            try:
-                field_id = int(request.path.split("/")[-3])  # type: ignore
-            except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
-            else:
-                dataset_id = ObjectField.objects.get(id = field_id).dataset_id  # type: ignore
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
-        return super(ObjectFieldAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
+    # change_actions = ('delete_content', 'generate_missing_values')
 
-    @action(label="Delete Content", description="Delete field data and index")
-    def delete_content(self, request, obj):
-        # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
-        url = DATA_BACKEND_HOST + '/data_backend/delete_field'
-        data = {
-            'dataset_id': obj.dataset_id,
-            'field_identifier': obj.identifier,
-        }
-        requests.post(url, json=data)
-        self.message_user(request, "Deleted this fields content")
 
-    @action(label="Generate Missing Values", description="Generate missing values")
-    def generate_missing_values(self, request, obj):
-        url = DATA_BACKEND_HOST + '/data_backend/generate_missing_values'
-        data = {
-            'dataset_id': obj.dataset_id,
-            'field_identifier': obj.identifier,
-        }
-        requests.post(url, json=data)
-        self.message_user(request, "Now generating missing values...")
-
-    change_actions = ('delete_content', 'generate_missing_values')
+    # def action_buttons(self, obj):
+    #     return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button> \
+    #                      <button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
+    # action_buttons.short_description = "Actions"
 
 
 @admin.register(SearchHistoryItem)
@@ -666,10 +514,10 @@ class DatasetSpecificSettingsOfCollectionAdmin(DjangoQLSearchMixin, SimpleHistor
             try:
                 item_id = int(request.path.split("/")[-3])  # type: ignore
             except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
+                kwargs["queryset"] = DatasetField.objects.filter(schema = -1)
             else:
-                dataset_id = DatasetSpecificSettingsOfCollection.objects.get(id = item_id).dataset_id  # type: ignore
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
+                schema = DatasetSpecificSettingsOfCollection.objects.get(id = item_id).dataset.schema  # type: ignore
+                kwargs["queryset"] = DatasetField.objects.filter(schema = schema)
         return super(DatasetSpecificSettingsOfCollectionAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
@@ -678,10 +526,10 @@ class DatasetSpecificSettingsOfCollectionAdmin(DjangoQLSearchMixin, SimpleHistor
             try:
                 item_id = int(request.path.split("/")[-3])  # type: ignore
             except ValueError:
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = -1)
+                kwargs["queryset"] = DatasetField.objects.filter(schema = -1)
             else:
-                dataset_id = DatasetSpecificSettingsOfCollection.objects.get(id = item_id).dataset_id  # type: ignore
-                kwargs["queryset"] = ObjectField.objects.filter(dataset = dataset_id)
+                schema = DatasetSpecificSettingsOfCollection.objects.get(id = item_id).dataset.schema  # type: ignore
+                kwargs["queryset"] = DatasetField.objects.filter(schema = schema)
         return super(DatasetSpecificSettingsOfCollectionAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
 

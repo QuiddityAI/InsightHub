@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import Chat, CollectionColumn, DataCollection, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier, WritingTask
+from .models import Chat, CollectionColumn, DataCollection, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier, WritingTask
 
 
 class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
@@ -15,17 +15,6 @@ class GeneratorSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = Generator
         exclude = ['created_at', 'changed_at', 'parameter_description']
-
-
-class ObjectFieldSerializer(drf_serializers.ModelSerializer):
-    source_fields = drf_serializers.StringRelatedField(many=True, read_only=True)
-    generator = GeneratorSerializer(read_only=True)
-    embedding_space = EmbeddingSpaceSerializer(read_only=True)
-    actual_embedding_space = EmbeddingSpaceSerializer(many=False, read_only=True)
-
-    class Meta:
-        model = ObjectField
-        exclude = ['created_at', 'changed_at', '_order']
 
 
 class DatasetFieldSerializer(drf_serializers.ModelSerializer):
@@ -73,6 +62,7 @@ class DatasetSerializer(drf_serializers.ModelSerializer):
     admins = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     actual_database_name = drf_serializers.ReadOnlyField()
     schema = DatasetSchemaSerializer(many=False, read_only=True)
+    merged_advanced_options = drf_serializers.ReadOnlyField()
 
     class Meta:
         model = Dataset

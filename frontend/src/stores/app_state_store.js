@@ -410,16 +410,16 @@ export const useAppStateStore = defineStore("appState", {
       history.replaceState(null, null, "?" + queryParams.toString())
       this.populate_search_fields_based_on_selected_datasets()
       // update default search settings:
-      this.settings.search.search_algorithm = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].schema.advanced_options.search_algorithm).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
+      this.settings.search.search_algorithm = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].merged_advanced_options.search_algorithm).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
       this.settings.frontend.rendering.max_opacity = this.default_settings.frontend.rendering.max_opacity
       this.settings.frontend.rendering.point_size_factor = this.default_settings.frontend.rendering.point_size_factor
       for (const dataset_id of this.settings.search.dataset_ids) {
         const dataset = this.datasets[dataset_id]
-        if (dataset.schema.advanced_options.max_opacity != undefined) {
-          this.settings.frontend.rendering.max_opacity = dataset.schema.advanced_options.max_opacity
+        if (dataset.merged_advanced_options.max_opacity != undefined) {
+          this.settings.frontend.rendering.max_opacity = dataset.merged_advanced_options.max_opacity
         }
-        if (dataset.schema.advanced_options.point_size_factor != undefined) {
-          this.settings.frontend.rendering.point_size_factor = dataset.schema.advanced_options.point_size_factor
+        if (dataset.merged_advanced_options.point_size_factor != undefined) {
+          this.settings.frontend.rendering.point_size_factor = dataset.merged_advanced_options.point_size_factor
         }
       }
     },
@@ -469,7 +469,7 @@ export const useAppStateStore = defineStore("appState", {
       }
 
       // select best map vector field:
-      const default_map_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].schema.advanced_options.map_vector_field)
+      const default_map_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].merged_advanced_options.map_vector_field)
       // if all datasets have the same default map vector field, use it:
       if (default_map_fields.every((field) => field == default_map_fields[0]) && default_map_fields[0] != undefined) {
         that.settings.vectorize.map_vector_field = default_map_fields[0]
@@ -493,7 +493,7 @@ export const useAppStateStore = defineStore("appState", {
       }
 
       // select best size field:
-      const default_size_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].schema.advanced_options.size_field)
+      const default_size_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].merged_advanced_options.size_field)
       // if all datasets have the same default size field, use it:
       if (default_size_fields.every((field) => field == default_size_fields[0]) && default_size_fields[0] != undefined) {
         that.settings.rendering.size.type = "number_field"

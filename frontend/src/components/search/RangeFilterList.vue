@@ -26,7 +26,7 @@ export default {
     range_filters() {
       const filters = {}
       for (const dataset_id of this.mapStateStore.map_parameters?.search.dataset_ids || []) {
-        for (const range_filter of this.appStateStore.datasets[dataset_id]?.schema.advanced_options?.range_filters || []) {
+        for (const range_filter of this.appStateStore.datasets[dataset_id]?.merged_advanced_options?.range_filters || []) {
           filters[range_filter.field] = range_filter
         }
       }
