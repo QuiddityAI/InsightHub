@@ -1,0 +1,95 @@
+{
+  "name": "Papers 2",
+  "entity_name": "paper",
+  "entity_name_plural": "papers",
+  "short_description": null,
+  "created_at": "2024-05-30T11:13:10.841Z",
+  "changed_at": "2024-05-30T13:11:48.237Z",
+  "primary_key": null,
+  "thumbnail_image": null,
+  "descriptive_text_fields": [],
+  "default_search_fields": [],
+  "advanced_options": {},
+  "result_list_rendering": {
+    "url": "(item) => { return null }",
+    "body": "(item) => { return null }",
+    "image": "(item) => { return null }",
+    "title": "(item) => { return null }",
+    "subtitle": "(item) => { return null }",
+    "required_fields": []
+  },
+  "hover_label_rendering": {
+    "image": "(item) => { return null }",
+    "title": "(item) => { return null }",
+    "subtitle": "(item) => { return null }",
+    "required_fields": []
+  },
+  "detail_view_rendering": {
+    "url": "(item) => { return null }",
+    "body": "(item) => { return null }",
+    "image": "(item) => { return null }",
+    "title": "(item) => { return null }",
+    "subtitle": "(item) => { return null }",
+    "required_fields": []
+  },
+  "statistics": {},
+  "applicable_import_converters": [
+    "generic_csv",
+    "scientific_article_pdf"
+  ],
+  "applicable_export_converters": [
+    "full_csv",
+    "full_json"
+  ],
+  "identifier": "papers",
+  "object_fields": [
+    {
+      "identifier": "title",
+      "name": "Title 1",
+      "created_at": "2024-05-30T11:13:42.093Z",
+      "changed_at": "2024-05-30T13:10:20.071Z",
+      "schema": "papers",
+      "description": null,
+      "field_type": "TEXT",
+      "is_array": false,
+      "language_analysis": "english",
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": null,
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 0
+    },
+    {
+      "identifier": "embedding",
+      "name": null,
+      "created_at": "2024-05-30T11:13:42.093Z",
+      "changed_at": "2024-05-30T13:05:01.020Z",
+      "schema": "papers",
+      "description": null,
+      "field_type": "VECTOR",
+      "is_array": false,
+      "language_analysis": null,
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": null,
+      "generator": "e5_base_text_embedding",
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [
+        "title"
+      ],
+      "should_be_generated": false,
+      "_order": 1
+    }
+  ]
+}

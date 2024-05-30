@@ -1,0 +1,120 @@
+{
+  "name": "Unsplash 25k",
+  "entity_name": null,
+  "entity_name_plural": null,
+  "short_description": null,
+  "created_at": "2023-11-16T17:30:10.119Z",
+  "changed_at": "2024-05-30T13:54:10.953Z",
+  "primary_key": "image_id",
+  "thumbnail_image": "image",
+  "descriptive_text_fields": [],
+  "default_search_fields": [
+    "image_openclip"
+  ],
+  "advanced_options": {},
+  "result_list_rendering": {
+    "url": "(item) => { return null }",
+    "body": "(item) => { return null }",
+    "image": "(item) => { return `/data_backend/local_image/${item.image}` }",
+    "title": "(item) => { return null }",
+    "subtitle": "(item) => { return null }",
+    "required_fields": [
+      "image"
+    ]
+  },
+  "hover_label_rendering": {
+    "image": "(item) => { return `/data_backend/local_image/${item.image}` }",
+    "title": "(item) => { return item._score }",
+    "subtitle": "(item) => { return null }",
+    "required_fields": [
+      "image"
+    ]
+  },
+  "detail_view_rendering": {
+    "url": "(item) => { return null }",
+    "body": "(item) => { return null }",
+    "image": "(item) => { return `/data_backend/local_image/${item.image}` }",
+    "title": "(item) => { return null }",
+    "subtitle": "(item) => { return null }",
+    "required_fields": [
+      "image"
+    ]
+  },
+  "statistics": {},
+  "applicable_import_converters": [],
+  "applicable_export_converters": [],
+  "identifier": "unsplash_25k",
+  "object_fields": [
+    {
+      "identifier": "image_id",
+      "name": null,
+      "created_at": "2023-11-16T17:30:44.027Z",
+      "changed_at": "2024-05-30T13:54:10.950Z",
+      "schema": "unsplash_25k",
+      "description": null,
+      "field_type": "IDENTIFIER",
+      "is_array": false,
+      "language_analysis": null,
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": null,
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 0
+    },
+    {
+      "identifier": "image",
+      "name": null,
+      "created_at": "2023-11-16T17:30:44.027Z",
+      "changed_at": "2024-05-30T13:54:10.951Z",
+      "schema": "unsplash_25k",
+      "description": null,
+      "field_type": "IMAGE",
+      "is_array": false,
+      "language_analysis": null,
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": null,
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 1
+    },
+    {
+      "identifier": "image_openclip",
+      "name": null,
+      "created_at": "2023-11-16T17:35:27.968Z",
+      "changed_at": "2024-05-30T13:54:10.952Z",
+      "schema": "unsplash_25k",
+      "description": null,
+      "field_type": "VECTOR",
+      "is_array": false,
+      "language_analysis": null,
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": 0.2,
+      "image_similarity_threshold": 0.6,
+      "is_available_for_filtering": false,
+      "index_parameters": null,
+      "generator": "openclip_image_embeddding",
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [
+        "image"
+      ],
+      "should_be_generated": false,
+      "_order": 2
+    }
+  ]
+}
