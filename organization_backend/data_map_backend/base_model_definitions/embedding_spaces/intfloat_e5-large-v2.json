@@ -1,0 +1,12 @@
+[
+{
+  "model": "data_map_backend.embeddingspace",
+  "pk": "intfloat/e5-large-v2",
+  "fields": {
+    "name": "E5 Large intfloat/e5-large-v2",
+    "created_at": "2023-09-23T08:16:09.578Z",
+    "changed_at": "2024-05-29T16:35:25.075Z",
+    "dimensions": 1024
+  }
+}
+]

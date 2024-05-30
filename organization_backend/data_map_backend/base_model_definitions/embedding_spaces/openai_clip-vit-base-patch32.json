@@ -1,0 +1,12 @@
+[
+{
+  "model": "data_map_backend.embeddingspace",
+  "pk": "openai/clip-vit-base-patch32",
+  "fields": {
+    "name": "Original CLIP openai/clip-vit-base-patch32",
+    "created_at": "2023-09-23T07:59:28.807Z",
+    "changed_at": "2024-05-29T16:36:33.478Z",
+    "dimensions": 768
+  }
+}
+]

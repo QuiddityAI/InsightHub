@@ -1,0 +1,12 @@
+[
+{
+  "model": "data_map_backend.embeddingspace",
+  "pk": "intfloat/e5-base-v2",
+  "fields": {
+    "name": "E5 Base intfloat/e5-base-v2",
+    "created_at": "2023-09-23T08:15:59.192Z",
+    "changed_at": "2024-05-30T07:59:55.294Z",
+    "dimensions": 768
+  }
+}
+]
