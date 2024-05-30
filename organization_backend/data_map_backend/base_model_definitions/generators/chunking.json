@@ -1,0 +1,29 @@
+[
+{
+  "model": "data_map_backend.generator",
+  "pk": "chunking",
+  "fields": {
+    "name": "Chunking",
+    "description": "Split long texts into chunks",
+    "created_at": "2024-03-20T15:47:59.665Z",
+    "changed_at": "2024-05-29T16:24:44.202Z",
+    "requires_context": false,
+    "module": "chunking",
+    "embedding_space": null,
+    "is_preferred_for_search": false,
+    "default_parameters": {
+      "overlap_in_characters": 50,
+      "chunk_size_in_characters": 500
+    },
+    "parameter_description": "",
+    "input_type": "TEXT",
+    "input_is_array": false,
+    "input_description": "",
+    "output_type": "TEXT",
+    "output_is_array": true,
+    "output_description": "",
+    "text_similarity_threshold": null,
+    "image_similarity_threshold": null
+  }
+}
+]

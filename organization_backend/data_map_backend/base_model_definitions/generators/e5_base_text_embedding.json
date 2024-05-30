@@ -1,0 +1,29 @@
+[
+{
+  "model": "data_map_backend.generator",
+  "pk": "e5_base_text_embedding",
+  "fields": {
+    "name": "E5 Base Text Embedding",
+    "description": "",
+    "created_at": "2023-09-19T13:21:41.885Z",
+    "changed_at": "2024-05-30T08:04:39.140Z",
+    "requires_context": false,
+    "module": "sentence_transformer",
+    "embedding_space": "intfloat/e5-base-v2",
+    "is_preferred_for_search": false,
+    "default_parameters": {
+      "prefix": "",
+      "model_name": "intfloat/e5-base-v2"
+    },
+    "parameter_description": "For E5 Models:\r\n\r\nprefix should be \"query:\" most of the time or \"passage:\" for retrieval documents\r\n\r\n\"query:\" is default when prefix is empty",
+    "input_type": "TEXT",
+    "input_is_array": false,
+    "input_description": "",
+    "output_type": "VECTOR",
+    "output_is_array": false,
+    "output_description": "",
+    "text_similarity_threshold": 0.78,
+    "image_similarity_threshold": null
+  }
+}
+]

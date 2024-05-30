@@ -1,0 +1,28 @@
+[
+{
+  "model": "data_map_backend.generator",
+  "pk": "fashionclip_image",
+  "fields": {
+    "name": "FashionCLIP Image",
+    "description": "",
+    "created_at": "2023-09-23T08:37:26.651Z",
+    "changed_at": "2024-05-30T08:05:01.619Z",
+    "requires_context": false,
+    "module": "clip_image",
+    "embedding_space": "patrickjohncyh/fashion-clip",
+    "is_preferred_for_search": false,
+    "default_parameters": {
+      "model_name": "patrickjohncyh/fashion-clip"
+    },
+    "parameter_description": "",
+    "input_type": "IMAGE",
+    "input_is_array": false,
+    "input_description": "",
+    "output_type": "VECTOR",
+    "output_is_array": false,
+    "output_description": "",
+    "text_similarity_threshold": 0.21,
+    "image_similarity_threshold": 0.6
+  }
+}
+]

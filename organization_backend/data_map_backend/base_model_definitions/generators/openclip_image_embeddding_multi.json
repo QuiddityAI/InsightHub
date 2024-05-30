@@ -1,0 +1,26 @@
+[
+{
+  "model": "data_map_backend.generator",
+  "pk": "openclip_image_embeddding_multi",
+  "fields": {
+    "name": "OpenCLIP Image Embeddding (multiple)",
+    "description": "",
+    "created_at": "2023-08-25T09:31:59.400Z",
+    "changed_at": "2024-05-30T08:05:30.339Z",
+    "requires_context": false,
+    "module": "x",
+    "embedding_space": "laion/clip-vit-h-14-laion2b-s32b-b79k",
+    "is_preferred_for_search": false,
+    "default_parameters": null,
+    "parameter_description": "",
+    "input_type": "IMAGE",
+    "input_is_array": true,
+    "input_description": "",
+    "output_type": "VECTOR",
+    "output_is_array": true,
+    "output_description": "",
+    "text_similarity_threshold": null,
+    "image_similarity_threshold": null
+  }
+}
+]
