@@ -18,7 +18,7 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import DATA_BACKEND_HOST
 
-from .models import CollectionColumn, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask
+from .models import CollectionColumn, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, ObjectField, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
@@ -207,6 +207,113 @@ class ExportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     actions = ['store_definition_as_code']
 
 
+@admin.register(DatasetField)
+class DatasetFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('id', 'schema', 'identifier', 'field_type', 'name')
+    list_display_links = ('id', 'identifier', 'name')
+    search_fields = ('identifier', 'name')
+    ordering = ['schema', 'identifier']
+
+    readonly_fields = ('changed_at', 'created_at')
+
+
+class DatasetFieldInline(admin.StackedInline):
+    model = DatasetField
+    readonly_fields = ('changed_at', 'created_at')
+    extra = 0
+
+    fields = [
+        "identifier", "name",
+        "field_type", "is_array", "language_analysis", "embedding_space", "index_parameters",
+        "is_available_for_search", "text_similarity_threshold", "image_similarity_threshold",
+        "is_available_for_filtering",
+        "generator", "generator_parameters", "generating_condition",
+        "source_fields", "should_be_generated",
+    ]
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit },
+    }
+
+
+@admin.register(DatasetSchema)
+class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False  # make normal search the default
+    list_display = ('identifier', 'name')
+    list_display_links = ('identifier', 'name')
+    search_fields = ('identifier', 'name')
+    ordering = ['identifier']
+
+    readonly_fields = ('changed_at', 'created_at', 'get_field_overview_table_html')
+
+    fields = [
+        "identifier", "name", "entity_name", "entity_name_plural", "short_description",
+        "primary_key", "thumbnail_image",
+        "descriptive_text_fields", "default_search_fields", "advanced_options",
+        "applicable_import_converters", "applicable_export_converters",
+        "get_field_overview_table_html",
+        "result_list_rendering", "hover_label_rendering", "detail_view_rendering",
+        "statistics",
+        "created_at", "changed_at",
+    ]
+
+    inlines = [
+        DatasetFieldInline,
+    ]
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit }
+    }
+
+
+    def get_field_overview_table_html(self, obj):
+        try:
+            header = ["Type", "Identifier", "Search / Filter / Generated", "Generator", "#"]
+            html = """<table style='border: 1px solid; border-collapse: collapse;'>\n<tr>"""
+            for item in header:
+                html += f"<th style='border: 1px solid;'>{item}</th>\n"
+            html += "</tr>\n"
+
+            for field in obj.object_fields.all():
+                html += "<tr style='border: 1px solid;'>\n"
+                html += f"<td style='border: 1px solid; padding-right: 4px;'>{field.field_type + ('[]' if field.is_array else '') + (' ' + field.language_analysis if field.language_analysis else '')}</td>\n"
+                html += f"<td style='border: 1px solid; padding-right: 4px;'><a href=\"/org/admin/data_map_backend/datasetfield/{field.id}/change/\">{field.identifier} {'<i>(PK)</i>' if obj.primary_key == field else ''}</a></td>\n"
+                thresholds = f"{field.text_similarity_threshold if field.text_similarity_threshold is not None else ''}"
+                thresholds += f" {field.image_similarity_threshold if field.image_similarity_threshold is not None else ''}"
+                attributes = f"{'s' if field.is_available_for_search else '-'} {thresholds} | {'f' if field.is_available_for_filtering else '-'} | {'g' if field.should_be_generated else '-'}"
+                html += f"<td style='border: 1px solid;'>{attributes}</td>\n"
+                html += f"<td style='border: 1px solid;'>{field.generator or ''}</td>\n"
+                html += f"<td style='border: 1px solid;' align='right'>{'TODO'}</td>\n"  # field.items_having_value_count}</td>\n"
+                html += "</tr>\n"
+
+            html += "</table>"
+
+            total_items = 0  # obj.item_count
+            if total_items:
+                for field in obj.object_fields.all():
+                    if field.field_type != FieldType.VECTOR:
+                        continue
+                    dimensions = get_vector_field_dimensions(field)
+                    if not dimensions:
+                        continue
+                    bytes_per_vector = 4
+                    space_needed_gb = (dimensions * bytes_per_vector * total_items) / 1024 / 1024 / 1024
+                    html += f"<br>TODO: Space needed for field '{field.identifier}': {space_needed_gb:.1f} GB"
+                    if field.is_array:
+                        html += " (with one array element per item)"
+        except Exception as e:
+            return repr(e)
+        return mark_safe(html)
+
+    get_field_overview_table_html.short_description='Field Overview'
+
+    class Media:
+        js = ('hide_objectfield_parameters.js',)
+
+
 class ObjectFieldInline(admin.StackedInline):
     model = ObjectField
     readonly_fields = ('changed_at', 'created_at', 'action_buttons', 'items_having_value_count')
@@ -358,13 +465,73 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         requests.post(url, json=data)
         self.message_user(request, "Updated the database layout")
 
-    change_actions = ('update_database_layout',)
-
     @action(label="Delete Content", description="Delete all items from the database")
     def delete_content(self, request, obj):
         obj.delete_content()
 
-    change_actions = ('update_database_layout', 'delete_content')
+    @takes_instance_or_queryset
+    def export_as_schema(self, request, queryset):
+        for obj in queryset:
+            try:
+                data = json.loads(serializers.serialize("json", [obj], indent=2))[0]['fields']
+                ignored_fields = ["is_template", "is_public", "is_organization_wide",
+                                  "organization", "origin_template", "created_in_ui",
+                                  "source_plugin", "source_plugin_parameters", "database_name",
+                                  "admins"]
+                for ignored_field in ignored_fields:
+                    data.pop(ignored_field, None)
+
+                data['primary_key'] = ObjectField.objects.get(id=data['primary_key']).identifier if data['primary_key'] else None
+                data['thumbnail_image'] = ObjectField.objects.get(id=data['thumbnail_image']).identifier if data['thumbnail_image'] else None
+
+                data['descriptive_text_fields'] = [ObjectField.objects.get(id=pk).identifier for pk in data['descriptive_text_fields']]
+                data['default_search_fields'] = [ObjectField.objects.get(id=pk).identifier for pk in data['default_search_fields']]
+
+                data['advanced_options'] = data['defaults']
+                del data['defaults']
+
+                data['identifier'] = obj.name.replace("/", "_").replace(" ", "_").lower()
+
+                data['object_fields'] = []
+                for field in obj.object_fields.all():
+                    field_data = json.loads(serializers.serialize("json", [field], indent=2))[0]['fields']
+                    ignored_fields = ["dataset"]
+                    for ignored_field in ignored_fields:
+                        field_data.pop(ignored_field, None)
+                    field_data['source_fields'] = field_data['source_fields_plain']
+                    del field_data['source_fields_plain']
+                    data['object_fields'].append(field_data)
+
+                json_data = json.dumps(data, indent=2)
+                path = "./data_map_backend/base_model_definitions/orig_schemas"
+                os.makedirs(path, exist_ok=True)
+                safe_identifier = obj.name.replace("/", "_").replace(" ", "_")
+                with open(os.path.join(path, f'{safe_identifier}.json'), 'w') as f:
+                    f.write(json_data)
+            except Exception as e:
+                logging.error(e)
+                self.message_user(request, "Failed to store definition")
+                return
+        self.message_user(request, "Stored definitions as schema")
+    export_as_schema.short_description = "Export as schema"
+
+    @takes_instance_or_queryset
+    def store_definition_as_code(self, request, queryset):
+        for obj in queryset:
+            try:
+                data = json.loads(serializers.serialize("json", [obj], indent=2))
+                json_data = json.dumps(data, indent=2)
+                path = "./data_map_backend/base_model_definitions/datasets"
+                os.makedirs(path, exist_ok=True)
+                safe_identifier = obj.name.replace("/", "_").replace(" ", "_")
+                with open(os.path.join(path, f'{safe_identifier}.json'), 'w') as f:
+                    f.write(json_data)
+            except Exception as e:
+                logging.error(e)
+                self.message_user(request, "Failed to store definition")
+                return
+        self.message_user(request, "Stored definitions as code")
+    store_definition_as_code.short_description = "Store definition in source code folder"
 
     def duplicate_datasets(self, request, queryset):
         for object in queryset:
@@ -379,7 +546,8 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
             object.delete_with_content()
     delete_with_content.short_description = "Delete and remove all items from database"
 
-    actions = ['duplicate_datasets', 'delete_with_content']
+    change_actions = ('export_as_schema', 'store_definition_as_code', 'update_database_layout', 'delete_content')
+    actions = ['export_as_schema', 'store_definition_as_code', 'duplicate_datasets', 'delete_with_content']
 
     class Media:
         js = ('hide_objectfield_parameters.js',)

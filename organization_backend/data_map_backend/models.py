@@ -248,6 +248,12 @@ class Organization(models.Model):
         to='Dataset',
         related_name='+',
         blank=True)
+    schemas_for_user_created_datasets = models.ManyToManyField(
+        verbose_name="Schemas for User-Created Datasets",
+        help_text="",
+        to='DatasetSchema',
+        related_name='+',
+        blank=True)
     workspace_tool_title = models.CharField(
         verbose_name="Workspace Tool Title",
         help_text="Title of the workspace tool in the frontend",
@@ -415,6 +421,263 @@ def get_default_hover_label_rendering():
 
 def get_default_detail_view_rendering():
     return get_rendering_json_field_default(['title', 'subtitle', 'body', 'image', 'url'])
+
+
+class DatasetSchema(models.Model):
+    identifier = models.CharField(
+        verbose_name="Identifier",
+        help_text="Do not change this after being used elsewhere",
+        max_length=200,
+        primary_key=True,
+        unique=True,
+        blank=False,
+        null=False)
+    name = models.CharField(
+        verbose_name="Display Name",
+        max_length=200,
+        blank=False,
+        null=False)
+    entity_name = models.CharField(
+        verbose_name="Entity Name",
+        help_text="The type of the entity, e.g. 'Product' or 'Article'",
+        max_length=40,
+        blank=True,
+        null=True)
+    entity_name_plural = models.CharField(
+        verbose_name="Entity Name (Plural)",
+        max_length=40,
+        blank=True,
+        null=True)
+    short_description = models.CharField(
+        verbose_name="Short Description",
+        max_length=200,
+        blank=True,
+        null=True)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=True,
+        null=True)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    primary_key = models.CharField(
+        verbose_name="Primary Key",
+        help_text="If set, this field is used to generate the internal '_id' field consistently, otherwise its a random UUID",
+        max_length=200,
+        blank=True,
+        null=True)
+    thumbnail_image = models.CharField(
+        verbose_name="Thumbnail Image",
+        help_text="Should point to a field with an image URL",
+        max_length=200,
+        blank=True,
+        null=True)
+    descriptive_text_fields = models.JSONField(
+        verbose_name="Descriptive Text Fields",
+        help_text="For Word2Vec, Cluster Titles and more",
+        default=list,
+        blank=True,
+        null=True)
+    default_search_fields = models.JSONField(
+        verbose_name="Default Search Fields",
+        help_text="Text or embedding fields (for hybrid search)",
+        default=list,
+        blank=True,
+        null=True)
+    advanced_options = models.JSONField(
+        verbose_name="Advanced Options",
+        help_text="Advanced options for the dataset, like defaults for map creation etc.",
+        default=dict,
+        blank=True,
+        null=True)
+    applicable_import_converters = models.ManyToManyField(
+        verbose_name="Applicable Import Converters",
+        to=ImportConverter,
+        related_name='+',
+        blank=True)
+    applicable_export_converters = models.ManyToManyField(
+        verbose_name="Applicable Export Converters",
+        to=ExportConverter,
+        related_name='+',
+        blank=True)
+    result_list_rendering = models.JSONField(
+        verbose_name="Result List Rendering",
+        default=get_default_result_list_rendering,
+        blank=True,
+        null=True)
+    hover_label_rendering =  models.JSONField(
+        verbose_name="Hover Label Rendering",
+        default=get_default_hover_label_rendering,
+        blank=True,
+        null=True)
+    detail_view_rendering =  models.JSONField(
+        verbose_name="Detail View Rendering",
+        default=get_default_detail_view_rendering,
+        blank=True,
+        null=True)
+    statistics = models.JSONField(
+        verbose_name="Statistics",
+        help_text="Statistics shown for the search results",
+        default=dict,
+        blank=True,
+        null=True)
+
+    def __str__(self):
+        return f"{self.name}"
+
+    class Meta:
+        verbose_name = "Dataset Schema"
+        verbose_name_plural = "Dataset Schemas"
+
+
+class DatasetField(models.Model):
+    identifier = models.CharField(
+        verbose_name="Identifier",
+        max_length=200,
+        blank=False,
+        null=False)
+    name = models.CharField(
+        verbose_name="Display Name",
+        max_length=200,
+        blank=True,
+        null=True)
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=True,
+        null=True)
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False)
+    schema = models.ForeignKey(
+        verbose_name="Schema",
+        to=DatasetSchema,
+        on_delete=models.CASCADE,
+        related_name='object_fields',
+        blank=False,
+        null=False)
+    description = models.CharField(
+        verbose_name="Description",
+        max_length=200,
+        blank=True,
+        null=True)
+    field_type = models.CharField(
+        verbose_name="Type",
+        max_length=50,
+        choices=FieldType.choices,
+        default=FieldType.TEXT,
+        blank=False,
+        null=False)
+    is_array = models.BooleanField(
+        verbose_name="Is array",
+        default=False,
+        blank=False,
+        null=False)
+    language_analysis = models.CharField(
+        verbose_name="Language Processing",
+        help_text="Only applicable for 'Text' fields",
+        max_length=50,
+        choices=LanguageAnalysis.choices,
+        blank=True,
+        null=True)
+    embedding_space = models.ForeignKey(
+        verbose_name="Embedding Space",
+        help_text="If not set, embedding space of generator will be used",
+        to=EmbeddingSpace,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True)
+    is_available_for_search = models.BooleanField(
+        verbose_name="Available for fulltext or vector search",
+        default=False,
+        blank=False,
+        null=False)
+    text_similarity_threshold = models.FloatField(
+        verbose_name="Text Similarity Threshold",
+        help_text="The minimum score / similarity a text query must have compared to this field to be considered relevant / similar (overriding the generators value)",
+        blank=True,
+        null=True)
+    image_similarity_threshold = models.FloatField(
+        verbose_name="Image Similarity Threshold",
+        help_text="The minimum score / similarity an image query must have compared to this field to be considered relevant / similar (overriding the generators value)",
+        blank=True,
+        null=True)
+    is_available_for_filtering = models.BooleanField(
+        verbose_name="Available for filtering",
+        default=False,
+        blank=False,
+        null=False)
+    index_parameters = models.JSONField(
+        verbose_name="Index Parameters",
+        blank=True,
+        null=True)
+    generator = models.ForeignKey(
+        verbose_name="Generator",
+        to=Generator,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True)
+    generator_parameters = models.JSONField(
+        verbose_name="Generator Parameters",
+        blank=True,
+        null=True)
+    generating_condition = models.TextField(
+        verbose_name="Generating Condition",
+        blank=True,
+        null=True)
+    source_fields = models.JSONField(
+        verbose_name="Source Fields",
+        help_text="List of source field identifiers",
+        default=list,
+        blank=True,
+        null=True)
+    should_be_generated = models.BooleanField(
+        verbose_name="Generate on insert / change",
+        help_text="Should be generated for new elements and when "\
+        "source fields are updated, not automatically generated for exisitng elements",
+        default=False,
+        blank=False,
+        null=False)
+
+
+    def items_having_value_count(self, dataset):
+        if not self.is_available_for_search and not self.is_available_for_filtering:
+            # OpenSearch can't easily count values that are not indexed
+            return "?"
+        try:
+            url = DATA_BACKEND_HOST + f'/data_backend/dataset/{dataset.id}/{self.identifier}/items_having_value_count'  # type: ignore
+            result = requests.get(url)
+            count = result.json()["count"]
+            if self.field_type == FieldType.VECTOR and self.is_array:
+                url = DATA_BACKEND_HOST + f'/data_backend/dataset/{dataset.id}/{self.identifier}/sub_items_having_value_count'  # type: ignore
+                result = requests.get(url)
+                sub_count = result.json()["count"]
+                return f"{count} (~{sub_count / count:.0f} ppi)"
+            else:
+                return count
+        except Exception as e:
+            return repr(e)
+
+    @property
+    def actual_embedding_space(self):
+        return self.embedding_space or self.generator.embedding_space if self.generator else None
+    actual_embedding_space.fget.short_description = "Actual Embedding Space"  # type: ignore
+
+    def __str__(self):
+        return f"{self.identifier}"
+
+    class Meta:
+        unique_together = [['schema', 'identifier']]
+        verbose_name = "Dataset Field"
+        verbose_name_plural = "Dataset Fields"
+        order_with_respect_to = "schema"
 
 
 class Dataset(models.Model):

@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.dateparse import parse_datetime
 from django.core.serializers.python import Deserializer
 
-from data_map_backend.models import EmbeddingSpace, Generator, ImportConverter, ExportConverter
+from data_map_backend.models import DatasetSchema, EmbeddingSpace, Generator, ImportConverter, ExportConverter
 from data_map_backend.utils import DotDict
 
 
@@ -20,6 +20,7 @@ class Command(BaseCommand):
         pass
 
     def handle(self, *args, **options):
+        self.import_original_datasets_as_schemas()
         self.load_model(EmbeddingSpace, "embedding_spaces")
         self.load_model(Generator, "generators")
         self.load_model(ImportConverter, "import_converters")
@@ -51,3 +52,32 @@ class Command(BaseCommand):
                 logging.warning(f"[Created] Object '{definition.pk}' does not exist yet and is being created")
                 obj = Deserializer([definition], ignorenonexistent=True).__next__()
                 obj.save()
+
+    def import_original_datasets_as_schemas(self):
+        logging.warning(f"--- Loading original datasets")
+        path = self.base_path + 'orig_schemas'
+        definitions = []
+        for file in os.listdir(path):
+            if file.endswith(".json"):
+                with open(path + "/" + file, "r") as f:
+                    data = json.load(f)
+                    definitions.append(DotDict(data))
+
+        for definition in definitions:
+            if DatasetSchema.objects.filter(pk=definition.identifier).exists():
+                logging.warning(f"[Up-to-date] Object '{definition.identifier}' is already up to date")
+                continue
+            logging.warning(f"[Created] Object '{definition.identifier}' does not exist yet and is being created")
+            fields = {item[0]: item[1] for item in definition.items() if item[0] not in ['applicable_import_converters', 'applicable_export_converters', 'object_fields']}
+            obj = DatasetSchema(
+                **fields  # type: ignore
+            )
+            obj.save()
+            obj.applicable_import_converters.set(definition.applicable_import_converters)
+            obj.applicable_export_converters.set(definition.applicable_export_converters)
+            obj.save()
+            for field in definition.object_fields:
+                field['generator'] = Generator.objects.get(pk=field['generator']) if field['generator'] is not None else None
+                field['embedding_space'] = EmbeddingSpace.objects.get(pk=field['embedding_space']) if field['embedding_space'] is not None else None
+                obj.object_fields.create(**field)  # type: ignore
+            obj.save()
