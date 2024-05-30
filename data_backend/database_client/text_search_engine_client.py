@@ -275,7 +275,8 @@ class TextSearchEngineClient(object):
     def get_search_results(self, dataset: DotDict, search_fields, filters: list[dict],
                            query_positive, query_negative, page, limit, return_fields,
                            highlights=False, use_bolding_in_highlights:bool=True,
-                           highlight_query: str | None = None, ignored_highlight_fields: list | None = None):
+                           highlight_query: str | None = None, ignored_highlight_fields: list | None = None,
+                           default_operator: str = "and"):
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
             return use_remote_db(
                 dataset=dataset,
@@ -300,7 +301,7 @@ class TextSearchEngineClient(object):
                     'simple_query_string': {
                         'query': self._convert_to_simple_query_language(query_positive),
                         'fields': search_fields,
-                        'default_operator': 'and',
+                        'default_operator': default_operator,
                     }
                 }
         else:
@@ -310,7 +311,7 @@ class TextSearchEngineClient(object):
                     'simple_query_string': {
                         'query': self._convert_to_simple_query_language(query_positive),
                         'fields': search_fields,
-                        'default_operator': 'and',
+                        'default_operator': default_operator,
                     }
                 },
                 '_source': return_fields,

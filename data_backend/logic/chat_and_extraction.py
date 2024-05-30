@@ -30,6 +30,7 @@ def get_global_question_context(search_settings: dict) -> dict:
     search_settings["max_sub_items_per_item"] = 2
     search_settings["return_highlights"] = True
     search_settings["use_bolding_in_highlights"] = False
+    search_settings["auto_relax_query"] = True
 
     try:
         params_str = json.dumps({'search': search_settings}, indent=2)  # for caching

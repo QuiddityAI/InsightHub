@@ -226,9 +226,11 @@ def separate_text_and_vector_fields(dataset: DotDict, fields: Iterable[str]):
 
 def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query: QueryInput, filters: list[dict],
                                 required_fields: list[str], limit: int, page: int, return_highlights: bool = False,
-                                use_bolding_in_highlights: bool = True):
+                                use_bolding_in_highlights: bool = True, auto_relax_query: bool = False):
     text_db_client = TextSearchEngineClient.get_instance()
     search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights)
+    if auto_relax_query and total_matches == 0:
+        search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, default_operator='or')
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     ignored_keyword_highlight_fields = dataset.schema.advanced_options.ignored_keyword_highlight_fields or []
