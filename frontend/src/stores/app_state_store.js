@@ -106,6 +106,7 @@ export const useAppStateStore = defineStore("appState", {
           internal_input_weight: 0.7,
           use_similarity_thresholds: true,
           order_by: { type: "score", parameter: "" },
+          auto_relax_query: false,
           use_reranking: true,
           use_autocut: true,
           autocut_strategy: "knee_point",
