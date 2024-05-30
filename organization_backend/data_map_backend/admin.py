@@ -150,6 +150,26 @@ class ImportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         models.JSONField: {'widget': JSONSuit },
     }
 
+    @takes_instance_or_queryset
+    def store_definition_as_code(self, request, queryset):
+        for obj in queryset:
+            try:
+                data = serializers.serialize("json", [obj], indent=2)
+                path = "./data_map_backend/base_model_definitions/import_converters"
+                os.makedirs(path, exist_ok=True)
+                safe_identifier = obj.identifier.replace("/", "_")
+                with open(os.path.join(path, f'{safe_identifier}.json'), 'w') as f:
+                    f.write(data)
+            except Exception as e:
+                logging.error(e)
+                self.message_user(request, "Failed to store definition")
+                return
+        self.message_user(request, "Stored definitions as code")
+    store_definition_as_code.short_description = "Store definition in source code folder"
+
+    change_actions = ('store_definition_as_code',)
+    actions = ['store_definition_as_code']
+
 
 @admin.register(ExportConverter)
 class ExportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
@@ -165,6 +185,26 @@ class ExportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
         models.JSONField: {'widget': JSONSuit },
     }
+
+    @takes_instance_or_queryset
+    def store_definition_as_code(self, request, queryset):
+        for obj in queryset:
+            try:
+                data = serializers.serialize("json", [obj], indent=2)
+                path = "./data_map_backend/base_model_definitions/export_converters"
+                os.makedirs(path, exist_ok=True)
+                safe_identifier = obj.identifier.replace("/", "_")
+                with open(os.path.join(path, f'{safe_identifier}.json'), 'w') as f:
+                    f.write(data)
+            except Exception as e:
+                logging.error(e)
+                self.message_user(request, "Failed to store definition")
+                return
+        self.message_user(request, "Stored definitions as code")
+    store_definition_as_code.short_description = "Store definition in source code folder"
+
+    change_actions = ('store_definition_as_code',)
+    actions = ['store_definition_as_code']
 
 
 class ObjectFieldInline(admin.StackedInline):

@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils.dateparse import parse_datetime
 from django.core.serializers.python import Deserializer
 
-from data_map_backend.models import EmbeddingSpace, Generator
+from data_map_backend.models import EmbeddingSpace, Generator, ImportConverter, ExportConverter
 from data_map_backend.utils import DotDict
 
 
@@ -22,6 +22,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.load_model(EmbeddingSpace, "embedding_spaces")
         self.load_model(Generator, "generators")
+        self.load_model(ImportConverter, "import_converters")
+        self.load_model(ExportConverter, "export_converters")
 
     def load_model(self, model_class, sub_path):
         logging.warning(f"--- Loading model '{model_class.__name__}'")
