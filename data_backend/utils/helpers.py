@@ -72,9 +72,9 @@ def join_extracted_text_sources(source_texts: list[str | list]) -> str:
     for content in source_texts:
         if not content:
             continue
-        if isinstance(content, list):
+        elif isinstance(content, list):
             texts.append(" ".join(content))
-        if isinstance(content, dict):
+        elif isinstance(content, dict):
             # assuming that this is a text chunk with metadata, should be handled better (e.g. with field type)
             texts.append(f'{content.get("prefix")}{content.get("text")}{content.get("suffix")}')
         else:
