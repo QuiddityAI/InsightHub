@@ -51,7 +51,6 @@ class EmbeddingSpaceAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistor
         for obj in queryset:
             try:
                 data = serializers.serialize("json", [obj], indent=2)
-                #path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'embedding_spaces')
                 path = "./data_map_backend/base_model_definitions/embedding_spaces"
                 os.makedirs(path, exist_ok=True)
                 safe_identifier = obj.identifier.replace("/", "_")
@@ -82,6 +81,26 @@ class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
         models.JSONField: {'widget': JSONSuit },
     }
+
+    @takes_instance_or_queryset
+    def store_definition_as_code(self, request, queryset):
+        for obj in queryset:
+            try:
+                data = serializers.serialize("json", [obj], indent=2)
+                path = "./data_map_backend/base_model_definitions/generators"
+                os.makedirs(path, exist_ok=True)
+                safe_identifier = obj.identifier.replace("/", "_")
+                with open(os.path.join(path, f'{safe_identifier}.json'), 'w') as f:
+                    f.write(data)
+            except Exception as e:
+                logging.error(e)
+                self.message_user(request, "Failed to store definition")
+                return
+        self.message_user(request, "Stored definitions as code")
+    store_definition_as_code.short_description = "Store definition in source code folder"
+
+    change_actions = ('store_definition_as_code',)
+    actions = ['store_definition_as_code']
 
 
 class DatasetInline(admin.TabularInline):
