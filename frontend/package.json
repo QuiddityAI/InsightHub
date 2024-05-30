@@ -13,6 +13,7 @@
     "@heroicons/vue": "^2.0.18",
     "apexcharts": "^3.46.0",
     "axios": "^1.4.0",
+    "cbor-x": "^1.5.9",
     "chart.js": "^4.4.0",
     "chartjs-plugin-annotation": "^3.0.1",
     "inter-ui": "^4.0.2",

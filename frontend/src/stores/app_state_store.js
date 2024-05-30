@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 import { inject } from "vue"
-import cborJs from "https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/+esm"
+import { decode as cborDecode } from 'cbor-x';
 import { useToast } from "primevue/usetoast"
 
 import { httpClient } from "../api/httpClient"
@@ -859,7 +859,7 @@ export const useAppStateStore = defineStore("appState", {
       const that = this
       const content_type = response.headers["content-type"]
       const data =
-        content_type == "application/cbor" ? cborJs.decode(response.data) : response.data
+        content_type == "application/cbor" ? cborDecode(new Uint8Array(response.data)) : response.data
       that.map_data = data
 
       if (data["finished"]) {
