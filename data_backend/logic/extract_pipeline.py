@@ -23,7 +23,7 @@ def get_pipeline_steps(dataset_: dict, ignored_fields: list[str] = [], enabled_f
         phase_steps: list[dict] = []
         steps_added_this_phase: list[str] = []
         any_field_skipped = False
-        for field in dataset.object_fields.values():
+        for field in dataset.schema.object_fields.values():
             if field.identifier in steps_added: continue
             this_field_skipped: bool = False
 
@@ -32,7 +32,7 @@ def get_pipeline_steps(dataset_: dict, ignored_fields: list[str] = [], enabled_f
                     or field.identifier in enabled_fields):
                 dependencies: list[str] = field.source_fields
                 for dep in dependencies:
-                    if dataset.object_fields[dep].generator and dep not in steps_added:
+                    if dataset.schema.object_fields[dep].generator and dep not in steps_added:
                         this_field_skipped = True
                         enabled_fields.append(dep)
                         break
@@ -71,7 +71,7 @@ def has_circular_dependency(dataset: dict) -> bool:
         steps_added_this_phase = []
         any_field_skipped = False
         any_field_added = False
-        for field in dataset.object_fields.values():
+        for field in dataset.schema.object_fields.values():
             if field.identifier in steps_added: continue
             this_field_skipped = False
             dependencies = field.source_fields

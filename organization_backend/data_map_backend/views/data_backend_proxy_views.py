@@ -105,7 +105,7 @@ def _check_remote_db_access(request):
     params = DotDict(json.loads(request.body))
     dataset = Dataset.objects.get(id=params.dataset_id)
     access_token = params.access_token
-    assert isinstance(dataset.defaults, dict)
-    if access_token not in dataset.defaults.get('access_tokens', {}):
+    assert isinstance(dataset.schema.advanced_options, dict)
+    if access_token not in dataset.schema.advanced_options.get('access_tokens', {}):
         return False
     return True

@@ -51,7 +51,7 @@ class VectorSearchEngineClient(object):
 
     def ensure_dataset_field_exists(self, dataset: dict, vector_field: str, update_params: bool = False, delete_if_params_changed: bool = False):
         dataset = DotDict(dataset)
-        field = dataset.object_fields[vector_field]
+        field = dataset.schema.object_fields[vector_field]
         if not (field.is_available_for_search and field.field_type == FieldType.VECTOR):
             logging.error(f"Field is not supposed to be indexed: {field.identifier}")
             raise ValueError(f"Field is not supposed to be indexed: {field.identifier}")
@@ -111,7 +111,7 @@ class VectorSearchEngineClient(object):
         }
 
         # create payload indexes:
-        for other_field in dataset.object_fields.values():
+        for other_field in dataset.schema.object_fields.values():
             if not other_field.is_available_for_filtering:
                 continue
             if other_field.field_type not in indexable_field_type_to_qdrant_type:

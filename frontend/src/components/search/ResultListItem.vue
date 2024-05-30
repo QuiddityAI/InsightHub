@@ -32,7 +32,7 @@ export default {
       const payload = {
         dataset_id: this.item._dataset_id,
         item_id: this.item._id,
-        fields: this.appStateStore.datasets[this.item._dataset_id].result_list_rendering.required_fields,
+        fields: this.appStateStore.datasets[this.item._dataset_id].schema.result_list_rendering.required_fields,
       }
       this.loading_item = true
       httpClient

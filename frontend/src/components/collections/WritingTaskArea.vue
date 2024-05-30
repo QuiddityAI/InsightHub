@@ -63,7 +63,7 @@ export default {
     available_source_fields() {
       const available_fields = {}
       // for (const dataset of this.included_datasets) {
-      //   for (const field of Object.values(dataset.object_fields)) {
+      //   for (const field of Object.values(dataset.schema.object_fields)) {
       //     available_fields[field.identifier] = {
       //       identifier: field.identifier,
       //       name: field.name || field.identifier,

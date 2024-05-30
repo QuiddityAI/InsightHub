@@ -50,7 +50,7 @@ export default {
     updateItemAndRendering() {
       if (!this.item || !this.item._id) return
       const that = this
-      const rendering = this.dataset.detail_view_rendering
+      const rendering = this.dataset.schema.detail_view_rendering
       for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon", "full_text_pdf_url"]) {
         // eval?.('"use strict"; ' + code) prevents access to local variables and
         // any new variable or function declarations are scoped instead of global
@@ -65,7 +65,7 @@ export default {
       const payload = {
         dataset_id: this.dataset.id,
         item_id: this.item._id,
-        fields: this.dataset.detail_view_rendering.required_fields,
+        fields: this.dataset.schema.detail_view_rendering.required_fields,
         relevant_parts: this.item._relevant_parts,
         get_text_search_highlights: true,
         top_n_full_text_chunks: 3,
@@ -159,7 +159,7 @@ export default {
       <div v-if="relevant_chunk.value">
         <div class="flex flex-row items-center">
           <div class="font-semibold text-gray-600 text-sm">Relevant Part in
-            {{ appState.datasets[item._dataset_id].object_fields[relevant_chunk.field]?.name }}{{ relevant_chunk.value?.page ? `, Page ${relevant_chunk.value.page}` : "" }}
+            {{ appState.datasets[item._dataset_id].schema.object_fields[relevant_chunk.field]?.name }}{{ relevant_chunk.value?.page ? `, Page ${relevant_chunk.value.page}` : "" }}
             <span class="text-gray-400">(based on meaning)</span>
           </div>
           <div class="flex-1"></div>
@@ -184,7 +184,7 @@ export default {
 
     <div v-for="highlight in relevant_keyword_highlights" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
       <div class="font-semibold text-gray-600 text-sm">Relevant Part in
-        {{ appState.datasets[item._dataset_id].object_fields[highlight.field]?.name || appState.datasets[item._dataset_id].object_fields[highlight.field]?.identifier }}
+        {{ appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.name || appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.identifier }}
         <span class="text-gray-400">(based on keywords)</span>
       </div>
       <div class="mt-1 text-gray-700 text-xs" v-html="highlight.value"></div>
@@ -195,7 +195,7 @@ export default {
         v-tooltip.bottom="{ value: `Export this item in different formats`, showDelay: 500 }"
         @click="show_export_dialog = true"
         class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
-        {{ dataset.defaults.export_button_name || "Export" }}
+        {{ dataset.schema.advanced_options.export_button_name || "Export" }}
       </button>
       <div v-for="link in rendering ? rendering.links : []">
         <button v-if="link.url(item)"
@@ -205,7 +205,7 @@ export default {
       </div>
     </div>
 
-    <Dialog v-model:visible="show_export_dialog" modal :header="dataset.defaults.export_button_name || 'Export'">
+    <Dialog v-model:visible="show_export_dialog" modal :header="dataset.schema.advanced_options.export_button_name || 'Export'">
       <ExportSingleItem :dataset="dataset" :item="item">
       </ExportSingleItem>
     </Dialog>
@@ -227,7 +227,7 @@ export default {
             ">
       </AddToCollectionButtons>
       <button
-        v-tooltip.bottom="{ value: `Show similar ${dataset.entity_name_plural} in currently selected datasets\n(based on 'meaning')`, showDelay: 500 }"
+        v-tooltip.bottom="{ value: `Show similar ${dataset.schema.entity_name_plural} in currently selected datasets\n(based on 'meaning')`, showDelay: 500 }"
         @click="appState.show_similar_items(appState.selected_document_ds_and_id, item)"
         class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         Similar Items

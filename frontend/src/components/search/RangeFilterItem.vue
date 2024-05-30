@@ -77,7 +77,7 @@ export default {
       this.min_value = min_value
       this.value = [min_value, max_value]
       const any_ds_field_is_integer = this.appStateStore.settings.search.dataset_ids.some(
-        (ds_id) => this.appStateStore.datasets[ds_id]?.object_fields[this.range_filter.field]?.field_type === FieldType.INTEGER
+        (ds_id) => this.appStateStore.datasets[ds_id]?.schema.object_fields[this.range_filter.field]?.field_type === FieldType.INTEGER
       )
       this.use_integers = any_ds_field_is_integer || (max_value - min_value) > 5
       this.step_size = this.use_integers ? 1 : (max_value - min_value) / 100

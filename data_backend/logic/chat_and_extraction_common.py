@@ -18,7 +18,7 @@ def get_context_for_each_item_in_search_results(sorted_ids: list[tuple[int, str]
 
 
 def _item_to_context(item: dict, dataset: DotDict, reranked_chunks: int=0, question: str | None=None) -> str:
-    always_included_fields = dataset.descriptive_text_fields
+    always_included_fields = dataset.schema.descriptive_text_fields
     _sort_fields_logically(always_included_fields)
 
     missing_fields = [field for field in always_included_fields if field not in item]
@@ -26,10 +26,10 @@ def _item_to_context(item: dict, dataset: DotDict, reranked_chunks: int=0, quest
     chunk_fields_with_relevant_parts: list[str] = [part.get('field') for part in item.get("_relevant_parts", []) if part.get("index") is not None]
     missing_fields += [field for field in chunk_fields_with_relevant_parts if field not in item]
 
-    if question and reranked_chunks > 0 and dataset.defaults.get("full_text_chunk_embeddings"):
+    if question and reranked_chunks > 0 and dataset.schema.advanced_options.get("full_text_chunk_embeddings"):
         # oversample chunks and rerank:
-        chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
-        chunk_source_field = dataset.object_fields[chunk_vector_field_name].source_fields[0] if dataset.object_fields[chunk_vector_field_name].source_fields else None
+        chunk_vector_field_name = dataset.schema.advanced_options.get("full_text_chunk_embeddings")
+        chunk_source_field = dataset.schema.object_fields[chunk_vector_field_name].source_fields[0] if dataset.schema.object_fields[chunk_vector_field_name].source_fields else None
         missing_fields += [chunk_source_field]
         missing_fields = tuple(set(missing_fields))
         relevant_parts_json = json.dumps(item.get("_relevant_parts", []))

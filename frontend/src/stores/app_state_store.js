@@ -118,7 +118,7 @@ export const useAppStateStore = defineStore("appState", {
             // query_negative: "",
             // must: false,
             // threshold_offset: 0.0,
-            // use_for_combined_search: that.dataset.default_search_fields.includes(field.identifier),
+            // use_for_combined_search: that.dataset.schema.default_search_fields.includes(field.identifier),
           },
           filters: [
             // for each filter:
@@ -384,22 +384,22 @@ export const useAppStateStore = defineStore("appState", {
     },
     prepare_dataset_object(dataset) {
       // convert strings to functions:
-      const result_list_rendering = dataset.result_list_rendering
+      const result_list_rendering = dataset.schema.result_list_rendering
       for (const field of ["title", "subtitle", "body", "image", "url", "icon"]) {
         // eval?.('"use strict"; ' + code) prevents access to local variables and
         // any new variable or function declarations are scoped instead of global
         // (still a major security risk, more meant to prevent accidental bugs)
         result_list_rendering[field] = eval?.('"use strict"; ' + result_list_rendering[field]) || ((item) => null)
       }
-      dataset.result_list_rendering = result_list_rendering
+      dataset.schema.result_list_rendering = result_list_rendering
 
-      const hover_label_rendering = dataset.hover_label_rendering
+      const hover_label_rendering = dataset.schema.hover_label_rendering
       for (const field of ["title", "subtitle", "body", "image"]) {
         hover_label_rendering[field] = hover_label_rendering[field]
           ? eval?.('"use strict"; ' + hover_label_rendering[field])
           : (item) => ""
       }
-      dataset.hover_label_rendering = hover_label_rendering
+      dataset.schema.hover_label_rendering = hover_label_rendering
       return dataset
     },
     on_selected_datasets_changed() {
@@ -409,16 +409,16 @@ export const useAppStateStore = defineStore("appState", {
       history.replaceState(null, null, "?" + queryParams.toString())
       this.populate_search_fields_based_on_selected_datasets()
       // update default search settings:
-      this.settings.search.search_algorithm = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].defaults.search_algorithm).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
+      this.settings.search.search_algorithm = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].schema.advanced_options.search_algorithm).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
       this.settings.frontend.rendering.max_opacity = this.default_settings.frontend.rendering.max_opacity
       this.settings.frontend.rendering.point_size_factor = this.default_settings.frontend.rendering.point_size_factor
       for (const dataset_id of this.settings.search.dataset_ids) {
         const dataset = this.datasets[dataset_id]
-        if (dataset.defaults.max_opacity != undefined) {
-          this.settings.frontend.rendering.max_opacity = dataset.defaults.max_opacity
+        if (dataset.schema.advanced_options.max_opacity != undefined) {
+          this.settings.frontend.rendering.max_opacity = dataset.schema.advanced_options.max_opacity
         }
-        if (dataset.defaults.point_size_factor != undefined) {
-          this.settings.frontend.rendering.point_size_factor = dataset.defaults.point_size_factor
+        if (dataset.schema.advanced_options.point_size_factor != undefined) {
+          this.settings.frontend.rendering.point_size_factor = dataset.schema.advanced_options.point_size_factor
         }
       }
     },
@@ -433,14 +433,14 @@ export const useAppStateStore = defineStore("appState", {
 
       const all_default_search_fields = Object.values(this.datasets)
         .filter(dataset => this.settings.search.dataset_ids.includes(dataset.id))
-        .map(dataset => dataset.default_search_fields)
+        .map(dataset => dataset.schema.default_search_fields)
         .reduce((acc, fields) => acc.concat(fields), []);
 
       for (const dataset_id of this.settings.search.dataset_ids) {
         const dataset = this.datasets[dataset_id]
 
         // initialize available search fields:
-        for (const field of Object.values(dataset.object_fields)) {
+        for (const field of Object.values(dataset.schema.object_fields)) {
           if (field.is_available_for_search) {
             that.settings.search.separate_queries[field.identifier] = {
               query: "",
@@ -455,7 +455,7 @@ export const useAppStateStore = defineStore("appState", {
         }
 
         // initialize available number and vector fields:
-        for (const field of Object.values(dataset.object_fields)) {
+        for (const field of Object.values(dataset.schema.object_fields)) {
           if (field.field_type == FieldType.VECTOR) {
             that.available_vector_fields.push([dataset.id, field.identifier])
           } else if (
@@ -468,7 +468,7 @@ export const useAppStateStore = defineStore("appState", {
       }
 
       // select best map vector field:
-      const default_map_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].defaults.map_vector_field)
+      const default_map_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].schema.advanced_options.map_vector_field)
       // if all datasets have the same default map vector field, use it:
       if (default_map_fields.every((field) => field == default_map_fields[0]) && default_map_fields[0] != undefined) {
         that.settings.vectorize.map_vector_field = default_map_fields[0]
@@ -478,7 +478,7 @@ export const useAppStateStore = defineStore("appState", {
         for (const field of default_map_fields) {
           let all_datasets_have_field = true
           for (const dataset_id of this.settings.search.dataset_ids) {
-            if (!this.datasets[dataset_id].object_fields[field]) {
+            if (!this.datasets[dataset_id].schema.object_fields[field]) {
               all_datasets_have_field = false
               break
             }
@@ -492,7 +492,7 @@ export const useAppStateStore = defineStore("appState", {
       }
 
       // select best size field:
-      const default_size_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].defaults.size_field)
+      const default_size_fields = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].schema.advanced_options.size_field)
       // if all datasets have the same default size field, use it:
       if (default_size_fields.every((field) => field == default_size_fields[0]) && default_size_fields[0] != undefined) {
         that.settings.rendering.size.type = "number_field"
@@ -503,7 +503,7 @@ export const useAppStateStore = defineStore("appState", {
         for (const field of default_size_fields) {
           let all_datasets_have_field = true
           for (const dataset_id of this.settings.search.dataset_ids) {
-            if (!this.datasets[dataset_id].object_fields[field]) {
+            if (!this.datasets[dataset_id].schema.object_fields[field]) {
               all_datasets_have_field = false
               break
             }
@@ -924,7 +924,7 @@ export const useAppStateStore = defineStore("appState", {
             const attr_params = that.settings.rendering[attr]
             const is_hue_attr = ["hue", "secondary_hue"].includes(attr)
             const is_integer_attr_type = ["cluster_idx", "origin_query_idx"].includes(attr_params.type)
-            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.mapState.map_parameters?.search.dataset_ids[0]].object_fields[attr_params.parameter]?.field_type == FieldType.INTEGER
+            const is_integer_field = attr_params.type == "number_field" && that.datasets[that.mapState.map_parameters?.search.dataset_ids[0]].schema.object_fields[attr_params.parameter]?.field_type == FieldType.INTEGER
             if (is_hue_attr && (is_integer_attr_type || is_integer_field)) {
               // if an integer value is assigned to a hue value, we need to make sure that the last value doesn't have
               // the same hue as the first value:
@@ -1122,7 +1122,7 @@ export const useAppStateStore = defineStore("appState", {
       // use currently selected datasets, no need to change them
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
-      const title_func = this.datasets[item_ds_and_id[0]].hover_label_rendering.title
+      const title_func = this.datasets[item_ds_and_id[0]].schema.hover_label_rendering.title
       if (!full_item) {
         const ds_items = this.map_item_details[item_ds_and_id[0]]
         full_item = ds_items ? ds_items[item_ds_and_id[1]] : null
@@ -1144,7 +1144,7 @@ export const useAppStateStore = defineStore("appState", {
       return this.datasets[dataset_id]
     },
     get_hover_rendering_by_index(item_index) {
-      return this.get_dataset_by_index(item_index)?.hover_label_rendering
+      return this.get_dataset_by_index(item_index)?.schema.hover_label_rendering
     },
     store_current_map() {
       const that = this

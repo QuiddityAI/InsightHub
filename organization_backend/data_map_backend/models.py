@@ -686,6 +686,13 @@ class Dataset(models.Model):
         max_length=200,
         blank=False,
         null=False)
+    schema = models.ForeignKey(
+        verbose_name="Schema",
+        to=DatasetSchema,
+        on_delete=models.PROTECT,
+        related_name='datasets',
+        blank=False,
+        null=False)
     entity_name = models.CharField(
         verbose_name="Entity Name",
         help_text="The type of the entity, e.g. 'Product' or 'Article'",
@@ -1789,7 +1796,7 @@ class Chat(models.Model):
                     if item.field_type == FieldType.IDENTIFIER:
                         assert item.dataset_id is not None
                         assert item.item_id is not None
-                        fields = list(Dataset.objects.get(id=item.dataset_id).descriptive_text_fields.all().values_list("identifier", flat=True))
+                        fields = list(Dataset.objects.get(id=item.dataset_id).schema.descriptive_text_fields.all().values_list("identifier", flat=True))  # type: ignore
                         fields.append("_id")
                         full_item = get_item_by_id(item.dataset_id, item.item_id, fields)
                         text = json.dumps(full_item, indent=2)

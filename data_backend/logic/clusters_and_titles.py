@@ -44,7 +44,7 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
     for result_index, cluster_id in enumerate(cluster_id_per_point):
         if cluster_id <= -1: continue
         ds_id, item_id = sorted_ids[result_index]
-        descriptive_text_fields = datasets[ds_id].get("descriptive_text_fields", [])
+        descriptive_text_fields = datasets[ds_id].get('schema', {}).get("descriptive_text_fields", [])
         text = join_text_source_fields(items_by_dataset[ds_id][item_id], descriptive_text_fields, field_boundary_indicator_padded)
         texts_per_item.append(text)
         texts_per_cluster[cluster_id] += f" {field_boundary_indicator} {text[:max_text_length]}"

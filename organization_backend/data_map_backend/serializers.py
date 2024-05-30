@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import Chat, CollectionColumn, DataCollection, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier, WritingTask
+from .models import Chat, CollectionColumn, DataCollection, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, ObjectField, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier, WritingTask
 
 
 class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
@@ -28,6 +28,16 @@ class ObjectFieldSerializer(drf_serializers.ModelSerializer):
         exclude = ['created_at', 'changed_at', '_order']
 
 
+class DatasetFieldSerializer(drf_serializers.ModelSerializer):
+    generator = GeneratorSerializer(read_only=True)
+    embedding_space = EmbeddingSpaceSerializer(read_only=True)
+    actual_embedding_space = EmbeddingSpaceSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = DatasetField
+        exclude = ['created_at', 'changed_at', '_order']
+
+
 class OrganizationSerializer(drf_serializers.ModelSerializer):
     datasets = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     default_dataset_selection = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
@@ -49,16 +59,20 @@ class ExportConverterSerializer(drf_serializers.ModelSerializer):
         exclude = ['created_at', 'changed_at']
 
 
-class DatasetSerializer(drf_serializers.ModelSerializer):
-    admins = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    object_fields = ObjectFieldSerializer(many=True, read_only=True)
-    actual_database_name = drf_serializers.ReadOnlyField()
-    primary_key = drf_serializers.StringRelatedField(many=False, read_only=True)
-    thumbnail_image = drf_serializers.StringRelatedField(many=False, read_only=True)
-    descriptive_text_fields = drf_serializers.StringRelatedField(many=True, read_only=True)
-    default_search_fields = drf_serializers.StringRelatedField(many=True, read_only=True)
+class DatasetSchemaSerializer(drf_serializers.ModelSerializer):
+    object_fields = DatasetFieldSerializer(many=True, read_only=True)
     applicable_import_converters = ImportConverterSerializer(many=True, read_only=True)
     applicable_export_converters = ExportConverterSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DatasetSchema
+        exclude = ['created_at', 'changed_at']
+
+
+class DatasetSerializer(drf_serializers.ModelSerializer):
+    admins = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    actual_database_name = drf_serializers.ReadOnlyField()
+    schema = DatasetSchemaSerializer(many=False, read_only=True)
 
     class Meta:
         model = Dataset

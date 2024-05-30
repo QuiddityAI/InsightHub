@@ -33,7 +33,7 @@ from logic.search_common import get_document_details_by_id
 
 def get_embedding_space_from_ds_and_field(ds_and_field: tuple[int, str]) -> DotDict:
     dataset: DotDict = get_dataset(ds_and_field[0])
-    field = dataset.object_fields[ds_and_field[1]]
+    field = dataset.schema.object_fields[ds_and_field[1]]
     embedding_space = field.generator.embedding_space if field.generator else field.embedding_space
     return DotDict(embedding_space)
 
@@ -114,10 +114,10 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
             if dataset_specific_settings:
                 source_fields = dataset_specific_settings.relevant_object_fields
             else:
-                source_fields = dataset.default_search_fields
-            for field_name in chain(source_fields, dataset.object_fields.keys()):
-                if field_name in dataset.object_fields:
-                    field = dataset.object_fields[field_name]
+                source_fields = dataset.schema.default_search_fields
+            for field_name in chain(source_fields, dataset.schema.object_fields.keys()):
+                if field_name in dataset.schema.object_fields:
+                    field = dataset.schema.object_fields[field_name]
                     try:
                         field_embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
                     except AttributeError:
@@ -129,7 +129,7 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
                 included_dataset_ids.add((dataset_id, vector_field))
                 try:
                     logging.warning(f'Getting vector for {dataset_id} {item_id} {vector_field}')
-                    is_array_field = dataset.object_fields[vector_field].is_array
+                    is_array_field = dataset.schema.object_fields[vector_field].is_array
                     results = vector_db_client.get_items_by_ids(dataset, [item_id], vector_field, is_array_field, return_vectors=True, return_payloads=False)
                 except Exception as e:
                     logging.warning(e)
@@ -171,7 +171,7 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
             for dataset_id, vector_field in included_dataset_ids:
                 dataset = get_dataset(dataset_id)
                 random_items = text_search_engine_client.get_random_items(dataset.actual_database_name, negative_items_per_dataset, [])
-                is_array_field = dataset.object_fields[vector_field].is_array
+                is_array_field = dataset.schema.object_fields[vector_field].is_array
                 results = vector_db_client.get_items_by_ids(dataset, [e['_id'] for e in random_items], vector_field, is_array_field, return_vectors=True, return_payloads=False)
                 for result in results:
                     vector = result.vector[vector_field]

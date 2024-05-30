@@ -96,7 +96,7 @@ def add_missing_map_vectors(items: dict[str, dict], query, params: DotDict, map_
     map_data["progress"]["total_steps"] = len(items)
     map_data["progress"]["current_step"] = 0
 
-    map_vector_field = dataset.object_fields[params.vectorize.map_vector_field]
+    map_vector_field = dataset.schema.object_fields[params.vectorize.map_vector_field]
     t1 = time.time()
 
     # try to get embeddings from cache:

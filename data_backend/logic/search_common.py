@@ -192,7 +192,7 @@ def sort_items_and_complete_them(dataset:DotDict, total_items:dict, required_fie
 
 
 def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
-    rendering = dataset.result_list_rendering if purpose == "list" else dataset.hover_label_rendering
+    rendering = dataset.schema.result_list_rendering if purpose == "list" else dataset.schema.hover_label_rendering
     required_fields = rendering['required_fields']
 
     if purpose == "map" and vectorize_settings.map_vector_field \
@@ -200,14 +200,14 @@ def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
         and vectorize_settings.map_vector_field not in required_fields:
         required_fields.append(vectorize_settings.map_vector_field)
 
-    if purpose == "map" and dataset.thumbnail_image:
-        required_fields.append(dataset.thumbnail_image)
+    if purpose == "map" and dataset.schema.thumbnail_image:
+        required_fields.append(dataset.schema.thumbnail_image)
 
     if purpose == "map":
         # used for cluster titles and potentially w2v:
         # TODO: this may be slow, maybe use only subset for cluster titles?
-        required_fields += dataset.descriptive_text_fields
-        required_fields += dataset.get("statistics", {}).get("required_fields", [])
+        required_fields += dataset.schema.descriptive_text_fields
+        required_fields += dataset.schema.get("statistics", {}).get("required_fields", [])
 
     required_fields = list(set(required_fields))
     return required_fields
@@ -217,7 +217,7 @@ def separate_text_and_vector_fields(dataset: DotDict, fields: Iterable[str]):
     vector_fields = []
     text_felds = []
     for field in fields:
-        if dataset.object_fields[field].field_type == FieldType.VECTOR:
+        if dataset.schema.object_fields[field].field_type == FieldType.VECTOR:
             vector_fields.append(field)
         else:
             text_felds.append(field)
@@ -231,7 +231,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
     search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
-    ignored_keyword_highlight_fields = dataset.defaults.ignored_keyword_highlight_fields or []
+    ignored_keyword_highlight_fields = dataset.schema.advanced_options.ignored_keyword_highlight_fields or []
     for i, item in enumerate(search_result):
         items[item['_id']] = {
             '_id': item['_id'],
@@ -245,7 +245,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
 
 def get_suitable_generator(dataset, vector_field: str):
     generators: list[DotDict] = get_generators()
-    field = dataset.object_fields[vector_field]
+    field = dataset.schema.object_fields[vector_field]
     embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
 
     # for text query:
@@ -260,7 +260,7 @@ def get_suitable_generator(dataset, vector_field: str):
 
     if field.generator and field.generator.input_type == FieldType.TEXT \
         and not (suitable_generator and suitable_generator.is_preferred_for_search):
-        generator_function = get_generator_function_from_field(dataset.object_fields[vector_field], always_return_single_value_per_item=True)
+        generator_function = get_generator_function_from_field(dataset.schema.object_fields[vector_field], always_return_single_value_per_item=True)
     else:
         generator_function = get_generator_function(suitable_generator.module, suitable_generator.default_parameters, False)
     return generator_function
@@ -298,8 +298,8 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
 
     vector_db_client = VectorSearchEngineClient.get_instance()
     assert query_vector is not None
-    is_array_field = dataset.object_fields[vector_field].is_array
-    array_source_field = dataset.object_fields[vector_field].source_fields[0] if is_array_field and dataset.object_fields[vector_field].source_fields else None
+    is_array_field = dataset.schema.object_fields[vector_field].is_array
+    array_source_field = dataset.schema.object_fields[vector_field].source_fields[0] if is_array_field and dataset.schema.object_fields[vector_field].source_fields else None
     vector_search_result = vector_db_client.get_items_near_vector(dataset, vector_field, query_vector,
                                                                   filters, return_vectors=False, limit=limit,
                                                                   score_threshold=score_threshold, is_array_field=is_array_field,
@@ -379,7 +379,7 @@ def fill_in_vector_data(dataset: DotDict, items: dict[str, dict], required_vecto
     ids = list(items.keys())
     vector_db_client = VectorSearchEngineClient.get_instance()
     for vector_field in required_vector_fields:
-        is_array_field = dataset.object_fields[vector_field].is_array
+        is_array_field = dataset.schema.object_fields[vector_field].is_array
         results = vector_db_client.get_items_by_ids(dataset, ids, vector_field, is_array_field, return_vectors=True, return_payloads=False)
         for result in results:
             items[result.id][vector_field] = result.vector[vector_field]
@@ -416,7 +416,7 @@ def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str
         '_origins': [{'type': 'vector', 'field': vector_field,
                     'query': 'unknown', 'score': max(*(item.score for item in vector_search_results), 0.0), 'rank': 1}],
     }
-    array_source_field = dataset.object_fields[vector_field].source_fields[0] if dataset.object_fields[vector_field].source_fields else None
+    array_source_field = dataset.schema.object_fields[vector_field].source_fields[0] if dataset.schema.object_fields[vector_field].source_fields else None
     item['_relevant_parts'] = [{'origin': 'vector_array', 'field': array_source_field, 'index': item.payload['array_index'], 'score': item.score} for item in vector_search_results]
     return item
 
@@ -429,17 +429,17 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
         if filter_['field'] == '_descriptive_text_fields':
             if filter_['operator'] == 'contains':
                 # only in this case a list of fields is allowed, as it needs to be concatenated as OR filters (aka 'should')
-                filter_['field'] = dataset.descriptive_text_fields
+                filter_['field'] = dataset.schema.descriptive_text_fields
             else:
-                for field in dataset.descriptive_text_fields:
+                for field in dataset.schema.descriptive_text_fields:
                     additional_filters.append({'field': field, 'value': filter_['value'], 'operator': filter_['operator']})
                 removed_filters.append(filter_)
     filters.extend(additional_filters)
     for filter_ in filters:
         if filter_ in removed_filters:
             continue
-        if not isinstance(filter_['field'], list) and filter_['field'] in dataset.object_fields:
-            field = dataset.object_fields[filter_['field']]
+        if not isinstance(filter_['field'], list) and filter_['field'] in dataset.schema.object_fields:
+            field = dataset.schema.object_fields[filter_['field']]
             if field.field_type == FieldType.INTEGER:
                 try:
                     filter_['value'] = int(filter_['value'])
@@ -484,9 +484,9 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
             additional_fields.append(relevant_part.get('field'))
     get_new_full_text_chunks = False
     if top_n_full_text_chunks and query:
-        chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
+        chunk_vector_field_name = dataset.schema.advanced_options.get("full_text_chunk_embeddings")
         if chunk_vector_field_name:
-            chunk_vector_field = DotDict(dataset.object_fields.get(chunk_vector_field_name))
+            chunk_vector_field = DotDict(dataset.schema.object_fields.get(chunk_vector_field_name))
             chunk_field = chunk_vector_field.source_fields[0]
             additional_fields.append(chunk_field)
             get_new_full_text_chunks = True
@@ -501,8 +501,8 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
 
     if get_text_search_highlights:
         filters = [{'field': '_id', 'value': [item_id], 'operator': 'ids'}]
-        ignored_keyword_highlight_fields = dataset.defaults.ignored_keyword_highlight_fields or []
-        results, total = search_engine_client.get_search_results(dataset, dataset.default_search_fields, filters,
+        ignored_keyword_highlight_fields = dataset.schema.advanced_options.ignored_keyword_highlight_fields or []
+        results, total = search_engine_client.get_search_results(dataset, dataset.schema.default_search_fields, filters,
                                                                  "", "", 0, 1, ['_id'],
                                                                  highlights=True, use_bolding_in_highlights=True,
                                                                  highlight_query=query,

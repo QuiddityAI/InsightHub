@@ -30,7 +30,7 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
-    this.selected_converter = this.dataset.applicable_export_converters[0]
+    this.selected_converter = this.dataset.schema.applicable_export_converters[0]
   },
   watch: {
     selected_converter() {
@@ -67,7 +67,7 @@ export default {
 <template>
   <div class="mb-2 flex flex-col gap-2">
     <div class="mb-2 flex flex-row gap-2">
-      <button v-for="export_converter in dataset.applicable_export_converters"
+      <button v-for="export_converter in dataset.schema.applicable_export_converters"
         @click="selected_converter = export_converter; exported_data = null"
         class="px-2 rounded bg-gray-100 hover:bg-blue-100/50"
         :class="{'text-blue-600': selected_converter?.id == export_converter.id}">

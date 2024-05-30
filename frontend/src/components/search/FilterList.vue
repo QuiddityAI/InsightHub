@@ -60,7 +60,7 @@ export default {
         display_name: `Contains: ${word}`,
         filter_fn: (item) => {
           const dataset = this.appStateStore.datasets[item._dataset_id]
-          for (const field of dataset.default_search_fields) {
+          for (const field of dataset.schema.default_search_fields) {
             const value = item[field]
             const is_string = typeof value === "string" || value instanceof String
             if (value && is_string && value.toLowerCase().includes(word.toLowerCase())) {

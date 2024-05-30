@@ -106,19 +106,14 @@ def get_dataset(request):
 
     dataset_dict = DatasetSerializer(instance=dataset).data
     assert isinstance(dataset_dict, dict)
-    dataset_dict["object_fields"] = {item['identifier']: item for item in dataset_dict["object_fields"]}
-    if "applicable_export_converters" not in dataset_dict:
-        dataset_dict["applicable_export_converters"] = []
+    dataset_dict["schema"]["object_fields"] = {item['identifier']: item for item in dataset_dict["schema"]["object_fields"]}
+    if "applicable_export_converters" not in dataset_dict["schema"]:
+        dataset_dict["schema"]["applicable_export_converters"] = []
     universal_exporters = ExportConverter.objects.filter(universally_applicable=True)
     serialized_exporters = ExportConverterSerializer(universal_exporters, many=True).data
-    dataset_dict["applicable_export_converters"].extend(serialized_exporters)
+    dataset_dict["schema"]["applicable_export_converters"].extend(serialized_exporters)
     if "item_count" in additional_fields:
         dataset_dict["item_count"] = dataset.item_count
-    if "origin_template" in additional_fields:
-        if dataset.origin_template:
-            dataset_dict["origin_template"] = DatasetSerializer(instance=dataset.origin_template).data
-        else:
-            dataset_dict["origin_template"] = None
 
     result = json.dumps(dataset_dict)
     return HttpResponse(result, status=200, content_type='application/json')
@@ -148,8 +143,8 @@ def get_available_datasets(request):
     #     elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
     #         continue
     #     result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
-    #                    "entity_name": dataset.entity_name, "entity_name_plural": dataset.entity_name_plural,
-    #                    "short_description": dataset.short_description,
+    #                    "entity_name": dataset.schema.entity_name, "entity_name_plural": dataset.schema.entity_name_plural,
+    #                    "short_description": dataset.schema.short_description,
     #                    })
 
     # result = json.dumps(result)
@@ -175,8 +170,8 @@ def get_dataset_templates(request):
         elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
             continue
         result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
-                       "entity_name": dataset.entity_name, "entity_name_plural": dataset.entity_name_plural,
-                       "short_description": dataset.short_description,
+                       "entity_name": dataset.schema.entity_name, "entity_name_plural": dataset.schema.entity_name_plural,
+                       "short_description": dataset.schema.short_description,
                        })
 
     result = json.dumps(result)
@@ -914,7 +909,7 @@ def get_index_settings(dataset):
     text_db_fields = []
     filtering_fields = []
 
-    for field in dataset.object_fields:
+    for field in dataset.schema.object_fields:
         if field.is_available_for_search and field.field_type == FieldType.VECTOR:
             vector_db_table_name = f'{dataset.id}_{field.identifier}'
             vector_db_fields.append([field.identifier, vector_db_table_name])

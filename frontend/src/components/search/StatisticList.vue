@@ -35,9 +35,9 @@ export default {
 
 <template>
   <div v-if="appState.search_result_ids.length" v-for="dataset_id in mapState.map_parameters?.search.dataset_ids || []">
-    <div v-if="appState.datasets[dataset_id]?.statistics?.groups?.length">
+    <div v-if="appState.datasets[dataset_id]?.schema.statistics?.groups?.length">
     <TabView class="mt-1">
-      <TabPanel v-for="group in appState.datasets[dataset_id]?.statistics?.groups"
+      <TabPanel v-for="group in appState.datasets[dataset_id]?.schema.statistics?.groups"
         :header="group.title">
         <Statistic
           v-if="group"

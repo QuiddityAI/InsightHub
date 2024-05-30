@@ -38,7 +38,7 @@ export default {
     available_converters() {
       const converters = {}
       for (const dataset of Object.values(this.appStateStore.datasets)) {
-        for (const converter of dataset.applicable_export_converters) {
+        for (const converter of dataset.schema.applicable_export_converters) {
           converters[converter.identifier] = converter
         }
       }

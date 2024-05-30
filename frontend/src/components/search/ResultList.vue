@@ -109,7 +109,7 @@ export default {
           <ResultListItem
             v-if="appState.search_result_items.hasOwnProperty(ds_and_item_id[0]) && appState.search_result_items[ds_and_item_id[0]].hasOwnProperty(ds_and_item_id[1])"
             :initial_item="appState.search_result_items[ds_and_item_id[0]][ds_and_item_id[1]]"
-            :rendering="appState.datasets[ds_and_item_id[0]].result_list_rendering"
+            :rendering="appState.datasets[ds_and_item_id[0]].schema.result_list_rendering"
             @mouseenter="appState.highlighted_item_id = ds_and_item_id"
             @mouseleave="appState.highlighted_item_id = null"
             @mousedown="appState.show_document_details(ds_and_item_id)"></ResultListItem>

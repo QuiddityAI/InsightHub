@@ -114,7 +114,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     negative_query = search_settings.all_field_query_negative
     image_query = ""  # TODO: search_settings.all_field_image_url
     negative_image_query = ""  # TODO: search_settings.all_field_image_url_negative
-    enabled_fields = dataset.default_search_fields
+    enabled_fields = dataset.schema.default_search_fields
     if search_settings.separate_queries:
         enabled_fields = [field_identifier for field_identifier, field_settings in search_settings.separate_queries.items() if field_settings['use_for_combined_search']]
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
@@ -142,7 +142,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     result_sets: list[dict] = []
     for query in queries:
         text_fields = []
-        for field in dataset.object_fields.values():
+        for field in dataset.schema.object_fields.values():
             if not field.is_available_for_search or field.identifier not in enabled_fields:
                 continue
             if search_settings.search_algorithm in ['vector', 'hybrid'] and field.field_type == FieldType.VECTOR:
@@ -249,7 +249,7 @@ def get_search_results_for_map_subset(dataset, search_settings: DotDict, vectori
 def _get_item_for_similarity_search(search_settings):
     dataset_id, item_id = search_settings.similar_to_item_id
     dataset = get_dataset(dataset_id)
-    vector_fields = [field for field in dataset.object_fields.values() if field.identifier in dataset.default_search_fields and field.field_type == FieldType.VECTOR and field.is_array == False]
+    vector_fields = [field for field in dataset.schema.object_fields.values() if field.identifier in dataset.schema.default_search_fields and field.field_type == FieldType.VECTOR and field.is_array == False]
     search_engine_client = TextSearchEngineClient.get_instance()
     items = search_engine_client.get_items_by_ids(dataset, [item_id], fields=[field.identifier for field in vector_fields])
     fill_in_vector_data_list(dataset, items, [field.identifier for field in vector_fields])
@@ -271,7 +271,7 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
 
     timings.log("search preparation")
 
-    vector_fields = [field for field in dataset.object_fields.values() if field.identifier in dataset.default_search_fields and field.field_type == FieldType.VECTOR and field.is_array == False]
+    vector_fields = [field for field in dataset.schema.object_fields.values() if field.identifier in dataset.schema.default_search_fields and field.field_type == FieldType.VECTOR and field.is_array == False]
 
     result_sets: list[dict] = []
     for field in vector_fields:
@@ -315,10 +315,10 @@ def get_search_results_matching_a_collection(dataset, search_settings: DotDict, 
     if dataset_specific_settings:
         source_fields = dataset_specific_settings.relevant_object_fields
     else:
-        source_fields = dataset.default_search_fields
+        source_fields = dataset.schema.default_search_fields
     # finding the first vector field, starting with the default search fields:
-    for field_name in itertools.chain(source_fields, dataset.object_fields.keys()):
-        field = dataset.object_fields[field_name]
+    for field_name in itertools.chain(source_fields, dataset.schema.object_fields.keys()):
+        field = dataset.schema.object_fields[field_name]
         try:
             field_embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
         except AttributeError:
@@ -448,7 +448,7 @@ def get_item_count(dataset_id: int) -> int:
 
 def get_items_having_value_count(dataset_id: int, field: str, count_sub_items: bool = False) -> int:
     dataset = get_dataset(dataset_id)
-    if dataset.object_fields[field].field_type == FieldType.VECTOR:
+    if dataset.schema.object_fields[field].field_type == FieldType.VECTOR:
         vector_db_client = VectorSearchEngineClient.get_instance()
         return vector_db_client.get_item_count(dataset, field, count_sub_items_of_array_field=count_sub_items)
     else:

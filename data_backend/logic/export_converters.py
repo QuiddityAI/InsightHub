@@ -19,7 +19,7 @@ def export_item(dataset_id: int, item_id: int, export_converter_identifier: str)
     required_fields = converter.required_fields()
     if "__all__" in required_fields:
         dataset = get_dataset(dataset_id)
-        required_fields = tuple(dataset.object_fields.keys())
+        required_fields = tuple(dataset.schema.object_fields.keys())
     item = get_document_details_by_id(dataset_id, item_id, required_fields)
     if not item:
         return { "value": None, "error": "Item not found"}
@@ -78,12 +78,12 @@ def _get_exportable_collection_items(collection_id: int, class_name: str,
     for ds_id in collection_items_per_dataset:
         dataset = get_dataset(ds_id)
         if not converter_definition.universally_applicable and \
-            not any(converter for converter in dataset.applicable_export_converters
+            not any(converter for converter in dataset.schema.applicable_export_converters
                    if converter.identifier == converter_definition.identifier):
             continue
 
         if "__all__" in required_fields:
-            required_fields = dataset.object_fields.keys()
+            required_fields = dataset.schema.object_fields.keys()
 
         item_ids = [collection_item['item_id'] for collection_item in collection_items_per_dataset[ds_id]]
         items = search_engine_client.get_items_by_ids(dataset, item_ids, fields=required_fields)

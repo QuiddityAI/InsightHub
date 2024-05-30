@@ -44,7 +44,7 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
-    this.selected_import_converter = this.dataset.applicable_import_converters.length ? this.dataset.applicable_import_converters[0] : null
+    this.selected_import_converter = this.dataset.schema.applicable_import_converters.length ? this.dataset.schema.applicable_import_converters[0] : null
     this.get_dataset_additional_info()
     this.get_upload_task_status()
   },
@@ -279,7 +279,7 @@ export default {
           <Dropdown
             id="import_type"
             v-model="selected_import_converter"
-            :options="dataset.applicable_import_converters"
+            :options="dataset.schema.applicable_import_converters"
             optionLabel="display_name"
             placeholder="Select an import type"/>
         </div>

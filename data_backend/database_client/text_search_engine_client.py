@@ -96,7 +96,7 @@ class TextSearchEngineClient(object):
             FieldType.CLASS_PROBABILITY: "rank_features",  # NOTE: "s" for multiple class probabilities (without creating new fields for each)
         })
 
-        for field in dataset.object_fields.values():
+        for field in dataset.schema.object_fields.values():
             if field.identifier == "_id":
                 continue
             if field.field_type == FieldType.VECTOR:

@@ -16,9 +16,9 @@ from utils.field_types import FieldType
 
 def delete_field_content(dataset_id: int, field_identifier: str):
     dataset = get_dataset(dataset_id)
-    is_vector_field = dataset.object_fields[field_identifier].field_type == FieldType.VECTOR
+    is_vector_field = dataset.schema.object_fields[field_identifier].field_type == FieldType.VECTOR
     if is_vector_field:
-        is_array_field = dataset.object_fields[field_identifier].is_array
+        is_array_field = dataset.schema.object_fields[field_identifier].is_array
         vector_db_client = VectorSearchEngineClient.get_instance()
         vector_db_client.delete_field(dataset.actual_database_name, field_identifier, is_array_field)
     else:
@@ -48,8 +48,8 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
     vector_db_client = VectorSearchEngineClient.get_instance()
     items_processed = 0
     total_items_estimated = search_engine_client.get_all_items_with_missing_field_count(dataset.actual_database_name, field_identifier)
-    is_vector_field = dataset.object_fields[field_identifier].field_type == FieldType.VECTOR
-    is_array_field = dataset.object_fields[field_identifier].is_array
+    is_vector_field = dataset.schema.object_fields[field_identifier].field_type == FieldType.VECTOR
+    is_array_field = dataset.schema.object_fields[field_identifier].is_array
     if is_vector_field:
         total_items_estimated -= vector_db_client.get_item_count(dataset, field_identifier)
     logging.warning(f"Total items with missing value: {total_items_estimated}")

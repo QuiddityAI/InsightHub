@@ -59,13 +59,13 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
     required_fields = {'_id'}
     source_fields_set = set(source_fields)
     if "_descriptive_text_fields" in source_fields_set:
-        required_fields = required_fields.union(dataset.descriptive_text_fields)
+        required_fields = required_fields.union(dataset.schema.descriptive_text_fields)
         source_fields_set.remove("_descriptive_text_fields")
-        source_fields_set.update(dataset.descriptive_text_fields)
+        source_fields_set.update(dataset.schema.descriptive_text_fields)
     if "_full_text_snippets" in source_fields:
-        chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
+        chunk_vector_field_name = dataset.schema.advanced_options.get("full_text_chunk_embeddings")
         if chunk_vector_field_name:
-            chunk_vector_field = DotDict(dataset.object_fields.get(chunk_vector_field_name))
+            chunk_vector_field = DotDict(dataset.schema.object_fields.get(chunk_vector_field_name))
             chunk_field = chunk_vector_field.source_fields[0]
             required_fields.add(chunk_field)
     required_fields.update([field for field in source_fields if not field.startswith("_")])
@@ -85,15 +85,15 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
         else:
             value = full_item.get(source_field, "n/a")
             value = str(value)[:max_characters_per_field]
-            name = dataset.object_fields.get(source_field, {}).get('name', None) or source_field
+            name = dataset.schema.object_fields.get(source_field, {}).get('name', None) or source_field
             text += f'{name}: {value}\n'
 
     max_chunks_to_show_all = 20
     max_selected_chunks = 5
     if "_full_text_snippets" in source_fields:
-        chunk_vector_field_name = dataset.defaults.get("full_text_chunk_embeddings")
+        chunk_vector_field_name = dataset.schema.advanced_options.get("full_text_chunk_embeddings")
         if chunk_vector_field_name:
-            chunk_vector_field = DotDict(dataset.object_fields.get(chunk_vector_field_name))
+            chunk_vector_field = DotDict(dataset.schema.object_fields.get(chunk_vector_field_name))
             chunk_field = chunk_vector_field.source_fields[0]
             chunks = full_item.get(chunk_field, [])
             if len(chunks) <= max_chunks_to_show_all:

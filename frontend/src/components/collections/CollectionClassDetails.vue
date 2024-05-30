@@ -54,7 +54,7 @@ export default {
         return null
       }
       const dataset = this.appStateStore.datasets[this.target_vector_ds_and_field[0]]
-      return dataset.object_fields[this.target_vector_ds_and_field[1]].actual_embedding_space.id
+      return dataset.schema.object_fields[this.target_vector_ds_and_field[1]].actual_embedding_space.id
     },
     class_details() {
       return this.collection.actual_classes.find((collection_class) => collection_class.name === this.class_name)

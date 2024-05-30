@@ -17,7 +17,7 @@ def update_database_layout(dataset_id: int):
     vector_db_client = VectorSearchEngineClient.get_instance()
     index_settings = get_index_settings(dataset)
     for field in index_settings.all_vector_fields:
-        if not dataset.object_fields[field].is_available_for_search:
+        if not dataset.schema.object_fields[field].is_available_for_search:
             continue
         vector_db_client.ensure_dataset_field_exists(dataset, field, update_params=True, delete_if_params_changed=False)
     search_engine_client = TextSearchEngineClient.get_instance()
@@ -30,8 +30,8 @@ def insert_many(dataset_id: int, elements: Iterable[dict]) -> list[tuple]:
     for element in elements:
         # make sure primary key exists, if not, generate it
         if not "_id" in element:
-            if dataset.primary_key in element and element[dataset.primary_key] != "":
-                element["_id"] = str(uuid5(uuid.NAMESPACE_URL, element[dataset.primary_key]))
+            if dataset.schema.primary_key in element and element[dataset.schema.primary_key] != "":
+                element["_id"] = str(uuid5(uuid.NAMESPACE_URL, element[dataset.schema.primary_key]))
             else:
                 element["_id"] = str(uuid4())
         elif isinstance("_id", int):
@@ -76,7 +76,7 @@ def insert_many(dataset_id: int, elements: Iterable[dict]) -> list[tuple]:
                 # for update case: add that field to changed fields:
                 # changed_fields_total[element_index].insert(pipeline_step.target_field)
 
-    for field in dataset.object_fields.values():
+    for field in dataset.schema.object_fields.values():
         if field.field_type == FieldType.CLASS_PROBABILITY and not field.is_array:
             for element  in elements:
                 if field.identifier not in element:
@@ -128,7 +128,7 @@ def get_index_settings(dataset: DotDict):
     all_vector_fields = []
     filtering_fields = []
 
-    for field in dataset.object_fields.values():
+    for field in dataset.schema.object_fields.values():
         if field.field_type == FieldType.VECTOR:
             all_vector_fields.append(field.identifier)
 
@@ -151,7 +151,7 @@ def delete_dataset_content(dataset_id: int):
     vector_db_client = VectorSearchEngineClient.get_instance()
     index_settings = get_index_settings(dataset)
     for field in index_settings.all_vector_fields:
-        is_array_field = dataset.object_fields[field].is_array
+        is_array_field = dataset.schema.object_fields[field].is_array
         vector_db_client.delete_field(dataset.actual_database_name, field, is_array_field)
     search_engine_client = TextSearchEngineClient.get_instance()
     search_engine_client.remove_dataset(dataset)

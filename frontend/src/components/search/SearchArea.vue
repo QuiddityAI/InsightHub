@@ -282,7 +282,7 @@ export default {
           name="search"
           @keyup.enter="run_smart_search()"
           v-model="smart_query"
-          :placeholder="`Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.entity_name || '' : ''} you want to find`"
+          :placeholder="`Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.schema.entity_name || '' : ''} you want to find`"
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
       </div>
       <button v-if="!processing_smart_search"
@@ -360,7 +360,7 @@ export default {
           autocomplete="off"
           :placeholder="
             appState.settings.search.search_type == 'external_input'
-              ? `Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.entity_name || '' : ''} you want to find`
+              ? `Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.schema.entity_name || '' : ''} you want to find`
               : 'But more like this:'
           "
           class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />

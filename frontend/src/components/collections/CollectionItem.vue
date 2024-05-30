@@ -36,7 +36,7 @@ export default {
       const that = this
       if (!this.dataset_id || !this.item_id) return
       if (this.item._dataset_id === this.dataset_id && this.item._id === this.item_id) return
-      this.rendering = this.appStateStore.datasets[this.dataset_id]?.result_list_rendering
+      this.rendering = this.appStateStore.datasets[this.dataset_id]?.schema.result_list_rendering
       if (!this.rendering) {
         this.item = {}
         return

@@ -36,7 +36,7 @@ export default {
       const available_fields = {}
       for (const dataset_id of dataset_ids) {
         const dataset = this.appStateStore.datasets[dataset_id]
-        for (const field of Object.values(dataset.object_fields)) {
+        for (const field of Object.values(dataset.schema.object_fields)) {
           if (!field.is_available_for_filtering) continue
           available_fields[field.identifier] = {
             identifier: field.identifier,
@@ -61,8 +61,8 @@ export default {
           dataset_name: dataset.name,
           descriptive_text_field_names: [],
         }
-        for (const field_name of dataset.descriptive_text_fields) {
-          const field = dataset.object_fields[field_name]
+        for (const field_name of dataset.schema.descriptive_text_fields) {
+          const field = dataset.schema.object_fields[field_name]
           if (!field.is_available_for_filtering) continue
           details.descriptive_text_field_names.push(field.name || field.identifier)
         }

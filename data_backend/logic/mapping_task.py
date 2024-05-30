@@ -235,8 +235,8 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
     slimmed_items_per_dataset = defaultdict(dict)
     generic_fields = {"_id", "_dataset_id", "_score", "_reciprocal_rank_score", "_origins", '_relevant_parts'}
     for ds_id, ds_items in items_by_dataset.items():
-        ds_specific_fields = set(datasets[ds_id].hover_label_rendering.required_fields)
-        ds_specific_fields |= set(datasets[ds_id].get("statistics", {}).get("required_fields", []))
+        ds_specific_fields = set(datasets[ds_id].schema.hover_label_rendering.required_fields)
+        ds_specific_fields |= set(datasets[ds_id].get('schema', {}).get("statistics", {}).get("required_fields", []))
         all_fields = generic_fields | ds_specific_fields
         for item_id, item in ds_items.items():
             slimmed_items_per_dataset[ds_id][item_id] = {field: item.get(field, None) for field in all_fields}
@@ -251,18 +251,18 @@ def search_phase(map_data: dict, params: DotDict, datasets: dict, items_by_datas
 
 
 def thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, timings: Timings):
-    if not any([datasets[ds_id].thumbnail_image for ds_id in datasets]):
+    if not any([datasets[ds_id].schema.thumbnail_image for ds_id in datasets]):
         return
 
     for ds_id, dataset in datasets.items():
-        if not dataset.thumbnail_image:
+        if not dataset.schema.thumbnail_image:
             continue
-        if dataset.object_fields[dataset.thumbnail_image].generator:
+        if dataset.schema.object_fields[dataset.schema.thumbnail_image].generator:
             elements = []
             for item in items_by_dataset[ds_id].values():
-                if item.get(dataset.thumbnail_image) is None:
+                if item.get(dataset.schema.thumbnail_image) is None:
                     elements.append(item)
-            pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[dataset.thumbnail_image])
+            pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[dataset.schema.thumbnail_image])
             generate_missing_values_for_given_elements(pipeline_steps, elements)
             logging.info(f"Generated {len(elements)} missing thumbnail URLs")
 
@@ -280,7 +280,7 @@ def thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, ti
     atlas_path = os.path.join(THUMBNAIL_ATLAS_DIR, atlas_filename)
     # don't leave the field empty, otherwise the last atlas is still visible
     map_data["results"]["thumbnail_atlas_filename"] = "loading"
-    thumbnail_uris = [items_by_dataset[ds_id][item_id][datasets[ds_id].thumbnail_image] if datasets[ds_id].thumbnail_image else None for (ds_id, item_id) in sorted_ids]
+    thumbnail_uris = [items_by_dataset[ds_id][item_id][datasets[ds_id].schema.thumbnail_image] if datasets[ds_id].schema.thumbnail_image else None for (ds_id, item_id) in sorted_ids]
     def _generate_thumbnail_atlas():
         t1 = time.time()
         aspect_ratios = generate_thumbnail_atlas(atlas_path, thumbnail_uris, sprite_size)
@@ -333,11 +333,11 @@ def add_missing_vectors(map_data: dict, params: DotDict, datasets: dict, items_b
         # FIXME: w2v vectors need to be generated for all datasets together
         for ds_id, ds_items in items_by_dataset.items():
             dataset = datasets[ds_id]
-            add_w2v_vectors(ds_items, query, similar_map, origin_map, dataset.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
+            add_w2v_vectors(ds_items, query, similar_map, origin_map, dataset.schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
     elif not all_map_vectors_present:
         for ds_id, ds_items in items_by_dataset.items():
             dataset = datasets[ds_id]
-            if dataset.object_fields[params.vectorize.map_vector_field].generator:
+            if dataset.schema.object_fields[params.vectorize.map_vector_field].generator:
                 add_missing_map_vectors(ds_items, query, params, map_data, dataset, timings)
 
     # update slimmed_items_per_dataset because the scores might have changed / were added:
@@ -408,7 +408,7 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
             cluster_hints = [hint.strip() for hint in cluster_hints.split(",")]
             logging.warning(f"cluster hints: {cluster_hints}")
             example_dataset = datasets[sorted_ids[0][0]]
-            # generator_function = get_generator_function_from_field(example_dataset.object_fields[map_vector_field])
+            # generator_function = get_generator_function_from_field(example_dataset.schema.object_fields[map_vector_field])
             # cluster_hint_embeddings = np.asarray(generator_function(cluster_hints))
             # dummy_vector = np.zeros(len(cluster_hints))
             # org_vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, dummy_vector))
@@ -416,7 +416,7 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
             # # vectors has 2000 rows and 7 columns, normalize each column separately to 0-1:
             # #vectors = (vectors - vectors.min(axis=0)) / (vectors.max(axis=0) - vectors.min(axis=0))
 
-            vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(example_dataset.object_fields[map_vector_field])
+            vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(example_dataset.schema.object_fields[map_vector_field])
             # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
             dummy_vector = np.zeros(vector_size)
             vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, dummy_vector))
@@ -429,7 +429,7 @@ def projection_phase(map_data: dict, params: DotDict, datasets: dict, items_by_d
 
         else:
             example_dataset = datasets[sorted_ids[0][0]]
-            vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(example_dataset.object_fields[map_vector_field])
+            vector_size = 256 if map_vector_field == "w2v_vector" else get_vector_field_dimensions(example_dataset.schema.object_fields[map_vector_field])
             # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
             dummy_vector = np.zeros(vector_size)
             vectors = np.asarray(get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, dummy_vector))
@@ -548,7 +548,7 @@ def clusterize_and_render_phase(map_data: dict, params: DotDict, datasets: dict,
     timings.log("clustering")
 
     map_data['progress']['step_title'] = "Find cluster titles"
-    if any(datasets[ds_id].descriptive_text_fields for ds_id in datasets.keys()):
+    if any(datasets[ds_id].schema.descriptive_text_fields for ds_id in datasets.keys()):
         if len(sorted_ids) >= 6:
             cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, timings)
         else:
