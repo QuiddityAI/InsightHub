@@ -7,12 +7,13 @@ from django.forms import Textarea
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin  # type: ignore
+from django.core import serializers
 
 from djangoql.admin import DjangoQLSearchMixin
 import requests
 from simple_history.admin import SimpleHistoryAdmin
 from jsonsuit.widgets import JSONSuit
-from django_object_actions import DjangoObjectActions, action
+from django_object_actions import DjangoObjectActions, action, takes_instance_or_queryset
 from import_export.admin import ImportExportMixin
 
 from .data_backend_client import DATA_BACKEND_HOST
@@ -34,10 +35,10 @@ admin.site.register(User, UserAdmin)
 
 
 @admin.register(EmbeddingSpace)
-class EmbeddingSpaceAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+class EmbeddingSpaceAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'identifier', 'name', 'dimensions')
-    list_display_links = ('id', 'identifier', 'name')
+    list_display = ('identifier', 'name', 'dimensions')
+    list_display_links = ('identifier', 'name')
     search_fields = ('name', 'identifier')
     ordering = ['identifier']
 
@@ -45,12 +46,33 @@ class EmbeddingSpaceAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     fields = ["identifier", "name", "dimensions", "created_at", "changed_at"]
 
+    @takes_instance_or_queryset
+    def store_definition_as_code(self, request, queryset):
+        for obj in queryset:
+            try:
+                data = serializers.serialize("json", [obj], indent=2)
+                #path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'embedding_spaces')
+                path = "./data_map_backend/base_model_definitions/embedding_spaces"
+                os.makedirs(path, exist_ok=True)
+                safe_identifier = obj.identifier.replace("/", "_")
+                with open(os.path.join(path, f'{safe_identifier}.json'), 'w') as f:
+                    f.write(data)
+            except Exception as e:
+                logging.error(e)
+                self.message_user(request, "Failed to store definition")
+                return
+        self.message_user(request, "Stored definitions as code")
+    store_definition_as_code.short_description = "Store definition in source code folder"
+
+    change_actions = ('store_definition_as_code',)
+    actions = ['store_definition_as_code']
+
 
 @admin.register(Generator)
 class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'identifier', 'name', 'embedding_space', 'text_similarity_threshold', 'image_similarity_threshold')
-    list_display_links = ('id', 'identifier', 'name')
+    list_display = ('identifier', 'name', 'embedding_space', 'text_similarity_threshold', 'image_similarity_threshold')
+    list_display_links = ('identifier', 'name')
     search_fields = ('name', 'identifier')
     ordering = ['identifier']
 
@@ -97,8 +119,8 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 @admin.register(ImportConverter)
 class ImportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'display_name', 'identifier')
-    list_display_links = ('id', 'display_name')
+    list_display = ('display_name', 'identifier')
+    list_display_links = ('display_name', 'identifier')
     search_fields = ('display_name', 'description', 'identifier')
     ordering = ['display_name']
 
@@ -113,8 +135,8 @@ class ImportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 @admin.register(ExportConverter)
 class ExportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('id', 'display_name', 'identifier')
-    list_display_links = ('id', 'display_name')
+    list_display = ('display_name', 'identifier')
+    list_display_links = ('display_name', 'identifier')
     search_fields = ('display_name', 'description', 'identifier')
     ordering = ['display_name']
 

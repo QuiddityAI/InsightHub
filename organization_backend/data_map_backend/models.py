@@ -65,7 +65,10 @@ class SourcePlugin(models.TextChoices):
 class EmbeddingSpace(models.Model):
     identifier = models.CharField(
         verbose_name="Identifier",
+        help_text="Do not change this after being used elsewhere",
         max_length=200,
+        primary_key=True,
+        unique=True,
         blank=False,
         null=False)
     name = models.CharField(
@@ -103,7 +106,10 @@ class EmbeddingSpace(models.Model):
 class Generator(models.Model):
     identifier = models.CharField(
         verbose_name="Identifier",
+        help_text="Do not change this after being used elsewhere",
         max_length=200,
+        primary_key=True,
+        unique=True,
         blank=False,
         null=False)
     name = models.CharField(
@@ -278,7 +284,10 @@ class ImportConverter(models.Model):
         null=False)
     identifier = models.CharField(
         verbose_name="Identifier",
+        help_text="Do not change this after being used elsewhere",
         max_length=200,
+        unique=True,
+        primary_key=True,
         blank=False,
         null=False)
     created_at = models.DateTimeField(
@@ -330,7 +339,9 @@ class ExportConverter(models.Model):
         null=False)
     identifier = models.CharField(
         verbose_name="Identifier",
+        help_text="Do not change this after being used elsewhere",
         max_length=200,
+        primary_key=True,
         unique=True,
         blank=False,
         null=False)
@@ -810,6 +821,7 @@ class ObjectField(models.Model):
         return f"{self.identifier}"
 
     class Meta:
+        unique_together = [['dataset', 'identifier']]
         verbose_name = "Object Field"
         verbose_name_plural = "Object Fields"
         order_with_respect_to = "dataset"
@@ -1148,6 +1160,7 @@ class CollectionColumn(models.Model):
         null=False)
     identifier = models.CharField(
         verbose_name="Identifier",
+        help_text="Do not change this after being used elsewhere",
         max_length=200,
         default=get_random_string,
         blank=False,
