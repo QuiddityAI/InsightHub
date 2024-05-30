@@ -1,0 +1,21 @@
+[
+{
+  "model": "data_map_backend.exportconverter",
+  "pk": "full_json",
+  "fields": {
+    "display_name": "Full Item as JSON",
+    "universally_applicable": true,
+    "created_at": "2024-05-08T08:50:29.399Z",
+    "changed_at": "2024-05-08T08:58:05.503Z",
+    "description": "",
+    "module": "json",
+    "parameters": {
+      "fields": [
+        "__all__"
+      ],
+      "include_vectors": false
+    },
+    "preview_as_text": true
+  }
+}
+]

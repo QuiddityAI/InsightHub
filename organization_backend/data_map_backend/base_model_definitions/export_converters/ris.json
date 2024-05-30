@@ -1,0 +1,16 @@
+[
+{
+  "model": "data_map_backend.exportconverter",
+  "pk": "ris",
+  "fields": {
+    "display_name": "RIS Format",
+    "universally_applicable": false,
+    "created_at": "2024-05-07T09:39:19.572Z",
+    "changed_at": "2024-05-07T09:39:19.573Z",
+    "description": "",
+    "module": "ris",
+    "parameters": {},
+    "preview_as_text": false
+  }
+}
+]

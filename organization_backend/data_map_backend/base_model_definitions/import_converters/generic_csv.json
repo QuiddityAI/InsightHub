@@ -1,0 +1,19 @@
+[
+{
+  "model": "data_map_backend.importconverter",
+  "pk": "generic_csv",
+  "fields": {
+    "display_name": "Generic CSV",
+    "created_at": "2024-05-27T10:06:57.999Z",
+    "changed_at": "2024-05-27T10:07:15.936Z",
+    "description": "",
+    "module": "csv",
+    "parameters": {
+      "fields": [
+        "__all__"
+      ]
+    },
+    "example_file_url": null
+  }
+}
+]

@@ -1,0 +1,16 @@
+[
+{
+  "model": "data_map_backend.exportconverter",
+  "pk": "internal_id",
+  "fields": {
+    "display_name": "Internal ID",
+    "universally_applicable": true,
+    "created_at": "2024-05-08T08:45:31.373Z",
+    "changed_at": "2024-05-08T08:45:31.376Z",
+    "description": "",
+    "module": "internal_id",
+    "parameters": {},
+    "preview_as_text": true
+  }
+}
+]

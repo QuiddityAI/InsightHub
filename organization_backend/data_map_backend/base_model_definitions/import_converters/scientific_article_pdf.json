@@ -1,0 +1,15 @@
+[
+{
+  "model": "data_map_backend.importconverter",
+  "pk": "scientific_article_pdf",
+  "fields": {
+    "display_name": "Scientific Article as PDF",
+    "created_at": "2024-03-16T19:41:48.668Z",
+    "changed_at": "2024-05-08T13:25:50.780Z",
+    "description": "Allows to import PDF files of scientific articles.\r\nExtracts the title, doi, publication year, journal, abstract and content.",
+    "module": "scientific_article_pdf",
+    "parameters": {},
+    "example_file_url": null
+  }
+}
+]

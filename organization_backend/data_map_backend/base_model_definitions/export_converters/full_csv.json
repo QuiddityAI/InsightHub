@@ -1,0 +1,21 @@
+[
+{
+  "model": "data_map_backend.exportconverter",
+  "pk": "full_csv",
+  "fields": {
+    "display_name": "Full Item as CSV",
+    "universally_applicable": true,
+    "created_at": "2024-05-07T13:06:41.163Z",
+    "changed_at": "2024-05-08T09:02:51.243Z",
+    "description": "",
+    "module": "csv",
+    "parameters": {
+      "fields": [
+        "__all__"
+      ],
+      "include_vectors": false
+    },
+    "preview_as_text": true
+  }
+}
+]

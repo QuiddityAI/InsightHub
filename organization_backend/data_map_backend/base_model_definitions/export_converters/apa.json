@@ -1,0 +1,16 @@
+[
+{
+  "model": "data_map_backend.exportconverter",
+  "pk": "apa",
+  "fields": {
+    "display_name": "APA",
+    "universally_applicable": false,
+    "created_at": "2024-05-07T09:27:58.926Z",
+    "changed_at": "2024-05-07T09:39:28.389Z",
+    "description": "",
+    "module": "apa",
+    "parameters": {},
+    "preview_as_text": true
+  }
+}
+]
