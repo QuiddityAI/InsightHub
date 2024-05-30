@@ -310,6 +310,33 @@ class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAd
 
     get_field_overview_table_html.short_description='Field Overview'
 
+    @takes_instance_or_queryset
+    def store_definition_as_code(self, request, queryset):
+        for obj in queryset:
+            try:
+                data = json.loads(serializers.serialize("json", [obj], indent=2))[0]['fields']
+                data['identifier'] = obj.identifier
+                data['object_fields'] = []
+                for field in obj.object_fields.all():
+                    field_data = json.loads(serializers.serialize("json", [field], indent=2))[0]['fields']
+                    data['object_fields'].append(field_data)
+
+                json_data = json.dumps(data, indent=2)
+                path = "./data_map_backend/base_model_definitions/dataset_schemas"
+                os.makedirs(path, exist_ok=True)
+                safe_identifier = obj.identifier.replace("/", "_")
+                with open(os.path.join(path, f'{safe_identifier}.json'), 'w') as f:
+                    f.write(json_data)
+            except Exception as e:
+                logging.error(e)
+                self.message_user(request, "Failed to store definition")
+                return
+        self.message_user(request, "Stored definitions as code")
+    store_definition_as_code.short_description = "Store definition in source code folder"
+
+    change_actions = ('store_definition_as_code',)
+    actions = ['store_definition_as_code']
+
     class Media:
         js = ('hide_objectfield_parameters.js',)
 
