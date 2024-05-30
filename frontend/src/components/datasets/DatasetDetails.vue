@@ -232,7 +232,7 @@ export default {
         <ChevronLeftIcon></ChevronLeftIcon>
       </button>
       <span class="font-bold text-gray-600">{{ dataset.name }}</span>
-      <span class="font-normal text-gray-400" v-if="dataset.origin_template">({{ dataset.origin_template.name }})</span>
+      <span class="font-normal text-gray-400" v-if="dataset.schema.name">({{ dataset.schema.name }})</span>
       <div class="flex-1"></div>
       <button
           @click="appState.show_global_map([dataset.id])"
