@@ -504,7 +504,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
                 ignored_fields = ["is_template", "is_public", "is_organization_wide",
                                   "organization", "origin_template", "created_in_ui",
                                   "source_plugin", "source_plugin_parameters", "database_name",
-                                  "admins"]
+                                  "admins", "schema"]
                 for ignored_field in ignored_fields:
                     data.pop(ignored_field, None)
 
