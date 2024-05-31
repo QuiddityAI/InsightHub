@@ -422,6 +422,7 @@ export default {
 
             // Font
             'leading-none',
+            'text-sm',
 
             // Spacing
             'm-0 px-3 py-2',

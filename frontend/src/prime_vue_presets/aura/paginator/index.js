@@ -155,6 +155,9 @@ export default {
 
             // Color
             'text-surface-500 dark:text-white/60',
+            {
+                'bg-primary-highlight border-primary-highlight  text-primary-highlight-inverse': context.active
+            },
 
             // State
             {
