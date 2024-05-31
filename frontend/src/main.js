@@ -3,6 +3,7 @@ import { createPinia } from "pinia"
 import mitt from 'mitt';
 import PrimeVue from 'primevue/config';
 import Wind from './prime_vue_presets/wind';
+import Aura from './prime_vue_presets/aura';
 import ToastService from 'primevue/toastservice';
 import DialogService from 'primevue/dialogservice';
 import Tooltip from 'primevue/tooltip';
@@ -31,7 +32,7 @@ app.provide('eventBus', eventBus);
 
 app.use(PrimeVue, {
   unstyled: true,
-  pt: Wind,
+  pt: Aura,
 });
 app.use(ToastService);
 app.use(DialogService);
