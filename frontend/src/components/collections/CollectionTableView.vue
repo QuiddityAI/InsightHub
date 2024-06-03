@@ -72,6 +72,7 @@ export default {
     available_source_fields() {
       const available_fields = {}
       for (const dataset of this.included_datasets) {
+        if (!dataset?.schema?.object_fields) continue
         for (const field of Object.values(dataset.schema.object_fields)) {
           available_fields[field.identifier] = {
             identifier: field.identifier,

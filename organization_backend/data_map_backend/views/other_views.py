@@ -9,7 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
 
-from ..models import DataCollection, CollectionItem, Dataset, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
+from ..models import DataCollection, CollectionItem, Dataset, DatasetSchema, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
 from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, ExportConverterSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
@@ -63,7 +63,6 @@ def get_available_organizations(request):
                 dataset.id  # type: ignore
                 for dataset in Dataset.objects.filter(
                     Q(organization_id=organization.id)  # type: ignore
-                    & Q(is_template=False)
                     & (
                         Q(is_public=True)
                         | Q(is_organization_wide=True)
@@ -76,7 +75,6 @@ def get_available_organizations(request):
                 dataset.id  # type: ignore
                 for dataset in Dataset.objects.filter(
                     Q(organization_id=organization.id)  # type: ignore
-                    & Q(is_template=False)
                     & Q(is_public=True)
                 )
             ]
@@ -152,26 +150,31 @@ def get_available_datasets(request):
 
 
 @csrf_exempt
-def get_dataset_templates(request):
+def get_dataset_schemas(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
     try:
         data = json.loads(request.body)
+        organization_id: int = data["organization_id"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    datasets = Dataset.objects.filter(Q(is_template=True))
+    try:
+        organization = Organization.objects.get(id=organization_id)
+    except Organization.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if not organization.members.filter(id=request.user.id).exists():
+        return HttpResponse(status=401)
+
+    schemas = organization.schemas_for_user_created_datasets.all()
 
     result = []
-    for dataset in datasets:
-        if not dataset.is_public and not request.user.is_authenticated:
-            continue
-        elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
-            continue
-        result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
-                       "entity_name": dataset.schema.entity_name, "entity_name_plural": dataset.schema.entity_name_plural,
-                       "short_description": dataset.schema.short_description,
+    for schema in schemas:
+        result.append({"identifier": schema.identifier, "name": schema.name,  # type: ignore
+                       "entity_name": schema.entity_name, "entity_name_plural": schema.entity_name_plural,
+                       "short_description": schema.short_description,
                        })
 
     result = json.dumps(result)
@@ -179,7 +182,7 @@ def get_dataset_templates(request):
 
 
 @csrf_exempt
-def create_dataset_from_template(request):
+def create_dataset_from_schema(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
@@ -189,7 +192,7 @@ def create_dataset_from_template(request):
         data = json.loads(request.body)
         name: str = data["name"]
         organization_id: int = data["organization_id"]
-        template_id: int = data["template_id"]
+        schema_identifier: str = data["schema_identifier"]
         from_ui: bool = data.get("from_ui", False)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
@@ -200,22 +203,22 @@ def create_dataset_from_template(request):
         return HttpResponse(status=404)
     if not organization.members.filter(id=request.user.id).exists():
         return HttpResponse(status=401)
+    if not organization.schemas_for_user_created_datasets.filter(identifier=schema_identifier).exists():
+        return HttpResponse(status=404)
 
     try:
-        template = Dataset.objects.get(id=template_id)
+        schema = DatasetSchema.objects.get(identifier=schema_identifier)
     except Dataset.DoesNotExist:
         return HttpResponse(status=404)
-    if not template.is_template:
-        return HttpResponse(status=400)
 
-    dataset = template.create_copy()
+    dataset = Dataset()
+    dataset.schema = schema
     dataset.name = name
     dataset.organization = organization
-    dataset.is_template = False
-    dataset.origin_template = template  # type: ignore
     dataset.created_in_ui = from_ui
-    dataset.admins.add(request.user)
     dataset.is_public = False
+    dataset.save()
+    dataset.admins.add(request.user)
     dataset.save()
 
     dataset_dict = DatasetSerializer(instance=dataset).data
@@ -245,7 +248,7 @@ def change_dataset(request):
     if not dataset.admins.filter(id=request.user.id).exists():
         return HttpResponse(status=401)
 
-    allowed_fields = ["name", "short_description", "long_description", "entity_name", "entity_name_plural", "is_public", "is_organization_wide"]
+    allowed_fields = ["name", "short_description", "is_public", "is_organization_wide"]
     for key in updates.keys():
         if key not in allowed_fields:
             return HttpResponse(status=400)
