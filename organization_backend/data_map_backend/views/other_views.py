@@ -549,13 +549,13 @@ def get_trained_classifier(request):
         data = json.loads(request.body)
         collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
-        embedding_space_id: int = data["embedding_space_id"]
+        embedding_space_identifier: str = data["embedding_space_identifier"]
         include_vector: bool = data.get("include_vector", False)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     try:
-        classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
+        classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space=embedding_space_identifier)
     except TrainedClassifier.DoesNotExist:
         result = json.dumps(None)
         return HttpResponse(result, status=200, content_type='application/json')
@@ -582,7 +582,7 @@ def set_trained_classifier(request):
         data = json.loads(request.body)
         collection_id: int = data["collection_id"]
         class_name: str = data["class_name"]
-        embedding_space_id: int = data["embedding_space_id"]
+        embedding_space_identifier: str = data["embedding_space_identifier"]
         decision_vector = data.get("decision_vector")
         highest_score = data.get("highest_score")
         threshold = data.get("threshold")
@@ -591,9 +591,9 @@ def set_trained_classifier(request):
         return HttpResponse(status=400)
 
     try:
-        classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
+        classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space=embedding_space_identifier)
     except TrainedClassifier.DoesNotExist:
-        classifier = TrainedClassifier(collection_id=collection_id, class_name=class_name, embedding_space_id=embedding_space_id)
+        classifier = TrainedClassifier(collection_id=collection_id, class_name=class_name, embedding_space=embedding_space_identifier)
     if classifier.collection.created_by != request.user and not is_from_backend(request):
         return HttpResponse(status=401)
 
