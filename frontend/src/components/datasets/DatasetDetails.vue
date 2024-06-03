@@ -60,11 +60,10 @@ export default {
     get_dataset_additional_info() {
       const that = this
       httpClient
-        .post("/org/data_map/dataset", { dataset_id: this.dataset.id, additional_fields: ["item_count", "origin_template"]})
+        .post("/org/data_map/dataset", { dataset_id: this.dataset.id, additional_fields: ["item_count"]})
         .then(function (response) {
           // don't overwrite the whole dataset object as other fields need special handling
           that.dataset.item_count = response.data.item_count
-          that.dataset.origin_template = response.data.origin_template
         })
         .catch(function (error) {
           console.error(error)

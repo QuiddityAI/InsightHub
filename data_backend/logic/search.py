@@ -277,8 +277,8 @@ def get_search_results_similar_to_item(dataset, search_settings: DotDict, vector
     result_sets: list[dict] = []
     for field in vector_fields:
         # for now, we only consider non-array default vector fields that exist in the same way in the origin item
-        # (when mostly using templates for datasets, this should cover most of the cases)
-        if not [field for field in origin_vector_fields if field.identifier == field.identifier and field.actual_embedding_space == field.actual_embedding_space]:
+        # (when mostly using schemas for datasets, this should cover most of the cases)
+        if not [org_field for org_field in origin_vector_fields if org_field.identifier == field.identifier and org_field.actual_embedding_space.identifier == field.actual_embedding_space.identifier]:
             continue
         query_vector = origin_item[field.identifier]
         score_threshold = get_field_similarity_threshold(field) if search_settings.use_similarity_thresholds else None
@@ -312,7 +312,7 @@ def get_search_results_matching_a_collection(dataset, search_settings: DotDict, 
     source_fields = []
     dataset_specific_settings = next(filter(lambda item: item.dataset_id == dataset.id, collection.dataset_specific_settings), None)
     vector_field = None
-    embedding_space_id = None
+    embedding_space_identifier = None
     if dataset_specific_settings:
         source_fields = dataset_specific_settings.relevant_object_fields
     else:
@@ -321,17 +321,17 @@ def get_search_results_matching_a_collection(dataset, search_settings: DotDict, 
     for field_name in itertools.chain(source_fields, dataset.schema.object_fields.keys()):
         field = dataset.schema.object_fields[field_name]
         try:
-            field_embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
+            field_embedding_space_identifier = field.generator.embedding_space.identifier if field.generator else field.embedding_space.identifier
         except AttributeError:
-            field_embedding_space_id = None
-        if field_embedding_space_id:
+            field_embedding_space_identifier = None
+        if field_embedding_space_identifier:
             vector_field = field.identifier
-            embedding_space_id = field_embedding_space_id
+            embedding_space_identifier = field_embedding_space_identifier
             break
-    if not vector_field or not embedding_space_id:
+    if not vector_field or not embedding_space_identifier:
         return [], {}, {}
 
-    decision_vector_data = get_trained_classifier(collection_id, class_name, embedding_space_id, include_vector=True)
+    decision_vector_data = get_trained_classifier(collection_id, class_name, embedding_space_identifier, include_vector=True)
     decision_vector = np.array(decision_vector_data.decision_vector)
     score_threshold = decision_vector_data.threshold
 

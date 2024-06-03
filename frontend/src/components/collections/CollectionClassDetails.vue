@@ -49,12 +49,12 @@ export default {
     last_retraining_human_readable() {
       return new Date(this.trained_classifier?.last_retrained_at).toLocaleString()
     },
-    embedding_space_id() {
+    embedding_space_identifier() {
       if (!this.target_vector_ds_and_field) {
         return null
       }
       const dataset = this.appStateStore.datasets[this.target_vector_ds_and_field[0]]
-      return dataset.schema.object_fields[this.target_vector_ds_and_field[1]].actual_embedding_space.id
+      return dataset.schema.object_fields[this.target_vector_ds_and_field[1]].actual_embedding_space.identifier
     },
     class_details() {
       return this.collection.actual_classes.find((collection_class) => collection_class.name === this.class_name)
@@ -98,7 +98,7 @@ export default {
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
-        embedding_space_id: this.embedding_space_id,
+        embedding_space_identifier: this.embedding_space_identifier,
         include_vector: false,
       }
       httpClient.post(`/org/data_map/get_trained_classifier`, body)
@@ -119,7 +119,7 @@ export default {
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
-        embedding_space_id: this.embedding_space_id,
+        embedding_space_identifier: this.embedding_space_identifier,
         deep_train: false,
       }
       httpClient.post(`/data_backend/classifier/retrain`, body)
@@ -137,7 +137,7 @@ export default {
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
-        embedding_space_id: this.embedding_space_id,
+        embedding_space_identifier: this.embedding_space_identifier,
       }
       httpClient.post(`/data_backend/classifier/retraining_status`, body)
       .then(function (response) {
@@ -210,7 +210,7 @@ export default {
         class="relative h-6 items-center justify-center rounded-md text-gray-400 bg-gray-100"
         @click="retrain"
         :disabled="is_retraining"
-        :title="`Last retraining: ${last_retraining_human_readable}, embedding space ${embedding_space_id}`">
+        :title="`Last retraining: ${last_retraining_human_readable}, embedding space ${embedding_space_identifier}`">
         <div class="absolute h-full bg-blue-500/20 rounded-md" :style="{ width: `${retraining_progress * 100}%` }"></div>
         <span class="mx-2 hover:text-blue-500">{{ is_retraining ? "Retraining..." : (show_retrain_success_label ? "Retrained ✓": "Retrain") }}</span>
       </button> -->

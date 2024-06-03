@@ -38,27 +38,27 @@ def get_embedding_space_from_ds_and_field(ds_and_field: tuple[int, str]) -> DotD
     return DotDict(embedding_space)
 
 
-def _get_task_id(collection_id: int, class_name: str, embedding_space_id: int):
-    return f'{collection_id}_{class_name}_{embedding_space_id}'
+def _get_task_id(collection_id: int, class_name: str, embedding_space_identifier: int):
+    return f'{collection_id}_{class_name}_{embedding_space_identifier}'
 
 
 RETRAINING_TASKS = {}  # collection_id -> task status (class name, progress)
 
 
-def get_retraining_status(collection_id: int, class_name: str, embedding_space_id: int):
-    status = RETRAINING_TASKS.get(_get_task_id(collection_id, class_name, embedding_space_id))
+def get_retraining_status(collection_id: int, class_name: str, embedding_space_identifier: int):
+    status = RETRAINING_TASKS.get(_get_task_id(collection_id, class_name, embedding_space_identifier))
     if isinstance(status, dict):
         status = copy.copy(status)
         if 'thread' in status:
             del status['thread']
         if status['status'] == 'done':
-            del RETRAINING_TASKS[_get_task_id(collection_id, class_name, embedding_space_id)]
+            del RETRAINING_TASKS[_get_task_id(collection_id, class_name, embedding_space_identifier)]
     return status
 
 
-def start_retrain(collection_id: int, class_name: str, embedding_space_id: int, deep_train=False):
-    thread = Thread(target=_retrain_safe, args=(collection_id, class_name, embedding_space_id, deep_train))
-    RETRAINING_TASKS[_get_task_id(collection_id, class_name, embedding_space_id)] = {
+def start_retrain(collection_id: int, class_name: str, embedding_space_identifier: int, deep_train=False):
+    thread = Thread(target=_retrain_safe, args=(collection_id, class_name, embedding_space_identifier, deep_train))
+    RETRAINING_TASKS[_get_task_id(collection_id, class_name, embedding_space_identifier)] = {
         'class_name': class_name,
         'progress': 0,
         'status': 'running',
@@ -73,7 +73,7 @@ def start_retrain(collection_id: int, class_name: str, embedding_space_id: int, 
             del RETRAINING_TASKS[other_task_id]
 
 
-def _retrain_safe(collection_id, class_name, embedding_space_id, deep_train=False):
+def _retrain_safe(collection_id, class_name, embedding_space_identifier, deep_train=False):
     # if deep_train, retrain using examples instead of decision vectors from parent collections
     # get all examples for class
     # get all embeddings for examples
@@ -81,19 +81,19 @@ def _retrain_safe(collection_id, class_name, embedding_space_id, deep_train=Fals
     # store classifier, best threshold, metrics
 
     try:
-        _retrain(collection_id, class_name, embedding_space_id, deep_train)
+        _retrain(collection_id, class_name, embedding_space_identifier, deep_train)
     except Exception as e:
-        task_id = _get_task_id(collection_id, class_name, embedding_space_id)
+        task_id = _get_task_id(collection_id, class_name, embedding_space_identifier)
         RETRAINING_TASKS[task_id]['status'] = 'error'
         RETRAINING_TASKS[task_id]['error'] = str(e)
         RETRAINING_TASKS[task_id]['time_finished'] = time.time()
         logging.exception(e)
 
 
-def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
+def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=False):
     # rudimentary implementation just for simple case of non-exclusive classes and item_id examples:
     collection = get_collection(collection_id)
-    task_id = _get_task_id(collection_id, class_name, embedding_space_id)
+    task_id = _get_task_id(collection_id, class_name, embedding_space_identifier)
     assert collection is not None
     examples = get_collection_items(collection_id, class_name, field_type=None, is_positive=None)
     positive_vectors = []
@@ -119,10 +119,10 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
                 if field_name in dataset.schema.object_fields:
                     field = dataset.schema.object_fields[field_name]
                     try:
-                        field_embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
+                        field_embedding_space_identifier = field.generator.embedding_space.identifier if field.generator else field.embedding_space.identifier
                     except AttributeError:
-                        field_embedding_space_id = None
-                    if embedding_space_id == field_embedding_space_id:
+                        field_embedding_space_identifier = None
+                    if embedding_space_identifier == field_embedding_space_identifier:
                         vector_field = field.identifier
                         break
             if vector_field:
@@ -188,7 +188,7 @@ def _retrain(collection_id, class_name, embedding_space_id, deep_train=False):
         }
         highest_score = metrics_without_random_data['highest_score'] if metrics_without_random_data else None
         best_threshold = metrics_without_random_data['best_threshold'] if metrics_without_random_data else None
-        set_trained_classifier(collection_id, class_name, embedding_space_id, decision_vector.tolist(), highest_score, best_threshold, metrics)
+        set_trained_classifier(collection_id, class_name, embedding_space_identifier, decision_vector.tolist(), highest_score, best_threshold, metrics)
     else:
         logging.warning(f"Decision vector not created")
 
@@ -234,7 +234,7 @@ def get_metrics(decision_vector, positive_vectors, negative_vectors):
     return metrics
 
 
-def _calculate_decision_vector_and_best_threshold_and_metrics(collection_id, class_name, embedding_space_id):
+def _calculate_decision_vector_and_best_threshold_and_metrics(collection_id, class_name, embedding_space_identifier):
     # a) binary (single class, pos, neg): do below
     # b) multi class, single output (classification): get all vectors, train together (use other pos as strong neg)
     # c) multi class, multi output (tagging): do below for each class (use other pos as weak neg)

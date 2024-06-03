@@ -31,12 +31,12 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
-    this.get_templates()
+    this.get_schemas()
   },
   watch: {
   },
   methods: {
-    get_templates() {
+    get_schemas() {
       const that = this
       const body = {
         organization_id: that.appStateStore.organization.id,

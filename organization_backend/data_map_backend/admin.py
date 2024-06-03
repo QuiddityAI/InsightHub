@@ -620,7 +620,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
             data = {
                 'collection_id': obj.collection_id,
                 'class_name': obj.class_name,
-                'embedding_space_id': obj.embedding_space_id,
+                'embedding_space_identifier': obj.embedding_space_identifier,
             }
             result = requests.post(url, json=data)
         except Exception as e:
@@ -640,7 +640,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
         data = {
             'collection_id': obj.collection_id,
             'class_name': obj.class_name,
-            'embedding_space_id': obj.embedding_space_id,
+            'embedding_space_identifier': obj.embedding_space_identifier,
         }
         requests.post(url, json=data)
         self.message_user(request, "Retraining classifier...")
@@ -652,7 +652,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
             url = DATA_BACKEND_HOST + f'/data_backend/classifier/{obj.collection_id}/retrain'
             data = {
                 'class_name': obj.class_name,
-                'embedding_space_id': obj.embedding_space_id,
+                'embedding_space_identifier': obj.embedding_space_identifier,
             }
             requests.post(url, json=data)
 

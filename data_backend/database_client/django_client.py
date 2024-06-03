@@ -110,12 +110,12 @@ def add_item_to_collection(collection_id: int, class_name: str, is_positive: boo
     return result.json()
 
 
-def get_trained_classifier(collection_id: int, class_name: str, embedding_space_id: int, include_vector: bool) -> DotDict:
+def get_trained_classifier(collection_id: int, class_name: str, embedding_space_identifier: int, include_vector: bool) -> DotDict:
     url = backend_url + '/org/data_map/get_trained_classifier'
     data = {
         'collection_id': collection_id,
         'class_name': class_name,
-        'embedding_space_id': embedding_space_id,
+        'embedding_space_identifier': embedding_space_identifier,
         'include_vector': include_vector,
     }
     result = django_client.post(url, json=data)
@@ -125,14 +125,14 @@ def get_trained_classifier(collection_id: int, class_name: str, embedding_space_
     return DotDict(result.json())
 
 
-def set_trained_classifier(collection_id: int, class_name: str, embedding_space_id: int,
+def set_trained_classifier(collection_id: int, class_name: str, embedding_space_identifier: int,
                            decision_vector: Iterable, highest_score: float | None, threshold: float | None,
                            metrics: dict) -> None:
     url = backend_url + '/org/data_map/set_trained_classifier'
     data = {
         'collection_id': collection_id,
         'class_name': class_name,
-        'embedding_space_id': embedding_space_id,
+        'embedding_space_identifier': embedding_space_identifier,
         'decision_vector': decision_vector,
         'highest_score': highest_score,
         'threshold': threshold,

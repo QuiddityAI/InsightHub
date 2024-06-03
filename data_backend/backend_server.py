@@ -455,7 +455,7 @@ def store_map():
 def get_retraining_status_route():
     params = request.json or {}
     params = DotDict(params)
-    status = get_retraining_status(params.collection_id, params.class_name, params.embedding_space_id)
+    status = get_retraining_status(params.collection_id, params.class_name, params.embedding_space_identifier)
     return jsonify(status)
 
 
@@ -463,7 +463,7 @@ def get_retraining_status_route():
 def start_retrain_route():
     params = request.json or {}
     params = DotDict(params)
-    start_retrain(params.collection_id, params.class_name, params.embedding_space_id, params.deep_train)
+    start_retrain(params.collection_id, params.class_name, params.embedding_space_identifier, params.deep_train)
     return "", 204
 
 

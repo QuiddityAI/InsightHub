@@ -248,12 +248,12 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
 def get_suitable_generator(dataset, vector_field: str):
     generators: list[DotDict] = get_generators()
     field = dataset.schema.object_fields[vector_field]
-    embedding_space_id = field.generator.embedding_space.id if field.generator else field.embedding_space.id
+    embedding_space_identifier = field.generator.embedding_space.identifier if field.generator else field.embedding_space.identifier
 
     # for text query:
     suitable_generator = None
     for generator in generators:
-        if generator.embedding_space and generator.embedding_space.id == embedding_space_id \
+        if generator.embedding_space and generator.embedding_space.identifier == embedding_space_identifier \
             and generator.input_type == FieldType.TEXT:
             suitable_generator = generator
 
