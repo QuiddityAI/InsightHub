@@ -1,48 +1,36 @@
 <script setup>
-import cborJs from "https://cdn.jsdelivr.net/npm/cbor-js@0.1.0/+esm"
-import Message from 'primevue/message';
 
-import { mapStores } from "pinia"
-
-import { Chart } from "chart.js/auto"
-import annotationPlugin from "chartjs-plugin-annotation"
-import {
-  CursorArrowRaysIcon,
-  RectangleGroupIcon,
-  PlusIcon,
-  MinusIcon,
-  ViewfinderCircleIcon,
-  XMarkIcon,
-} from "@heroicons/vue/24/outline"
+// Chart.js was replaced by ApexCharts but was still used for "Score Info" chart
+// import { Chart } from "chart.js/auto"
+// import annotationPlugin from "chartjs-plugin-annotation"
 
 import Toast from 'primevue/toast';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import DynamicDialog from 'primevue/dynamicdialog'
 import OverlayPanel from "primevue/overlaypanel";
+import Message from 'primevue/message';
 
-import MapWithLabels from "../components/map/MapWithLabels.vue"
-import SearchArea from "../components/search/SearchArea.vue"
-import FilterList from "../components/search/FilterList.vue"
-import RangeFilterList from "../components/search/RangeFilterList.vue"
-import ResultList from "../components/search/ResultList.vue"
-import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
-import CollectionArea from "../components/collections/CollectionArea.vue"
-import CollectionItem from "../components/collections/CollectionItem.vue"
-import AddToCollectionButtons from "../components/collections/AddToCollectionButtons.vue"
-import StatisticList from "../components/search/StatisticList.vue"
-import DatasetsArea from "../components/datasets/DatasetsArea.vue"
-import ChatList from "../components/chats/ChatList.vue"
+import MapWithLabelsAndButtons from "../components/map/MapWithLabels.vue"
+import TopMenu from "../components/general/TopMenu.vue"
+import Timings from "../components/general/Timings.vue"
+import ExploreTab from "../components/search/ExploreTab.vue"
+import CollectionsTab from "../components/collections/CollectionsTab.vue"
+import WriteTab from "../components/collections/WriteTab.vue"
+import DatasetsTab from "../components/datasets/DatasetsTab.vue"
 
 import { httpClient } from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
 
+import { mapStores } from "pinia"
 import { useAppStateStore } from "../stores/app_state_store"
 import { useMapStateStore } from "../stores/map_state_store"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 
-Chart.register(annotationPlugin)
+// Chart.register(annotationPlugin)
+
+const _window = window
 </script>
 
 <script>
@@ -51,7 +39,7 @@ export default {
   data() {
     return {
       // tabs:
-      selected_tab: "map",
+      selected_tab: "results",
 
       score_info_chart: null,
     }
@@ -60,7 +48,8 @@ export default {
     updateMapPassiveMargin() {
       if (window.innerWidth > 768) {
         this.mapStateStore.passiveMarginsLRTB = [
-          this.$refs.left_column.getBoundingClientRect().right + 50,
+          //this.$refs.left_column.getBoundingClientRect().right + 50,
+          50,
           50,
           50,
           150,
@@ -214,6 +203,7 @@ export default {
 
 <template>
   <main class="overflow-hidden">
+
     <Toast position="top-right"></Toast>
     <DynamicDialog />
     <Dialog v-model:visible="appState.show_error_dialog" modal header="Error">
@@ -222,291 +212,24 @@ export default {
         <Button @click="appState.show_error_dialog = false" label="OK"></Button>
       </div>
     </Dialog>
-    <MapWithLabels class="absolute top-0 h-screen w-screen"/>
 
-    <div
-      v-if="appState.map_id && appState.settings.search.search_type === 'similar_to_item'"
-      class="absolute bottom-6 right-[200px] flex flex-row items-center gap-2 rounded-md bg-white p-2 shadow-sm">
-      <button
-        v-tooltip.top="'Normal map with items arranged in island-like clusters'"
-        @click="appState.set_two_dimensional_projection(); appState.request_search_results()"
-        class="h-6 px-1 rounded hover:bg-gray-100"
-        :class="{
-          'text-blue-600': !appState.settings.projection.use_polar_coordinates,
-          'text-gray-400': appState.settings.projection.use_polar_coordinates,
-        }">
-        Normal
-      </button>
-      <button
-        v-tooltip.top="'Arrange items in a star shape around the most relevant one in the center'"
-        @click="appState.set_polar_projection(); appState.request_search_results()"
-        class="h-6 px-1 rounded hover:bg-gray-100"
-        :class="{
-          'text-blue-600': appState.settings.projection.use_polar_coordinates,
-          'text-gray-400': !appState.settings.projection.use_polar_coordinates,
-        }">
-        Star-Shape
-      </button>
-    </div>
+    <MapWithLabelsAndButtons></MapWithLabelsAndButtons>
 
-
-    <div
-      v-if="mapState.selected_map_tool === 'lasso'"
-      class="absolute bottom-6 right-4 flex flex-row justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
-      <button
-        @click="mapState.selection_merging_mode = 'replace'"
-        v-tooltip.top="{ value: 'Replace current selection with new one', showDelay: 400 }"
-        class="h-6 w-6 rounded hover:bg-gray-100"
-        :class="{
-          'text-blue-600': mapState.selection_merging_mode === 'replace',
-          'text-gray-400': mapState.selection_merging_mode !== 'replace',
-        }">
-        <ViewfinderCircleIcon></ViewfinderCircleIcon>
-      </button>
-      <button
-        @click="mapState.selection_merging_mode = 'add'"
-        v-tooltip.top="{ value: 'Add new selection to current one', showDelay: 400 }"
-        class="h-6 w-6 rounded hover:bg-gray-100"
-        :class="{
-          'text-blue-600': mapState.selection_merging_mode === 'add',
-          'text-gray-400': mapState.selection_merging_mode !== 'add',
-        }">
-        <PlusIcon></PlusIcon>
-      </button>
-      <button
-        @click="mapState.selection_merging_mode = 'remove'"
-        v-tooltip.left="{ value: 'Remove new selection from current one', showDelay: 400 }"
-        class="mr-2 h-6 w-6 rounded hover:bg-gray-100"
-        :class="{
-          'text-blue-600': mapState.selection_merging_mode === 'remove',
-          'text-gray-400': mapState.selection_merging_mode !== 'remove',
-        }">
-        <MinusIcon></MinusIcon>
-      </button>
-      <div class="h-6 w-6"></div>
-    </div>
-    <div
-      class="absolute bottom-6 right-4 flex flex-col justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
-      <button
-        @click="mapState.selected_map_tool = 'drag'; mapState.selection_merging_mode = 'replace'"
-        v-tooltip.left="{ value: 'Navigate map by click and drag (normal mode)', showDelay: 400 }"
-        class="h-6 w-6 rounded hover:bg-gray-100"
-        :class="{
-          'text-blue-600': mapState.selected_map_tool === 'drag',
-          'text-gray-400': mapState.selected_map_tool !== 'drag',
-        }">
-        <CursorArrowRaysIcon></CursorArrowRaysIcon>
-      </button>
-      <button
-        @click="mapState.selected_map_tool = 'lasso'"
-        v-tooltip.left="{ value: 'Select items by drawing a line around them', showDelay: 400 }"
-        class="h-6 w-6 rounded hover:bg-gray-100"
-        :class="{
-          'text-blue-600': mapState.selected_map_tool === 'lasso',
-          'text-gray-400': mapState.selected_map_tool !== 'lasso',
-        }">
-        <RectangleGroupIcon></RectangleGroupIcon>
-      </button>
-    </div>
-
-    <div
-      v-if="mapState.visibility_filters.length"
-      class="absolute bottom-6 right-48 flex flex-row items-center justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
-      <span class="mr-2 text-md text-gray-400">Selection:</span>
-      <button
-        @click="(event) => { $refs.add_selection_to_collection_overlay.toggle(event) }"
-        class="px-2 rounded bg-gray-100 text-gray-400 hover:bg-blue-100/50">
-        Add to Collection
-      </button>
-      <button
-        @click="appState.narrow_down_on_selection(appState.visible_result_ids)"
-        class="px-2 rounded bg-gray-100 text-gray-400 hover:bg-blue-100/50">
-        Recluster
-      </button>
-      <button
-        @click="mapState.reset_visibility_filters()"
-        class="h-6 w-6 rounded text-gray-400 hover:bg-red-100">
-        <XMarkIcon></XMarkIcon>
-      </button>
-    </div>
-    <OverlayPanel ref="add_selection_to_collection_overlay">
-      <AddToCollectionButtons
-        @addToCollection="appState.add_selected_points_to_collection"
-        @removeFromCollection="appState.remove_selected_points_from_collection">
-      </AddToCollectionButtons>
-    </OverlayPanel>
-
-
-    <div v-if="appState.show_timings" class="absolute bottom-0 right-0 text-right">
-      <!-- timings -->
-      <ul role="list">
-        <li v-for="item in appState.search_timings" :key="item.part" class="text-gray-300">
-          {{ item.part }}: {{ item.duration.toFixed(2) }} s
-        </li>
-      </ul>
-      <hr />
-      <ul role="list">
-        <li v-for="item in appState.map_timings" :key="item.part" class="text-gray-300">
-          {{ item.part }}: {{ item.duration.toFixed(2) }} s
-        </li>
-      </ul>
-    </div>
+    <Timings></Timings>
 
     <!-- content area -->
-    <div
-      class="pointer-events-none relative mr-auto grid h-screen min-h-0 min-w-0 max-w-7xl grid-cols-1 gap-4 overflow-hidden px-3 pb-20 pt-6 md:grid-cols-2 md:pb-6 md:pt-6 xl:px-12"
-      style="grid-auto-rows: minmax(auto, min-content)">
-      <!-- left column -->
-      <div ref="left_column" class="pointer-events-none flex flex-col overflow-hidden h-[calc(100%-3em)]">
-        <!-- search card -->
-        <SearchArea class="flex-none"></SearchArea>
+    <div class="h-screen flex flex-col pointer-events-none relative p-0 md:pt-3 md:px-4 xl:px-12">
 
-        <!-- tab box -->
-        <div
-          class="pointer-events-auto mt-3 flex flex-initial flex-col overflow-hidden rounded-md bg-white shadow-sm">
-          <div class="mx-3 flex flex-none flex-row gap-1 py-3 text-gray-500">
-            <button
-              @click="selected_tab = 'map'"
-              :class="{ 'text-blue-500': selected_tab === 'map' }"
-              class="flex-none px-5">
-              ◯
-            </button>
-            <button
-              @click="selected_tab = 'results'"
-              :class="{ 'text-blue-500': selected_tab === 'results' }"
-              class="flex-1">
-              Current View
-            </button>
-            <button
-              @click="selected_tab = 'chats'"
-              :class="{ 'text-blue-500': selected_tab === 'chats' }"
-              class="flex-1">
-              Questions
-            </button>
-            <button
-              @click="selected_tab = 'collections'; eventBus.emit('collections_tab_is_clicked')"
-              :class="{ 'text-blue-500': selected_tab === 'collections' }"
-              class="flex-1">
-              Collections
-            </button>
-            <button
-              @click="selected_tab = 'datasets'; eventBus.emit('datasets_tab_is_clicked')"
-              :class="{ 'text-blue-500': selected_tab === 'datasets' }"
-              class="flex-1">
-              Datasets
-            </button>
-          </div>
-          <hr v-if="selected_tab !== 'map'" class="h-px border-0 bg-gray-200" />
+      <TopMenu class="flex-none pointer-events-auto"></TopMenu>
 
-          <div class="flex-initial overflow-y-auto px-3" style="min-height: 0">
-            <!-- result list -->
-            <div v-if="selected_tab === 'results'">
-              <div v-if="appState.debug_autocut">
-                <canvas ref="score_info_chart"></canvas>
-                <div v-if="search_result_score_info">
-                  <div
-                    v-for="score_info_title in Object.keys(search_result_score_info)"
-                    class="text-xs">
-                    {{ score_info_title }} <br />
-                    Max score:
-                    {{ search_result_score_info[score_info_title].max_score.toFixed(2) }}, Min
-                    score:
-                    {{ search_result_score_info[score_info_title].min_score.toFixed(2) }},
-                    Cutoff Index:
-                    {{ search_result_score_info[score_info_title].cutoff_index }}, Reason:
-                    {{ search_result_score_info[score_info_title].reason }}
-                    <div
-                      v-for="item_id in search_result_score_info[score_info_title]
-                        .positive_examples"
-                      :key="'example' + item_id"
-                      class="justify-between pb-3">
-                      <CollectionItem :item_id="item_id" :is_positive="true">
-                      </CollectionItem>
-                    </div>
-                    <div
-                      v-for="item_id in search_result_score_info[score_info_title]
-                        .negative_examples"
-                      :key="'example' + item_id"
-                      class="justify-between pb-3">
-                      <CollectionItem :item_id="item_id" :is_positive="false">
-                      </CollectionItem>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <ExploreTab v-if="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab>
 
-              <FilterList></FilterList>
+      <CollectionsTab v-if="appState.selected_app_tab === 'collections'" class="flex-1 pointer-events-auto"></CollectionsTab>
 
-              <StatisticList></StatisticList>
+      <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab>
 
-              <RangeFilterList></RangeFilterList>
+      <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto"></DatasetsTab>
 
-              <div
-                v-if="appState.search_result_ids.length !== 0 && appState.cluster_data.length !== 0"
-                class="ml-2 mt-1 flex flex-row items-center">
-                <span class="mr-2 flex-none text-gray-500">Cluster:</span>
-                <div class="flex-1 h-10">
-                  <select
-                    v-model="appState.selected_cluster_id"
-                    class="w-full h-[90%] text-md flex-1 rounded border-transparent text-gray-500 focus:border-blue-500 focus:ring-blue-500">
-                    <option :value="null" selected>All</option>
-                    <option v-for="cluster in appState.cluster_data" :value="cluster.id" selected>
-                      {{ cluster.title }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <ResultList></ResultList>
-            </div>
-
-            <!-- ChatList needs v-show instead of v-if to be able to react to show_chat signal -->
-            <ChatList v-show="selected_tab === 'chats'"></ChatList>
-
-            <CollectionArea v-if="selected_tab === 'collections'"> </CollectionArea>
-
-            <DatasetsArea v-if="selected_tab === 'datasets'"></DatasetsArea>
-          </div>
-        </div>
-      </div>
-
-      <!-- right column (e.g. for showing box with details for selected result) -->
-      <div
-        ref="right_column"
-        class="pointer-events-none flex flex-col overflow-hidden md:h-screen">
-        <div
-          v-if="appState.selected_document_ds_and_id !== null"
-          class="pointer-events-auto flex w-full flex-initial overflow-hidden">
-          <ObjectDetailsModal
-            :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
-            :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
-            :show_action_buttons="true"></ObjectDetailsModal>
-        </div>
-
-        <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center items-center">
-          <div class="flex flex-col p-4 bg-white shadow-xl rounded-xl">
-            <span class="self-center font-bold text-gray-400">{{ appState.progress_step_title }}</span>
-            <div class="mt-2 h-2.5 w-32 self-center rounded-full bg-gray-400/50">
-              <div
-                class="h-2.5 rounded-full bg-blue-400"
-                :style="{ width: (appState.progress * 100).toFixed(0) + '%' }"></div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          v-if="!appState.show_loading_bar && !appState.search_result_ids.length && !appState.map_id"
-          class="align-center flex flex-1 flex-col justify-center">
-          <div class="mb-6 flex flex-row justify-center">
-            <img
-              class="h-12"
-              :src="appState.organization ? appState.organization.workspace_tool_logo_url : ''" />
-          </div>
-          <div
-            class="mb-2 flex-none text-center pointer-events-auto font-bold text-gray-400"
-            v-html="appState.organization ? appState.organization.workspace_tool_intro_text : ''"></div>
-        </div>
-      </div>
     </div>
 
     <!-- <div
@@ -520,4 +243,5 @@ export default {
   </main>
 </template>
 
-<style scoped></style>
+<style scoped>
+</style>

@@ -117,11 +117,6 @@ export default {
       </ul>
       <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length"></Paginator>
     </div>
-    <div
-      v-if="appState.visible_result_ids.length === 0"
-      class="flex h-20 flex-col place-content-center text-center">
-      <p class="flex-none text-gray-400">No Results</p>
-    </div>
   </div>
 </template>
 

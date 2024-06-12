@@ -20,10 +20,8 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { FieldType, ellipse } from "../../utils/utils"
 import { useAppStateStore } from "../../stores/app_state_store"
 import CollectionAndVectorFieldSelection from "./CollectionAndVectorFieldSelection.vue";
-import LoginButton from "../LoginButton.vue";
 import AddFilterMenu from "./AddFilterMenu.vue";
 import SearchFilterList from "./SearchFilterList.vue";
-import UserMenu from "./UserMenu.vue";
 import SearchHistoryDialog from "../history/SearchHistoryDialog.vue";
 import StoredMapsDialog from "../history/StoredMapsDialog.vue";
 import { useToast } from 'primevue/usetoast';
@@ -61,8 +59,6 @@ export default {
   emits: ["request_search_results", "reset_search_box"],
   data() {
     return {
-      internal_organization_id: null,
-
       smart_query: "",
       use_smart_search: false,
       processing_smart_search: false,
@@ -141,7 +137,6 @@ export default {
   },
   mounted() {
     const that = this
-    this.internal_organization_id = this.appStateStore.organization_id
     this.eventBus.on("show_results_tab", () => {
       that.use_smart_search = false
     })
@@ -161,11 +156,6 @@ export default {
     },
   },
   watch: {
-    "appStateStore.organization_id": function (newValue, oldValue) {
-      // using internal variable to be able to reset parameters before
-      // actually changing global dataset_id in select-field listener below
-      this.internal_organization_id = this.appStateStore.organization_id
-    },
     show_negative_query_field() {
       if (!this.show_negative_query_field) {
         this.appStateStore.settings.search.all_field_query_negative = ""
@@ -173,9 +163,6 @@ export default {
     },
   },
   methods: {
-    organization_id_changed_by_user() {
-      this.appStateStore.set_organization_id(this.internal_organization_id)
-    },
     open_search_history_dialog() {
       this.$dialog.open(SearchHistoryDialog, {props: {header: "Search History", modal: true}});
     },
@@ -213,27 +200,9 @@ export default {
 </script>
 
 <template>
-  <div class="px-3 pt-3 pb-2 pointer-events-auto rounded-md bg-white shadow-sm">
+  <div class="px-12 pt-10 pb-10 pointer-events-auto rounded-md bg-white shadow-sm">
     <!-- Database Selection -->
     <div class="mb-2 flex items-center justify-between">
-      <a
-        v-tooltip.right="{ value: 'Reset search', showDelay: 400 }"
-        :href="`?organization_id=${appState.organization_id}`"
-        class="w-8 rounded p-2 text-gray-500 hover:bg-gray-100">
-        <HomeIcon></HomeIcon>
-      </a>
-
-      <div class="ml-1 flex-initial w-28"
-        v-tooltip.bottom="{ value: 'Select the organization', showDelay: 400 }">
-        <select
-          v-model="internal_organization_id"
-          @change="organization_id_changed_by_user"
-          class="w-full rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black focus:border-blue-500 focus:ring-blue-500">
-          <option v-for="item in appState.available_organizations" :value="item.id" selected>
-            {{ item.name }}
-          </option>
-        </select>
-      </div>
 
       <div class="flex-initial w-48"
         v-tooltip.bottom="{ value: 'Datasets to search in', showDelay: 400 }">
@@ -261,17 +230,7 @@ export default {
       </div>
 
       <div class="flex-1"></div>
-      <LoginButton></LoginButton>
-      <button v-if="appState.logged_in" class="mr-2 p-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
-        v-tooltip.bottom="{ value: 'User Menu (logout etc.)', showDelay: 400 }"
-        @click="(event) => $refs.user_menu.toggle(event)">
-        <!-- <UserCircleIcon class="inline-block w-4 h-4"></UserCircleIcon> -->
-        {{ appState.user.username.substring(0, 6) + (appState.user.username.length > 6 ? '...' : '') }}
-      </button>
 
-      <OverlayPanel ref="user_menu">
-        <UserMenu @hide="$refs.user_menu.hide()"></UserMenu>
-      </OverlayPanel>
     </div>
 
     <!-- Search Field -->

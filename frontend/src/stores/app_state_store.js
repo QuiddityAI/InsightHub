@@ -15,6 +15,18 @@ export const useAppStateStore = defineStore("appState", {
       mapState: useMapStateStore(),
       toast: useToast(),
 
+      available_organizations: [],
+      organization_id: null,
+      organization: null,
+      datasets: {},
+
+      user_id: null,
+      logged_in: false,
+      username: null,
+      dev_mode: false,
+
+      selected_app_tab: "explore",
+
       show_timings: false,
       store_search_history: true,
       ignore_cache: false,
@@ -30,16 +42,6 @@ export const useAppStateStore = defineStore("appState", {
 
       available_vector_fields: [],
       available_number_fields: [],
-
-      available_organizations: [],
-      organization_id: null,
-      organization: null,
-      datasets: {},
-
-      user_id: null,
-      logged_in: false,
-      username: null,
-      dev_mode: false,
 
       // results:
       search_result_ids: [],
@@ -351,6 +353,13 @@ export const useAppStateStore = defineStore("appState", {
       }
 
       this.retrieve_available_datasets(preselected_dataset_ids)
+    },
+    set_app_tab(part) {
+      this.selected_app_tab = part
+      // store selected part in URL:
+      const queryParams = new URLSearchParams(window.location.search)
+      queryParams.set("tab", part)
+      history.pushState(null, null, "?" + queryParams.toString())
     },
     retrieve_available_datasets(preselected_dataset_ids = null) {
       const that = this
