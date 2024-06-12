@@ -15,16 +15,7 @@ import DynamicDialog from 'primevue/dynamicdialog'
 import OverlayPanel from "primevue/overlaypanel";
 import Message from 'primevue/message';
 
-import SearchArea from "../search/SearchArea.vue"
-import FilterList from "../search/FilterList.vue"
-import RangeFilterList from "../search/RangeFilterList.vue"
-import ResultList from "../search/ResultList.vue"
-import ObjectDetailsModal from "../search/ObjectDetailsModal.vue"
 import CollectionArea from "../collections/CollectionArea.vue"
-import CollectionItem from "../collections/CollectionItem.vue"
-import StatisticList from "../search/StatisticList.vue"
-import DatasetsArea from "../datasets/DatasetsArea.vue"
-import ChatList from "../chats/ChatList.vue"
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -74,4 +65,4 @@ export default {
 </template>
 
 <style scoped>
-</style>
+</style>../search/CreateSearchTaskArea.vue

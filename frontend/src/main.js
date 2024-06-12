@@ -2,7 +2,7 @@ import { createApp } from "vue"
 import { createPinia } from "pinia"
 import mitt from 'mitt';
 import PrimeVue from 'primevue/config';
-import Wind from './prime_vue_presets/wind';
+//import Wind from './prime_vue_presets/wind';
 import Aura from './prime_vue_presets/aura';
 import ToastService from 'primevue/toastservice';
 import DialogService from 'primevue/dialogservice';
@@ -13,7 +13,7 @@ import {marked} from "marked";
 import markedKatex from "marked-katex-extension";
 
 import "./style.css"
-import SearchAndMap from "./apps/SearchAndMap.vue"
+import MainApp from "./apps/MainApp.vue"
 import { get_download_url } from "./utils/utils";  // used in item rendering definitions
 
 globalThis.get_download_url = get_download_url;
@@ -25,7 +25,7 @@ const katex_options = {
 marked.use(markedKatex(katex_options))
 
 const pinia = createPinia()
-const app = createApp(SearchAndMap)
+const app = createApp(MainApp)
 
 const eventBus = mitt();
 app.provide('eventBus', eventBus);

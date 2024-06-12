@@ -15,7 +15,7 @@ import DynamicDialog from 'primevue/dynamicdialog'
 import OverlayPanel from "primevue/overlaypanel";
 import Message from 'primevue/message';
 
-import SearchArea from "../search/SearchArea.vue"
+import CreateSearchTaskArea from "../search/CreateSearchTaskArea.vue"
 import FilterList from "../search/FilterList.vue"
 import RangeFilterList from "../search/RangeFilterList.vue"
 import ResultList from "../search/ResultList.vue"
@@ -67,10 +67,9 @@ export default {
 <template>
   <div class="flex flex-col items-center justify-center">
 
+    <CreateSearchTaskArea v-if="!appState.map_id" class="flex-none"></CreateSearchTaskArea>
 
-    <SearchArea v-if="true" class="flex-none"></SearchArea>
-
-    <div v-if="false"
+    <div v-if="!!appState.map_id"
       class="grid min-h-0 min-w-0 gap-4 overflow-hidden"
       :class="{
         'mx-auto': use_single_column,
@@ -242,4 +241,4 @@ export default {
 </template>
 
 <style scoped>
-</style>
+</style>./CreateSearchTaskArea.vue
