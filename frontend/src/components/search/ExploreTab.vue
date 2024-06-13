@@ -12,6 +12,7 @@ import Message from 'primevue/message';
 
 import CreateSearchTaskArea from "../search/CreateSearchTaskArea.vue"
 import SearchTaskDescriptionCard from "../search/SearchTaskDescriptionCard.vue"
+import CollectionQuickAccessCard from "../search/CollectionQuickAccessCard.vue"
 
 import FilterList from "../search/FilterList.vue"
 import RangeFilterList from "../search/RangeFilterList.vue"
@@ -72,13 +73,13 @@ export default {
       style="grid-auto-rows: minmax(auto, min-content)">
 
       <!-- left column -->
-      <div ref="left_column" class="pointer-events-none flex flex-col gap-4 overflow-hidden">
+      <div ref="left_column" class="h-[calc(100vh-6em)] pointer-events-none flex flex-col gap-4 overflow-hidden">
 
         <SearchTaskDescriptionCard class="pointer-events-auto">
 
         </SearchTaskDescriptionCard>
 
-        <div class="flex-initial overflow-y-auto px-3 bg-white shadow-sm rounded-md pointer-events-auto" style="min-height: 0">
+        <div class="flex-1 min-h-0 px-3 bg-white shadow-sm rounded-md pointer-events-auto overflow-y-auto" style="min-height: 0">
 
           <div v-if="appState.debug_autocut">
             <canvas ref="score_info_chart"></canvas>
@@ -138,6 +139,9 @@ export default {
 
           <ResultList></ResultList>
         </div>
+
+        <CollectionQuickAccessCard></CollectionQuickAccessCard>
+
       </div>
 
       <!-- right column (e.g. for showing box with details for selected result) -->
