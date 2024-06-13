@@ -66,7 +66,7 @@ export default {
 
     <!-- two column layout (search results left and map and details card right)-->
     <div v-if="!!appState.map_id"
-      class="grid min-h-0 min-w-0 mt-3 gap-4 overflow-hidden"
+      class="w-full grid min-h-0 min-w-0 mt-3 gap-4 overflow-hidden"
       :class="{
         'grid-cols-1': use_single_column,
         'grid-cols-2': !use_single_column,
@@ -139,6 +139,7 @@ export default {
           </div>
 
           <ResultList></ResultList>
+
         </div>
 
         <CollectionQuickAccessCard></CollectionQuickAccessCard>

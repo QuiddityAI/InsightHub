@@ -624,6 +624,7 @@ export const useAppStateStore = defineStore("appState", {
       this.reset_search_results_and_map({ leave_map_unchanged: true })
       this.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")
       this.eventBus.emit("show_results_tab")
+      this.selected_app_tab = "explore"
 
       // postprocess search query:
       if (this.settings.search.search_type == "external_input"

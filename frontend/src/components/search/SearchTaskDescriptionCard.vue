@@ -77,6 +77,11 @@ export default {
         Cluster: {{ mapState.map_parameters?.search.origin_display_name }}
       </h2>
 
+      <h2 v-if="mapState.map_parameters?.search.search_type === 'global_map'"
+        class="text-md font-bold">
+        Overview: {{ mapState.map_parameters?.search.dataset_ids.map(dataset_id => appState.datasets[dataset_id].name).join(', ') }}
+      </h2>
+
     </div>
 
     <SearchFilterList :show_filters_of_current_task="true"

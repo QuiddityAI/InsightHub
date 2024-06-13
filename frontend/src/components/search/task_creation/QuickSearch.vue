@@ -130,6 +130,7 @@ export default {
           optionGroupChildren="items"
           optionLabel="name"
           optionValue="id"
+          @change="appState.on_selected_datasets_changed"
           class="w-full"
           listStyle="height:225px">
           <template #option="slotProps">

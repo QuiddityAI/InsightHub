@@ -78,7 +78,7 @@ export default {
           @click="show_result_search = !show_result_search"
           class="flex-none p-1 rounded hover:bg-gray-100"
           :class="{'bg-blue-100/50': show_result_search}">
-          <MagnifyingGlassIcon class="h-5 w-5 text-gray-500"></MagnifyingGlassIcon>
+          <MagnifyingGlassIcon class="h-5 w-5 text-gray-400"></MagnifyingGlassIcon>
         </button>
       </div>
       <div class="flex flex-row justify-center">
