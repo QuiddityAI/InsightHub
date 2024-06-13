@@ -45,7 +45,6 @@ export default {
   emits: [],
   data() {
     return {
-      selected_task_type: null,
       available_task_types: [
         { task_type: 'quick_search', title: 'Quick Search', tooltip: 'Quick and easy search, with the results presented in a list and visually on a map' },
         { task_type: 'topic_overview', title: 'Topic Overview', tooltip: "Like 'Quick Search', but provides a more advanced structure of the map together with summaries of each subarea" },
@@ -84,28 +83,28 @@ export default {
     <div class="px-5 md:px-12 pt-10 pb-10 pointer-events-auto rounded-xl bg-white shadow-lg">
 
       <!-- Task Type Selection -->
-      <p v-if="!selected_task_type" class="mb-6 text-lg text-gray-500 font-normal">
+      <p v-if="!appState.settings.search.task_type" class="mb-6 text-lg text-gray-500 font-normal">
         Select what you want to do:</p>
       <div class="flex flex-row items-center justify-between gap-6 text-gray-500 font-semibold">
         <button v-for="task_type in available_task_types"
           class="text-md bg-gray-100 rounded-md px-3 py-1 hover:text-blue-500"
-          :class="{ 'text-blue-500': selected_task_type === task_type.task_type }"
+          :class="{ 'text-blue-500': appState.settings.search.task_type === task_type.task_type }"
           v-tooltip.top="{ value: task_type.tooltip, showDelay: 400 }"
-          @click="selected_task_type === task_type.task_type ? selected_task_type = null : selected_task_type = task_type.task_type">
+          @click="appState.settings.search.task_type === task_type.task_type ? appState.settings.search.task_type = null : appState.settings.search.task_type = task_type.task_type">
           {{ task_type.title }}
         </button>
       </div>
-      <div v-if="!selected_task_type" class="mt-4 flex flex-row items-end">
+      <div v-if="!appState.settings.search.task_type" class="mt-4 flex flex-row items-end">
         <img src="assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
         <span class="text-gray-500 italic">Start here if your are new!</span>
       </div>
 
-      <QuickSearch v-if="selected_task_type === 'quick_search'" class="mt-10"></QuickSearch>
-      <CustomSearch v-if="selected_task_type === 'custom_search'" class="mt-10"></CustomSearch>
+      <QuickSearch v-if="appState.settings.search.task_type === 'quick_search'" class="mt-10"></QuickSearch>
+      <CustomSearch v-if="appState.settings.search.task_type === 'custom_search'" class="mt-10"></CustomSearch>
 
     </div>
 
-    <div v-if="!selected_task_type && appState.logged_in && appState.search_history.length"
+    <div v-if="!appState.settings.search.task_type && appState.logged_in && appState.search_history.length"
       class="max-w-[900px] mt-10 px-5 md:px-12 pt-6 pb-6 pointer-events-auto rounded-xl bg-white shadow-sm">
       <div class="flex flex-row gap-4 items-center text-gray-400">
         <span class="">Continue where you left off:</span>

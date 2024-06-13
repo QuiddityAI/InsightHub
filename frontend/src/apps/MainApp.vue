@@ -48,10 +48,10 @@ export default {
     updateMapPassiveMargin() {
       if (window.innerWidth > 768) {
         this.mapStateStore.passiveMarginsLRTB = [
-          window.innerWidth < 768 ? 50 : window.innerWidth * 0.5 + 50,
-          150,
-          50,
-          150,
+          window.innerWidth * 0.5 + 50,
+          100,
+          120,
+          70,
         ]
       } else {
         this.mapStateStore.passiveMarginsLRTB = [50, 50, 250, 50]

@@ -100,6 +100,7 @@ export const useAppStateStore = defineStore("appState", {
       settings: {
         search: {
           dataset_ids: [],
+          task_type: null,  // one of quick_search, custom_search etc.
           search_type: "external_input", // or cluster, collection or similar item
           search_algorithm: "hybrid",  // "keyword", "vector", "hybrid"
           use_separate_queries: false,
@@ -134,6 +135,7 @@ export const useAppStateStore = defineStore("appState", {
           ],
 
           origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
+          origins: [],  // for each origin: { type: "cluster", display_name: "", map_id: "123" }
           cluster_origin_map_id: null,
           cluster_id: null,
           collection_id_and_class: null,
@@ -574,11 +576,13 @@ export const useAppStateStore = defineStore("appState", {
       this.eventBus.emit("search_results_cleared")
     },
     reset_search_box() {
+      this.settings.search.task_type = null
       this.settings.search.search_type = "external_input"
       this.settings.search.use_separate_queries = false
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.search.origin_display_name = ""
+      this.settings.search.origins = []
       this.settings.search.filters = []
 
       this.settings.search.cluster_origin_map_id = null
@@ -599,7 +603,7 @@ export const useAppStateStore = defineStore("appState", {
       history.pushState(null, null, "?" + emptyQueryParams.toString())
     },
     run_search_from_history(history_item) {
-      this.settings = history_item.parameters
+      this.settings = JSON.parse(JSON.stringify(history_item.parameters))
       this.request_search_results()
     },
     request_search_results() {
@@ -715,6 +719,10 @@ export const useAppStateStore = defineStore("appState", {
           name = this.settings.search.all_field_query
           if (this.settings.search.all_field_query_negative) {
             name = name + ` (-${this.settings.search.all_field_query_negative})`
+          }
+          if (this.settings.search.filters.length > 0) {
+            const filter_part = this.settings.search.filters.length > 1 ? ` (${this.settings.search.filters.length} filters)` : ` (${this.settings.search.filters.length} filter)`
+            name = name + filter_part
           }
           display_name = name
         }
@@ -1042,7 +1050,18 @@ export const useAppStateStore = defineStore("appState", {
     cluster_hover_end(cluster_id) {
       this.highlighted_cluster_id = null
     },
+    get_current_origin() {
+      const current_map_name = this.get_current_map_name()
+      const origin = {
+        type: this.mapState.map_parameters.search.search_type,
+        name: current_map_name[0],
+        display_name: current_map_name[1],
+        map_id: this.map_id,
+      }
+      return origin
+    },
     narrow_down_on_cluster(cluster_item) {
+      this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])
       this.settings.search.search_type = "cluster"
       this.settings.search.cluster_origin_map_id = this.map_id
       this.settings.search.cluster_id = cluster_item.id
@@ -1053,6 +1072,7 @@ export const useAppStateStore = defineStore("appState", {
       this.request_search_results()
     },
     narrow_down_on_selection(selected_items) {
+      this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])
       this.settings.search.search_type = "map_subset"
       this.settings.search.cluster_origin_map_id = this.map_id
       this.settings.search.selected_items = selected_items
