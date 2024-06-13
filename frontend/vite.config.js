@@ -26,5 +26,5 @@ export default defineConfig({
     },
   },
   plugins: [vue()],
-  assetsInclude: ["**/*.vert", "**/*.frag", "src/textures/*.jpg"],
+  assetsInclude: ["**/*.vert", "**/*.frag", "src/textures/*.jpg", "assets/*"],
 })

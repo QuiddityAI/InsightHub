@@ -50,8 +50,8 @@ export default {
 <template>
   <div v-if="appState.settings.search.filters.length" class="mt-3 flex flex-row flex-wrap gap-2">
     <Chip v-for="filter, index in appState.settings.search.filters"
-      :label="get_filter_label(filter)"
       removable @remove="remove_filter(index)">
+      <span class="text-sm">{{ get_filter_label(filter) }}</span>
     </Chip>
   </div>
 

@@ -48,9 +48,8 @@ export default {
     updateMapPassiveMargin() {
       if (window.innerWidth > 768) {
         this.mapStateStore.passiveMarginsLRTB = [
-          //this.$refs.left_column.getBoundingClientRect().right + 50,
-          50,
-          50,
+          window.innerWidth < 768 ? 50 : window.innerWidth * 0.5 + 50,
+          150,
           50,
           150,
         ]
@@ -191,6 +190,11 @@ export default {
     this.eventBus.on("show_score_info_chart", () => {
       this.show_score_info_chart()
     })
+
+    if (window.innerWidth < 768) {
+      this.appStateStore.error_dialog_message = "This application doesn't work correctly on mobile devices. Please use a desktop browser."
+      this.appStateStore.show_error_dialog = true
+    }
   },
   watch: {
     "appStateStore.organization_id"() {

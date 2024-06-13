@@ -19,6 +19,7 @@ import RangeFilterList from "../search/RangeFilterList.vue"
 import ResultList from "../search/ResultList.vue"
 import ObjectDetailsModal from "../search/ObjectDetailsModal.vue"
 import StatisticList from "../search/StatisticList.vue"
+import CollectionItem from "../collections/CollectionItem.vue"
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
