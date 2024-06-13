@@ -40,6 +40,7 @@ export default {
     return {
       use_smart_search: true,
       processing_smart_search: false,
+      example_query_index: 0,
     }
   },
   computed: {
@@ -75,8 +76,18 @@ export default {
       const query = this.appStateStore.settings.search.all_field_query
       return other_quotes.some((quote) => query.includes(" " + quote) || query.includes(quote + " "))
     },
+    example_queries() {
+      if (this.appStateStore.settings.search.dataset_ids.length === 0) {
+        return []
+      }
+      return this.appStateStore.datasets[this.appStateStore.settings.search.dataset_ids[0]]?.advanced_options.example_queries || []
+    },
   },
   mounted() {
+    // increase example query index every few seconds
+    setInterval(() => {
+      this.example_query_index = this.example_query_index + 1
+    }, 6000)
   },
   watch: {
   },
@@ -114,6 +125,12 @@ export default {
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'Smart search failed', life: 5000})
       })
       this.processing_smart_search = true
+    },
+    run_example_query(example) {
+      this.appStateStore.settings.search.all_field_query = example.query
+      this.appStateStore.settings.search.filters = example.filters || []
+      this.appStateStore.settings.search.search_algorithm = example.search_type
+      this.use_smart_search = example.use_smart_search || true
     },
   },
 }
@@ -226,6 +243,15 @@ export default {
             @click="use_smart_search = !use_smart_search">
             Auto-detect best search strategy and required filters from query
           </button>
+        </div>
+
+        <div class="relative">
+          <div v-if="example_queries.length" class="absolute top-4 text-sm text-gray-400">
+            Try: <button class="underline hover:text-blue-500"
+              @click="run_example_query(example_queries[example_query_index % example_queries.length])">
+              "{{ example_queries[example_query_index % example_queries.length].query }}"
+            </button>
+          </div>
         </div>
 
       </div>
