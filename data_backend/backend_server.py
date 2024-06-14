@@ -23,7 +23,7 @@ from logic.upload_files import upload_files, get_upload_task_status, UPLOADED_FI
 from logic.chat_and_extraction import get_global_question_context, get_item_question_context
 from logic.export_converters import export_collection, export_collection_table, export_item
 
-from database_client.django_client import add_stored_map
+from database_client.django_client import add_stored_map, get_or_create_default_dataset
 from database_client.forward_local_db import forward_local_db
 
 
@@ -232,19 +232,25 @@ def delete_dataset_content_endpoint():
 def upload_files_endpoint():
     # TODO: check auth
     try:
-        dataset_id: int = int(request.form["dataset_id"])
+        dataset_id: int = int(request.form["dataset_id"])  # type: ignore
+        schema_identifier: int = int(request.form["schema_identifier"])  # type: ignore
+        user_id: int = int(request.form["user_id"])  # type: ignore
+        organization_id: int = int(request.form["organization_id"])  # type: ignore
         import_converter: str = request.form["import_converter"]
         collection_id_str: str | None = request.form.get("collection_id")
         collection_class: str | None = request.form.get("collection_class")
     except KeyError as e:
         return f"parameter missing: {e}", 400
     collection_id: int | None = int(collection_id_str) if collection_id_str else None
+    if dataset_id == -1:
+        dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
+    assert dataset_id is not None
     task_id = upload_files(dataset_id, import_converter, request.files.getlist("files[]"), collection_id, collection_class)
     # usually, all in-memory files of the request would be closed and deleted after the request is done
     # in this case, we want to keep them open and close them manually in the background thread
     # so we need to remove the files from the request object:
     request.__dict__["files"] = werkzeug.datastructures.MultiDict()
-    return jsonify({"task_id": task_id}), 200
+    return jsonify({"task_id": task_id, dataset_id: dataset_id}), 200
 
 
 @app.route('/data_backend/upload_files/status', methods=['POST'])

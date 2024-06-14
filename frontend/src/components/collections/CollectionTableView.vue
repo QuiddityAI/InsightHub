@@ -21,6 +21,7 @@ import CollectionItem from "./CollectionItem.vue"
 import ExportTableArea from "./ExportTableArea.vue";
 import CollectionTableCell from "./CollectionTableCell.vue";
 import ObjectDetailsModal from "../search/ObjectDetailsModal.vue";
+import AddItemsToCollectionArea from "./AddItemsToCollectionArea.vue";
 
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -44,6 +45,7 @@ export default {
       collection_items: [],
 
       show_add_column_dialog: false,
+      show_add_item_dialog: false,
       selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
       selected_module: 'openai_gpt_4_o',
 
@@ -301,7 +303,7 @@ export default {
   <div class="flex flex-row">
     <div class="flex-1 flex flex-col overflow-x-hidden">
 
-      <div class="w-full flex flex-row mb-3">
+      <div class="w-full flex flex-row gap-3 mb-3">
         <button @click="show_add_column_dialog = true" class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
           Add Column <PlusIcon class="inline h-4 w-4"></PlusIcon>
         </button>
@@ -363,13 +365,22 @@ export default {
           </div>
         </Dialog>
 
+        <button @click="show_add_item_dialog = true" class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
+          Add Items <PlusIcon class="inline h-4 w-4"></PlusIcon>
+        </button>
+        <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
+          <AddItemsToCollectionArea
+            :collection="collection"
+            ></AddItemsToCollectionArea>
+        </Dialog>
+
         <div class="flex-1"></div>
         <button @click="event => {$refs.export_dialog.toggle(event)}"
           class="py-1 px-2 rounded-md bg-gray-100 text-gray-500 text-sm font-semibold hover:bg-blue-100/50">
           Export Table
         </button>
         <button v-if="appState.user.is_staff" @click="show_writing_tasks = !show_writing_tasks"
-          class="ml-2 py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
+          class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
           {{ show_writing_tasks ? 'Hide' : 'Show' }} Writing Tasks <ChevronRightIcon class="inline h-4 w-4"></ChevronRightIcon>
         </button>
 
@@ -380,32 +391,35 @@ export default {
       </div>
 
       <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" size="small" class="min-h-0 overflow-x-auto">
-          <Column header="">
-            <template #header="slotProps">
-              <span class="text-sm">Item</span>
-            </template>
-            <template #body="slotProps">
-              <CollectionItem
-                :dataset_id="slotProps.data.dataset_id"
-                :item_id="slotProps.data.item_id"
-                :is_positive="slotProps.data.is_positive"
-                class="w-[520px]">
-              </CollectionItem>
-            </template>
-          </Column>
-          <Column v-for="column in collection.columns" :header="false">
-            <template #header="slotProps">
-              <button class="rounded-md bg-gray-100 text-sm hover:bg-blue-100/50 py-1 px-2"
-                @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
-                {{ column.name }}
-              </button>
-            </template>
-            <template #body="slotProps">
-              <CollectionTableCell :item="slotProps.data" :column="column"
-                :current_extraction_processes="collection.current_extraction_processes">
-              </CollectionTableCell>
-            </template>
-          </Column>
+        <template #empty>
+          <div class="py-10 flex flex-row justify-center text-gray-500">No items yet</div>
+        </template>
+        <Column header="">
+          <template #header="slotProps">
+            <span class="text-sm">Item</span>
+          </template>
+          <template #body="slotProps">
+            <CollectionItem
+              :dataset_id="slotProps.data.dataset_id"
+              :item_id="slotProps.data.item_id"
+              :is_positive="slotProps.data.is_positive"
+              class="w-[520px]">
+            </CollectionItem>
+          </template>
+        </Column>
+        <Column v-for="column in collection.columns" :header="false">
+          <template #header="slotProps">
+            <button class="rounded-md bg-gray-100 text-sm hover:bg-blue-100/50 py-1 px-2"
+              @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
+              {{ column.name }}
+            </button>
+          </template>
+          <template #body="slotProps">
+            <CollectionTableCell :item="slotProps.data" :column="column"
+              :current_extraction_processes="collection.current_extraction_processes">
+            </CollectionTableCell>
+          </template>
+        </Column>
       </DataTable>
 
       <div class="flex flex-row items-center justify-center">

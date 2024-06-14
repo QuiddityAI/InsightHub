@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from ..models import DataCollection, CollectionItem, Dataset, DatasetSchema, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
-from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSerializer, ExportConverterSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
+from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSchemaSerializer, DatasetSerializer, ExportConverterSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -170,14 +170,9 @@ def get_dataset_schemas(request):
 
     schemas = organization.schemas_for_user_created_datasets.all()
 
-    result = []
-    for schema in schemas:
-        result.append({"identifier": schema.identifier, "name": schema.name,  # type: ignore
-                       "entity_name": schema.entity_name, "entity_name_plural": schema.entity_name_plural,
-                       "short_description": schema.short_description,
-                       })
+    serialized_data = DatasetSchemaSerializer(schemas, many=True).data
 
-    result = json.dumps(result)
+    result = json.dumps(serialized_data)
     return HttpResponse(result, status=200, content_type='application/json')
 
 
@@ -220,6 +215,55 @@ def create_dataset_from_schema(request):
     dataset.save()
     dataset.admins.add(request.user)
     dataset.save()
+
+    dataset_dict = DatasetSerializer(instance=dataset).data
+    result = json.dumps(dataset_dict)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def get_or_create_default_dataset(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]
+        schema_identifier: str = data["schema_identifier"]
+        organization_id: int = data["organization_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        organization = Organization.objects.get(id=organization_id)
+    except Organization.DoesNotExist:
+        return HttpResponse(status=404)
+    if not organization.members.filter(id=request.user.id).exists():
+        return HttpResponse(status=401)
+    if not organization.schemas_for_user_created_datasets.filter(identifier=schema_identifier).exists():
+        return HttpResponse(status=404)
+
+    try:
+        schema = DatasetSchema.objects.get(identifier=schema_identifier)
+    except Dataset.DoesNotExist:
+        return HttpResponse(status=404)
+
+    default_dataset_name = f"My {schema.name}"
+    if Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=request.user).exists():
+        dataset = Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=request.user).first()
+    else:
+        dataset = Dataset()
+        dataset.schema = schema
+        dataset.name = default_dataset_name
+        dataset.organization = organization
+        dataset.created_in_ui = True
+        dataset.is_public = False
+        dataset.save()
+        dataset.admins.add(request.user)
+        dataset.save()
 
     dataset_dict = DatasetSerializer(instance=dataset).data
     result = json.dumps(dataset_dict)

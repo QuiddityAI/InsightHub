@@ -169,3 +169,14 @@ def get_export_converter(export_converter_identifier: str) -> DotDict:
     }
     result = django_client.post(url, json=data)
     return DotDict(result.json())
+
+
+def get_or_create_default_dataset(user_id: int, schema_id: int, organization_id: int) -> DotDict:
+    url = backend_url + '/org/data_map/get_or_create_default_dataset'
+    data = {
+        'user_id': user_id,
+        'schema_id': schema_id,
+        'organization_id': organization_id,
+    }
+    result = django_client.post(url, json=data)
+    return DotDict(result.json())
