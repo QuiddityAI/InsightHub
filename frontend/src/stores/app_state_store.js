@@ -608,6 +608,17 @@ export const useAppStateStore = defineStore("appState", {
     },
     request_search_results() {
       const that = this
+      // check if the user has searched something before and is not logged in
+      if (!this.logged_in && document.cookie.includes("searched_without_login=true")) {
+        this.eventBus.emit("show_login_dialog", {message: "Login or register to continue searching"})
+        return
+      }
+
+      // set a cookie to remember that the user has searched something
+      if (!this.logged_in) {
+        document.cookie = "searched_without_login=true; max-age=3600; path=/"
+      }
+
       if (this.settings.search.dataset_ids.length === 0) return
 
       if (

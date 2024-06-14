@@ -20,7 +20,7 @@ import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 
 import UserMenu from "../search/UserMenu.vue";
-import LoginButton from "../LoginButton.vue";
+import LoginButton from "../general/LoginButton.vue";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()

@@ -11,8 +11,8 @@ import { useToast } from 'primevue/usetoast';
 import { UserIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
 
 import { mapStores } from "pinia"
-import { useAppStateStore } from "../stores/app_state_store"
-import { useMapStateStore } from "../stores/map_state_store"
+import { useAppStateStore } from "../../stores/app_state_store"
+import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
@@ -28,6 +28,7 @@ export default {
   data() {
     return {
       dialog_visible: false,
+      message: "",
       email: "",
       password: "",
       password_confirm: "",
@@ -39,8 +40,17 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
+    this.eventBus.on("show_login_dialog", ({message}) => {
+      this.dialog_visible = true
+      this.message = message
+    })
   },
   watch: {
+    dialog_visible(new_value) {
+      if (!new_value) {
+        this.message = ""
+      }
+    }
   },
   methods: {
     login() {
@@ -78,6 +88,7 @@ export default {
     </button>
 
     <Dialog v-model:visible="dialog_visible" modal header="Login / Register">
+      <p>{{ message }}</p>
       <Accordion :activeIndex="0" class="mb-2">
         <AccordionTab header="Login">
           <form ref="login_form" :action="`/org/login_from_app/?next=/`" method="post" class="flex flex-col gap-3">
@@ -132,4 +143,4 @@ export default {
 </template>
 
 <style scoped>
-</style>
+</style>../../stores/app_state_store../../stores/map_state_store
