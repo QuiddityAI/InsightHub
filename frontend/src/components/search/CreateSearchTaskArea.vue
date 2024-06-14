@@ -6,6 +6,9 @@ import SearchHistoryDialog from "../history/SearchHistoryDialog.vue";
 import StoredMapsDialog from "../history/StoredMapsDialog.vue";
 import QuickSearch from "./task_creation/QuickSearch.vue";
 import CustomSearch from "./task_creation/CustomSearch.vue";
+import QuestionTask from "./task_creation/QuestionTask.vue";
+import HighPrecisionSearch from "./task_creation/HighPrecisionSearch.vue";
+import TopicOverview from "./task_creation/TopicOverview.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -53,7 +56,6 @@ export default {
         { task_type: 'custom_search', title: 'Custom Search', tooltip: "Allows you to configure all parameters of the search yourself" },
       ],
 
-
     }
   },
   mounted() {
@@ -100,6 +102,9 @@ export default {
       </div>
 
       <QuickSearch v-if="appState.settings.search.task_type === 'quick_search'" class="mt-10"></QuickSearch>
+      <TopicOverview v-if="appState.settings.search.task_type === 'topic_overview'" class="mt-10"></TopicOverview>
+      <QuestionTask v-if="appState.settings.search.task_type === 'question'" class="mt-10"></QuestionTask>
+      <HighPrecisionSearch v-if="appState.settings.search.task_type === 'high_precision_search'" class="mt-10"></HighPrecisionSearch>
       <CustomSearch v-if="appState.settings.search.task_type === 'custom_search'" class="mt-10"></CustomSearch>
 
     </div>

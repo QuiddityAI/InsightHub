@@ -95,8 +95,6 @@ export default {
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'Please select at least one source', life: 5000})
         return
       }
-      if (!this.appStateStore.check_if_search_is_allowed({use_credit: false})) return
-
       djangoClient.post(`/org/data_map/convert_smart_query_to_parameters`, {
         user_id: this.appStateStore.user.id,
         query: this.appStateStore.settings.search.all_field_query,
@@ -133,7 +131,11 @@ export default {
 
 <template>
   <div class="flex flex-col">
-    <div class="flex flex-row gap-10">
+    <Message v-if="!appState.user.is_staff" :closable="false">
+      Coming Soon
+    </Message>
+
+    <div v-if="appState.user.is_staff" class="flex flex-row gap-10">
       <div class="w-[250px] flex flex-col">
         <Listbox multiple metaKeySelection
           v-model="appState.settings.search.dataset_ids"
@@ -253,7 +255,7 @@ export default {
 
     </div>
 
-    <div class="mt-4 flex flex-row items-end">
+    <div v-if="appState.user.is_staff" class="mt-4 flex flex-row items-end">
       <img src="assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
       <span class="text-gray-500 italic">Want to search your own files? Upload them at the top.</span>
     </div>

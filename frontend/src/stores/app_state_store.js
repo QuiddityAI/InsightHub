@@ -606,18 +606,22 @@ export const useAppStateStore = defineStore("appState", {
       this.settings = JSON.parse(JSON.stringify(history_item.parameters))
       this.request_search_results()
     },
-    request_search_results() {
-      const that = this
+    check_if_search_is_allowed(params = {use_credit: false}) {
       // check if the user has searched something before and is not logged in
       if (!this.logged_in && document.cookie.includes("searched_without_login=true")) {
         this.eventBus.emit("show_login_dialog", {message: "Login or register to continue searching"})
-        return
+        return false
       }
 
       // set a cookie to remember that the user has searched something
-      if (!this.logged_in) {
+      if (params.use_credit && !this.logged_in) {
         document.cookie = "searched_without_login=true; max-age=3600; path=/"
       }
+      return true
+    },
+    request_search_results() {
+      const that = this
+      if (!this.check_if_search_is_allowed({use_credit: true})) return
 
       if (this.settings.search.dataset_ids.length === 0) return
 

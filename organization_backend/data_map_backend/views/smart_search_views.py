@@ -16,12 +16,11 @@ from .other_views import is_from_backend
 def convert_smart_query_to_parameters(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
+    # route is available without login
 
     try:
         data = json.loads(request.body)
-        user_id = data["user_id"]
+        user_id: int | None = data.get("user_id")
         query: str = data["query"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
@@ -146,9 +145,17 @@ JSON:
     # logging.warning(prompt)
     history = [ { "role": "system", "content": system_prompt },
                 { "role": "user", "content": user_prompt } ]
-    usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
-    result = usage_tracker.request_usage(1)
-    if result["approved"]:
+    approved = False
+    if user_id:
+        usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
+        result = usage_tracker.request_usage(1)
+        approved = result["approved"]
+    else:
+        # to enable new user to try the service, this method is available without login
+        # (but the frontend makes sure that users need to login after the first usage)
+        approved = True
+
+    if approved:
         response_text = get_chatgpt_response_using_history(history, model=OPENAI_MODELS.GPT4)
     else:
         response_text = "AI usage limit exceeded."
