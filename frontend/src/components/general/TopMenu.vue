@@ -96,6 +96,7 @@ export default {
           @click="appState.set_app_tab('collections')">
           Collect & Process</button>
          <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'write'}"
+          v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('write')">
           Write</button>
          <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'datasets'}"
@@ -127,7 +128,7 @@ export default {
       <select class="md:hidden rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
         <option>Explore</option>
         <option>Collect & Process</option>
-        <option>Write</option>
+        <option v-if="appState.user?.is_staff">Write</option>
         <option>Upload Files</option>
       </select>
     </div>
