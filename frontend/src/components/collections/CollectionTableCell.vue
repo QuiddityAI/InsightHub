@@ -131,9 +131,9 @@ export default {
         class="w-6 h-6"></ProgressSpinner>
       </div>
       <div v-else>
-        <div v-if="!edit_mode" v-html="value_as_html" class="use-default-html-styles"></div>
+        <div v-if="!edit_mode" v-html="value_as_html" class="text-sm use-default-html-styles"></div>
         <textarea v-if="edit_mode"
-          class="w-full h-[150px] p-1 border border-gray-300 rounded"
+          class="w-full h-[150px] p-1 border border-gray-300 rounded text-sm"
           :value="item.column_data[column.identifier]?.value"
           ref="edit_text_area">
         </textarea>

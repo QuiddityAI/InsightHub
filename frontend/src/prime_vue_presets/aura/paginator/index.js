@@ -5,7 +5,7 @@ export default {
             'flex items-center justify-center flex-wrap',
 
             // Spacing
-            'px-4 py-2',
+            'px-4 py-0',
 
             // Shape
             'border-0 rounded-md',

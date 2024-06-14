@@ -62,6 +62,9 @@ export default {
       if (queryParams.get("error") !== null) {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: queryParams.get("error") })
       }
+      if (queryParams.get("tab")) {
+        this.appStateStore.selected_app_tab = queryParams.get("tab")
+      }
 
       if (queryParams.get("organization_id") === null) {
         const default_organization = this.appStateStore.available_organizations.find(
@@ -217,18 +220,18 @@ export default {
       </div>
     </Dialog>
 
-    <MapWithLabelsAndButtons></MapWithLabelsAndButtons>
+    <MapWithLabelsAndButtons v-show="appState.selected_app_tab === 'explore'"></MapWithLabelsAndButtons>
 
     <Timings></Timings>
 
     <!-- content area -->
-    <div class="h-screen flex flex-col pointer-events-none relative p-0 md:pt-3 md:px-4 xl:px-12">
+    <div class="h-screen flex flex-col pointer-events-none relative p-0 md:pt-3 md:px-4">
 
       <TopMenu class="flex-none pointer-events-auto"></TopMenu>
 
-      <ExploreTab v-if="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab>
+      <ExploreTab v-show="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab>
 
-      <CollectionsTab v-if="appState.selected_app_tab === 'collections'" class="flex-1 pointer-events-auto"></CollectionsTab>
+      <CollectionsTab v-show="appState.selected_app_tab === 'collections'" class="flex-1 pointer-events-auto"></CollectionsTab>
 
       <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab>
 

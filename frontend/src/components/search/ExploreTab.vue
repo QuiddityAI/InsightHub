@@ -74,7 +74,7 @@ export default {
       style="grid-auto-rows: minmax(auto, min-content)">
 
       <!-- left column -->
-      <div ref="left_column" class="h-[calc(100vh-6em)] pointer-events-none flex flex-col gap-4 overflow-hidden">
+      <div ref="left_column" class="h-[calc(100vh-6em)] pointer-events-none flex flex-col gap-3 overflow-hidden">
 
         <SearchTaskDescriptionCard class="pointer-events-auto">
 

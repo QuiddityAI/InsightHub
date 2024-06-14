@@ -21,6 +21,7 @@ import CollectionItem from "./CollectionItem.vue"
 import ExportTableArea from "./ExportTableArea.vue";
 import CollectionTableCell from "./CollectionTableCell.vue";
 import ObjectDetailsModal from "../search/ObjectDetailsModal.vue";
+
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -297,11 +298,11 @@ export default {
 </script>
 
 <template>
-  <div class="h-full w-full flex flex-row">
+  <div class="flex flex-row">
     <div class="flex-1 flex flex-col overflow-x-hidden">
 
       <div class="w-full flex flex-row mb-3">
-        <button @click="show_add_column_dialog = true" class="py-1 px-2 rounded-md bg-green-100 font-semibold hover:bg-blue-100/50">
+        <button @click="show_add_column_dialog = true" class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
           Add Column <PlusIcon class="inline h-4 w-4"></PlusIcon>
         </button>
         <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
@@ -364,11 +365,11 @@ export default {
 
         <div class="flex-1"></div>
         <button @click="event => {$refs.export_dialog.toggle(event)}"
-          class="py-1 px-2 rounded-md bg-gray-100 hover:bg-blue-100/50">
-          Export
+          class="py-1 px-2 rounded-md bg-gray-100 text-gray-500 text-sm font-semibold hover:bg-blue-100/50">
+          Export Table
         </button>
         <button v-if="appState.user.is_staff" @click="show_writing_tasks = !show_writing_tasks"
-          class="ml-2 py-1 px-2 rounded-md bg-green-100 font-semibold hover:bg-blue-100/50">
+          class="ml-2 py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
           {{ show_writing_tasks ? 'Hide' : 'Show' }} Writing Tasks <ChevronRightIcon class="inline h-4 w-4"></ChevronRightIcon>
         </button>
 
@@ -378,8 +379,11 @@ export default {
         </OverlayPanel>
       </div>
 
-      <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" class="min-h-0 overflow-x-auto">
-          <Column header="Item">
+      <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" size="small" class="min-h-0 overflow-x-auto">
+          <Column header="">
+            <template #header="slotProps">
+              <span class="text-sm">Item</span>
+            </template>
             <template #body="slotProps">
               <CollectionItem
                 :dataset_id="slotProps.data.dataset_id"
@@ -391,7 +395,7 @@ export default {
           </Column>
           <Column v-for="column in collection.columns" :header="false">
             <template #header="slotProps">
-              <button class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2"
+              <button class="rounded-md bg-gray-100 text-sm hover:bg-blue-100/50 py-1 px-2"
                 @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
                 {{ column.name }}
               </button>
@@ -414,6 +418,7 @@ export default {
           placeholder="Order By..."
           class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
         <button @click="order_descending = !order_descending"
+          v-tooltip="{'value': 'Sort Order', showDelay: 500}"
           class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
           {{ order_descending ? '▼' : '▲' }}
         </button>

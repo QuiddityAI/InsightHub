@@ -58,7 +58,11 @@ export default {
 <template>
   <div class="mt-3 mb-3 shadow-sm rounded-md flex flex-row items-center justify-center bg-white">
 
-    <DatasetsArea></DatasetsArea>
+    <Message v-if="!appState.logged_in" :closable="false">
+      Log in to upload your own files (PDF, CSV, txt, etc.) to make them searchable and process them using AI.
+    </Message>
+
+    <DatasetsArea v-if="appState.logged_in"></DatasetsArea>
 
   </div>
 

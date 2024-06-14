@@ -46,7 +46,7 @@ export default {
 <template>
   <div>
 
-    <div v-if="appState.logged_in" class="my-2 flex items-stretch">
+    <div v-if="appState.logged_in" class="mt-2 mb-2 flex items-stretch">
       <input
         ref="new_collection_name"
         type="text"
@@ -61,7 +61,7 @@ export default {
       </button>
     </div>
 
-    <ul v-if="Object.keys(appState.collections).length !== 0" role="list" class="mb-4 mt-5">
+    <ul v-if="Object.keys(appState.collections).length !== 0" role="list" class="mt-5">
       <li
         v-for="collection in appState.collections"
         :key="collection.id"
@@ -70,16 +70,6 @@ export default {
         <div class="flex flex-row gap-3">
           <span class="font-bold text-gray-600">{{ collection.name }}</span>
           <div class="flex-1"></div>
-          <!-- <button
-            @click="$emit('recommend_items_for_collection', collection)"
-            class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-            Recommend Similar
-          </button>
-          <button
-            @click="$emit('show_collection_as_map', collection)"
-            class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-            Show Map
-          </button> -->
           <button
             @click="$emit('collection_selected', collection.id)"
             class="ml-1 w-8 rounded px-1 hover:bg-gray-100">

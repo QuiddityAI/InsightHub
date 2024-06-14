@@ -1,21 +1,10 @@
 <script setup>
-import {
-  CursorArrowRaysIcon,
-  RectangleGroupIcon,
-  PlusIcon,
-  MinusIcon,
-  ViewfinderCircleIcon,
-  XMarkIcon,
-} from "@heroicons/vue/24/outline"
 
-import Toast from 'primevue/toast';
-import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
-import DynamicDialog from 'primevue/dynamicdialog'
-import OverlayPanel from "primevue/overlaypanel";
 import Message from 'primevue/message';
 
-import CollectionArea from "../collections/CollectionArea.vue"
+import CollectionList from "../collections/CollectionList.vue"
+import CollectionClassesList from "../collections/CollectionClassesList.vue"
+import CollectionClassDetails from "../collections/CollectionClassDetails.vue"
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -37,14 +26,13 @@ export default {
   emits: [],
   data() {
     return {
+      currently_selected_collection: null,
+      currently_selected_collection_class: null,
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
-    use_single_column() {
-      return window.innerWidth < 768 || (this.selected_tab === "results" && this.appStateStore.search_result_ids.length === 0)
-    },
   },
   mounted() {
   },
@@ -56,9 +44,40 @@ export default {
 </script>
 
 <template>
-  <div class="mt-3 mb-3 shadow-sm rounded-md flex flex-row items-center justify-center bg-white">
+  <div class="mt-3 mb-3 pt-4 pb-3 px-5 shadow-sm rounded-md bg-white overflow-hidden">
 
-    <CollectionArea></CollectionArea>
+    <div v-if="!appState.logged_in" class="h-full flex flex-row gap-5 items-center justify-center">
+      <Message :closable="false">
+        Log in to save items in collections and extract information in a table
+      </Message>
+    </div>
+
+    <div v-if="appState.logged_in" class="h-full flex flex-row gap-5 items-center justify-center">
+
+      <CollectionList
+        v-if="!currently_selected_collection && !currently_selected_collection_class"
+        class="w-[500px] h-full overflow-y-auto"
+        @collection_selected="(collection_id) => currently_selected_collection = collection_id"
+        @class_selected="(class_name) => currently_selected_collection_class = class_name">
+      </CollectionList>
+
+      <CollectionClassesList
+        v-if="currently_selected_collection && !currently_selected_collection_class"
+        class="w-[500px] h-full overflow-y-auto"
+        :collection_id="currently_selected_collection"
+        @class_selected="(class_name) => currently_selected_collection_class = class_name"
+        @close="currently_selected_collection = null">
+      </CollectionClassesList>
+
+      <CollectionClassDetails
+        v-if="currently_selected_collection && currently_selected_collection_class"
+        class="flex-1 h-full"
+        :collection_id="currently_selected_collection"
+        :class_name="currently_selected_collection_class"
+        @close="currently_selected_collection = null; currently_selected_collection_class = null">
+      </CollectionClassDetails>
+
+    </div>
 
   </div>
 

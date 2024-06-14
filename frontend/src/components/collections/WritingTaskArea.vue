@@ -262,7 +262,7 @@ export default {
     <div v-if="appState.selected_writing_task" class="flex-1 flex flex-col gap-2 overflow-y-auto">
 
       <div class="flex flex-row items-center">
-        Prompt:
+        <span class="text-sm">Prompt:</span>
         <div class="flex-1"></div>
         <button
           @click="delete_writing_task()"
@@ -299,8 +299,8 @@ export default {
         <SelectButton v-model="appState.selected_writing_task.use_all_items"
           :options="item_selection_options" optionLabel="label" optionValue="value"
           class="ml-[2px]" />
-        <button @click="update_writing_task()" class="px-2 py-1 rounded bg-gray-100 hover:bg-blue-100/50">Save Changes</button>
-        <button @click="execute_writing_task()" class="px-2 py-1 rounded bg-green-100 hover:bg-blue-100/50">(Re-)generate</button>
+        <button @click="update_writing_task()" class="px-2 py-1 rounded text-sm bg-gray-100 hover:bg-blue-100/50">Save Changes</button>
+        <button @click="execute_writing_task()" class="px-2 py-1 rounded text-sm bg-green-100 hover:bg-blue-100/50">(Re-)generate</button>
         <div class="flex-1"></div>
         <button v-if="appState.selected_writing_task.previous_versions?.length > 0"
           @click="revert_changes()"
@@ -316,10 +316,10 @@ export default {
       <div class="relative flex-1 mt-2 flex flex-col overflow-hidden">
         <textarea v-if="edit_mode"
           v-model="appState.selected_writing_task.text"
-          class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
+          class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
         <div v-if="!edit_mode" class="w-full h-full">
           <div v-html="marked.parse(appState.selected_writing_task.text)"
-            class="w-full h-full use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
+            class="w-full h-full text-sm use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
         </div>
         <button @click="edit_mode = !edit_mode"
           v-tooltip.left="{'value': 'Edit', showDelay: 500}"

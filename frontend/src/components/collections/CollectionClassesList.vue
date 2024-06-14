@@ -68,7 +68,7 @@ export default {
 
 <template>
   <div>
-    <div class="mb-3 ml-1 mt-3 flex flex-row gap-3">
+    <div class="mb-3 flex flex-row gap-3">
       <button @click="$emit('close')" class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
         <ChevronLeftIcon></ChevronLeftIcon>
       </button>
@@ -82,23 +82,6 @@ export default {
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </button>
     </div>
-
-    <!-- <div v-if="settings_visible" class="mt-2 flex flex-row gap-3">
-      <button
-        @click="train_classifier"
-        class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-        Train Classifier
-      </button>
-      <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-        X: highlight similar in map
-      </button>
-      <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-        Color: xxx
-      </button>
-      <button @click="" class="text-sm font-light text-gray-500 hover:text-blue-500/50">
-        Symbol: xxx
-      </button>
-    </div> -->
 
     <div class="my-2 flex items-stretch">
       <input
