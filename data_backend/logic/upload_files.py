@@ -27,10 +27,8 @@ UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 upload_tasks = {}
 
 
-def upload_files(dataset_id: int, import_converter: str, files: Iterable[FileStorage],
-                 collection_id: int | None, collection_class: str | None) -> str:
+def _create_upload_task(dataset_id: int):
     global upload_tasks
-
     # delete any finished tasks from upload_tasks[dataset_id]:
     if dataset_id not in upload_tasks:
         upload_tasks[dataset_id] = {}
@@ -49,10 +47,17 @@ def upload_files(dataset_id: int, import_converter: str, files: Iterable[FileSto
         "inserted_ids": [],
         "failed_files": [],
     }
+    return task_id
+
+
+def upload_files(dataset_id: int, import_converter: str, files: Iterable[FileStorage],
+                 collection_id: int | None, collection_class: str | None) -> str:
+    global upload_tasks
+    task_id = _create_upload_task(dataset_id)
 
     def run():
         try:
-            inserted_ids, failed_files = _upload_files(dataset_id, import_converter, files,
+            inserted_ids, failed_files = _store_files_and_import_them(dataset_id, import_converter, files,
                  collection_id, collection_class, task_id)
             upload_tasks[dataset_id][task_id]["is_running"] = False
             upload_tasks[dataset_id][task_id]["status"] = "finished"
@@ -77,6 +82,34 @@ def upload_files(dataset_id: int, import_converter: str, files: Iterable[FileSto
     return task_id
 
 
+def import_items(dataset_id, import_converter, items, collection_id, collection_class):
+    global upload_tasks
+    task_id = _create_upload_task(dataset_id)
+
+    def run():
+        try:
+            inserted_ids, failed_files = _import_items(dataset_id, import_converter, items,
+                 collection_id, collection_class, task_id)
+            upload_tasks[dataset_id][task_id]["is_running"] = False
+            upload_tasks[dataset_id][task_id]["status"] = "finished"
+            upload_tasks[dataset_id][task_id]["finished_at"] = datetime.datetime.now().isoformat()
+            upload_tasks[dataset_id][task_id]["progress"] = 1.0
+            upload_tasks[dataset_id][task_id]["inserted_ids"] = inserted_ids
+            upload_tasks[dataset_id][task_id]["failed_files"] = failed_files
+        except Exception as e:
+            logging.warning(f"upload_files failed: {e}")
+            # print traceback
+            import traceback
+            traceback.print_exc()
+            upload_tasks[dataset_id][task_id]["is_running"] = False
+            upload_tasks[dataset_id][task_id]["status"] = f"failed ({str(e)})"
+            upload_tasks[dataset_id][task_id]["finished_at"] = datetime.datetime.now().isoformat()
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    return task_id
+
+
 def get_upload_task_status(dataset_id: int) -> list[dict]:
     return list(upload_tasks.get(dataset_id, {}).values())
 
@@ -86,10 +119,9 @@ def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float
     upload_tasks[dataset_id][task_id]["progress"] = progress
 
 
-def _upload_files(dataset_id: int, import_converter_identifier: str, files: Iterable[FileStorage],
+def _store_files_and_import_them(dataset_id: int, import_converter_identifier: str, files: Iterable[FileStorage],
                  collection_id: int | None, collection_class: str | None, task_id: str) -> tuple[list[tuple], list[str]]:
-    import_converter = get_import_converter(import_converter_identifier)
-    logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter}")
+    logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter_identifier}")
     if not os.path.exists(UPLOADED_FILES_FOLDER):
         os.makedirs(UPLOADED_FILES_FOLDER)
     _set_task_status(dataset_id, task_id, "storing files", 0.0)
@@ -114,8 +146,15 @@ def _upload_files(dataset_id: int, import_converter_identifier: str, files: Iter
             failed_files.append({"filename": file.filename, "reason": str(e)})
         _set_task_status(dataset_id, task_id, "storing files", i / len(files))  # type: ignore
 
+    return _import_items(dataset_id, import_converter_identifier, paths, collection_id, collection_class, task_id, failed_files)
+
+
+def _import_items(dataset_id: int, import_converter_identifier: str, paths_or_items: list,
+                 collection_id: int | None, collection_class: str | None, task_id: str,
+                 failed_files: list = []) -> tuple[list[tuple], list[str]]:
+    import_converter = get_import_converter(import_converter_identifier)
     converter_func = get_import_converter_by_name(import_converter.module)
-    items, failed_ids = converter_func(paths, import_converter.parameters, lambda progress: _set_task_status(dataset_id, task_id, "converting files", progress))
+    items, failed_ids = converter_func(paths_or_items, import_converter.parameters, lambda progress: _set_task_status(dataset_id, task_id, "converting files", progress))
     failed_files += failed_ids
 
     _set_task_status(dataset_id, task_id, "inserting into DB", 0.0)
@@ -232,6 +271,8 @@ def get_import_converter_by_name(code_module_name: str) -> Callable:
         return _scientific_article_pdf
     elif code_module_name == "scientific_article_csv":
         return _scientific_article_csv
+    elif code_module_name == "scientific_article_form":
+        return _scientific_article_form
     elif code_module_name == "csv":
         return _import_csv
     raise ValueError(f"import converter {code_module_name} not found")
@@ -330,6 +371,32 @@ def _scientific_article_csv(paths, parameters, on_progress=None) -> tuple[list[d
                 logging.warning(f"Failed to parse row {i} in {sub_path}: {e}")
         if on_progress:
             on_progress(0.5 + (len(items) / len(paths)) * 0.5)
+
+    return items, []
+
+
+def _scientific_article_form(raw_items, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+    items = []
+    for row in raw_items:
+        try:
+            items.append({
+                "id": row.get("doi") or str(uuid.uuid4()),
+                "doi": row.get("doi"),
+                "title": row.get("title"),
+                "abstract": row.get("abstract"),
+                "authors": row.get("authors"),
+                "journal": row.get("journal"),
+                "publication_year": _safe_to_int(row.get("year")),
+                "cited_by": _safe_to_int(row.get("cited by")),
+                "file_path": None,
+                "thumbnail_path": None,
+                "full_text": None,
+                "full_text_original_chunks": [],
+            })
+        except Exception as e:
+            logging.warning(f"Failed to parse item: {e}")
+        if on_progress:
+            on_progress(0.5 + (len(items) / len(raw_items)) * 0.5)
 
     return items, []
 

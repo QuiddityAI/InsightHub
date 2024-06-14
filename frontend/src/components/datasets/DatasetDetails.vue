@@ -159,11 +159,12 @@ export default {
         </h3>
       </button>
       <AddItemsToDatasetArea v-if="visible_area == 'upload_files'"
+        class="ml-2"
         :schema="dataset.schema"
         :preselected_import_converter="preselected_import_converter"
         :target_collection="null"
         :dataset_id="dataset.id"
-        @get_dataset_additional_info="get_dataset_additional_info"
+        @items_added="get_dataset_additional_info"
         />
       <button v-if="appState.dev_mode" class="mt-2 w-full hover:bg-gray-100" @click="visible_area = 'upload_using_api'">
         <h3 class="text-left text-md text-gray-600 font-semibold">

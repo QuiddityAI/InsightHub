@@ -371,6 +371,8 @@ export default {
         <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
           <AddItemsToCollectionArea
             :collection="collection"
+            :collection_class="class_name"
+            @items_added="load_collection_items"
             ></AddItemsToCollectionArea>
         </Dialog>
 

@@ -17,8 +17,8 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: ["collection"],
-  emits: [],
+  props: ["collection", "collection_class"],
+  emits: ["items_added"],
   data() {
     return {
       available_schemas: [],
@@ -93,7 +93,9 @@ export default {
         :schema="selected_schema"
         :preselected_import_converter="null"
         :target_collection="collection"
+        :target_collection_class="collection_class"
         :dataset_id="selected_dataset_id"
+        @items_added="$emit('items_added')"
         ></AddItemsToDatasetArea>
     </div>
   </div>

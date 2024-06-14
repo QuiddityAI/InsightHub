@@ -326,6 +326,12 @@ class ImportConverter(models.Model):
         max_length=200,
         blank=True,
         null=True)
+    manual_insert_form = models.JSONField(
+        verbose_name="Manual Insert Form",
+        help_text='A list of fields like [{"identifier": "field_name", "label": "Field Label", "type": "text", "required": true}]',
+        default=list,
+        blank=True,
+        null=True)
 
     history = HistoricalRecords()
 

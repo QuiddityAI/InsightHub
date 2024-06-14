@@ -29,8 +29,8 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: ["schema", "target_collection", "preselected_import_converter", "dataset_id"],
-  emits: ["get_dataset_additional_info"],
+  props: ["schema", "target_collection", "target_collection_class", "preselected_import_converter", "dataset_id"],
+  emits: ["items_added"],
   data() {
     return {
       selected_import_converter: this.preselected_import_converter,
@@ -38,6 +38,7 @@ export default {
       upload_in_progress: false,
       upload_tasks: [],
       actual_dataset_id: this.dataset_id,
+      manually_created_item: {},
     }
   },
   computed: {
@@ -165,21 +166,52 @@ export default {
           if (that.upload_tasks.filter(task => task.is_running).length > 0) {
             setTimeout(that.get_upload_task_status, 1000)
           } else {
-            that.$emit('get_dataset_additional_info')
+            that.$emit('items_added')
           }
         })
         .catch(function (error) {
           console.error(error)
         })
     },
+    manually_create_item() {
+      const that = this
+      const collection_id = this.target_collection?.id
+      const collection_class = this.target_collection_class
+      if (this.add_to_collection) {
+        const collection_selection = this.$refs.collection_selection
+        if (collection_selection.selected_collection_id) {
+          collection_id = collection_selection.selected_collection_id
+          collection_class = collection_selection.selected_collection_class
+        }
+      }
+      const body = {
+        dataset_id: this.dataset_id,
+        schema_identifier: this.schema.identifier,
+        user_id: this.appStateStore.user.id,
+        organization_id: this.appStateStore.organization.id,
+        import_converter: this.selected_import_converter.identifier,
+        collection_id: collection_id,
+        collection_class: collection_class,
+        items: [this.manually_created_item],
+      }
+      httpClient
+        .post("/data_backend/import_items", body)
+        .then(function (response) {
+          that.actual_dataset_id = response.data.dataset_id
+          that.get_upload_task_status()
+        })
+        .catch(function (error) {
+          console.error(error)
+        })
+      this.manually_created_item = {}
+    },
   },
 }
 </script>
 
 <template>
-  <div class="ml-2 mb-3 mt-2 flex flex-col gap-2">
+  <div class="mb-3 mt-2 flex flex-col gap-2">
     <div class="flex flex-row items-center">
-      <label class="mr-2 text-sm text-gray-700" for="import_type">Import Type:</label>
       <Dropdown
         id="import_type"
         v-model="selected_import_converter"
@@ -201,8 +233,15 @@ export default {
       <SelectCollection v-show="add_to_collection" ref="collection_selection">
       </SelectCollection>
     </div>
+    <div v-if="selected_import_converter && selected_import_converter.manual_insert_form?.length">
+      <div v-for="field in selected_import_converter.manual_insert_form">
+        <label :for="field.identifier" class="mr-2 text-sm text-gray-700">{{ field.label }}:</label>
+        <input :id="field.identifier" v-model="manually_created_item[field.identifier]" class="border border-gray-300 rounded-md p-1">
+      </div>
+      <button @click="manually_create_item()">Create Item</button>
+    </div>
     <FileUpload
-      v-if="selected_import_converter"
+      v-if="selected_import_converter && !selected_import_converter.manual_insert_form?.length"
       ref="fileUploader"
       name="files[]"
       url="/data_backend/upload_files"

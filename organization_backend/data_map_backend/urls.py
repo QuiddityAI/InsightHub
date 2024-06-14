@@ -48,6 +48,7 @@ urlpatterns=[
     path("execute_writing_task", question_views.execute_writing_task),
     path("get_dataset_schemas", other_views.get_dataset_schemas),
     path("create_dataset_from_schema", other_views.create_dataset_from_schema),
+    path("get_or_create_default_dataset", other_views.get_or_create_default_dataset),
     path("change_dataset", other_views.change_dataset),
     path("delete_dataset", other_views.delete_dataset),
     path("get_import_converter", other_views.get_import_converter),

@@ -19,7 +19,7 @@ from logic.search_common import get_document_details_by_id
 from logic.generate_missing_values import delete_field_content, generate_missing_values
 from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from logic.classifiers import get_retraining_status, start_retrain
-from logic.upload_files import upload_files, get_upload_task_status, UPLOADED_FILES_FOLDER
+from logic.upload_files import import_items, upload_files, get_upload_task_status, UPLOADED_FILES_FOLDER
 from logic.chat_and_extraction import get_global_question_context, get_item_question_context
 from logic.export_converters import export_collection, export_collection_table, export_item
 
@@ -233,7 +233,7 @@ def upload_files_endpoint():
     # TODO: check auth
     try:
         dataset_id: int = int(request.form["dataset_id"])  # type: ignore
-        schema_identifier: int = int(request.form["schema_identifier"])  # type: ignore
+        schema_identifier: str = int(request.form["schema_identifier"])  # type: ignore
         user_id: int = int(request.form["user_id"])  # type: ignore
         organization_id: int = int(request.form["organization_id"])  # type: ignore
         import_converter: str = request.form["import_converter"]
@@ -244,13 +244,32 @@ def upload_files_endpoint():
     collection_id: int | None = int(collection_id_str) if collection_id_str else None
     if dataset_id == -1:
         dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
-    assert dataset_id is not None
     task_id = upload_files(dataset_id, import_converter, request.files.getlist("files[]"), collection_id, collection_class)
     # usually, all in-memory files of the request would be closed and deleted after the request is done
     # in this case, we want to keep them open and close them manually in the background thread
     # so we need to remove the files from the request object:
     request.__dict__["files"] = werkzeug.datastructures.MultiDict()
-    return jsonify({"task_id": task_id, dataset_id: dataset_id}), 200
+    return jsonify({"task_id": task_id, "dataset_id": dataset_id}), 200
+
+
+@app.route('/data_backend/import_items', methods=['POST'])
+def import_items_endpoint():
+    try:
+        params = request.json or {}
+        dataset_id: int = params["dataset_id"]
+        schema_identifier: str = params["schema_identifier"]
+        user_id: int = params["user_id"]
+        organization_id: int = params["organization_id"]
+        import_converter: str = params["import_converter"]
+        collection_id: int | None = params.get("collection_id")
+        collection_class: str | None = params.get("collection_class")
+        items: list[dict] = params["items"]
+    except KeyError as e:
+        return f"parameter missing: {e}", 400
+    if dataset_id == -1:
+        dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
+    task_id = import_items(dataset_id, import_converter, items, collection_id, collection_class)
+    return jsonify({"task_id": task_id, "dataset_id": dataset_id}), 200
 
 
 @app.route('/data_backend/upload_files/status', methods=['POST'])

@@ -8,6 +8,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 from ..models import DataCollection, CollectionItem, Dataset, DatasetSchema, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
 from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSchemaSerializer, DatasetSerializer, ExportConverterSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
@@ -238,10 +239,15 @@ def get_or_create_default_dataset(request):
         return HttpResponse(status=400)
 
     try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return HttpResponse(status=404)
+
+    try:
         organization = Organization.objects.get(id=organization_id)
     except Organization.DoesNotExist:
         return HttpResponse(status=404)
-    if not organization.members.filter(id=request.user.id).exists():
+    if not organization.members.filter(id=user.id).exists():  # type: ignore
         return HttpResponse(status=401)
     if not organization.schemas_for_user_created_datasets.filter(identifier=schema_identifier).exists():
         return HttpResponse(status=404)
@@ -252,8 +258,8 @@ def get_or_create_default_dataset(request):
         return HttpResponse(status=404)
 
     default_dataset_name = f"My {schema.name}"
-    if Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=request.user).exists():
-        dataset = Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=request.user).first()
+    if Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=user).exists():
+        dataset = Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=user).first()
     else:
         dataset = Dataset()
         dataset.schema = schema
@@ -262,7 +268,7 @@ def get_or_create_default_dataset(request):
         dataset.created_in_ui = True
         dataset.is_public = False
         dataset.save()
-        dataset.admins.add(request.user)
+        dataset.admins.add(user)
         dataset.save()
 
     dataset_dict = DatasetSerializer(instance=dataset).data
