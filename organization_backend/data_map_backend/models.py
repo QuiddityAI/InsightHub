@@ -815,6 +815,8 @@ class Dataset(models.Model):
 
     def delete_content(self):
         delete_dataset_content(self.id)  # type: ignore
+        collection_items = CollectionItem.objects.filter(dataset_id=self.id)  # type: ignore
+        collection_items.delete()
 
     def delete_with_content(self):
         self.delete_content()

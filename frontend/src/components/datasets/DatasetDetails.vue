@@ -88,7 +88,7 @@ export default {
         this.$toast.add({severity:'info', summary: 'Info', detail: 'You cannot delete this dataset because it was not created from the UI. Use the backend to delete it.'})
         return
       }
-      if (!confirm("Are you sure you want to delete this dataset and all of its data? This action cannot be undone.")) {
+      if (!confirm("Are you sure you want to delete this dataset, all of its data, and related collection items? This action cannot be undone.")) {
         return
       }
       const that = this
