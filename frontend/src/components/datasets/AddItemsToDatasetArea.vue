@@ -115,7 +115,7 @@ export default {
                 fileUploaderComponent.messages.push(error)
               }
             }
-            that.actual_dataset_id = data.dataset_id
+            that.set_actual_dataset_id(data.dataset_id)
             that.get_upload_task_status()
 
             if (fileUploaderComponent.fileLimit) {
@@ -152,6 +152,12 @@ export default {
 
       xhr.send(formData);
       that.upload_in_progress = true
+    },
+    set_actual_dataset_id(dataset_id) {
+      this.actual_dataset_id = dataset_id
+      if (!this.appStateStore.datasets[dataset_id]) {
+        this.appStateStore.fetch_dataset(dataset_id)
+      }
     },
     get_upload_task_status() {
       const that = this
@@ -197,7 +203,7 @@ export default {
       httpClient
         .post("/data_backend/import_items", body)
         .then(function (response) {
-          that.actual_dataset_id = response.data.dataset_id
+          that.set_actual_dataset_id(response.data.dataset_id)
           that.get_upload_task_status()
         })
         .catch(function (error) {
