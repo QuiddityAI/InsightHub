@@ -14,6 +14,7 @@ from dataclasses import asdict
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 import pypdfium2 as pdfium
+import requests
 
 from utils.field_types import FieldType
 from database_client.text_search_engine_client import TextSearchEngineClient
@@ -275,6 +276,8 @@ def get_import_converter_by_name(code_module_name: str) -> Callable:
         return _scientific_article_form
     elif code_module_name == "csv":
         return _import_csv
+    elif code_module_name == "website_url":
+        return _import_website_url
     raise ValueError(f"import converter {code_module_name} not found")
 
 
@@ -414,5 +417,26 @@ def _import_csv(paths, parameters, on_progress=None) -> tuple[list[dict], list[d
             items.append(row)
         if on_progress:
             on_progress(0.5 + (len(items) / len(paths)) * 0.5)
+
+    return items, []
+
+
+def _import_website_url(raw_items, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+    items = []
+    for raw_item in raw_items:
+        url = raw_item.get("url")
+        # get title from url using web scraping
+        headers = {'headers':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:51.0) Gecko/20100101 Firefox/51.0'}
+        result = requests.get(url, headers=headers)
+        html = result.text
+        title = html[html.find('<title>') + 7 : html.find('</title>')]
+        items.append({
+            "url": url,
+            "title": title,
+            "content": html,
+        })
+
+        if on_progress:
+            on_progress(0.5 + (len(items) / len(raw_items)) * 0.5)
 
     return items, []

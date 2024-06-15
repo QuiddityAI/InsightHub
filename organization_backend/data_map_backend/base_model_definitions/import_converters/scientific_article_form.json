@@ -1,0 +1,35 @@
+[
+{
+  "model": "data_map_backend.importconverter",
+  "pk": "scientific_article_form",
+  "fields": {
+    "display_name": "Scientific Article Form",
+    "created_at": "2024-06-14T16:36:21.768Z",
+    "changed_at": "2024-06-14T16:36:21.773Z",
+    "description": "Manually add an article.",
+    "module": "scientific_article_form",
+    "parameters": {},
+    "example_file_url": null,
+    "manual_insert_form": [
+      {
+        "type": "text",
+        "label": "Title",
+        "required": true,
+        "identifier": "title"
+      },
+      {
+        "type": "text",
+        "label": "DOI",
+        "required": false,
+        "identifier": "doi"
+      },
+      {
+        "type": "text",
+        "label": "Authors",
+        "required": false,
+        "identifier": "authors"
+      }
+    ]
+  }
+}
+]

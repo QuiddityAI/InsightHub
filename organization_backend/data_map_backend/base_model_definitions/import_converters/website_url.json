@@ -1,0 +1,23 @@
+[
+{
+  "model": "data_map_backend.importconverter",
+  "pk": "website_url",
+  "fields": {
+    "display_name": "Website URL",
+    "created_at": "2024-06-15T15:06:35.821Z",
+    "changed_at": "2024-06-15T15:06:35.826Z",
+    "description": "Imports a URL and retrieves title and description automatically",
+    "module": "website_url",
+    "parameters": {},
+    "example_file_url": null,
+    "manual_insert_form": [
+      {
+        "type": "text",
+        "label": "URL",
+        "required": true,
+        "identifier": "url"
+      }
+    ]
+  }
+}
+]
