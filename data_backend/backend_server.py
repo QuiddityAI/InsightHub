@@ -233,7 +233,7 @@ def upload_files_endpoint():
     # TODO: check auth
     try:
         dataset_id: int = int(request.form["dataset_id"])  # type: ignore
-        schema_identifier: str = int(request.form["schema_identifier"])  # type: ignore
+        schema_identifier: str = request.form["schema_identifier"]  # type: ignore
         user_id: int = int(request.form["user_id"])  # type: ignore
         organization_id: int = int(request.form["organization_id"])  # type: ignore
         import_converter: str = request.form["import_converter"]
