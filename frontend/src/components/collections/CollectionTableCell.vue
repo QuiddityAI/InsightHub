@@ -121,7 +121,7 @@ export default {
 </script>
 
 <template>
-  <div class="relative" id="cell"
+  <div class="relative max-w-[400px]" id="cell"
     :class="{'min-w-[120px]': item.column_data[column.identifier]?.value.length > 5 && item.column_data[column.identifier]?.value.length <= 100,
                 'min-w-[250px]': item.column_data[column.identifier]?.value.length > 100}">
     <div ref="scroll_area" class="min-h-[70px] max-h-[210px] overflow-y-scroll">

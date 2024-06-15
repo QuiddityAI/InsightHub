@@ -189,7 +189,7 @@ export default {
       })
     },
     add_extraction_question(name, prompt, process_current_page=false) {
-      if (!name || !prompt || !this.selected_source_fields.length) {
+      if (!name || !this.selected_source_fields.length) {
         return
       }
       const that = this

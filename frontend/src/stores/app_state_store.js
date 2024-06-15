@@ -93,7 +93,7 @@ export const useAppStateStore = defineStore("appState", {
       ],
       additional_column_modules: [
         // { identifier: 'python_expression', name: 'Python Expression' },
-        // { identifier: 'website_scraping', name: 'Website Text Extraction' },
+        { identifier: 'website_scraping', name: 'Website Text Extraction' },
         { identifier: 'notes', name: 'No AI, just notes' },
       ],
 
@@ -368,31 +368,38 @@ export const useAppStateStore = defineStore("appState", {
       this.datasets = {}
 
       for (const dataset_id of this.organization.datasets) {
-        httpClient
-          .post("/org/data_map/dataset", { dataset_id: dataset_id })
-          .then(function (response) {
-            const dataset = response.data
-            that.prepare_dataset_object(dataset)
-
-            that.datasets[dataset_id] = dataset
-            let selected = false
-            if (preselected_dataset_ids !== null) {
-              selected = preselected_dataset_ids.includes(dataset_id)
-            } else if (that.organization.default_dataset_selection.includes(dataset_id) || that.organization.default_dataset_selection.length == 0) {
-              selected = true
+        this.fetch_dataset(dataset_id, () => {
+          let selected = false
+          if (preselected_dataset_ids !== null) {
+            selected = preselected_dataset_ids.includes(dataset_id)
+          } else if (that.organization.default_dataset_selection.includes(dataset_id) || that.organization.default_dataset_selection.length == 0) {
+            selected = true
+          }
+          if (selected) {
+            if (!that.settings.search.dataset_ids.includes(dataset_id)) {
+              that.settings.search.dataset_ids.push(dataset_id)
+              // FIXME: should be triggered automatically
+              that.on_selected_datasets_changed()
             }
-            if (selected) {
-              if (!that.settings.search.dataset_ids.includes(dataset_id)) {
-                that.settings.search.dataset_ids.push(dataset_id)
-                // FIXME: should be triggered automatically
-                that.on_selected_datasets_changed()
-              }
-            }
-            if (Object.keys(that.datasets).length == that.organization.datasets.length) {
-              that.eventBus.emit("datasets_are_loaded")
-            }
-          })
+          }
+          if (Object.keys(that.datasets).length == that.organization.datasets.length) {
+            that.eventBus.emit("datasets_are_loaded")
+          }
+        })
       }
+    },
+    fetch_dataset(dataset_id, on_success = null) {
+      const that = this
+      httpClient
+        .post("/org/data_map/dataset", { dataset_id: dataset_id })
+        .then(function (response) {
+          const dataset = response.data
+          that.prepare_dataset_object(dataset)
+          that.datasets[dataset_id] = dataset
+          if (on_success) {
+            on_success()
+          }
+        })
     },
     prepare_dataset_object(dataset) {
       // convert strings to functions:

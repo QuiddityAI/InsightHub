@@ -556,7 +556,7 @@ def get_collections(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = DataCollection.objects.filter(Q(related_organization_id=related_organization_id) & (Q(created_by=request.user.id) | Q(is_public=True))).order_by('created_at')
+    items = DataCollection.objects.filter(Q(related_organization_id=related_organization_id) & (Q(created_by=request.user.id) | Q(is_public=True))).order_by('-created_at')
     serialized_data = CollectionSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
