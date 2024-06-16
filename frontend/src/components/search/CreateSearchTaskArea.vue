@@ -9,6 +9,7 @@ import CustomSearch from "./task_creation/CustomSearch.vue";
 import QuestionTask from "./task_creation/QuestionTask.vue";
 import HighPrecisionSearch from "./task_creation/HighPrecisionSearch.vue";
 import TopicOverview from "./task_creation/TopicOverview.vue";
+import SimilaritySearch from "./task_creation/SimilaritySearch.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -52,9 +53,11 @@ export default {
         { task_type: 'quick_search', title: 'Quick Search', tooltip: 'Quick and easy search, with the results presented in a list and visually on a map' },
         { task_type: 'topic_overview', title: 'Topic Overview', tooltip: "Like 'Quick Search', but provides a more advanced structure of the map together with summaries of each subarea" },
         { task_type: 'question', title: 'Question', tooltip: "Ask a question and get a direct answer, including citations" },
-        { task_type: 'high_precision_search', title: 'High Precision Search', tooltip: "Slow, but evaluates each result using AI to only return truly relevant items. Can be used to exhaustively find all relevant items in a database." },
-        { task_type: 'custom_search', title: 'Custom Search', tooltip: "Allows you to configure all parameters of the search yourself" },
+        { task_type: 'similarity', title: 'Find by Similarity', tooltip: "Upload a file and find similar items" },
+        { task_type: 'high_precision_search', title: 'High Precision Search', advanced: true, tooltip: "Slow, but evaluates each result using AI to only return truly relevant items. Can be used to exhaustively find all relevant items in a database." },
+        { task_type: 'custom_search', title: 'Custom Search', advanced: true, tooltip: "Allows you to configure all parameters of the search yourself" },
       ],
+      show_advanced_options: false,
 
     }
   },
@@ -88,7 +91,21 @@ export default {
       <p v-if="!appState.settings.search.task_type" class="mb-6 text-lg text-gray-500 font-normal">
         Select what you want to do:</p>
       <div class="flex flex-row items-center justify-between gap-6 text-gray-500 font-semibold">
-        <button v-for="task_type in available_task_types"
+        <button v-for="task_type in available_task_types.filter(task_type => !task_type.advanced)"
+          class="text-md bg-gray-100 rounded-md px-3 py-1 hover:text-blue-500"
+          :class="{ 'text-blue-500': appState.settings.search.task_type === task_type.task_type }"
+          v-tooltip.top="{ value: task_type.tooltip, showDelay: 400 }"
+          @click="appState.settings.search.task_type === task_type.task_type ? appState.settings.search.task_type = null : appState.settings.search.task_type = task_type.task_type">
+          {{ task_type.title }}
+        </button>
+        <button @click="show_advanced_options = !show_advanced_options"
+          class="text-md font-normal bg-gray-100 rounded-md px-3 py-1 hover:text-blue-500"
+          :class="{ 'text-blue-500': show_advanced_options }">
+          More
+        </button>
+      </div>
+      <div v-if="show_advanced_options" class="mt-3 flex flex-row items-center justify-left gap-6 text-gray-500 font-semibold">
+        <button v-for="task_type in available_task_types.filter(task_type => task_type.advanced)"
           class="text-md bg-gray-100 rounded-md px-3 py-1 hover:text-blue-500"
           :class="{ 'text-blue-500': appState.settings.search.task_type === task_type.task_type }"
           v-tooltip.top="{ value: task_type.tooltip, showDelay: 400 }"
@@ -96,7 +113,7 @@ export default {
           {{ task_type.title }}
         </button>
       </div>
-      <div v-if="!appState.settings.search.task_type" class="mt-4 flex flex-row items-end">
+      <div v-if="!appState.settings.search.task_type && !show_advanced_options" class="mt-4 flex flex-row items-end">
         <img src="assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
         <span class="text-gray-500 italic">Start here if your are new!</span>
       </div>
@@ -104,6 +121,7 @@ export default {
       <QuickSearch v-if="appState.settings.search.task_type === 'quick_search'" class="mt-10"></QuickSearch>
       <TopicOverview v-if="appState.settings.search.task_type === 'topic_overview'" class="mt-10"></TopicOverview>
       <QuestionTask v-if="appState.settings.search.task_type === 'question'" class="mt-10"></QuestionTask>
+      <SimilaritySearch v-if="appState.settings.search.task_type === 'similarity'" class="mt-10"></SimilaritySearch>
       <HighPrecisionSearch v-if="appState.settings.search.task_type === 'high_precision_search'" class="mt-10"></HighPrecisionSearch>
       <CustomSearch v-if="appState.settings.search.task_type === 'custom_search'" class="mt-10"></CustomSearch>
 
