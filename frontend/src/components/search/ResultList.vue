@@ -5,6 +5,10 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/vue/24/outline"
 
+import FilterList from "../search/FilterList.vue"
+import RangeFilterList from "../search/RangeFilterList.vue"
+import StatisticList from "../search/StatisticList.vue"
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -70,9 +74,23 @@ export default {
 <template>
   <div>
     <div v-if="appState.search_result_ids.length !== 0">
-      <div class="flex flex-row items-center">
-        <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length"
+
+      <div class="flex flex-row items-center mb-1">
+        <div class="flex flex-row justify-center ml-2">
+          <div v-if="appState.search_result_ids.length && (!appState.search_result_total_matches || appState.search_result_ids.length >= appState.search_result_total_matches)" class="text-xs text-gray-400">
+            {{ appState.search_result_ids.length.toLocaleString() }} results found
+            {{ appState.visible_result_ids.length < appState.search_result_ids.length ? `(${appState.visible_result_ids.length.toLocaleString()} after filtering)` : '' }}
+          </div>
+          <div v-else-if="appState.search_result_ids.length && appState.search_result_total_matches" class="text-xs text-gray-400"
+            v-tooltip.right="{ value: 'If there are many total results, only a subset is displayed on the map and in the list', showDelay: 500 }">
+            First {{ appState.search_result_ids.length.toLocaleString() }} of ~{{  appState.search_result_total_matches.toLocaleString() }} results<br>
+            {{ appState.visible_result_ids.length < appState.search_result_ids.length ? `(${appState.visible_result_ids.length.toLocaleString()} after filtering)` : '' }}
+          </div>
+        </div>
+
+        <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length" pageLinkSize="3"
           class="flex-1 mt-[0px]"></Paginator>
+
         <button
           v-tooltip.right="{ value: 'Search within results', showDelay: 500 }"
           @click="show_result_search = !show_result_search"
@@ -81,27 +99,26 @@ export default {
           <MagnifyingGlassIcon class="h-5 w-5 text-gray-400"></MagnifyingGlassIcon>
         </button>
       </div>
-      <div class="flex flex-row justify-center">
-        <div v-if="appState.search_result_ids.length && (!appState.search_result_total_matches || appState.search_result_ids.length >= appState.search_result_total_matches)" class="text-xs text-gray-400">
-          {{ appState.search_result_ids.length.toLocaleString() }} results found
-          {{ appState.visible_result_ids.length < appState.search_result_ids.length ? `(${appState.visible_result_ids.length.toLocaleString()} after filtering)` : '' }}
-        </div>
-        <div v-else-if="appState.search_result_ids.length && appState.search_result_total_matches" class="text-xs text-gray-400">
-          First {{ appState.search_result_ids.length.toLocaleString() }} of ~{{  appState.search_result_total_matches.toLocaleString() }} results are included
-          {{ appState.visible_result_ids.length < appState.search_result_ids.length ? `(${appState.visible_result_ids.length.toLocaleString()} after filtering)` : '' }}
-        </div>
-      </div>
-      <div v-if="show_result_search" class="flex flex-row mb-1 mt-1">
+
+      <div v-if="show_result_search" class="flex flex-row mb-4 mt-1">
         <input
           v-model="appState.result_search_query"
           @input="event => apply_text_filter(event)"
-          class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm text-gray-600"
+          class="flex-1 px-2 py-1 border border-gray-200 rounded text-sm text-gray-500"
           placeholder="Search within results (titles only)">
       </div>
-      <Message v-if="appState.search_result_ids.length && appState.extended_search_results_are_loading" severity="info" :closable="false">
+
+      <RangeFilterList></RangeFilterList>
+
+      <FilterList></FilterList>
+
+      <StatisticList></StatisticList>
+
+      <Message v-if="appState.search_result_ids.length && appState.extended_search_results_are_loading" severity="info" :closable="false" class="opacity-70">
         Preview of the results (loading more...)
       </Message>
-      <ul role="list" class="pt-1">
+
+      <ul role="list" class="mt-3">
         <li
           v-for="ds_and_item_id in result_ids_for_this_page"
           :key="ds_and_item_id.join('_')"
@@ -115,7 +132,10 @@ export default {
             @mousedown="appState.show_document_details(ds_and_item_id)"></ResultListItem>
         </li>
       </ul>
-      <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length"></Paginator>
+      <Paginator class="mb-3"
+        v-model:first="first_index"
+        :rows="per_page" :total-records="appState.visible_result_ids.length">
+      </Paginator>
     </div>
   </div>
 </template>

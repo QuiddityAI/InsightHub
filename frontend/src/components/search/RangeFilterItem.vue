@@ -109,12 +109,12 @@ export default {
 
 <template>
   <div class="mx-2 flex flex-row gap-2 items-center">
-    <span class="flex-none text-sm text-gray-500">{{ range_filter.display_name }}:</span>
-    <span class="flex-none text-sm text-gray-500">{{ value[0].toFixed(use_integers ? 0 : 2) }}</span>
-    <div class="flex-1 px-4">
+    <span class="flex-none text-xs text-gray-400">{{ range_filter.display_name }}:</span>
+    <span class="flex-none text-xs text-gray-500">{{ value[0].toFixed(use_integers ? 0 : 2) }}</span>
+    <div class="flex-1 px-4 opacity-50">
       <Slider v-model="value" :min="min_value" :max="max_value" :step="step_size" range class="" />
     </div>
-    <span class="flex-none text-sm text-gray-500">{{ value[1].toFixed(use_integers ? 0 : 2) }}</span>
+    <span class="flex-none text-xs text-gray-500">{{ value[1].toFixed(use_integers ? 0 : 2) }}</span>
   </div>
 
 </template>

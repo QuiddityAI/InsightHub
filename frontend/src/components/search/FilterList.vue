@@ -77,24 +77,25 @@ export default {
 </script>
 
 <template>
-  <div v-if="mapState.visibility_filters.length" class="mt-3 mb-1">
-    <div class="flex flex-row flex-wrap gap-2">
+  <div v-if="mapState.visibility_filters.length" class="mt-3 mb-3">
+    <div class="ml-1 flex flex-row flex-wrap gap-2">
       <Chip v-for="filter, index in mapState.visibility_filters"
-        class="text-sm">
-        {{ filter.display_name }}
+        class="text-xs">
+        <span class="text-gray-500">{{ filter.display_name }}</span>
         <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for future filter list -->
         <button v-if="!filter.hide_remove_button" @click="remove_filter(index)" v-tooltip="{value: 'Remove Filter', showDelay: 400}"
             class="ml-2 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
       </Chip>
     </div>
+
     <div v-if="selection_statistics.important_words"
-      class="ml-1 mt-2 text-sm text-gray-500">
+      class="mt-3 ml-1 py-2 px-2 text-sm text-gray-500 rounded-md bg-gray-100/50">
       <b>Important keywords in selected items:</b><br>
       <VueWordCloud :words="selection_statistics.important_words"
         font-family="Lexend"
         color="Gray"
-        :spacing="0.7"
-        style="width: 100%; height: 150px;">
+        :spacing="0.9"
+        style="width: 100%; height: 125px;">
         <template v-slot="props">
           <button
             class="px-1 text-gray-500 rounded-md hover:bg-gray-100"

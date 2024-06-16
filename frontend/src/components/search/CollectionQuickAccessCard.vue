@@ -33,13 +33,9 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col bg-white shadow-sm rounded-md px-6 py-4">
+  <div class="flex flex-col bg-white shadow-sm rounded-md px-5 py-3">
     <div class="flex flex-row items-center justify-between">
       <h3 class="text-sm text-gray-500">Quick Access: My Favorites</h3>
-    </div>
-
-    <div class="flex flex-row items-center justify-between">
-      12 items
     </div>
 
     <div class="flex flex-row items-center justify-between">

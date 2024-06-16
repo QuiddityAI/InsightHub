@@ -44,9 +44,17 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col bg-white shadow-sm rounded-md px-6 py-4">
-    <div class="flex flex-row items-center justify-between">
-      <h3 class="text-sm text-gray-500">{{ task_type_names[mapState.map_parameters?.search.task_type || 'quick_search'] }}</h3>
+  <div class="flex flex-col bg-white shadow-sm rounded-md px-5 pt-2 pb-4">
+
+    <div class="flex flex-row items-center">
+
+      <!-- <h3 class="text-sm text-gray-500">
+        {{ task_type_names[mapState.map_parameters?.search.task_type || 'quick_search'] }}</h3> -->
+      <span
+        class=" text-sm text-gray-500">
+        {{ mapState.map_parameters?.search.dataset_ids.map(dataset_id => appState.datasets[dataset_id].name).join(', ') }}:
+      </span>
+      <div class="flex-1"></div>
       <div class="flex flex-row items-center gap-2">
         <!-- <button class="py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
           @click="eventBus.emit('edit-search-task-description')">
@@ -68,7 +76,7 @@ export default {
     <div class="flex flex-row items-center justify-between">
 
       <h2 v-if="mapState.map_parameters?.search.search_type === 'external_input'"
-        class="text-lg font-bold">
+        class="text-lg font-bold leading-none">
         {{ mapState.map_parameters?.search.all_field_query }}
       </h2>
 

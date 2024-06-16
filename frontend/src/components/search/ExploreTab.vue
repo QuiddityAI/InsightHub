@@ -14,11 +14,8 @@ import CreateSearchTaskArea from "../search/CreateSearchTaskArea.vue"
 import SearchTaskDescriptionCard from "../search/SearchTaskDescriptionCard.vue"
 import CollectionQuickAccessCard from "../search/CollectionQuickAccessCard.vue"
 
-import FilterList from "../search/FilterList.vue"
-import RangeFilterList from "../search/RangeFilterList.vue"
 import ResultList from "../search/ResultList.vue"
 import ObjectDetailsModal from "../search/ObjectDetailsModal.vue"
-import StatisticList from "../search/StatisticList.vue"
 import CollectionItem from "../collections/CollectionItem.vue"
 
 import { useToast } from 'primevue/usetoast';
@@ -80,7 +77,7 @@ export default {
 
         </SearchTaskDescriptionCard>
 
-        <div class="flex-1 min-h-0 px-3 bg-white shadow-sm rounded-md pointer-events-auto overflow-y-auto" style="min-height: 0">
+        <div class="flex-1 min-h-0 px-3 pt-1 bg-white shadow-sm rounded-md pointer-events-auto overflow-y-auto" style="min-height: 0">
 
           <div v-if="appState.debug_autocut">
             <canvas ref="score_info_chart"></canvas>
@@ -116,13 +113,8 @@ export default {
             </div>
           </div>
 
-          <FilterList></FilterList>
-
-          <StatisticList></StatisticList>
-
-          <RangeFilterList></RangeFilterList>
-
-          <div
+          <!-- Cluster selection: -->
+          <!-- <div
             v-if="appState.search_result_ids.length !== 0 && appState.cluster_data.length !== 0"
             class="ml-2 mt-1 flex flex-row items-center">
             <span class="mr-2 flex-none text-gray-500">Cluster:</span>
@@ -136,13 +128,13 @@ export default {
                 </option>
               </select>
             </div>
-          </div>
+          </div> -->
 
           <ResultList></ResultList>
 
         </div>
 
-        <CollectionQuickAccessCard></CollectionQuickAccessCard>
+        <!-- <CollectionQuickAccessCard></CollectionQuickAccessCard> -->
 
       </div>
 

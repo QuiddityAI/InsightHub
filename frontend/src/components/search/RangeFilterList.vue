@@ -43,7 +43,7 @@ export default {
 </script>
 
 <template>
-  <div v-if="appState.search_result_ids.length" class="flex flex-col gap-2">
+  <div v-if="appState.search_result_ids.length" class="mt-2 flex flex-col gap-2">
     <RangeFilterItem v-for="range_filter in range_filters"
       :range_filter="range_filter" />
   </div>
