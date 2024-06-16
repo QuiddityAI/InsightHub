@@ -94,6 +94,7 @@ export const useAppStateStore = defineStore("appState", {
       additional_column_modules: [
         // { identifier: 'python_expression', name: 'Python Expression' },
         { identifier: 'website_scraping', name: 'Website Text Extraction' },
+        { identifier: 'web_search', name: 'Web Search' },
         { identifier: 'notes', name: 'No AI, just notes' },
       ],
 
