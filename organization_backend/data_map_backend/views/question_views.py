@@ -558,9 +558,9 @@ def _google_search(input_data, source_fields):
     soup = BeautifulSoup(content, 'html.parser')
 
     search = soup.find(id = 'search')
-    first_link = search.find('a')
+    first_link = search.find('a') if search else {}
 
-    url = first_link.get('href')
+    url = first_link.get('href') if first_link else ""  # type: ignore
 
     if not url:
         return {
