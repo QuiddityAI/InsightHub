@@ -41,6 +41,9 @@ export default {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
     value_as_html() {
+      if (this.item.column_data[this.column.identifier]?.collapsed_label) {
+        return this.item.column_data[this.column.identifier]?.collapsed_label
+      }
       const value = this.item.column_data[this.column.identifier]?.value || ""
       return marked.parse(value)
     },
@@ -94,6 +97,7 @@ export default {
       if (!value) {
         this.item.column_data[this.column.identifier].is_ai_generated = false
         this.item.column_data[this.column.identifier].is_manually_edited = false
+        this.item.column_data[this.column.identifier].collapsed_label = ""
       }
       const body = {
         item_id: this.item.id,

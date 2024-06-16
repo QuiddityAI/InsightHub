@@ -522,7 +522,7 @@ def _scrape_website_module(item, source_fields):
         if c == ">":
             in_tag = False
     return {
-        "collapsed_label": f"Website Content (length: {len(text)})",
+        "collapsed_label": f"<i>Website Content<br>({len(text.split())} words)</i>",
         "value": text,
         "changed_at": timezone.now().isoformat(),
         "is_ai_generated": False,
