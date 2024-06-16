@@ -75,7 +75,7 @@ export default {
   <div>
     <div v-if="appState.search_result_ids.length !== 0">
 
-      <div class="flex flex-row items-center mb-1">
+      <div class="flex flex-row items-center">
         <div class="flex flex-row justify-center ml-2">
           <div v-if="appState.search_result_ids.length && (!appState.search_result_total_matches || appState.search_result_ids.length >= appState.search_result_total_matches)" class="text-xs text-gray-400">
             {{ appState.search_result_ids.length.toLocaleString() }} results found

@@ -67,10 +67,10 @@ export default {
       </div>
     </div>
 
-    <button v-for="origin in mapState.map_parameters?.search.origins"
-      class="my-1 flex flex-row items-center gap-2 text-sm text-gray-500"
+    <button v-for="(origin, index) in mapState.map_parameters?.search.origins"
+      class="mb-1 flex flex-row items-center gap-2 text-sm text-gray-500 hover:text-blue-500"
       @click="appState.show_stored_map(origin.map_id)">
-      &gt <span v-html="origin.display_name"></span>
+      ↳ <span v-html="origin.display_name"></span>
     </button>
 
     <div class="flex flex-row items-center justify-between">
@@ -83,6 +83,11 @@ export default {
       <h2 v-if="mapState.map_parameters?.search.search_type === 'cluster'"
         class="text-md font-bold">
         Cluster: {{ mapState.map_parameters?.search.origin_display_name }}
+      </h2>
+
+      <h2 v-if="mapState.map_parameters?.search.search_type === 'similar_to_item'"
+        class="text-md font-bold">
+        Similar to: {{ mapState.map_parameters?.search.origin_display_name }}
       </h2>
 
       <h2 v-if="mapState.map_parameters?.search.search_type === 'global_map'"

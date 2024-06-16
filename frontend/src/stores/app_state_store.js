@@ -767,6 +767,9 @@ export const useAppStateStore = defineStore("appState", {
       ) {
         name = `Recommended for collection '${this.settings.search.origin_display_name}'`
         display_name = `<i>Recommended for collection</i> '${this.settings.search.origin_display_name}'`
+      } else if (this.settings.search.search_type == "global_map") {
+        name = `Overview`
+        display_name = `Overview`
       }
       return [name, display_name]
     },
@@ -1114,6 +1117,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.search.origin_display_name = `${collection.name}: ${class_name}`
+      this.settings.search.origins = []
       this.set_two_dimensional_projection()
       this.request_search_results()
     },
@@ -1123,6 +1127,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.search.origin_display_name = `${collection.name}: ${class_name}`
+      this.settings.search.origins = []
       this.request_search_results()
     },
     show_global_map(dataset_ids = []) {
@@ -1133,6 +1138,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.search_type = "global_map"
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
+      this.settings.search.origins = []
       this.set_two_dimensional_projection()
       this.request_search_results()
     },
