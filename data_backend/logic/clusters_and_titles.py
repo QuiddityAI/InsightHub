@@ -55,10 +55,17 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
     # IDEA: get top words from all clusters, then subtract all other vectors from vector from current
     # cluster, then take word closest to that vector
 
-    # highlight TF-IDF words:
-    # vectorizer = TfidfVectorizer(stop_words="english")
+    dataset_specific_ignore_words: set = set()
+    use_lower_case = True
+    for dataset in datasets.values():
+        advanced_options = dataset.get("advanced_options", {})
+        ignore_words = advanced_options.get("ignore_words", [])
+        dataset_specific_ignore_words.update(ignore_words)
+        if not advanced_options.get("use_lower_case", True):
+            use_lower_case = False
 
     # getting all words that appear in more than 50% of the items:
+    context_specific_tokenize = partial(tokenize, context_specific_ignore_words=dataset_specific_ignore_words, use_lower_case=use_lower_case)
     count_vectorizer = CountVectorizer(tokenizer=tokenize, lowercase=False, strip_accents=None, min_df=0.5)
     try:
         count_vectorizer.fit_transform(texts_per_item)
@@ -75,7 +82,8 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
 
     # using "tokenizer" instead of "analyzer" keeps the default preprocessor but also enables generation of ngrams
     # the default preprocessor only does lowercase conversion and accent stripping, so we can just disable those:
-    context_specific_tokenize = partial(tokenize, context_specific_ignore_words=context_specific_ignore_words)
+    all_ignore_words = context_specific_ignore_words | dataset_specific_ignore_words  # type: ignore
+    context_specific_tokenize = partial(tokenize, context_specific_ignore_words=all_ignore_words, use_lower_case=use_lower_case)
     vectorizer = TfidfVectorizer(tokenizer=context_specific_tokenize, lowercase=False, strip_accents=None, ngram_range=(1, 2), max_df=0.7)
     try:
         vectorizer.fit(texts_per_cluster)

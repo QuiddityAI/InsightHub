@@ -57,7 +57,7 @@ def correct_first_letter(word):
         return word.lower()
     return word
 
-def tokenize(text, context_specific_ignore_words=set()):
+def tokenize(text, context_specific_ignore_words=set(), use_lower_case=True):
     # this method is called very often and a performance bottleneck
     # -> check criteria with most likely first and return early
     words = []
@@ -89,7 +89,8 @@ def tokenize(text, context_specific_ignore_words=set()):
         if len(words) >= 1 and words[-1] == word:
             continue
         word = correct_plural_abbreviation(word)
-        word = correct_first_letter(word)
+        if use_lower_case:
+            word = correct_first_letter(word)
         words.append(word)
 
     return words
