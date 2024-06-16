@@ -12,7 +12,8 @@ import {
 import Button from 'primevue/button';
 import OverlayPanel from "primevue/overlaypanel"
 
-import AddToCollectionButtons from "../components/collections/AddToCollectionButtons.vue"
+import MapWithLabels from "./MapWithLabels.vue"
+import AddToCollectionButtons from "../../components/collections/AddToCollectionButtons.vue"
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -49,7 +50,7 @@ export default {
 </script>
 
 <template>
-  <div>
+  <div class="absolute h-screen w-screen">
 
     <MapWithLabels class="absolute top-0 h-screen w-screen"/>
 

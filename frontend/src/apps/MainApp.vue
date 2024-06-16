@@ -11,7 +11,7 @@ import DynamicDialog from 'primevue/dynamicdialog'
 import OverlayPanel from "primevue/overlaypanel";
 import Message from 'primevue/message';
 
-import MapWithLabelsAndButtons from "../components/map/MapWithLabels.vue"
+import MapWithLabelsAndButtons from "../components/map/MapWithLabelsAndButtons.vue"
 import TopMenu from "../components/general/TopMenu.vue"
 import Timings from "../components/general/Timings.vue"
 import ExploreTab from "../components/search/ExploreTab.vue"
