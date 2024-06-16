@@ -88,7 +88,7 @@ export default {
           </div>
         </div>
 
-        <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length" pageLinkSize="3"
+        <Paginator v-model:first="first_index" :rows="per_page" :total-records="appState.visible_result_ids.length" :pageLinkSize="3"
           class="flex-1 mt-[0px]"></Paginator>
 
         <button

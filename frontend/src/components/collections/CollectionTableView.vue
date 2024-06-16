@@ -405,7 +405,7 @@ export default {
               :dataset_id="slotProps.data.dataset_id"
               :item_id="slotProps.data.item_id"
               :is_positive="slotProps.data.is_positive"
-              class="w-[520px]">
+              class="min-w-[350px] max-w-[520px]">
             </CollectionItem>
           </template>
         </Column>

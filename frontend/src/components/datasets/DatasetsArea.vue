@@ -83,7 +83,9 @@ export default {
       <Message v-if="category.items === your_datasets && !appState.organization.is_member" severity="warn">
         You need to be a member of the organization {{ appState.organization.name }} to create a dataset
       </Message>
-      <CreateDatasetDialog v-if="category.items === your_datasets && create_dataset_dialog_visible" v-model:visible="create_dataset_dialog_visible" />
+      <CreateDatasetDialog
+        v-if="category.items === your_datasets && create_dataset_dialog_visible"
+        v-model:visible="create_dataset_dialog_visible" />
     </div>
 
     <DatasetDetails

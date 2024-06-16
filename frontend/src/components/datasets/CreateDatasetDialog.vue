@@ -24,6 +24,7 @@ export default {
       name: "",
       available_schemas: [],
       selected_schema: null,
+      dialog_is_visible: true,
     }
   },
   computed: {
@@ -34,6 +35,9 @@ export default {
     this.get_schemas()
   },
   watch: {
+    dialog_is_visible() {
+      this.$emit("update:visible", false)
+    },
   },
   methods: {
     get_schemas() {
@@ -76,7 +80,7 @@ export default {
 </script>
 
 <template>
-  <Dialog modal header="Create Dataset">
+  <Dialog modal header="Create Dataset" v-model:visible="dialog_is_visible">
     <div class="flex flex-col gap-2">
       <label for="new_dataset_name">Dataset Name</label>
       <InputText id="new_dataset_name" v-model="name" />
