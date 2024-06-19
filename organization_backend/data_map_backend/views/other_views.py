@@ -697,6 +697,32 @@ def get_collection_items(request):
 
 
 @csrf_exempt
+def get_related_collection_items(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        dataset_id: int = data["dataset_id"]
+        item_id: str = data["item_id"]
+        include_column_data: bool = data.get("include_column_data", False)
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    all_items = CollectionItem.objects.filter(dataset_id=dataset_id, item_id=item_id)
+    all_items = all_items.order_by('-date_added')
+    serialized_data = CollectionItemSerializer(all_items, many=True).data
+    if not include_column_data:
+        for item in serialized_data:
+            item.pop('column_data', None)
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
 def add_item_to_collection(request):
     if request.method != 'POST':
         return HttpResponse(status=405)

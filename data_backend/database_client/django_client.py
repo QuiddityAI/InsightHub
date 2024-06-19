@@ -180,3 +180,14 @@ def get_or_create_default_dataset(user_id: int, schema_identifier: str, organiza
     }
     result = django_client.post(url, json=data)
     return DotDict(result.json())
+
+
+def get_related_collection_items(dataset_id: int, item_id: str, include_column_data: bool = False) -> list[dict]:
+    url = backend_url + '/org/data_map/get_related_collection_items'
+    data = {
+        'dataset_id': dataset_id,
+        'item_id': item_id,
+        'include_column_data': include_column_data,
+    }
+    result = django_client.post(url, json=data)
+    return result.json()

@@ -19,6 +19,7 @@ urlpatterns=[
     path("get_trained_classifier", other_views.get_trained_classifier),
     path("set_trained_classifier", other_views.set_trained_classifier),
     path("get_collection_items", other_views.get_collection_items),
+    path("get_related_collection_items", other_views.get_related_collection_items),
     path("delete_collection", other_views.delete_collection),
     path("add_item_to_collection", other_views.add_item_to_collection),
     path("remove_collection_item", other_views.remove_collection_item),

@@ -6,6 +6,7 @@ from functools import lru_cache
 import json
 
 import numpy as np
+import cachetools.func
 
 from utils.field_types import FieldType
 from utils.collect_timings import Timings
@@ -15,7 +16,7 @@ from utils.source_plugin_types import SourcePlugin
 from api_clients.old_absclust_database_client import get_absclust_items_by_ids, get_absclust_item_by_id
 from api_clients.cohere_reranking import get_reranking_results
 
-from database_client.django_client import get_generators, get_dataset
+from database_client.django_client import get_generators, get_dataset, get_related_collection_items
 from database_client.vector_search_engine_client import VectorSearchEngineClient
 from database_client.text_search_engine_client import TextSearchEngineClient
 
@@ -459,11 +460,11 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
     return filters
 
 
-@lru_cache
+@cachetools.func.ttl_cache(maxsize=128, ttl=10)  # seconds
 def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str],
                                relevant_parts: str | None=None, database_name: str | None = None,
                                top_n_full_text_chunks: int | None=None, get_text_search_highlights: bool = False,
-                               query: str | None=None) -> dict | None:
+                               query: str | None=None, include_related_collection_items: bool = False) -> dict | None:
     if dataset_id == ABSCLUST_DATASET_ID:
         return get_absclust_item_by_id(item_id)
 
@@ -539,5 +540,8 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
     for field in additional_fields:
         if field not in original_fields and field in item:  # type: ignore
             del item[field]  # type: ignore
+
+    if include_related_collection_items:
+        item['_related_collection_items'] = get_related_collection_items(dataset_id, item_id, include_column_data=True)
 
     return item

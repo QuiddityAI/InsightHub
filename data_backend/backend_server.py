@@ -412,17 +412,23 @@ def retrieve_document_details_by_id():
     get_text_search_highlights = params.get("get_text_search_highlights", False)
     top_n_full_text_chunks = params.get("top_n_full_text_chunks")
     query = params.get("query")
+    include_related_collection_items: bool = params.get("include_related_collection_items", False)
     if not all([dataset_id is not None, item_id is not None, fields is not None]):
         return "a parameter is missing", 400
+    assert isinstance(fields, list)
+    assert dataset_id is not None
+    assert item_id is not None
 
     if relevant_parts:
         # need to convert to json string to make it hashable for caching
         relevant_parts = json.dumps(relevant_parts)
     else:
         relevant_parts = None
-    result = get_document_details_by_id(dataset_id, item_id, tuple(fields), relevant_parts,
+    result = get_document_details_by_id(dataset_id, item_id, tuple(fields), relevant_parts,  # type: ignore
                                         top_n_full_text_chunks=top_n_full_text_chunks,
-                                        get_text_search_highlights=get_text_search_highlights, query=query)
+                                        get_text_search_highlights=get_text_search_highlights, query=query,
+                                        include_related_collection_items=include_related_collection_items
+                                        )
 
     if result is None:
         return "document not found", 404
