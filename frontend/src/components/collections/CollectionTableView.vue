@@ -37,7 +37,7 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: ["collection_id", "class_name"],
+  props: ["collection_id", "class_name", "is_positive"],
   emits: [],
   data() {
     return {
@@ -129,7 +129,21 @@ export default {
     }
   },
   mounted() {
+    const that = this
     this.load_collection_items()
+    this.eventBus.on("collection_item_added", ({collection_id, class_name, is_positive, created_item}) => {
+      if (collection_id === this.collection_id && class_name === this.class_name && is_positive === this.is_positive) {
+        that.load_collection_items()
+      }
+    })
+    this.eventBus.on("collection_item_removed", ({collection_id, class_name, collection_item_id}) => {
+      if (collection_id === this.collection_id && class_name === this.class_name) {
+        const item_index = that.collection_items.findIndex((item) => item.id === collection_item_id)
+        if (item_index >= 0) {
+          that.collection_items.splice(item_index, 1)
+        }
+      }
+    })
   },
   watch: {
     first_index() {
@@ -153,7 +167,7 @@ export default {
         collection_id: this.collection.id,
         class_name: this.class_name,
         type: FieldType.IDENTIFIER,
-        is_positive: true,
+        is_positive: this.is_positive,
         offset: this.first_index,
         limit: this.per_page,
         order_by: (this.order_descending ? "-" : "") + this.order_by_field,
@@ -406,6 +420,8 @@ export default {
               :dataset_id="slotProps.data.dataset_id"
               :item_id="slotProps.data.item_id"
               :is_positive="slotProps.data.is_positive"
+              :show_remove_button="true"
+              @remove="appState.remove_item_from_collection([slotProps.data.dataset_id, slotProps.data.item_id], collection_id, class_name)"
               class="min-w-[350px] max-w-[520px]">
             </CollectionItem>
           </template>

@@ -232,7 +232,8 @@ export default {
     <CollectionTableView
       class="flex-1 overflow-hidden mt-3"
       :collection_id="collection_id"
-      :class_name="class_name">
+      :class_name="class_name"
+      :is_positive="true">
     </CollectionTableView>
 
     <!-- <ChatList
