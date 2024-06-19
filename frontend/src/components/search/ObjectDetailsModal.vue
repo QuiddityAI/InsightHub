@@ -131,23 +131,26 @@ export default {
 </script>
 
 <template>
-  <div class="overflow-scroll max-h-[90vh] rounded-md bg-white p-3 shadow-sm w-full">
-    <div class="flex flex-row w-full">
+  <div class="p-[2px]">
+
+    <div class="flex flex-row w-full mb-3">
       <div class="flex-1 flex min-w-0 flex-col w-full">
 
-        <div>
+        <div class="flex flex-row mb-1">
           <img v-if="rendering ? rendering.icon(item) : false" :src="rendering.icon(item)"
-            class="h-5 w-5 mr-2 inline" />
-          <p class="flex-none text-sm font-medium leading-6 text-gray-900 inline"
+            class="h-5 w-5 mr-2" />
+          <p class="text-md font-medium leading-tight text-gray-900"
             v-html="rendering ? rendering.title(item) : ''"></p>
         </div>
-        <p class="mt-1 flex-none text-xs leading-5 text-gray-500" v-html="rendering ? rendering.subtitle(item) : ''">
+
+        <p class="mt-1 flex-none text-xs leading-normal text-gray-500"
+          v-html="rendering ? rendering.subtitle(item) : ''">
         </p>
 
-        <p ref="body_text" class="mt-2 text-[13px] text-gray-700" :class="{ 'line-clamp-[12]': body_text_collapsed }"
+        <p ref="body_text" class="mt-2 text-sm text-gray-700" :class="{ 'line-clamp-[12]': body_text_collapsed }"
           v-html="loading_item ? 'loading...' : rendering ? highlight_words_in_text(rendering.body(item), mapState.map_parameters?.search.all_field_query.split(' ')) : null"></p>
         <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
-          <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
+          <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500 hover:text-blue-500">
             {{ body_text_collapsed ? "Show more" : "Show less" }}
           </button>
         </div>

@@ -129,7 +129,7 @@ export default {
             :rendering="appState.datasets[ds_and_item_id[0]].schema.result_list_rendering"
             @mouseenter="appState.highlighted_item_id = ds_and_item_id"
             @mouseleave="appState.highlighted_item_id = null"
-            @mousedown="appState.show_document_details(ds_and_item_id)"></ResultListItem>
+            @selected="appState.show_document_details(ds_and_item_id)"></ResultListItem>
         </li>
       </ul>
       <Paginator class="mb-3"

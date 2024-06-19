@@ -58,9 +58,11 @@ export default {
   <div v-if="rendering" class="rounded bg-gray-100/50 p-3 flex flex-row gap-2 cursor-pointer"
     @click="appState.show_document_details([dataset_id, item_id])">
     <div class="flex-1">
-      <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2 inline" />
-      <p class="text-sm font-medium leading-normal text-gray-90 inline" v-html="rendering.title(item)"></p>
-      <p class="mt-1 text-xs leading-relaxed text-gray-500" v-html="rendering.subtitle(item)"></p>
+      <div class="flex flex-row">
+        <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
+        <p class="text-sm font-medium leading-tight" v-html="rendering.title(item)"></p>
+      </div>
+      <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
 
       <div class="flex-1"></div>
       <div class="mt-2 flex flex-row items-center">

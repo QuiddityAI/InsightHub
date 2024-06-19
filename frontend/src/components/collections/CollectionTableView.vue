@@ -142,6 +142,7 @@ export default {
       this.load_collection_items()
     },
     'appStateStore.selected_document_ds_and_id'() {
+      if (this.appStateStore.selected_app_tab !== 'collections') { return }
       this.show_details_dialog = !!this.appStateStore.selected_document_ds_and_id
     },
   },

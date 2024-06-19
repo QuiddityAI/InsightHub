@@ -63,7 +63,7 @@ export default {
 
     <!-- two column layout (search results left and map and details card right)-->
     <div v-if="!!appState.map_id"
-      class="w-full grid min-h-0 min-w-0 mt-3 gap-4 overflow-hidden"
+      class="w-full grid min-h-0 min-w-0 mt-3 gap-4"
       :class="{
         'grid-cols-1': use_single_column,
         'grid-cols-2': !use_single_column,
@@ -71,7 +71,7 @@ export default {
       style="grid-auto-rows: minmax(auto, min-content)">
 
       <!-- left column -->
-      <div ref="left_column" class="h-[calc(100vh-6em)] pointer-events-none flex flex-col gap-3 overflow-hidden">
+      <div ref="left_column" class="h-[calc(100vh-6em)] pointer-events-none flex flex-col gap-3">
 
         <SearchTaskDescriptionCard class="pointer-events-auto">
 
@@ -141,12 +141,14 @@ export default {
       <!-- right column (e.g. for showing box with details for selected result) -->
       <div
         ref="right_column"
-        class="pointer-events-none flex flex-col overflow-hidden"
+        class="pointer-events-none flex flex-col"
         :class="{'h-screen': !use_single_column}">
+
         <div
-          v-if="appState.selected_document_ds_and_id !== null"
-          class="pointer-events-auto flex w-full flex-initial overflow-hidden">
+          v-if="appState.selected_document_ds_and_id !== null && appState.selected_app_tab === 'explore'"
+          class="pointer-events-auto rounded-md bg-white p-4 shadow-xl max-h-[75vh]">
           <ObjectDetailsModal
+            class="h-full w-full overflow-y-auto"
             :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
             :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
             :show_action_buttons="true"></ObjectDetailsModal>

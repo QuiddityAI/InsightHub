@@ -209,7 +209,7 @@ export default {
 </script>
 
 <template>
-  <main class="overflow-hidden">
+  <main class="">
 
     <Toast position="top-right"></Toast>
     <DynamicDialog />
