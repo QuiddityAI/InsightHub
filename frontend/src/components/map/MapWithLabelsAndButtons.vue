@@ -161,6 +161,7 @@ export default {
     </div>
     <OverlayPanel ref="add_selection_to_collection_overlay">
       <AddToCollectionButtons
+        :multiple_items="true"
         @addToCollection="appState.add_selected_points_to_collection"
         @removeFromCollection="appState.remove_selected_points_from_collection">
       </AddToCollectionButtons>

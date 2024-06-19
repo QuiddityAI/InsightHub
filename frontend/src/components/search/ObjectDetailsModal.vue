@@ -1,5 +1,8 @@
 <script setup>
-import { XMarkIcon } from "@heroicons/vue/24/outline"
+import {
+  XMarkIcon,
+  MagnifyingGlassIcon
+ } from "@heroicons/vue/24/outline"
 import axios from "axios"
 
 import LoadingDotAnimation from "./LoadingDotAnimation.vue"
@@ -210,8 +213,9 @@ export default {
       </ExportSingleItem>
     </Dialog>
 
-    <div v-if="show_action_buttons" class="mt-2 flex flex-none flex-row">
-      <AddToCollectionButtons v-if="appState.collections?.length" class="mr-3" @addToCollection="(collection_id, class_name, is_positive) =>
+    <div v-if="show_action_buttons" class="mt-3 flex flex-none flex-row items-center gap-4 h-7">
+
+      <AddToCollectionButtons v-if="appState.collections?.length" class="" @addToCollection="(collection_id, class_name, is_positive) =>
               appState.add_item_to_collection(
                   appState.selected_document_ds_and_id,
                   collection_id,
@@ -229,8 +233,8 @@ export default {
       <button
         v-tooltip.bottom="{ value: `Show similar ${dataset.schema.entity_name_plural} in currently selected datasets\n(based on 'meaning')`, showDelay: 500 }"
         @click="appState.show_similar_items(appState.selected_document_ds_and_id, item)"
-        class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
-        Similar Items
+        class="h-full flex flex-row items-center gap-2 mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+        <MagnifyingGlassIcon class="h-3 w-3"></MagnifyingGlassIcon> Similar Items
       </button>
 
       <button v-if="rendering ? rendering.url(item) : false"
@@ -238,7 +242,7 @@ export default {
         <a :href="rendering.url(item)" target="_blank">Link</a>
       </button>
 
-      <button v-if="(rendering ? rendering.doi(item) : false) &&
+      <!-- <button v-if="(rendering ? rendering.doi(item) : false) &&
             !checking_for_fulltext &&
             !checked_for_fulltext
             " @click="findFulltext"
@@ -255,10 +259,10 @@ export default {
       <button disabled v-if="checked_for_fulltext && !fulltext_url"
         class="mr-3 rounded-md px-3 text-sm text-red-500 ring-1 ring-gray-300 hover:bg-blue-100">
         No open access fulltext found
-      </button>
+      </button> -->
 
       <div class="flex-1"></div>
-      <button @click="appState.close_document_details" class="w-10 rounded-md px-2 text-gray-500 hover:bg-gray-100">
+      <button @click="appState.close_document_details" class="h-full w-10 rounded-md px-2 text-gray-500 hover:bg-gray-100">
         <XMarkIcon></XMarkIcon>
       </button>
     </div>

@@ -37,6 +37,7 @@ export default {
         .then(function (response) {
           that.appStateStore.collections.push(response.data)
           that.appStateStore.last_used_collection_id = response.data.id
+          that.appStateStore.last_used_collection_class = response.data.actual_classes[0].name
         })
     },
   },

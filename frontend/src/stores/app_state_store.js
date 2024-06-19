@@ -74,6 +74,7 @@ export const useAppStateStore = defineStore("appState", {
       // collections:
       collections: [],
       last_used_collection_id: null,
+      last_used_collection_class: null,
 
       // chats:
       chats: [],
@@ -1281,6 +1282,7 @@ export const useAppStateStore = defineStore("appState", {
     add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, show_toast=true) {
       const that = this
       this.last_used_collection_id = collection_id
+      this.last_used_collection_class = class_name
       const add_item_to_collection_body = {
         collection_id: collection_id,
         is_positive: is_positive,
