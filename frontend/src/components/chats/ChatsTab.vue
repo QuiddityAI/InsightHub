@@ -3,6 +3,7 @@
 import Message from 'primevue/message';
 
 import Chat from "./Chat.vue"
+import NewChat from './NewChat.vue';
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -111,7 +112,7 @@ export default {
           </button>
         </div>
 
-        <button @click=""
+        <button @click="selected_chat_id = null"
           class="mt-2 bg-gray-100 font-semibold hover:bg-blue-100/50 rounded-md w-full py-1 text-left pl-2 text-gray-600 mb-2">
           New Chat +
         </button>
@@ -124,11 +125,10 @@ export default {
       </div>
 
       <div class="h-full flex-1 flex flex-col">
-        <div
+        <NewChat
           v-if="!selected_chat_id"
-          class="flex-1 flex flex-col place-content-center text-center">
-          <p class="flex-none text-gray-400">Select a chat on the left</p>
-        </div>
+          class="flex-1">
+        </NewChat>
 
         <Chat v-if="selected_chat_id"
           class="flex-1"

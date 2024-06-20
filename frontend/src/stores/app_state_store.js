@@ -705,6 +705,7 @@ export const useAppStateStore = defineStore("appState", {
         }
     },
     answer_question() {
+      // FIXME: outdated, replaced by create_chat_from_search_settings
       const that = this
       if (this.settings.search.dataset_ids.length === 0) return
       if (
@@ -729,6 +730,27 @@ export const useAppStateStore = defineStore("appState", {
         .then(function (response) {
           const chat_data = response.data
           that.chats.unshift(chat_data)
+          that.eventBus.emit("show_chat", {chat_id: chat_data.id})
+          that.reset_search_box()
+        })
+    },
+    create_chat_from_search_settings(on_success) {
+      const that = this
+      if (this.settings.search.dataset_ids.length === 0) return
+      if (!this.settings.search.all_field_query) return
+
+      // TODO: needs to be checked if it removes the quoted parts (what it should in this case)
+      // this.convert_quoted_parts_to_filter()
+
+      const body = { search_settings: this.settings.search }
+      httpClient
+        .post(`/org/data_map/create_chat_from_search_settings`, body)
+        .then(function (response) {
+          const chat_data = response.data
+          that.chats.unshift(chat_data)
+          if (on_success) {
+            on_success(chat_data)
+          }
           that.eventBus.emit("show_chat", {chat_id: chat_data.id})
           that.reset_search_box()
         })
