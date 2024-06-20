@@ -8,6 +8,7 @@ import { useToast } from 'primevue/usetoast';
 import OverlayPanel from 'primevue/overlaypanel';
 
 import CollectionItem from '../collections/CollectionItem.vue';
+import ChatContextCard from './ChatContextCard.vue';
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -122,6 +123,7 @@ export default {
 <template>
   <div class="flex flex-col gap-4">
     <div v-if="chat_data" class="flex flex-col gap-4 ">
+
       <div class="ml-1 mt-3 flex flex-row items-center gap-3">
         <button
           @click="$emit('close')"
@@ -137,6 +139,11 @@ export default {
           <TrashIcon class="h-4 w-4"></TrashIcon>
         </button>
       </div>
+
+      <ChatContextCard
+        :chat_data="chat_data"
+        >
+      </ChatContextCard>
 
       <div class="flex flex-col gap-4">
         <div v-for="message in chat_data.is_processing ? [...chat_data.chat_history, {content: 'Processing...', role: 'system'}] : chat_data.chat_history"
