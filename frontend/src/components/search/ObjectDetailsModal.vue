@@ -27,7 +27,7 @@ const toast = useToast()
 <script>
 export default {
   inject: ["eventBus"],
-  props: ["dataset", "initial_item", "show_action_buttons"],
+  props: ["dataset", "initial_item", "show_close_button"],
   data() {
     return {
       rendering: null,
@@ -238,33 +238,34 @@ export default {
       </RelatedCollectionItem>
     </div>
 
-    <div v-if="show_action_buttons" class="mt-3 flex flex-none flex-row items-center gap-4 h-7">
+    <div class="mt-3 flex flex-none flex-row items-center gap-4 h-7">
 
-      <AddToCollectionButtons v-if="appState.collections?.length" class="" @addToCollection="(collection_id, class_name, is_positive) =>
-              appState.add_item_to_collection(
-                  appState.selected_document_ds_and_id,
-                  collection_id,
-                  class_name,
-                  is_positive,
-                  /*show_toast=*/false,
-                )
-            " @removeFromCollection="(collection_id, class_name) =>
-              appState.remove_item_from_collection(
-                  appState.selected_document_ds_and_id,
-                  collection_id,
-                  class_name
-                )
-            ">
+      <AddToCollectionButtons v-if="appState.collections?.length && appState.selected_app_tab !== 'collections'"
+        @addToCollection="(collection_id, class_name, is_positive) =>
+            appState.add_item_to_collection(
+                appState.selected_document_ds_and_id,
+                collection_id,
+                class_name,
+                is_positive,
+                /*show_toast=*/false,
+              )
+          " @removeFromCollection="(collection_id, class_name) =>
+            appState.remove_item_from_collection(
+                appState.selected_document_ds_and_id,
+                collection_id,
+                class_name
+              )
+          ">
       </AddToCollectionButtons>
       <button
         v-tooltip.bottom="{ value: `Show similar ${dataset.schema.entity_name_plural} in currently selected datasets\n(based on 'meaning')`, showDelay: 500 }"
         @click="appState.show_similar_items(appState.selected_document_ds_and_id, item)"
-        class="h-full flex flex-row items-center gap-2 mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+        class="h-full flex flex-row items-center gap-2 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         <MagnifyingGlassIcon class="h-3 w-3"></MagnifyingGlassIcon> Similar Items
       </button>
 
       <button v-if="rendering ? rendering.url(item) : false"
-        class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+        class="h-full rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         <a :href="rendering.url(item)" target="_blank">Link</a>
       </button>
 
@@ -288,7 +289,9 @@ export default {
       </button> -->
 
       <div class="flex-1"></div>
-      <button @click="appState.close_document_details" class="h-full w-10 rounded-md px-2 text-gray-500 hover:bg-gray-100">
+      <button v-if="show_close_button"
+        @click="appState.close_document_details"
+        class="h-full w-10 rounded-md px-2 text-gray-500 hover:bg-gray-100">
         <XMarkIcon></XMarkIcon>
       </button>
     </div>

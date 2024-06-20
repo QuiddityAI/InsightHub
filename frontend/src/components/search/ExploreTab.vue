@@ -151,7 +151,7 @@ export default {
             class="h-full w-full overflow-y-auto"
             :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
             :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
-            :show_action_buttons="true"></ObjectDetailsModal>
+            :show_close_button="true"></ObjectDetailsModal>
         </div>
 
         <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center items-center">

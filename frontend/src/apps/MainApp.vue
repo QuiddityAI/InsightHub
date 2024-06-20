@@ -240,7 +240,7 @@ export default {
       <ObjectDetailsModal
         :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
         :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
-        :show_action_buttons="false"></ObjectDetailsModal>
+        :show_close_button="false"></ObjectDetailsModal>
     </Dialog>
 
     <MapWithLabelsAndButtons v-show="appState.selected_app_tab === 'explore'"></MapWithLabelsAndButtons>
