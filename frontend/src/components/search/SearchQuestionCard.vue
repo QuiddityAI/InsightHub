@@ -81,7 +81,7 @@ export default {
         <span class="text-gray-400 text-sm">AI Generated</span>
       </div>
 
-      <div v-if="mapState.answer.answer">
+      <div v-if="mapState.answer?.answer">
         <span v-for="part in list_of_text_and_citation_parts(mapState.answer.answer)">
           <span v-if="part.is_citation">
             <button
@@ -97,7 +97,7 @@ export default {
         </span>
       </div>
 
-      <div v-if="!mapState.answer.answer" class="text-gray-400 text-md">
+      <div v-if="!mapState.answer?.answer" class="text-gray-400 text-md">
         Loading...
       </div>
 

@@ -31,6 +31,7 @@ export default {
   emits: [],
   data() {
     return {
+      use_smart_search: true,
       processing_smart_search: false,
       example_query_index: 0,
     }

@@ -115,7 +115,7 @@ export default {
 
       <StatisticList></StatisticList>
 
-      <SearchQuestionCard v-if="mapState.map_parameters.search.question"></SearchQuestionCard>
+      <SearchQuestionCard v-if="mapState.map_parameters?.search.question?.length"></SearchQuestionCard>
 
       <Message v-if="appState.search_result_ids.length && appState.extended_search_results_are_loading" severity="info" :closable="false" class="opacity-70">
         Preview of the results (loading more...)

@@ -10,6 +10,7 @@ export const useMapStateStore = defineStore("mapState", {
 
       map_parameters: null,
       text_data: {},
+      answer: null,
       per_point: {
         item_id: [],
         cluster_id: [],

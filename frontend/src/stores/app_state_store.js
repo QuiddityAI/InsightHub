@@ -555,6 +555,7 @@ export const useAppStateStore = defineStore("appState", {
       this.selected_cluster_id = null
       this.mapState.visited_point_indexes = []
       this.mapState.map_parameters = null
+      this.mapState.answer = null
 
       this.search_result_score_info = null
       if (this.score_info_chart) this.score_info_chart.destroy()
@@ -594,6 +595,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.origin_display_name = ""
       this.settings.search.origins = []
       this.settings.search.filters = []
+      this.settings.search.question = ""
 
       this.settings.search.cluster_origin_map_id = null
       this.settings.search.cluster_id = null
