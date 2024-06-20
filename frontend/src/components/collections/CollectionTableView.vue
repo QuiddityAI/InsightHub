@@ -56,8 +56,6 @@ export default {
 
       selected_column: null,
 
-      show_details_dialog: false,
-
       show_writing_tasks: false,
     }
   },
@@ -154,10 +152,6 @@ export default {
     },
     order_descending() {
       this.load_collection_items()
-    },
-    'appStateStore.selected_document_ds_and_id'() {
-      if (this.appStateStore.selected_app_tab !== 'collections') { return }
-      this.show_details_dialog = !!this.appStateStore.selected_document_ds_and_id
     },
   },
   methods: {
@@ -495,16 +489,6 @@ export default {
     <WritingTaskArea v-if="show_writing_tasks" class="flex-none w-[500px]"
       :collection_id="collection_id" :class_name="class_name">
     </WritingTaskArea>
-
-    <Dialog
-      v-model:visible="show_details_dialog"
-      :style="{'max-width': '650px', width: '650px'}"
-      @hide="appState.selected_document_ds_and_id = null">
-      <ObjectDetailsModal
-        :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
-        :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
-        :show_action_buttons="false"></ObjectDetailsModal>
-    </Dialog>
 
   </div>
 

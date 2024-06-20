@@ -19,6 +19,7 @@ import CollectionsTab from "../components/collections/CollectionsTab.vue"
 import WriteTab from "../components/collections/WriteTab.vue"
 import DatasetsTab from "../components/datasets/DatasetsTab.vue"
 import ChatsTab from "../components/chats/ChatsTab.vue"
+import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
 
 import { httpClient } from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
@@ -41,6 +42,8 @@ export default {
     return {
       // tabs:
       selected_tab: "results",
+
+      show_details_dialog: false,
 
       score_info_chart: null,
     }
@@ -210,6 +213,10 @@ export default {
       this.appStateStore.reset_search_results_and_map()
       this.appStateStore.retrieve_stored_maps_history_and_collections()
     },
+    'appStateStore.selected_document_ds_and_id'() {
+      if (this.appStateStore.selected_app_tab === 'explore') { return }
+      this.show_details_dialog = !!this.appStateStore.selected_document_ds_and_id
+    },
   },
 }
 </script>
@@ -224,6 +231,16 @@ export default {
       <div class="mt-2 flex flex-row-reverse">
         <Button @click="appState.show_error_dialog = false" label="OK"></Button>
       </div>
+    </Dialog>
+
+    <Dialog
+      v-model:visible="show_details_dialog"
+      :style="{'max-width': '650px', width: '650px'}"
+      @hide="appState.selected_document_ds_and_id = null">
+      <ObjectDetailsModal
+        :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
+        :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
+        :show_action_buttons="false"></ObjectDetailsModal>
     </Dialog>
 
     <MapWithLabelsAndButtons v-show="appState.selected_app_tab === 'explore'"></MapWithLabelsAndButtons>
