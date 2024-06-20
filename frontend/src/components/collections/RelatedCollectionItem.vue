@@ -120,6 +120,7 @@ export default {
         </div>
         <CollectionTableCell :item="collection_item" :column="column" class="bg-white border rounded-md"
           :current_extraction_processes="collection.current_extraction_processes"
+          :show_overlay_buttons="true"
           @run_cell="run_cell(column)">
         </CollectionTableCell>
       </div>

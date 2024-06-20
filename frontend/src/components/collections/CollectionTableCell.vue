@@ -29,7 +29,7 @@ const _window = window
 
 export default {
   inject: ["eventBus"],
-  props: ["item", "column", "current_extraction_processes"],
+  props: ["item", "column", "current_extraction_processes", "show_overlay_buttons"],
   emits: ["run_cell"],
   data() {
     return {
@@ -149,7 +149,7 @@ export default {
       <ProgressSpinner class="w-6 h-6"></ProgressSpinner>
     </div>
 
-    <div v-if="is_empty && !edit_mode && !is_processing"
+    <div v-if="is_empty && !edit_mode && !is_processing && show_overlay_buttons"
       class="absolute top-0 w-full h-full flex flex-row gap-2 justify-center items-center text-gray-500 text-sm">
       <button
         @click="edit_mode = true" class="hover:text-sky-500">

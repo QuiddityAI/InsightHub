@@ -430,7 +430,8 @@ export default {
           <template #body="slotProps">
             <CollectionTableCell :item="slotProps.data" :column="column"
               class="max-w-[400px]"
-              :current_extraction_processes="collection.current_extraction_processes">
+              :current_extraction_processes="collection.current_extraction_processes"
+              :show_overlay_buttons="false">
             </CollectionTableCell>
           </template>
         </Column>
