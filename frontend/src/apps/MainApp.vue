@@ -18,6 +18,7 @@ import ExploreTab from "../components/search/ExploreTab.vue"
 import CollectionsTab from "../components/collections/CollectionsTab.vue"
 import WriteTab from "../components/collections/WriteTab.vue"
 import DatasetsTab from "../components/datasets/DatasetsTab.vue"
+import ChatsTab from "../components/chats/ChatsTab.vue"
 
 import { httpClient } from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
@@ -237,6 +238,8 @@ export default {
       <ExploreTab v-show="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab>
 
       <CollectionsTab v-show="appState.selected_app_tab === 'collections'" class="flex-1 pointer-events-auto"></CollectionsTab>
+
+      <ChatsTab v-if="appState.selected_app_tab === 'chats'" class="flex-1 pointer-events-auto"></ChatsTab>
 
       <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab>
 

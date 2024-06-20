@@ -34,6 +34,11 @@ export default {
     this.get_chat()
   },
   watch: {
+    chat_id: function (newValue, oldValue) {
+      this.chat_data = null
+      this.selected_citation = null
+      this.get_chat()
+    },
   },
   methods: {
     get_chat() {
@@ -111,7 +116,7 @@ export default {
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col">
     <div v-if="chat_data">
       <div class="mb-3 ml-1 mt-3 flex flex-row gap-3">
         <button
@@ -122,10 +127,18 @@ export default {
         <h2 class="mb-2 font-bold text-gray-600">{{ chat_data.name }}</h2>
       </div>
 
-      <div class="flex flex-col">
-        <div v-for="message in chat_data.is_processing ? [...chat_data.chat_history, {content: 'Processing...', role: 'system'}] : chat_data.chat_history" class="flex" :class="{'flex-row-reverse': message.role == 'user', 'flex-row': message.role == 'system'}">
+      <div class="flex flex-col gap-4">
+        <div v-for="message in chat_data.is_processing ? [...chat_data.chat_history, {content: 'Processing...', role: 'system'}] : chat_data.chat_history"
+          class="flex"
+          :class="{
+            'flex-row-reverse': message.role == 'user',
+            'flex-row': message.role == 'system',
+            'ml-[25%]': message.role == 'user',
+            'mr-[25%]': message.role == 'system',
+            }"
+          >
           <div
-            class="px-2 py-2 rounded-md mb-1 text-sm text-gray-700"
+            class="px-3 py-3 rounded-md text-sm text-gray-700"
             :class="{'text-right': message.role == 'user', 'bg-blue-100/50': message.role == 'user', 'bg-gray-100': message.role == 'system'}">
             <span v-for="part in list_of_text_and_citation_parts(message.content)">
               <span v-if="part.is_citation">
@@ -154,8 +167,9 @@ export default {
 
     </div>
 
-    <br>
-    <div v-if="chat_data?.chat_history?.length == 0" class="my-2 flex items-stretch">
+    <div class="flex-1"></div>
+
+    <div v-if="chat_data?.chat_history?.length == 0 || appState.user.is_staff" class="my-2 flex items-stretch">
       <input
         ref="new_question_name"
         type="text"
@@ -163,7 +177,7 @@ export default {
         placeholder="Ask a question"
         @keyup.enter="add_question($refs.new_question_name.value); $refs.new_question_name.value = ''"/>
       <button
-        class="rounded-r-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+        class="rounded-r-md border-0 px-4 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
         @click="add_question($refs.new_question_name.value); $refs.new_question_name.value = ''">
         Ask

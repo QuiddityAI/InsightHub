@@ -88,4 +88,4 @@ export default {
 </template>
 
 <style scoped>
-</style>../search/CreateSearchTaskArea.vue
+</style>
