@@ -57,4 +57,5 @@ urlpatterns=[
     path("get_export_converter", other_views.get_export_converter),
     path("request_service_usage", question_views.request_service_usage),
     path("convert_smart_query_to_parameters", smart_search_views.convert_smart_query_to_parameters),
+    path("answer_question_using_items", question_views.answer_question_using_items),
 ]

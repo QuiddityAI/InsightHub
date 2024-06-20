@@ -48,7 +48,7 @@ export default {
         }
         grouped[group].items.push(dataset)
       }
-      const preferred_order = ["Semantic Scholar", "OpenAlex", "OpenLibrary"]
+      const preferred_order = ["OpenAlex", "Semantic Scholar", "OpenLibrary"]
       for (const dataset_name of preferred_order.slice().reverse()) {
         if (grouped["Public Sources"]?.items.find(item => item.name === dataset_name)) {
           const element = grouped["Public Sources"].items.find(item => item.name === dataset_name)

@@ -18,7 +18,7 @@ from ..serializers import ChatSerializer, CollectionColumnSerializer, Collection
 from ..data_backend_client import get_item_by_id, get_item_question_context
 from ..chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
 from ..groq_client import GROQ_MODELS, get_groq_response_using_history
-from ..prompts import table_cell_prompt, writing_task_prompt
+from ..prompts import table_cell_prompt, writing_task_prompt, search_question_prompt
 
 from .other_views import is_from_backend
 
@@ -982,3 +982,35 @@ def _execute_writing_task(task):
     }
     task.is_processing = False
     task.save()
+
+
+@csrf_exempt
+def answer_question_using_items(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        question: str = data["question"]
+        ds_and_item_ids: list = data["ds_and_item_ids"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    source_fields = ["_descriptive_text_fields", "_full_text_snippets"]
+
+    texts = []
+    for ds_id, item_id in ds_and_item_ids:
+        text = f"Document ID: [{ds_id}, {item_id}]\n" + get_item_question_context(ds_id, item_id, source_fields, question)
+        texts.append(text)
+
+    context = "\n\n".join(texts)
+
+    prompt = search_question_prompt.replace("{{ context }}", context).replace("{{ question }}", question)
+
+    history = [ { "role": "system", "content": prompt } ]
+
+    response_text = get_chatgpt_response_using_history(history, OPENAI_MODELS.GPT4_O)
+
+    return HttpResponse(json.dumps({"answer": response_text, "prompt": prompt}), content_type="application/json", status=200)

@@ -15,7 +15,7 @@ from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_
 from utils.dotdict import DotDict
 from utils.source_plugin_types import SourcePlugin
 
-from database_client.django_client import get_dataset, get_stored_map_data, get_trained_classifier
+from database_client.django_client import answer_question_using_items, get_dataset, get_stored_map_data, get_trained_classifier
 
 from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
 from logic.clusters_and_titles import clusterize_results, get_cluster_titles
@@ -115,6 +115,7 @@ def generate_map(map_id: str, ignore_cache: bool):
 
     # variables set in specific stages but used globally later on:
     thumbnail_atlas_thread = None
+    question_thread = None
     sorted_ids: list[tuple[str, str]] = []
     items_by_dataset = {}
 
@@ -153,6 +154,18 @@ def generate_map(map_id: str, ignore_cache: bool):
     assert items_by_dataset != {}
 
 
+    # ----------------- Optional: Question Answering Phase -----------------
+
+    if params.search.question:
+        def _answer_question():
+            item_subset = sorted_ids[:5]
+            answer = answer_question_using_items(params.search.question, item_subset)
+            map_data["results"]["answer"] = answer
+
+        question_thread = Thread(target=_answer_question)
+        question_thread.start()
+
+
     # ----------------- Vectorize Phase -----------------
 
     map_vector_field = params.vectorize.map_vector_field
@@ -187,6 +200,10 @@ def generate_map(map_id: str, ignore_cache: bool):
     if thumbnail_atlas_thread:
         thumbnail_atlas_thread.join()
         timings.log("waiting for thumbnail atlas")
+
+    if question_thread:
+        question_thread.join()
+        timings.log("waiting for question answering")
 
     map_data["results"]["timings"] = timings.get_timestamps()
     map_data["finished"] = True

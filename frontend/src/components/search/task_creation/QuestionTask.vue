@@ -31,7 +31,6 @@ export default {
   emits: [],
   data() {
     return {
-      use_smart_search: true,
       processing_smart_search: false,
       example_query_index: 0,
     }
@@ -48,7 +47,7 @@ export default {
         }
         grouped[group].items.push(dataset)
       }
-      const preferred_order = ["Semantic Scholar", "OpenAlex", "OpenLibrary"]
+      const preferred_order = ["OpenAlex", "Semantic Scholar", "OpenLibrary"]
       for (const dataset_name of preferred_order.slice().reverse()) {
         if (grouped["Public Sources"]?.items.find(item => item.name === dataset_name)) {
           const element = grouped["Public Sources"].items.find(item => item.name === dataset_name)
@@ -73,7 +72,7 @@ export default {
       if (this.appStateStore.settings.search.dataset_ids.length === 0) {
         return []
       }
-      return this.appStateStore.datasets[this.appStateStore.settings.search.dataset_ids[0]]?.advanced_options.example_queries || []
+      return this.appStateStore.datasets[this.appStateStore.settings.search.dataset_ids[0]]?.advanced_options.example_questions || []
     },
   },
   mounted() {
@@ -95,6 +94,10 @@ export default {
         this.$toast.add({severity: 'error', summary: 'Error', detail: 'Please select at least one source', life: 5000})
         return
       }
+      if (!this.appStateStore.check_if_search_is_allowed({use_credit: false})) return
+
+      const question = this.appStateStore.settings.search.all_field_query
+
       djangoClient.post(`/org/data_map/convert_smart_query_to_parameters`, {
         user_id: this.appStateStore.user.id,
         query: this.appStateStore.settings.search.all_field_query,
@@ -110,7 +113,7 @@ export default {
           search_parameters.search_type = "vector"
         }
         this.appStateStore.settings.search.search_algorithm = search_parameters.search_type
-        this.use_smart_search = false
+        this.appStateStore.settings.search.question = question
         this.appStateStore.request_search_results()
       }).catch((error) => {
         console.log(error)
@@ -120,10 +123,9 @@ export default {
       this.processing_smart_search = true
     },
     run_example_query(example) {
-      this.appStateStore.settings.search.all_field_query = example.query
+      this.appStateStore.settings.search.all_field_query = example.question
       this.appStateStore.settings.search.filters = example.filters || []
       this.appStateStore.settings.search.search_algorithm = example.search_type
-      this.use_smart_search = example.use_smart_search || true
     },
   },
 }
@@ -131,11 +133,7 @@ export default {
 
 <template>
   <div class="flex flex-col">
-    <Message v-if="!appState.user.is_staff" :closable="false">
-      Coming Soon
-    </Message>
-
-    <div v-if="appState.user.is_staff" class="flex flex-row gap-10">
+    <div class="flex flex-row gap-10">
       <div class="w-[250px] flex flex-col">
         <Listbox multiple metaKeySelection
           v-model="appState.settings.search.dataset_ids"
@@ -170,56 +168,21 @@ export default {
             <input
               type="search"
               name="search"
-              @keyup.enter="use_smart_search ? run_smart_search() : appState.request_search_results()"
+              @keyup.enter="run_smart_search()"
               v-model="appState.settings.search.all_field_query"
               autocomplete="off"
               :disabled="processing_smart_search"
-              :placeholder="`Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.schema.entity_name || '' : ''} you want to find`"
+              :placeholder="`Ask a question`"
               class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
           </div>
           <button v-if="!processing_smart_search"
             v-tooltip.bottom="{value: 'Submit', showDelay: 400}"
             class="ml-2 px-2 h-9 w-9 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
-            @click="use_smart_search ? run_smart_search() : appState.request_search_results()">
+            @click="run_smart_search()">
             <PaperAirplaneIcon class="h-5 w-5"></PaperAirplaneIcon>
           </button>
           <div class="flex items-center justify-center">
             <ProgressSpinner v-if="processing_smart_search" class="ml-1 w-5 h-5"></ProgressSpinner>
-          </div>
-        </div>
-
-        <div v-if="!use_smart_search" class="mt-3 ml-0 flex flex-row gap-1 items-center">
-          <div class="flex flex-row items-center gap-0 h-6">
-            <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="appState.settings.search.search_algorithm = 'keyword'"
-              v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
-              :class="{'text-blue-500': appState.settings.search.search_algorithm === 'keyword', 'text-gray-400': appState.settings.search.search_algorithm != 'keyword'}">
-              Keywords
-            </button>
-            <button class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="appState.settings.search.search_algorithm = 'vector'"
-              v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-              :class="{'text-blue-500': appState.settings.search.search_algorithm === 'vector', 'text-gray-400': appState.settings.search.search_algorithm != 'vector'}">
-              Meaning
-            </button>
-            <button class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="appState.settings.search.search_algorithm = 'hybrid'"
-              v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-              :class="{'text-blue-500': appState.settings.search.search_algorithm === 'hybrid', 'text-gray-400': appState.settings.search.search_algorithm != 'hybrid'}">
-              Both
-            </button>
-          </div>
-          <div class="flex-1"></div>
-          <div class="flex flex-row items-center gap-0 h-6">
-            <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
-              v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
-              @click="(event) => { $refs.add_filter_menu.toggle(event) }">
-              + Filter / Option
-            </button>
-            <OverlayPanel ref="add_filter_menu">
-              <AddFilterMenu @close="$refs.add_filter_menu.hide()">
-              </AddFilterMenu>
-            </OverlayPanel>
           </div>
         </div>
 
@@ -232,21 +195,11 @@ export default {
           Note: use double quotes instead of single quotes to search for phrases.
         </div>
 
-        <SearchFilterList v-if="!use_smart_search"></SearchFilterList>
-
-        <div class="mt-5 ml-1 mb-5 flex flex-row items-center">
-          <Checkbox v-model="use_smart_search" class="" :binary="true" />
-          <button class="ml-2 text-xs text-gray-500"
-            @click="use_smart_search = !use_smart_search">
-            Auto-detect best search strategy and required filters from query
-          </button>
-        </div>
-
         <div class="relative">
           <div v-if="example_queries.length" class="absolute top-4 text-sm text-gray-400">
             Try: <button class="underline hover:text-blue-500"
               @click="run_example_query(example_queries[example_query_index % example_queries.length])">
-              "{{ example_queries[example_query_index % example_queries.length].query }}"
+              "{{ example_queries[example_query_index % example_queries.length].question }}"
             </button>
           </div>
         </div>
@@ -255,9 +208,9 @@ export default {
 
     </div>
 
-    <div v-if="appState.user.is_staff" class="mt-4 flex flex-row items-end">
+    <div class="mt-4 flex flex-row items-end">
       <img src="assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
-      <span class="text-gray-500 italic">Want to search your own files? Upload them at the top.</span>
+      <span class="text-gray-500 italic">Want to ask your own files? Upload them at the top.</span>
     </div>
   </div>
 

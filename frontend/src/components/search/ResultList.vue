@@ -8,6 +8,7 @@ import {
 import FilterList from "../search/FilterList.vue"
 import RangeFilterList from "../search/RangeFilterList.vue"
 import StatisticList from "../search/StatisticList.vue"
+import SearchQuestionCard from "../search/SearchQuestionCard.vue"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -113,6 +114,8 @@ export default {
       <FilterList></FilterList>
 
       <StatisticList></StatisticList>
+
+      <SearchQuestionCard v-if="mapState.map_parameters.search.question"></SearchQuestionCard>
 
       <Message v-if="appState.search_result_ids.length && appState.extended_search_results_are_loading" severity="info" :closable="false" class="opacity-70">
         Preview of the results (loading more...)

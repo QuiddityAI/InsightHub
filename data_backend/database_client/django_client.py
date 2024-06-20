@@ -191,3 +191,13 @@ def get_related_collection_items(dataset_id: int, item_id: str, include_column_d
     }
     result = django_client.post(url, json=data)
     return result.json()
+
+
+def answer_question_using_items(question: str, ds_and_item_ids: list[tuple]) -> dict:
+    url = backend_url + '/org/data_map/answer_question_using_items'
+    data = {
+        'question': question,
+        'ds_and_item_ids': ds_and_item_ids,
+    }
+    result = django_client.post(url, json=data)
+    return result.json()

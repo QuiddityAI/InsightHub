@@ -38,3 +38,25 @@ The documents are the following:
 
 Reply only with the requested text, without introductory sentence.
 """
+
+
+search_question_prompt = """\
+You are an expert in answering scientific questions. Answer a question based on the following documents.
+Follow the task exactly. Do not add any additional information not mentioned in the documents.
+Mention the document ID where a statement is taken from behind the sentence in square brackets, like this: [dataset_id, item_id].
+
+The documents are the following:
+
+{{ context }}
+
+The question is:
+
+{{ question }}
+
+Reply only with the answer, without introductory sentence.
+Keep the answer close to the document's wording.
+Only use information that is directly stated in the document.
+Answer with at most two sentences.
+
+Your answer:
+"""

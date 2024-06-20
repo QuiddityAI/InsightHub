@@ -108,6 +108,7 @@ export const useAppStateStore = defineStore("appState", {
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
+          question: "",
           internal_input_weight: 0.7,
           use_similarity_thresholds: true,
           order_by: { type: "score", parameter: "" },
@@ -1097,6 +1098,11 @@ export const useAppStateStore = defineStore("appState", {
           that.search_result_score_info = results["search_result_score_info"]
           that.fields_already_received.add("search_result_score_info")
           that.eventBus.emit("show_score_info_chart")
+        }
+
+        if (results["answer"]) {
+          that.mapState.answer = results["answer"]
+          that.fields_already_received.add("answer")
         }
 
         that.map_timings = results["timings"]
