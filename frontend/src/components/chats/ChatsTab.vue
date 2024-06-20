@@ -66,6 +66,7 @@ export default {
       })
     },
     create_chat(chat_name) {
+      // TODO: outdated?
       const that = this
       const body = {
         collection_id: this.collection_id,
@@ -78,6 +79,12 @@ export default {
       })
       .catch(function (error) {
         console.error(error)
+      })
+    },
+    remove_chat(chat_id) {
+      const that = this
+      this.appStateStore.remove_chat(chat_id, () => {
+        that.selected_chat_id = null
       })
     },
   },
@@ -133,6 +140,7 @@ export default {
         <Chat v-if="selected_chat_id"
           class="flex-1"
           @close="selected_chat_id = null"
+          @remove="remove_chat(selected_chat_id)"
           :chat_id="selected_chat_id">
         </Chat>
       </div>

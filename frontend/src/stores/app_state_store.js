@@ -755,6 +755,17 @@ export const useAppStateStore = defineStore("appState", {
           that.reset_search_box()
         })
     },
+    remove_chat(chat_id, on_success) {
+      const that = this
+      httpClient
+        .post(`/org/data_map/delete_chat`, { chat_id: chat_id })
+        .then(function (response) {
+          if (on_success) {
+            on_success()
+          }
+          that.chats = that.chats.filter((chat) => chat.id !== chat_id)
+        })
+    },
     get_current_map_name() {
       let name = ""
       let display_name = ""

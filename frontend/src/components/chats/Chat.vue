@@ -1,11 +1,15 @@
 <script setup>
-import { useToast } from 'primevue/usetoast';
-import OverlayPanel from 'primevue/overlaypanel';
 import {
   ChevronLeftIcon,
+  TrashIcon,
 } from "@heroicons/vue/24/outline"
-import { httpClient, djangoClient } from "../../api/httpClient"
+
+import { useToast } from 'primevue/usetoast';
+import OverlayPanel from 'primevue/overlaypanel';
+
 import CollectionItem from '../collections/CollectionItem.vue';
+
+import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -116,15 +120,22 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col">
-    <div v-if="chat_data">
-      <div class="mb-3 ml-1 mt-3 flex flex-row gap-3">
+  <div class="flex flex-col gap-4">
+    <div v-if="chat_data" class="flex flex-col gap-4 ">
+      <div class="ml-1 mt-3 flex flex-row items-center gap-3">
         <button
           @click="$emit('close')"
           class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
           <ChevronLeftIcon></ChevronLeftIcon>
         </button>
-        <h2 class="mb-2 font-bold text-gray-600">{{ chat_data.name }}</h2>
+        <h2 class="font-bold text-gray-600">{{ chat_data.name }}</h2>
+        <div class="flex-1"></div>
+        <button
+          @click.stop="$emit('remove')"
+          v-tooltip.right="{ value: 'Delete this chat', showDelay: 400 }"
+          class="text-sm text-gray-400 hover:text-red-600">
+          <TrashIcon class="h-4 w-4"></TrashIcon>
+        </button>
       </div>
 
       <div class="flex flex-col gap-4">

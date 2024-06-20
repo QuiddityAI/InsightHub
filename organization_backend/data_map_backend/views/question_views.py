@@ -173,6 +173,29 @@ def get_chat_by_id(request):
 
 
 @csrf_exempt
+def delete_chat(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+    try:
+        data = json.loads(request.body)
+        chat_id: int = data["chat_id"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        item = Chat.objects.get(id=chat_id)
+    except Chat.DoesNotExist:
+        return HttpResponse(status=404)
+    if item.created_by != request.user:
+        return HttpResponse(status=401)
+
+    item.delete()
+    return HttpResponse(None, status=204)
+
+
+@csrf_exempt
 def add_collection_column(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
