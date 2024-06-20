@@ -2,6 +2,7 @@
 import {
   ChevronLeftIcon,
   TrashIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
@@ -65,6 +66,9 @@ export default {
       })
     },
     add_question(question) {
+      if (!question) {
+        return
+      }
       const that = this
       const body = {
         chat_id: this.chat_id,
@@ -121,31 +125,31 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
-    <div v-if="chat_data" class="flex flex-col gap-4 ">
+  <div v-if="chat_data" class="h-full flex flex-col gap-4">
 
-      <div class="ml-1 mt-3 flex flex-row items-center gap-3">
-        <button
-          @click="$emit('close')"
-          class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
-          <ChevronLeftIcon></ChevronLeftIcon>
-        </button>
-        <h2 class="font-bold text-gray-600">{{ chat_data.name }}</h2>
-        <div class="flex-1"></div>
-        <button
-          @click.stop="$emit('remove')"
-          v-tooltip.right="{ value: 'Delete this chat', showDelay: 400 }"
-          class="text-sm text-gray-400 hover:text-red-600">
-          <TrashIcon class="h-4 w-4"></TrashIcon>
-        </button>
-      </div>
+    <div class="ml-1 mt-3 flex flex-row items-center gap-3">
+      <button
+        @click="$emit('close')"
+        class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
+        <ChevronLeftIcon></ChevronLeftIcon>
+      </button>
+      <h2 class="font-bold text-gray-600">{{ chat_data.name }}</h2>
+      <div class="flex-1"></div>
+      <button
+        @click.stop="$emit('remove')"
+        v-tooltip.right="{ value: 'Delete this chat', showDelay: 400 }"
+        class="text-sm text-gray-400 hover:text-red-600">
+        <TrashIcon class="h-4 w-4"></TrashIcon>
+      </button>
+    </div>
 
-      <ChatContextCard
-        :chat_data="chat_data"
-        >
-      </ChatContextCard>
+    <ChatContextCard
+      :chat_data="chat_data"
+      >
+    </ChatContextCard>
 
-      <div class="flex flex-col gap-4">
+    <div class="flex-1 overflow-hidden">
+      <div class="h-full flex flex-col gap-4 overflow-y-auto">
         <div v-for="message in chat_data.is_processing ? [...chat_data.chat_history, {content: 'Processing...', role: 'system'}] : chat_data.chat_history"
           class="flex"
           :class="{
@@ -174,31 +178,28 @@ export default {
           </div>
         </div>
       </div>
-
-      <OverlayPanel ref="citation_tooltip">
-        <CollectionItem
-          class="w-[500px]"
-          :dataset_id="selected_citation.dataset_id"
-          :item_id="selected_citation.item_id">
-        </CollectionItem>
-      </OverlayPanel>
-
     </div>
 
-    <div class="flex-1"></div>
+    <OverlayPanel ref="citation_tooltip">
+      <CollectionItem
+        class="w-[500px]"
+        :dataset_id="selected_citation.dataset_id"
+        :item_id="selected_citation.item_id">
+      </CollectionItem>
+    </OverlayPanel>
 
     <div v-if="chat_data?.chat_history?.length == 0 || appState.user.is_staff" class="my-2 flex items-stretch">
       <input
         ref="new_question_name"
         type="text"
-        class="flex-auto rounded-l-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+        class="flex-auto rounded-l-md py-1.5 text-gray-900 shadow-sm placeholder:text-gray-400 border border-gray-300 focus:border-blue-300 focus:ring-0"
         placeholder="Ask a question"
         @keyup.enter="add_question($refs.new_question_name.value); $refs.new_question_name.value = ''"/>
       <button
-        class="rounded-r-md border-0 px-4 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
+        class="rounded-r-md px-4 py-1.5 shadow-sm border-t border-b border-r border-gray-300 hover:bg-gray-100"
         type="button"
         @click="add_question($refs.new_question_name.value); $refs.new_question_name.value = ''">
-        Ask
+        <PaperAirplaneIcon class="h-5 w-5 text-blue-500"></PaperAirplaneIcon>
       </button>
     </div>
   </div>
