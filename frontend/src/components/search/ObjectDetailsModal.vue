@@ -18,6 +18,7 @@ import Dialog from 'primevue/dialog';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import RelatedCollectionItem from "../collections/RelatedCollectionItem.vue"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
@@ -25,6 +26,7 @@ const toast = useToast()
 
 <script>
 export default {
+  inject: ["eventBus"],
   props: ["dataset", "initial_item", "show_action_buttons"],
   data() {
     return {
@@ -125,8 +127,21 @@ export default {
     },
   },
   mounted() {
+    const that = this
     this.updateItemAndRendering()
     this.show_more_button = this.$refs.body_text?.scrollHeight > this.$refs.body_text?.clientHeight
+
+    this.eventBus.on("collection_item_added", ({collection_id, class_name, is_positive, created_item}) => {
+      if (created_item.dataset_id === this.item._dataset_id && created_item.item_id === this.item._id) {
+        this.item._related_collection_items.push(created_item)
+      }
+    })
+    this.eventBus.on("collection_item_removed", ({collection_id, class_name, collection_item_id}) => {
+      const index = this.item._related_collection_items.findIndex((item) => item.id === collection_item_id)
+      if (index !== -1) {
+        this.item._related_collection_items.splice(index, 1)
+      }
+    })
   },
 }
 </script>
@@ -217,14 +232,10 @@ export default {
       </ExportSingleItem>
     </Dialog>
 
-    <div v-for="collection_item in item._related_collection_items" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
-      <div class="font-semibold text-gray-600 text-sm">Also in Collection
-        {{ appState.collections.find((collection) => collection.id === collection_item.collection)?.name }}
-        {{ collection_item }}
-      </div>
-      <div class="mt-1 text-gray-700 text-xs">
-
-      </div>
+    <div v-for="collection_item in item._related_collection_items" class="mt-3">
+      <RelatedCollectionItem :collection_item="collection_item"
+        @refresh_item="updateItemAndRendering()">
+      </RelatedCollectionItem>
     </div>
 
     <div v-if="show_action_buttons" class="mt-3 flex flex-none flex-row items-center gap-4 h-7">
@@ -234,7 +245,8 @@ export default {
                   appState.selected_document_ds_and_id,
                   collection_id,
                   class_name,
-                  is_positive
+                  is_positive,
+                  /*show_toast=*/false,
                 )
             " @removeFromCollection="(collection_id, class_name) =>
               appState.remove_item_from_collection(
@@ -280,6 +292,12 @@ export default {
         <XMarkIcon></XMarkIcon>
       </button>
     </div>
+
+    <div class="mt-2 flex flex-row items-end" v-if="!item?._related_collection_items?.length">
+      <img src="assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
+      <span class="text-gray-500 italic">Add to a collection to take notes and extract information!</span>
+    </div>
+
   </div>
 </template>
 

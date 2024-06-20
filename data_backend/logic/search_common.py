@@ -460,7 +460,7 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
     return filters
 
 
-@cachetools.func.ttl_cache(maxsize=128, ttl=10)  # seconds
+@cachetools.func.ttl_cache(maxsize=128, ttl=1)  # seconds
 def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str],
                                relevant_parts: str | None=None, database_name: str | None = None,
                                top_n_full_text_chunks: int | None=None, get_text_search_highlights: bool = False,

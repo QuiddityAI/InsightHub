@@ -17,6 +17,7 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
@@ -29,7 +30,7 @@ const _window = window
 export default {
   inject: ["eventBus"],
   props: ["item", "column", "current_extraction_processes"],
-  emits: [],
+  emits: ["run_cell"],
   data() {
     return {
       show_more_indicator: false,
@@ -62,6 +63,12 @@ export default {
       }
       return extractContent(html)
     },
+    is_empty() {
+      return !this.item.column_data[this.column.identifier]?.value
+    },
+    is_processing() {
+      return this.current_extraction_processes.includes(this.column.identifier)
+    }
   },
   mounted() {
     this.$nextTick(() => {
@@ -125,37 +132,48 @@ export default {
 </script>
 
 <template>
-  <div class="relative max-w-[400px]" id="cell"
+  <div class="relative" id="cell"
     :class="{'min-w-[120px]': item.column_data[column.identifier]?.value.length > 5 && item.column_data[column.identifier]?.value.length <= 100,
                 'min-w-[250px]': item.column_data[column.identifier]?.value.length > 100}">
     <div ref="scroll_area" class="min-h-[70px] max-h-[210px] overflow-y-scroll">
-      <div v-if="!item.column_data[column.identifier]?.value && current_extraction_processes.includes(column.identifier)"
-        class="flex flex-col items-center justify-center">
-        <ProgressSpinner
-        class="w-6 h-6"></ProgressSpinner>
-      </div>
-      <div v-else>
-        <div v-if="!edit_mode" v-html="value_as_html" class="text-sm use-default-html-styles"></div>
-        <textarea v-if="edit_mode"
-          class="w-full h-[150px] p-1 border border-gray-300 rounded text-sm"
-          :value="item.column_data[column.identifier]?.value"
-          ref="edit_text_area">
-        </textarea>
-      </div>
+      <div v-if="!edit_mode" v-html="value_as_html" class="text-sm use-default-html-styles py-2 pl-1 text-gray-700"></div>
+      <textarea v-if="edit_mode"
+        class="w-full h-[150px] p-1 border border-gray-300 rounded text-sm py-2 pl-1"
+        :value="item.column_data[column.identifier]?.value"
+        ref="edit_text_area">
+      </textarea>
     </div>
 
-    <div v-if="show_more_indicator" class="absolute bottom-6 right-0 h-6 w-6 rounded-full bg-white text-gray-400"
+    <div v-if="is_processing"
+      class="absolute top-0 w-full h-full flex flex-col items-center justify-center">
+      <ProgressSpinner class="w-6 h-6"></ProgressSpinner>
+    </div>
+
+    <div v-if="is_empty && !edit_mode && !is_processing"
+      class="absolute top-0 w-full h-full flex flex-row gap-2 justify-center items-center text-gray-500 text-sm">
+      <button
+        @click="edit_mode = true" class="hover:text-sky-500">
+        Edit
+      </button>
+      <span v-if="column.module !== 'notes'"> | </span>
+      <button v-if="column.module !== 'notes'"
+        @click="$emit('run_cell')" class="hover:text-sky-500">
+        Extract
+      </button>
+    </div>
+
+    <div v-if="show_more_indicator" class="absolute bottom-6 right-1 h-6 w-6 rounded-full bg-white text-gray-400"
       v-tooltip="{'value': 'Scroll down for more'}">
       <ArrowDownCircleIcon></ArrowDownCircleIcon>
     </div>
     <button v-if="!edit_mode" @click="edit_mode = true"
       v-tooltip.right="{'value': 'Edit', showDelay: 500}"
-      class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
+      class="absolute top-1 right-1 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
       <PencilIcon class="m-1"></PencilIcon>
     </button>
     <button v-if="appState.user.is_staff && !edit_mode && item.column_data[column.identifier]?.used_prompt" @click="show_used_prompt = true"
       v-tooltip.right="{'value': 'Show the used prompt', showDelay: 500}"
-      class="absolute top-8 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
+      class="absolute top-8 right-1 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
       P
     </button>
     <Dialog v-model:visible="show_used_prompt" modal header="Used Prompt">
@@ -164,23 +182,23 @@ export default {
     </Dialog>
     <button v-if="!edit_mode" @click="_window.isSecureContext ? _navigator.clipboard.writeText(value_as_plain_text) : _window.prompt('Copy to clipboard: Ctrl+C, Enter', value_as_plain_text)"
       v-tooltip.right="{'value': 'Copy plain text to clipboard', showDelay: 500}"
-      class="absolute top-0 right-8 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
+      class="absolute top-1 right-8 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
       <DocumentDuplicateIcon class="m-1"></DocumentDuplicateIcon>
     </button>
 
     <button v-if="edit_mode" @click="submit_changes()"
       v-tooltip.right="{'value': 'Save changes', showDelay: 500}"
-      class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-green-500">
+      class="absolute top-1 right-1 h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-green-500">
       <CheckIcon class="m-1"></CheckIcon>
     </button>
     <div v-if="!edit_mode && item.column_data[column.identifier]?.is_ai_generated"
       v-tooltip.bottom="{'value': 'AI generated'}"
-      class="absolute bottom-0 right-0 h-4 w-4 rounded bg-gray-100/50 text-gray-300 text-xs flex flex-row items-center justify-center">
+      class="absolute bottom-1 right-1 h-4 w-4 rounded bg-gray-100/50 text-gray-300 text-xs flex flex-row items-center justify-center">
       ✨
     </div>
     <div v-if="!edit_mode && item.column_data[column.identifier]?.is_manually_edited"
       v-tooltip.bottom="{'value': 'manually edited'}"
-      class="absolute bottom-0 right-6 h-4 w-4 p-[1px] rounded bg-gray-100/50 text-gray-300 text-xs flex flex-row items-center justify-center">
+      class="absolute bottom-1 right-6 h-4 w-4 p-[1px] rounded bg-gray-100/50 text-gray-300 text-xs flex flex-row items-center justify-center">
       <UserIcon></UserIcon>
     </div>
   </div>

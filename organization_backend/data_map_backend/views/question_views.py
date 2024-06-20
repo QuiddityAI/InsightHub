@@ -302,6 +302,7 @@ def extract_question_from_collection_class_items(request):
         offset: int = data.get("offset", 0)
         limit: int = data.get("limit", -1)
         order_by = data.get("order_by", '-date_added')
+        collection_item_id = data.get("collection_item_id")
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -315,18 +316,18 @@ def extract_question_from_collection_class_items(request):
     if not column.module or column.module == "notes":
         pass
     else:
-        _extract_question_from_collection_class_items_thread(column.collection, class_name, column, offset, limit, order_by, request.user.id)
+        _extract_question_from_collection_class_items_thread(column.collection, class_name, column, offset, limit, order_by, collection_item_id, request.user.id)
 
     data = CollectionSerializer(column.collection).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
 
 
-def _extract_question_from_collection_class_items_thread(collection, class_name, column, offset, limit, order_by, user_id):
+def _extract_question_from_collection_class_items_thread(collection, class_name, column, offset, limit, order_by, collection_item_id, user_id):
     collection.current_extraction_processes.append(column.identifier)
     collection.save()
     def _run_safe():
         try:
-            _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, user_id)
+            _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, collection_item_id, user_id)
         except Exception as e:
             logging.error(e)
             import traceback
@@ -344,10 +345,13 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
         collection.save()
 
 
-def _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, user_id):
-    collection_items = CollectionItem.objects.filter(collection=collection, is_positive=True, classes__contains=[class_name])
-    collection_items = collection_items.order_by(order_by)
-    collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
+def _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, collection_item_id, user_id):
+    if collection_item_id:
+        collection_items = CollectionItem.objects.filter(id=collection_item_id)
+    else:
+        collection_items = CollectionItem.objects.filter(collection=collection, is_positive=True, classes__contains=[class_name])
+        collection_items = collection_items.order_by(order_by)
+        collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
     included_items = 0
     batch_size = 10
     for i in range(0, len(collection_items), batch_size):

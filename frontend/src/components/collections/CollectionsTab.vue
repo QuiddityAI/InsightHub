@@ -35,6 +35,10 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
+    this.eventBus.on("show_table", ({collection_id, class_name}) => {
+      this.currently_selected_collection = collection_id
+      this.currently_selected_collection_class = class_name
+    })
   },
   watch: {
   },

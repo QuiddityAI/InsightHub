@@ -185,10 +185,15 @@ export default {
     window.addEventListener("popstate", this.evaluate_url_query_parameters)
 
     this.eventBus.on("show_results_tab", () => {
+      // FIXME: outdated use of selected_tab
       this.selected_tab = "results"
     })
     this.eventBus.on("show_chat", ({chat_id}) => {
+      // FIXME: outdated use of selected_tab
       this.selected_tab = "chats"
+    })
+    this.eventBus.on("show_table", ({collection_id, class_name}) => {
+      this.appStateStore.selected_app_tab = "collections"
     })
     this.eventBus.on("show_score_info_chart", () => {
       this.show_score_info_chart()

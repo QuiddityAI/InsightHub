@@ -435,6 +435,7 @@ export default {
           </template>
           <template #body="slotProps">
             <CollectionTableCell :item="slotProps.data" :column="column"
+              class="max-w-[400px]"
               :current_extraction_processes="collection.current_extraction_processes">
             </CollectionTableCell>
           </template>
