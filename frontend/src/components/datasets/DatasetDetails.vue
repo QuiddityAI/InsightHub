@@ -109,7 +109,7 @@ export default {
 </script>
 
 <template>
-  <div>
+  <div class="h-full">
     <div class="mb-3 ml-1 mt-3 flex flex-row gap-3">
       <button
         @click="$emit('close')"

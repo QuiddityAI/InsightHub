@@ -48,7 +48,7 @@ export default {
 </script>
 
 <template>
-  <div class="mt-2 mb-2 flex flex-col gap-2">
+  <div class="mt-2 mb-2 flex flex-col gap-2 overflow-y-auto">
     <Message v-if="!appState.logged_in" severity="warn">
       Log in to create your own dataset
     </Message>

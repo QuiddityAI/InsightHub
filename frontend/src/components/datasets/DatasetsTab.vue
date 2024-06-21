@@ -56,7 +56,7 @@ export default {
 </script>
 
 <template>
-  <div class="mt-3 mb-3 p-4 shadow-sm rounded-md flex flex-row items-center justify-center bg-white">
+  <div class="mt-3 mb-3 p-4 shadow-sm rounded-md flex flex-row items-center justify-center bg-white overflow-hidden">
 
     <Message v-if="!appState.logged_in" :closable="false">
       Log in to upload your own files (PDF, CSV, txt, etc.) to make them searchable and process them using AI.
