@@ -78,16 +78,16 @@ export default {
       <div class="flex flex-row">
         <span class="text-md font-bold">{{ mapState.map_parameters?.search.question }}</span>
         <div class="flex-1"></div>
-        <span class="text-gray-400 text-sm">AI Generated</span>
+        <span class="text-gray-400 text-sm italic">AI generated</span>
       </div>
 
       <div v-if="mapState.answer?.answer">
-        <span v-for="part in list_of_text_and_citation_parts(mapState.answer.answer)">
+        <span v-for="part in list_of_text_and_citation_parts(mapState.answer.answer)" class="text-gray-600 text-sm">
           <span v-if="part.is_citation">
             <button
               @click="(event) => { selected_citation = part; $refs.citation_tooltip.toggle(event) }"
               title="Click to show reference"
-              class="text-blue-500 cursor-pointer"
+              class="text-blue-500 cursor-pointer inline"
               type="button">
               [{{ part.citation_index }}]
             </button>
