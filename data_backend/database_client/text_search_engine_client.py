@@ -109,6 +109,14 @@ class TextSearchEngineClient(object):
                 properties[field.identifier]["index"] = indexed
             if field.field_type == FieldType.TEXT and field.language_analysis:
                 properties[field.identifier]["analyzer"] = field.language_analysis
+            if field.field_type == FieldType.TEXT and field.additional_language_analysis:
+                for language in field.additional_language_analysis:
+                    properties[field.identifier]["fields"] = {
+                        language: {
+                            "type": "text",
+                            "analyzer": language,
+                        }
+                    }
 
         mappings = {
             'properties': properties,

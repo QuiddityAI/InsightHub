@@ -593,6 +593,12 @@ class DatasetField(models.Model):
         choices=LanguageAnalysis.choices,
         blank=True,
         null=True)
+    additional_language_analysis = models.JSONField(
+        verbose_name="Additional Language Processing",
+        help_text="Only applicable for 'Text' fields, any of 'english, german, french, spanish, czech, russian, hindi'",
+        default=list,
+        blank=True,
+        null=True)
     embedding_space = models.ForeignKey(
         verbose_name="Embedding Space",
         help_text="If not set, embedding space of generator will be used",

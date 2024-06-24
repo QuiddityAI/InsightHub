@@ -225,7 +225,7 @@ class DatasetFieldInline(admin.StackedInline):
 
     fields = [
         "identifier", "name",
-        "field_type", "is_array", "language_analysis", "embedding_space", "index_parameters",
+        "field_type", "is_array", "language_analysis", "additional_language_analysis", "embedding_space", "index_parameters",
         "is_available_for_search", "text_similarity_threshold", "image_similarity_threshold",
         "is_available_for_filtering",
         "generator", "generator_parameters", "generating_condition",
