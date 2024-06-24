@@ -76,7 +76,9 @@ export default {
   <div class="mt-3 p-3 rounded bg-gray-100/50">
     <div class="flex flex-col gap-2">
       <div class="flex flex-row">
-        <span class="text-md font-bold">{{ mapState.map_parameters?.search.question }}</span>
+        <button class="text-md font-bold"
+          @click="eventBus.emit('show_summary_dialog')">
+          {{ mapState.map_parameters?.search.question }}</button>
         <div class="flex-1"></div>
         <span class="text-gray-400 text-sm italic">AI generated</span>
       </div>

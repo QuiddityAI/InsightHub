@@ -38,6 +38,7 @@ export default {
   emits: [],
   data() {
     return {
+      show_summary_dialog: false,
     }
   },
   computed: {
@@ -48,6 +49,9 @@ export default {
     },
   },
   mounted() {
+    this.eventBus.on("show_summary_dialog", () => {
+      this.show_summary_dialog = true
+    })
   },
   watch: {
   },
@@ -152,6 +156,23 @@ export default {
             :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
             :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
             :show_close_button="true"></ObjectDetailsModal>
+        </div>
+
+        <div
+          v-if="show_summary_dialog"
+          class="pointer-events-auto rounded-md bg-white p-4 shadow-xl max-h-[75vh]">
+          <div class="flex flex-row">
+            <h3 class="text-gray-700 font-semibold">{{ mapState.map_parameters?.search.question }}</h3>
+            <div class="flex-1"></div>
+            <button @click="show_summary_dialog = false" class="text-gray-500">X</button>
+          </div>
+          <div class="mt-2">
+            <p class="text-gray-600 text-sm">
+              {{ mapState.answer?.answer.replace(/\[.*\]/g, " ")}}
+            </p>
+          </div>
+          <!-- <p class="mt-3 mb-1 text-gray-600 text-md font-semibold">Cluster 1: Membranes</p>
+          <p class="text-gray-600 text-md text-sm">The articles in this cluster analyze how Mxenes can be used for high-tech membranes. Most of them conduct experiments on how durable those membranes are [1] [2].</p> -->
         </div>
 
         <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center items-center">
