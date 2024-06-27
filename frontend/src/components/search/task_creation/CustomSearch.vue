@@ -409,6 +409,8 @@ export default {
         </button>
       </div>
 
+      <SearchFilterList></SearchFilterList>
+
       <!-- Parameters Area -->
       <div v-show="show_settings" class="mt-3">
         <div
