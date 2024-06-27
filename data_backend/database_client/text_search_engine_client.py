@@ -388,7 +388,7 @@ class TextSearchEngineClient(object):
                     }
                 })
             elif filter_.operator in ("is", "is_not"):
-                # Note: also works to check if an element is in an array
+                # Note: also works to check if a given element is in an array of the document
                 query_filter['bool']['must' if filter_.operator == "is" else 'must_not'].append({
                     "term": {
                         filter_.field: {
@@ -397,6 +397,20 @@ class TextSearchEngineClient(object):
                         }
                     }
                 })
+            elif filter_.operator in ("in", "not_in"):
+                if filter_.field == "_id":
+                    query_filter['bool']['must'].append({
+                        "ids": {
+                            "values": filter_.value
+                        }
+                    })
+                else:
+                    # only works for keyword fields, not text fields
+                    query_filter['bool']['must' if filter_.operator == "in" else 'must_not'].append({
+                        "terms": {
+                            filter_.field: filter_.value,
+                        }
+                    })
             elif filter_.operator == "is_empty":
                 query_filter["bool"]["must"].append(
                     {
@@ -423,12 +437,6 @@ class TextSearchEngineClient(object):
                         filter_.field: {
                             filter_.operator: filter_.value
                         }
-                    }
-                })
-            elif filter_.operator == "ids":
-                query_filter['bool']['must'].append({
-                    "ids": {
-                        "values": filter_.value
                     }
                 })
         return query_filter

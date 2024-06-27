@@ -332,6 +332,14 @@ class VectorSearchEngineClient(object):
                 # Note: also works to check if an element is not in an array
                 filter_types['must_not'].append(models.FieldCondition(
                     key=filter_.field, match=models.MatchValue(value=filter_.value)))
+            elif filter_.operator == "in":
+                # Note: also works to check if an element is in an array
+                filter_types['must'].append(models.FieldCondition(
+                    key=filter_.field, match=models.MatchAny(any=filter_.value)))
+            elif filter_.operator == "not_in":
+                # Note: also works to check if an element is not in an array
+                filter_types['must_not'].append(models.FieldCondition(
+                    key=filter_.field, match=models.MatchAny(any=filter_.value)))
             elif filter_.operator == "is_empty":
                 filter_types['must'].append(models.Filter(should=[
                     models.IsEmptyCondition(is_empty=models.PayloadField(key=filter_.field)),

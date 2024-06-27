@@ -503,7 +503,7 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
     item['_dataset_id'] = dataset_id
 
     if get_text_search_highlights:
-        filters = [{'field': '_id', 'value': [item_id], 'operator': 'ids'}]
+        filters = [{'field': '_id', 'value': [item_id], 'operator': 'in'}]
         ignored_keyword_highlight_fields = dataset.merged_advanced_options.ignored_keyword_highlight_fields or []
         results, total = search_engine_client.get_search_results(dataset, dataset.schema.default_search_fields, filters,
                                                                  "", "", 0, 1, ['_id'],
