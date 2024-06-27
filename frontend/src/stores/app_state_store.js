@@ -659,9 +659,9 @@ export const useAppStateStore = defineStore("appState", {
         this.convert_quoted_parts_to_filter()
       }
 
-      if (!this.settings.search.question) {
-        this.settings.search.question = `Short summary of results for query '${this.settings.search.all_field_query}'`
-      }
+      // if (!this.settings.search.question) {
+      //   this.settings.search.question = `Short summary of results for query '${this.settings.search.all_field_query}'`
+      // }
 
       this.add_search_history_item()
 
