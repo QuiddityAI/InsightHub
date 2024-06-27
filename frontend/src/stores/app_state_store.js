@@ -1185,6 +1185,7 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
       this.settings.search.origins = []
+      this.settings.search.filters = []
       this.set_two_dimensional_projection()
       this.request_search_results()
     },
