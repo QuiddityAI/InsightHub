@@ -103,7 +103,9 @@ class VectorSearchEngineClient(object):
                     max_token_len=20,
                     lowercase=True,
                 ),
-            FieldType.TAG: PayloadSchemaType.KEYWORD,  # TODO: check if this works
+            FieldType.STRING: PayloadSchemaType.KEYWORD,
+            FieldType.IDENTIFIER: PayloadSchemaType.KEYWORD,
+            FieldType.TAG: PayloadSchemaType.KEYWORD,
             FieldType.INTEGER: PayloadSchemaType.INTEGER,
             FieldType.FLOAT: PayloadSchemaType.FLOAT,
             FieldType.BOOL: PayloadSchemaType.BOOL,
@@ -116,7 +118,7 @@ class VectorSearchEngineClient(object):
                 continue
             if other_field.field_type not in indexable_field_type_to_qdrant_type:
                 continue
-            if other_field.is_array and other_field.field_type != FieldType.TAG:
+            if other_field.is_array and other_field.field_type not in [FieldType.TAG, FieldType.STRING]:
                 logging.warning("Array fields are not yet supported for indexing in Qdrant, must be flattened somehow")
                 continue
 

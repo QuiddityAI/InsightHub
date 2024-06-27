@@ -75,6 +75,7 @@ class TextSearchEngineClient(object):
         field_type_to_open_search_type = defaultdict(lambda: "text")
         field_type_to_open_search_type.update({
             FieldType.TEXT: "text",
+            FieldType.STRING: "keyword",
             FieldType.TAG: "keyword",
             FieldType.INTEGER: "integer",
             FieldType.FLOAT: "float",
@@ -82,8 +83,8 @@ class TextSearchEngineClient(object):
             FieldType.BOOL: "boolean",
             FieldType.DATE: "date",
             FieldType.DATETIME: "date",
-            FieldType.IDENTIFIER: "text",
-            FieldType.URL: "text",
+            FieldType.IDENTIFIER: "keyword",
+            FieldType.URL: "keyword",
             FieldType.VECTOR: "knn_vector",  # in ElasticSearch, its called "dense_vector"
             FieldType.ATTRIBUTES: "object",
             FieldType.ARBITRARY_OBJECT: "flat_object",

@@ -21,8 +21,9 @@ from .chatgpt_client import get_chatgpt_response_using_history
 
 
 class FieldType(models.TextChoices):
-    TEXT = "TEXT", "Text"
-    IDENTIFIER = "IDENTIFIER", "Identifier"
+    TEXT = "TEXT", "Prose Text"
+    STRING = "STRING", "Exact String"
+    IDENTIFIER = "IDENTIFIER", "Identifier / ID"
     FLOAT = "FLOAT", "Float"
     INTEGER = "INTEGER", "Integer"
     DATE = "DATE", "Date"
@@ -33,7 +34,7 @@ class FieldType(models.TextChoices):
     FACE = "FACE", "Face"
     URL = "URL", "URL"
     GEO_COORDINATES = "GEO_COORDINATES", "Geo Coordinates"
-    TAG = "TAG", "Tag"
+    TAG = "TAG", "Tag / Keyword / Category"
     IMAGE = "IMAGE", "Image"
     AUDIO = "AUDIO", "Audio"
     VIDEO = "VIDEO", "Video"

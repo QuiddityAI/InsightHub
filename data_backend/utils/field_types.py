@@ -4,6 +4,7 @@
 
 class FieldType():
     TEXT = "TEXT"
+    STRING = "STRING"
     IDENTIFIER = "IDENTIFIER"
     FLOAT = "FLOAT"
     INTEGER = "INTEGER"
