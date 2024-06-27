@@ -15,6 +15,7 @@ from utils.source_plugin_types import SourcePlugin
 
 from api_clients.old_absclust_database_client import get_absclust_items_by_ids, get_absclust_item_by_id
 from api_clients.cohere_reranking import get_reranking_results
+from api_clients import openalex_api
 
 from database_client.django_client import get_generators, get_dataset, get_related_collection_items
 from database_client.vector_search_engine_client import VectorSearchEngineClient
@@ -424,7 +425,7 @@ def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str
     return item
 
 
-def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
+def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict, limit: int):
     filters = copy.deepcopy(filters)
     additional_filters = []
     removed_filters = []
@@ -457,7 +458,36 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict):
                     removed_filters.append(filter_)
     for filter_ in removed_filters:
         filters.remove(filter_)
+    workaround_to_filter_by_institution_using_openalex(dataset, filters, limit)
     return filters
+
+
+def workaround_to_filter_by_institution_using_openalex(dataset, filters, limit):
+    if dataset.schema.identifier not in ['semantic_scholar', 'openalex']:
+        return None
+
+    for filter_ in filters.copy():
+        if filter_['field'] == 'institution':
+            institution_query = filter_['value']
+            institution_info = openalex_api.search_institution(institution_query)['results'][0]
+            institution_id = institution_info["id"]
+            filters.remove(filter_)
+            if dataset.schema.identifier == 'openalex':
+                import uuid
+                # workaround for DOI not being stored as 'keyword' (and therefore not searchable) in our OpenAlex database:
+                openalex_ids = openalex_api.get_ids_of_institution(institution_id, max_results=min(limit, 65000))
+                # OpenAlex ids are urls like "https://openalex.org/works/W123124", only the last part was used during ingest:
+                openalex_ids = [oid.split("/")[-1] for oid in openalex_ids]
+                # mimicking the way the ids were generated during ingest:
+                ids = [str(uuid.uuid5(uuid.NAMESPACE_URL, oid)) for oid in openalex_ids]
+                filters.append({'field': '_id', 'value': ids, 'operator': 'in'})
+            else:
+                # OpenSearch allows a max of 65k elements by default, no limit on OpenAlex API side for now
+                ids = openalex_api.get_dois_of_institution(institution_id, max_results=min(limit, 65000))
+                filters.append({'field': 'doi', 'value': ids, 'operator': 'in'})
+            return institution_info['display_name']
+
+    return None
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=1)  # seconds
