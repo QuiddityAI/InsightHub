@@ -5,15 +5,16 @@
   "fields": {
     "display_name": "Generic CSV",
     "created_at": "2024-05-27T10:06:57.999Z",
-    "changed_at": "2024-05-27T10:07:15.936Z",
-    "description": "",
+    "changed_at": "2024-06-27T16:34:57.969Z",
+    "description": "The columns should be named as the fields in the dataset schema.\r\n\r\nFor the 'Generic Data Non-English' schema those are for example 'title', 'subtitle' and 'text'. For others schemas it might be different.",
     "module": "csv",
     "parameters": {
       "fields": [
         "__all__"
       ]
     },
-    "example_file_url": null
+    "example_file_url": null,
+    "manual_insert_form": []
   }
 }
 ]
