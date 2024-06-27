@@ -85,6 +85,11 @@ export default {
         Cluster: {{ mapState.map_parameters?.search.origin_display_name }}
       </h2>
 
+      <h2 v-if="mapState.map_parameters?.search.search_type === 'map_subset'"
+        class="text-md font-bold">
+        Custom Selection
+      </h2>
+
       <h2 v-if="mapState.map_parameters?.search.search_type === 'similar_to_item'"
         class="text-md font-bold">
         Similar to: {{ mapState.map_parameters?.search.origin_display_name }}
