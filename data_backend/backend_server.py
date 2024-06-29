@@ -207,7 +207,8 @@ def get_item_question_context_route():
     if not data:
         return "no data", 400
     data = DotDict(data)
-    result = get_item_question_context(data.dataset_id, data.item_id, data.source_fields, data.question)
+    result = get_item_question_context(data.dataset_id, data.item_id, data.source_fields, data.question,
+                                       data.max_characters_per_field, data.max_total_characters)
     if result is None or result.get("error"):
         return result.get("error", "error"), 500
 

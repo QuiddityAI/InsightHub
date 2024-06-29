@@ -55,7 +55,8 @@ def get_global_question_context(search_settings: dict) -> dict:
     return {'context': context}
 
 
-def get_item_question_context(dataset_id: int, item_id: str, source_fields: list[str], question: str) -> dict:
+def get_item_question_context(dataset_id: int, item_id: str, source_fields: list[str], question: str,
+                              max_characters_per_field: int | None = 5000, max_total_characters: int | None = None) -> dict:
     dataset = get_dataset(dataset_id)
     required_fields = {'_id'}
     source_fields_set = set(source_fields)
@@ -71,10 +72,9 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
             required_fields.add(chunk_field)
     required_fields.update([field for field in source_fields if not field.startswith("_")])
 
-    full_item = get_document_details_by_id(dataset_id, item_id, tuple(required_fields), None) or {}
+    full_item = get_document_details_by_id(dataset_id, item_id, tuple(required_fields), None) or {}  # type: ignore
 
     text = ""
-    max_characters_per_field = 5000
     source_fields = list(source_fields_set)
     _sort_fields_logically(source_fields)
 
@@ -85,20 +85,22 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
             continue
         else:
             value = full_item.get(source_field, "n/a")
-            value = str(value)[:max_characters_per_field]
+            value = str(value)[:max_characters_per_field] if max_characters_per_field else str(value)
             name = dataset.schema.object_fields.get(source_field, {}).get('name', None) or source_field
             text += f'{name}: {value}\n'
+            if max_total_characters and len(text) >= max_total_characters:
+                break
 
     max_chunks_to_show_all = 20
     max_selected_chunks = 5
-    if "_full_text_snippets" in source_fields:
+    if "_full_text_snippets" in source_fields and (not max_total_characters or len(text) < max_total_characters):
         chunk_vector_field_name = dataset.merged_advanced_options.get("full_text_chunk_embeddings")
         if chunk_vector_field_name:
             chunk_vector_field = DotDict(dataset.schema.object_fields.get(chunk_vector_field_name))
             chunk_field = chunk_vector_field.source_fields[0]
             chunks = full_item.get(chunk_field, [])
-            if len(chunks) <= max_chunks_to_show_all:
-                full_text = " ".join([chunk.get('text', '') for chunk in chunks])
+            full_text = " ".join([chunk.get('text', '') for chunk in chunks])
+            if len(chunks) <= max_chunks_to_show_all and (not max_characters_per_field or len(full_text) <= max_characters_per_field):
                 text += f'Full Text:\n'
                 text += f'{full_text}\n'
             else:
@@ -115,7 +117,14 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
                     this_chunk = chunks[part.get("index")].get('text', '')
                     chunk_after = chunks[part.get("index") + 1].get('text', '') if part.get("index") + 1 < len(chunks) else ""
                     relevant_text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
+                    if max_characters_per_field:
+                        relevant_text = relevant_text[:max_characters_per_field]
                     text += f"\nPotentially Relevant Snippet from {chunk_field}:\n"
                     text += f"    {relevant_text}\n\n"
+                    if max_total_characters and len(text) >= max_total_characters:
+                        break
+
+    if max_total_characters and len(text) > max_total_characters:
+        text = text[:max_total_characters]
 
     return {'context': text}
