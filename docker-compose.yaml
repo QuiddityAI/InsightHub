@@ -17,6 +17,7 @@ services:
       dockerfile: ./docker/organization_backend.Dockerfile
     volumes:
       - ./:/source_code/
+      - /data:/data
     # ports:  # expose port outside of this virtual network
     #   - "55125:55125"
     # Note: by default, the data-backend is and should not be accessible from the outside
