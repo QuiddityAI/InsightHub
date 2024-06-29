@@ -123,13 +123,14 @@ export default {
 
       <ul role="list" class="mt-3">
         <li
-          v-for="ds_and_item_id in result_ids_for_this_page"
+          v-for="(ds_and_item_id, index) in result_ids_for_this_page"
           :key="ds_and_item_id.join('_')"
           class="justify-between pb-3">
           <ResultListItem
             v-if="appState.search_result_items.hasOwnProperty(ds_and_item_id[0]) && appState.search_result_items[ds_and_item_id[0]].hasOwnProperty(ds_and_item_id[1])"
             :initial_item="appState.search_result_items[ds_and_item_id[0]][ds_and_item_id[1]]"
             :rendering="appState.datasets[ds_and_item_id[0]].schema.result_list_rendering"
+            :index="index"
             @mouseenter="appState.highlighted_item_id = ds_and_item_id"
             @mouseleave="appState.highlighted_item_id = null"
             @selected="appState.show_document_details(ds_and_item_id)"></ResultListItem>

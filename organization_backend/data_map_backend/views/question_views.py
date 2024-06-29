@@ -12,13 +12,15 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
+from diskcache import Cache
 
-from ..models import CollectionItem, DataCollection, CollectionColumn, Chat, ServiceUsage, FieldType, WritingTask
+from ..models import CollectionItem, DataCollection, CollectionColumn, Chat, Dataset, ServiceUsage, FieldType, WritingTask
 from ..serializers import ChatSerializer, CollectionColumnSerializer, CollectionSerializer, WritingTaskSerializer
 from ..data_backend_client import get_item_by_id, get_item_question_context
 from ..chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
 from ..groq_client import GROQ_MODELS, get_groq_response_using_history
-from ..prompts import table_cell_prompt, writing_task_prompt, search_question_prompt
+from ..prompts import table_cell_prompt, writing_task_prompt, search_question_prompt, item_relevancy_prompt
+from .. import prompts
 
 from .other_views import is_from_backend
 
@@ -1014,3 +1016,68 @@ def answer_question_using_items(request):
     response_text = get_chatgpt_response_using_history(history, OPENAI_MODELS.GPT4_O)
 
     return HttpResponse(json.dumps({"answer": response_text, "prompt": prompt}), content_type="application/json", status=200)
+
+
+@csrf_exempt
+def judge_item_relevancy_using_llm(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]
+        question: str = data["question"]
+        dataset_id: int = data["dataset_id"]
+        item_id: str = data["item_id"]
+        delay: int = data.get("delay", 0)
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    relevancy = _judge_item_relevancy_using_llm(user_id, question, dataset_id, item_id, delay)
+
+    return HttpResponse(json.dumps(relevancy), content_type="application/json", status=200)
+
+
+item_relevancy_cache = Cache("/data/quiddity_data/item_relevancy_cache/")
+
+
+def _judge_item_relevancy_using_llm(user_id: int, question: str, dataset_id: int, item_id: str,
+                                    delay: int = 0) -> dict:
+    cache_key = f"{question}_{dataset_id}_{item_id}"
+    if cache_key in item_relevancy_cache:
+        return item_relevancy_cache.get(cache_key)  # type: ignore
+
+    source_fields = ["_descriptive_text_fields", "_full_text_snippets"]
+    item_context = get_item_question_context(dataset_id, item_id, source_fields, question,
+                                             max_characters_per_field=3000, max_total_characters=5000)
+
+    dataset = Dataset.objects.get(id=dataset_id)
+
+    prompt = item_relevancy_prompt.replace("{{ question }}", question)
+    prompt = prompt.replace("{{ document }}", item_context)
+    assert isinstance(dataset.merged_advanced_options, dict)
+    dataset_context = dataset.merged_advanced_options.get("relevancy_context", prompts.dataset_context)
+    prompt = prompt.replace("{{ dataset_context }}", dataset_context)
+
+    # logging.warning(prompt)
+
+    history = [ { "role": "system", "content": prompt } ]
+
+    usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
+    result = usage_tracker.request_usage(0.1)
+    if result["approved"]:
+        if delay:
+            time.sleep(delay / 1000)
+        response_text = get_groq_response_using_history(history, GROQ_MODELS.LLAMA_3_70B)  # type: ignore
+        assert response_text
+        try:
+            relevancy = json.loads(response_text)
+        except (KeyError, ValueError):
+            relevancy = {'error': 'Could not parse AI response'}
+    else:
+        relevancy = {'error': 'AI usage limit exceeded'}
+    if relevancy.get("explanation") and 'decision' in relevancy:
+        item_relevancy_cache.set(cache_key, relevancy, expire=60*60*24*7)  # cache for 1 week
+    return relevancy

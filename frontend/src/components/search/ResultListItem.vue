@@ -1,4 +1,10 @@
 <script setup>
+import {
+  HandThumbUpIcon,
+  HandThumbDownIcon,
+ } from "@heroicons/vue/24/outline"
+
+import ProgressSpinner from 'primevue/progressspinner';
 
 import { httpClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -11,7 +17,7 @@ const mapState = useMapStateStore()
 
 <script>
 export default {
-  props: ["initial_item", "rendering"],
+  props: ["initial_item", "rendering", "index"],
   emits: ["selected"],
   data() {
     return {
@@ -19,11 +25,14 @@ export default {
       loading_item: false,
       body_text_collapsed: true,
       show_more_button: false,
+      loading_relevancy: false,
+      relevancy: null,
     }
   },
   watch: {
     initial_item() {
       this.item = this.initial_item
+      this.relevancy = null
       this.getFullItem()
     },
   },
@@ -54,19 +63,44 @@ export default {
           that.loading_item = false
         })
     },
+    get_relevancy(delay) {
+      if (!this.item || !this.item._id) return
+      if (!this.appStateStore.logged_in) return
+      const that = this
+
+      const payload = {
+        user_id: this.appStateStore.user.id,
+        dataset_id: this.item._dataset_id,
+        item_id: this.item._id,
+        question: this.mapStateStore.map_parameters.search.question || this.mapStateStore.map_parameters.search.all_field_query,
+        delay: delay,
+      }
+      this.loading_relevancy = true
+      httpClient
+        .post("/org/data_map/judge_item_relevancy_using_llm", payload)
+        .then(function (response) {
+          that.relevancy = response.data
+        })
+        .finally(function () {
+          that.loading_relevancy = false
+        })
+    },
   },
   mounted() {
     this.getFullItem()
     this.show_more_button = this.$refs.body_text?.scrollHeight > this.$refs.body_text?.clientHeight
+    this.get_relevancy(this.index * 500)
   },
   computed: {
     ...mapStores(useAppStateStore),
+    ...mapStores(useMapStateStore),
   }
 }
 </script>
 
 <template>
-  <div class="rounded bg-gray-100/50 p-3 flex flex-row gap-2">
+  <div class="rounded bg-gray-100/50 p-3 flex flex-row gap-2"
+    :class="{'opacity-30': relevancy && relevancy.decision === false }">
     <div class="flex-1">
       <button class="flex flex-row text-left" @click="$emit('selected')">
         <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
@@ -83,7 +117,17 @@ export default {
           </button>
         </div>
         <div class="flex-1"></div>
+        <div v-if="loading_relevancy" class="flex flex-row items-center">
+          <ProgressSpinner class="w-4 h-4"></ProgressSpinner>
+        </div>
+        <div v-else-if="relevancy" class="flex flex-row items-center"
+          v-tooltip="{'value': relevancy.explanation }">
+          <HandThumbUpIcon class="w-4 h-4 text-green-500" v-if="relevancy.decision" />
+          <HandThumbDownIcon class="w-4 h-4 text-red-500" v-else />
+        </div>
       </div>
+
+
 
       <!-- <p class="mt-2 text-xs leading-5 text-gray-700" v-if="rendering.url(item)">
         <a :href="rendering.url(item)">Link</a>
