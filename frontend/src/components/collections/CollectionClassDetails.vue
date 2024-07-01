@@ -214,7 +214,7 @@ export default {
 
       <button @click="show_export_dialog = true"
         class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold text-sm">
-          Export Items
+          Export Items Only
       </button>
 
       <Dialog v-model:visible="show_export_dialog" modal header="Export">
