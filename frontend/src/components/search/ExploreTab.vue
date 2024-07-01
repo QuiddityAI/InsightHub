@@ -9,6 +9,7 @@ import Button from 'primevue/button';
 import DynamicDialog from 'primevue/dynamicdialog'
 import OverlayPanel from "primevue/overlaypanel";
 import Message from 'primevue/message';
+import ProgressSpinner from "primevue/progressspinner";
 
 import CreateSearchTaskArea from "../search/CreateSearchTaskArea.vue"
 import SearchTaskDescriptionCard from "../search/SearchTaskDescriptionCard.vue"
@@ -63,10 +64,10 @@ export default {
 <template>
   <div class="flex flex-col items-center justify-center">
 
-    <CreateSearchTaskArea v-if="!appState.map_id" class="flex-none"></CreateSearchTaskArea>
+    <CreateSearchTaskArea v-if="!appState.search_result_ids.length && !appState.map_id && !appState.is_loading_search_results" class="flex-none"></CreateSearchTaskArea>
 
     <!-- two column layout (search results left and map and details card right)-->
-    <div v-if="!!appState.map_id"
+    <div v-else
       class="w-full grid min-h-0 min-w-0 mt-3 gap-4"
       :class="{
         'grid-cols-1': use_single_column,
@@ -175,10 +176,11 @@ export default {
           <p class="text-gray-600 text-md text-sm">The articles in this cluster analyze how Mxenes can be used for high-tech membranes. Most of them conduct experiments on how durable those membranes are [1] [2].</p> -->
         </div>
 
-        <div v-if="appState.show_loading_bar" class="flex w-full flex-1 flex-col justify-center items-center">
+        <div v-if="appState.show_loading_bar || appState.is_loading_search_results" class="flex w-full flex-1 flex-col justify-center items-center">
           <div class="flex flex-col p-4 bg-white shadow-xl rounded-xl">
-            <span class="self-center font-bold text-gray-400">{{ appState.progress_step_title }}</span>
-            <div class="mt-2 h-2.5 w-32 self-center rounded-full bg-gray-400/50">
+            <ProgressSpinner v-if="appState.is_loading_search_results" class="w-8 h-8"></ProgressSpinner>
+            <span v-if="appState.show_loading_bar" class="self-center font-bold text-gray-400">{{ appState.progress_step_title }}</span>
+            <div v-if="appState.show_loading_bar" class="mt-2 h-2.5 w-32 self-center rounded-full bg-gray-400/50">
               <div
                 class="h-2.5 rounded-full bg-blue-400"
                 :style="{ width: (appState.progress * 100).toFixed(0) + '%' }"></div>
@@ -187,7 +189,7 @@ export default {
         </div>
 
         <div
-          v-if="!appState.show_loading_bar && !appState.search_result_ids.length && !appState.map_id"
+          v-if="!appState.show_loading_bar && !appState.search_result_ids.length && !appState.map_id && !appState.is_loading_search_results"
           class="align-center flex flex-1 flex-col justify-center">
           <div class="mb-6 flex flex-row justify-center">
             <img

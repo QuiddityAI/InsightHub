@@ -44,6 +44,7 @@ export const useAppStateStore = defineStore("appState", {
       available_number_fields: [],
 
       // results:
+      is_loading_search_results: false,
       search_result_ids: [],
       visible_result_ids : [],
       search_result_items: {},
@@ -542,6 +543,7 @@ export const useAppStateStore = defineStore("appState", {
     },
     reset_search_results_and_map(params = { leave_map_unchanged: false }) {
       // results:
+      this.is_loading_search_results = false
       this.search_result_ids = []
       this.search_result_total_matches = 0
       this.search_result_items = {}
@@ -648,10 +650,7 @@ export const useAppStateStore = defineStore("appState", {
         return
       }
 
-      this.reset_search_results_and_map({ leave_map_unchanged: true })
-      this.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")
-      this.eventBus.emit("show_results_tab")
-      this.selected_app_tab = "explore"
+      this.is_loading_search_results = true
 
       // postprocess search query:
       if (this.settings.search.search_type == "external_input"
@@ -675,6 +674,9 @@ export const useAppStateStore = defineStore("appState", {
           if (that.load_map_after_search) {
             that.request_map()
           }
+        })
+        .finally(() => {
+          this.is_loading_search_results = false
         })
     },
     convert_quoted_parts_to_filter() {
@@ -845,6 +847,11 @@ export const useAppStateStore = defineStore("appState", {
         })
     },
     show_received_search_results(response_data) {
+      this.reset_search_results_and_map({ leave_map_unchanged: true })
+      this.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")
+      this.eventBus.emit("show_results_tab")
+      this.selected_app_tab = "explore"
+
       this.search_result_ids = response_data["sorted_ids"]
       this.search_result_total_matches = response_data["total_matches"]
       this.search_result_items = response_data["items_by_dataset"]
@@ -871,6 +878,11 @@ export const useAppStateStore = defineStore("appState", {
       const that = this
       if (this.settings.search.dataset_ids.length === 0) return
 
+      that.extended_search_results_are_loading = true
+      that.show_loading_bar = true
+      that.progress_step_title = "Requesting map..."
+      that.progress = 0.0
+
       httpClient
         .post(
           `/data_backend/map?ignore_cache=${this.ignore_cache}`,
@@ -880,8 +892,13 @@ export const useAppStateStore = defineStore("appState", {
           that.map_id = response.data["map_id"]
           that.map_viewport_is_adjusted = false
           that.map_is_in_progess = true
-          that.extended_search_results_are_loading = true
+          that.progress = 0.1
           that.request_mapping_progress()
+        })
+        .catch(function (error) {
+          console.log(error)
+          that.extended_search_results_are_loading = false
+          that.show_loading_bar = false
         })
     },
     request_mapping_progress() {

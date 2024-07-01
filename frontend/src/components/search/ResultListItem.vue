@@ -34,6 +34,7 @@ export default {
       this.item = this.initial_item
       this.relevancy = null
       this.getFullItem()
+      this.get_relevancy(this.index * 500)
     },
   },
   methods: {
@@ -68,7 +69,7 @@ export default {
       if (!this.appStateStore.logged_in) return
       const that = this
 
-      const question = this.mapStateStore.map_parameters.search.question || this.mapStateStore.map_parameters.search.all_field_query
+      const question = this.mapStateStore.map_parameters?.search.question || this.mapStateStore.map_parameters?.search.all_field_query
       if (!question) return
 
       const payload = {

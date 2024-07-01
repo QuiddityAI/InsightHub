@@ -50,9 +50,12 @@ export default {
 
       <!-- <h3 class="text-sm text-gray-500">
         {{ task_type_names[mapState.map_parameters?.search.task_type || 'quick_search'] }}</h3> -->
-      <span
-        class=" text-sm text-gray-500">
+      <span v-if="mapState.map_parameters?.search.dataset_ids.length > 0"
+        class="text-sm text-gray-500">
         {{ mapState.map_parameters?.search.dataset_ids.map(dataset_id => appState.datasets[dataset_id].name).join(', ') }}:
+      </span>
+      <span v-else class="text-sm text-gray-500">
+        Loading...
       </span>
       <div class="flex-1"></div>
       <div class="flex flex-row items-center gap-2">
