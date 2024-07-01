@@ -62,13 +62,13 @@ export default {
         Loading...
       </span>
       <div class="flex-1"></div>
-      <div class="flex flex-row items-center gap-2">
-        <button class="py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
+      <div class=" h-full flex flex-row items-center gap-2">
+        <button class="h-full py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
           v-tooltip.bottom="{ value: 'Edit search', showDelay: 400 }"
           @click="appState.reset_search_results_and_map()">
           <PencilIcon class="w-4 h-4"></PencilIcon>
         </button>
-        <button class="py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
+        <button class="h-full py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
           @click="appState.reset_search_box(); appState.reset_search_results_and_map()">
           New Search
         </button>
