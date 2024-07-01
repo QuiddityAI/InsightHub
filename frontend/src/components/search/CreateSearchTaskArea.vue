@@ -63,9 +63,6 @@ export default {
   },
   mounted() {
     const that = this
-    this.eventBus.on("show_results_tab", () => {
-      that.use_smart_search = false
-    })
   },
   computed: {
     ...mapStores(useAppStateStore),

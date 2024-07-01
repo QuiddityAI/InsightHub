@@ -112,6 +112,7 @@ export default {
           search_parameters.search_type = "vector"
         }
         this.appStateStore.settings.search.search_algorithm = search_parameters.search_type
+        // disable smart search because when editing the search params, it should not be re-run
         this.use_smart_search = false
         this.appStateStore.request_search_results()
       }).catch((error) => {
