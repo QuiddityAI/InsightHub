@@ -68,11 +68,14 @@ export default {
       if (!this.appStateStore.logged_in) return
       const that = this
 
+      const question = this.mapStateStore.map_parameters.search.question || this.mapStateStore.map_parameters.search.all_field_query
+      if (!question) return
+
       const payload = {
         user_id: this.appStateStore.user.id,
         dataset_id: this.item._dataset_id,
         item_id: this.item._id,
-        question: this.mapStateStore.map_parameters.search.question || this.mapStateStore.map_parameters.search.all_field_query,
+        question: question,
         delay: delay,
       }
       this.loading_relevancy = true
