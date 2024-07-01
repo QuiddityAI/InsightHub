@@ -37,6 +37,16 @@ export default {
     public_datasets() {
       return Object.values(this.appStateStore.datasets).filter(dataset => !dataset.admins.includes(this.appStateStore.user.id) && dataset.is_public === true)
     },
+    categories() {
+      const elements = [
+        {items: this.your_datasets, name: 'Your Datasets'},
+        {items: this.organization_datasets, name: 'Shared in Organization'},
+      ]
+      if (this.appStateStore.is_staff) {
+        elements.push({items: this.public_datasets, name: 'Public'})
+      }
+      return elements
+    }
   },
   mounted() {
   },
@@ -55,7 +65,7 @@ export default {
 
     <div
       v-if="!selected_dataset"
-      v-for="category in [{items: your_datasets, name: 'Your Datasets'}, {items: organization_datasets, name: 'Organization'}, {items: public_datasets, name: 'Public'}]"
+      v-for="category in categories"
       class="rounded-md bg-gray-100 pb-1 pl-3 pr-2 pt-2">
       <div class="flex flex-row gap-3">
         <span class="font-bold text-gray-600">{{ category.name }}</span>
@@ -72,8 +82,11 @@ export default {
           </button>
         </li>
       </ul>
-      <div v-if="category.items.length === 0" class="mb-2 text-sm text-gray-500">
-        No datasets yet
+      <div v-if="category.items.length === 0 && category.items === your_datasets" class="mb-2 text-sm text-gray-500">
+        No datasets yet, create a new one to upload your files
+      </div>
+      <div v-if="category.items.length === 0 && category.items !== your_datasets" class="mb-2 text-sm text-gray-500">
+        No shared datasets yet
       </div>
       <Button v-if="category.items === your_datasets && appState.logged_in" class="h-6 mb-2 mt-1"
         :disabled="!appState.organization.is_member"
