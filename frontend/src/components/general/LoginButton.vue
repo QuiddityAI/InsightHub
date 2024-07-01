@@ -90,7 +90,7 @@ export default {
     <Dialog v-model:visible="dialog_visible" modal header="Login / Register">
       <p>{{ message }}</p>
       <Accordion :activeIndex="0" class="mb-2">
-        <AccordionTab header="Login">
+        <AccordionTab header="Login with an existing account">
           <form ref="login_form" :action="`/org/login_from_app/?next=/`" method="post" class="flex flex-col gap-3">
             <InputGroup>
               <InputGroupAddon>
@@ -109,7 +109,7 @@ export default {
             <Button label="Login" class="w-full" @click="login" />
           </form>
         </AccordionTab>
-        <AccordionTab header="Register">
+        <AccordionTab header="Register / Create a new account">
           <form ref="register_form" :action="`/org/signup_from_app/?next=/`" method="post" class="flex flex-col gap-3">
             <InputGroup>
               <InputGroupAddon>
