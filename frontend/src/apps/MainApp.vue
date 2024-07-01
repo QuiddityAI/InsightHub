@@ -244,7 +244,7 @@ export default {
         :show_close_button="false"></ObjectDetailsModal>
     </Dialog>
 
-    <MapWithLabelsAndButtons v-show="appState.selected_app_tab === 'explore'"></MapWithLabelsAndButtons>
+    <MapWithLabelsAndButtons v-show="appState.selected_app_tab === 'explore' && appState.map_id"></MapWithLabelsAndButtons>
 
     <Timings></Timings>
 
