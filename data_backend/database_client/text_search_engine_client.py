@@ -65,7 +65,8 @@ class TextSearchEngineClient(object):
         try:
             response = self.client.indices.create(index_name, body=index_body)
         except Exception as e:
-            logging.error(f"Error during creating index: type {type(e)}, error: {e}")
+            logging.warning(f"Error during creating index: type {type(e)}, error: {e}")
+            logging.warning(f"If this is an resource_already_exists_exception error, it can be ignored.")
             # opensearchpy.exceptions.RequestError: RequestError(400, 'resource_already_exists_exception', 'index [dataset_4/1kYO7nOKQm2LMbosdiPeXw] already exists')
         else:
             logging.info(response)

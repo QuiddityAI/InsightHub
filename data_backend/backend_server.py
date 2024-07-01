@@ -2,6 +2,7 @@ import json
 import os
 from copy import deepcopy
 from threading import Thread
+import logging
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -132,6 +133,7 @@ def update_database_layout_route():
     try:
         update_database_layout(params.dataset_id)
     except Exception as e:
+        logging.warning("Error updating database layout", exc_info=True)
         return repr(e), 500
     return "", 204
 
@@ -143,6 +145,7 @@ def insert_many_sync_route():
     try:
         insert_many(params.dataset_id, params.elements)
     except Exception as e:
+        logging.warning("Error inserting many items", exc_info=True)
         return repr(e), 500
     return "", 204
 
