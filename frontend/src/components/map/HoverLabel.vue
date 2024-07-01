@@ -40,7 +40,7 @@ export default {
       }">
       <div
         v-if="appState.get_hover_rendering_by_index(mapState.hovered_point_idx)"
-        class="flex flex-col rounded bg-white px-2 py-1 text-xs text-gray-500">
+        class="flex flex-col rounded bg-white px-2 py-1 text-xs text-gray-500 shadow-xl">
         <div
           class="text-xs font-semibold"
           v-html="appState.get_hover_rendering_by_index(mapState.hovered_point_idx).title(mapState.get_item_by_index(mapState.hovered_point_idx))">

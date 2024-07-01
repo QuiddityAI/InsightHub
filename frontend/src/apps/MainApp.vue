@@ -20,6 +20,7 @@ import WriteTab from "../components/collections/WriteTab.vue"
 import DatasetsTab from "../components/datasets/DatasetsTab.vue"
 import ChatsTab from "../components/chats/ChatsTab.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
+import HoverLabel from "../components/map/HoverLabel.vue"
 
 import { httpClient } from "../api/httpClient"
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
@@ -263,6 +264,8 @@ export default {
       <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto"></DatasetsTab>
 
     </div>
+
+    <HoverLabel class="absolute top-0 h-screen w-screen" />
 
     <!-- <div
       v-if="appState.organization ? !appState.organization.workspace_tool_title : true"
