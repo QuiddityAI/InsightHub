@@ -65,7 +65,7 @@ export default {
       <div class=" h-full flex flex-row items-center gap-2">
         <button class="h-full py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
           v-tooltip.bottom="{ value: 'Edit search', showDelay: 400 }"
-          @click="appState.reset_search_results_and_map()">
+          @click="appState.open_search_edit_mode()">
           <PencilIcon class="w-4 h-4"></PencilIcon>
         </button>
         <button class="h-full py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"

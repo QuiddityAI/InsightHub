@@ -616,6 +616,13 @@ export const useAppStateStore = defineStore("appState", {
       emptyQueryParams.set("dataset_ids", this.settings.search.dataset_ids.join(","))
       history.pushState(null, null, "?" + emptyQueryParams.toString())
     },
+    open_search_edit_mode() {
+      const map_settings = JSON.parse(JSON.stringify(this.mapState.map_parameters))
+      this.reset_search_results_and_map()
+      const frontend_settings = JSON.parse(JSON.stringify(this.default_settings.frontend))
+      map_settings.frontend = frontend_settings
+      this.settings = map_settings
+    },
     run_search_from_history(history_item) {
       this.settings = JSON.parse(JSON.stringify(history_item.parameters))
       this.request_search_results()
