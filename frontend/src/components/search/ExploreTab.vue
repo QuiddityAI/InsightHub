@@ -153,7 +153,7 @@ export default {
           v-if="appState.selected_document_ds_and_id !== null && appState.selected_app_tab === 'explore'"
           class="pointer-events-auto rounded-md bg-white p-4 shadow-xl max-h-[75vh]">
           <ObjectDetailsModal
-            class="h-full w-full overflow-y-auto"
+            class="h-full w-full"
             :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
             :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
             :show_close_button="true"></ObjectDetailsModal>

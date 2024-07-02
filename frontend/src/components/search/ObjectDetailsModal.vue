@@ -1,7 +1,8 @@
 <script setup>
 import {
   XMarkIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  ArrowDownCircleIcon,
  } from "@heroicons/vue/24/outline"
 import axios from "axios"
 
@@ -40,6 +41,7 @@ export default {
       show_more_button: false,
       vector_chunk_index: 0,
       show_export_dialog: false,
+      show_scroll_indicator: false,
     }
   },
   computed: {
@@ -88,6 +90,10 @@ export default {
           // height of text is only available after rendering:
           setTimeout(() => {
             that.show_more_button = that.$refs.body_text?.scrollHeight > that.$refs.body_text?.clientHeight
+            // wait till more button is rendered:
+            setTimeout(() => {
+              that.update_show_scroll_indicator()
+            }, 100)
           }, 100)
         })
         .finally(function () {
@@ -115,6 +121,12 @@ export default {
         })
       this.checking_for_fulltext = true
     },
+    update_show_scroll_indicator() {
+      const scroll_area = this.$refs.scroll_area
+      const scrollable = scroll_area.scrollHeight > scroll_area.clientHeight
+      const is_at_end = scroll_area.scrollTop + scroll_area.clientHeight >= scroll_area.scrollHeight
+      this.show_scroll_indicator = scrollable && !is_at_end
+    },
   },
   watch: {
     initial_item() {
@@ -124,6 +136,9 @@ export default {
       this.fulltext_url = false
       this.vector_chunk_index = 0
       this.updateItemAndRendering()
+    },
+    body_text_collapsed() {
+      this.update_show_scroll_indicator()
     },
   },
   mounted() {
@@ -142,103 +157,117 @@ export default {
         this.item._related_collection_items.splice(index, 1)
       }
     })
+    const scroll_area = this.$refs.scroll_area
+    scroll_area.addEventListener("scroll", this.update_show_scroll_indicator)
+    scroll_area.addEventListener("resize", this.update_show_scroll_indicator)
+    scroll_area.addEventListener("load", this.update_show_scroll_indicator)
+    this.update_show_scroll_indicator()
   },
 }
 </script>
 
 <template>
-  <div class="p-[2px]">
+  <div class="p-[2px] flex flex-col">
 
-    <div class="flex flex-row w-full mb-3">
-      <div class="flex-1 flex min-w-0 flex-col w-full">
+    <div class="p-[2px] flex flex-col overflow-y-auto" ref="scroll_area"
+      :class="{'shadow-[inset_0_-10px_20px_-20px_rgba(0,0,0,0.3)]': show_scroll_indicator}">
 
-        <div class="flex flex-row mb-1">
-          <img v-if="rendering ? rendering.icon(item) : false" :src="rendering.icon(item)"
-            class="h-5 w-5 mr-2" />
-          <p class="text-md font-medium leading-tight text-gray-900"
-            v-html="rendering ? rendering.title(item) : ''"></p>
+      <div class="flex flex-row w-full mb-3">
+        <div class="flex-1 flex min-w-0 flex-col w-full">
+
+          <div class="flex flex-row mb-1">
+            <img v-if="rendering ? rendering.icon(item) : false" :src="rendering.icon(item)"
+              class="h-5 w-5 mr-2" />
+            <p class="text-md font-medium leading-tight text-gray-900"
+              v-html="rendering ? rendering.title(item) : ''"></p>
+          </div>
+
+          <p class="mt-1 flex-none text-xs leading-normal text-gray-500"
+            v-html="rendering ? rendering.subtitle(item) : ''">
+          </p>
+
+          <p ref="body_text" class="mt-2 text-sm text-gray-700" :class="{ 'line-clamp-[12]': body_text_collapsed }"
+            v-html="loading_item ? 'loading...' : rendering ? highlight_words_in_text(rendering.body(item), mapState.map_parameters?.search.all_field_query.split(' ')) || '-' : null"></p>
+          <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
+            <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500 hover:text-blue-500">
+              {{ body_text_collapsed ? "Show more" : "Show less" }}
+            </button>
+          </div>
+
         </div>
+        <div v-if="rendering ? rendering.image(item) : false" class="flex-none w-32 flex flex-col justify-center ml-2">
+          <Image class="w-full rounded-lg shadow-md" :src="rendering.image(item)" preview />
+        </div>
+      </div>
 
-        <p class="mt-1 flex-none text-xs leading-normal text-gray-500"
-          v-html="rendering ? rendering.subtitle(item) : ''">
-        </p>
+      <div v-if="relevant_chunks.length" v-for="relevant_chunk in [relevant_chunks[vector_chunk_index]]" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
+        <div v-if="relevant_chunk.value">
+          <div class="flex flex-row items-center">
+            <div class="font-semibold text-gray-600 text-sm">Relevant Part in
+              {{ appState.datasets[item._dataset_id].schema.object_fields[relevant_chunk.field]?.name }}{{ relevant_chunk.value?.page ? `, Page ${relevant_chunk.value.page}` : "" }}
+              <span class="text-gray-400">(based on meaning)</span>
+            </div>
+            <div class="flex-1"></div>
+            <div v-if="relevant_chunks.length > 1" class="flex flex-row items-center">
+              <button class="mr-1 rounded-md px-1 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100"
+                @click="vector_chunk_index = (vector_chunk_index - 1 + relevant_chunks.length) % relevant_chunks.length">
+                &lt;</button>
+              <span class="text-gray-500 text-xs">
+                {{ vector_chunk_index + 1 }} / {{ relevant_chunks.length }}
+              </span>
+              <button class="ml-1 rounded-md px-1 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100"
+                @click="vector_chunk_index = (vector_chunk_index + 1) % relevant_chunks.length">
+                &gt;</button>
+            </div>
+          </div>
+          <div class="mt-1 text-gray-700 text-xs"
+            v-html="highlight_words_in_text(relevant_chunk.value.text, mapState.map_parameters.search.all_field_query.split(' '))"></div>
+          <a :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_chunk.value.page}`" target="_blank"
+            class="mt-1 text-gray-500 text-xs">Open PDF at this page</a>
+        </div>
+      </div>
 
-        <p ref="body_text" class="mt-2 text-sm text-gray-700" :class="{ 'line-clamp-[12]': body_text_collapsed }"
-          v-html="loading_item ? 'loading...' : rendering ? highlight_words_in_text(rendering.body(item), mapState.map_parameters?.search.all_field_query.split(' ')) || '-' : null"></p>
-        <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
-          <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500 hover:text-blue-500">
-            {{ body_text_collapsed ? "Show more" : "Show less" }}
+      <div v-for="highlight in relevant_keyword_highlights" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
+        <div class="font-semibold text-gray-600 text-sm">Relevant Part in
+          {{ appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.name || appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.identifier }}
+          <span class="text-gray-400">(based on keywords)</span>
+        </div>
+        <div class="mt-1 text-gray-700 text-xs" v-html="highlight.value"></div>
+      </div>
+
+      <div class="mt-2 flex flex-none flex-row">
+        <button
+          v-tooltip.bottom="{ value: `Export this item in different formats`, showDelay: 500 }"
+          @click="show_export_dialog = true"
+          class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+          {{ dataset.merged_advanced_options.export_button_name || "Export" }}
+        </button>
+        <div v-for="link in rendering ? rendering.links : []">
+          <button v-if="link.url(item)"
+            class="h-full mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+            <a :href="link.url(item)" target="_blank">{{ link.label }}</a>
           </button>
         </div>
-
       </div>
-      <div v-if="rendering ? rendering.image(item) : false" class="flex-none w-32 flex flex-col justify-center ml-2">
-        <Image class="w-full rounded-lg shadow-md" :src="rendering.image(item)" preview />
-      </div>
-    </div>
 
-    <div v-if="relevant_chunks.length" v-for="relevant_chunk in [relevant_chunks[vector_chunk_index]]" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
-      <div v-if="relevant_chunk.value">
-        <div class="flex flex-row items-center">
-          <div class="font-semibold text-gray-600 text-sm">Relevant Part in
-            {{ appState.datasets[item._dataset_id].schema.object_fields[relevant_chunk.field]?.name }}{{ relevant_chunk.value?.page ? `, Page ${relevant_chunk.value.page}` : "" }}
-            <span class="text-gray-400">(based on meaning)</span>
-          </div>
-          <div class="flex-1"></div>
-          <div v-if="relevant_chunks.length > 1" class="flex flex-row items-center">
-            <button class="mr-1 rounded-md px-1 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100"
-              @click="vector_chunk_index = (vector_chunk_index - 1 + relevant_chunks.length) % relevant_chunks.length">
-              &lt;</button>
-            <span class="text-gray-500 text-xs">
-              {{ vector_chunk_index + 1 }} / {{ relevant_chunks.length }}
-            </span>
-            <button class="ml-1 rounded-md px-1 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100"
-              @click="vector_chunk_index = (vector_chunk_index + 1) % relevant_chunks.length">
-              &gt;</button>
-          </div>
-        </div>
-        <div class="mt-1 text-gray-700 text-xs"
-          v-html="highlight_words_in_text(relevant_chunk.value.text, mapState.map_parameters.search.all_field_query.split(' '))"></div>
-        <a :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_chunk.value.page}`" target="_blank"
-          class="mt-1 text-gray-500 text-xs">Open PDF at this page</a>
+      <Dialog v-model:visible="show_export_dialog" modal :header="dataset.merged_advanced_options.export_button_name || 'Export'">
+        <ExportSingleItem :dataset="dataset" :item="item">
+        </ExportSingleItem>
+      </Dialog>
+
+      <div v-for="collection_item in item._related_collection_items" class="mt-3">
+        <RelatedCollectionItem :collection_item="collection_item"
+          @refresh_item="updateItemAndRendering()">
+        </RelatedCollectionItem>
       </div>
     </div>
 
-    <div v-for="highlight in relevant_keyword_highlights" class="mt-2 rounded-md bg-gray-100 py-2 px-2">
-      <div class="font-semibold text-gray-600 text-sm">Relevant Part in
-        {{ appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.name || appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.identifier }}
-        <span class="text-gray-400">(based on keywords)</span>
+    <div class="relative mt-3 flex flex-none flex-row items-center gap-4 h-7">
+
+      <div v-if="show_scroll_indicator" class="absolute -top-12 right-1 h-6 w-6 rounded-full bg-white text-gray-400"
+        v-tooltip.left="{'value': 'Scroll down for more'}">
+        <ArrowDownCircleIcon></ArrowDownCircleIcon>
       </div>
-      <div class="mt-1 text-gray-700 text-xs" v-html="highlight.value"></div>
-    </div>
-
-    <div class="mt-2 flex flex-none flex-row">
-      <button
-        v-tooltip.bottom="{ value: `Export this item in different formats`, showDelay: 500 }"
-        @click="show_export_dialog = true"
-        class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
-        {{ dataset.merged_advanced_options.export_button_name || "Export" }}
-      </button>
-      <div v-for="link in rendering ? rendering.links : []">
-        <button v-if="link.url(item)"
-          class="h-full mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
-          <a :href="link.url(item)" target="_blank">{{ link.label }}</a>
-        </button>
-      </div>
-    </div>
-
-    <Dialog v-model:visible="show_export_dialog" modal :header="dataset.merged_advanced_options.export_button_name || 'Export'">
-      <ExportSingleItem :dataset="dataset" :item="item">
-      </ExportSingleItem>
-    </Dialog>
-
-    <div v-for="collection_item in item._related_collection_items" class="mt-3">
-      <RelatedCollectionItem :collection_item="collection_item"
-        @refresh_item="updateItemAndRendering()">
-      </RelatedCollectionItem>
-    </div>
-
-    <div class="mt-3 flex flex-none flex-row items-center gap-4 h-7">
 
       <AddToCollectionButtons v-if="appState.collections?.length && appState.selected_app_tab !== 'collections'"
         @addToCollection="(collection_id, class_name, is_positive) =>
