@@ -98,6 +98,22 @@ export default {
   computed: {
     ...mapStores(useAppStateStore),
     ...mapStores(useMapStateStore),
+    main_relevance_influence() {
+      const origins = this.item._origins
+      // find origin.type of origins with lowest origin.rank:
+      const min_rank = Math.min(...origins.filter(origin => ['vector', 'keyword'].includes(origin.type)).map((origin) => origin.rank))
+      const min_rank_origins = origins.filter((origin) => origin.rank === min_rank)
+      const min_rank_origin_types = min_rank_origins.map((origin) => origin.type)
+      if (min_rank_origin_types.includes("vector") && min_rank_origin_types.includes("keyword")) {
+        return "both"
+      } else if (min_rank_origin_types.includes("vector")) {
+        return "vector"
+      } else if (min_rank_origin_types.includes("keyword")) {
+        return "keyword"
+      } else {
+        return null
+      }
+    },
   }
 }
 </script>
@@ -114,13 +130,28 @@ export default {
 
       <p ref="body_text" class="mt-2 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
        v-html="rendering.body(item)"></p>
-      <div class="flex flex-row items-begin">
+      <div class="flex flex-row items-begin gap-3">
         <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
           <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
             {{ body_text_collapsed ? "Show more" : "Show less" }}
           </button>
         </div>
         <div class="flex-1"></div>
+        <span v-if="main_relevance_influence === 'vector'"
+          v-tooltip.bottom="{ value: 'This item was mainly found because it matches the meaning of the search query.', showDelay: 500 }"
+          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 bg-gray-100 flex items-center">
+          Found by Meaning
+        </span>
+        <span v-if="main_relevance_influence === 'keyword'"
+          v-tooltip.bottom="{ value: 'This item was mainly found because it contains keywords of the search query.', showDelay: 500 }"
+          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 bg-gray-100 flex items-center">
+          Found by Keywords
+        </span>
+        <span v-if="main_relevance_influence === 'both'"
+          v-tooltip.bottom="{ value: 'This item was found by meaning and keywords.', showDelay: 500 }"
+          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 bg-gray-100 flex items-center">
+          Found by Meaning & Keywords
+        </span>
         <div v-if="loading_relevancy" class="flex flex-row items-center">
           <ProgressSpinner class="w-4 h-4"></ProgressSpinner>
         </div>
