@@ -22,11 +22,14 @@ export function normalizeArrayMedianGamma(a, gamma_factor, max_default = 1.0) {
 
 export class FieldType {
   static TEXT = "TEXT"
+  static STRING = "STRING"
   static VECTOR = "VECTOR"
   static INTEGER = "INTEGER"
   static FLOAT = "FLOAT"
   static IDENTIFIER = "IDENTIFIER"
   static CHUNK = "CHUNK"
+  static CLASS_PROBABILITY = "CLASS_PROBABILITY"
+  static ARBITRARY_OBJECT = "ARBITRARY_OBJECT"
 }
 
 export function ellipse(text, length) {
