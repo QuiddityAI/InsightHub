@@ -423,6 +423,18 @@ export const useAppStateStore = defineStore("appState", {
           : (item) => ""
       }
       dataset.schema.hover_label_rendering = hover_label_rendering
+
+      const detail_view_rendering = dataset.schema.detail_view_rendering
+      for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon", "full_text_pdf_url"]) {
+        detail_view_rendering[field] = detail_view_rendering[field]
+          ? eval?.('"use strict"; ' + detail_view_rendering[field])
+          : (item) => ""
+      }
+      for (const link of detail_view_rendering.links || []) {
+        link.url = link.url ? eval(link.url) : ""
+      }
+      dataset.schema.detail_view_rendering = detail_view_rendering
+
       return dataset
     },
     on_selected_datasets_changed() {

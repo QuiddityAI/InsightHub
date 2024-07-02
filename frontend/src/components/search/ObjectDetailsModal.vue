@@ -4,11 +4,10 @@ import {
   MagnifyingGlassIcon,
   ArrowDownCircleIcon,
  } from "@heroicons/vue/24/outline"
-import axios from "axios"
 
-import LoadingDotAnimation from "./LoadingDotAnimation.vue"
 import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
 import ExportSingleItem from "./ExportSingleItem.vue"
+import RelatedCollectionItem from "../collections/RelatedCollectionItem.vue"
 
 import { httpClient } from "../../api/httpClient"
 import { highlight_words_in_text } from "../../utils/utils"
@@ -19,7 +18,7 @@ import Dialog from 'primevue/dialog';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
-import RelatedCollectionItem from "../collections/RelatedCollectionItem.vue"
+
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
@@ -31,12 +30,11 @@ export default {
   props: ["dataset", "initial_item", "show_close_button"],
   data() {
     return {
-      rendering: null,
       item: this.initial_item,
       loading_item: false,
-      checking_for_fulltext: false,
-      checked_for_fulltext: false,
-      fulltext_url: null,
+      // checking_for_fulltext: false,
+      // checked_for_fulltext: false,
+      // fulltext_url: null,
       body_text_collapsed: true,
       show_more_button: false,
       vector_chunk_index: 0,
@@ -52,22 +50,14 @@ export default {
     relevant_keyword_highlights() {
       return this.item?._relevant_parts?.filter((part) => part.origin === "keyword_search") || []
     },
+    rendering() {
+      return this.dataset.schema.detail_view_rendering
+    },
   },
   methods: {
     updateItemAndRendering() {
       if (!this.item || !this.item._id) return
       const that = this
-      const rendering = this.dataset.schema.detail_view_rendering
-      for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon", "full_text_pdf_url"]) {
-        // eval?.('"use strict"; ' + code) prevents access to local variables and
-        // any new variable or function declarations are scoped instead of global
-        // (still a major security risk, more meant to prevent accidental bugs)
-        rendering[field] = rendering[field] ? eval?.('"use strict"; ' + rendering[field]) : (item) => ""
-      }
-      for (const link of rendering.links || []) {
-        link.url = link.url ? eval(link.url) : ""
-      }
-      that.rendering = rendering
 
       const payload = {
         dataset_id: this.dataset.id,
@@ -100,27 +90,46 @@ export default {
           that.loading_item = false
         })
     },
-    findFulltext() {
+    update_column_data_only() {
+      if (!this.item || !this.item._id) return
       const that = this
-      const doi = this.rendering.doi(this.item)
-      const email = "mail@luminosus.org"
-      axios
-        .get(`https://api.unpaywall.org/v2/${doi}?email=${email}`)
+      const payload = {
+        dataset_id: this.dataset.id,
+        item_id: this.item._id,
+        fields: [],
+        relevant_parts: null,
+        get_text_search_highlights: false,
+        top_n_full_text_chunks: 0,
+        query: null,
+        include_related_collection_items: true,
+      }
+      httpClient
+        .post("/data_backend/document/details_by_id", payload)
         .then(function (response) {
-          that.fulltext_url = response.data.best_oa_location
-            ? response.data.best_oa_location.url
-            : null
-          that.checking_for_fulltext = false
-          that.checked_for_fulltext = true
+          that.item._related_collection_items = response.data._related_collection_items
         })
-        .catch(function (error) {
-          console.log(error)
-          that.fulltext_url = null
-          that.checking_for_fulltext = false
-          that.checked_for_fulltext = true
-        })
-      this.checking_for_fulltext = true
     },
+    // findFulltext() {
+    //   const that = this
+    //   const doi = this.rendering.doi(this.item)
+    //   const email = "mail@luminosus.org"
+    //   axios
+    //     .get(`https://api.unpaywall.org/v2/${doi}?email=${email}`)
+    //     .then(function (response) {
+    //       that.fulltext_url = response.data.best_oa_location
+    //         ? response.data.best_oa_location.url
+    //         : null
+    //       that.checking_for_fulltext = false
+    //       that.checked_for_fulltext = true
+    //     })
+    //     .catch(function (error) {
+    //       console.log(error)
+    //       that.fulltext_url = null
+    //       that.checking_for_fulltext = false
+    //       that.checked_for_fulltext = true
+    //     })
+    //   this.checking_for_fulltext = true
+    // },
     update_show_scroll_indicator() {
       const scroll_area = this.$refs.scroll_area
       const scrollable = scroll_area.scrollHeight > scroll_area.clientHeight
@@ -160,7 +169,6 @@ export default {
     const scroll_area = this.$refs.scroll_area
     scroll_area.addEventListener("scroll", this.update_show_scroll_indicator)
     scroll_area.addEventListener("resize", this.update_show_scroll_indicator)
-    scroll_area.addEventListener("load", this.update_show_scroll_indicator)
     this.update_show_scroll_indicator()
   },
 }
@@ -257,13 +265,15 @@ export default {
 
       <div v-for="collection_item in item._related_collection_items" class="mt-3">
         <RelatedCollectionItem :collection_item="collection_item"
-          @refresh_item="updateItemAndRendering()">
+          @refresh_item="update_column_data_only()">
         </RelatedCollectionItem>
       </div>
+
     </div>
 
     <div class="relative mt-3 flex flex-none flex-row items-center gap-4 h-7">
 
+      <!-- has to be here (although displayed above) because otherwise it would scroll with the content -->
       <div v-if="show_scroll_indicator" class="absolute -top-12 right-1 h-6 w-6 rounded-full bg-white text-gray-400"
         v-tooltip.left="{'value': 'Scroll down for more'}">
         <ArrowDownCircleIcon></ArrowDownCircleIcon>
@@ -286,6 +296,7 @@ export default {
               )
           ">
       </AddToCollectionButtons>
+
       <button
         v-tooltip.bottom="{ value: `Show similar ${dataset.schema.entity_name_plural} in currently selected datasets\n(based on 'meaning')`, showDelay: 500 }"
         @click="appState.show_similar_items(appState.selected_document_ds_and_id, item)"
@@ -297,25 +308,6 @@ export default {
         class="h-full rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         <a :href="rendering.url(item)" target="_blank">Link</a>
       </button>
-
-      <!-- <button v-if="(rendering ? rendering.doi(item) : false) &&
-            !checking_for_fulltext &&
-            !checked_for_fulltext
-            " @click="findFulltext"
-        class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
-        Find Fulltext
-      </button>
-      <div v-if="checking_for_fulltext" class="flex h-full w-10 place-items-center">
-        <LoadingDotAnimation></LoadingDotAnimation>
-      </div>
-      <button type="button" v-if="checked_for_fulltext && fulltext_url"
-        class="mr-3 rounded-md px-3 text-sm text-green-500 ring-1 ring-gray-300 hover:bg-blue-100">
-        <a :href="fulltext_url" target="_blank">Open Fulltext</a>
-      </button>
-      <button disabled v-if="checked_for_fulltext && !fulltext_url"
-        class="mr-3 rounded-md px-3 text-sm text-red-500 ring-1 ring-gray-300 hover:bg-blue-100">
-        No open access fulltext found
-      </button> -->
 
       <div class="flex-1"></div>
       <button v-if="show_close_button"
