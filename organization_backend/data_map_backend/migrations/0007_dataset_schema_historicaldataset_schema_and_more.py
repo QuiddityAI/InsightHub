@@ -3,7 +3,7 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
-def make_sure_openalex_exists(apps, schema_editor):
+def make_sure_scientific_articles_schema_exists(apps, schema_editor):
     DatasetSchema = apps.get_model('data_map_backend', 'DatasetSchema')
     if not DatasetSchema.objects.filter(identifier='scientific_articles').exists():
         DatasetSchema.objects.create(identifier='scientific_articles', name='Scientific Articles')
@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(make_sure_openalex_exists, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(make_sure_scientific_articles_schema_exists, reverse_code=migrations.RunPython.noop),
         migrations.AddField(
             model_name='dataset',
             name='schema',
