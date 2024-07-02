@@ -1,0 +1,12 @@
+[
+{
+  "model": "data_map_backend.embeddingspace",
+  "pk": "allenai/specter2_base",
+  "fields": {
+    "name": "Specter V2",
+    "created_at": "2024-06-30T09:04:47.515Z",
+    "changed_at": "2024-06-30T09:04:47.519Z",
+    "dimensions": 768
+  }
+}
+]
