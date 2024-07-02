@@ -24,9 +24,9 @@ export default {
       selected_converter: null,
       selected_format: null,
       available_formats: [
-        { identifier: "xlsx", display_name: "Microsoft Excel (.xlsx)" },
+        //{ identifier: "xlsx", display_name: "Microsoft Excel (.xlsx)" },
         { identifier: "csv", display_name: "CSV" },
-        { identifier: "json", display_name: "JSON (array of objects)" },
+        //{ identifier: "json", display_name: "JSON (array of objects)" },
       ],
       is_loading: false,
       exported_data: null,
