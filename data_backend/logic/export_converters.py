@@ -13,7 +13,7 @@ from database_client.text_search_engine_client import TextSearchEngineClient
 from logic.search_common import get_document_details_by_id
 
 
-def export_item(dataset_id: int, item_id: int, export_converter_identifier: str) -> dict:
+def export_item(dataset_id: int, item_id: str, export_converter_identifier: str) -> dict:
     converter_definition = get_export_converter(export_converter_identifier)
     converter = get_export_converter_module(converter_definition.module, converter_definition.parameters)
     required_fields = converter.required_fields()
