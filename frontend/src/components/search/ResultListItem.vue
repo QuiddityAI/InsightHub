@@ -122,10 +122,16 @@ export default {
   <div class="rounded bg-gray-100/50 p-3 flex flex-row gap-2"
     :class="{'opacity-30': relevancy && relevancy.decision === false }">
     <div class="flex-1">
-      <button class="flex flex-row text-left" @click="$emit('selected')">
+      <div class="flex flex-row items-center w-full" @click="$emit('selected')">
         <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
-        <p class="text-md font-medium leading-tight text-sky-800 hover:underline" v-html="rendering.title(item)"></p>
-      </button>
+        <button class="text-md text-left font-medium leading-tight text-sky-800 hover:underline" v-html="rendering.title(item)"></button>
+        <div class="flex-1"></div>
+        <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"
+          v-tooltip.bottom="{ value: tag.tooltip, showDelay: 500 }"
+          class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
+          {{ tag.label }}
+        </span>
+      </div>
       <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
 
       <p ref="body_text" class="mt-2 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
@@ -139,17 +145,17 @@ export default {
         <div class="flex-1"></div>
         <span v-if="main_relevance_influence === 'vector'"
           v-tooltip.bottom="{ value: 'This item was mainly found because it matches the meaning of the search query.', showDelay: 500 }"
-          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 bg-gray-100 flex items-center">
+          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 flex items-center">
           Found by Meaning
         </span>
         <span v-if="main_relevance_influence === 'keyword'"
           v-tooltip.bottom="{ value: 'This item was mainly found because it contains keywords of the search query.', showDelay: 500 }"
-          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 bg-gray-100 flex items-center">
+          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 flex items-center">
           Found by Keywords
         </span>
         <span v-if="main_relevance_influence === 'both'"
           v-tooltip.bottom="{ value: 'This item was found by meaning and keywords.', showDelay: 500 }"
-          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 bg-gray-100 flex items-center">
+          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 flex items-center">
           Found by Meaning & Keywords
         </span>
         <div v-if="loading_relevancy" class="flex flex-row items-center">
