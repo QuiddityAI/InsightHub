@@ -66,6 +66,9 @@ export default {
         if (!ds_items) continue
         const item = ds_items[ds_and_item_id[1]]
         const value = item[this.range_filter.field]
+        if (value === undefined || value === null) {
+          continue
+        }
         if (value > max_value) {
           max_value = value
         }
