@@ -3,6 +3,11 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+def make_sure_openalex_exists(apps, schema_editor):
+    DatasetSchema = apps.get_model('data_map_backend', 'DatasetSchema')
+    if not DatasetSchema.objects.filter(identifier='openalex').exists():
+        DatasetSchema.objects.create(identifier='openalex', name='OpenAlex')
+
 
 class Migration(migrations.Migration):
 
@@ -11,6 +16,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(make_sure_openalex_exists, reverse_code=migrations.RunPython.noop),
         migrations.AddField(
             model_name='dataset',
             name='schema',
