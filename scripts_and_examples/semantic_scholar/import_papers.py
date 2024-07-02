@@ -236,6 +236,6 @@ def import_file(file_path, dataset_id, index):
 if __name__ == "__main__":
     dataset_id = 80
     #update_database_layout(dataset_id)
-    #load_indexes()
+    load_indexes()
     import_papers(dataset_id)
     logging.warning("Done")
