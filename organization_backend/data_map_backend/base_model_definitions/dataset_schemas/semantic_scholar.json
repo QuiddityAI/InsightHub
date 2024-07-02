@@ -4,8 +4,8 @@
   "entity_name_plural": "articles",
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-06-24T11:49:17.186Z",
-  "primary_key": "paperId",
+  "changed_at": "2024-07-02T10:24:08.339Z",
+  "primary_key": "corpus_id",
   "thumbnail_image": null,
   "descriptive_text_fields": [
     "title",
@@ -13,18 +13,67 @@
   ],
   "default_search_fields": [
     "title",
-    "abstract"
+    "abstract",
+    "tldr",
+    "full_text"
   ],
-  "advanced_options": {},
-  "result_list_rendering": {
-    "url": "(item) => { return null }",
-    "body": "(item) => { return item.abstract }",
-    "image": "(item) => { return null }",
-    "title": "(item) => { return item.title }",
-    "subtitle": "(item) => { return null }",
-    "required_fields": [
+  "advanced_options": {
+    "size_field": "cited_by",
+    "access_tokens": {
+      "mfoClZqtnpB4ObEA53tOCyB1oKx3DiIr": "staging_server"
+    },
+    "range_filters": [
+      {
+        "field": "publication_year",
+        "display_name": "Year"
+      },
+      {
+        "field": "cited_by",
+        "display_name": "Citations"
+      }
+    ],
+    "example_queries": [
+      {
+        "query": "papers about Mxene before 2020"
+      },
+      {
+        "query": "corona"
+      },
+      {
+        "query": "influence of social media on the youth"
+      }
+    ],
+    "map_vector_field": "w2v_vector",
+    "search_algorithm": "keyword",
+    "example_questions": [
+      {
+        "question": "What can Mxenes be used for?"
+      },
+      {
+        "question": "What is aerosinusitis?"
+      }
+    ],
+    "export_button_name": "Cite",
+    "ignored_keyword_highlight_fields": [
       "title",
       "abstract"
+    ]
+  },
+  "result_list_rendering": {
+    "url": "item => null",
+    "body": "item => `${item.abstract}`",
+    "tags": "(item) => {return [ {'label': 'OA', 'tooltip': 'Open Access', 'applies': item.is_open_access},] }",
+    "image": "item => null",
+    "title": "item => `${item.title}`",
+    "subtitle": "item => `${item.publication_year} | ${item.venue || item.journal} | ${item.authors ? item.authors.join(', ') : ''}`",
+    "required_fields": [
+      "title",
+      "venue",
+      "journal",
+      "publication_year",
+      "authors",
+      "abstract",
+      "is_open_access"
     ]
   },
   "hover_label_rendering": {
@@ -37,19 +86,118 @@
     ]
   },
   "detail_view_rendering": {
-    "url": "(item) => { return null }",
-    "body": "(item) => { return item.abstract }",
-    "image": "(item) => { return null }",
-    "title": "(item) => { return item.title }",
-    "subtitle": "(item) => { return null }",
+    "url": "item => null",
+    "body": "item => `${item.abstract}`",
+    "tags": "(item) => {return [ {'label': 'OA', 'tooltip': 'Open Access', 'applies': item.is_open_access},] }",
+    "image": "item => null",
+    "links": [
+      {
+        "url": "item => `https://api.semanticscholar.org/CorpusID:${item.corpus_id}`",
+        "label": "@ Semantic Scholar",
+        "tooltip": "Open this paper in Semantic Scholar"
+      }
+    ],
+    "title": "item => `${item.title}`",
+    "subtitle": "item => `${item.publication_year} | ${item.venue || item.journal} | ${item.authors ? item.authors.join(', ') : ''}`",
     "required_fields": [
+      "corpus_id",
       "title",
-      "abstract"
+      "venue",
+      "journal",
+      "publication_year",
+      "authors",
+      "abstract",
+      "is_open_access"
     ]
   },
-  "statistics": {},
+  "statistics": {
+    "groups": [
+      {
+        "plots": [
+          {
+            "x": "publication_year",
+            "y": [
+              {
+                "name": "Citations",
+                "type": "mean",
+                "field": "cited_by"
+              },
+              {
+                "name": "# Articles",
+                "type": "count",
+                "field": null
+              }
+            ],
+            "title": "Citations",
+            "x_type": "category",
+            "order_by": "x",
+            "max_columns": 10
+          }
+        ],
+        "title": "By Year"
+      },
+      {
+        "plots": [
+          {
+            "x": "journal",
+            "y": [
+              {
+                "name": "Citations",
+                "type": "mean",
+                "field": "cited_by"
+              },
+              {
+                "name": "# Articles",
+                "type": "count",
+                "field": null
+              }
+            ],
+            "title": "Citations",
+            "x_type": "category",
+            "order_by": "y_max",
+            "max_columns": 10
+          }
+        ],
+        "title": "By Journal"
+      },
+      {
+        "plots": [
+          {
+            "x": "authors",
+            "y": [
+              {
+                "name": "Citations",
+                "type": "mean",
+                "field": "cited_by"
+              },
+              {
+                "name": "# Articles",
+                "type": "count",
+                "field": null
+              }
+            ],
+            "title": "Citations",
+            "x_type": "array_item_category",
+            "order_by": "y_max",
+            "max_columns": 10
+          }
+        ],
+        "title": "By Author"
+      }
+    ],
+    "required_fields": [
+      "publication_year",
+      "cited_by",
+      "journal",
+      "authors"
+    ]
+  },
   "applicable_import_converters": [],
-  "applicable_export_converters": [],
+  "applicable_export_converters": [
+    "apa",
+    "bibtex",
+    "ris"
+  ],
   "identifier": "semantic_scholar",
   "object_fields": [
     {
@@ -132,10 +280,10 @@
       "identifier": "authors",
       "name": "Authors",
       "created_at": "2024-06-24T11:08:32.420Z",
-      "changed_at": "2024-06-24T11:27:19.663Z",
+      "changed_at": "2024-06-27T16:01:55.988Z",
       "schema": "semantic_scholar",
       "description": null,
-      "field_type": "TEXT",
+      "field_type": "STRING",
       "is_array": true,
       "language_analysis": null,
       "additional_language_analysis": [],
@@ -372,10 +520,10 @@
       "identifier": "journal",
       "name": "Journal",
       "created_at": "2024-06-24T11:08:32.425Z",
-      "changed_at": "2024-06-24T11:27:37.304Z",
+      "changed_at": "2024-06-27T12:31:08.120Z",
       "schema": "semantic_scholar",
       "description": null,
-      "field_type": "TEXT",
+      "field_type": "TAG",
       "is_array": false,
       "language_analysis": null,
       "additional_language_analysis": [],
@@ -491,10 +639,10 @@
       "_order": 18
     },
     {
-      "identifier": "embedding_spectre_v2",
+      "identifier": "embedding_specter_v2",
       "name": null,
       "created_at": "2024-06-24T11:26:59.057Z",
-      "changed_at": "2024-06-24T11:26:59.085Z",
+      "changed_at": "2024-06-30T09:06:54.602Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "VECTOR",
@@ -507,18 +655,21 @@
       "image_similarity_threshold": null,
       "is_available_for_filtering": false,
       "index_parameters": null,
-      "generator": null,
+      "generator": "allenai/specter2_base",
       "generator_parameters": null,
       "generating_condition": "",
-      "source_fields": [],
+      "source_fields": [
+        "title",
+        "abstract"
+      ],
       "should_be_generated": false,
       "_order": 19
     },
     {
-      "identifier": "chunk_embeddings_spectre_v2",
+      "identifier": "chunk_embeddings_specter_v2",
       "name": null,
       "created_at": "2024-06-24T11:26:59.057Z",
-      "changed_at": "2024-06-24T11:26:59.086Z",
+      "changed_at": "2024-06-30T09:10:30.260Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "VECTOR",
@@ -526,15 +677,17 @@
       "language_analysis": null,
       "additional_language_analysis": [],
       "embedding_space": null,
-      "is_available_for_search": false,
+      "is_available_for_search": true,
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": false,
       "index_parameters": null,
-      "generator": null,
+      "generator": "allenai/specter2_base",
       "generator_parameters": null,
       "generating_condition": "",
-      "source_fields": [],
+      "source_fields": [
+        "full_text_chunks"
+      ],
       "should_be_generated": false,
       "_order": 20
     },
