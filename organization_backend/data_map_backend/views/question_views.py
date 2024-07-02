@@ -1040,11 +1040,16 @@ def judge_item_relevancy_using_llm(request):
     return HttpResponse(json.dumps(relevancy), content_type="application/json", status=200)
 
 
-item_relevancy_cache = Cache("/data/quiddity_data/item_relevancy_cache/")
+item_relevancy_cache = None
 
 
 def _judge_item_relevancy_using_llm(user_id: int, question: str, dataset_id: int, item_id: str,
                                     delay: int = 0) -> dict:
+    global item_relevancy_cache
+    if not item_relevancy_cache:
+        # create it here and note above, as otherwise it would also be created when management commands are run
+        # and in this case it might not be from the docker container and the /data/ folder might not be available
+        item_relevancy_cache = Cache("/data/quiddity_data/item_relevancy_cache/")
     cache_key = f"{question}_{dataset_id}_{item_id}"
     if cache_key in item_relevancy_cache:
         return item_relevancy_cache.get(cache_key)  # type: ignore
