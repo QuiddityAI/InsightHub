@@ -193,7 +193,7 @@ class CSVExport(ExportConverter):
 
 class BibtexExport(ExportConverter):
     def required_fields(self) -> tuple:
-        return ("title", "authors", "publication_year")
+        return ("title", "authors", "publication_year", "journal", "journal_info", "doi")
 
     def export_single(self, item: DotDict) -> dict:
         if isinstance(item.authors, list):
@@ -205,12 +205,21 @@ class BibtexExport(ExportConverter):
             cite_key = f'{first_author}_{item.publication_year}'
         else:
             cite_key = first_author
-        value = f"""@article{{
+        journal = item.journal or item.primary_location_name or ""
+        journal_info = item.journal_info
+        value = f"""\
+@article{{
     {cite_key},
     title="{item.title}",
-    author="{item.authors}",
-    year={item.publication_year if item.publication_year else "n.d."},
-}}"""
+    author="{item.authors or ''}",
+    year={item.publication_year or ''},
+    doi="{item.doi or ''}",
+    journal="{journal}\""""
+        if journal_info and (journal_info.get("volume") or journal_info.get("pages")):
+            value += f""",
+    volume="{journal_info.get('volume', '')}",
+    pages="{journal_info.get('pages', '')}\""""
+        value += "\n}"
         return { "value": value, "filename": "citation.bib" }
 
     def export_multiple(self, items: Iterable[dict]) -> dict:
@@ -221,25 +230,61 @@ class BibtexExport(ExportConverter):
 
 class ApaExport(ExportConverter):
     def required_fields(self) -> tuple:
-        return ("title", "authors", "publication_year")
+        return ("title", "authors", "publication_year", "journal", "journal_info", "doi")
 
     def export_single(self, item: DotDict) -> dict:
         if isinstance(item.authors, list):
-            item.authors = "; ".join(item.authors)
-        value = f"""{item.authors} ({item.publication_year}). {item.title}."""
+            item.authors = ", ".join(item.authors)
+        value = f"""{item.authors} ({item.publication_year}). {item.title}"""
+        journal = item.journal or item.primary_location_name or ""
+        journal_info = item.journal_info
+        if journal:
+            value += f". {journal}"
+        if journal_info and (journal_info.get("volume") or journal_info.get("pages")):
+            value += f", {journal_info.get('volume', '')}"
+            if journal_info.get("pages"):
+                value += f", {journal_info.get('pages')}"
+        if item.doi:
+            value += f". {item.doi}"
         return { "value": value, "filename": "citation.txt" }
+
+    def export_multiple(self, items: Iterable[dict]) -> dict:
+        values = [self.export_single(DotDict(item))["value"] for item in items]
+        content = "\n\n".join(values)
+        return { "value": content, "filename": "citations.apa" }
 
 
 class RisExport(ExportConverter):
     def required_fields(self) -> tuple:
-        return ("title", "authors", "publication_year")
+        return ("title", "authors", "publication_year", "journal", "journal_info", "doi")
 
     def export_single(self, item: DotDict) -> dict:
-        value = f"""TY  - JOUR
-AU  - {item.authors}
+        journal = item.journal or item.primary_location_name or ""
+        journal_info = item.journal_info
+        value = f"TY  - JOUR"
+        if isinstance(item.authors, list):
+            for author in item.authors:
+                value += f"\nAU  - {author}"
+        value += f"""
 PY  - {item.publication_year}
 TI  - {item.title}"""
+        if journal:
+            value += f"\nJO  - {journal}"
+        if journal_info and (journal_info.get("volume") or journal_info.get("pages")):
+            value += f"\nVL  - {journal_info.get('volume', '')}"
+            if journal_info.get("pages"):
+                value += f"\nSP  - {journal_info.get('pages').split('-')[0].strip()}"
+            if journal_info.get("pages").count("-") > 0:
+                value += f"\nEP  - {journal_info.get('pages').split('-')[1].strip()}"
+        if item.doi:
+            value += f"\nDO  - {item.doi}"
+        value += "\nER  -"
         return { "value": value, "filename": "citation.ris" }
+
+    def export_multiple(self, items: Iterable[dict]) -> dict:
+        values = [self.export_single(DotDict(item))["value"] for item in items]
+        content = "\n".join(values)
+        return { "value": content, "filename": "citations.ris" }
 
 
 class TableExportFormat():
