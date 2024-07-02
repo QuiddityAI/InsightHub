@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.models import User
 
-from ..models import DataCollection, CollectionItem, Dataset, DatasetSchema, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier
+from ..models import DataCollection, CollectionItem, Dataset, DatasetSchema, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier, ServiceUsage
 from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSchemaSerializer, DatasetSerializer, ExportConverterSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
@@ -33,11 +33,14 @@ def get_health(request):
 @csrf_exempt
 def get_current_user(request):
     user = request.user
+    ai_service_usage = ServiceUsage.get_usage_tracker(user, "External AI")
     response_json = json.dumps({
         'id': user.id,
         'logged_in': user.is_authenticated,
         'username': user.username,
         'is_staff': user.is_staff,
+        'used_ai_credits': ai_service_usage.get_current_period().usage,
+        'total_ai_credits': ai_service_usage.limit_per_period,
     })
     return HttpResponse(response_json, status=200, content_type='application/json')
 

@@ -1684,7 +1684,7 @@ class ServiceUsage(models.Model):
         blank=False,
         null=False)
 
-    def request_usage(self, amount: float):
+    def get_current_period(self) -> ServiceUsagePeriod:
         if self.period_type == PeriodType.DAY:
             period = timezone.now().strftime("%Y-%m-%d")
         elif self.period_type == PeriodType.WEEK:
@@ -1695,7 +1695,8 @@ class ServiceUsage(models.Model):
             period = timezone.now().strftime("%Y")
         else:
             logging.warning(f"Unknown period type {self.period_type}")
-            return {"approved": False, "error": "Unknown period type"}
+            # default to year, which is the most conservative
+            period = timezone.now().strftime("%Y")
         usage_period = ServiceUsagePeriod.objects.filter(service_usage=self, period=period).first()
         if usage_period is None:
             usage_period = ServiceUsagePeriod.objects.create(
@@ -1703,8 +1704,10 @@ class ServiceUsage(models.Model):
                 period=period,
                 usage=0)
             usage_period.save()
-        assert usage_period is not None
+        return usage_period
 
+    def request_usage(self, amount: float):
+        usage_period = self.get_current_period()
         if usage_period.usage + amount > self.limit_per_period:
             return {"approved": False, "error": "Limit exceeded"}
         usage_period.usage = models.F('usage') + amount

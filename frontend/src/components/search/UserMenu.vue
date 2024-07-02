@@ -37,6 +37,7 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
+    this.appStateStore.retrieve_current_user()
   },
   watch: {
   },
@@ -69,14 +70,23 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col gap-1">
-      <button
-        v-if="appState.logged_in"
-        @click="djangoClient.post(`/org/logout/`).then(() => { _window.location.assign('/') })"
-        title="Logout"
-        class="rounded p-2 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
-        Logout <ArrowRightOnRectangleIcon class="w-4 inline"></ArrowRightOnRectangleIcon>
-      </button>
+  <div class="flex flex-col gap-2">
+    <span class="text-sm text-gray-600">
+      AI Credits used:
+      {{ appState.user.used_ai_credits.toFixed(1) }} / {{ appState.user.total_ai_credits }}
+    </span>
+
+    <span class="text-xs text-gray-500">
+      Need more credits? Contact us!
+    </span>
+
+    <button
+      v-if="appState.logged_in"
+      @click="djangoClient.post(`/org/logout/`).then(() => { _window.location.assign('/') })"
+      title="Logout"
+      class="rounded p-2 text-sm text-gray-500 bg-gray-100 hover:bg-blue-100/50">
+      Logout <ArrowRightOnRectangleIcon class="w-4 inline"></ArrowRightOnRectangleIcon>
+    </button>
     <hr>
     <button @click="show_change_password = !show_change_password"
       class="text-sm text-gray-500 rounded-md p-2 bg-gray-100 hover:bg-blue-100/50">
