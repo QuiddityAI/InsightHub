@@ -73,7 +73,7 @@ class Command(BaseCommand):
                     needs_update = True
                 elif len(obj.object_fields.all()) != len(definition.object_fields):  # type: ignore
                     needs_update = True
-                elif any([field['changed_at'] is not None and obj.object_fields.get(pk=field['identifier']).changed_at < parse_datetime(field['changed_at']) for field in definition.object_fields]):  # type: ignore
+                elif any([field['changed_at'] is not None and obj.object_fields.get(schema=obj, identifier=field['identifier']).changed_at < parse_datetime(field['changed_at']) for field in definition.object_fields]):  # type: ignore
                     needs_update = True
                 if needs_update:
                     logging.warning(f"[Updated] Object '{obj}' is being updated")
