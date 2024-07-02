@@ -5,8 +5,9 @@ from django.db import migrations, models
 
 def make_sure_openalex_exists(apps, schema_editor):
     DatasetSchema = apps.get_model('data_map_backend', 'DatasetSchema')
-    if not DatasetSchema.objects.filter(identifier='openalex').exists():
-        DatasetSchema.objects.create(identifier='openalex', name='OpenAlex')
+    if not DatasetSchema.objects.filter(identifier='scientific_articles').exists():
+        DatasetSchema.objects.create(identifier='scientific_articles', name='Scientific Articles')
+        # will be overwritten by the actual schema using update_base_models
 
 
 class Migration(migrations.Migration):
@@ -20,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='dataset',
             name='schema',
-            field=models.ForeignKey(default='openalex', on_delete=django.db.models.deletion.PROTECT, related_name='datasets', to='data_map_backend.datasetschema', verbose_name='Schema'),
+            field=models.ForeignKey(default='scientific_articles', on_delete=django.db.models.deletion.PROTECT, related_name='datasets', to='data_map_backend.datasetschema', verbose_name='Schema'),
             preserve_default=False,
         ),
         migrations.AddField(
