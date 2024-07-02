@@ -81,6 +81,9 @@ export default {
     setInterval(() => {
       this.example_query_index = this.example_query_index + 1
     }, 6000)
+    this.eventBus.on('edit_search_parameters', () => {
+      this.use_smart_search = false
+    })
   },
   watch: {
   },

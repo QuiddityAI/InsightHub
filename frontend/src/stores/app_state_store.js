@@ -634,6 +634,10 @@ export const useAppStateStore = defineStore("appState", {
       const frontend_settings = JSON.parse(JSON.stringify(this.default_settings.frontend))
       map_settings.frontend = frontend_settings
       this.settings = map_settings
+      // wait till Search Task Creation Dialog is loaded:
+      setTimeout(() => {
+        this.eventBus.emit('edit_search_parameters')
+      }, 100)
     },
     run_search_from_history(history_item) {
       this.settings = JSON.parse(JSON.stringify(history_item.parameters))
