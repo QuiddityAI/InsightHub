@@ -318,7 +318,7 @@ export default {
     </div>
 
     <div class="mt-2 flex flex-row items-end" v-if="!item?._related_collection_items?.length">
-      <img src="assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
+      <img src="/assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
       <span class="text-gray-500 italic">Add to a collection to take notes and extract information!</span>
     </div>
 

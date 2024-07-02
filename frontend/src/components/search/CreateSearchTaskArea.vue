@@ -111,7 +111,7 @@ export default {
         </button>
       </div>
       <div v-if="!appState.settings.search.task_type && !show_advanced_options" class="mt-4 flex flex-row items-end">
-        <img src="assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
+        <img src="/assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
         <span class="text-gray-500 italic">Start here if your are new!</span>
       </div>
 
