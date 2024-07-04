@@ -33,6 +33,16 @@ def get_health(request):
 @csrf_exempt
 def get_current_user(request):
     user = request.user
+    if not user.is_authenticated:
+        response_json = json.dumps({
+            'id': None,
+            'logged_in': False,
+            'username': None,
+            'is_staff': False,
+            'used_ai_credits': 0,
+            'total_ai_credits': 0,
+        })
+        return HttpResponse(response_json, status=200, content_type='application/json')
     ai_service_usage = ServiceUsage.get_usage_tracker(user, "External AI")
     response_json = json.dumps({
         'id': user.id,
