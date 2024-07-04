@@ -21,7 +21,7 @@ services:
       - ./:/source_code/
       - "${DATA_PATH:-/data}:/data"
     depends_on:
-      - organization-backend
+      - organization-backend-staging
     environment:
       - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
