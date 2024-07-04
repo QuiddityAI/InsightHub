@@ -4,9 +4,6 @@ GPU_IS_AVAILABLE=False
 
 BACKEND_AUTHENTICATION_SECRET= generate any random secret
 
-ABSCLUST_TYPESENSE_DB_API_KEY="?"  # deprecated but not removed yet
-ABSCLUST_TYPESENSE_DB_HOST="?"  # deprecated but not removed yet
-
 BING_SEARCH_V7_SUBSCRIPTION_KEY=?
 BING_SEARCH_V7_ENDPOINT=?
 
@@ -41,6 +38,9 @@ POSTGRES_EXPOSED_PORT=5432
 
 OPENSEARCH_DASHBOARD_EXPOSED_IP=127.0.0.1
 OPENSEARCH_DASHBOARD_EXPOSED_PORT=5601
+
+optionally, specify different docker compose file:
+COMPOSE_FILE=docker-compose-staging.yaml
 
 
 credentials.json file with the following content:

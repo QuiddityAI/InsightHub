@@ -26,9 +26,6 @@ from logic.reranking import rerank
 from database_client.django_client import get_dataset
 
 
-ABSCLUST_DATASET_ID = 1
-
-
 #@lru_cache()
 def get_search_results(params_str: str, purpose: str, timings: Timings | None = None) -> dict:
     # profiling results: for a short list, most time is spent getting the dataset (60ms) and only 10ms on the search
@@ -129,10 +126,6 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     timings.log("search preparation")
 
     # TODO: currently only first page is returned
-    # if dataset.id == ABSCLUST_DATASET_ID:
-    #     results =  get_absclust_search_results(raw_query, required_fields, limit)
-    #     save_search_cache()
-    #     return results, {}
 
     queries = QueryInput.from_raw_query(raw_query, negative_query, image_query, negative_image_query)
     filters = adapt_filters_to_dataset(search_settings.filters, dataset, limit)
@@ -260,9 +253,6 @@ def _get_item_for_similarity_search(search_settings):
 
 
 def get_search_results_similar_to_item(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings, similar_item_info: tuple) -> tuple[list, dict, dict]:
-    if dataset.id == ABSCLUST_DATASET_ID:
-        # similar item functionality doesn't work with AbsClust database as it doesn't contain vectors
-        return [], {}, {}
     origin_item, origin_vector_fields = similar_item_info
     limit = search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
     limit = min(limit, 50)

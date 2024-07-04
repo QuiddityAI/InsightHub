@@ -13,7 +13,6 @@ from utils.collect_timings import Timings
 from utils.dotdict import DotDict
 from utils.source_plugin_types import SourcePlugin
 
-from api_clients.old_absclust_database_client import get_absclust_items_by_ids, get_absclust_item_by_id
 from api_clients.cohere_reranking import get_reranking_results
 from api_clients import openalex_api
 
@@ -26,9 +25,6 @@ from logic.generator_functions import get_generator_function_from_field, get_gen
 from logic.autocut import get_number_of_useful_items
 
 from utils.helpers import normalize_array
-
-
-ABSCLUST_DATASET_ID = 1
 
 
 class QueryInput(object):
@@ -356,11 +352,8 @@ def fill_in_details_from_text_storage(dataset: DotDict, items: dict[str, dict], 
         # all required fields are already present
         return
     ids = list(items.keys())
-    if dataset.id == ABSCLUST_DATASET_ID:
-        full_items = get_absclust_items_by_ids(ids)
-    else:
-        search_engine_client = TextSearchEngineClient.get_instance()
-        full_items = search_engine_client.get_items_by_ids(dataset, ids, fields=required_fields)
+    search_engine_client = TextSearchEngineClient.get_instance()
+    full_items = search_engine_client.get_items_by_ids(dataset, ids, fields=required_fields)
     for full_item in full_items:
         items[full_item['_id']].update(full_item)
 
@@ -377,8 +370,6 @@ def fill_in_vector_data(dataset: DotDict, items: dict[str, dict], required_vecto
         return
     if all(all(field in item for field in required_vector_fields) for item in items.values()):
         # all required fields are already present
-        return
-    if dataset.id == ABSCLUST_DATASET_ID:
         return
     ids = list(items.keys())
     vector_db_client = VectorSearchEngineClient.get_instance()
@@ -495,9 +486,6 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
                                relevant_parts: str | None=None, database_name: str | None = None,
                                top_n_full_text_chunks: int | None=None, get_text_search_highlights: bool = False,
                                query: str | None=None, include_related_collection_items: bool = False) -> dict | None:
-    if dataset_id == ABSCLUST_DATASET_ID:
-        return get_absclust_item_by_id(item_id)
-
     dataset = get_dataset(dataset_id)
     if not database_name:
         database_name = dataset.actual_database_name

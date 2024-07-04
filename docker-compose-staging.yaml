@@ -28,8 +28,6 @@ services:
       - organization_backend_host=http://organization-backend-staging:55125
       - vector_database_host=qdrant
       - search_engine_host=opensearch
-      - ABSCLUST_TYPESENSE_DB_API_KEY
-      - ABSCLUST_TYPESENSE_DB_HOST
       - BACKEND_AUTHENTICATION_SECRET
       - PDFERRET_GROBID_URL=http://grobid:8070
   webserver-prod-staging:
