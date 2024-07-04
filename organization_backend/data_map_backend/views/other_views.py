@@ -43,7 +43,7 @@ def get_current_user(request):
             'total_ai_credits': 0,
         })
         return HttpResponse(response_json, status=200, content_type='application/json')
-    ai_service_usage = ServiceUsage.get_usage_tracker(user, "External AI")
+    ai_service_usage = ServiceUsage.get_usage_tracker(user.id, "External AI")
     response_json = json.dumps({
         'id': user.id,
         'logged_in': user.is_authenticated,
