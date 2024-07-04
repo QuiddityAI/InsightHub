@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.models import User
 
-from ..models import DataCollection, CollectionItem, Dataset, DatasetSchema, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier, ServiceUsage
+from ..models import DataCollection, CollectionItem, Dataset, DatasetSchema, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier, ServiceUsage, generate_unique_database_name
 from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSchemaSerializer, DatasetSerializer, ExportConverterSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
 
 
@@ -220,12 +220,16 @@ def create_dataset_from_schema(request):
     except Dataset.DoesNotExist:
         return HttpResponse(status=404)
 
+    safe_name = ''.join(e for e in name if e.isalnum() or e == '_' or e == ' ')
+    safe_name = safe_name.replace(' ', '_').lower()
+
     dataset = Dataset()
     dataset.schema = schema
     dataset.name = name
     dataset.organization = organization
     dataset.created_in_ui = from_ui
     dataset.is_public = False
+    dataset.database_name = generate_unique_database_name(f"{request.user.id}_{schema.identifier}_{safe_name}")
     dataset.save()
     dataset.admins.add(request.user)
     dataset.save()
@@ -280,6 +284,7 @@ def get_or_create_default_dataset(request):
         dataset.organization = organization
         dataset.created_in_ui = True
         dataset.is_public = False
+        dataset.database_name = generate_unique_database_name(f"{user_id}_my_{schema.identifier}")
         dataset.save()
         dataset.admins.add(user)
         dataset.save()

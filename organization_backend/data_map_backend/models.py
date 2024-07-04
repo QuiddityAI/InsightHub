@@ -693,6 +693,13 @@ class DatasetField(models.Model):
         order_with_respect_to = "schema"
 
 
+def generate_unique_database_name(name: str | None = None):
+    if name:
+        name = name[:100]
+        return f"dataset_{name}_{''.join(random.choices(string.ascii_lowercase, k=6))}"
+    return f"dataset_{''.join(random.choices(string.ascii_lowercase, k=6))}"
+
+
 class Dataset(models.Model):
     name = models.CharField(
         verbose_name="Name",
@@ -769,6 +776,7 @@ class Dataset(models.Model):
         verbose_name="Database Name",
         help_text="Name of the OpenSearch index and vector DB prefix, using 'dataset_&lt;id&gt;' if empty",
         max_length=100,
+        default=generate_unique_database_name,
         blank=True,
         null=True)
     advanced_options = models.JSONField(
