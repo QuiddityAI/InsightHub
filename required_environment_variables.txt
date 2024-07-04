@@ -32,6 +32,7 @@ optionally, set IP where the containers should be available (e.g. 127.0.0.1 or 0
   port that is exposed outside the docker network:
 
 WEBSERVER_EXPOSED_IP=0.0.0.0
+WEBSERVER_STAGING_EXPOSED_IP=127.0.0.1
 
 QDRANT_EXPOSED_IP=127.0.0.1
 QDRANT_EXPOSED_PORT=6333

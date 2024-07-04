@@ -1,3 +1,4 @@
+name: vsm_staging
 services:
   organization-backend-staging:
     image: visual_data_map/organization_backend
@@ -6,10 +7,11 @@ services:
       dockerfile: ./docker/organization_backend.Dockerfile
     volumes:
       - ./:/source_code/
-    ports:
-      - "55425:55125"
+      - "${DATA_PATH:-/data}:/data"
     environment:
-      - data_backend_host=http://data-backend:55423
+      - data_backend_host=http://data-backend-staging:55123
+      - postgres_host=postgres-staging
+      - BACKEND_AUTHENTICATION_SECRET
   data-backend-staging:
     image: visual_data_map/data_backend
     build:
@@ -17,32 +19,46 @@ services:
       dockerfile: ./docker/data_backend.Dockerfile
     volumes:
       - ./:/source_code/
-      - /data:/data
-    ports:
-      - "55423:55123"
+      - "${DATA_PATH:-/data}:/data"
     depends_on:
-      - organization-backend-staging
+      - organization-backend
     environment:
       - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
       - organization_backend_host=http://organization-backend-staging:55125
       - vector_database_host=qdrant
-      # - object_storage_host=mongo
       - search_engine_host=opensearch
       - ABSCLUST_TYPESENSE_DB_API_KEY
       - ABSCLUST_TYPESENSE_DB_HOST
-  webserver-staging:
-    image: visual_data_map/webserver
+      - BACKEND_AUTHENTICATION_SECRET
+      - PDFERRET_GROBID_URL=http://grobid:8070
+  webserver-prod-staging:
+    image: visual_data_map/webserver_prod
     build:
       context: ./frontend
-      dockerfile: ../docker/webserver.Dockerfile
+      dockerfile: ../docker/webserver_prod.Dockerfile
     volumes:
       - ./:/source_code/
-    ports:
-      - "55440:55140"
+    ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
+      - "${WEBSERVER_STAGING_EXPOSED_IP:-127.0.0.1}:55440:55140"
     environment:
       - organization_backend_host=http://organization-backend-staging:55125
       - data_backend_host=http://data-backend-staging:55123
+  postgres-staging:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=visdatamap
+volumes:
+  model_server_cache:
+  qdrant_storage:
+  opensearch_data:
+  postgres_data:
+  infinity_model_cache:
+  swag_data:
 networks:
   default:
     name: visualdatamapnetwork
