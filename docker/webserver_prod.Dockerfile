@@ -14,4 +14,4 @@ EXPOSE 55140
 WORKDIR /source_code/frontend
 USER node
 ENTRYPOINT ["sh", "-c"]
-CMD ["npx vite build && npx vite preview --port 55140"]
+CMD ["npm install && npx vite build && npx vite preview --port 55140"]
