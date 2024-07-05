@@ -642,7 +642,7 @@
       "identifier": "embedding_specter_v2",
       "name": null,
       "created_at": "2024-06-24T11:26:59.057Z",
-      "changed_at": "2024-06-30T09:06:54.602Z",
+      "changed_at": "2024-07-05T16:14:59.078Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "VECTOR",
@@ -654,7 +654,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": false,
-      "index_parameters": null,
+      "index_parameters": {
+        "datatype": "float16",
+        "quantization": "scalar_int8"
+      },
       "generator": "allenai/specter2_base",
       "generator_parameters": null,
       "generating_condition": "",
@@ -669,7 +672,7 @@
       "identifier": "chunk_embeddings_specter_v2",
       "name": null,
       "created_at": "2024-06-24T11:26:59.057Z",
-      "changed_at": "2024-06-30T09:10:30.260Z",
+      "changed_at": "2024-07-05T16:15:19.339Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "VECTOR",
@@ -681,7 +684,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": false,
-      "index_parameters": null,
+      "index_parameters": {
+        "datatype": "float16",
+        "quantization": "scalar_int8"
+      },
       "generator": "allenai/specter2_base",
       "generator_parameters": null,
       "generating_condition": "",

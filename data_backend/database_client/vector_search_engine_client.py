@@ -61,8 +61,19 @@ class VectorSearchEngineClient(object):
             raise ValueError(f"Indexed vector field doesn't have vector size: {field.identifier}")
         logging.info(f"Creating vector field {field.identifier} with size {vector_size}")
         vector_configs = {}
+        datatype = models.Datatype.FLOAT16 if (field.index_parameters or {}).get('datatype') == 'float16' else models.Datatype.FLOAT32
+        quantization_config = None
+        if (field.index_parameters or {}).get('quantization') == 'scalar_int8':
+            quantization_config = models.ScalarQuantization(
+                scalar=models.ScalarQuantizationConfig(
+                    type=models.ScalarType.INT8,
+                    quantile=0.99,
+                    always_ram=False,
+                ),
+            )
         vector_configs[field.identifier] = models.VectorParams(size=vector_size, distance=models.Distance.COSINE,
-                                                               on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))
+                                                               on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True),
+                                                               datatype=datatype, quantization_config=quantization_config)
         vector_configs_update = {}
         vector_configs_update[field.identifier] = models.VectorParamsDiff(on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))  # TODO: add params
         # TODO: parse and add field.index_parameters for HNSW, storage type, quantization etc.
