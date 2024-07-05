@@ -46,7 +46,7 @@ export default {
       use_smart_search: false,
       processing_smart_search: false,
       show_negative_query_field: false,
-      show_settings: false,
+      show_settings: true,
 
       show_search_settings: false,
       show_autocut_settings: false,
