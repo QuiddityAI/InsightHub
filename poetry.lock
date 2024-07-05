@@ -4344,8 +4344,8 @@ tests = ["black (>=24.3.0)", "matplotlib (>=3.3.4)", "mypy (>=1.9)", "numpydoc (
 
 [[package]]
 name = "scipdf"
-version = "0.1dev"
-description = " Python parser for scientific PDF based on GROBID."
+version = "0.1.dev0"
+description = "Python parser for scientific PDF based on GROBID."
 optional = false
 python-versions = "*"
 files = []
