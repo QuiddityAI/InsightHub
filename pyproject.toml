@@ -1,14 +1,12 @@
-[[source]]
-url = "https://pypi.org/simple"
-verify_ssl = true
-name = "pypi"
+[tool.poetry]
+name = "visual-data-map"
+version = "0.1.0"
+description = ""
+authors = ["Tim Henning <tim@luminosuslight.de>"]
+readme = "README.md"
 
-[[source]]
-url = "https://pypi.nvidia.com"
-verify_ssl = true
-name = "nvidia"
-
-[packages]
+[tool.poetry.dependencies]
+python = "^3.11.0,<3.12"
 flask = "*"
 flask-cors = "*"
 torch = "*"
@@ -16,7 +14,6 @@ transformers = "*"
 scikit-learn = "*"
 hdbscan = "*"
 openai = "*"
-spacy = "*"
 gensim = "*"
 django = "*"
 django-extensions = "*"
@@ -48,23 +45,31 @@ cohere = "*"
 scipy = "==1.10.1"
 nltk = "*"
 pandas = "*"
-pypdf = "*"
+#pypdf = "*"
 pyspellchecker = "*"
-unstructured = {extras = ["pdf"], version = "*"}
+#unstructured = {extras = ["pdf"], version = "*"}
 lingua-language-detector = "*"
-ocrmypdf = "*"
+#ocrmypdf = "*"
 pdferret = {git = "https://trel725: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@github.com/Trel725/pdferret.git"}
-viztracer = "*"
 groq = "*"
 ratelimit = "*"
 pacmap = "*"
-cuml-cu12 = {version="24.4.0", index="nvidia"}
+cuml-cu12 = {version = "24.6.*", source = "nvidia"}
 cachetools = "*"
 
-[dev-packages]
-ipykernel = "*"
-pandas = "*"
-plotly = "*"
 
-[requires]
-python_version = "3.11"
+[tool.poetry.group.dev.dependencies]
+viztracer = "*"
+spacy = "*"
+
+[[tool.poetry.source]]
+name = "pypi"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "nvidia"
+url = "https://pypi.nvidia.com"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
