@@ -567,7 +567,8 @@ def clusterize_and_render_phase(map_data: dict, params: DotDict, datasets: dict,
     map_data['progress']['step_title'] = "Find cluster titles"
     if any(datasets[ds_id].schema.descriptive_text_fields for ds_id in datasets.keys()):
         if len(sorted_ids) >= 6:
-            cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, timings)
+            result_language = params.search.result_language
+            cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, timings)
         else:
             cluster_data = {}
         map_data["results"]["clusters"] = cluster_data
@@ -642,7 +643,8 @@ def get_map_selection_statistics(map_id: str, selected_ids: list[tuple[int, str]
             items_by_dataset[ds_id] = ds_full_items
     final_positions = np.column_stack([map_data["results"]["per_point_data"]["positions_x"], map_data["results"]["per_point_data"]["positions_y"]])
     cluster_id_per_point = [0 if any(ds_id == s[0] and item_id == s[1] for s in selected_ids) else 1 for ds_id, item_id in sorted_ids]
-    cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, timings)
+    result_language = params.search.result_language
+    cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, timings)
     return cluster_data[0] if cluster_data else None
 
 

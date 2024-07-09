@@ -42,6 +42,7 @@ export const useAppStateStore = defineStore("appState", {
 
       available_vector_fields: [],
       available_number_fields: [],
+      available_language_filters: [],
 
       // results:
       is_loading_search_results: false,
@@ -137,6 +138,7 @@ export const useAppStateStore = defineStore("appState", {
             //   value: "",  // str or number value
             // },
           ],
+          result_language: "en",
 
           origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
           origins: [],  // for each origin: { type: "cluster", display_name: "", map_id: "123" }
@@ -465,6 +467,8 @@ export const useAppStateStore = defineStore("appState", {
       that.settings.rendering.size.parameter = ""
       that.available_vector_fields = []
       that.available_number_fields = []
+      that.available_language_filters = []
+      that.settings.search.result_language = "en"
 
       const all_default_search_fields = Object.values(this.datasets)
         .filter(dataset => this.settings.search.dataset_ids.includes(dataset.id))
@@ -499,6 +503,15 @@ export const useAppStateStore = defineStore("appState", {
           ) {
             that.available_number_fields.push([dataset.id, field.identifier])
           }
+        }
+
+        if (dataset.merged_advanced_options.language_filtering?.options) {
+          for (const language of dataset.merged_advanced_options.language_filtering.options) {
+            that.available_language_filters.push([dataset.id, language])
+          }
+        }
+        if (dataset.merged_advanced_options.default_result_language) {
+          that.settings.search.result_language = dataset.merged_advanced_options.default_result_language
         }
       }
 

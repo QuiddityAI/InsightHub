@@ -128,7 +128,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     # TODO: currently only first page is returned
 
     queries = QueryInput.from_raw_query(raw_query, negative_query, image_query, negative_image_query)
-    filters = adapt_filters_to_dataset(search_settings.filters, dataset, limit)
+    filters = adapt_filters_to_dataset(search_settings.filters, dataset, limit, search_settings.result_language)
     if not (filters or queries):
         raise ValueError("No search queries or filters provided")
     actual_total_matches = 0

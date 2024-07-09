@@ -28,7 +28,7 @@ def clusterize_results(projections, clusterizer_parameters: DotDict):
     return clusterer.labels_
 
 
-def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[str, str]], items_by_dataset: dict[str, dict[str, dict]], datasets: dict[str, DotDict], timings: Timings):
+def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[str, str]], items_by_dataset: dict[str, dict[str, dict]], datasets: dict[str, DotDict], result_language: str | None, timings: Timings):
     num_clusters: int = max(cluster_id_per_point) + 1
     if num_clusters <= 0:
         return []
@@ -83,6 +83,8 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
     # using "tokenizer" instead of "analyzer" keeps the default preprocessor but also enables generation of ngrams
     # the default preprocessor only does lowercase conversion and accent stripping, so we can just disable those:
     all_ignore_words = context_specific_ignore_words | dataset_specific_ignore_words  # type: ignore
+    if result_language and result_language in LANGUAGE_IGNORE_WORDS:
+        all_ignore_words |= set(LANGUAGE_IGNORE_WORDS[result_language])
     context_specific_tokenize = partial(tokenize, context_specific_ignore_words=all_ignore_words, use_lower_case=use_lower_case)
     vectorizer = TfidfVectorizer(tokenizer=context_specific_tokenize, lowercase=False, strip_accents=None, ngram_range=(1, 2), max_df=0.7)
     try:
@@ -161,3 +163,42 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[s
     timings.log("Tf-Idf for cluster titles")
 
     return cluster_data
+
+
+LANGUAGE_IGNORE_WORDS = {
+    'de': [
+    "der",
+    "die",
+    "das",
+    "für",
+    "mit",
+    "einer",
+    "eine",
+    "bei",
+    "oder",
+    "zur",
+    "nach",
+    "dem",
+    "nicht",
+    "aus",
+    "auf",
+    "von",
+    "des",
+    "im",
+    "eigenen",
+    "eigene",
+    "eigener",
+    "eines",
+    "den",
+    "als",
+    "aller",
+    "zu",
+    "dass",
+    "ist",
+    "für",
+    "zum",
+    "werden",
+    "wird",
+    "durch",
+  ],
+}

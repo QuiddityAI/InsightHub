@@ -87,3 +87,27 @@ export function debounce(func, timeout = 300) {
     timer = setTimeout(() => { func.apply(this, args); }, timeout);
   };
 }
+
+export const languages = [
+  { 'name': 'English', 'code': 'en', 'flag': '🇬🇧' },
+  { 'name': 'German', 'code': 'de', 'flag': '🇩🇪' },
+  { 'name': 'French', 'code': 'fr', 'flag': '🇫🇷' },
+  { 'name': 'Spanish', 'code': 'es', 'flag': '🇪🇸' },
+  { 'name': 'Italian', 'code': 'it', 'flag': '🇮🇹' },
+  { 'name': 'Dutch', 'code': 'nl', 'flag': '🇳🇱' },
+  { 'name': 'Portuguese', 'code': 'pt', 'flag': '🇵🇹' },
+  { 'name': 'Russian', 'code': 'ru', 'flag': '🇷🇺' },
+  { 'name': 'Chinese', 'code': 'zh', 'flag': '🇨🇳' },
+  { 'name': 'Japanese', 'code': 'ja', 'flag': '🇯🇵' },
+  { 'name': 'Korean', 'code': 'ko', 'flag': '🇰🇷' },
+  { 'name': 'Arabic', 'code': 'ar', 'flag': '🇸🇦' },
+  { 'name': 'Turkish', 'code': 'tr', 'flag': '🇹🇷' },
+  { 'name': 'Polish', 'code': 'pl', 'flag': '🇵🇱' },
+  { 'name': 'Swedish', 'code': 'sv', 'flag': '🇸🇪' },
+  { 'name': 'Finnish', 'code': 'fi', 'flag': '🇫🇮' },
+  { 'name': 'Danish', 'code': 'da', 'flag': '🇩🇰' },
+  { 'name': 'Norwegian', 'code': 'no', 'flag': '🇳🇴' },
+  { 'name': 'Greek', 'code': 'el', 'flag': '🇬🇷' },
+  { 'name': 'Czech', 'code': 'cs', 'flag': '🇨🇿' },
+  { 'name': 'Hungarian', 'code': 'hu', 'flag': '🇭🇺' },
+]

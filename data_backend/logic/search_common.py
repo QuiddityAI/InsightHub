@@ -416,7 +416,7 @@ def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str
     return item
 
 
-def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict, limit: int):
+def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict, limit: int, result_language: str | None=None):
     filters = copy.deepcopy(filters)
     additional_filters = []
     removed_filters = []
@@ -429,6 +429,12 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict, limit: int):
                 for field in dataset.schema.descriptive_text_fields:
                     additional_filters.append({'field': field, 'value': filter_['value'], 'operator': filter_['operator']})
                 removed_filters.append(filter_)
+    if result_language and dataset.merged_advanced_options.get('language_filtering'):
+        language_filtering = dataset.merged_advanced_options.language_filtering
+        if not language_filtering.format == 'iso_639_set_1':
+            logging.warning(f"Unsupported language filtering format '{language_filtering.format}'")
+        else:
+            additional_filters.append({'field': language_filtering.field, 'value': result_language, 'operator': 'is'})
     filters.extend(additional_filters)
     for filter_ in filters:
         if filter_ in removed_filters:
