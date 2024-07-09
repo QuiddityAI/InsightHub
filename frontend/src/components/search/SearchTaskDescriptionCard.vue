@@ -7,6 +7,7 @@ import { useToast } from 'primevue/usetoast';
 
 import SearchFilterList from "./SearchFilterList.vue"
 
+import { languages } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -32,6 +33,11 @@ export default {
         'high_precision_search': 'High Precision Search',
         'custom_search': 'Custom Search',
       },
+      search_algorithms: {
+        'keyword': { title: 'Keyword', tooltip: 'Searching by matching keywords' },
+        'vector': { title: 'Meaning', tooltip: 'Searching by similar meaning (AI-based)' },
+        'hybrid': { title: 'Hybrid', tooltip: 'Searching using both keywords and meaning' },
+      }
     }
   },
   computed: {
@@ -50,7 +56,7 @@ export default {
 <template>
   <div class="flex flex-col bg-white shadow-sm rounded-md px-5 pt-2 pb-4">
 
-    <div class="flex flex-row items-center">
+    <div class="flex flex-row items-center gap-4">
 
       <!-- <h3 class="text-sm text-gray-500">
         {{ task_type_names[mapState.map_parameters?.search.task_type || 'quick_search'] }}</h3> -->
@@ -62,7 +68,16 @@ export default {
         Loading...
       </span>
       <div class="flex-1"></div>
-      <div class=" h-full flex flex-row items-center gap-2">
+      <div class="text-xs text-gray-400"
+        v-tooltip.bottom="{ value: search_algorithms[mapState.map_parameters?.search.search_algorithm]?.tooltip }">
+        {{ search_algorithms[mapState.map_parameters?.search.search_algorithm]?.title }}
+      </div>
+      <div v-if="mapState.map_parameters?.search.result_language?.length && mapState.map_parameters?.search.result_language !== 'en'"
+        class="text-sm"
+        v-tooltip.bottom="{ value: 'Search result language' }">
+        {{ languages.find(lang => lang.code === mapState.map_parameters?.search.result_language).flag }}
+      </div>
+      <div class="h-full flex flex-row items-center gap-2">
         <button class="h-full py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
           v-tooltip.bottom="{ value: 'Edit search', showDelay: 400 }"
           @click="appState.open_search_edit_mode()">
