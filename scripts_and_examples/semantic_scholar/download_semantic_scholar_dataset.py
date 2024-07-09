@@ -27,6 +27,7 @@ class DatasetNames():
     ABSTRACTS = 'abstracts'
     S2ORC = 's2orc'
     TLDRS = 'tldrs'
+    SPECTER_V2 = 'embeddings-specter_v2'
 
 
 def print_releases():
@@ -77,6 +78,25 @@ def download_gz_file_using_curl(file_url, file_path, uncompress=True):
         except FileNotFoundError:
             pass
         raise Exception(f"Error downloading {file_path}")
+
+
+def streaming_download(link):
+    # not used for now, its slower than downloading a file and at the same time process the last file
+    headers = {
+        "x-api-key": API_KEY,
+    }
+    import logging
+    with requests.get(link, headers=headers, stream=True) as response:  # type: ignore
+        response.raise_for_status()
+        with gzip.open(response.raw, 'rt', encoding='utf-8') as gz:
+            for line in gz:
+                try:
+                    data = orjson.loads(line)
+                    yield data
+                except Exception as e:
+                    print(e)
+                    print(line)
+                    continue
 
 
 def s3_url_to_filename(s3_url):

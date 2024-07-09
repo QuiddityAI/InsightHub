@@ -3,6 +3,7 @@ import logging
 from typing import Tuple
 
 import requests
+import cbor2
 
 
 data_backend_url = os.getenv("data_backend_host", "http://localhost:55123")
@@ -28,6 +29,22 @@ def insert_many(dataset_id: int, elements: list[dict]):
     response = requests.post(url, json=data)
     if response.status_code != 204:
         logging.error(f"Error during insert_many_sync: {repr(response)}, {response.text}")
+        raise Exception(response)
+
+
+def insert_vectors(dataset_id: int, vector_field: str, item_pks: list[str], vectors: list[list[float]], excluded_filter_fields: list[str] = []):
+    url = data_backend_url + '/data_backend/insert_vectors_sync'
+    data = {
+        'dataset_id': dataset_id,
+        'vector_field': vector_field,
+        'item_pks': item_pks,
+        'vectors': vectors,
+        'excluded_filter_fields': excluded_filter_fields,
+    }
+    cbor_data = cbor2.dumps(data)
+    response = requests.post(url, data=cbor_data)
+    if response.status_code != 204:
+        logging.error(f"Error during insert_vectors_sync: {repr(response)}, {response.text}")
         raise Exception(response)
 
 

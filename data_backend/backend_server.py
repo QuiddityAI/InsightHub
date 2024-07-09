@@ -14,7 +14,7 @@ from utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncode
 from utils.dotdict import DotDict
 
 from logic.mapping_task import get_map_selection_statistics, get_or_create_map, get_map_results
-from logic.insert_logic import insert_many, update_database_layout, delete_dataset_content
+from logic.insert_logic import insert_many, insert_vectors, update_database_layout, delete_dataset_content
 from logic.search import get_search_results, get_search_results_for_stored_map, get_item_count, get_random_items, get_items_having_value_count
 from logic.search_common import get_document_details_by_id
 from logic.generate_missing_values import delete_field_content, generate_missing_values
@@ -144,6 +144,18 @@ def insert_many_sync_route():
     params = DotDict(request.json) # type: ignore
     try:
         insert_many(params.dataset_id, params.elements)
+    except Exception as e:
+        logging.warning("Error inserting many items", exc_info=True)
+        return repr(e), 500
+    return "", 204
+
+
+@app.route('/data_backend/insert_vectors_sync', methods=['POST'])
+def insert_vectors_sync_route():
+    # TODO: check auth
+    params = DotDict(cbor2.loads(request.data)) # type: ignore
+    try:
+        insert_vectors(params.dataset_id, params.vector_field, params.item_pks, params.vectors, params.excluded_filter_fields)
     except Exception as e:
         logging.warning("Error inserting many items", exc_info=True)
         return repr(e), 500
@@ -520,4 +532,4 @@ def remote_db_access_route():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=55123, debug=True)
+    app.run(host='0.0.0.0', port=55123, debug=True, use_evalex=False, threaded=True)

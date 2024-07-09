@@ -118,3 +118,14 @@
   }
 }
 ```
+
+
+# Vectors
+
+```json
+{
+  "corpusid": 237630229,
+  "model": "specter_v2",
+  "vector": "[-0.7103170156478882, ]"  # this is a string, needs json decode again
+}
+```

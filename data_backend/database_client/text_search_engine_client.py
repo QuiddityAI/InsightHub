@@ -219,7 +219,7 @@ class TextSearchEngineClient(object):
         response = self.client.mget(body=body, index=index_name, params={"_source_includes": ",".join(fields)})
         items = []
         for doc in response['docs']:
-            item = doc["_source"]
+            item = doc.get("_source", {})  # if an item isn't found, the source is not there, return it anyway to keep order
             item["_id"] = doc["_id"]
             item["_dataset_id"] = dataset.id
             items.append(item)

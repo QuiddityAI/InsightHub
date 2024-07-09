@@ -124,6 +124,28 @@ def insert_many(dataset_id: int, elements: Iterable[dict]) -> list[tuple]:
     return [(dataset.id, item["_id"]) for item in elements]
 
 
+def insert_vectors(dataset_id: int, vector_field: str, item_pks: list[str], vectors: list[list[float]], excluded_filter_fields: list[str] = []):
+    """ Allows to insert vectors for items that are already in the database.
+    The caller needs to take care of the best batch size itself."""
+    dataset = get_dataset(dataset_id)
+    # this assumes that the item_pks are not the item._id ids and still need to be converted:
+    item_ids = [str(uuid5(uuid.NAMESPACE_URL, item_pk)) for item_pk in item_pks]
+
+    index_settings = get_index_settings(dataset)
+
+    text_storage_client = TextSearchEngineClient.get_instance()
+    filter_fields = index_settings.filtering_fields - set(excluded_filter_fields)
+    filtering_data = text_storage_client.get_items_by_ids(dataset, item_ids, filter_fields)
+    # takes 450ms for 512 items
+    for filtering_data_item in filtering_data:
+        filtering_data_item.pop("_id")
+        filtering_data_item.pop("_dataset_id")
+
+    vector_db_client = VectorSearchEngineClient.get_instance()
+    vector_db_client.upsert_items(dataset.actual_database_name, vector_field, item_ids, filtering_data, vectors)
+    # takes 120ms for 512 items (the other operations are negligible)
+
+
 def get_index_settings(dataset: DotDict):
     all_vector_fields = []
     filtering_fields = []
