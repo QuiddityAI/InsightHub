@@ -6,12 +6,15 @@
     "name": "Specter V2 Base",
     "description": "",
     "created_at": "2024-06-30T09:05:57.168Z",
-    "changed_at": "2024-06-30T09:05:57.175Z",
+    "changed_at": "2024-07-09T09:02:30.627Z",
     "requires_context": false,
     "module": "sentence_transformer",
     "embedding_space": "allenai/specter2_base",
     "is_preferred_for_search": false,
-    "default_parameters": null,
+    "default_parameters": {
+      "prefix": "",
+      "model_name": "allenai/specter2_base"
+    },
     "parameter_description": "",
     "input_type": "TEXT",
     "input_is_array": false,
