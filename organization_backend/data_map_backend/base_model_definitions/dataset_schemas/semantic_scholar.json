@@ -4,7 +4,7 @@
   "entity_name_plural": "articles",
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-07-02T10:24:08.339Z",
+  "changed_at": "2024-07-09T10:47:27.487Z",
   "primary_key": "corpus_id",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -15,7 +15,8 @@
     "title",
     "abstract",
     "tldr",
-    "full_text"
+    "full_text",
+    "embedding_specter_v2"
   ],
   "advanced_options": {
     "size_field": "cited_by",
@@ -54,6 +55,15 @@
       }
     ],
     "export_button_name": "Cite",
+    "language_filtering": {
+      "field": "language",
+      "format": "iso_639_set_1",
+      "options": [
+        "en",
+        "de"
+      ]
+    },
+    "default_result_language": "en",
     "ignored_keyword_highlight_fields": [
       "title",
       "abstract"
@@ -204,7 +214,7 @@
       "identifier": "corpus_id",
       "name": "S2 Corpus ID",
       "created_at": "2024-03-05T14:46:52.937Z",
-      "changed_at": "2024-06-24T11:08:32.437Z",
+      "changed_at": "2024-07-10T06:32:35.880Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "IDENTIFIER",
@@ -216,7 +226,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": null,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",
@@ -254,7 +267,7 @@
       "identifier": "abstract",
       "name": "Abstract / tldr",
       "created_at": "2024-03-05T14:46:52.937Z",
-      "changed_at": "2024-06-24T11:48:30.322Z",
+      "changed_at": "2024-07-10T06:31:24.991Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "TEXT",
@@ -268,7 +281,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": null,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",
@@ -280,7 +296,7 @@
       "identifier": "authors",
       "name": "Authors",
       "created_at": "2024-06-24T11:08:32.420Z",
-      "changed_at": "2024-06-27T16:01:55.988Z",
+      "changed_at": "2024-07-10T06:33:02.010Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "STRING",
@@ -292,7 +308,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": null,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",
@@ -304,7 +323,7 @@
       "identifier": "author_ids",
       "name": "Author IDs",
       "created_at": "2024-06-24T11:08:32.421Z",
-      "changed_at": "2024-06-24T11:08:32.439Z",
+      "changed_at": "2024-07-10T06:33:15.997Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "IDENTIFIER",
@@ -316,7 +335,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": null,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",
@@ -328,7 +350,7 @@
       "identifier": "doi",
       "name": "DOI",
       "created_at": "2024-06-24T11:08:32.421Z",
-      "changed_at": "2024-06-24T11:08:32.440Z",
+      "changed_at": "2024-07-10T06:33:23.132Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "IDENTIFIER",
@@ -340,7 +362,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": null,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",
@@ -352,7 +377,7 @@
       "identifier": "venue",
       "name": "Venue",
       "created_at": "2024-06-24T11:08:32.422Z",
-      "changed_at": "2024-06-24T11:08:32.441Z",
+      "changed_at": "2024-07-10T06:34:29.989Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "TAG",
@@ -364,7 +389,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": null,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",
@@ -496,7 +524,7 @@
       "identifier": "publication_types",
       "name": "Publication Types",
       "created_at": "2024-06-24T11:08:32.424Z",
-      "changed_at": "2024-06-24T11:08:32.445Z",
+      "changed_at": "2024-07-10T06:38:33.268Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "TAG",
@@ -508,7 +536,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": null,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": false
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",
@@ -520,7 +551,7 @@
       "identifier": "journal",
       "name": "Journal",
       "created_at": "2024-06-24T11:08:32.425Z",
-      "changed_at": "2024-06-27T12:31:08.120Z",
+      "changed_at": "2024-07-10T06:38:43.893Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "TAG",
@@ -532,7 +563,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": null,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",
@@ -642,7 +676,7 @@
       "identifier": "embedding_specter_v2",
       "name": null,
       "created_at": "2024-06-24T11:26:59.057Z",
-      "changed_at": "2024-07-05T16:14:59.078Z",
+      "changed_at": "2024-07-06T16:34:48.822Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "VECTOR",
@@ -655,8 +689,7 @@
       "image_similarity_threshold": null,
       "is_available_for_filtering": false,
       "index_parameters": {
-        "datatype": "float16",
-        "quantization": "scalar_int8"
+        "datatype": "float16"
       },
       "generator": "allenai/specter2_base",
       "generator_parameters": null,
@@ -672,7 +705,7 @@
       "identifier": "chunk_embeddings_specter_v2",
       "name": null,
       "created_at": "2024-06-24T11:26:59.057Z",
-      "changed_at": "2024-07-05T16:15:19.339Z",
+      "changed_at": "2024-07-06T16:34:03.453Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "VECTOR",
@@ -685,8 +718,7 @@
       "image_similarity_threshold": null,
       "is_available_for_filtering": false,
       "index_parameters": {
-        "datatype": "float16",
-        "quantization": "scalar_int8"
+        "datatype": "float16"
       },
       "generator": "allenai/specter2_base",
       "generator_parameters": null,
