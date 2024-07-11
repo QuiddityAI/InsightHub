@@ -78,8 +78,7 @@ export default {
     },
     show_warning_about_missing_meaning_search() {
       const non_keyword = this.appStateStore.settings.search.search_algorithm !== 'keyword'
-      const is_s2_or_oa = this.appStateStore.settings.search.dataset_ids.filter(id => ['OpenAlex', 'Semantic Scholar'].includes(this.appStateStore.datasets[id].name)).length > 0
-      return non_keyword && is_s2_or_oa
+      return non_keyword && false  // disable warning for now
     },
     available_languages() {
       return this.appStateStore.available_language_filters.map(item => languages.find(lang => lang.code == item[1]))
@@ -241,7 +240,7 @@ export default {
         </div>
 
         <Message v-if="show_warning_about_missing_meaning_search" class="mt-3" :closable="false">
-          Meaning / hybrid search is not yet available for this dataset. It is coming mid July. Try it using uploaded files or OpenLibrary for now.
+          Meaning / hybrid search is not yet available for this dataset.
         </Message>
 
         <div v-if="!use_smart_search && query_uses_operators_and_meaning" class="mt-3 text-xs text-gray-400">
