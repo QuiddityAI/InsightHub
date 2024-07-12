@@ -52,12 +52,13 @@ def import_vectors(dataset_id, release):
     dataset_name = DatasetNames.SPECTER_V2
     processed_files = get_processed_files()
     files = sorted(get_dataset_file_urls(release, dataset_name))
-    thread = None
+    thread_future = None
+    pool = ThreadPoolExecutor(max_workers=1)
     download_folder = Path(base_download_folder) / DatasetNames.SPECTER_V2
     download_folder.mkdir(parents=True, exist_ok=True)
 
     def handle_file(i, link):
-        nonlocal thread
+        nonlocal thread_future
         file_name = link.split('/')[-1].split('?')[0]
         file_name = file_name.replace('.gz', '')
         file_path = download_folder / file_name
@@ -65,21 +66,20 @@ def import_vectors(dataset_id, release):
             logging.info(f"Skipping file {i+1} of {len(files)}: {file_path}")
             return 0
         logging.info(f"Importing file {i+1} of {len(files)}: {file_path}")
-        try:
-            if not file_path.exists():
-                download_gz_file_using_curl(link, file_path, uncompress=True)
-            if thread:
-                # usually, the import is faster than the download, but in case its not, wait for the last import to finish
-                thread.join()
-            thread = Thread(target=import_vector_file, args=(file_path, dataset_id))
-            thread.start()
-        except KeyboardInterrupt:
-            logging.warning("Interrupted")
-            return
+        if not file_path.exists():
+            download_gz_file_using_curl(link, file_path, uncompress=True)
+        if thread_future:
+            # usually, the import is faster than the download, but in case its not, wait for the last import to finish
+            thread_future.result()  # wait for the last import to finish and raise an exception if it failed
+        thread_future = pool.submit(import_vector_file, file_path, dataset_id)
 
     for i, link in enumerate(files):
         handle_file(i, link)
+    if thread_future:
+        # usually, the import is faster than the download, but in case its not, wait for the last import to finish
+        thread_future.result()  # wait for the last import to finish and raise an exception if it failed
     logging.warning(f"Done importing all {total_items} items")
+    return True
 
 
 def import_vector_file(file_path, dataset_id):
@@ -93,7 +93,7 @@ def import_vector_file(file_path, dataset_id):
     item_count = 0
     excluded_filter_fields = []
     thread_pool = ThreadPoolExecutor(max_workers=threads)
-    total_items = 200000000
+    est_total_items = 200000000
 
     with open(file_path, 'rb') as f:
         for line in f:
@@ -114,11 +114,16 @@ def import_vector_file(file_path, dataset_id):
                 # preprocessing is fast, 90% is spent in fetching the text data and inserting the vectors in Qdrant
                 processing_start = time.time()
                 futures = [thread_pool.submit(lambda batch: insert_vectors(dataset_id, 'embedding_specter_v2', batch[0], batch[1], excluded_filter_fields), batch) for batch in batches]
-                wait(futures, timeout=None, return_when=ALL_COMPLETED)
+                completed, not_completed = wait(futures, timeout=None, return_when=ALL_COMPLETED)
+                # check if any future had an exception:
+                for future in completed:
+                    if future.exception():
+                        logging.error(f"Exception in thread: {future.exception()}")
+                        raise future.exception()
                 item_count += items_to_be_inserted
                 duration_ms_per_item_proc = (time.time() - processing_start) / items_to_be_inserted * 1000
                 duration_ms_per_item = (time.time() - batch_start) / items_to_be_inserted * 1000
-                estimated_time_hours = total_items * (duration_ms_per_item / 1000) / 60 / 60
+                estimated_time_hours = est_total_items * (duration_ms_per_item / 1000) / 60 / 60
                 if item_count % (batch_size * threads) == 0:
                     logging.info(f"{item_count} items, {duration_ms_per_item_preprocessing:.2f} ms preprocessing, {duration_ms_per_item_proc:.3f} ms proc, {duration_ms_per_item:.2f} ms per item, estimated time: {estimated_time_hours:.2f} hours")
                     pass
@@ -128,7 +133,7 @@ def import_vector_file(file_path, dataset_id):
         if batch_pks:
             insert_vectors(dataset_id, 'embedding_specter_v2', batch_pks, batch_vectors, excluded_filter_fields)
             duration_ms_per_item = (time.time() - batch_start) / len(batch_pks) * 1000
-            estimated_time_hours = total_items * (duration_ms_per_item / 1000) / 60 / 60
+            estimated_time_hours = est_total_items * (duration_ms_per_item / 1000) / 60 / 60
             logging.info(f"{item_count} items, {duration_ms_per_item:.2f} ms per item, estimated time: {estimated_time_hours:.2f} hours")
             batch_start = time.time()
             item_count += len(batch_pks)
@@ -144,5 +149,19 @@ def import_vector_file(file_path, dataset_id):
 if __name__ == "__main__":
     dataset_id = 80
     release = '2024-06-18'
-    import_vectors(dataset_id, release)
+    retries = 5
+    success = False
+    while not success and retries > 0:
+        try:
+            success = import_vectors(dataset_id, release)
+            break
+        except KeyboardInterrupt:
+            logging.warning("Interrupted")
+            break
+        except Exception as e:
+            logging.error(f"Failed to import vectors: {e}")
+            retries -= 1
+            logging.warning(f"Retrying in 120 seconds")
+            time.sleep(120)
+            logging.warning(f"Retrying now")
     logging.warning("Done")
