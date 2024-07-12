@@ -4,7 +4,7 @@
   "entity_name_plural": "articles",
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-07-09T10:47:27.487Z",
+  "changed_at": "2024-07-11T15:12:06.419Z",
   "primary_key": "corpus_id",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -44,7 +44,7 @@
         "query": "influence of social media on the youth"
       }
     ],
-    "map_vector_field": "w2v_vector",
+    "map_vector_field": "embedding_specter_v2",
     "search_algorithm": "keyword",
     "example_questions": [
       {
