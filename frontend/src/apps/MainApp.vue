@@ -267,6 +267,26 @@ export default {
 
     <HoverLabel class="absolute top-0 h-screen w-screen" />
 
+    <div class="absolute flex flex-row gap-2 text-xs text-gray-400"
+      :class="{
+        'bottom-1': appState.selected_app_tab === 'explore',
+        'right-3': appState.selected_app_tab === 'explore',
+        'bottom-4': appState.selected_app_tab !== 'explore',
+        'right-6': appState.selected_app_tab !== 'explore',
+      }">
+      <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/imprint">
+        Imprint
+      </a>
+      |
+      <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/terms_of_services">
+        Terms of Services
+      </a>
+      |
+      <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/privacy">
+        Privacy Policy
+      </a>
+    </div>
+
     <!-- <div
       v-if="appState.organization ? !appState.organization.workspace_tool_title : true"
       class="absolute -right-3 bottom-4 rounded-xl bg-black py-1 pl-3 pr-5 font-['Lexend'] shadow-sm">

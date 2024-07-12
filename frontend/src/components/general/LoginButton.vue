@@ -135,6 +135,13 @@ export default {
 
             <Button label="Register" class="w-full" @click="register" />
           </form>
+
+          <div class="mt-3 text-sm text-gray-500">
+            By registering you agree to our
+            <a href="https://absclust.com/disclaimers/terms_of_services" class="text-blue-500 hover:underline" target="_blank">Terms of Service</a>
+            and
+            <a href="https://absclust.com/disclaimers/privacy" class="text-blue-500 hover:underline" target="_blank">Privacy Policy</a>.
+          </div>
         </AccordionTab>
     </Accordion>
     </Dialog>
@@ -143,4 +150,4 @@ export default {
 </template>
 
 <style scoped>
-</style>../../stores/app_state_store../../stores/map_state_store
+</style>
