@@ -134,7 +134,7 @@ def insert_vectors(dataset_id: int, vector_field: str, item_pks: list[str], vect
     index_settings = get_index_settings(dataset)
 
     text_storage_client = TextSearchEngineClient.get_instance()
-    filter_fields = index_settings.filtering_fields - set(excluded_filter_fields)
+    filter_fields = index_settings.vector_filtering_fields - set(excluded_filter_fields)
     filtering_data = text_storage_client.get_items_by_ids(dataset, item_ids, filter_fields)
     # takes 450ms for 512 items
     for filtering_data_item in filtering_data:
@@ -149,6 +149,7 @@ def insert_vectors(dataset_id: int, vector_field: str, item_pks: list[str], vect
 def get_index_settings(dataset: DotDict):
     all_vector_fields = []
     filtering_fields = []
+    vector_filtering_fields = []
 
     for field in dataset.schema.object_fields.values():
         if field.field_type == FieldType.VECTOR:
@@ -156,10 +157,13 @@ def get_index_settings(dataset: DotDict):
 
         if field.is_available_for_filtering:
             filtering_fields.append(field.identifier)
+            if not (field.index_parameters or {}).get('exclude_from_vector_database'):
+                vector_filtering_fields.append(field.identifier)
 
     result = {
         'all_vector_fields': set(all_vector_fields),
-        'filtering_fields': set(filtering_fields)
+        'filtering_fields': set(filtering_fields),
+        'vector_filtering_fields': set(vector_filtering_fields),
         }
 
     return DotDict(result)

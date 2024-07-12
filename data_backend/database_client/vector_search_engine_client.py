@@ -124,12 +124,18 @@ class VectorSearchEngineClient(object):
         }
 
         # create payload indexes:
+        remove_indexes = []
         for other_field in dataset.schema.object_fields.values():
-            if not other_field.is_available_for_filtering:
+            if not other_field.is_available_for_filtering \
+              or (other_field.index_parameters or {}).get('exclude_from_vector_database') \
+              or (other_field.index_parameters or {}).get('no_index_in_vector_database'):
+                remove_indexes.append(other_field.identifier)
                 continue
             if other_field.field_type not in indexable_field_type_to_qdrant_type:
+                remove_indexes.append(other_field.identifier)
                 continue
             if other_field.is_array and other_field.field_type not in [FieldType.TAG, FieldType.STRING, FieldType.IDENTIFIER]:
+                remove_indexes.append(other_field.identifier)
                 logging.warning("Array fields are not yet supported for indexing in Qdrant, must be flattened somehow")
                 continue
 
@@ -137,6 +143,11 @@ class VectorSearchEngineClient(object):
             self.client.create_payload_index(collection_name=collection_name,
                 field_name=other_field.identifier,
                 field_schema=indexable_field_type_to_qdrant_type[other_field.field_type])
+
+        for field_name in remove_indexes:
+            # in case an index was created before, but the field is not available for filtering anymore:
+            logging.warning(f"Removing indexed payload field {field_name} because it's not available for filtering")
+            self.client.delete_payload_index(collection_name=collection_name, field_name=field_name)
 
         if field.is_array:
             logging.warning(f"Creating payload index for parent_id field because this is an array field with sub-items")
