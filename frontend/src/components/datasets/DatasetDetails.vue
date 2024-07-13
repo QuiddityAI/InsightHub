@@ -109,8 +109,8 @@ export default {
 </script>
 
 <template>
-  <div class="h-full">
-    <div class="mb-3 ml-1 mt-3 flex flex-row gap-3">
+  <div class="ml-5">
+    <div class="mb-3 -ml-5 mt-2 flex flex-row gap-3">
       <button
         @click="$emit('close')"
         class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
@@ -133,7 +133,7 @@ export default {
       </button>
     </div>
 
-    <div class="flex flex-col ml-2 mb-4 mt-2 gap-1">
+    <div class="flex flex-col ml-2 mt-6 gap-1">
       <p class="text-gray-600 text-sm">
         Items in this dataset: <b>{{ dataset.item_count !== undefined ? dataset.item_count.toLocaleString() : 'unknown' }}</b>
       </p>
@@ -145,21 +145,21 @@ export default {
           <input type="checkbox" v-model="dataset.is_public" :disabled="!dataset.admins?.includes(appState.user.id) || !appState.user.is_staff">
           <span class="ml-2 text-sm text-gray-600">Public for everyone on the internet {{ !appState.user.is_staff ? '(can only be changed by staff)': '' }}</span>
         </label>
-        <label class="flex items-center">
+        <label class="flex items-center" v-if="!appState.organization.is_public">
           <input type="checkbox" v-model="dataset.is_organization_wide" :disabled="!dataset.admins?.includes(appState.user.id)">
           <span class="ml-2 text-sm text-gray-600">Available to other organization members</span>
         </label>
       </div>
     </div>
 
-    <div v-if="dataset.admins?.includes(appState.user.id)">
+    <div v-if="dataset.admins?.includes(appState.user.id)" class="mt-10">
       <button class="w-full hover:bg-gray-100" @click="visible_area = 'upload_files'">
         <h3 class="text-left text-md text-gray-600 font-semibold">
           Upload Files
         </h3>
       </button>
       <AddItemsToDatasetArea v-if="visible_area == 'upload_files'"
-        class="ml-2"
+        class="ml-2 mt-5 mr-5"
         :schema="dataset.schema"
         :preselected_import_converter="preselected_import_converter"
         :target_collection="null"

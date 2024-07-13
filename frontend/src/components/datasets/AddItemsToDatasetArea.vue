@@ -46,7 +46,11 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
-    this.selected_import_converter = this.schema.applicable_import_converters.length ? this.schema.applicable_import_converters[0] : null
+    if (this.schema.applicable_import_converters.filter(e => e.identifier === 'scientific_article_pdf').length) {
+      this.selected_import_converter = this.schema.applicable_import_converters.find(e => e.identifier === 'scientific_article_pdf')
+    } else {
+      this.selected_import_converter = this.schema.applicable_import_converters.length ? this.schema.applicable_import_converters[0] : null
+    }
     this.get_upload_task_status()
   },
   watch: {
@@ -218,6 +222,7 @@ export default {
 <template>
   <div class="mb-3 mt-2 flex flex-col gap-2">
     <div class="flex flex-row items-center">
+      <span class="text-md text-gray-600 mr-4">File Type:</span>
       <Dropdown
         id="import_type"
         v-model="selected_import_converter"
@@ -225,19 +230,28 @@ export default {
         optionLabel="display_name"
         placeholder="Select an import type"/>
     </div>
-    <div v-if="selected_import_converter?.description" class="ml-3 mr-2 mb-2 text-sm text-gray-500"
-      v-html="selected_import_converter?.description.replaceAll('\n', '<br>')">
+    <div class="border-l-4 border-gray-200 pl-4 mt-2">
+      <div v-if="selected_import_converter?.description" class="mr-2 mb-2 text-sm text-gray-500"
+        v-html="selected_import_converter?.description.replaceAll('\n', '<br>')">
+      </div>
+      <div v-if="selected_import_converter?.example_file_url" class="mr-2 mb-2 text-sm text-gray-500">
+        <a :href="selected_import_converter.example_file_url" target="_blank" class="text-blue-500">Example file</a>
+      </div>
     </div>
-    <div v-if="selected_import_converter?.example_file_url" class="ml-3 mr-2 mb-2 text-sm text-gray-500">
-      <a :href="selected_import_converter.example_file_url" target="_blank" class="text-blue-500">Example file</a>
-    </div>
-    <div v-if="!target_collection" class="flex flex-row items-center">
-      <label class="mr-2 text-sm text-gray-700" for="target_collection">
-        Add to Collection (optional):
-      </label>
-      <Checkbox v-model="add_to_collection" :binary="true" class="mr-2"></Checkbox>
-      <SelectCollection v-show="add_to_collection" ref="collection_selection">
-      </SelectCollection>
+    <div v-if="selected_import_converter && !target_collection" class="mt-1 mb-3">
+      <div class="flex flex-row items-center">
+        <label class="mr-4 text-md text-gray-600" for="target_collection">
+          Add to Collection (optional):
+        </label>
+        <Checkbox v-model="add_to_collection" :binary="true" class="mr-2"></Checkbox>
+        <SelectCollection v-show="add_to_collection" ref="collection_selection">
+        </SelectCollection>
+      </div>
+      <div class="border-l-4 border-gray-200 pl-4 mt-2">
+        <div v-if="selected_import_converter?.description" class="mr-2 mb-2 text-sm text-gray-500">
+          Adds all uploaded files to a specific collection. Useful to directly process all items in a table.
+        </div>
+      </div>
     </div>
     <div v-if="selected_import_converter && selected_import_converter.manual_insert_form?.length">
       <div v-for="field in selected_import_converter.manual_insert_form">
