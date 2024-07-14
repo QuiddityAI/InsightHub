@@ -57,7 +57,7 @@ export default {
           grouped["Public Sources"].items.unshift(element)
         }
       }
-      return [grouped["Public Sources"], grouped["Your Files"]]
+      return Object.values(grouped)
     },
     query_uses_operators_and_meaning() {
       const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.search_algorithm)
@@ -145,8 +145,26 @@ export default {
 
 <template>
   <div class="flex flex-col">
-    <div class="flex flex-row gap-10">
-      <div class="w-[250px] flex flex-col">
+
+    <div v-if="Object.keys(appState.datasets).length <= 1"
+      class="mb-14 flex flex-row items-center justify-center gap-6 text-gray-500 font-semibold">
+      Search in:
+      <button v-for="dataset in appState.datasets" @click="appState.settings.search.dataset_ids = [dataset.id]"
+        class="text-md px-3 py-1 hover:text-blue-500"
+        :class="{
+          'underline': appState.settings.search.dataset_ids.includes(dataset.id) }"
+        v-tooltip.bottom="{ value: dataset.short_description, showDelay: 0 }">
+        {{ dataset.name }}
+      </button>
+      <button @click="appState.selected_app_tab = 'datasets'"
+        class="text-md font-normal px-3 py-1 hover:text-blue-500">
+        Upload your own files
+      </button>
+    </div>
+
+    <div class="flex flex-row gap-10 justify-center">
+      <div v-if="Object.keys(appState.datasets).length > 1"
+        class="w-[250px] flex flex-col">
         <Listbox multiple metaKeySelection
           v-model="appState.settings.search.dataset_ids"
           :options="grouped_available_datasets"
@@ -171,10 +189,14 @@ export default {
           Select multiple by holding Ctrl</p>
         <Message v-if="appState.settings.search.dataset_ids.length === 0" class="text-gray-500 text-sm mt-2">
           Select at least one source</Message>
+        <button @click="appState.selected_app_tab = 'datasets'"
+          class="mt-4 border rounded-md text-gray-400 text-md font-normal px-3 py-1 hover:text-blue-500 hover:border-gray-300">
+          Upload your own files
+        </button>
       </div>
 
 
-      <div class="flex-1 mr-4 flex flex-col justify-center">
+      <div class="max-w-[500px] flex-1 mr-4 flex flex-col justify-center">
         <div class="flex flex-row">
           <div class="relative flex-1 h-9 flex flex-row items-center">
             <input
@@ -275,10 +297,10 @@ export default {
 
     </div>
 
-    <div class="mt-4 flex flex-row items-end">
+    <!-- <div v-if="Object.keys(appState.datasets).length > 1" class="mt-4 flex flex-row items-end">
       <img src="/assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
       <span class="text-gray-500 italic">Want to search your own files? Upload them at the top.</span>
-    </div>
+    </div> -->
   </div>
 
 </template>
