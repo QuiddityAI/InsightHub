@@ -332,6 +332,7 @@ export default {
   border-left: 4px solid gray;
   padding-left: 8px;
   display: block;
+  margin-top: 0.5rem;
   margin-bottom: 0.6rem;
   color: gray;
 }
