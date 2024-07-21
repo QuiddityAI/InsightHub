@@ -416,6 +416,21 @@ def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str
     return item
 
 
+def check_filters(dataset: DotDict, filters: list[dict], search_algorithm: str):
+    for filter_ in filters:
+        if filter_['field'] == '_descriptive_text_fields':
+            continue
+        if filter_['field'] not in dataset.schema.object_fields:
+            raise ValueError(f"Filter field '{filter_['field']}' not found")
+        field = DotDict(dataset.schema.object_fields[filter_['field']])
+        if not field.is_available_for_filtering:
+            raise ValueError(f"Field '{field.name}' is not available for filtering")
+        index_params = field.index_parameters or DotDict({})
+        no_index_in_vector_db = index_params.no_index_in_vector_database or index_params.exclude_from_vector_database
+        if search_algorithm != 'keyword' and no_index_in_vector_db:
+            raise ValueError(f"Field '{field.name}' is not available for filtering in 'meaning' or 'hybrid' mode")
+
+
 def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict, limit: int, result_language: str | None=None):
     filters = copy.deepcopy(filters)
     additional_filters = []

@@ -38,6 +38,9 @@ export default {
         const dataset = this.appStateStore.datasets[dataset_id]
         for (const field of Object.values(dataset.schema.object_fields)) {
           if (!field.is_available_for_filtering) continue
+          const index_params = field.index_parameters || {}
+          const no_index_in_vector_db = index_params.no_index_in_vector_database || index_params.exclude_from_vector_database
+          if (this.appStateStore.settings.search.search_algorithm !== 'keyword' && no_index_in_vector_db) continue
           available_fields[field.identifier] = {
             identifier: field.identifier,
             dataset_id: dataset_id,  // for now, filters are applied to all matching fields in any dataset, but we need one dataset as a reference for the field description
@@ -48,7 +51,7 @@ export default {
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
         dataset_id: null,
-        name: 'Descriptive Text',
+        name: 'Descriptive Text*',
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
@@ -151,7 +154,9 @@ export default {
         </button>
       </div>
 
-      <h3 class="mt-3 text-sm text-gray-400">'Descriptive Text' is:</h3>
+      <h3 class="mt-4 text-sm text-gray-400">Note: not all filters might be available in 'meaning' or 'hybrid' mode.</h3>
+
+      <h3 class="mt-3 text-sm text-gray-400">* 'Descriptive Text' is a shortcut for these fields:</h3>
       <ul>
         <li v-for="ds_fields in descriptive_text_field_details" class="text-sm text-gray-400">
           - {{ ds_fields.dataset_name }}: <em>{{ ds_fields.descriptive_text_field_names.join(", ") }}</em>

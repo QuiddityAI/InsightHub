@@ -711,6 +711,10 @@ export const useAppStateStore = defineStore("appState", {
             that.request_map()
           }
         })
+        .catch(function (error) {
+          that.show_error_dialog = true
+          that.error_dialog_message = `An error occurred: ${error.response.data}`
+        })
         .finally(() => {
           this.is_loading_search_results = false
         })

@@ -20,7 +20,7 @@ from logic.local_map_cache import local_maps
 from logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
     get_vector_search_results_matching_collection, get_fulltext_search_results, \
     combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold, \
-    fill_in_vector_data_list, adapt_filters_to_dataset
+    fill_in_vector_data_list, adapt_filters_to_dataset, check_filters
 from logic.reranking import rerank
 
 from database_client.django_client import get_dataset
@@ -44,6 +44,8 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         dataset = get_dataset(dataset_id)
         score_info = {}
         total_matches = 0
+
+        check_filters(dataset, params.search.filters, params.search.search_algorithm)
 
         if dataset.source_plugin == SourcePlugin.BING_WEB_API and params.search.search_type == "external_input":
             query = params.search.all_field_query
