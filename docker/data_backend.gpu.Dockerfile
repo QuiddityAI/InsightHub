@@ -12,6 +12,8 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 RUN python3.11 -m pip install pipenv
 RUN apt update && apt install -y libgl1  # for pdfferret (and there for cv2)
 RUN apt update && apt install -y tesseract-ocr tesseract-ocr-eng ghostscript  # for pytesseract in pdferret
+# for healthcheck, curl is not present in this image:
+RUN apt install -y curl
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
 #COPY docker/docker_container_base_python_packages.txt /app
