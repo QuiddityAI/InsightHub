@@ -57,7 +57,14 @@ export default {
           grouped["Public Sources"].items.unshift(element)
         }
       }
-      return Object.values(grouped)
+      const groups = []
+      if (grouped["Public Sources"]) {
+        groups.push(grouped["Public Sources"])
+      }
+      if (grouped["Your Files"]) {
+        groups.push(grouped["Your Files"])
+      }
+      return groups
     },
     query_uses_operators_and_meaning() {
       const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.search_algorithm)
