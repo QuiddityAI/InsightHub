@@ -33,7 +33,7 @@ class VectorSearchEngineClient(object):
         self.client = QdrantClient(
             qdrant_host,
             port=qdrant_port,
-            timeout=30,  # seconds, especially on AWS EBS volumes, requests can take very long
+            timeout=60,  # seconds, especially on AWS EBS volumes, requests can take very long
             )  # , grpc_port=6334, prefer_grpc=True
         # self.client = QdrantClient(":memory:")
 
@@ -75,8 +75,11 @@ class VectorSearchEngineClient(object):
                                                                on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True),
                                                                datatype=datatype, quantization_config=quantization_config)
         vector_configs_update = {}
-        vector_configs_update[field.identifier] = models.VectorParamsDiff(on_disk=True, hnsw_config=HnswConfigDiff(on_disk=True))  # TODO: add params
-        # TODO: parse and add field.index_parameters for HNSW, storage type, quantization etc.
+        vector_configs_update[field.identifier] = models.VectorParamsDiff(
+            on_disk=True,
+            hnsw_config=HnswConfigDiff(on_disk=True),
+            quantization_config=quantization_config)
+        # TODO: parse field.index_parameters for torage type
 
         collection_name = self._get_collection_name(dataset.actual_database_name, vector_field)
         if field.is_array:
