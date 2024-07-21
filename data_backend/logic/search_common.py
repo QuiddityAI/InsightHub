@@ -416,6 +416,14 @@ def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str
     return item
 
 
+def _field_is_available_for_filtering(field: DotDict, search_algorithm: str):
+    if not field.is_available_for_filtering:
+        return False
+    index_params = field.index_parameters or DotDict({})
+    no_index_in_vector_db = index_params.no_index_in_vector_database or index_params.exclude_from_vector_database
+    return not (search_algorithm != 'keyword' and no_index_in_vector_db)
+
+
 def check_filters(dataset: DotDict, filters: list[dict], search_algorithm: str):
     for filter_ in filters:
         if filter_['field'] == '_descriptive_text_fields':
@@ -425,23 +433,23 @@ def check_filters(dataset: DotDict, filters: list[dict], search_algorithm: str):
         field = DotDict(dataset.schema.object_fields[filter_['field']])
         if not field.is_available_for_filtering:
             raise ValueError(f"Field '{field.name}' is not available for filtering")
-        index_params = field.index_parameters or DotDict({})
-        no_index_in_vector_db = index_params.no_index_in_vector_database or index_params.exclude_from_vector_database
-        if search_algorithm != 'keyword' and no_index_in_vector_db:
+        if not _field_is_available_for_filtering(field, search_algorithm):
             raise ValueError(f"Field '{field.name}' is not available for filtering in 'meaning' or 'hybrid' mode")
 
 
-def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict, limit: int, result_language: str | None=None):
+def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict, limit: int, search_algorithm: str, result_language: str | None=None):
     filters = copy.deepcopy(filters)
     additional_filters = []
     removed_filters = []
     for filter_ in filters:
         if filter_['field'] == '_descriptive_text_fields':
+            descriptive_text_fields = [f for f in dataset.schema.descriptive_text_fields
+                                       if _field_is_available_for_filtering(DotDict(dataset.schema.object_fields[f]), search_algorithm)]
             if filter_['operator'] == 'contains':
                 # only in this case a list of fields is allowed, as it needs to be concatenated as OR filters (aka 'should')
-                filter_['field'] = dataset.schema.descriptive_text_fields
+                filter_['field'] = descriptive_text_fields
             else:
-                for field in dataset.schema.descriptive_text_fields:
+                for field in descriptive_text_fields:
                     additional_filters.append({'field': field, 'value': filter_['value'], 'operator': filter_['operator']})
                 removed_filters.append(filter_)
     if result_language and dataset.merged_advanced_options.get('language_filtering'):
