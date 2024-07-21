@@ -486,6 +486,53 @@ def workaround_to_filter_by_institution_using_openalex(dataset, filters, limit):
 
     return None
 
+# --- Workaround for getting OpenAccess PDF links from disk for semantic_scholar dataset ---
+# should be replaced soon by storing this link in OpenSearch index
+
+import pickle
+import time
+from pathlib import Path
+import orjson
+
+base_download_folder = f'/data/semantic_scholar'
+abstract_files = {}
+abstract_file_paths = {}
+corpus_ids = None
+file_ids = None
+file_positions = None
+
+
+def load_indexes():
+    global corpus_ids, file_ids, file_positions, abstract_file_paths
+    abstract_file_paths, corpus_ids, file_ids, file_positions = pickle.load(open(Path(base_download_folder) / f"abstracts.flat_index.pkl", 'rb'))
+    # takes about 1s and 2GB memory
+
+
+def get_abstract(corpusid):
+    if corpus_ids is None:
+        load_indexes()
+    #t1 = time.time()
+    assert corpus_ids is not None
+    assert file_ids is not None
+    assert file_positions is not None
+    # corpus_ids is a sorted numpy array of integers
+    index = np.searchsorted(corpus_ids, corpusid)
+    file_id = file_ids[index]
+    pos = file_positions[index]
+    file_path = abstract_file_paths[file_id]
+    if file_path not in abstract_files:
+        # logging.warning(f"Opening file {file_path}")
+        abstract_files[file_path] = open(file_path, 'rb')
+    file = abstract_files[file_path]
+    file.seek(pos)
+    line = file.readline()
+    data = orjson.loads(line)
+    #duration_ms = (time.time() - t1) * 1000
+    #logging.warning(f"get_abstract took {duration_ms:.2f} ms")  # about 0.16ms on average
+    return data
+
+# --- End of Workaround for getting OpenAccess PDF links from disk for semantic_scholar dataset ---
+
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=1)  # seconds
 def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str],
@@ -497,6 +544,9 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
         database_name = dataset.actual_database_name
         assert database_name is not None
     additional_fields = []
+    if dataset.schema.identifier == 'semantic_scholar':
+        # for workaround to add data from disk for semantic_scholar dataset:
+        additional_fields.append("corpus_id")
     relevant_parts_list = []
     original_fields = fields
     if relevant_parts:
@@ -525,6 +575,13 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
         return None
     item = items[0]
     item['_dataset_id'] = dataset_id
+
+    # workaround to add data from disk for semantic_scholar dataset:
+    if dataset.schema.identifier == 'semantic_scholar':
+        abstract = get_abstract(int(item['corpus_id']))
+        item['oa_url'] = (abstract.get('openaccessinfo') or {}).get('url')
+        item['oa_status'] = (abstract.get('openaccessinfo') or {}).get('status')
+        item['oa_license'] = (abstract.get('openaccessinfo') or {}).get('license')
 
     if get_text_search_highlights:
         filters = [{'field': '_id', 'value': [item_id], 'operator': 'in'}]

@@ -92,6 +92,22 @@ def build_index_for_dataset(dataset_name: str):
     test(index_file_path)
 
 
+def convert_to_flat_index():
+    import numpy as np
+    base_download_folder = f'/data/semantic_scholar'
+    abstract_file_paths, abstract_index = pickle.load(open(Path(base_download_folder) / f"abstracts.index.pkl", 'rb'))
+    print(f"Loaded")
+    corpus_ids = np.array(list(abstract_index.keys()))
+    corpus_ids.sort()
+    file_ids = np.array([abstract_index[corpus_id][0] for corpus_id in corpus_ids])
+    file_positions = np.array([abstract_index[corpus_id][1] for corpus_id in corpus_ids])
+    print(f"Converted")
+    with open(Path(base_download_folder) / f"abstracts.flat_index.pkl", 'wb') as f:
+        pickle.dump((abstract_file_paths, corpus_ids, file_ids, file_positions), f)
+    print(f"Saved")
+
+
 if __name__ == "__main__":
     #build_index_for_dataset(DatasetNames.TLDRS)
-    build_index_for_dataset(DatasetNames.ABSTRACTS)
+    #build_index_for_dataset(DatasetNames.ABSTRACTS)
+    convert_to_flat_index()
