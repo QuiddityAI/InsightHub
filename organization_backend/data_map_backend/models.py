@@ -630,8 +630,8 @@ class DatasetField(models.Model):
     index_parameters = models.JSONField(
         verbose_name="Index Parameters",
         default=dict,
-        blank=True,
-        null=True)
+        blank=False,
+        null=False)
     generator = models.ForeignKey(
         verbose_name="Generator",
         to=Generator,
