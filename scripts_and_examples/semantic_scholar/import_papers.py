@@ -176,6 +176,7 @@ def import_file(file_path, dataset_id, index):
             tldr_text = tldr.get('text') if tldr else None
             abstract = get_abstract(corpusid)
             abstract_text = abstract.get('abstract') if abstract else None
+            oa_info = abstract.get('openaccessinfo', {}) if abstract else {}
             language = guess_language(data['title'], abstract_text, tldr_text)
             item = {
                 'corpus_id': str(corpusid),
@@ -195,6 +196,9 @@ def import_file(file_path, dataset_id, index):
                 'journal': (data.get('journal') or {}).get('name'),
                 'journal_info': data.get('journal') or {},
                 'language': language,
+                'oa_url': oa_info.get('url'),
+                'oa_status': oa_info.get('status'),
+                'oa_license': oa_info.get('license'),
                 #'full_text': None, # imported separately
             }
             #print(json.dumps(tldr, indent=2))

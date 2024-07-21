@@ -4,7 +4,7 @@
   "entity_name_plural": "articles",
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-07-11T15:12:06.419Z",
+  "changed_at": "2024-07-21T12:13:41.640Z",
   "primary_key": "corpus_id",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -72,7 +72,7 @@
   "result_list_rendering": {
     "url": "item => null",
     "body": "item => `${item.abstract}`",
-    "tags": "(item) => {return [ {'label': 'OA', 'tooltip': 'Open Access', 'applies': item.is_open_access},] }",
+    "tags": "(item) => {return [ {'label': 'PDF', 'tooltip': 'PDF is available', 'applies': !!item.oa_url},] }",
     "image": "item => null",
     "title": "item => `${item.title}`",
     "subtitle": "item => `${item.publication_year} | ${item.venue || item.journal} | ${item.authors ? item.authors.join(', ') : ''}`",
@@ -105,6 +105,11 @@
         "url": "item => `https://api.semanticscholar.org/CorpusID:${item.corpus_id}`",
         "label": "@ Semantic Scholar",
         "tooltip": "Open this paper in Semantic Scholar"
+      },
+      {
+        "url": "item => item.oa_url",
+        "label": "PDF",
+        "tooltip": "Open PDF directly"
       }
     ],
     "title": "item => `${item.title}`",
@@ -800,6 +805,81 @@
       "source_fields": [],
       "should_be_generated": false,
       "_order": 23
+    },
+    {
+      "identifier": "oa_url",
+      "name": "PDF Link",
+      "created_at": "2024-07-21T12:13:41.615Z",
+      "changed_at": "2024-07-21T12:14:46.473Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "URL",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 24
+    },
+    {
+      "identifier": "oa_status",
+      "name": "Open Access Status",
+      "created_at": "2024-07-21T12:13:41.615Z",
+      "changed_at": "2024-07-21T12:13:41.652Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TAG",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 25
+    },
+    {
+      "identifier": "oa_license",
+      "name": "Open Access License",
+      "created_at": "2024-07-21T12:13:41.616Z",
+      "changed_at": "2024-07-21T12:13:41.652Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "STRING",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 26
     }
   ]
 }
