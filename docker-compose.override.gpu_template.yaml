@@ -7,6 +7,9 @@ services:
             - driver: nvidia
               capabilities: [gpu]
   data-backend:
+    build:
+      context: ./
+      dockerfile: ./docker/data_backend.gpu.Dockerfile
     deploy:
       resources:
         reservations:
