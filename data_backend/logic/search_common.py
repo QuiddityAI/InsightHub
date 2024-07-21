@@ -540,6 +540,8 @@ def get_abstract(corpusid):
     assert file_positions is not None
     # corpus_ids is a sorted numpy array of integers
     index = np.searchsorted(corpus_ids, corpusid)
+    if index >= len(corpus_ids) or corpus_ids[index] != corpusid:
+        return {}
     file_id = file_ids[index]
     pos = file_positions[index]
     file_path = abstract_file_paths[file_id]
