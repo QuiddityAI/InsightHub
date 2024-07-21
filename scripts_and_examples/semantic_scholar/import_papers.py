@@ -191,7 +191,7 @@ def import_file(file_path, dataset_id, index):
                 'publication_date': data.get('publicationdate'),
                 'cited_by': data.get('citationcount'),
                 'influential_citation_count': data.get('influentialcitationcount'),
-                'is_open_access': data.get('isopenaccess'),
+                # 'is_open_access': data.get('isopenaccess'),  # is not reliable, rather use oa_url
                 'publication_types': data.get('publicationtypes'),
                 'journal': (data.get('journal') or {}).get('name'),
                 'journal_info': data.get('journal') or {},
