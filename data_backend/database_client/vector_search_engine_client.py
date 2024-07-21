@@ -323,6 +323,9 @@ class VectorSearchEngineClient(object):
             limit=limit,
             score_threshold=score_threshold,
             query_filter=qdrant_filters,
+            search_params=models.SearchParams(
+                hnsw_ef=50,  # higher ef means more accurate search, but slower, default is 100
+            ),
         )
         if min_results > 0 and len(hits) < min_results and score_threshold:
             # try again without score threshold
