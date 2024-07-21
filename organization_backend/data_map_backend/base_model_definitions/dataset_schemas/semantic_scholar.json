@@ -4,7 +4,7 @@
   "entity_name_plural": "articles",
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-07-21T12:13:41.640Z",
+  "changed_at": "2024-07-21T15:24:46.901Z",
   "primary_key": "corpus_id",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -66,7 +66,8 @@
     "default_result_language": "en",
     "ignored_keyword_highlight_fields": [
       "title",
-      "abstract"
+      "abstract",
+      "tldr"
     ]
   },
   "result_list_rendering": {
@@ -83,7 +84,7 @@
       "publication_year",
       "authors",
       "abstract",
-      "is_open_access"
+      "oa_url"
     ]
   },
   "hover_label_rendering": {
@@ -97,7 +98,7 @@
   },
   "detail_view_rendering": {
     "url": "item => null",
-    "body": "item => `${item.abstract}`",
+    "body": "item => `<cite> TLDR: ${item.tldr}</cite> ${item.abstract}`",
     "tags": "(item) => {return [ {'label': 'OA', 'tooltip': 'Open Access', 'applies': item.is_open_access},] }",
     "image": "item => null",
     "links": [
@@ -122,7 +123,8 @@
       "publication_year",
       "authors",
       "abstract",
-      "is_open_access"
+      "tldr",
+      "oa_url"
     ]
   },
   "statistics": {
@@ -457,7 +459,7 @@
       "identifier": "influential_citation_count",
       "name": "Influential Citation Count",
       "created_at": "2024-06-24T11:08:32.423Z",
-      "changed_at": "2024-06-24T11:08:32.443Z",
+      "changed_at": "2024-07-21T12:47:29.410Z",
       "schema": "semantic_scholar",
       "description": null,
       "field_type": "INTEGER",
@@ -469,7 +471,10 @@
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
       "is_available_for_filtering": true,
-      "index_parameters": {},
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
       "generator": null,
       "generator_parameters": null,
       "generating_condition": "",

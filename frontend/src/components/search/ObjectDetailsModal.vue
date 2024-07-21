@@ -194,7 +194,7 @@ export default {
             v-html="rendering ? rendering.subtitle(item) : ''">
           </p>
 
-          <p ref="body_text" class="mt-2 text-sm text-gray-700" :class="{ 'line-clamp-[12]': body_text_collapsed }"
+          <p ref="body_text" class="mt-2 text-sm text-gray-700 custom-cite-style" :class="{ 'line-clamp-[12]': body_text_collapsed }"
             v-html="loading_item ? 'loading...' : rendering ? highlight_words_in_text(rendering.body(item), mapState.map_parameters?.search.all_field_query.split(' ')) || '-' : null"></p>
           <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
             <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500 hover:text-blue-500">
@@ -325,4 +325,15 @@ export default {
   </div>
 </template>
 
-<style scoped></style>
+<style>
+
+.custom-cite-style cite {
+  font-style: normal;
+  border-left: 4px solid gray;
+  padding-left: 8px;
+  display: block;
+  margin-bottom: 0.6rem;
+  color: gray;
+}
+
+</style>
