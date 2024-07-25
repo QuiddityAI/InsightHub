@@ -7,6 +7,7 @@ import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import InputText from 'primevue/inputtext';
 import InlineMessage from 'primevue/inlinemessage';
+import Checkbox from 'primevue/checkbox';
 import { useToast } from 'primevue/usetoast';
 import { UserIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
 
@@ -33,6 +34,7 @@ export default {
       password: "",
       password_confirm: "",
       password_confirm_mismatch: false,
+      terms_accepted: false,
     }
   },
   computed: {
@@ -70,6 +72,10 @@ export default {
       }
       if (this.password !== this.password_confirm) {
         this.password_confirm_mismatch = true
+        return
+      }
+      if (!this.terms_accepted) {
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please accept the terms of service and privacy policy' })
         return
       }
       this.$refs.register_form.submit()
@@ -133,15 +139,19 @@ export default {
               <InlineMessage v-if="password_confirm_mismatch">Passwords don't match</InlineMessage>
             </InputGroup>
 
-            <Button label="Register" class="w-full" @click="register" />
-          </form>
+            <div class="mt-3 mb-3 text-sm text-gray-500">
+              <Checkbox v-model="terms_accepted" binary class="mr-2" />
+              I agree to the
+              <a href="https://absclust.com/disclaimers/terms_of_services" class="text-blue-500 hover:underline" target="_blank">Terms of Service</a>
+              and
+              <a href="https://absclust.com/disclaimers/privacy" class="text-blue-500 hover:underline" target="_blank">Privacy Policy</a>.
+            </div>
 
-          <div class="mt-3 text-sm text-gray-500">
-            By registering you agree to our
-            <a href="https://absclust.com/disclaimers/terms_of_services" class="text-blue-500 hover:underline" target="_blank">Terms of Service</a>
-            and
-            <a href="https://absclust.com/disclaimers/privacy" class="text-blue-500 hover:underline" target="_blank">Privacy Policy</a>.
-          </div>
+            <!-- put tooltip in div because it doesn't work when button is disabled otherwise -->
+            <div v-tooltip.bottom="{ value: terms_accepted ? '' : 'You need to accept the terms of services and privacy policy to register.', showDelay: 400 }">
+              <Button label="Register" class="w-full" @click="register" :disabled="!terms_accepted" />
+            </div>
+          </form>
         </AccordionTab>
     </Accordion>
     </Dialog>
