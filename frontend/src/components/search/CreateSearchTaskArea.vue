@@ -50,12 +50,12 @@ export default {
   data() {
     return {
       available_task_types: [
-        { task_type: 'quick_search', title: 'Quick Search', tooltip: 'Quick and easy search, with the results presented in a list and visually on a map' },
-        { task_type: 'topic_overview', title: 'Topic Overview', tooltip: "Like 'Quick Search', but provides a more advanced structure of the map together with summaries of each subarea" },
-        { task_type: 'question', title: 'Question', tooltip: "Ask a question and get a direct answer, including citations" },
-        { task_type: 'similarity', title: 'Find by Similarity', tooltip: "Upload a file and find similar items" },
-        { task_type: 'high_precision_search', title: 'High Precision Search', advanced: true, tooltip: "Slow, but evaluates each result using AI to only return truly relevant items. Can be used to exhaustively find all relevant items in a database." },
-        { task_type: 'custom_search', title: 'Custom Search', advanced: true, tooltip: "Allows you to configure all parameters of the search yourself" },
+        { task_type: 'quick_search', title: 'Quick Search', tooltip: 'Quick and easy search, with the results presented in a list and visually on a map', coming_soon: false },
+        { task_type: 'question', title: 'Question', tooltip: "Ask a question and get a direct answer, including citations", coming_soon: false },
+        { task_type: 'topic_overview', title: 'Topic Overview', tooltip: "Like 'Quick Search', but provides a more advanced structure of the map together with summaries of each subarea", coming_soon: true },
+        { task_type: 'similarity', title: 'Find by Similarity', tooltip: "Upload a file and find similar items", coming_soon: true },
+        { task_type: 'high_precision_search', title: 'High Precision Search', advanced: true, tooltip: "Slow, but evaluates each result using AI to only return truly relevant items. Can be used to exhaustively find all relevant items in a database.", coming_soon: true },
+        { task_type: 'custom_search', title: 'Custom Search', advanced: true, tooltip: "Allows you to configure all parameters of the search yourself", coming_soon: true },
       ],
       show_advanced_options: false,
 
@@ -89,8 +89,10 @@ export default {
         Select what you want to do:</p>
       <div class="flex flex-row items-center justify-between gap-6 text-gray-500 font-semibold">
         <button v-for="task_type in available_task_types.filter(task_type => !task_type.advanced)"
-          class="text-md bg-gray-100 rounded-md px-3 py-1 hover:text-blue-500"
-          :class="{ 'text-blue-500': appState.settings.search.task_type === task_type.task_type }"
+          class="text-md rounded-md px-3 py-1 bg-gray-100 hover:text-blue-500"
+          :class="{ 'text-blue-500': appState.settings.search.task_type === task_type.task_type,
+                    'text-gray-500': !task_type.coming_soon && appState.settings.search.task_type !== task_type.task_type,
+                    'text-gray-400': task_type.coming_soon && appState.settings.search.task_type !== task_type.task_type }"
           v-tooltip.top="{ value: task_type.tooltip, showDelay: 400 }"
           @click="appState.settings.search.task_type === task_type.task_type ? appState.settings.search.task_type = null : appState.settings.search.task_type = task_type.task_type">
           {{ task_type.title }}
@@ -104,7 +106,9 @@ export default {
       <div v-if="show_advanced_options" class="mt-3 flex flex-row items-center justify-left gap-6 text-gray-500 font-semibold">
         <button v-for="task_type in available_task_types.filter(task_type => task_type.advanced)"
           class="text-md bg-gray-100 rounded-md px-3 py-1 hover:text-blue-500"
-          :class="{ 'text-blue-500': appState.settings.search.task_type === task_type.task_type }"
+          :class="{ 'text-blue-500': appState.settings.search.task_type === task_type.task_type,
+                    'text-gray-500': !task_type.coming_soon && appState.settings.search.task_type !== task_type.task_type,
+                    'text-gray-400': task_type.coming_soon && appState.settings.search.task_type !== task_type.task_type }"
           v-tooltip.top="{ value: task_type.tooltip, showDelay: 400 }"
           @click="appState.settings.search.task_type === task_type.task_type ? appState.settings.search.task_type = null : appState.settings.search.task_type = task_type.task_type">
           {{ task_type.title }}

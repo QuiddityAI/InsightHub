@@ -304,10 +304,10 @@ export default {
 
     </div>
 
-    <!-- <div v-if="Object.keys(appState.datasets).length > 1" class="mt-4 flex flex-row items-end">
+    <div v-if="Object.keys(appState.datasets).length > 1" class="mt-4 flex flex-row items-end">
       <img src="/assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
-      <span class="text-gray-500 italic">Want to search your own files? Upload them at the top.</span>
-    </div> -->
+      <span class="text-gray-500 italic">Want to search your own files? Upload them here.</span>
+    </div>
   </div>
 
 </template>
