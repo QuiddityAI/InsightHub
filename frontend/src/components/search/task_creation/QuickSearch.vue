@@ -89,7 +89,10 @@ export default {
     },
     available_languages() {
       return this.appStateStore.available_language_filters.map(item => languages.find(lang => lang.code == item[1]))
-    }
+    },
+    ai_is_available() {
+      return this.appStateStore.user.used_ai_credits < this.appStateStore.user.total_ai_credits
+    },
   },
   mounted() {
     // increase example query index every few seconds
@@ -99,6 +102,9 @@ export default {
     this.eventBus.on('edit_search_parameters', () => {
       this.use_smart_search = false
     })
+    if (!this.ai_is_available) {
+      this.use_smart_search = false
+    }
   },
   watch: {
   },
@@ -283,9 +289,11 @@ export default {
 
         <SearchFilterList v-if="!use_smart_search"></SearchFilterList>
 
-        <div class="mt-5 ml-1 mb-5 flex flex-row items-center">
-          <Checkbox v-model="use_smart_search" class="" :binary="true" />
+        <div class="mt-5 ml-1 mb-5 flex flex-row items-center"
+          v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available'}">
+          <Checkbox v-model="use_smart_search" class="" :binary="true" :disabled="!ai_is_available" />
           <button class="ml-2 text-xs text-gray-500"
+            :disabled="!ai_is_available"
             @click="use_smart_search = !use_smart_search">
             Auto-detect best search strategy and required filters from query
           </button>

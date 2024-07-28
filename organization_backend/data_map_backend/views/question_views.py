@@ -1107,7 +1107,7 @@ def _judge_item_relevancy_using_llm(user_id: int, question: str, dataset_id: int
         except (KeyError, ValueError):
             relevancy = {'error': 'Could not parse AI response'}
     else:
-        relevancy = {'error': 'AI usage limit exceeded'}
+        relevancy = {'error': 'No AI check, usage limit exceeded'}
     if relevancy.get("explanation") and 'decision' in relevancy:
         item_relevancy_cache.set(cache_key, relevancy, expire=60*60*24*7)  # cache for 1 week
     return relevancy

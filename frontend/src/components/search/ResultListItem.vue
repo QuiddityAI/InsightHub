@@ -2,6 +2,7 @@
 import {
   HandThumbUpIcon,
   HandThumbDownIcon,
+  NoSymbolIcon,
  } from "@heroicons/vue/24/outline"
 
 import ProgressSpinner from 'primevue/progressspinner';
@@ -136,8 +137,8 @@ export default {
 
       <p ref="body_text" class="mt-2 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
        v-html="rendering.body(item)"></p>
-      <div class="flex flex-row items-begin gap-3">
-        <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
+      <div class="mt-2 flex flex-row items-center gap-3">
+        <div v-if="show_more_button" class="text-xs text-gray-700">
           <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
             {{ body_text_collapsed ? "Show more" : "Show less" }}
           </button>
@@ -145,26 +146,27 @@ export default {
         <div class="flex-1"></div>
         <span v-if="main_relevance_influence === 'vector'"
           v-tooltip.bottom="{ value: 'This item was mainly found because it matches the meaning of the search query.', showDelay: 500 }"
-          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 flex items-center">
+          class="text-xs text-gray-400">
           Found by Meaning
         </span>
         <span v-if="main_relevance_influence === 'keyword'"
           v-tooltip.bottom="{ value: 'This item was mainly found because it contains keywords of the search query.', showDelay: 500 }"
-          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 flex items-center">
+          class="text-xs text-gray-400">
           Found by Keywords
         </span>
         <span v-if="main_relevance_influence === 'both'"
           v-tooltip.bottom="{ value: 'This item was found by meaning and keywords.', showDelay: 500 }"
-          class="mt-1 px-2 py-[1px] rounded-xl text-xs text-gray-400 flex items-center">
+          class="text-xs text-gray-400">
           Found by Meaning & Keywords
         </span>
         <div v-if="loading_relevancy" class="flex flex-row items-center">
           <ProgressSpinner class="w-4 h-4"></ProgressSpinner>
         </div>
         <div v-else-if="relevancy" class="flex flex-row items-center"
-          v-tooltip="{'value': relevancy.explanation }">
-          <HandThumbUpIcon class="w-4 h-4 text-green-500" v-if="relevancy.decision" />
-          <HandThumbDownIcon class="w-4 h-4 text-red-500" v-else />
+          v-tooltip="{'value': relevancy.explanation || relevancy.error }">
+          <HandThumbUpIcon class="w-4 h-4 text-green-500" v-if="relevancy.decision === true" />
+          <HandThumbDownIcon class="w-4 h-4 text-red-500" v-else-if="relevancy.decision === false" />
+          <NoSymbolIcon class="w-4 h-4 text-gray-400" v-else />
         </div>
       </div>
 
