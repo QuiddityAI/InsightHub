@@ -201,3 +201,29 @@ def answer_question_using_items(question: str, ds_and_item_ids: list[tuple]) -> 
     }
     result = django_client.post(url, json=data)
     return result.json()
+
+
+def track_service_usage(user_id: int, service_name: str, amount: float, cause: str) -> dict:
+    url = backend_url + '/org/data_map/track_service_usage'
+    data = {
+        'user_id': user_id,
+        'service_name': service_name,
+        'amount': amount,
+        'cause': cause,
+    }
+    result = django_client.post(url, json=data)
+    if result.status_code != 200:
+        logging.warning("Couldn't track service usage")
+    return result.json()
+
+
+def get_service_usage(user_id: int, service_name: str) -> dict:
+    url = backend_url + '/org/data_map/get_service_usage'
+    data = {
+        'user_id': user_id,
+        'service_name': service_name,
+    }
+    result = django_client.post(url, json=data)
+    if result.status_code != 200:
+        logging.warning("Couldn't get service usage")
+    return result.json()

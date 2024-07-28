@@ -39,6 +39,7 @@ export default {
       upload_tasks: [],
       actual_dataset_id: this.dataset_id,
       manually_created_item: {},
+      service_usage_info: {},
     }
   },
   computed: {
@@ -52,6 +53,7 @@ export default {
       this.selected_import_converter = this.schema.applicable_import_converters.length ? this.schema.applicable_import_converters[0] : null
     }
     this.get_upload_task_status()
+    this.get_service_usage_info()
   },
   watch: {
     schema() {
@@ -63,6 +65,9 @@ export default {
       const that = this
       if (!this.selected_import_converter) {
         this.$toast.add({severity:'error', summary: 'Error', detail: 'Please select an import type.'})
+        return
+      }
+      if (!this.check_service_usage(event.files.length)) {
         return
       }
       // see https://github.com/primefaces/primevue/blob/master/components/lib/fileupload/FileUpload.vue
@@ -177,14 +182,40 @@ export default {
             setTimeout(that.get_upload_task_status, 1000)
           } else {
             that.$emit('items_added')
+            that.get_service_usage_info()
           }
         })
         .catch(function (error) {
           console.error(error)
         })
     },
+    get_service_usage_info() {
+      const that = this
+      const body = {
+        user_id: this.appStateStore.user.id,
+        service_name: 'upload_items',
+      }
+      httpClient
+        .post("/org/data_map/get_service_usage", body)
+        .then(function (response) {
+          that.service_usage_info = response.data
+        })
+        .catch(function (error) {
+          console.error(error)
+        })
+    },
+    check_service_usage(amount) {
+      if (this.service_usage_info.usage_current_period + amount > this.service_usage_info.limit_per_period) {
+        this.$toast.add({severity:'error', summary: 'Error', detail: 'This action would exceed your monthly upload limit.'})
+        return false
+      }
+      return true
+    },
     manually_create_item() {
       const that = this
+      if (!this.check_service_usage(1)) {
+        return
+      }
       const collection_id = this.target_collection?.id
       const collection_class = this.target_collection_class
       if (this.add_to_collection) {
@@ -260,6 +291,12 @@ export default {
       </div>
       <button @click="manually_create_item()">Create Item</button>
     </div>
+    <div>
+      <span class="text-sm text-gray-600 mb-1"
+        v-tooltip.top="{ value: 'This is the amount of items you can upload per month with your current plan.', showDelay: 400 }">
+        {{ service_usage_info.usage_current_period }} / {{ service_usage_info.limit_per_period }} items uploaded this month
+      </span>
+    </div>
     <FileUpload
       v-if="selected_import_converter && !selected_import_converter.manual_insert_form?.length"
       ref="fileUploader"
@@ -309,6 +346,12 @@ export default {
         </div>
       </template>
     </FileUpload>
+
+    <div class="text-xs text-gray-400">
+      Disclaimer: Do not upload personal, sensitive or confidential data.
+      Uploading files is only meant for processing them within out tool, not for long-term storage.
+      Always keep a local copy of the files, we don't guarantee their availability.
+    </div>
 
     <p v-if="upload_tasks.length !== 0" class="text-gray-700">
       Recent uploads:

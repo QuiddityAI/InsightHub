@@ -251,7 +251,8 @@ def delete_dataset_content_endpoint():
 
 @app.route('/data_backend/upload_files', methods=['POST'])
 def upload_files_endpoint():
-    # TODO: check auth
+    """ Upload individual files or zip archives.
+    Will be stored, extracted and post-processed (OCR etc.), then imported. """
     try:
         dataset_id: int = int(request.form["dataset_id"])  # type: ignore
         schema_identifier: str = request.form["schema_identifier"]  # type: ignore
@@ -265,7 +266,7 @@ def upload_files_endpoint():
     collection_id: int | None = int(collection_id_str) if collection_id_str else None
     if dataset_id == -1:
         dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
-    task_id = upload_files(dataset_id, import_converter, request.files.getlist("files[]"), collection_id, collection_class)
+    task_id = upload_files(dataset_id, import_converter, request.files.getlist("files[]"), collection_id, collection_class, user_id)
     # usually, all in-memory files of the request would be closed and deleted after the request is done
     # in this case, we want to keep them open and close them manually in the background thread
     # so we need to remove the files from the request object:
@@ -275,6 +276,8 @@ def upload_files_endpoint():
 
 @app.route('/data_backend/import_items', methods=['POST'])
 def import_items_endpoint():
+    """ Import items directly from JSON data.
+    (No file upload, no extraction, no OCR etc.) """
     try:
         params = request.json or {}
         dataset_id: int = params["dataset_id"]
@@ -289,7 +292,7 @@ def import_items_endpoint():
         return f"parameter missing: {e}", 400
     if dataset_id == -1:
         dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
-    task_id = import_items(dataset_id, import_converter, items, collection_id, collection_class)
+    task_id = import_items(dataset_id, import_converter, items, collection_id, collection_class, user_id)
     return jsonify({"task_id": task_id, "dataset_id": dataset_id}), 200
 
 

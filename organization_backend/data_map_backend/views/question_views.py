@@ -450,7 +450,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
 
         if cost > 0:
             usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
-            result = usage_tracker.request_usage(cost)
+            result = usage_tracker.track_usage(cost, f"extract information using {module}")
         else:
             result = {"approved": True}
         if result["approved"]:
@@ -638,7 +638,8 @@ def remove_collection_class_column_data(request):
     return HttpResponse(None, status=204)
 
 
-def request_service_usage(request):
+@csrf_exempt
+def track_service_usage(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -649,11 +650,35 @@ def request_service_usage(request):
         user_id: int = data["user_id"]
         service_name: str = data["service_name"]
         amount: int = data["amount"]
+        cause: str = data["cause"]
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     usage_tracker = ServiceUsage.get_usage_tracker(user_id, service_name)
-    result = usage_tracker.request_usage(amount)
+    result = usage_tracker.track_usage(amount, cause)
+
+    return HttpResponse(json.dumps(result), content_type="application/json", status=200)
+
+
+@csrf_exempt
+def get_service_usage(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+    try:
+        data = json.loads(request.body)
+        user_id: int = data["user_id"]
+        service_name: str = data["service_name"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    usage_tracker = ServiceUsage.get_usage_tracker(user_id, service_name)
+    result = {
+        'usage_current_period': usage_tracker.get_current_period().usage,
+        'limit_per_period': usage_tracker.limit_per_period,
+        'period_type': usage_tracker.period_type,
+    }
 
     return HttpResponse(json.dumps(result), content_type="application/json", status=200)
 
@@ -946,7 +971,7 @@ def _execute_writing_task(task):
     module = task.module or "openai_gpt_3_5"
 
     usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by, "External AI")
-    result = usage_tracker.request_usage(cost_per_module.get(module, 1.0))
+    result = usage_tracker.track_usage(cost_per_module.get(module, 1.0), f"execute writing task using {module}")
     if result["approved"]:
         if module.startswith("openai_gpt"):
             openai_model = {
@@ -1071,7 +1096,7 @@ def _judge_item_relevancy_using_llm(user_id: int, question: str, dataset_id: int
     history = [ { "role": "system", "content": prompt } ]
 
     usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
-    result = usage_tracker.request_usage(0.1)
+    result = usage_tracker.track_usage(0.1, f"judge item relevancy")
     if result["approved"]:
         if delay:
             time.sleep(delay / 1000)

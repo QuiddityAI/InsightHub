@@ -1570,7 +1570,7 @@ class Chat(models.Model):
                 })
 
             usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
-            result = usage_tracker.request_usage(1)
+            result = usage_tracker.track_usage(1, "chat answer")
             if result["approved"]:
                 response_text = get_chatgpt_response_using_history(history)
             else:
@@ -1715,7 +1715,8 @@ class ServiceUsage(models.Model):
             usage_period.save()
         return usage_period
 
-    def request_usage(self, amount: float):
+    def track_usage(self, amount: float, cause: str):
+        # TODO: save cause
         usage_period = self.get_current_period()
         if usage_period.usage + amount > self.limit_per_period:
             return {"approved": False, "error": "Limit exceeded"}

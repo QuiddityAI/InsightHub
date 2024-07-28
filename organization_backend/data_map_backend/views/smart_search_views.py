@@ -148,7 +148,7 @@ JSON:
     approved = False
     if user_id:
         usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
-        result = usage_tracker.request_usage(1)
+        result = usage_tracker.track_usage(1, f"convert smart query to parameters")
         approved = result["approved"]
     else:
         # to enable new user to try the service, this method is available without login

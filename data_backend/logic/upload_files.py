@@ -18,7 +18,7 @@ import requests
 
 from utils.field_types import FieldType
 from database_client.text_search_engine_client import TextSearchEngineClient
-from database_client.django_client import get_dataset, get_import_converter, add_item_to_collection
+from database_client.django_client import get_dataset, get_import_converter, add_item_to_collection, get_service_usage, track_service_usage
 from logic.insert_logic import insert_many, update_database_layout
 from logic.local_map_cache import clear_local_map_cache
 
@@ -26,6 +26,10 @@ UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 
 
 upload_tasks = {}
+
+# only applies to single files, not archives
+# (this is also why it can't be enforced by flask's max_content_length)
+MAX_SINGLE_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 
 
 def _create_upload_task(dataset_id: int):
@@ -52,14 +56,15 @@ def _create_upload_task(dataset_id: int):
 
 
 def upload_files(dataset_id: int, import_converter: str, files: Iterable[FileStorage],
-                 collection_id: int | None, collection_class: str | None) -> str:
+                 collection_id: int | None, collection_class: str | None,
+                 user_id: int) -> str:
     global upload_tasks
     task_id = _create_upload_task(dataset_id)
 
     def run():
         try:
             inserted_ids, failed_files = _store_files_and_import_them(dataset_id, import_converter, files,
-                 collection_id, collection_class, task_id)
+                 collection_id, collection_class, task_id, user_id)
             upload_tasks[dataset_id][task_id]["is_running"] = False
             upload_tasks[dataset_id][task_id]["status"] = "finished"
             upload_tasks[dataset_id][task_id]["finished_at"] = datetime.datetime.now().isoformat()
@@ -83,14 +88,14 @@ def upload_files(dataset_id: int, import_converter: str, files: Iterable[FileSto
     return task_id
 
 
-def import_items(dataset_id, import_converter, items, collection_id, collection_class):
+def import_items(dataset_id, import_converter, items, collection_id, collection_class, user_id: int):
     global upload_tasks
     task_id = _create_upload_task(dataset_id)
 
     def run():
         try:
             inserted_ids, failed_files = _import_items(dataset_id, import_converter, items,
-                 collection_id, collection_class, task_id)
+                 collection_id, collection_class, task_id, user_id)
             upload_tasks[dataset_id][task_id]["is_running"] = False
             upload_tasks[dataset_id][task_id]["status"] = "finished"
             upload_tasks[dataset_id][task_id]["finished_at"] = datetime.datetime.now().isoformat()
@@ -121,17 +126,27 @@ def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float
 
 
 def _store_files_and_import_them(dataset_id: int, import_converter_identifier: str, files: Iterable[FileStorage],
-                 collection_id: int | None, collection_class: str | None, task_id: str) -> tuple[list[tuple], list[str]]:
+                 collection_id: int | None, collection_class: str | None, task_id: str,
+                 user_id: int) -> tuple[list[tuple], list[str]]:
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter_identifier}")
     if not os.path.exists(UPLOADED_FILES_FOLDER):
         os.makedirs(UPLOADED_FILES_FOLDER)
     _set_task_status(dataset_id, task_id, "storing files", 0.0)
+
+    # check if user is allowed to upload this many files before storing them
+    # to prevent filling up the disk with files that can't be imported
+    service_usage = get_service_usage(user_id, "upload_items")
+    remaining_allowed_items = service_usage["limit_per_period"] - service_usage["usage_current_period"]
+    files = list(files)
+    if len(files) > remaining_allowed_items:
+        raise ValueError(f"Too many files, limit is {remaining_allowed_items}")
+
     paths = []
     failed_files = []
     for i, file in enumerate(files):
         if not file.filename: continue
         if file.filename.endswith(".tar.gz") or file.filename.endswith(".zip"):
-            new_paths, new_failed_files = _unpack_archive(file, dataset_id)
+            new_paths, new_failed_files = _unpack_archive(file, dataset_id, user_id)
             paths += new_paths
             failed_files += new_failed_files
             continue
@@ -147,12 +162,20 @@ def _store_files_and_import_them(dataset_id: int, import_converter_identifier: s
             failed_files.append({"filename": file.filename, "reason": str(e)})
         _set_task_status(dataset_id, task_id, "storing files", i / len(files))  # type: ignore
 
-    return _import_items(dataset_id, import_converter_identifier, paths, collection_id, collection_class, task_id, failed_files)
+    if not paths:
+        return [], failed_files
+
+    return _import_items(dataset_id, import_converter_identifier, paths,
+                         collection_id, collection_class, task_id, user_id, failed_files)
 
 
 def _import_items(dataset_id: int, import_converter_identifier: str, paths_or_items: list,
                  collection_id: int | None, collection_class: str | None, task_id: str,
-                 failed_files: list = []) -> tuple[list[tuple], list[str]]:
+                 user_id: int, failed_files: list = []) -> tuple[list[tuple], list[str]]:
+    response = track_service_usage(user_id, "upload_items", len(paths_or_items), "uploading files")
+    if not response["approved"]:
+        raise ValueError("service usage not approved")
+
     import_converter = get_import_converter(import_converter_identifier)
     converter_func = get_import_converter_by_name(import_converter.module)
     items, failed_ids = converter_func(paths_or_items, import_converter.parameters, lambda progress: _set_task_status(dataset_id, task_id, "converting files", progress))
@@ -187,11 +210,17 @@ def _import_items(dataset_id: int, import_converter_identifier: str, paths_or_it
 def _store_uploaded_file(file: FileStorage, dataset_id: int):
     temp_path = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}"
     file.save(temp_path)
+    # check if file size is within limits, otherwise delete it to prevent filling up the disk
+    # (file size can't be determined earlier as it might be a stream)
+    file_size = os.path.getsize(temp_path)
+    if file_size > MAX_SINGLE_FILE_SIZE:
+        os.remove(temp_path)
+        raise ValueError(f"File size of {file_size / 1024 / 1024:.2f} MB exceeds the limit of {MAX_SINGLE_FILE_SIZE / 1024 / 1024:.2f} MB")
     sub_path = _move_to_path_containing_md5(temp_path, file.filename or '', dataset_id)
     return sub_path
 
 
-def _unpack_archive(file: FileStorage, dataset_id: int) -> tuple[list[str], list[str]]:
+def _unpack_archive(file: FileStorage, dataset_id: int, user_id: int) -> tuple[list[str], list[str]]:
     assert file.filename
     failed_files = []
     paths = []
@@ -199,6 +228,10 @@ def _unpack_archive(file: FileStorage, dataset_id: int) -> tuple[list[str], list
     is_tar = file.filename.endswith(".tar.gz")
     tempfile = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}" + (".tar.gz" if is_tar else f".zip")
     file.save(tempfile)
+
+    service_usage = get_service_usage(user_id, "upload_items")
+    remaining_allowed_items = service_usage["limit_per_period"] - service_usage["usage_current_period"]
+
     try:
         if is_tar:
             archive = tarfile.open(tempfile, 'r:gz')
@@ -207,7 +240,17 @@ def _unpack_archive(file: FileStorage, dataset_id: int) -> tuple[list[str], list
             archive = zipfile.ZipFile(tempfile)
             members = archive.infolist()
         logging.warning(f"contains {len(members)} files")
+
+        # check if user is allowed to upload this many files before storing them
+        # to prevent filling up the disk with files that can't be imported
+        if len(members) > remaining_allowed_items:
+            raise ValueError(f"Too many files in archive, limit is {remaining_allowed_items}")
+
         for member in members:
+            file_size = member.size if isinstance(member, tarfile.TarInfo) else member.file_size
+            # check if file size is within limits before extracting
+            if file_size > MAX_SINGLE_FILE_SIZE:
+                raise ValueError(f"File size of {file_size / 1024 / 1024:.2f} MB exceeds the limit of {MAX_SINGLE_FILE_SIZE / 1024 / 1024:.2f} MB")
             filename = member.name if isinstance(member, tarfile.TarInfo) else member.filename
             logging.warning(f"extracting file: {filename}")
             try:
