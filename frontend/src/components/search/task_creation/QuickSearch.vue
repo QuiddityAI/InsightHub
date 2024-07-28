@@ -91,7 +91,8 @@ export default {
       return this.appStateStore.available_language_filters.map(item => languages.find(lang => lang.code == item[1]))
     },
     ai_is_available() {
-      return this.appStateStore.user.used_ai_credits < this.appStateStore.user.total_ai_credits
+      // show AI features when not logged in as an example, is restricted elsewhere
+      return !this.appStateStore.logged_in || this.appStateStore.user.used_ai_credits < this.appStateStore.user.total_ai_credits
     },
   },
   mounted() {
