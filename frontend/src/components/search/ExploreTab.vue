@@ -48,6 +48,9 @@ export default {
     use_single_column() {
       return window.innerWidth < 768
     },
+    show_result_area() {
+      return this.appStateStore.search_result_ids.length || this.appStateStore.map_id || this.appStateStore.is_loading_search_results
+    },
   },
   mounted() {
     this.eventBus.on("show_summary_dialog", () => {
@@ -64,7 +67,22 @@ export default {
 <template>
   <div class="flex flex-col items-center justify-center">
 
-    <CreateSearchTaskArea v-if="!appState.search_result_ids.length && !appState.map_id && !appState.is_loading_search_results" class="flex-none"></CreateSearchTaskArea>
+    <div class="mb-[40px] max-w-lg"
+      v-if="!show_result_area && appState.settings.search.task_type === null">
+      <div
+        class="align-center flex flex-1 flex-col justify-center">
+        <div class="mb-6 flex flex-row justify-center">
+          <img
+            class="h-12"
+            :src="appState.organization ? appState.organization.workspace_tool_logo_url : ''" />
+        </div>
+        <div
+          class="mb-2 flex-none text-center pointer-events-auto font-bold text-gray-400"
+          v-html="appState.organization ? appState.organization.workspace_tool_intro_text : ''"></div>
+      </div>
+    </div>
+
+    <CreateSearchTaskArea v-if="!show_result_area" class="flex-none"></CreateSearchTaskArea>
 
     <!-- two column layout (search results left and map and details card right)-->
     <div v-else
@@ -188,7 +206,7 @@ export default {
           </div>
         </div>
 
-        <div
+        <!-- <div
           v-if="!appState.show_loading_bar && !appState.search_result_ids.length && !appState.map_id && !appState.is_loading_search_results"
           class="align-center flex flex-1 flex-col justify-center">
           <div class="mb-6 flex flex-row justify-center">
@@ -199,7 +217,7 @@ export default {
           <div
             class="mb-2 flex-none text-center pointer-events-auto font-bold text-gray-400"
             v-html="appState.organization ? appState.organization.workspace_tool_intro_text : ''"></div>
-        </div>
+        </div> -->
       </div>
 
     </div>
