@@ -665,7 +665,8 @@ export const useAppStateStore = defineStore("appState", {
 
       // set a cookie to remember that the user has searched something
       if (params.use_credit && !this.logged_in) {
-        document.cookie = "searched_without_login=true; max-age=3600; path=/"
+        // max-age is in seconds, 2592000 = 30 days
+        document.cookie = "searched_without_login=true; max-age=2592000; path=/"
       }
       return true
     },

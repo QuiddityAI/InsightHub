@@ -40,6 +40,7 @@ export default {
   data() {
     return {
       show_summary_dialog: false,
+      show_tutorial_video_dialog: false,
     }
   },
   computed: {
@@ -56,6 +57,9 @@ export default {
     this.eventBus.on("show_summary_dialog", () => {
       this.show_summary_dialog = true
     })
+    setTimeout(() => {
+      this.show_tutorial_video_dialog = !this.appStateStore.logged_in || this.appStateStore.user?.used_ai_credits === 0
+    }, 1000)
   },
   watch: {
   },
@@ -67,22 +71,33 @@ export default {
 <template>
   <div class="flex flex-col items-center justify-center">
 
-    <div class="mb-[40px] max-w-lg"
-      v-if="!show_result_area && appState.settings.search.task_type === null">
-      <div
-        class="align-center flex flex-1 flex-col justify-center">
-        <div class="mb-6 flex flex-row justify-center">
-          <img
-            class="h-12"
-            :src="appState.organization ? appState.organization.workspace_tool_logo_url : ''" />
-        </div>
+    <div v-if="!show_result_area" class="flex flex-col items-center justify-center">
+      <div class="mb-[40px] max-w-lg"
+        v-if="appState.settings.search.task_type === null">
         <div
-          class="mb-2 flex-none text-center pointer-events-auto font-bold text-gray-400"
-          v-html="appState.organization ? appState.organization.workspace_tool_intro_text : ''"></div>
+          class="align-center flex flex-1 flex-col justify-center">
+          <div class="mb-6 flex flex-row justify-center">
+            <img
+              class="h-12"
+              :src="appState.organization ? appState.organization.workspace_tool_logo_url : ''" />
+          </div>
+          <div
+            class="mb-2 flex-none text-center pointer-events-auto font-bold text-gray-400"
+            v-html="appState.organization ? appState.organization.workspace_tool_intro_text : ''"></div>
+        </div>
       </div>
-    </div>
 
-    <CreateSearchTaskArea v-if="!show_result_area" class="flex-none"></CreateSearchTaskArea>
+      <CreateSearchTaskArea class="flex-none"></CreateSearchTaskArea>
+
+      <Dialog v-model:visible="show_tutorial_video_dialog"
+        :modal="false" position="topright" class="mt-20 mr-12"
+        :style="{ width: '200px' }">
+        <a class="flex flex-col items-center gap-1" href="https://drive.google.com/file/d/1li_hlCJG1VxGTU2dCFN82BYoZ0PtAYDY/view?usp=sharing" target="_blank">
+          <img class="w-48" src="https://lh3.googleusercontent.com/fife/ALs6j_FA5omo5J6ZIZjmubcQOf_MoJ5KoX3FfCptuKiFv-2qQgDR6VAHQzp3JOpH0apaSIIBFKyX-AEn-1grQyPYnGl454AbhiW7u-0y1NiVn-0ktMaJKcqPLstEHri2C77rBclCL6toQTrNE4ua56l7qqtMXRZZSIOB38bLAKAbMmLbGhTokamfvlPhWhcDjLiWO3_pGOi_1Y9jRj7m2Hrj0bwaN3YgD7_sfZzuY94JRi7xfSOCpvifuWvOcQuuI5zBT3iO8sFq3nHlWZzc5c0l9Xq0_hGwuqU-L-hSu6QAj72FXhiN9MrEQzSjVVbJ0caVNzdUF7I5ffJls8koQfEUEm5OzsYido-kbmOz5d7iJxSrNhR96tSZ3D7wterJQ7louAriC32U5toWFpw0qROq0SqNHHEY-MVf7SO0ys8GRz3is2LoYE5RJNp5qa1IilTpN_0xdqzuUwHyXQc1No7dUMk8Io324ggDYI29DKA9ZOB-F0jgvtkHpuk9VOTOdfAAUo3wJ1NAJhc8BKsJbGQaeR89H9ydzI1SaZd48dBJPhnav5mEYg5J8rqA-n4eqwB0SEzohy2zByi_zH8XIzmrwrwR0IIRfUphgurPO2VmbKJEaWZyqRg7Sm5gCc7c1R2AnbrnS9h3sO3rmcfoSZsg31A8t4ZjGa42d7NDoJIVwCJuaD6RsgOkCDKXqfBc9uxM1hVNtAXVDZTiaPwbSE2PJd6OldlXMmLkHlwDI4Bghg92Kw9lRz_38j7NOJcrBlldgCVjJQov0z-TadRk7ME0EII7iwgpkzkat-8em1jjykMLoPExyqGYPrtNGXL5OoI91ccld8o_iGKv8-070W-6LUNnpUBpMfzRget-uGGYSvEsi1wX_3H4cei2HDQxKvqZgwuMYDjkhuxjjz_nlTPw4XMmlJHjxWyf0Z26X0l0zWMlmL3DuvSn4GuwnKgTGYI1QCOAAGPNVpGbV1mQizitn-_FhprLAf1DKNUPghoVSiKpTWKX0zfL7wNta4pbv-ia8Xj9IFGiO6OOoqhtks1jqnmrmfi0WCyCLUjefe3nE3aRGev4sQDUS8dCqr7-Cb7Ol_SMlSRfE0t_dz_iXKVwubY2KOeMGhist4UI-R9CUf1XqqilSWrr3i6QJ4AyGAbcc3d1XHqL9w-xmutRQaWjHYNCHugb9Acs-1VExN0WruHZFquElxNykCP82sZbTQpqtJXL8bD4ITVfGb3e5EPIAMH9W753sd6DzEl5ZK_f5h99pyR6k44wdprymmMYiatjmp79g7vW2FPWhVbntoxv9EPuB4lth3sBM1G0FCPUI4vqwoU0LgwhsEwJxQsN4wRGye5VM3Lmo-EYhOmsyUPbp_XY7bim_YdB63El2ljQi1Y_J71ncLSzSylieZ2fmS48UiesuHI6OpAtv7BzxTPnKQxdGailT2vdnTuCuN-6BPm1RMyb2IWA2JxYBeWa-edIr9XQm7mc9-lSZlNL1XAblWPTNvKcl7pyNYQm2WTTTb-1aafIPD1ZRxbrVcXKAVKJUBGKJRk-jAudeobeX3ADGC-ZgS33zJeNJl2DbRei5ymK-naRzOtEdL8i5frjB08b7x0uDhsv0n0-WwE2qg=w1920-h1080-k-pd" />
+          <p class="text-gray-600 text-sm mt-2">Learn the basics in 60s</p>
+        </a>
+      </Dialog>
+    </div>
 
     <!-- two column layout (search results left and map and details card right)-->
     <div v-else
