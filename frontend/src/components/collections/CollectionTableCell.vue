@@ -67,7 +67,7 @@ export default {
       return !this.item.column_data[this.column.identifier]?.value
     },
     is_processing() {
-      return this.current_extraction_processes.includes(this.column.identifier)
+      return this.is_empty && this.current_extraction_processes.includes(this.column.identifier)
     }
   },
   mounted() {
