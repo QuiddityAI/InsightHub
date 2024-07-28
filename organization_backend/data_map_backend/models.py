@@ -1644,6 +1644,11 @@ class ServiceUsagePeriod(models.Model):
         default=0,
         blank=False,
         null=False)
+    usage_by_cause = models.JSONField(
+        verbose_name="Usage by Cause",
+        default=dict,
+        blank=True,
+        null=False)
 
     class Meta:
         verbose_name = "Service Usage Period"
@@ -1716,11 +1721,13 @@ class ServiceUsage(models.Model):
         return usage_period
 
     def track_usage(self, amount: float, cause: str):
-        # TODO: save cause
         usage_period = self.get_current_period()
         if usage_period.usage + amount > self.limit_per_period:
             return {"approved": False, "error": "Limit exceeded"}
         usage_period.usage = models.F('usage') + amount
+        if cause not in usage_period.usage_by_cause:
+            usage_period.usage_by_cause[cause] = 0
+        usage_period.usage_by_cause[cause] += amount
         usage_period.save()
         usage_period.refresh_from_db()
 

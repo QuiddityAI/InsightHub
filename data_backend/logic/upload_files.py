@@ -172,7 +172,7 @@ def _store_files_and_import_them(dataset_id: int, import_converter_identifier: s
 def _import_items(dataset_id: int, import_converter_identifier: str, paths_or_items: list,
                  collection_id: int | None, collection_class: str | None, task_id: str,
                  user_id: int, failed_files: list = []) -> tuple[list[tuple], list[str]]:
-    response = track_service_usage(user_id, "upload_items", len(paths_or_items), "uploading files")
+    response = track_service_usage(user_id, "upload_items", len(paths_or_items), "uploading items")
     if not response["approved"]:
         raise ValueError("service usage not approved")
 

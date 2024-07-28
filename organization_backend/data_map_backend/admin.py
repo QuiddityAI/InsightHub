@@ -747,6 +747,11 @@ class ServiceUsagePeriodInline(admin.TabularInline):
     ordering = ['period']
     extra = 0
 
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': JSONSuit }
+    }
+
 
 @admin.register(ServiceUsage)
 class ServiceUsageAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
