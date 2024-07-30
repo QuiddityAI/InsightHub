@@ -28,6 +28,7 @@ admin.site.site_title = 'Quiddity'
 
 class UserAdmin(ImportExportMixin, UserAdmin):
     resource_class = UserResource
+    list_display = UserAdmin.list_display + ('id',)  # type: ignore
     pass
 
 admin.site.unregister(User)
