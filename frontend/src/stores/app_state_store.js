@@ -610,6 +610,7 @@ export const useAppStateStore = defineStore("appState", {
 
       // selection:
       this.selected_document_ds_and_id = null
+      this.mapState.reset_visibility_filters()
 
       this.eventBus.emit("search_results_cleared")
     },
