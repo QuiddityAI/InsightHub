@@ -621,6 +621,8 @@ def clusterize_and_render_phase(map_data: dict, params: DotDict, datasets: dict,
 
 
 def get_map_selection_statistics(map_id: str, selected_ids: list[tuple[int, str]]) -> dict | None:
+    if not selected_ids:
+        return None
     if map_id not in local_maps:
         # map is not in cache anymore, try to get it from storage again:
         map_data = get_stored_map_data(map_id)
@@ -629,10 +631,14 @@ def get_map_selection_statistics(map_id: str, selected_ids: list[tuple[int, str]
     map_data = local_maps.get(map_id)
     if not map_data:
         return None
+    if not map_data.get("finished"):
+        return None
     timings: Timings = Timings()
     params: DotDict = DotDict(map_data["parameters"])
     datasets = {dataset_id: get_dataset(dataset_id) for dataset_id in params.search.dataset_ids}
     sorted_ids = map_data["results"]["per_point_data"]["item_ids"]
+    if not sorted_ids:
+        return None
     slimmed_items_per_dataset = map_data['results']['slimmed_items_per_dataset']
     items_by_dataset = get_cached_full_item_data(map_id)
     if not items_by_dataset:

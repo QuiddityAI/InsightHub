@@ -44,7 +44,7 @@ export default {
       httpClient
         .post(`/data_backend/map/selection_statistics`, body)
         .then(function (response) {
-          that.selection_statistics = response.data
+          that.selection_statistics = response.data || {}
         })
     })
   },
