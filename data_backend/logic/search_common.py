@@ -603,7 +603,11 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
 
     # workaround to add data from disk for semantic_scholar dataset:
     if dataset.schema.identifier == 'semantic_scholar':
-        abstract = get_abstract(int(item['corpus_id']))
+        try:
+            abstract = get_abstract(int(item['corpus_id']))
+        except Exception as e:
+            logging.warning(f"Could not get abstract for corpus_id {item['corpus_id']}: {e}")
+            abstract = {}
         item['oa_url'] = (abstract.get('openaccessinfo') or {}).get('url')
         item['oa_status'] = (abstract.get('openaccessinfo') or {}).get('status')
         item['oa_license'] = (abstract.get('openaccessinfo') or {}).get('license')
