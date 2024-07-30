@@ -35,6 +35,7 @@ export default {
       password_confirm: "",
       password_confirm_mismatch: false,
       terms_accepted: false,
+      accordion_index: null,
     }
   },
   computed: {
@@ -45,6 +46,11 @@ export default {
     this.eventBus.on("show_login_dialog", ({message}) => {
       this.dialog_visible = true
       this.message = message
+    })
+    this.eventBus.on("show_register_dialog", ({message}) => {
+      this.dialog_visible = true
+      this.message = message
+      this.accordion_index = 1
     })
   },
   watch: {
@@ -95,7 +101,7 @@ export default {
 
     <Dialog v-model:visible="dialog_visible" modal header="Login / Register">
       <p>{{ message }}</p>
-      <Accordion :activeIndex="0" class="mb-2">
+      <Accordion :activeIndex="accordion_index" class="mb-2">
         <AccordionTab header="Login with an existing account">
           <form ref="login_form" :action="`/org/login_from_app/?next=/`" method="post" class="flex flex-col gap-3">
             <InputGroup>

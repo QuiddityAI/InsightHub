@@ -70,6 +70,10 @@ export default {
       if (queryParams.get("tab")) {
         this.appStateStore.selected_app_tab = queryParams.get("tab")
       }
+      // check if url has anchor #register
+      if (window.location.hash === "#register") {
+        this.eventBus.emit("show_register_dialog", {message: ""})
+      }
 
       if (queryParams.get("organization_id") === null) {
         const default_organization = this.appStateStore.available_organizations.find(
