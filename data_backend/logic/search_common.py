@@ -232,7 +232,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
                 {
                     "field_value_factor": {
                         "field": "cited_by",
-                        "factor": 0.001,
+                        "factor": 0.003,  # 0.001 was to small, 0.005 was too big
                         "modifier": "log2p",
                         "missing": 0.0,
                     },
@@ -243,6 +243,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
                             "origin":  "2025",
                             "offset": "0",
                             "scale":  "20",
+                            "decay": 0.5,
                         }
                     },
                 },
