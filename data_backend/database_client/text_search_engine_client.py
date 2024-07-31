@@ -286,7 +286,7 @@ class TextSearchEngineClient(object):
                            query_positive, query_negative, page, limit, return_fields,
                            highlights=False, use_bolding_in_highlights:bool=True,
                            highlight_query: str | None = None, ignored_highlight_fields: list | None = None,
-                           default_operator: str = "and"):
+                           default_operator: str = "and", boost_function: dict | None = None) -> tuple[list, int]:
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
             return use_remote_db(
                 dataset=dataset,
@@ -294,7 +294,9 @@ class TextSearchEngineClient(object):
                 function_name="get_search_results",
                 arguments={"search_fields": search_fields, "filters": filters, "query_positive": query_positive,
                             "query_negative": query_negative, "page": page, "limit": limit, "return_fields": return_fields,
-                            "highlights": highlights, "use_bolding_in_highlights": use_bolding_in_highlights}
+                            "highlights": highlights, "use_bolding_in_highlights": use_bolding_in_highlights,
+                            "highlight_query": highlight_query, "ignored_highlight_fields": ignored_highlight_fields,
+                            "default_operator": default_operator, "boost_function": boost_function}
             )
         if filters:
             query = {
@@ -345,6 +347,14 @@ class TextSearchEngineClient(object):
                         'default_operator': 'and',
                     }
                 }
+        if boost_function:
+            query['query'] = {
+                'function_score': {
+                    'query': query['query'],
+                    **boost_function,
+                }
+            }
+            logging.warning(f"Using boost function: {query}")
 
         response = self.client.search(
             body = query,
