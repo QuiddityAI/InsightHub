@@ -241,7 +241,7 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
                     "exp": {
                         "publication_year": {
                             "origin":  "2025",
-                            "offset": "0",
+                            "offset": "1",
                             "scale":  "20",
                             "decay": 0.5,
                         }
