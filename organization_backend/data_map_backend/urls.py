@@ -10,6 +10,7 @@ urlpatterns=[
     path("dataset", other_views.get_dataset),
     path("available_datasets", other_views.get_available_datasets),
     path("add_search_history_item", other_views.add_search_history_item),
+    path("update_search_history_item", other_views.update_search_history_item),
     path("get_search_history", other_views.get_search_history),
     path("add_collection", other_views.add_collection),
     path("add_collection_class", other_views.add_collection_class),

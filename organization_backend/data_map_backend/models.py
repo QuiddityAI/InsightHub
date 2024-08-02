@@ -873,8 +873,8 @@ class SearchHistoryItem(models.Model):
         verbose_name="User",
         to=User,
         on_delete=models.CASCADE,
-        blank=False,
-        null=False)
+        blank=True,
+        null=True)
     organization = models.ForeignKey(
         verbose_name="Organization",
         to=Organization,
@@ -884,6 +884,23 @@ class SearchHistoryItem(models.Model):
         null=False)
     parameters = models.JSONField(
         verbose_name="Parameters",
+        blank=True,
+        null=True)
+    total_matches = models.IntegerField(
+        verbose_name="Total Matches",
+        blank=True,
+        null=True)
+    auto_relaxed = models.BooleanField(
+        verbose_name="Auto Relaxed",
+        help_text="Whether the search was automatically relaxed to find results",
+        blank=True,
+        null=True)
+    cluster_count = models.IntegerField(
+        verbose_name="Cluster Count",
+        blank=True,
+        null=True)
+    result_information = models.JSONField(
+        verbose_name="Other Result Information",
         blank=True,
         null=True)
 

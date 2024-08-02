@@ -881,7 +881,6 @@ export const useAppStateStore = defineStore("appState", {
     add_search_history_item() {
       const that = this
       if (!this.store_search_history) return
-      if (!this.logged_in) return
 
       if (
         this.search_history.length > 0 &&
@@ -906,6 +905,28 @@ export const useAppStateStore = defineStore("appState", {
         .post("/org/data_map/add_search_history_item", history_item_body)
         .then(function (response) {
           that.search_history.push(response.data)
+        })
+    },
+    update_search_history_item() {
+      const that = this
+      if (!this.store_search_history) return
+
+      // TODO: check if map_settings are actully the ones in the last history item
+
+      const history_item_body = {
+        item_id: this.search_history[this.search_history.length - 1].id,
+        total_matches: this.search_result_total_matches,
+        auto_relaxed: null,  // TODO: implement
+        cluster_count: this.mapState.clusterData.length,
+        result_information: {
+          shown_results: this.search_result_ids.length,
+        },
+      }
+
+      httpClient
+        .post("/org/data_map/update_search_history_item", history_item_body)
+        .then(function (response) {
+          that.search_history[that.search_history.length - 1] = response.data
         })
     },
     show_received_search_results(response_data) {
@@ -1191,6 +1212,10 @@ export const useAppStateStore = defineStore("appState", {
         }
 
         that.map_timings = results["timings"]
+
+        if (!that.map_is_in_progess) {
+          that.update_search_history_item()
+        }
       }
     },
     cluster_selected(cluster_item) {

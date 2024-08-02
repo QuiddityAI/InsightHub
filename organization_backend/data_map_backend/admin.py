@@ -478,7 +478,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 @admin.register(SearchHistoryItem)
 class SearchHistoryItemAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ('created_at', 'name', 'user')
+    list_display = ('created_at', 'name', 'total_matches', 'cluster_count', 'user')
     list_display_links = ('name',)
     search_fields = ('name',)
     list_filter = ('user',)

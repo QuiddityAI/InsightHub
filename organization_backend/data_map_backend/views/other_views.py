@@ -400,8 +400,7 @@ def get_export_converter(request):
 def add_search_history_item(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
+    # view is accesible without authentication
 
     try:
         data = json.loads(request.body)
@@ -413,11 +412,44 @@ def add_search_history_item(request):
         return HttpResponse(status=400)
 
     item = SearchHistoryItem()
-    item.user_id = request.user.id  # type: ignore
+    item.user_id = request.user.id if request.user.is_authenticated else None  # type: ignore
     item.organization_id = organization_id  # type: ignore
     item.name = name
     item.display_name = display_name
     item.parameters = parameters  # type: ignore
+    item.save()
+
+    serialized_data = SearchHistoryItemSerializer(instance=item).data
+    result = json.dumps(serialized_data)
+
+    return HttpResponse(result, status=200, content_type='application/json')
+
+
+@csrf_exempt
+def update_search_history_item(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    # view is accesible without authentication
+
+    try:
+        data = json.loads(request.body)
+        item_id: int = data["item_id"]
+        total_matches: int = data["total_matches"]
+        auto_relaxed: bool = data["auto_relaxed"]
+        cluster_count: int = data["cluster_count"]
+        result_information: dict = data["result_information"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        item = SearchHistoryItem.objects.get(id=item_id)
+    except SearchHistoryItem.DoesNotExist:
+        return HttpResponse(status=404)
+
+    item.total_matches = total_matches
+    item.auto_relaxed = auto_relaxed
+    item.cluster_count = cluster_count
+    item.result_information = result_information  # type: ignore
     item.save()
 
     serialized_data = SearchHistoryItemSerializer(instance=item).data

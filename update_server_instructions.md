@@ -19,6 +19,7 @@
   - Attention: on v2, there is a different postgres running on same port, migrations must be done in container!
   - from within container:
   - docker exec -it visual-data-map-organization-backend-1 bash
+  - docker exec -it vsm_staging-organization-backend-staging-1 bash
   - ../.venv/bin/python manage.py migrate
   - ../.venv/bin/python manage.py update_base_models
 - docker compose restart organization-backend
