@@ -4,7 +4,7 @@
   "entity_name_plural": "articles",
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-07-21T15:57:49.865Z",
+  "changed_at": "2024-08-02T17:36:42.481Z",
   "primary_key": "corpus_id",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -42,6 +42,68 @@
       },
       {
         "query": "influence of social media on the youth"
+      }
+    ],
+    "ranking_options": [
+      {
+        "title": "Recent & popular papers",
+        "tooltip": "Rank mostly by relevance, but slightly favor recent and highly cited papers",
+        "boost_function": {
+          "functions": [
+            {
+              "field_value_factor": {
+                "field": "cited_by",
+                "factor": 0.003,
+                "missing": 0.0,
+                "modifier": "log2p"
+              }
+            },
+            {
+              "exp": {
+                "publication_year": {
+                  "decay": 0.5,
+                  "scale": "20",
+                  "offset": "1",
+                  "origin": "2025"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Relevance only",
+        "tooltip": "Rank by similarity to query only"
+      },
+      {
+        "sort": [
+          {
+            "publication_year": {
+              "order": "desc",
+              "missing": "_last"
+            }
+          },
+          {
+            "publication_date": {
+              "order": "desc",
+              "missing": "_last"
+            }
+          }
+        ],
+        "title": "Newest first",
+        "tooltip": "Strictly sort by publication date, as long as the paper contains the keywords at least once"
+      },
+      {
+        "sort": [
+          {
+            "cited_by": {
+              "order": "desc",
+              "missing": "_last"
+            }
+          }
+        ],
+        "title": "Most cited first",
+        "tooltip": "Strictly sort by number of citations, as long as the paper contains the keywords at least once"
       }
     ],
     "map_vector_field": "embedding_specter_v2",

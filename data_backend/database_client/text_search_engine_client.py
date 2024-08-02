@@ -286,7 +286,8 @@ class TextSearchEngineClient(object):
                            query_positive, query_negative, page, limit, return_fields,
                            highlights=False, use_bolding_in_highlights:bool=True,
                            highlight_query: str | None = None, ignored_highlight_fields: list | None = None,
-                           default_operator: str = "and", boost_function: dict | None = None) -> tuple[list, int]:
+                           default_operator: str = "and", sort_settings: list | None = None,
+                           boost_function: dict | None = None) -> tuple[list, int]:
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
             return use_remote_db(
                 dataset=dataset,
@@ -354,7 +355,9 @@ class TextSearchEngineClient(object):
                     **boost_function,
                 }
             }
-            logging.warning(f"Using boost function: {query}")
+        if sort_settings:
+            query['sort'] = sort_settings
+            query['track_scores'] = True
 
         response = self.client.search(
             body = query,

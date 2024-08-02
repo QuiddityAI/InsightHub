@@ -81,7 +81,7 @@ export default {
 </script>
 
 <template>
-  <div class="w-full max-w-[900px]">
+  <div class="w-full">
     <div class="px-5 md:px-12 pt-10 pb-10 pointer-events-auto rounded-xl bg-white shadow-lg">
 
       <!-- Task Type Selection -->

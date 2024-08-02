@@ -1,0 +1,64 @@
+{
+    "ranking_options": [
+        {
+            "title": "Recent & popular papers",
+            "tooltip": "Rank mostly by relevance, but slightly favor recent and highly cited papers",
+            "boost_function": {
+                "functions": [
+                    {
+                        "field_value_factor": {
+                            "field": "cited_by",
+                            "factor": 0.003,
+                            "modifier": "log2p",
+                            "missing": 0.0
+                        }
+                    },
+                    {
+                        "exp": {
+                            "publication_year": {
+                                "origin": "2025",
+                                "offset": "1",
+                                "scale": "20",
+                                "decay": 0.5
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "title": "Relevance only",
+            "tooltip": "Rank by similarity to query only"
+        },
+        {
+            "title": "Newest first",
+            "tooltip": "Strictly sort by publication date, as long as the paper contains the keywords at least once",
+            "sort": [
+                {
+                    "publication_year": {
+                        "order": "desc",
+                        "missing": "_last"
+                    }
+                },
+                {
+                    "publication_date": {
+                        "order": "desc",
+                        "missing": "_last"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Most cited first",
+            "tooltip": "Strictly sort by number of citations, as long as the paper contains the keywords at least once",
+            "sort": [
+                {
+                    "cited_by": {
+                        "order": "desc",
+                        "missing": "_last"
+                    }
+                }
+            ]
+        }
+    ]
+}

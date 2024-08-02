@@ -43,6 +43,7 @@ export const useAppStateStore = defineStore("appState", {
       available_vector_fields: [],
       available_number_fields: [],
       available_language_filters: [],
+      available_ranking_options: [],
 
       // results:
       is_loading_search_results: false,
@@ -113,7 +114,7 @@ export const useAppStateStore = defineStore("appState", {
           question: "",
           internal_input_weight: 0.7,
           use_similarity_thresholds: true,
-          order_by: { type: "score", parameter: "" },
+          order_by: { type: "score", parameter: "" },  // not used at the moment
           auto_relax_query: true,
           use_reranking: true,
           use_autocut: true,
@@ -139,6 +140,7 @@ export const useAppStateStore = defineStore("appState", {
             // },
           ],
           result_language: "en",
+          ranking_settings: {},
 
           origin_display_name: "", // collection or cluster name, that this map refers to, just for displaying it
           origins: [],  // for each origin: { type: "cluster", display_name: "", map_id: "123" }
@@ -468,7 +470,9 @@ export const useAppStateStore = defineStore("appState", {
       that.available_vector_fields = []
       that.available_number_fields = []
       that.available_language_filters = []
+      that.available_ranking_options = []
       that.settings.search.result_language = "en"
+      that.settings.search.ranking_settings = {}
 
       const all_default_search_fields = Object.values(this.datasets)
         .filter(dataset => this.settings.search.dataset_ids.includes(dataset.id))
@@ -512,6 +516,15 @@ export const useAppStateStore = defineStore("appState", {
         }
         if (dataset.merged_advanced_options.default_result_language) {
           that.settings.search.result_language = dataset.merged_advanced_options.default_result_language
+        }
+      }
+
+      // ranking options are only supported if there is only one dataset selected:
+      if (this.settings.search.dataset_ids.length == 1) {
+        const dataset = this.datasets[this.settings.search.dataset_ids[0]]
+        if (dataset.merged_advanced_options.ranking_options.length > 0) {
+          that.available_ranking_options = dataset.merged_advanced_options.ranking_options
+          that.settings.search.ranking_settings = dataset.merged_advanced_options.ranking_options[0]
         }
       }
 
@@ -615,6 +628,7 @@ export const useAppStateStore = defineStore("appState", {
       this.eventBus.emit("search_results_cleared")
     },
     reset_search_box() {
+      // TODO: maybe rather restore using default settings?
       this.settings.search.task_type = null
       this.settings.search.search_type = "external_input"
       this.settings.search.use_separate_queries = false
@@ -624,6 +638,8 @@ export const useAppStateStore = defineStore("appState", {
       this.settings.search.origins = []
       this.settings.search.filters = []
       this.settings.search.question = ""
+      this.settings.search.result_language = "en"
+      this.settings.search.ranking_settings = {}
 
       this.settings.search.cluster_origin_map_id = null
       this.settings.search.cluster_id = null
@@ -694,6 +710,10 @@ export const useAppStateStore = defineStore("appState", {
       if (this.settings.search.search_type == "external_input"
           && ["vector", "hybrid"].includes(this.settings.search.search_algorithm)) {
         this.convert_quoted_parts_to_filter()
+      }
+      if (this.settings.search.search_algorithm != "keyword") {
+        // for now, ranking settings are not supported in vector or hybrid search:
+        this.settings.search.ranking_settings = {}
       }
 
       // if (!this.settings.search.question) {

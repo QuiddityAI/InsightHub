@@ -224,36 +224,15 @@ def separate_text_and_vector_fields(dataset: DotDict, fields: Iterable[str]):
 
 def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query: QueryInput, filters: list[dict],
                                 required_fields: list[str], limit: int, page: int, return_highlights: bool = False,
-                                use_bolding_in_highlights: bool = True, auto_relax_query: bool = False):
-    boost_function = None
-    if dataset.schema.identifier == 'semantic_scholar':
-        boost_function = {
-            "functions": [
-                {
-                    "field_value_factor": {
-                        "field": "cited_by",
-                        "factor": 0.003,  # 0.001 was to small, 0.005 was too big
-                        "modifier": "log2p",
-                        "missing": 0.0,
-                    },
-                },
-                {
-                    "exp": {
-                        "publication_year": {
-                            "origin":  "2025",
-                            "offset": "1",
-                            "scale":  "20",
-                            "decay": 0.5,
-                        }
-                    },
-                },
-            ],
-        }
+                                use_bolding_in_highlights: bool = True, auto_relax_query: bool = False,
+                                ranking_settings: DotDict | None = None) -> tuple[dict[str, dict], int]:
+    boost_function = ranking_settings.get('boost_function') if ranking_settings else None
+    sort_settings = ranking_settings.get('sort') if ranking_settings else None
 
     text_db_client = TextSearchEngineClient.get_instance()
-    search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, boost_function=boost_function)
+    search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, sort_settings=sort_settings, boost_function=boost_function)
     if auto_relax_query and total_matches == 0:
-        search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, default_operator='or', boost_function=boost_function)
+        search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, default_operator='or', sort_settings=sort_settings, boost_function=boost_function)
     items = {}
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     ignored_keyword_highlight_fields = dataset.merged_advanced_options.ignored_keyword_highlight_fields or []

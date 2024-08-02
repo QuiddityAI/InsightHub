@@ -137,6 +137,7 @@ export default {
           search_parameters.search_type = "vector"
         }
         this.appStateStore.settings.search.search_algorithm = search_parameters.search_type
+        this.appStateStore.settings.search.ranking_settings = this.appStateStore.available_ranking_options[0]
         // disable smart search because when editing the search params, it should not be re-run
         this.use_smart_search = false
         this.appStateStore.request_search_results()
@@ -262,11 +263,19 @@ export default {
             </button>
           </div>
           <div class="flex-1"></div>
+          <select v-model="appState.settings.search.ranking_settings" v-if="appState.available_ranking_options.length > 1 && appState.settings.search.search_algorithm === 'keyword'"
+            class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
+            v-tooltip.bottom="{ value: appState.settings.search.ranking_settings?.tooltip, showDelay: 400}">
+            <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">
+              {{ ranking_settings.title }}
+            </option>
+          </select>
+          <div class="flex-1"></div>
           <div class="flex flex-row items-center gap-0 h-6">
             <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
               v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
               @click="(event) => { $refs.add_filter_menu.toggle(event) }">
-              + Filter / Option
+              + Filter
             </button>
             <OverlayPanel ref="add_filter_menu">
               <AddFilterMenu @close="$refs.add_filter_menu.hide()">

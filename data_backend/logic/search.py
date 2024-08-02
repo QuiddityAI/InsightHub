@@ -159,7 +159,8 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
                                                                  required_fields=['_id'], limit=limit, page=page,
                                                                  return_highlights=search_settings.return_highlights,
                                                                  use_bolding_in_highlights=search_settings.use_bolding_in_highlights,
-                                                                 auto_relax_query=search_settings.auto_relax_query)
+                                                                 auto_relax_query=search_settings.auto_relax_query,
+                                                                 ranking_settings=search_settings.ranking_settings)
             result_sets.append(results)
             actual_total_matches = max(actual_total_matches, total_matches)
             timings.log("keyword database query")

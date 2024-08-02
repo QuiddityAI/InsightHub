@@ -71,7 +71,7 @@ export default {
 <template>
   <div class="flex flex-col items-center justify-center">
 
-    <div v-if="!show_result_area" class="flex flex-col items-center justify-center">
+    <div v-if="!show_result_area" class="flex flex-col items-center justify-center w-[900px]">
       <div class="mb-[40px] max-w-lg"
         v-if="appState.settings.search.task_type === null && (appState.organization?.workspace_tool_logo_url || appState.organization?.workspace_tool_intro_text)">
         <div

@@ -382,6 +382,14 @@ export default {
           </button>
         </div>
         <div class="flex-1"></div>
+        <select v-model="appState.settings.search.ranking_settings" v-if="appState.available_ranking_options.length > 1 && appState.settings.search.search_algorithm === 'keyword'"
+          class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
+          v-tooltip.bottom="{ value: appState.settings.search.ranking_settings?.tooltip, showDelay: 400}">
+          <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">
+            {{ ranking_settings.title }}
+          </option>
+        </select>
+        <div class="flex-1"></div>
         <div class="flex flex-row items-center gap-0 h-6">
           <button class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
             v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
