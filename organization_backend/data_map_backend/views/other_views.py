@@ -10,8 +10,35 @@ from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.models import User
 
-from ..models import DataCollection, CollectionItem, Dataset, DatasetSchema, ExportConverter, FieldType, ImportConverter, Organization, SearchHistoryItem, StoredMap, Generator, TrainedClassifier, ServiceUsage, generate_unique_database_name
-from ..serializers import CollectionItemSerializer, CollectionSerializer, DatasetSchemaSerializer, DatasetSerializer, ExportConverterSerializer, ImportConverterSerializer, OrganizationSerializer, SearchHistoryItemSerializer, StoredMapSerializer, GeneratorSerializer, TrainedClassifierSerializer
+from ..models import (
+    DataCollection,
+    CollectionItem,
+    Dataset,
+    DatasetSchema,
+    ExportConverter,
+    FieldType,
+    ImportConverter,
+    Organization,
+    SearchHistoryItem,
+    StoredMap,
+    Generator,
+    TrainedClassifier,
+    ServiceUsage,
+    generate_unique_database_name,
+)
+from ..serializers import (
+    CollectionItemSerializer,
+    CollectionSerializer,
+    DatasetSchemaSerializer,
+    DatasetSerializer,
+    ExportConverterSerializer,
+    ImportConverterSerializer,
+    OrganizationSerializer,
+    SearchHistoryItemSerializer,
+    StoredMapSerializer,
+    GeneratorSerializer,
+    TrainedClassifierSerializer,
+)
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -22,7 +49,7 @@ BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_
 
 
 def is_from_backend(request):
-    return request.headers.get('Authorization') == BACKEND_AUTHENTICATION_SECRET
+    return request.headers.get("Authorization") == BACKEND_AUTHENTICATION_SECRET
 
 
 @csrf_exempt
@@ -34,44 +61,53 @@ def get_health(request):
 def get_current_user(request):
     user = request.user
     if not user.is_authenticated:
-        response_json = json.dumps({
-            'id': None,
-            'logged_in': False,
-            'username': None,
-            'is_staff': False,
-            'used_ai_credits': 0,
-            'total_ai_credits': 0,
-        })
-        return HttpResponse(response_json, status=200, content_type='application/json')
+        response_json = json.dumps(
+            {
+                "id": None,
+                "logged_in": False,
+                "username": None,
+                "is_staff": False,
+                "used_ai_credits": 0,
+                "total_ai_credits": 0,
+            }
+        )
+        return HttpResponse(response_json, status=200, content_type="application/json")
     ai_service_usage = ServiceUsage.get_usage_tracker(user.id, "External AI")
-    response_json = json.dumps({
-        'id': user.id,
-        'logged_in': user.is_authenticated,
-        'username': user.username,
-        'is_staff': user.is_staff,
-        'used_ai_credits': ai_service_usage.get_current_period().usage,
-        'total_ai_credits': ai_service_usage.limit_per_period,
-    })
-    return HttpResponse(response_json, status=200, content_type='application/json')
+    response_json = json.dumps(
+        {
+            "id": user.id,
+            "logged_in": user.is_authenticated,
+            "username": user.username,
+            "is_staff": user.is_staff,
+            "used_ai_credits": ai_service_usage.get_current_period().usage,
+            "total_ai_credits": ai_service_usage.limit_per_period,
+        }
+    )
+    return HttpResponse(response_json, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_available_organizations(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
 
     is_authenticated = request.user.is_authenticated
     if is_authenticated:
-        organizations = Organization.objects.filter(Q(is_public=True) | Q(members=request.user))
+        organizations = Organization.objects.filter(
+            Q(is_public=True) | Q(members=request.user)
+        )
     else:
         organizations = Organization.objects.filter(is_public=True)
-    organizations = organizations.distinct().order_by('name')
+    organizations = organizations.distinct().order_by("name")
     serialized_data = OrganizationSerializer(organizations, many=True).data
 
     # replace list of all datasets of each organization with list of available datasets:
     for organization, serialized in zip(organizations, serialized_data):
-        is_member = is_authenticated and organization.members.filter(id=request.user.id).exists()
-        serialized['is_member'] = is_member
+        is_member = (
+            is_authenticated
+            and organization.members.filter(id=request.user.id).exists()
+        )
+        serialized["is_member"] = is_member
         if is_member:
             serialized["datasets"] = [
                 dataset.id  # type: ignore
@@ -94,11 +130,12 @@ def get_available_organizations(request):
             ]
 
     result = json.dumps(serialized_data)
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
+
 
 @csrf_exempt
 def get_dataset(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
 
     try:
@@ -111,24 +148,34 @@ def get_dataset(request):
     dataset: Dataset = Dataset.objects.get(id=dataset_id)
 
     if not is_from_backend(request) and not dataset.is_public:
-        is_member = request.user.is_authenticated and dataset.organization.members.filter(id=request.user.id).exists()
-        is_admin = request.user.is_authenticated and dataset.admins.filter(id=request.user.id).exists()
+        is_member = (
+            request.user.is_authenticated
+            and dataset.organization.members.filter(id=request.user.id).exists()
+        )
+        is_admin = (
+            request.user.is_authenticated
+            and dataset.admins.filter(id=request.user.id).exists()
+        )
         if not ((dataset.is_organization_wide and is_member) or is_admin):
             return HttpResponse(status=401)
 
     dataset_dict = DatasetSerializer(instance=dataset).data
     assert isinstance(dataset_dict, dict)
-    dataset_dict["schema"]["object_fields"] = {item['identifier']: item for item in dataset_dict["schema"]["object_fields"]}
+    dataset_dict["schema"]["object_fields"] = {
+        item["identifier"]: item for item in dataset_dict["schema"]["object_fields"]
+    }
     if "applicable_export_converters" not in dataset_dict["schema"]:
         dataset_dict["schema"]["applicable_export_converters"] = []
     universal_exporters = ExportConverter.objects.filter(universally_applicable=True)
-    serialized_exporters = ExportConverterSerializer(universal_exporters, many=True).data
+    serialized_exporters = ExportConverterSerializer(
+        universal_exporters, many=True
+    ).data
     dataset_dict["schema"]["applicable_export_converters"].extend(serialized_exporters)
     if "item_count" in additional_fields:
         dataset_dict["item_count"] = dataset.item_count
 
     result = json.dumps(dataset_dict)
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
@@ -165,7 +212,7 @@ def get_available_datasets(request):
 
 @csrf_exempt
 def get_dataset_schemas(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
 
     try:
@@ -187,12 +234,12 @@ def get_dataset_schemas(request):
     serialized_data = DatasetSchemaSerializer(schemas, many=True).data
 
     result = json.dumps(serialized_data)
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def create_dataset_from_schema(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
@@ -212,7 +259,9 @@ def create_dataset_from_schema(request):
         return HttpResponse(status=404)
     if not organization.members.filter(id=request.user.id).exists():
         return HttpResponse(status=401)
-    if not organization.schemas_for_user_created_datasets.filter(identifier=schema_identifier).exists():
+    if not organization.schemas_for_user_created_datasets.filter(
+        identifier=schema_identifier
+    ).exists():
         return HttpResponse(status=404)
 
     try:
@@ -220,8 +269,8 @@ def create_dataset_from_schema(request):
     except Dataset.DoesNotExist:
         return HttpResponse(status=404)
 
-    safe_name = ''.join(e for e in name if e.isalnum() or e == '_' or e == ' ')
-    safe_name = safe_name.replace(' ', '_').lower()
+    safe_name = "".join(e for e in name if e.isalnum() or e == "_" or e == " ")
+    safe_name = safe_name.replace(" ", "_").lower()
 
     dataset = Dataset()
     dataset.schema = schema
@@ -229,7 +278,9 @@ def create_dataset_from_schema(request):
     dataset.organization = organization
     dataset.created_in_ui = from_ui
     dataset.is_public = False
-    dataset.database_name = generate_unique_database_name(f"{request.user.id}_{schema.identifier}_{safe_name}")
+    dataset.database_name = generate_unique_database_name(
+        f"{request.user.id}_{schema.identifier}_{safe_name}"
+    )
     dataset.save()
     dataset.admins.add(request.user)
     dataset.save()
@@ -237,12 +288,12 @@ def create_dataset_from_schema(request):
     dataset_dict = DatasetSerializer(instance=dataset).data
     result = json.dumps(dataset_dict)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_or_create_default_dataset(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -266,7 +317,9 @@ def get_or_create_default_dataset(request):
         return HttpResponse(status=404)
     if not organization.members.filter(id=user.id).exists():  # type: ignore
         return HttpResponse(status=401)
-    if not organization.schemas_for_user_created_datasets.filter(identifier=schema_identifier).exists():
+    if not organization.schemas_for_user_created_datasets.filter(
+        identifier=schema_identifier
+    ).exists():
         return HttpResponse(status=404)
 
     try:
@@ -275,8 +328,12 @@ def get_or_create_default_dataset(request):
         return HttpResponse(status=404)
 
     default_dataset_name = f"My {schema.name}"
-    if Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=user).exists():
-        dataset = Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=user).first()
+    if Dataset.objects.filter(
+        name=default_dataset_name, organization=organization, admins=user
+    ).exists():
+        dataset = Dataset.objects.filter(
+            name=default_dataset_name, organization=organization, admins=user
+        ).first()
     else:
         dataset = Dataset()
         dataset.schema = schema
@@ -284,7 +341,9 @@ def get_or_create_default_dataset(request):
         dataset.organization = organization
         dataset.created_in_ui = True
         dataset.is_public = False
-        dataset.database_name = generate_unique_database_name(f"{user_id}_my_{schema.identifier}")
+        dataset.database_name = generate_unique_database_name(
+            f"{user_id}_my_{schema.identifier}"
+        )
         dataset.save()
         dataset.admins.add(user)
         dataset.save()
@@ -292,12 +351,12 @@ def get_or_create_default_dataset(request):
     dataset_dict = DatasetSerializer(instance=dataset).data
     result = json.dumps(dataset_dict)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def change_dataset(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
@@ -328,12 +387,12 @@ def change_dataset(request):
     dataset_dict = DatasetSerializer(instance=dataset).data
     result = json.dumps(dataset_dict)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def delete_dataset(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
@@ -358,7 +417,7 @@ def delete_dataset(request):
 
 @csrf_exempt
 def get_import_converter(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
 
     try:
@@ -373,12 +432,12 @@ def get_import_converter(request):
         return HttpResponse(status=404)
 
     serialized_data = json.dumps(ImportConverterSerializer(instance=converter).data)
-    return HttpResponse(serialized_data, status=200, content_type='application/json')
+    return HttpResponse(serialized_data, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_export_converter(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
 
     try:
@@ -393,12 +452,12 @@ def get_export_converter(request):
         return HttpResponse(status=404)
 
     serialized_data = json.dumps(ExportConverterSerializer(instance=converter).data)
-    return HttpResponse(serialized_data, status=200, content_type='application/json')
+    return HttpResponse(serialized_data, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def add_search_history_item(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     # view is accesible without authentication
 
@@ -422,12 +481,12 @@ def add_search_history_item(request):
     serialized_data = SearchHistoryItemSerializer(instance=item).data
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def update_search_history_item(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     # view is accesible without authentication
 
@@ -455,12 +514,12 @@ def update_search_history_item(request):
     serialized_data = SearchHistoryItemSerializer(instance=item).data
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_search_history(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -471,16 +530,18 @@ def get_search_history(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = SearchHistoryItem.objects.filter(user_id=request.user.id, organization_id=organization_id).order_by('-created_at')[:25:-1]
+    items = SearchHistoryItem.objects.filter(
+        user_id=request.user.id, organization_id=organization_id
+    ).order_by("-created_at")[:25:-1]
     serialized_data = SearchHistoryItemSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def add_collection(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -501,12 +562,12 @@ def add_collection(request):
     dataset_dict = CollectionSerializer(instance=item).data
     result = json.dumps(dataset_dict)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def delete_collection(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -530,7 +591,7 @@ def delete_collection(request):
 
 @csrf_exempt
 def add_collection_class(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -550,7 +611,7 @@ def add_collection_class(request):
         return HttpResponse(status=401)
 
     if item.class_names == None:
-        item.class_names = [class_name] # type: ignore
+        item.class_names = [class_name]  # type: ignore
     elif class_name not in item.class_names:
         item.class_names.append(class_name)  # type: ignore
     item.save()
@@ -560,7 +621,7 @@ def add_collection_class(request):
 
 @csrf_exempt
 def delete_collection_class(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -572,11 +633,15 @@ def delete_collection_class(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    all_items = CollectionItem.objects.filter(collection_id=collection_id, classes__contains=[class_name])
+    all_items = CollectionItem.objects.filter(
+        collection_id=collection_id, classes__contains=[class_name]
+    )
     for item in all_items:
         item.delete()
 
-    classifiers = TrainedClassifier.objects.filter(collection_id=collection_id, class_name=class_name)
+    classifiers = TrainedClassifier.objects.filter(
+        collection_id=collection_id, class_name=class_name
+    )
     classifiers.delete()
 
     try:
@@ -595,7 +660,7 @@ def delete_collection_class(request):
 
 @csrf_exempt
 def get_collections(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -606,16 +671,19 @@ def get_collections(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = DataCollection.objects.filter(Q(related_organization_id=related_organization_id) & (Q(created_by=request.user.id) | Q(is_public=True))).order_by('-created_at')
+    items = DataCollection.objects.filter(
+        Q(related_organization_id=related_organization_id)
+        & (Q(created_by=request.user.id) | Q(is_public=True))
+    ).order_by("-created_at")
     serialized_data = CollectionSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_collection(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -630,17 +698,21 @@ def get_collection(request):
         collection = DataCollection.objects.get(id=collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-    if collection.created_by != request.user and not collection.is_public and not is_from_backend(request):
+    if (
+        collection.created_by != request.user
+        and not collection.is_public
+        and not is_from_backend(request)
+    ):
         return HttpResponse(status=401)
     serialized_data = CollectionSerializer(collection).data
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_trained_classifier(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -655,25 +727,35 @@ def get_trained_classifier(request):
         return HttpResponse(status=400)
 
     try:
-        classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space=embedding_space_identifier)
+        classifier = TrainedClassifier.objects.get(
+            collection_id=collection_id,
+            class_name=class_name,
+            embedding_space=embedding_space_identifier,
+        )
     except TrainedClassifier.DoesNotExist:
         result = json.dumps(None)
-        return HttpResponse(result, status=200, content_type='application/json')
-    if classifier.collection.created_by != request.user and not classifier.collection.is_public and not is_from_backend(request):
+        return HttpResponse(result, status=200, content_type="application/json")
+    if (
+        classifier.collection.created_by != request.user
+        and not classifier.collection.is_public
+        and not is_from_backend(request)
+    ):
         return HttpResponse(status=401)
     serialized_data = TrainedClassifierSerializer(classifier).data
     assert isinstance(serialized_data, dict)
     if not include_vector and "decision_vector" in serialized_data:
-        serialized_data["decision_vector_exists"] = len(serialized_data["decision_vector"]) > 0
+        serialized_data["decision_vector_exists"] = (
+            len(serialized_data["decision_vector"]) > 0
+        )
         del serialized_data["decision_vector"]
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def set_trained_classifier(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -691,10 +773,20 @@ def set_trained_classifier(request):
         return HttpResponse(status=400)
 
     try:
-        classifier = TrainedClassifier.objects.get(collection_id=collection_id, class_name=class_name, embedding_space=embedding_space_identifier)
+        classifier = TrainedClassifier.objects.get(
+            collection_id=collection_id,
+            class_name=class_name,
+            embedding_space=embedding_space_identifier,
+        )
     except TrainedClassifier.DoesNotExist:
-        classifier = TrainedClassifier(collection_id=collection_id, class_name=class_name, embedding_space=embedding_space_identifier)
-    if classifier.collection.created_by != request.user and not is_from_backend(request):
+        classifier = TrainedClassifier(
+            collection_id=collection_id,
+            class_name=class_name,
+            embedding_space=embedding_space_identifier,
+        )
+    if classifier.collection.created_by != request.user and not is_from_backend(
+        request
+    ):
         return HttpResponse(status=401)
 
     if decision_vector is not None:
@@ -713,7 +805,7 @@ def set_trained_classifier(request):
 
 @csrf_exempt
 def get_collection_items(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -726,29 +818,36 @@ def get_collection_items(request):
         is_positive = data["is_positive"]
         offset = data.get("offset", 0)
         limit = data.get("limit", 25)
-        order_by = data.get("order_by", '-date_added')
+        order_by = data.get("order_by", "-date_added")
         include_column_data = data.get("include_column_data", False)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     if field_type or is_positive:
-        all_items = CollectionItem.objects.filter(collection_id=collection_id, field_type=field_type, is_positive=is_positive, classes__contains=[class_name])
+        all_items = CollectionItem.objects.filter(
+            collection_id=collection_id,
+            field_type=field_type,
+            is_positive=is_positive,
+            classes__contains=[class_name],
+        )
     else:
         # return all examples
-        all_items = CollectionItem.objects.filter(collection_id=collection_id, classes__contains=[class_name])
-    all_items = all_items.order_by(order_by)[offset:offset + limit]
+        all_items = CollectionItem.objects.filter(
+            collection_id=collection_id, classes__contains=[class_name]
+        )
+    all_items = all_items.order_by(order_by)[offset : offset + limit]
     serialized_data = CollectionItemSerializer(all_items, many=True).data
     if not include_column_data:
         for item in serialized_data:
-            item.pop('column_data', None)
+            item.pop("column_data", None)
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_related_collection_items(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -762,19 +861,19 @@ def get_related_collection_items(request):
         return HttpResponse(status=400)
 
     all_items = CollectionItem.objects.filter(dataset_id=dataset_id, item_id=item_id)
-    all_items = all_items.order_by('-date_added')
+    all_items = all_items.order_by("-date_added")
     serialized_data = CollectionItemSerializer(all_items, many=True).data
     if not include_column_data:
         for item in serialized_data:
-            item.pop('column_data', None)
+            item.pop("column_data", None)
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def add_item_to_collection(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -782,7 +881,7 @@ def add_item_to_collection(request):
     try:
         data = json.loads(request.body)
         collection_id: int = data["collection_id"]
-        class_name: str = data.get("class_name", '_default')
+        class_name: str = data.get("class_name", "_default")
         is_positive: bool = data["is_positive"]
         field_type: str = data["field_type"]
         value: str | None = data.get("value")
@@ -794,7 +893,9 @@ def add_item_to_collection(request):
 
     if value is None and dataset_id is None:
         return HttpResponse(status=400)
-    if field_type == FieldType.IDENTIFIER and not (dataset_id is not None and item_id is not None):
+    if field_type == FieldType.IDENTIFIER and not (
+        dataset_id is not None and item_id is not None
+    ):
         return HttpResponse(status=400)
 
     try:
@@ -804,7 +905,14 @@ def add_item_to_collection(request):
     if collection.created_by != request.user and not is_from_backend(request):
         return HttpResponse(status=401)
 
-    items = CollectionItem.objects.filter(collection_id=collection_id, is_positive=is_positive, field_type=field_type, value=value, dataset_id=dataset_id, item_id=item_id)
+    items = CollectionItem.objects.filter(
+        collection_id=collection_id,
+        is_positive=is_positive,
+        field_type=field_type,
+        value=value,
+        dataset_id=dataset_id,
+        item_id=item_id,
+    )
     for item in items:
         if class_name in item.classes:  # type: ignore
             # the item exists already, but the weight might need to be updated:
@@ -828,12 +936,12 @@ def add_item_to_collection(request):
     collection.items_last_changed[class_name] = timezone.now().isoformat()  # type: ignore
     collection.save()
 
-    return HttpResponse(serialized_data, status=200, content_type='application/json')
+    return HttpResponse(serialized_data, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def remove_collection_item(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -862,7 +970,7 @@ def remove_collection_item(request):
 
 @csrf_exempt
 def remove_collection_item_by_value(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -877,7 +985,13 @@ def remove_collection_item_by_value(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    collection_items = CollectionItem.objects.filter(collection_id=collection_id, value=value, dataset_id=dataset_id, item_id=item_id, classes__contains=[class_name])
+    collection_items = CollectionItem.objects.filter(
+        collection_id=collection_id,
+        value=value,
+        dataset_id=dataset_id,
+        item_id=item_id,
+        classes__contains=[class_name],
+    )
     if not collection_items:
         return HttpResponse(status=404)
 
@@ -891,12 +1005,12 @@ def remove_collection_item_by_value(request):
 
     serialized_data = json.dumps(removed_items)
 
-    return HttpResponse(serialized_data, status=200, content_type='application/json')
+    return HttpResponse(serialized_data, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def add_stored_map(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -923,12 +1037,12 @@ def add_stored_map(request):
     serialized_data = StoredMapSerializer(instance=item).data
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_stored_maps(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -940,16 +1054,18 @@ def get_stored_maps(request):
         return HttpResponse(status=400)
 
     # TODO: also show public ones
-    items = StoredMap.objects.filter(user_id=request.user.id, organization_id=organization_id).order_by('created_at')[:25]
+    items = StoredMap.objects.filter(
+        user_id=request.user.id, organization_id=organization_id
+    ).order_by("created_at")[:25]
     serialized_data = StoredMapSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 @csrf_exempt
 def get_stored_map_data(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -967,12 +1083,12 @@ def get_stored_map_data(request):
         return HttpResponse(status=401)
     result = map_item.map_data
 
-    return HttpResponse(result, status=200, content_type='application/octet-stream')
+    return HttpResponse(result, status=200, content_type="application/octet-stream")
 
 
 @csrf_exempt
 def delete_stored_map(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -995,14 +1111,14 @@ def delete_stored_map(request):
 
 @csrf_exempt
 def get_generators(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
 
     items = Generator.objects.all()
     serialized_data = GeneratorSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
-    return HttpResponse(result, status=200, content_type='application/json')
+    return HttpResponse(result, status=200, content_type="application/json")
 
 
 """
