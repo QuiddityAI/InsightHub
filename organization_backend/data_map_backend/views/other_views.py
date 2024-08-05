@@ -39,6 +39,7 @@ from ..serializers import (
     GeneratorSerializer,
     TrainedClassifierSerializer,
 )
+from ..notifier import default_notifier
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -252,6 +253,8 @@ def create_dataset_from_schema(request):
         from_ui: bool = data.get("from_ui", False)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
+
+    default_notifier.info(f"User {request.user.username} created dataset {name}")
 
     try:
         organization = Organization.objects.get(id=organization_id)
@@ -477,6 +480,14 @@ def add_search_history_item(request):
     item.display_name = display_name
     item.parameters = parameters  # type: ignore
     item.save()
+    try:
+        user = User.objects.get(id=item.user_id) if item.user_id else None
+        username = user.username if user else "-"
+        default_notifier.info(
+            f"User {username} logged a history question {parameters['search']['all_field_query']}"
+        )
+    except Exception as e:
+        logging.warn(f"Can't notify, {repr(e)}")
 
     serialized_data = SearchHistoryItemSerializer(instance=item).data
     result = json.dumps(serialized_data)
