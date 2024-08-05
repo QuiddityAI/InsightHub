@@ -88,7 +88,7 @@ def add_collection_class_chat(request):
 def add_chat_question(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
+    if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
