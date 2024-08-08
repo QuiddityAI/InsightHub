@@ -484,7 +484,7 @@ def add_search_history_item(request):
         user = User.objects.get(id=item.user_id) if item.user_id else None
         username = user.username if user else "-"
         default_notifier.info(
-            f"User {username} logged a history question {parameters['search']['all_field_query']}"
+            f"User {username} searched for question {parameters['search']['all_field_query']}"
         )
     except Exception as e:
         logging.warn(f"Can't notify, {repr(e)}")
