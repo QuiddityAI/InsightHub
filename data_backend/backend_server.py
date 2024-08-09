@@ -26,6 +26,8 @@ from logic.export_converters import export_collection, export_collection_table, 
 
 from database_client.django_client import add_stored_map, get_or_create_default_dataset
 from database_client.forward_local_db import forward_local_db
+from database_client.text_search_engine_client import TextSearchEngineClient
+from database_client.vector_search_engine_client import VectorSearchEngineClient
 
 
 if os.environ.get('RUN_MAIN') or os.environ.get('WERKZEUG_RUN_MAIN'):
@@ -48,6 +50,7 @@ paths_excluded_from_logging = ['/data_backend/map/result',
                                '/data_backend/document/details_by_id',
                                '/data_backend/upload_files/status',
                                '/health',
+                               '/db_health',
                                ]
 
 def log_request(self, *args, **kwargs):
@@ -102,6 +105,21 @@ serving.WSGIRequestHandler.log_request = log_request
 
 @app.route('/health', methods=['GET'])
 def health():
+    return "", 200
+
+
+@app.route('/db_health', methods=['GET'])
+def db_health():
+    try:
+        text_search_engine_client = TextSearchEngineClient()
+        if not text_search_engine_client.check_status():
+            raise Exception("Text search engine not healthy")
+        vector_search_engine_client = VectorSearchEngineClient()
+        if not vector_search_engine_client.check_status():
+            raise Exception("Vector search engine not healthy")
+    except Exception as e:
+        logging.error("Error checking database status", exc_info=True)
+        return "", 500
     return "", 200
 
 

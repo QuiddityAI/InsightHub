@@ -45,6 +45,11 @@ class VectorSearchEngineClient(object):
         return VectorSearchEngineClient._instance
 
 
+    def check_status(self) -> bool:
+        collections = self.client.get_collections()
+        return collections is not None
+
+
     def _get_collection_name(self, database_name: str, vector_field: str):
         return f'{database_name}_field_{vector_field}'
 

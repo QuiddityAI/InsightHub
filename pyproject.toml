@@ -56,6 +56,7 @@ ratelimit = "*"
 pacmap = "*"
 cuml-cu12 = {version = "24.6.*", source = "nvidia"}
 cachetools = "*"
+django-prometheus = "*"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -51,6 +51,11 @@ class TextSearchEngineClient(object):
         return TextSearchEngineClient._instance
 
 
+    def check_status(self) -> bool:
+        status = self.client.cluster.health()
+        return status["status"] in ("green", "yellow")
+
+
     def ensure_dataset_exists(self, dataset: dict):
         # create dataset
         # create indexes
