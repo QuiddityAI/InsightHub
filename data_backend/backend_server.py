@@ -27,11 +27,14 @@ from logic.export_converters import export_collection, export_collection_table, 
 from database_client.django_client import add_stored_map, get_or_create_default_dataset
 from database_client.forward_local_db import forward_local_db
 
-import debugpy
-
 
 if os.environ.get('RUN_MAIN') or os.environ.get('WERKZEUG_RUN_MAIN'):
-    debugpy.listen(('0.0.0.0', 20001))
+    try:
+        import debugpy
+    except ImportError:
+        logging.warning("Debugpy not installed, skipping debugging support")
+    else:
+        debugpy.listen(('0.0.0.0', 20001))
 
 # --- Flask set up: ---
 
