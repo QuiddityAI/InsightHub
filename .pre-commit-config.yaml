@@ -1,0 +1,30 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ["--profile", "black"]
+
+  # - repo: local
+  #   hooks:
+  #   - id: run-tests-docker
+  #     name: run-tests-docker
+  #     entry: tests/run_tests.sh
+  #     args: ['2> /dev/null']
+  #     language: system
+  #     types: [python]
+  #     pass_filenames: false
+  #     require_serial: true

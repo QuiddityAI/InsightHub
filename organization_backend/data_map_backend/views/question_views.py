@@ -14,13 +14,14 @@ from django.db.models import Q
 from django.utils import timezone
 from diskcache import Cache
 
-from ..models import CollectionItem, DataCollection, CollectionColumn, Chat, Dataset, ServiceUsage, FieldType, WritingTask
+from ..models import CollectionItem, DataCollection, CollectionColumn, Chat, Dataset, ServiceUsage, FieldType, WritingTask, User
 from ..serializers import ChatSerializer, CollectionColumnSerializer, CollectionSerializer, WritingTaskSerializer
 from ..data_backend_client import get_item_by_id, get_item_question_context
 from ..chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
 from ..groq_client import GROQ_MODELS, get_groq_response_using_history
 from ..prompts import table_cell_prompt, writing_task_prompt, search_question_prompt, item_relevancy_prompt
 from .. import prompts
+from ..notifier import default_notifier
 
 from .other_views import is_from_backend
 
@@ -87,7 +88,7 @@ def add_collection_class_chat(request):
 def add_chat_question(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
+    if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
@@ -97,6 +98,10 @@ def add_chat_question(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
+    user = User.objects.get(id=request.user.id)
+    username = user.username
+    default_notifier.info(f"User {username} asked a question {question}", user=user)
+
     try:
         item = Chat.objects.get(id=chat_id)
     except Chat.DoesNotExist:
@@ -105,7 +110,6 @@ def add_chat_question(request):
         return HttpResponse(status=401)
 
     item.add_question(question, request.user.id)
-
     data = ChatSerializer(item).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=201)
 
