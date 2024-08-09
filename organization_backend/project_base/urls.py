@@ -51,5 +51,5 @@ urlpatterns = [
     path("org/o/", include('oauth2_provider.urls', namespace='oauth2_provider')),
 
     # Django Prometheus / Grafana
-    path('org/', include('django_prometheus.urls')),
+    path('', include('django_prometheus.urls')),
 ]
