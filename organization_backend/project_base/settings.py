@@ -65,9 +65,11 @@ INSTALLED_APPS = [
     'jsonsuit.apps.JSONSuitConfig',
     'django_object_actions',
     'import_export',
+    'django_prometheus',
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -79,6 +81,7 @@ MIDDLEWARE = [
     'simple_history.middleware.HistoryRequestMiddleware',
     'social_django.middleware.SocialAuthExceptionMiddleware',
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'project_base.urls'
@@ -113,7 +116,7 @@ DATABASES = {
     #     'NAME': BASE_DIR / 'db.sqlite3',
     # },
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django_prometheus.db.backends.postgresql',
         'NAME': 'visdatamap',
         'USER': 'postgres',
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
@@ -310,3 +313,6 @@ LOGGING = {
         }
     }
 }
+
+# Django Prometheus / Grafana
+PROMETHEUS_METRIC_NAMESPACE = "absclust_v2"
