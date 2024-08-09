@@ -100,7 +100,7 @@ def add_chat_question(request):
 
     user = User.objects.get(id=request.user.id)
     username = user.username
-    default_notifier.info(f"User {username} asked a question {question}")
+    default_notifier.info(f"User {username} asked a question {question}", user=user)
 
     try:
         item = Chat.objects.get(id=chat_id)

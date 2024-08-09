@@ -254,7 +254,7 @@ def create_dataset_from_schema(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    default_notifier.info(f"User {request.user.username} created dataset {name}")
+    default_notifier.info(f"User {request.user.username} created dataset {name}", user=request.user)
 
     try:
         organization = Organization.objects.get(id=organization_id)
@@ -484,7 +484,8 @@ def add_search_history_item(request):
         user = User.objects.get(id=item.user_id) if item.user_id else None
         username = user.username if user else "-"
         default_notifier.info(
-            f"User {username} searched for question {parameters['search']['all_field_query']}"
+            f"User {username} searched for question {parameters['search']['all_field_query']}",
+            user=user,
         )
     except Exception as e:
         logging.warn(f"Can't notify, {repr(e)}")

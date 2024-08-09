@@ -26,10 +26,10 @@ def login_from_app(request):
         login(request, user)
     except ValueError:
         logging.error("User not found")
-        default_notifier.info(f"User {email} unsuccessfully tried to log in")
+        default_notifier.info(f"User {email} unsuccessfully tried to log in", user=None)
         return redirect(next_url + '&error=Invalid username or password')
 
-    default_notifier.info(f"User {email} just logged in")
+    default_notifier.info(f"User {email} just logged in", user=user)
     return redirect(next_url)
 
 
@@ -72,7 +72,7 @@ def signup_from_app(request):
     user = authenticate(username=email, password=password)
     login(request, user)
 
-    default_notifier.info(f"User {email} just registered")
+    default_notifier.info(f"User {email} just registered", user=user)
     return redirect(next_url)
 
 
@@ -97,5 +97,5 @@ def change_password_from_app(request):
         return HttpResponse(status=401)
     user.set_password(new_password)
     user.save()
-    default_notifier.info(f"User {request.user.username} just updated password")
+    default_notifier.info(f"User {request.user.username} just updated password", user=request.user)
     return HttpResponse(status=200)

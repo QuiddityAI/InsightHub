@@ -19,13 +19,22 @@ class BaseNotifier:
         except Exception as e:
             logging.warn(f"Can't send notification, {repr(e)}")
 
-    def info(self, message):
+    def info(self, message, user=None):
+        if user and user.is_staff:
+            # not logging staff actions for now
+            return
         self.send("Info", message)
 
-    def warning(self, message):
+    def warning(self, message, user=None):
+        if user and user.is_staff:
+            # not logging staff actions for now
+            return
         self.send("Warning", message)
 
-    def error(self, message):
+    def error(self, message, user=None):
+        if user and user.is_staff:
+            # not logging staff actions for now
+            return
         self.send("Error", message)
 
 
