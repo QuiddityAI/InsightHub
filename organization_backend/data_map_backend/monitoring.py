@@ -9,14 +9,14 @@ class DataBackendStatusCollector(Collector):
         data_backend_status = StateSetMetricFamily('data_backend_status', 'Status of the data_backend')
         data_backend_database_status = StateSetMetricFamily('data_backend_database_status', 'Status of the data_backend databases')
         if get_data_backend_health():
-            data_backend_status.add_metric([], {'healthy': True, 'unhealthy': False})
+            data_backend_status.add_metric([], {'healthy': True})
         else:
-            data_backend_status.add_metric([], {'healthy': False, 'unhealthy': True})
+            data_backend_status.add_metric([], {'healthy': False})
         yield data_backend_status
         if get_data_backend_database_health():
-            data_backend_database_status.add_metric([], {'healthy': True, 'unhealthy': False})
+            data_backend_database_status.add_metric([], {'healthy': True})
         else:
-            data_backend_database_status.add_metric([], {'healthy': False, 'unhealthy': True})
+            data_backend_database_status.add_metric([], {'healthy': False})
         yield data_backend_database_status
 
 
