@@ -7,6 +7,18 @@ import requests
 DATA_BACKEND_HOST = os.getenv("data_backend_host", "http://localhost:55123")
 
 
+def get_data_backend_health():
+    url = DATA_BACKEND_HOST + '/health'
+    result = requests.get(url, timeout=0.1)
+    return result.status_code == 200
+
+
+def get_data_backend_database_health():
+    url = DATA_BACKEND_HOST + '/db_health'
+    result = requests.get(url, timeout=0.7)
+    return result.status_code == 200
+
+
 def get_item_by_id(dataset_id: int, item_id: str, fields: Iterable[str]):
     url = DATA_BACKEND_HOST + f'/data_backend/document/details_by_id'
     data = {

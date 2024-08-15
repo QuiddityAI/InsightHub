@@ -23,6 +23,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "/metrics": {  // allows the browser to access static resources of the organization-backend directly
+        target: (process.env.organization_backend_host || "http://127.0.0.1:55125"),
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   plugins: [vue()],
