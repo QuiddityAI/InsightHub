@@ -18,6 +18,7 @@ def load_env_file():
 
 load_env_file()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+temp = float(os.getenv("LLM_TEMPERATURE", 0.0))
 
 
 class OPENAI_MODELS:
@@ -33,6 +34,7 @@ def get_chatgpt_response(question: str, language: str, model: str = OPENAI_MODEL
     system_prompt_de = "Du bist ein hilfreicher Assistent"
     response = client.chat.completions.create(
         model=model,
+        temperature=temp,
         messages=[
             {"role": "system", "content": system_prompt_de if language == 'de' else system_prompt},
             {"role": "user", "content": question},
@@ -48,6 +50,7 @@ def get_chatgpt_response_using_history(history, model: str = OPENAI_MODELS.GPT4_
     logging.info(f"Sending prompt history to ChatGPT: {history[-1]}")
     response = client.chat.completions.create(
         model=model,
+        temperature=temp,
         messages=history
     )
 

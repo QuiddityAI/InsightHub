@@ -19,9 +19,12 @@ def load_env_file():
 
 
 load_env_file()
+
 client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
+
+temp = float(os.getenv("LLM_TEMPERATURE", 0.0))
 
 class GROQ_MODELS:
     LLAMA_3_8B = "llama3-8b-8192"
@@ -54,6 +57,7 @@ def get_groq_response_using_history(history, model: str = GROQ_MODELS.LLAMA_3_70
     try:
         response = client.chat.completions.create(
             model=model,
+            temperature=temp,
             messages=history
         )
     except RateLimitError as e:

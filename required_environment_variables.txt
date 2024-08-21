@@ -57,3 +57,5 @@ For Telegram notifier to work, following env vars must be set:
 
 TELEGRAM_TOKEN=
 TELEGRAM_CHAT_ID=
+
+LLM temperature can be set using LLM_TEMPERATURE env var
