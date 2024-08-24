@@ -85,6 +85,8 @@ export default {
               that.update_show_scroll_indicator()
             }, 100)
           }, 100)
+
+          umami.track("document_details", { title: that.rendering.title(that.item) })
         })
         .finally(function () {
           that.loading_item = false

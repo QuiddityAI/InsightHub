@@ -370,6 +370,7 @@ export const useAppStateStore = defineStore("appState", {
       const queryParams = new URLSearchParams(window.location.search)
       queryParams.set("tab", part)
       history.pushState(null, null, "?" + queryParams.toString())
+      umami.track(props => ({ ...props, url: window.location.href, event_type: "tab_change", title: part }))
     },
     retrieve_available_datasets(preselected_dataset_ids = null) {
       const that = this
@@ -906,6 +907,8 @@ export const useAppStateStore = defineStore("appState", {
         .then(function (response) {
           that.search_history.push(response.data)
         })
+
+      umami.track("search", { name: name })
     },
     update_search_history_item() {
       const that = this
