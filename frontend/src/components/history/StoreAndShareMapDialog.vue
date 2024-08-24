@@ -41,7 +41,7 @@ export default {
         window.prompt('Copy to clipboard: Ctrl+C, Enter', this.share_url)
       } else {
         navigator.clipboard.writeText(this.share_url)
-        toast.add({severity: 'success', summary: 'Success', detail: 'Link copied to clipboard', life: 3000})
+        this.$toast.add({severity: 'success', summary: 'Success', detail: 'Link copied to clipboard', life: 3000})
       }
     },
   },
