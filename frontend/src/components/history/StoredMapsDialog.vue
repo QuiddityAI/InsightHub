@@ -49,7 +49,7 @@ export default {
       </button>
     </div>
 
-    <ul v-if="Object.keys(appState.stored_maps).length !== 0" role="list" class="pt-3">
+    <ul v-if="appState.stored_maps.length !== 0" role="list" class="pt-3">
       <li
         v-for="stored_map in appState.stored_maps"
         :key="stored_map.name"
@@ -71,7 +71,7 @@ export default {
       </li>
     </ul>
     <div
-      v-if="Object.keys(appState.stored_maps).length === 0"
+      v-if="appState.stored_maps.length === 0"
       class="flex h-20 flex-col place-content-center text-center">
       <p class="flex-none text-gray-400">No Stored Maps Yet</p>
     </div>

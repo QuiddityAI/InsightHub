@@ -143,6 +143,12 @@ export default {
           @click="open_search_history_dialog()">
           <span class="font-medium italic">Show all</span>
         </button>
+        <button
+          v-if="appState.stored_maps.length !== 0"
+          class="text-sm hover:text-blue-500"
+          @click="open_stored_maps_dialog()">
+          <span class="font-medium italic">Show stored maps</span>
+        </button>
       </div>
     </div>
   </div>

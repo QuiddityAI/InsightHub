@@ -55,6 +55,9 @@ def get_stored_map_data(map_id: str) -> dict | None:
     result = django_client.post(url, json=data)
     if result.status_code == 200:
         map_data = json.loads(base64.b64decode(result.content.decode()))
+        # during serialization, the keys are converted to strings, so we need to convert them back to integers
+        for dataset_id_str in map_data['results']['slimmed_items_per_dataset'].keys():
+            map_data['results']['slimmed_items_per_dataset'][int(dataset_id_str)] = map_data['results']['slimmed_items_per_dataset'].pop(dataset_id_str)
         return map_data
     else:
         return None

@@ -1,11 +1,13 @@
 <script setup>
 import {
   PencilIcon,
+  ShareIcon,
  } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
 
 import SearchFilterList from "./SearchFilterList.vue"
+import StoreAndShareMapDialog from "../history/StoreAndShareMapDialog.vue";
 
 import { languages } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -49,6 +51,9 @@ export default {
   watch: {
   },
   methods: {
+    open_store_and_share_dialog() {
+      this.$dialog.open(StoreAndShareMapDialog, {props: {header: "Store / Share", modal: true}});
+    },
   },
 }
 </script>
@@ -77,13 +82,21 @@ export default {
         v-tooltip.bottom="{ value: 'Search result language' }">
         {{ languages.find(lang => lang.code === mapState.map_parameters?.search.result_language).flag }}
       </div>
+
       <div class="h-full flex flex-row items-center gap-2">
+        <button
+          class="h-full flex flex-row items-center py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
+          v-tooltip.bottom="{ value: 'Store or share this search result', showDelay: 400 }"
+          @click="open_store_and_share_dialog()">
+          <ShareIcon class="w-4 h-4 inline mr-2"></ShareIcon>
+          <span class="">Store / Share</span>
+        </button>
         <button class="h-full py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
           v-tooltip.bottom="{ value: 'Edit search', showDelay: 400 }"
           @click="appState.open_search_edit_mode()">
           <PencilIcon class="w-4 h-4"></PencilIcon>
         </button>
-        <button class="h-full py-1 px-2 rounded-md bg-gray-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
+        <button class="h-full py-1 px-2 rounded-md bg-green-100 text-sm text-gray-500  hover:bg-blue-100/50 hover:text-gray-700"
           @click="appState.reset_search_box(); appState.reset_search_results_and_map()">
           New Search
         </button>

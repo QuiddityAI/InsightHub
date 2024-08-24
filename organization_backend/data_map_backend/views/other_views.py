@@ -1091,8 +1091,6 @@ def get_stored_map_data(request):
         map_item = StoredMap.objects.get(id=map_id)
     except StoredMap.DoesNotExist:
         return HttpResponse(status=404)
-    if map_item.user != request.user:  # TODO: also allow public ones
-        return HttpResponse(status=401)
     result = map_item.map_data
 
     return HttpResponse(result, status=200, content_type="application/octet-stream")
