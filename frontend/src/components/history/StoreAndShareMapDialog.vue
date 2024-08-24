@@ -9,8 +9,6 @@ import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
-
-const window_ = window
 </script>
 
 <script>
@@ -29,12 +27,23 @@ export default {
     is_stored() {
       return this.appStateStore.stored_maps.filter(map => map.id === this.appStateStore.map_id).length > 0
     },
+    share_url() {
+      return window.location
+    }
   },
   mounted() {
   },
   watch: {
   },
   methods: {
+    copy_share_url() {
+      if (!window.navigator.clipboard) {
+        window.prompt('Copy to clipboard: Ctrl+C, Enter', this.share_url)
+      } else {
+        navigator.clipboard.writeText(this.share_url)
+        toast.add({severity: 'success', summary: 'Success', detail: 'Link copied to clipboard', life: 3000})
+      }
+    },
   },
 }
 </script>
@@ -59,13 +68,13 @@ export default {
         class="flex-auto rounded-md border-0 px-2 py-1.5 text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="text"
         :disabled="!is_stored"
-        :value="is_stored ? `${window_.location}` : 'You need to store the map first'"
+        :value="is_stored ? share_url : 'You need to store the map first'"
         readonly>
       <Button
         class="rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
         :disabled="!is_stored"
-        @click="window_navigator.clipboard.writeText(`${window_.location.origin}/maps/${appState.map_id}`)">
+        @click="copy_share_url()">
         Copy
       </Button>
     </div>
