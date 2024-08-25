@@ -10,7 +10,7 @@ import threading
 import numpy as np
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.utils.safestring import mark_safe
 import requests
 
@@ -69,6 +69,40 @@ class SourcePlugin(models.TextChoices):
     BRAVE_WEB_API = "BRAVE_WEB_API", "Brave Web Search API"
     BING_WEB_API = "BING_WEB_API", "Bing Web Search API"
     SEMANTIC_SCHOLAR_API = "SEMANTIC_SCHOLAR_API", "Semantic Scholar API"
+
+
+class User(AbstractUser):
+    # assume user didn't accept cookies by default
+    accepted_cookies = models.BooleanField(
+        verbose_name="Cookies accepted", default=False, blank=False, null=False
+    )
+
+    # # assume user didn't accept sending emails by default
+    accepted_emails = models.BooleanField(
+        verbose_name="Emails allowed",
+        default=False,
+        blank=False,
+        null=False,
+    )
+
+    # if we'll want to include dj-stripe
+    # subscription = models.ForeignKey(
+    #     "djstripe.Subscription",
+    #     null=True,
+    #     blank=True,
+    #     on_delete=models.SET_NULL,
+    #     help_text="The user's Stripe Subscription object, if it exists",
+    # )
+    # customer = models.ForeignKey(
+    #     "djstripe.Customer",
+    #     null=True,
+    #     blank=True,
+    #     on_delete=models.SET_NULL,
+    #     help_text="The user's Stripe Customer object, if it exists",
+    # )
+
+    def __str__(self):
+        return "{}".format(self.email)
 
 
 class EmbeddingSpace(models.Model):

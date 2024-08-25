@@ -8,7 +8,6 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
-from django.contrib.auth.models import User
 
 from ..models import (
     DataCollection,
@@ -25,6 +24,7 @@ from ..models import (
     TrainedClassifier,
     ServiceUsage,
     generate_unique_database_name,
+    User
 )
 from ..serializers import (
     CollectionItemSerializer,
