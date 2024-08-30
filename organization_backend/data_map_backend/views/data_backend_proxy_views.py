@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 import requests
 
@@ -9,6 +10,8 @@ from ..data_backend_client import DATA_BACKEND_HOST
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+
+BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 
 
 @csrf_exempt
@@ -26,6 +29,9 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/collection/table/export": _check_collection_export,
         "/data_backend/remote_db_access": _check_remote_db_access,
         "/data_backend/local_image": lambda x: True,  # TODO, but not very harmful, need to know file name
+        "/data_backend/item_question_context": _check_if_from_backend,
+        "/data_backend/global_question_context": _check_if_from_backend,
+        "/data_backend/delete_dataset_content": _check_if_from_backend,
     }
     checks_for_routes_always_needing_authentication = {
         "/data_backend/classifier/retrain": lambda x: True,  # TODO, but not very harmful
@@ -58,7 +64,8 @@ def data_backend_proxy_view(request, sub_path: str):
         return HttpResponse(status=401)
 
     # forward the request to the data backend
-    url = DATA_BACKEND_HOST + request.get_full_path()
+    full_path = request.get_full_path().replace("/data_backend/", "/legacy_backend/")
+    url = DATA_BACKEND_HOST + full_path
     response = requests.request(request.method, url, data=request.body, headers=request.headers)
 
     return HttpResponse(response.content, status=response.status_code, content_type=response.headers.get("Content-Type"))
@@ -110,3 +117,7 @@ def _check_remote_db_access(request):
     if access_token not in dataset.merged_advanced_options.get('access_tokens', {}):
         return False
     return True
+
+
+def _check_if_from_backend(request):
+    return request.META.get("HTTP_AUTHORIZATION") == f"{BACKEND_AUTHENTICATION_SECRET}"

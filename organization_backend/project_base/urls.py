@@ -38,8 +38,8 @@ urlpatterns = [
     re_path(r'^org/auth/', include('drf_social_oauth2.urls', namespace='drf')),
     path('org/', other_views.HomeView.as_view(), name='home'),
 
-    path('data_backend/', include('legacy_backend.urls')),
-    #path('data_backend/<path:sub_path>', data_backend_proxy_views.data_backend_proxy_view, name='data_backend_proxy_view'),
+    path('legacy_backend/', include('legacy_backend.urls')),
+    path('data_backend/<path:sub_path>', data_backend_proxy_views.data_backend_proxy_view, name='data_backend_proxy_view'),
 
     # Login and Logout
     path('org/login/', auth_views.LoginView.as_view(), name='login'),

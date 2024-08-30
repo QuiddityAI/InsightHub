@@ -6,6 +6,8 @@ import requests
 
 DATA_BACKEND_HOST = os.getenv("data_backend_host", "http://localhost:55123")
 
+BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
+
 
 def get_data_backend_health():
     url = DATA_BACKEND_HOST + '/health'
@@ -36,7 +38,10 @@ def get_global_question_context(search_settings: dict):
     data = {
         'search_settings': search_settings,
     }
-    result = requests.post(url, json=data)
+    headers = {
+        'Authorization': f'{BACKEND_AUTHENTICATION_SECRET}',
+    }
+    result = requests.post(url, json=data, headers=headers)
     result.raise_for_status()
     return result.json()['context']
 
@@ -52,7 +57,10 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
         'max_characters_per_field': max_characters_per_field,
         'max_total_characters': max_total_characters,
     }
-    result = requests.post(url, json=data)
+    headers = {
+        'Authorization': f'{BACKEND_AUTHENTICATION_SECRET}',
+    }
+    result = requests.post(url, json=data, headers=headers)
     result.raise_for_status()
     return result.json()['context']
 
@@ -62,5 +70,8 @@ def delete_dataset_content(dataset_id: int):
     data = {
         'dataset_id': dataset_id,
     }
-    response = requests.post(url, json=data)
+    headers = {
+        'Authorization': f'{BACKEND_AUTHENTICATION_SECRET}',
+    }
+    response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
