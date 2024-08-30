@@ -5,8 +5,8 @@ from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.forms import Textarea
 from django.db import models
-from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin  # type: ignore
+from django.contrib.auth.forms import UserChangeForm
 from django.core import serializers
 
 from djangoql.admin import DjangoQLSearchMixin
@@ -18,20 +18,19 @@ from import_export.admin import ImportExportMixin
 
 from .data_backend_client import DATA_BACKEND_HOST
 
-from .models import CollectionColumn, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask
+from .models import CollectionColumn, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask, User
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
-admin.site.site_header = 'Quiddity'
-admin.site.site_title = 'Quiddity'
+admin.site.site_header = "Quiddity"
+admin.site.site_title = "Quiddity"
 
 
 class UserAdmin(ImportExportMixin, UserAdmin):
     resource_class = UserResource
-    list_display = UserAdmin.list_display + ('id',)  # type: ignore
-    pass
+    list_display = UserAdmin.list_display + ("id", "accepted_cookies", "accepted_emails")  # type: ignore
 
-admin.site.unregister(User)
+
 admin.site.register(User, UserAdmin)
 
 

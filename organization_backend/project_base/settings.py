@@ -259,6 +259,7 @@ JAZZMIN_SETTINGS = {
         "data_map_backend.serviceusage": "fas fa-chart-line",
         "data_map_backend.importconverter": "fas fa-file-import",
         "data_map_backend.exportconverter": "fas fa-file-export",
+        "data_map_backend.user": "fas fa-user"
     },
 
     "show_ui_builder": True,
@@ -316,3 +317,5 @@ LOGGING = {
 
 # Django Prometheus / Grafana
 PROMETHEUS_METRIC_NAMESPACE = "absclust_v2"
+
+AUTH_USER_MODEL = "data_map_backend.user"

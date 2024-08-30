@@ -32,7 +32,7 @@ class UserCountCollector(Collector):
         yield GaugeMetricFamily('user_count', 'Number of users in the system')
 
     def collect(self):
-        from django.contrib.auth.models import User
+        from .models import User
         user_count = GaugeMetricFamily('user_count', 'Number of users in the system')
         user_count.add_metric([], User.objects.count())
         yield user_count
