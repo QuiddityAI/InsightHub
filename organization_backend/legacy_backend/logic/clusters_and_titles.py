@@ -5,10 +5,10 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import hdbscan
 
-from utils.regex_tokenizer import tokenize
-from utils.collect_timings import Timings
-from utils.dotdict import DotDict
-from utils.helpers import normalize_array, join_text_source_fields, get_field_from_all_items
+from ..utils.regex_tokenizer import tokenize
+from ..utils.collect_timings import Timings
+from ..utils.dotdict import DotDict
+from ..utils.helpers import normalize_array, join_text_source_fields, get_field_from_all_items
 
 
 def clusterize_results(projections, clusterizer_parameters: DotDict):

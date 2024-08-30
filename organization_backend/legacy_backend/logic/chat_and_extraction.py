@@ -1,12 +1,12 @@
 import json
 import logging
 
-from api_clients.cohere_reranking import get_reranking_results
-from utils.dotdict import DotDict
-from logic.search import get_search_results
-from logic.search_common import get_relevant_parts_of_item_using_query_vector, get_field_similarity_threshold, get_suitable_generator, get_document_details_by_id
-from logic.chat_and_extraction_common import get_context_for_each_item_in_search_results, _sort_fields_logically
-from database_client.django_client import get_dataset
+from ..api_clients.cohere_reranking import get_reranking_results
+from ..utils.dotdict import DotDict
+from ..logic.search import get_search_results
+from ..logic.search_common import get_relevant_parts_of_item_using_query_vector, get_field_similarity_threshold, get_suitable_generator, get_document_details_by_id
+from ..logic.chat_and_extraction_common import get_context_for_each_item_in_search_results, _sort_fields_logically
+from ..database_client.django_client import get_dataset
 
 
 def get_global_question_context(search_settings: dict) -> dict:

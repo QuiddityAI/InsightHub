@@ -8,8 +8,8 @@ import base64
 
 import cachetools.func
 
-from utils.dotdict import DotDict
-from utils.custom_json_encoder import CustomJSONEncoder
+from ..utils.dotdict import DotDict
+from ..utils.custom_json_encoder import CustomJSONEncoder
 
 
 backend_url = os.getenv("organization_backend_host", "http://localhost:55125")

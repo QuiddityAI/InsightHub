@@ -5,12 +5,12 @@ import os
 import json
 import base64
 
-from database_client.django_client import get_dataset
-from utils.dotdict import DotDict
-from utils.custom_json_encoder import CustomJSONEncoder
+from ..database_client.django_client import get_dataset
+from ..utils.dotdict import DotDict
+from ..utils.custom_json_encoder import CustomJSONEncoder
 
-from database_client.text_search_engine_client import TextSearchEngineClient
-from database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..database_client.text_search_engine_client import TextSearchEngineClient
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
 
 
 def forward_local_db(params: DotDict):

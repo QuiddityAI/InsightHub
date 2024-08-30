@@ -20,15 +20,15 @@ import time
 
 import numpy as np
 
-from utils.dotdict import DotDict
-from utils.field_types import FieldType
+from ..utils.dotdict import DotDict
+from ..utils.field_types import FieldType
 
-from database_client.django_client import get_collection, get_collection_items, get_dataset, set_trained_classifier
-from database_client.vector_search_engine_client import VectorSearchEngineClient
-from database_client.text_search_engine_client import TextSearchEngineClient
-from logic.extract_pipeline import get_pipeline_steps
-from logic.generate_missing_values import generate_missing_values_for_given_elements
-from logic.search_common import get_document_details_by_id
+from ..database_client.django_client import get_collection, get_collection_items, get_dataset, set_trained_classifier
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..database_client.text_search_engine_client import TextSearchEngineClient
+from ..logic.extract_pipeline import get_pipeline_steps
+from ..logic.generate_missing_values import generate_missing_values_for_given_elements
+from ..logic.search_common import get_document_details_by_id
 
 
 def get_embedding_space_from_ds_and_field(ds_and_field: tuple[int, str]) -> DotDict:

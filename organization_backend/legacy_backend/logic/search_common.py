@@ -8,23 +8,23 @@ import json
 import numpy as np
 import cachetools.func
 
-from utils.field_types import FieldType
-from utils.collect_timings import Timings
-from utils.dotdict import DotDict
-from utils.source_plugin_types import SourcePlugin
+from ..utils.field_types import FieldType
+from ..utils.collect_timings import Timings
+from ..utils.dotdict import DotDict
+from ..utils.source_plugin_types import SourcePlugin
 
-from api_clients.cohere_reranking import get_reranking_results
-from api_clients import openalex_api
+from ..api_clients.cohere_reranking import get_reranking_results
+from ..api_clients import openalex_api
 
-from database_client.django_client import get_generators, get_dataset, get_related_collection_items
-from database_client.vector_search_engine_client import VectorSearchEngineClient
-from database_client.text_search_engine_client import TextSearchEngineClient
+from ..database_client.django_client import get_generators, get_dataset, get_related_collection_items
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..database_client.text_search_engine_client import TextSearchEngineClient
 
-from logic.postprocess_search_results import enrich_search_results
-from logic.generator_functions import get_generator_function_from_field, get_generator_function
-from logic.autocut import get_number_of_useful_items
+from ..logic.postprocess_search_results import enrich_search_results
+from ..logic.generator_functions import get_generator_function_from_field, get_generator_function
+from ..logic.autocut import get_number_of_useful_items
 
-from utils.helpers import normalize_array
+from ..utils.helpers import normalize_array
 
 
 class QueryInput(object):

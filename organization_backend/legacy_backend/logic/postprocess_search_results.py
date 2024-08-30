@@ -3,7 +3,7 @@ import re
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from utils.regex_tokenizer import tokenize
+from ..utils.regex_tokenizer import tokenize
 
 
 words_ignored_for_highlighting = ("on", "in", "using", "with", "the", "a", "of")

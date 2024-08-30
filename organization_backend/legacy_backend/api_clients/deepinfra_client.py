@@ -4,7 +4,7 @@ import os
 import logging
 from typing import Iterable
 
-from utils.helpers import load_env_file
+from ..utils.helpers import load_env_file
 import requests
 
 load_env_file()

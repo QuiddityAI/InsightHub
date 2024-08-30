@@ -6,8 +6,8 @@ import logging
 
 from diskcache import Cache
 
-from logic.insert_logic import insert_many
-from utils.helpers import load_env_file
+from ..logic.insert_logic import insert_many
+from ..utils.helpers import load_env_file
 
 load_env_file()
 

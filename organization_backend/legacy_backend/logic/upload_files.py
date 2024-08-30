@@ -16,11 +16,13 @@ from werkzeug.utils import secure_filename
 import pypdfium2 as pdfium
 import requests
 
-from utils.field_types import FieldType
-from database_client.text_search_engine_client import TextSearchEngineClient
-from database_client.django_client import get_dataset, get_import_converter, add_item_to_collection, get_service_usage, track_service_usage
-from logic.insert_logic import insert_many, update_database_layout
-from logic.local_map_cache import clear_local_map_cache
+from django.core.files import File
+
+from ..utils.field_types import FieldType
+from ..database_client.text_search_engine_client import TextSearchEngineClient
+from ..database_client.django_client import get_dataset, get_import_converter, add_item_to_collection, get_service_usage, track_service_usage
+from ..logic.insert_logic import insert_many, update_database_layout
+from ..logic.local_map_cache import clear_local_map_cache
 
 UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 
@@ -55,7 +57,7 @@ def _create_upload_task(dataset_id: int):
     return task_id
 
 
-def upload_files(dataset_id: int, import_converter: str, files: Iterable[FileStorage],
+def upload_files(dataset_id: int, import_converter: str, files: Iterable[File],
                  collection_id: int | None, collection_class: str | None,
                  user_id: int) -> str:
     global upload_tasks
@@ -125,7 +127,7 @@ def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float
     upload_tasks[dataset_id][task_id]["progress"] = progress
 
 
-def _store_files_and_import_them(dataset_id: int, import_converter_identifier: str, files: Iterable[FileStorage],
+def _store_files_and_import_them(dataset_id: int, import_converter_identifier: str, files: Iterable[File],
                  collection_id: int | None, collection_class: str | None, task_id: str,
                  user_id: int) -> tuple[list[tuple], list[str]]:
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter_identifier}")
@@ -144,13 +146,13 @@ def _store_files_and_import_them(dataset_id: int, import_converter_identifier: s
     paths = []
     failed_files = []
     for i, file in enumerate(files):
-        if not file.filename: continue
-        if file.filename.endswith(".tar.gz") or file.filename.endswith(".zip"):
+        if not file.name: continue
+        if file.name.endswith(".tar.gz") or file.name.endswith(".zip"):
             new_paths, new_failed_files = _unpack_archive(file, dataset_id, user_id)
             paths += new_paths
             failed_files += new_failed_files
             continue
-        logging.warning(f"saving file: {file.filename}")
+        logging.warning(f"saving file: {file.name}")
         try:
             sub_path = _store_uploaded_file(file, dataset_id)
             paths.append(sub_path)
@@ -159,7 +161,7 @@ def _store_files_and_import_them(dataset_id: int, import_converter_identifier: s
             # print traceback
             import traceback
             traceback.print_exc()
-            failed_files.append({"filename": file.filename, "reason": str(e)})
+            failed_files.append({"filename": file.name, "reason": str(e)})
         _set_task_status(dataset_id, task_id, "storing files", i / len(files))  # type: ignore
 
     if not paths:
@@ -207,27 +209,30 @@ def _import_items(dataset_id: int, import_converter_identifier: str, paths_or_it
     return inserted_ids, failed_files
 
 
-def _store_uploaded_file(file: FileStorage, dataset_id: int):
+def _store_uploaded_file(file: File, dataset_id: int):
     temp_path = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}"
-    file.save(temp_path)
+
+    with open(temp_path, 'wb') as f:
+        f.write(file.read())
     # check if file size is within limits, otherwise delete it to prevent filling up the disk
     # (file size can't be determined earlier as it might be a stream)
     file_size = os.path.getsize(temp_path)
     if file_size > MAX_SINGLE_FILE_SIZE:
         os.remove(temp_path)
         raise ValueError(f"File size of {file_size / 1024 / 1024:.2f} MB exceeds the limit of {MAX_SINGLE_FILE_SIZE / 1024 / 1024:.2f} MB")
-    sub_path = _move_to_path_containing_md5(temp_path, file.filename or '', dataset_id)
+    sub_path = _move_to_path_containing_md5(temp_path, file.name or '', dataset_id)
     return sub_path
 
 
-def _unpack_archive(file: FileStorage, dataset_id: int, user_id: int) -> tuple[list[str], list[str]]:
-    assert file.filename
+def _unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[str], list[str]]:
+    assert file.name
     failed_files = []
     paths = []
-    logging.warning(f"extracting archive file: {file.filename}")
-    is_tar = file.filename.endswith(".tar.gz")
+    logging.warning(f"extracting archive file: {file.name}")
+    is_tar = file.name.endswith(".tar.gz")
     tempfile = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}" + (".tar.gz" if is_tar else f".zip")
-    file.save(tempfile)
+    with open(tempfile, 'wb') as f:
+        f.write(file.read())
 
     service_usage = get_service_usage(user_id, "upload_items")
     remaining_allowed_items = service_usage["limit_per_period"] - service_usage["usage_current_period"]
@@ -266,7 +271,7 @@ def _unpack_archive(file: FileStorage, dataset_id: int, user_id: int) -> tuple[l
         # print stacktrace
         import traceback
         traceback.print_exc()
-        failed_files.append({"filename": file.filename, "reason": str(e)})
+        failed_files.append({"filename": file.name, "reason": str(e)})
     finally:
         os.remove(tempfile)
     return paths, failed_files

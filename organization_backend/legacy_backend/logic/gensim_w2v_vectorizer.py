@@ -6,7 +6,7 @@ import gensim
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from utils.regex_tokenizer import tokenize
+from ..utils.regex_tokenizer import tokenize
 
 
 class TfidfEmbeddingVectorizer(object):

@@ -3,13 +3,13 @@ import uuid
 from uuid import uuid4, uuid5
 import logging
 
-from database_client.django_client import get_dataset
-from database_client.vector_search_engine_client import VectorSearchEngineClient
-from database_client.text_search_engine_client import TextSearchEngineClient
-from logic.extract_pipeline import get_pipeline_steps
+from ..database_client.django_client import get_dataset
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..database_client.text_search_engine_client import TextSearchEngineClient
+from ..logic.extract_pipeline import get_pipeline_steps
 
-from utils.dotdict import DotDict
-from utils.field_types import FieldType
+from ..utils.dotdict import DotDict
+from ..utils.field_types import FieldType
 
 
 def update_database_layout(dataset_id: int):

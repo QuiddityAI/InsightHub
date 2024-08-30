@@ -8,13 +8,13 @@ from typing import Generator, Iterable, Optional
 from opensearchpy import OpenSearch
 import opensearchpy.helpers
 
-from database_client.remote_instance_client import use_remote_db
+from ..database_client.remote_instance_client import use_remote_db
 
-from utils.dotdict import DotDict
-from utils.field_types import FieldType
-from utils.custom_json_encoder import CustomJSONEncoder
-from utils.helpers import run_in_batches_without_result
-from utils.source_plugin_types import SourcePlugin
+from ..utils.dotdict import DotDict
+from ..utils.field_types import FieldType
+from ..utils.custom_json_encoder import CustomJSONEncoder
+from ..utils.helpers import run_in_batches_without_result
+from ..utils.source_plugin_types import SourcePlugin
 
 
 with open("../credentials.json", "rb") as f:

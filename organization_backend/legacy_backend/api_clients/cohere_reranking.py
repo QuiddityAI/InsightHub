@@ -2,7 +2,7 @@ import os
 import logging
 
 import cohere
-from utils.helpers import load_env_file
+from ..utils.helpers import load_env_file
 
 load_env_file()
 

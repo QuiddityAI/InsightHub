@@ -4,7 +4,7 @@ import math
 from typing import Any, Callable, Iterable
 import numpy as np
 
-from utils.dotdict import DotDict
+from ..utils.dotdict import DotDict
 
 
 def polar_to_cartesian(r, theta):

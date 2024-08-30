@@ -2,8 +2,8 @@ import json
 import logging
 from typing import Callable, Optional
 
-from utils.dotdict import DotDict
-from logic.generator_functions import get_generator_function_from_field
+from ..utils.dotdict import DotDict
+from ..logic.generator_functions import get_generator_function_from_field
 
 
 # TODO: add changed_at as parameter and cache function (using changed_at as measure for dropping the cache)

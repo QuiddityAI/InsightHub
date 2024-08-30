@@ -4,68 +4,31 @@ from copy import deepcopy
 from threading import Thread
 import logging
 
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from werkzeug import serving
 import cbor2
-import werkzeug
 
-from utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
-from utils.dotdict import DotDict
+from .utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
+from .utils.dotdict import DotDict
 
-from logic.mapping_task import get_map_selection_statistics, get_or_create_map, get_map_results
-from logic.insert_logic import insert_many, insert_vectors, update_database_layout, delete_dataset_content
-from logic.search import get_search_results, get_search_results_for_stored_map, get_item_count, get_random_items, get_items_having_value_count
-from logic.search_common import get_document_details_by_id
-from logic.generate_missing_values import delete_field_content, generate_missing_values
-from logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
-from logic.classifiers import get_retraining_status, start_retrain
-from logic.upload_files import import_items, upload_files, get_upload_task_status, UPLOADED_FILES_FOLDER
-from logic.chat_and_extraction import get_global_question_context, get_item_question_context
-from logic.export_converters import export_collection, export_collection_table, export_item
+from .logic.mapping_task import get_map_selection_statistics, get_or_create_map, get_map_results
+from .logic.insert_logic import insert_many, insert_vectors, update_database_layout, delete_dataset_content
+from .logic.search import get_search_results, get_search_results_for_stored_map, get_item_count, get_random_items, get_items_having_value_count
+from .logic.search_common import get_document_details_by_id
+from .logic.generate_missing_values import delete_field_content, generate_missing_values
+from .logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
+from .logic.classifiers import get_retraining_status, start_retrain
+from .logic.upload_files import import_items, upload_files, get_upload_task_status, UPLOADED_FILES_FOLDER
+from .logic.chat_and_extraction import get_global_question_context, get_item_question_context
+from .logic.export_converters import export_collection, export_collection_table, export_item
 
-from database_client.django_client import add_stored_map, get_or_create_default_dataset
-from database_client.forward_local_db import forward_local_db
-from database_client.text_search_engine_client import TextSearchEngineClient
-from database_client.vector_search_engine_client import VectorSearchEngineClient
+from .database_client.django_client import add_stored_map, get_or_create_default_dataset
+from .database_client.forward_local_db import forward_local_db
+from .database_client.text_search_engine_client import TextSearchEngineClient
+from .database_client.vector_search_engine_client import VectorSearchEngineClient
 
-
-if os.environ.get('RUN_MAIN') or os.environ.get('WERKZEUG_RUN_MAIN'):
-    try:
-        import debugpy
-    except ImportError:
-        logging.warning("Debugpy not installed, skipping debugging support")
-    else:
-        debugpy.listen(('0.0.0.0', 20001))
-
-# --- Flask set up: ---
-
-app = Flask(__name__)
-CORS(app) # This will enable CORS for all routes
-
-# exclude polling endpoints from logs (see https://stackoverflow.com/a/57413338):
-parent_log_request = serving.WSGIRequestHandler.log_request
-
-paths_excluded_from_logging = ['/data_backend/map/result',
-                               '/data_backend/document/details_by_id',
-                               '/data_backend/upload_files/status',
-                               '/health',
-                               '/db_health',
-                               ]
-
-def log_request(self, *args, **kwargs):
-    if self.path in paths_excluded_from_logging or self.path.startswith("/data_backend/local_image/") or \
-            self.path.startswith("/data_backend/download_file/"):
-        try:
-            code = int(args[0])
-        except:
-            code = None
-        if code and code < 400:
-            return
-
-    parent_log_request(self, *args, **kwargs)
-
-serving.WSGIRequestHandler.log_request = log_request
+from django.urls import path
+from django.http import HttpResponse, FileResponse
+from django.http.response import HttpResponseBase
+from django.views.decorators.csrf import csrf_exempt
 
 
 # --- New Routes: ---
@@ -103,13 +66,63 @@ serving.WSGIRequestHandler.log_request = log_request
 # given 100 products all called "white t-shirt", search by title but map by image
 
 
-@app.route('/health', methods=['GET'])
-def health():
+URLS = []
+
+
+def convert_flask_to_django_route(path_pattern, methods=['GET']):
+    path_pattern = path_pattern.lstrip('/')
+    path_pattern = path_pattern.replace('data_backend/', '')
+    def decorator(original_route):
+
+        @csrf_exempt
+        def wrapper(request, *args, **kwargs):
+            if request.method not in methods:
+                return HttpResponse(status=405)
+            request.json = json.loads(request.body) if request.body and request.headers.get('Content-Type') == 'application/json' else {}
+            request.args = request.GET
+            request.form = request.POST
+            result = original_route(request, *args, **kwargs)
+            if isinstance(result, HttpResponseBase):
+                return result
+            elif isinstance(result, tuple) and len(result) == 2:
+                data, status_code = result
+            else:
+                data = result
+                status_code = 200
+            content_type = None
+            if not isinstance(data, str):
+                data = json.dumps(data)
+                content_type = 'application/json'
+            return HttpResponse(data, status=status_code, content_type=content_type)
+        URLS.append(path(path_pattern, wrapper))
+        return wrapper
+    return decorator
+
+
+def jsonify(data, status_code=200):
+    data = json.dumps(data)
+    return HttpResponse(data, status=status_code, content_type='application/json')
+
+
+def send_from_directory(directory, filename):
+    full_path = os.path.join(directory, filename)
+
+    if not os.path.realpath(full_path).startswith(os.path.realpath(UPLOADED_FILES_FOLDER)):
+        return "file not found", 404
+
+    if not os.path.exists(full_path):
+        return "file not found", 404
+
+    return FileResponse(open(full_path, 'rb'))
+
+
+@convert_flask_to_django_route('/health', methods=['GET'])
+def health(request, ):
     return "", 200
 
 
-@app.route('/db_health', methods=['GET'])
-def db_health():
+@convert_flask_to_django_route('/db_health', methods=['GET'])
+def db_health(request, ):
     try:
         text_search_engine_client = TextSearchEngineClient()
         if not text_search_engine_client.check_status():
@@ -123,37 +136,35 @@ def db_health():
     return "", 200
 
 
-@app.route('/data_backend/dataset/<int:dataset_id>/item_count', methods=['GET'])
-def get_item_count_route(dataset_id: int):
+@convert_flask_to_django_route('/data_backend/dataset/<int:dataset_id>/item_count', methods=['GET'])
+def get_item_count_route(request, dataset_id: int):
     count = get_item_count(dataset_id)
     return jsonify({"count": count})
 
 
-@app.route('/data_backend/dataset/<int:dataset_id>/<field>/items_having_value_count', methods=['GET'])
-def get_items_having_value_count_route(dataset_id: int, field: str):
+@convert_flask_to_django_route('/data_backend/dataset/<int:dataset_id>/<field>/items_having_value_count', methods=['GET'])
+def get_items_having_value_count_route(request, dataset_id: int, field: str):
     count = get_items_having_value_count(dataset_id, field)
     return jsonify({"count": count})
 
 
-@app.route('/data_backend/dataset/<int:dataset_id>/<field>/sub_items_having_value_count', methods=['GET'])
-def get_sub_items_having_value_count_route(dataset_id: int, field: str):
+@convert_flask_to_django_route('/data_backend/dataset/<int:dataset_id>/<field>/sub_items_having_value_count', methods=['GET'])
+def get_sub_items_having_value_count_route(request, dataset_id: int, field: str):
     count = get_items_having_value_count(dataset_id, field, count_sub_items=True)
     return jsonify({"count": count})
 
 
-@app.route('/data_backend/dataset/<int:dataset_id>/random_item', methods=['GET'])
-def get_random_item_route(dataset_id: int):
+@convert_flask_to_django_route('/data_backend/dataset/<int:dataset_id>/random_item', methods=['GET'])
+def get_random_item_route(request, dataset_id: int):
     items = get_random_items(dataset_id, 1)
     item = items[0] if len(items) else {}
-    response = app.response_class(
-        response=json.dumps({"item": item}, cls=HumanReadableJSONEncoder),  # type: ignore
-        mimetype='application/json'
-    )
-    return response
+    data = json.dumps({"item": item}, cls=HumanReadableJSONEncoder)  # type: ignore
+    headers = {'Content-Type': 'application/json'}
+    return HttpResponse(data, status=200, headers=headers)
 
 
-@app.route('/data_backend/update_database_layout', methods=['POST'])
-def update_database_layout_route():
+@convert_flask_to_django_route('/data_backend/update_database_layout', methods=['POST'])
+def update_database_layout_route(request, ):
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
     try:
@@ -164,8 +175,8 @@ def update_database_layout_route():
     return "", 204
 
 
-@app.route('/data_backend/insert_many_sync', methods=['POST'])
-def insert_many_sync_route():
+@convert_flask_to_django_route('/data_backend/insert_many_sync', methods=['POST'])
+def insert_many_sync_route(request, ):
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
     try:
@@ -176,8 +187,8 @@ def insert_many_sync_route():
     return "", 204
 
 
-@app.route('/data_backend/insert_vectors_sync', methods=['POST'])
-def insert_vectors_sync_route():
+@convert_flask_to_django_route('/data_backend/insert_vectors_sync', methods=['POST'])
+def insert_vectors_sync_route(request, ):
     # TODO: check auth
     params = DotDict(cbor2.loads(request.data)) # type: ignore
     try:
@@ -188,16 +199,16 @@ def insert_vectors_sync_route():
     return "", 204
 
 
-@app.route('/data_backend/delete_field', methods=['POST'])
-def delete_field_route():
+@convert_flask_to_django_route('/data_backend/delete_field', methods=['POST'])
+def delete_field_route(request, ):
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
     delete_field_content(params.dataset_id, params.field_identifier)
     return "", 204
 
 
-@app.route('/data_backend/generate_missing_values', methods=['POST'])
-def generate_missing_values_route():
+@convert_flask_to_django_route('/data_backend/generate_missing_values', methods=['POST'])
+def generate_missing_values_route(request, ):
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
     thread = Thread(target=generate_missing_values, args=(params.dataset_id, params.field_identifier))
@@ -205,8 +216,8 @@ def generate_missing_values_route():
     return "", 204
 
 
-@app.route('/data_backend/search_list_result', methods=['POST'])
-def get_search_list_result_endpoint():
+@convert_flask_to_django_route('/data_backend/search_list_result', methods=['POST'])
+def get_search_list_result_endpoint(request, ):
     # turn params into string to make it cachable (aka hashable):
     params_str = json.dumps(request.json, indent=2)
     # ignore_cache = request.args.get('ignore_cache') == "true"
@@ -219,15 +230,13 @@ def get_search_list_result_endpoint():
         traceback.print_exc()
         return str(e.args), 400  # TODO: there could be other reasons, e.g. dataset not found
 
-    response = app.response_class(
-        response=json.dumps(result, cls=CustomJSONEncoder),  # type: ignore
-        mimetype='application/json'
-    )
-    return response
+    data = json.dumps(result, cls=CustomJSONEncoder)
+    headers = {'Content-Type': 'application/json'}
+    return HttpResponse(data, status=200, headers=headers)
 
 
-@app.route('/data_backend/global_question_context', methods=['POST'])
-def get_global_question_context_route():
+@convert_flask_to_django_route('/data_backend/global_question_context', methods=['POST'])
+def get_global_question_context_route(request, ):
     data: dict | None = request.json
     if not data or "search_settings" not in data:
         return "no data", 400
@@ -235,15 +244,13 @@ def get_global_question_context_route():
     if result is None or result.get("error"):
         return result.get("error", "error"), 500
 
-    response = app.response_class(
-        response=json.dumps(result),  # type: ignore
-        mimetype='application/json'
-    )
-    return response
+    json_data = json.dumps(result)
+    headers = {'Content-Type': 'application/json'}
+    return HttpResponse(json_data, status=200, headers=headers)
 
 
-@app.route('/data_backend/item_question_context', methods=['POST'])
-def get_item_question_context_route():
+@convert_flask_to_django_route('/data_backend/item_question_context', methods=['POST'])
+def get_item_question_context_route(request, ):
     data: dict | None = request.json
     if not data:
         return "no data", 400
@@ -253,15 +260,13 @@ def get_item_question_context_route():
     if result is None or result.get("error"):
         return result.get("error", "error"), 500
 
-    response = app.response_class(
-        response=json.dumps(result),  # type: ignore
-        mimetype='application/json'
-    )
-    return response
+    json_data = json.dumps(result)
+    headers = {'Content-Type': 'application/json'}
+    return HttpResponse(json_data, status=200, headers=headers)
 
 
-@app.route('/data_backend/delete_dataset_content', methods=['POST'])
-def delete_dataset_content_endpoint():
+@convert_flask_to_django_route('/data_backend/delete_dataset_content', methods=['POST'])
+def delete_dataset_content_endpoint(request, ):
     # FIXME: check permissions
     try:
         dataset_id: int = request.json["dataset_id"]  # type: ignore
@@ -275,8 +280,8 @@ def delete_dataset_content_endpoint():
     return "", 204
 
 
-@app.route('/data_backend/upload_files', methods=['POST'])
-def upload_files_endpoint():
+@convert_flask_to_django_route('/data_backend/upload_files', methods=['POST'])
+def upload_files_endpoint(request, ):
     """ Upload individual files or zip archives.
     Will be stored, extracted and post-processed (OCR etc.), then imported. """
     try:
@@ -292,16 +297,17 @@ def upload_files_endpoint():
     collection_id: int | None = int(collection_id_str) if collection_id_str else None
     if dataset_id == -1:
         dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
-    task_id = upload_files(dataset_id, import_converter, request.files.getlist("files[]"), collection_id, collection_class, user_id)
+    task_id = upload_files(dataset_id, import_converter, request.FILES.getlist("files[]"), collection_id, collection_class, user_id)
     # usually, all in-memory files of the request would be closed and deleted after the request is done
     # in this case, we want to keep them open and close them manually in the background thread
     # so we need to remove the files from the request object:
-    request.__dict__["files"] = werkzeug.datastructures.MultiDict()
+    # (this was ported from flask to Django, not sure if it's necessary in Django)
+    request.FILES.clear()
     return jsonify({"task_id": task_id, "dataset_id": dataset_id}), 200
 
 
-@app.route('/data_backend/import_items', methods=['POST'])
-def import_items_endpoint():
+@convert_flask_to_django_route('/data_backend/import_items', methods=['POST'])
+def import_items_endpoint(request, ):
     """ Import items directly from JSON data.
     (No file upload, no extraction, no OCR etc.) """
     try:
@@ -322,8 +328,8 @@ def import_items_endpoint():
     return jsonify({"task_id": task_id, "dataset_id": dataset_id}), 200
 
 
-@app.route('/data_backend/upload_files/status', methods=['POST'])
-def upload_files_status_endpoint():
+@convert_flask_to_django_route('/data_backend/upload_files/status', methods=['POST'])
+def upload_files_status_endpoint(request, ):
     try:
         params = request.json or {}
         dataset_id: int = params["dataset_id"]
@@ -336,8 +342,8 @@ def upload_files_status_endpoint():
 # --- Old Routes: ---
 
 
-@app.route('/data_backend/map', methods=['POST'])
-def get_or_create_map_endpoint():
+@convert_flask_to_django_route('/data_backend/map', methods=['POST'])
+def get_or_create_map_endpoint(request, ):
     params = DotDict(request.json or {})
     ignore_cache = request.args.get('ignore_cache') == "true"
 
@@ -346,8 +352,8 @@ def get_or_create_map_endpoint():
     return jsonify({"map_id": map_id})
 
 
-@app.route('/data_backend/map/result', methods=['POST'])
-def retrive_map_results():
+@convert_flask_to_django_route('/data_backend/map/result', methods=['POST'])
+def retrive_map_results(request, ):
     params = request.json or {}
     map_id = params.get("map_id")
     exclude_fields = params.get("exclude_fields", [])
@@ -386,14 +392,14 @@ def retrive_map_results():
 
     use_cbor = request.headers.get('Accept') == "application/cbor"
     if use_cbor:
-        resp = app.make_response(cbor2.dumps(result))
-        resp.mimetype = "application/cbor"
-        return resp
+        data = cbor2.dumps(result)
+        headers = {'Content-Type': 'application/cbor'}
+        return HttpResponse(data, status=200, headers=headers)
     return result
 
 
-@app.route('/data_backend/map/selection_statistics', methods=['POST'])
-def get_map_selection_statistics_route():
+@convert_flask_to_django_route('/data_backend/map/selection_statistics', methods=['POST'])
+def get_map_selection_statistics_route(request, ):
     params = request.json or {}
     map_id = params.get("map_id")
     selected_ids = params.get("selected_ids", [])
@@ -405,8 +411,8 @@ def get_map_selection_statistics_route():
     return result
 
 
-@app.route('/data_backend/stored_map/parameters_and_search_results', methods=['POST'])
-def retrive_parameters_and_search_results_for_stored_map():
+@convert_flask_to_django_route('/data_backend/stored_map/parameters_and_search_results', methods=['POST'])
+def retrive_parameters_and_search_results_for_stored_map(request, ):
     # FIXME: this doesn't support paging in the future
     params = request.json or {}
     map_id = params.get("map_id")
@@ -419,8 +425,8 @@ def retrive_parameters_and_search_results_for_stored_map():
     return result
 
 
-@app.route('/data_backend/map/thumbnail_atlas/<filename>', methods=['GET'])
-def retrieve_thumbnail_atlas(filename):
+@convert_flask_to_django_route('/data_backend/map/thumbnail_atlas/<filename>', methods=['GET'])
+def retrieve_thumbnail_atlas(request, filename):
     full_path = os.path.join(THUMBNAIL_ATLAS_DIR, filename)
     if filename is None or not os.path.exists(full_path):
         return "texture atlas not found", 404
@@ -428,8 +434,8 @@ def retrieve_thumbnail_atlas(filename):
     return send_from_directory(THUMBNAIL_ATLAS_DIR, filename)
 
 
-@app.route('/data_backend/local_image/<path:image_path>', methods=['GET'])
-def retrieve_local_image(image_path):
+@convert_flask_to_django_route('/data_backend/local_image/<path:image_path>', methods=['GET'])
+def retrieve_local_image(request, image_path):
     # FIXME: this is just a hacky way to make Kaggle Fashion images stored in /data work
     image_path = "/" + image_path
     if image_path is None or not os.path.exists(image_path):
@@ -438,8 +444,8 @@ def retrieve_local_image(image_path):
     return send_from_directory('/data/', image_path.replace("/data/", ""))
 
 
-@app.route('/data_backend/download_file/<path:file_path>', methods=['GET'])
-def download_file(file_path):
+@convert_flask_to_django_route('/data_backend/download_file/<path:file_path>', methods=['GET'])
+def download_file(request, file_path):
     path = f'{UPLOADED_FILES_FOLDER}/{file_path}'
     if not os.path.exists(path):
         return "file not found", 404
@@ -447,8 +453,8 @@ def download_file(file_path):
     return send_from_directory(UPLOADED_FILES_FOLDER, file_path)
 
 
-@app.route('/data_backend/document/details_by_id', methods=['POST'])
-def retrieve_document_details_by_id():
+@convert_flask_to_django_route('/data_backend/document/details_by_id', methods=['POST'])
+def retrieve_document_details_by_id(request, ):
     params = request.json or {}
     dataset_id = params.get("dataset_id")
     item_id = params.get("item_id")
@@ -481,8 +487,8 @@ def retrieve_document_details_by_id():
     return result
 
 
-@app.route('/data_backend/document/export', methods=['POST'])
-def export_document_route():
+@convert_flask_to_django_route('/data_backend/document/export', methods=['POST'])
+def export_document_route(request, ):
     params = request.json or {}
     params = DotDict(params)
     exported_data = export_item(params.dataset_id, params.item_id, params.converter_identifier)
@@ -490,8 +496,8 @@ def export_document_route():
     return exported_data
 
 
-@app.route('/data_backend/collection/export', methods=['POST'])
-def export_collection_route():
+@convert_flask_to_django_route('/data_backend/collection/export', methods=['POST'])
+def export_collection_route(request, ):
     params = request.json or {}
     params = DotDict(params)
     exported_data = export_collection(params.collection_id, params.class_name, params.converter_identifier)
@@ -499,8 +505,8 @@ def export_collection_route():
     return exported_data
 
 
-@app.route('/data_backend/collection/table/export', methods=['POST'])
-def export_collection_table_route():
+@convert_flask_to_django_route('/data_backend/collection/table/export', methods=['POST'])
+def export_collection_table_route(request, ):
     params = request.json or {}
     params = DotDict(params)
     exported_data = export_collection_table(params.collection_id, params.class_name,
@@ -509,8 +515,8 @@ def export_collection_table_route():
     return exported_data
 
 
-@app.route('/data_backend/map/store', methods=['POST'])
-def store_map():
+@convert_flask_to_django_route('/data_backend/map/store', methods=['POST'])
+def store_map(request, ):
     params = request.json or {}
     user_id = params.get("user_id")
     organization_id = params.get("organization_id")
@@ -532,16 +538,16 @@ def store_map():
 
 # -------------------- DataCollections --------------------
 
-@app.route('/data_backend/classifier/retraining_status', methods=['POST'])
-def get_retraining_status_route():
+@convert_flask_to_django_route('/data_backend/classifier/retraining_status', methods=['POST'])
+def get_retraining_status_route(request, ):
     params = request.json or {}
     params = DotDict(params)
     status = get_retraining_status(params.collection_id, params.class_name, params.embedding_space_identifier)
     return jsonify(status)
 
 
-@app.route('/data_backend/classifier/retrain', methods=['POST'])
-def start_retrain_route():
+@convert_flask_to_django_route('/data_backend/classifier/retrain', methods=['POST'])
+def start_retrain_route(request, ):
     params = request.json or {}
     params = DotDict(params)
     start_retrain(params.collection_id, params.class_name, params.embedding_space_identifier, params.deep_train)
@@ -551,14 +557,10 @@ def start_retrain_route():
 # -------------------- Remote DB Access --------------------
 
 
-@app.route('/data_backend/remote_db_access', methods=['POST'])
-def remote_db_access_route():
+@convert_flask_to_django_route('/data_backend/remote_db_access', methods=['POST'])
+def remote_db_access_route(request, ):
     # permissions were already checked in the organization backend
     params = request.json or {}
     params = DotDict(params)
     result = forward_local_db(params)
     return jsonify({'result': result})
-
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=55123, debug=True, use_evalex=False, threaded=True)

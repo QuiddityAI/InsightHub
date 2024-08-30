@@ -9,7 +9,7 @@ from bson.errors import InvalidDocument
 from pymongo import MongoClient, ReplaceOne, UpdateOne
 from pymongo.errors import BulkWriteError
 
-from utils.dotdict import DotDict
+from ..utils.dotdict import DotDict
 
 
 # docker run --name mongo --rm -p 27017:27017 mongodb/mongodb-community-server:latest

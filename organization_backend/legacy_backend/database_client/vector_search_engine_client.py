@@ -8,12 +8,12 @@ from qdrant_client.http import models
 from qdrant_client.models import Filter, FieldCondition, Range, PayloadSchemaType, NamedVector, HnswConfigDiff
 from qdrant_client.http.exceptions import UnexpectedResponse
 
-from database_client.remote_instance_client import use_remote_db
+from ..database_client.remote_instance_client import use_remote_db
 
-from utils.dotdict import DotDict
-from utils.field_types import FieldType
-from utils.helpers import get_vector_field_dimensions
-from utils.source_plugin_types import SourcePlugin
+from ..utils.dotdict import DotDict
+from ..utils.field_types import FieldType
+from ..utils.helpers import get_vector_field_dimensions
+from ..utils.source_plugin_types import SourcePlugin
 
 
 qdrant_host = os.getenv("vector_database_host", "localhost")

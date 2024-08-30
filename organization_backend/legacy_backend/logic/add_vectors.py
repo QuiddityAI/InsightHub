@@ -6,17 +6,17 @@ import time
 
 import numpy as np
 
-from utils.dotdict import DotDict
-from utils.field_types import FieldType
-from utils.helpers import join_text_source_fields
+from ..utils.dotdict import DotDict
+from ..utils.field_types import FieldType
+from ..utils.helpers import join_text_source_fields
 
-from logic.model_client import save_embedding_cache, embedding_cache
-from logic.gensim_w2v_vectorizer import GensimW2VVectorizer
-from logic.generate_missing_values import generate_missing_values_for_given_elements
-from logic.extract_pipeline import get_pipeline_steps
-from logic.generator_functions import get_generator_function_from_field
-from logic.search_common import get_required_fields
-from logic.local_map_cache import get_vectorize_stage_hash
+from ..logic.model_client import save_embedding_cache, embedding_cache
+from ..logic.gensim_w2v_vectorizer import GensimW2VVectorizer
+from ..logic.generate_missing_values import generate_missing_values_for_given_elements
+from ..logic.extract_pipeline import get_pipeline_steps
+from ..logic.generator_functions import get_generator_function_from_field
+from ..logic.search_common import get_required_fields
+from ..logic.local_map_cache import get_vectorize_stage_hash
 
 
 def add_w2v_vectors(items: dict[str, dict], query, similar_map: dict | None, origin_map: dict | None, descriptive_text_fields, map_data, vectorize_stage_params_hash, timings):

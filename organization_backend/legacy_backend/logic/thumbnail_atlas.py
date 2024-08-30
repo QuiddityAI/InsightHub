@@ -10,7 +10,7 @@ from PIL import Image
 from PIL import ImageFile
 import requests
 
-from utils.helpers import do_in_parallel
+from ..utils.helpers import do_in_parallel
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

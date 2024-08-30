@@ -4,13 +4,13 @@ import logging
 from typing import Iterable
 import csv
 
-from utils.field_types import FieldType
-from utils.dotdict import DotDict
+from ..utils.field_types import FieldType
+from ..utils.dotdict import DotDict
 
-from database_client.django_client import get_collection, get_collection_items, get_dataset, get_export_converter
-from database_client.text_search_engine_client import TextSearchEngineClient
+from ..database_client.django_client import get_collection, get_collection_items, get_dataset, get_export_converter
+from ..database_client.text_search_engine_client import TextSearchEngineClient
 
-from logic.search_common import get_document_details_by_id
+from ..logic.search_common import get_document_details_by_id
 
 
 def export_item(dataset_id: int, item_id: str, export_converter_identifier: str) -> dict:

@@ -22,9 +22,15 @@ services:
     #   - "127.0.0.1:55125:55125"
     # Note: by default, the data-backend is and should not be accessible from the outside
     environment:
-      - data_backend_host=http://data-backend:55123
+      - data_backend_host=http://localhost:55125
       - postgres_host=postgres
       - BACKEND_AUTHENTICATION_SECRET
+      - model_server_host=http://model-server:55180
+      - infinity_server_host=http://infinity-model-server:55181
+      - organization_backend_host=http://localhost:55125
+      - vector_database_host=qdrant
+      - search_engine_host=opensearch
+      - PDFERRET_GROBID_URL=http://grobid:8070
   data-backend:
     image: visual_data_map/data_backend
     build:
@@ -38,14 +44,6 @@ services:
     # Note: this port is indirectly exposed through a proxy in the vite webserver
     depends_on:
       - organization-backend
-    environment:
-      - model_server_host=http://model-server:55180
-      - infinity_server_host=http://infinity-model-server:55181
-      - organization_backend_host=http://organization-backend:55125
-      - vector_database_host=qdrant
-      - search_engine_host=opensearch
-      - BACKEND_AUTHENTICATION_SECRET
-      - PDFERRET_GROBID_URL=http://grobid:8070
   webserver:
     image: visual_data_map/webserver
     build:

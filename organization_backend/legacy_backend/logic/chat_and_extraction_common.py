@@ -1,9 +1,9 @@
 import json
 import logging
 
-from utils.dotdict import DotDict
-from logic.search_common import get_document_details_by_id
-from database_client.django_client import get_dataset
+from ..utils.dotdict import DotDict
+from ..logic.search_common import get_document_details_by_id
+from ..database_client.django_client import get_dataset
 
 
 def get_context_for_each_item_in_search_results(sorted_ids: list[tuple[int, str]], items_by_dataset,

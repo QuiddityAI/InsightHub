@@ -10,24 +10,24 @@ import numpy as np
 
 # import umap  # imported lazily when used
 
-from utils.collect_timings import Timings
-from utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions, get_field_from_all_items
-from utils.dotdict import DotDict
-from utils.source_plugin_types import SourcePlugin
+from ..utils.collect_timings import Timings
+from ..utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions, get_field_from_all_items
+from ..utils.dotdict import DotDict
+from ..utils.source_plugin_types import SourcePlugin
 
-from database_client.django_client import answer_question_using_items, get_dataset, get_stored_map_data, get_trained_classifier
+from ..database_client.django_client import answer_question_using_items, get_dataset, get_stored_map_data, get_trained_classifier
 
-from logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
-from logic.clusters_and_titles import clusterize_results, get_cluster_titles
-from logic.search import get_search_results, get_full_results_from_meta_info
-from logic.search_common import fill_in_details_from_text_storage
-from logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
+from ..logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
+from ..logic.clusters_and_titles import clusterize_results, get_cluster_titles
+from ..logic.search import get_search_results, get_full_results_from_meta_info
+from ..logic.search_common import fill_in_details_from_text_storage
+from ..logic.local_map_cache import local_maps, vectorize_stage_hash_to_map_id, \
     projection_stage_hash_to_map_id, get_map_parameters_hash, get_search_stage_hash, \
     get_vectorize_stage_hash, get_projection_stage_hash, cache_full_item_data, get_cached_full_item_data
-from logic.thumbnail_atlas import generate_thumbnail_atlas, THUMBNAIL_ATLAS_DIR
-from logic.extract_pipeline import get_pipeline_steps
-from logic.generate_missing_values import generate_missing_values_for_given_elements
-from logic.classifiers import get_embedding_space_from_ds_and_field
+from ..logic.thumbnail_atlas import generate_thumbnail_atlas, THUMBNAIL_ATLAS_DIR
+from ..logic.extract_pipeline import get_pipeline_steps
+from ..logic.generate_missing_values import generate_missing_values_for_given_elements
+from ..logic.classifiers import get_embedding_space_from_ds_and_field
 
 
 default_map_data = {

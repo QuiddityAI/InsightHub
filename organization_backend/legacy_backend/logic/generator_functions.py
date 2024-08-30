@@ -5,13 +5,13 @@ import os
 
 import openai
 
-from utils.dotdict import DotDict
-from utils.helpers import join_extracted_text_sources
+from ..utils.dotdict import DotDict
+from ..utils.helpers import join_extracted_text_sources
 
-from logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings, get_infinity_embeddings, add_e5_prefix
-from logic.chunking import chunk_text_generator
+from ..logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings, get_infinity_embeddings, add_e5_prefix
+from ..logic.chunking import chunk_text_generator
 
-from api_clients import deepinfra_client
+from ..api_clients import deepinfra_client
 
 
 GPU_IS_AVAILABLE = os.getenv('GPU_IS_AVAILABLE', "False") == "True"

@@ -46,6 +46,7 @@ ALLOWED_HOSTS = ["*"]  # TODO: change this as soons as fixed IP is used to IPv4 
 
 INSTALLED_APPS = [
     "data_map_backend.apps.DataMapBackendConfig",
+    "legacy_backend.apps.LegacyBackendConfig",
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -281,10 +282,21 @@ def skip_health_requests(record):
         return True
     return '/org/data_map/health' not in str(record.args[0])
 
-def skip_data_backend_proxy_request(record):
+def skip_some_legacy_backend_routes(record):
     if not record.args:
         return True
-    return '/data_backend/' not in str(record.args[0])
+    # return False if it should be ignored
+    paths_excluded_from_logging = [
+        '/data_backend/map/result',
+        '/data_backend/document/details_by_id',
+        '/data_backend/upload_files/status',
+        '/data_backend/health',
+        '/data_backend/db_health',
+    ]
+    for path in paths_excluded_from_logging:
+        if path in str(record.args[0]):
+            return False
+    return True
 
 LOGGING = {
     'version': 1,
@@ -294,15 +306,15 @@ LOGGING = {
             '()': 'django.utils.log.CallbackFilter',
             'callback': skip_health_requests
         },
-        'exclude_data_backend_proxy': {
+        'exclude_some_legacy_backend_routes': {
             '()': 'django.utils.log.CallbackFilter',
-            'callback': skip_data_backend_proxy_request
+            'callback': skip_some_legacy_backend_routes
         },
     },
     'handlers': {
         'console': {
             'level': 'INFO',
-            'filters': ['exclude_health', 'exclude_data_backend_proxy'],
+            'filters': ['exclude_health', 'exclude_some_legacy_backend_routes'],
             'class': 'logging.StreamHandler',
         }
     },

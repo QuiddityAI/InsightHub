@@ -5,8 +5,8 @@ import os
 import json
 import base64
 
-from utils.dotdict import DotDict
-from utils.custom_json_encoder import CustomJSONEncoder
+from ..utils.dotdict import DotDict
+from ..utils.custom_json_encoder import CustomJSONEncoder
 
 
 def use_remote_db(dataset: DotDict, db_type: str, function_name: str, arguments: dict) -> Any:
