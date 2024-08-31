@@ -10,11 +10,11 @@ services:
       - model_server_cache:/home/appuser/.cache/
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55180:55180"
-  organization-backend:
-    image: visual_data_map/organization_backend
+  backend:
+    image: visual_data_map/backend
     build:
       context: ./
-      dockerfile: ./docker/organization_backend.Dockerfile
+      dockerfile: ./docker/backend.Dockerfile
     volumes:
       - ./:/source_code/
       - "${DATA_PATH:-/data}:/data"
@@ -26,7 +26,7 @@ services:
       - BACKEND_AUTHENTICATION_SECRET
       - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
-      - organization_backend_host=http://localhost:55125
+      - backend_host=http://localhost:55125
       - vector_database_host=qdrant
       - search_engine_host=opensearch
       - PDFERRET_GROBID_URL=http://grobid:8070
@@ -42,7 +42,7 @@ services:
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
       - "${WEBSERVER_EXPOSED_IP:-127.0.0.1}:55140:55140"
     environment:
-      - organization_backend_host=http://organization-backend:55125
+      - backend_host=http://backend:55125
   webserver-prod:
     image: visual_data_map/webserver_prod
     build:
@@ -55,7 +55,7 @@ services:
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
       - "${WEBSERVER_EXPOSED_IP:-127.0.0.1}:55140:55140"
     environment:
-      - organization_backend_host=http://organization-backend:55125
+      - backend_host=http://backend:55125
   qdrant:
     image: "qdrant/qdrant:latest"
     volumes:

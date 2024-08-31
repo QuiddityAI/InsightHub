@@ -1,6 +1,6 @@
 """
-Note: the organization-backend container port needs to be exposed for this script to work,
-it does not work by going through the organization-backend proxy for now.
+Note: the backend container port needs to be exposed for this script to work,
+it does not work by going through the backend proxy for now.
 """
 
 

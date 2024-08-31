@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM nvidia/cuda:12.0.0-runtime-ubuntu22.04 AS cuda_python_env_organization_backend
+FROM --platform=$BUILDPLATFORM nvidia/cuda:12.0.0-runtime-ubuntu22.04 AS cuda_python_env_backend
 RUN apt update
 RUN apt install -y software-properties-common
 RUN add-apt-repository -y ppa:deadsnakes/ppa
@@ -23,7 +23,7 @@ WORKDIR /app
 #    && pip install --no-cache-dir -r requirements.txt
 RUN chown -R appuser /app
 
-FROM cuda_python_env_organization_backend as organization_backend
+FROM cuda_python_env_backend as backend
 EXPOSE 55125
 
 #RUN pip uninstall -y umap-learn
@@ -37,7 +37,7 @@ HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost:55125/org/data_map/health || exit 1
 
 USER appuser
-WORKDIR /source_code/organization_backend
+WORKDIR /source_code/backend
 # using virtual env of host for now to make it easier to update packages:
 ENTRYPOINT ["/source_code/.venv/bin/python3"]
 CMD ["manage.py", "runserver", "0.0.0.0:55125"]
