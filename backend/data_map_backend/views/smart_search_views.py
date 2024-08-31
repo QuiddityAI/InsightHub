@@ -57,6 +57,7 @@ Rules:
 - If "meaning" is used as the search type, make sure that the "query" field is either a question or a sentence that could describe one of the items that should be found.
 - The "query" field can be empty if only filters are needed.
 - When in doubt about the language of the query, use "en" as the language code.
+- "meaning" search only works for English queries. For other languages, use "keyword" search type.
 
 Item type in this dataset: "paper" aka "publication" aka "article"
 
