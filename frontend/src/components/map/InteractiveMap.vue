@@ -10,7 +10,7 @@ import {
   Transform,
   Texture,
   TextureLoader,
-} from "https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm"
+} from "https://cdn.jsdelivr.net/npm/ogl@1.0.8/+esm"
 import * as math from "mathjs"
 import pointInPolygon from "point-in-polygon"
 
@@ -201,10 +201,21 @@ export default {
       })
     },
     setupWebGl() {
+      const that = this
       this.renderer = new Renderer({ depth: false, dpr: window.devicePixelRatio || 1.0 })
       this.glContext = this.renderer.gl
       this.$refs.webGlArea.appendChild(this.glContext.canvas)
       this.glContext.clearColor(0.93, 0.94, 0.95, 1)
+
+      // not tested yet, but should handle context loss
+      this.glContext.canvas.addEventListener("webglcontextlost", (event) => {
+        event.preventDefault()
+        console.error("WebGL context lost")
+      })
+      this.glContext.canvas.addEventListener("webglcontextrestored", () => {
+        console.log("WebGL context restored")
+        that.setupWebGl()
+      })
 
       this.camera = new Camera(this.glContext, {
         left: 0.00001,
@@ -214,11 +225,11 @@ export default {
       })
       this.camera.position.z = 1
 
-      const that = this
 
       function resize() {
         that.renderer.setSize(window.innerWidth, window.innerHeight)
         //that.camera.perspective({ aspect: that.glContext.canvas.width / that.glContext.canvas.height });
+        that.updateGeometry()
       }
       window.addEventListener("resize", resize, false)
       resize()
@@ -248,19 +259,29 @@ export default {
       function update(currentTimeInMs) {
         requestAnimationFrame(update)
 
-        const timeSinceLastUpdateInSec = (currentTimeInMs - lastUpdateTimeInMs) / 1000.0
+        let timeSinceLastUpdateInSec = (currentTimeInMs - lastUpdateTimeInMs) / 1000.0
         lastUpdateTimeInMs = currentTimeInMs
+        if (timeSinceLastUpdateInSec < 0.0) {
+          return
+        }
+        if (timeSinceLastUpdateInSec > 0.1) {
+          timeSinceLastUpdateInSec = 0.02
+        }
 
         if (
           that.currentPositionsX.length == 0 ||
           that.currentPositionsX.length != that.mapStateStore.per_point.x.length
-        )
+        ) {
           return
+        }
+
+        const use_animations = true
 
         // restDelta means at which distance from the target position the movement stops and they
         // jump to the target (otherwise the motion could go on forever)
         // here we assume that the plot is about 700px wide and if the delta is less than a pixel, it should stop
-        const restDelta = (math.max(that.mapStateStore.per_point.x) - math.min(that.mapStateStore.per_point.x)) / 700.0
+        const plotWidth = math.max(that.mapStateStore.per_point.x) - math.min(that.mapStateStore.per_point.x)
+        const restDelta = plotWidth > 0.0 ? plotWidth / 700.0 : 1.0
         // to make sure overshoots still work, we don't stop the motion if the speed is still
         // greater than restSpeed, here defined as restDelta per 1/5th second
         const restSpeed = restDelta / 0.2 // in restDelta units per sec
@@ -391,9 +412,10 @@ export default {
     centerAndFitDataToActiveAreaSmooth() {
       if (this.mapStateStore.per_point.x.length === 0) return
       const newBaseOffsetTarget = [-math.min(this.mapStateStore.per_point.x), -math.min(this.mapStateStore.per_point.y)]
-      const newBaseScaleTarget = [1.0, 1.0]
-      newBaseScaleTarget[0] = 1.0 / (math.max(this.mapStateStore.per_point.x) + newBaseOffsetTarget[0])
-      newBaseScaleTarget[1] = 1.0 / (math.max(this.mapStateStore.per_point.y) + newBaseOffsetTarget[1])
+      const newBaseScaleTarget = [
+        1.0 / (math.max(this.mapStateStore.per_point.x) + newBaseOffsetTarget[0]),
+        1.0 / (math.max(this.mapStateStore.per_point.y) + newBaseOffsetTarget[1])
+      ]
       const offsetChange = math.max(
         math.max(newBaseOffsetTarget[0], this.mapStateStore.baseOffsetTarget[0]) /
           math.min(newBaseOffsetTarget[0], this.mapStateStore.baseOffsetTarget[0]),
@@ -447,6 +469,10 @@ export default {
     },
     update_opacities() {
       this.actual_opacity = Array(this.mapStateStore.per_point.x.length).fill(1.0)
+      if ( this.mapStateStore.per_point.x.length !== this.mapStateStore.per_point.item_id.length) {
+        // this might happen during loading a new map
+        return
+      }
       try {
         for (const i in this.mapStateStore.per_point.x) {
           const item_ds_and_id = this.mapStateStore.per_point.item_id[i]
@@ -463,20 +489,14 @@ export default {
       const pointCount = this.mapStateStore.per_point.x.length
       this.mapStateStore.per_point.y = ensureLength(this.mapStateStore.per_point.y, pointCount, 0.0)
 
-      this.currentPositionsX = ensureLength(
-        this.currentPositionsX,
-        pointCount,
-        pointCount > 0 ? math.mean(this.mapStateStore.per_point.x) : 0.0,
-        true
-      )
-      this.currentPositionsY = ensureLength(
-        this.currentPositionsY,
-        pointCount,
-        pointCount > 0 ? math.mean(this.mapStateStore.per_point.y) : 0.0,
-        true
-      )
-      this.currentVelocityX = ensureLength(this.currentVelocityX, pointCount, 0.0, true)
-      this.currentVelocityY = ensureLength(this.currentVelocityY, pointCount, 0.0, true)
+      if (this.currentPositionsX.length !== pointCount || this.currentPositionsY.length !== pointCount) {
+        this.currentPositionsX = this.mapStateStore.per_point.x.slice()
+        this.currentPositionsY = this.mapStateStore.per_point.y.slice()
+        this.currentVelocityX = Array(pointCount).fill(0.0)
+        this.currentVelocityY = Array(pointCount).fill(0.0)
+      }
+
+
       this.actual_opacity = ensureLength(this.actual_opacity, pointCount, 1.0)
       this.pointVisibility = ensureLength(this.pointVisibility, pointCount, 0)
 
