@@ -6,6 +6,7 @@ import logging
 import random
 import string
 import threading
+import os
 
 import numpy as np
 from django.db import models
@@ -23,6 +24,13 @@ from .data_backend_client import (
     get_global_question_context,
 )
 from .chatgpt_client import get_chatgpt_response_using_history
+
+
+BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
+
+# create requests session with BACKEND_AUTHENTICATION_SECRET as header:
+backend_client = requests.Session()
+backend_client.headers.update({'Authorization': BACKEND_AUTHENTICATION_SECRET})
 
 
 class FieldType(models.TextChoices):
@@ -700,11 +708,11 @@ class DatasetField(models.Model):
             return "?"
         try:
             url = DATA_BACKEND_HOST + f"/data_backend/dataset/{dataset.id}/{self.identifier}/items_having_value_count"  # type: ignore
-            result = requests.get(url)
+            result = backend_client.get(url)
             count = result.json()["count"]
             if self.field_type == FieldType.VECTOR and self.is_array:
                 url = DATA_BACKEND_HOST + f"/data_backend/dataset/{dataset.id}/{self.identifier}/sub_items_having_value_count"  # type: ignore
-                result = requests.get(url)
+                result = backend_client.get(url)
                 sub_count = result.json()["count"]
                 return f"{count} (~{sub_count / count:.0f} ppi)"
             else:
@@ -833,7 +841,7 @@ class Dataset(models.Model):
     def item_count(self):
         try:
             url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/item_count"  # type: ignore
-            result = requests.get(url)
+            result = backend_client.get(url)
             return result.json()["count"]
         except Exception as e:
             return repr(e)
@@ -844,7 +852,7 @@ class Dataset(models.Model):
     def random_item(self):
         try:
             url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/random_item"  # type: ignore
-            result = requests.get(url)
+            result = backend_client.get(url)
             item = result.json()["item"]
 
             def replace_long_arrays(value):

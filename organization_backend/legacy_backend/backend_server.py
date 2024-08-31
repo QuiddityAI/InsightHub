@@ -82,15 +82,16 @@ def convert_flask_to_django_route(path_pattern, methods=['GET']):
             request.args = request.GET
             request.form = request.POST
             result = original_route(request, *args, **kwargs)
-            if isinstance(result, HttpResponseBase):
-                return result
-            elif isinstance(result, tuple) and len(result) == 2:
+            if isinstance(result, tuple) and len(result) == 2:
                 data, status_code = result
             else:
                 data = result
                 status_code = 200
-            content_type = None
-            if not isinstance(data, str):
+            if isinstance(data, HttpResponseBase):
+                return data
+            if isinstance(data, str):
+                content_type = None
+            else:
                 data = json.dumps(data)
                 content_type = 'application/json'
             return HttpResponse(data, status=status_code, content_type=content_type)

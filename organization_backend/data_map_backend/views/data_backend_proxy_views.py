@@ -32,6 +32,8 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/item_question_context": _check_if_from_backend,
         "/data_backend/global_question_context": _check_if_from_backend,
         "/data_backend/delete_dataset_content": _check_if_from_backend,
+        "/data_backend/dataset": _check_if_from_backend,
+        "/data_backend/update_database_layout": _check_if_from_backend,
     }
     checks_for_routes_always_needing_authentication = {
         "/data_backend/classifier/retrain": lambda x: True,  # TODO, but not very harmful
@@ -49,6 +51,8 @@ def data_backend_proxy_view(request, sub_path: str):
         path = "/data_backend/local_image"
     elif path.startswith("/data_backend/map/thumbnail_atlas"):
         path = "/data_backend/map/thumbnail_atlas"
+    elif path.startswith("/data_backend/dataset/"):
+        path = "/data_backend/dataset"
 
     if path not in checks_for_routes_partially_available_without_log_in \
         and path not in checks_for_routes_always_needing_authentication:

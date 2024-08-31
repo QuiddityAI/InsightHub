@@ -22,6 +22,13 @@ from .models import CollectionColumn, DatasetField, DatasetSchema, DatasetSpecif
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
 
+
+BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
+
+# create requests session with BACKEND_AUTHENTICATION_SECRET as header:
+backend_client = requests.Session()
+backend_client.headers.update({'Authorization': BACKEND_AUTHENTICATION_SECRET})
+
 admin.site.site_header = "Quiddity"
 admin.site.site_title = "Quiddity"
 
@@ -406,7 +413,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         data = {
             'dataset_id': obj.id,
         }
-        requests.post(url, json=data)
+        backend_client.post(url, json=data)
         self.message_user(request, "Updated the database layout")
 
     @action(label="Delete Content", description="Delete all items from the database")
@@ -452,7 +459,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
     #         'dataset_id': obj.dataset_id,
     #         'field_identifier': obj.identifier,
     #     }
-    #     requests.post(url, json=data)
+    #     backend_client.post(url, json=data)
     #     self.message_user(request, "Deleted this fields content")
 
     # @action(label="Generate Missing Values", description="Generate missing values")
@@ -462,7 +469,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
     #         'dataset_id': obj.dataset_id,
     #         'field_identifier': obj.identifier,
     #     }
-    #     requests.post(url, json=data)
+    #     backend_client.post(url, json=data)
     #     self.message_user(request, "Now generating missing values...")
 
     # change_actions = ('delete_content', 'generate_missing_values')
@@ -622,7 +629,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
                 'class_name': obj.class_name,
                 'embedding_space_identifier': obj.embedding_space_identifier,
             }
-            result = requests.post(url, json=data)
+            result = backend_client.post(url, json=data)
         except Exception as e:
             return repr(e)
         try:
@@ -642,7 +649,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
             'class_name': obj.class_name,
             'embedding_space_identifier': obj.embedding_space_identifier,
         }
-        requests.post(url, json=data)
+        backend_client.post(url, json=data)
         self.message_user(request, "Retraining classifier...")
 
     change_actions = ('retrain_classifier',)
@@ -654,7 +661,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
                 'class_name': obj.class_name,
                 'embedding_space_identifier': obj.embedding_space_identifier,
             }
-            requests.post(url, json=data)
+            backend_client.post(url, json=data)
 
     actions = ['retrain_multiple_classifiers']
 
