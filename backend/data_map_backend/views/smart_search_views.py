@@ -33,6 +33,7 @@ query into a structured JSON document.
 You only answer with a single JSON object of this schema:
 {
     "query": "the main search query",
+    "query_language": two letter language code like "en", "de", "fr", etc.,
     "search_type": one of ["keyword", "meaning", "hybrid"],
     "filters": [
         {
@@ -55,6 +56,7 @@ Rules:
 - If the search type "keyword" is used, remove any unnecessary words from the query like "show me", "find", "papers about ...", etc.
 - If "meaning" is used as the search type, make sure that the "query" field is either a question or a sentence that could describe one of the items that should be found.
 - The "query" field can be empty if only filters are needed.
+- When in doubt about the language of the query, use "en" as the language code.
 
 Item type in this dataset: "paper" aka "publication" aka "article"
 
@@ -70,6 +72,7 @@ Query: "mxene photocalytic papers after the year 2015"
 JSON:
 {
     "query": "mxene photocalytic",
+    "query_language": "en",
     "search_type": "keyword",
     "filters": [
         {
@@ -84,6 +87,7 @@ Query: "papers that are not about graphene"
 JSON:
 {
     "query": "",
+    "query_language": "en",
     "search_type": "keyword",
     "filters": [
         {
@@ -98,6 +102,7 @@ Query: "papers about the applications of graphene"
 JSON:
 {
     "query": "applications of graphene",
+    "query_language": "en",
     "search_type": "hybrid",
     "filters": []
 }
@@ -106,6 +111,7 @@ Query: "How can the material Mxene be used for solar cells?"
 JSON:
 {
     "query": "Mxene solar cells",
+    "query_language": "en",
     "search_type": "hybrid",
     "filters": []
 }
@@ -114,6 +120,7 @@ Query: "What are recent advances in the field of nanotechnology?"
 JSON:
 {
     "query": "An article about recent advances in nanotechnology",
+    "query_language": "en",
     "search_type": "meaning",
     "filters": []
 }
@@ -122,6 +129,7 @@ Query: "Show me papers about solar cells by John Doe"
 JSON:
 {
     "query": "An article about solar cells",
+    "query_language": "en",
     "search_type": "meaning",
     "filters": [
         {
@@ -136,7 +144,17 @@ Query: "Show me papers about nitrofluorene"
 JSON:
 {
     "query": "nitrofluorene",
+    "query_language": "en",
     "search_type": "keyword",
+    "filters": []
+}
+
+Query: "Welchen Einfluss haben Nanopartikel und ähnliches auf die Umwelt?"
+JSON:
+{
+    "query": "Einfluss von Nanopartikeln auf die Umwelt",
+    "query_language": "de",
+    "search_type": "meaning",
     "filters": []
 }
 """

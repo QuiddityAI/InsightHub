@@ -138,6 +138,11 @@ export default {
         }
         this.appStateStore.settings.search.search_algorithm = search_parameters.search_type
         this.appStateStore.settings.search.ranking_settings = this.appStateStore.available_ranking_options[0]
+        if (languages.find(lang => lang.code == search_parameters.query_language)) {
+          this.appStateStore.settings.search.result_language = search_parameters.query_language
+        } else {
+          this.appStateStore.settings.search.result_language = "en"
+        }
         // disable smart search because when editing the search params, it should not be re-run
         this.use_smart_search = false
         this.appStateStore.request_search_results()
@@ -223,9 +228,9 @@ export default {
               :disabled="processing_smart_search"
               :placeholder="`Describe what ${appState.settings.search.dataset_ids.length ? appState.datasets[appState.settings.search.dataset_ids[0]]?.schema.entity_name || '' : ''} you want to find`"
               class="h-full w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
-            <div class="absolute right-5" v-if="available_languages.length">
+            <div class="absolute right-5" v-if="available_languages.length && !use_smart_search">
               <select v-model="appState.settings.search.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
-                v-tooltip.bottom="{ value: 'Search result language', showDelay: 400 }">
+                v-tooltip.bottom="{ value: 'Language of the query and search results', showDelay: 400 }">
                 <option v-for="language in available_languages" :value="language.code">{{ language.flag }}</option>
               </select>
             </div>

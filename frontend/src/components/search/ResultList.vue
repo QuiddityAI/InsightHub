@@ -14,6 +14,7 @@ import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 import { debounce } from "../../utils/utils"
+import { languages } from "../../utils/utils"
 import ResultListItem from "./ResultListItem.vue";
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
@@ -116,6 +117,11 @@ export default {
       <StatisticList></StatisticList>
 
       <SearchQuestionCard v-if="mapState.map_parameters?.search.question?.length"></SearchQuestionCard>
+
+      <Message v-if="mapState.map_parameters?.search.result_language !== 'en'" severity="info" :closable="true" class="opacity-70">
+        Only {{ languages.find(lang => lang.code === mapState.map_parameters?.search.result_language)?.name || mapState.map_parameters?.search.result_language }} results are shown.
+        If you want to find English results, use an English query and select English as the result language.
+      </Message>
 
       <Message v-if="appState.search_result_ids.length && appState.extended_search_results_are_loading" severity="info" :closable="false" class="opacity-70">
         Preview of the results (loading more...)
