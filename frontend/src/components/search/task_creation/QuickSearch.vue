@@ -297,7 +297,7 @@ export default {
         </Message>
 
         <Message v-if="!use_smart_search && using_meaning_for_non_english_search" class="mt-3" :closable="false">
-          Note: Non-keyword search does not work for non-English queries.
+          Meaning / hybrid search only works for English queries.
         </Message>
 
         <div v-if="!use_smart_search && query_uses_operators_and_meaning" class="mt-3 text-xs text-gray-400">
