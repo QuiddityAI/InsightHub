@@ -12,7 +12,7 @@ from ..utils.dotdict import DotDict
 from ..utils.custom_json_encoder import CustomJSONEncoder
 
 
-backend_url = os.getenv("organization_backend_host", "http://localhost:55125")
+backend_url = os.getenv("backend_host", "http://localhost:55125")
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 

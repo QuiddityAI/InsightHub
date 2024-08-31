@@ -1,5 +1,5 @@
 
-# Note: also update organization_backend/data_map_backend/models.py -> FieldType
+# Note: also update backend/data_map_backend/models.py -> FieldType
 
 
 class FieldType():

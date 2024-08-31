@@ -1,5 +1,5 @@
 
-# Note: also update organization_backend/data_map_backend/models.py -> SourcePlugin
+# Note: also update backend/data_map_backend/models.py -> SourcePlugin
 
 
 class SourcePlugin():
