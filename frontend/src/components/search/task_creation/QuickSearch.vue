@@ -77,6 +77,9 @@ export default {
       const query = this.appStateStore.settings.search.all_field_query
       return other_quotes.some((quote) => query.includes(" " + quote) || query.includes(quote + " "))
     },
+    using_meaning_for_non_english_search() {
+      return this.appStateStore.settings.search.result_language !== "en" && ["vector", "hybrid"].includes(this.appStateStore.settings.search.search_algorithm)
+    },
     example_queries() {
       if (this.appStateStore.settings.search.dataset_ids.length === 0) {
         return []
@@ -291,6 +294,10 @@ export default {
 
         <Message v-if="show_warning_about_missing_meaning_search" class="mt-3" :closable="false">
           Meaning / hybrid search is not yet available for this dataset.
+        </Message>
+
+        <Message v-if="!use_smart_search && using_meaning_for_non_english_search" class="mt-3" :closable="false">
+          Note: Non-keyword search does not work for non-English queries.
         </Message>
 
         <div v-if="!use_smart_search && query_uses_operators_and_meaning" class="mt-3 text-xs text-gray-400">
