@@ -1,5 +1,5 @@
 """
-Note: the data-backend container port needs to be exposed for this script to work,
+Note: the organization-backend container port needs to be exposed for this script to work,
 it does not work by going through the organization-backend proxy for now.
 """
 

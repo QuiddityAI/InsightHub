@@ -6,10 +6,10 @@ services:
           devices:
             - driver: nvidia
               capabilities: [gpu]
-  data-backend:
+  organization-backend:
     build:
       context: ./
-      dockerfile: ./docker/data_backend.gpu.Dockerfile
+      dockerfile: ./docker/organization_backend.gpu.Dockerfile
     deploy:
       resources:
         reservations:

@@ -9,26 +9,14 @@ services:
       - ./:/source_code/
       - "${DATA_PATH:-/data}:/data"
     environment:
-      - data_backend_host=http://data-backend-staging:55123
+      - data_backend_host=http://localhost:55125
       - postgres_host=postgres-staging
       - BACKEND_AUTHENTICATION_SECRET
-  data-backend-staging:
-    image: visual_data_map/data_backend
-    build:
-      context: ./
-      dockerfile: ./docker/data_backend.Dockerfile
-    volumes:
-      - ./:/source_code/
-      - "${DATA_PATH:-/data}:/data"
-    depends_on:
-      - organization-backend-staging
-    environment:
       - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
-      - organization_backend_host=http://organization-backend-staging:55125
+      - organization_backend_host=http://localhost:55125
       - vector_database_host=qdrant
       - search_engine_host=opensearch
-      - BACKEND_AUTHENTICATION_SECRET
       - PDFERRET_GROBID_URL=http://grobid:8070
   webserver-prod-staging:
     image: visual_data_map/webserver_prod
@@ -41,7 +29,6 @@ services:
       - "${WEBSERVER_STAGING_EXPOSED_IP:-127.0.0.1}:55440:55140"
     environment:
       - organization_backend_host=http://organization-backend-staging:55125
-      - data_backend_host=http://data-backend-staging:55123
   postgres-staging:
     image: postgres:16
     volumes:
