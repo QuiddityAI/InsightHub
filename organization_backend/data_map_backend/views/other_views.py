@@ -925,23 +925,28 @@ def add_item_to_collection(request):
         dataset_id=dataset_id,
         item_id=item_id,
     )
+
+    exists = False
     for item in items:
         if class_name in item.classes:  # type: ignore
             # the item exists already, but the weight might need to be updated:
             item.weight = weight
             item.save()
-            return HttpResponse(None, status=204)
+            exists = True
+            break
 
-    item = CollectionItem()
-    item.collection_id = collection_id  # type: ignore
-    item.is_positive = is_positive
-    item.classes = [class_name]  # type: ignore
-    item.field_type = field_type
-    item.value = value
-    item.dataset_id = dataset_id
-    item.item_id = item_id
-    item.weight = weight
-    item.save()
+    if not exists:
+        item = CollectionItem()
+        item.collection_id = collection_id  # type: ignore
+        item.is_positive = is_positive
+        item.classes = [class_name]  # type: ignore
+        item.field_type = field_type
+        item.value = value
+        item.dataset_id = dataset_id
+        item.item_id = item_id
+        item.weight = weight
+        item.save()
+
     dataset_dict = CollectionItemSerializer(instance=item).data
     serialized_data = json.dumps(dataset_dict)
 
