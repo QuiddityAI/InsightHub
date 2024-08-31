@@ -94,7 +94,7 @@ void main() {
     // zoomAdjustment variable does. The same calculation is used in JS to get the pointSize
     // when checking if a point was clicked.)
     float zoomAdjustment = (zoom - 1.0) * 0.05 + 1.0;
-    float pointSize = (5.0 + 15.0 * pointSize) * zoomAdjustment * pointSizeFactor * devicePixelRatio;
+    float pointSize = (12.0 + 10.0 * pointSize) * zoomAdjustment * pointSizeFactor * devicePixelRatio;
     pointRadiusPxVar = pointSize / 2.0;
 
     vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);

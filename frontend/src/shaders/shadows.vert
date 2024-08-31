@@ -56,7 +56,7 @@ void main() {
     // (see points.vert shader for how zoomAdjustment works)
     float zoomAdjustment = (zoom - 1.0) * 0.05 + 1.0;
     float shadowScale = 1.5;
-    float pointSize = (5.0 + 15.0 * pointSize) * shadowScale * zoomAdjustment * pointSizeFactor * devicePixelRatio;
+    float pointSize = (12.0 + 10.0 * pointSize) * shadowScale * zoomAdjustment * pointSizeFactor * devicePixelRatio;
 
     vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);
     vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0) / devicePixelRatio;
