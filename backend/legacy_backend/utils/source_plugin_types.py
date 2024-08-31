@@ -1,0 +1,10 @@
+
+# Note: also update backend/data_map_backend/models.py -> SourcePlugin
+
+
+class SourcePlugin():
+    INTERNAL_OPENSEARCH_QDRANT = "INTERNAL_OPENSEARCH_QDRANT"
+    REMOTE_DATASET = "REMOTE_DATASET"
+    BRAVE_WEB_API = "BRAVE_WEB_API"
+    BING_WEB_API = "BING_WEB_API"
+    SEMANTIC_SCHOLAR_API = "SEMANTIC_SCHOLAR_API"
