@@ -11,13 +11,19 @@ BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_
 
 def get_data_backend_health():
     url = DATA_BACKEND_HOST + '/data_backend/health'
-    result = requests.get(url, timeout=0.1)
+    headers = {
+        'Authorization': f'{BACKEND_AUTHENTICATION_SECRET}',
+    }
+    result = requests.get(url, timeout=0.1, headers=headers)
     return result.status_code == 200
 
 
 def get_data_backend_database_health():
     url = DATA_BACKEND_HOST + '/data_backend/db_health'
-    result = requests.get(url, timeout=0.7)
+    headers = {
+        'Authorization': f'{BACKEND_AUTHENTICATION_SECRET}',
+    }
+    result = requests.get(url, timeout=0.7, headers=headers)
     return result.status_code == 200
 
 
