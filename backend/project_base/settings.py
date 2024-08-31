@@ -280,7 +280,14 @@ JAZZMIN_SETTINGS = {
 def skip_health_requests(record):
     if not record.args:
         return True
-    return '/org/data_map/health' not in str(record.args[0])
+    paths_excluded_from_logging = [
+        '/org/data_map/health',
+        '/metrics',
+    ]
+    for path in paths_excluded_from_logging:
+        if path in str(record.args[0]):
+            return False
+    return True
 
 def skip_some_legacy_backend_routes(record):
     if not record.args:
