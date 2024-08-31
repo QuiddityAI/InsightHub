@@ -18,8 +18,9 @@ const mapState = useMapStateStore()
 
 <script>
 export default {
-  props: ["initial_item", "rendering", "index"],
-  emits: ["selected"],
+  expose: ['relevancy'],
+  props: ["initial_item", "rendering", "index", "hide_irrelevant_items"],
+  emits: ["selected", "llm_relevancy_changed"],
   data() {
     return {
       item: this.initial_item,
@@ -85,6 +86,7 @@ export default {
         .post("/org/data_map/judge_item_relevancy_using_llm", payload)
         .then(function (response) {
           that.relevancy = response.data
+          that.$emit("llm_relevancy_changed")
         })
         .finally(function () {
           that.loading_relevancy = false
@@ -121,7 +123,7 @@ export default {
 
 <template>
   <div class="rounded bg-gray-100/50 p-3 flex flex-row gap-2"
-    :class="{'opacity-30': relevancy && relevancy.decision === false }">
+    :class="{'opacity-30': relevancy && hide_irrelevant_items && relevancy.decision === false }">
     <div class="flex-1">
       <div class="flex flex-row items-center w-full" @click="$emit('selected')">
         <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />

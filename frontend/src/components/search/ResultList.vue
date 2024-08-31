@@ -31,6 +31,7 @@ export default {
       first_index: 0,
       per_page: 10,
       show_result_search: false,
+      hide_irrelevant_items: true,
       apply_text_filter: debounce((event) => {
         this.mapStateStore.modify_text_filter(event.target.value, this.appStateStore)
       }, 500),
@@ -57,8 +58,8 @@ export default {
     })
   },
   watch: {
-    first(new_val, old_val) {
-      console.log("first", new_val, old_val)
+    "first_index"(new_val, old_val) {
+      this.hide_irrelevant_items = true
     },
     "appStateStore.search_result_ids"(new_val, old_val) {
       this.appStateStore.update_visible_result_ids()
@@ -68,6 +69,20 @@ export default {
     },
   },
   methods: {
+    check_overall_relevancy() {
+      let negative_relevancies = 0
+      let positive_relevancies = 0
+      for (const item of this.$refs.result_items) {
+        if (item.relevancy?.decision === false) {
+          negative_relevancies++
+        } else if (item.relevancy?.decision === true) {
+          positive_relevancies++
+        }
+      }
+      // if more than twice as many items are irrelevant than relevant, don't hide irrelevant items
+      // otherwise the whole list might be greyed out
+      this.hide_irrelevant_items = negative_relevancies * 2 < positive_relevancies
+    },
   },
 }
 </script>
@@ -132,13 +147,15 @@ export default {
           v-for="(ds_and_item_id, index) in result_ids_for_this_page"
           :key="ds_and_item_id.join('_')"
           class="justify-between pb-3">
-          <ResultListItem
+          <ResultListItem ref="result_items"
             v-if="appState.search_result_items.hasOwnProperty(ds_and_item_id[0]) && appState.search_result_items[ds_and_item_id[0]].hasOwnProperty(ds_and_item_id[1])"
             :initial_item="appState.search_result_items[ds_and_item_id[0]][ds_and_item_id[1]]"
             :rendering="appState.datasets[ds_and_item_id[0]].schema.result_list_rendering"
             :index="index"
+            :hide_irrelevant_items="hide_irrelevant_items"
             @mouseenter="appState.highlighted_item_id = ds_and_item_id"
             @mouseleave="appState.highlighted_item_id = null"
+            @llm_relevancy_changed="check_overall_relevancy"
             @selected="appState.show_document_details(ds_and_item_id)"></ResultListItem>
         </li>
       </ul>
