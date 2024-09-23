@@ -65,27 +65,19 @@ export default {
     this.get_retraining_status()
   },
   methods: {
-    delete_collection_class() {
-      if (!confirm("Are you sure you want to delete this class and the list of examples?")) {
+    delete_collection() {
+      if (!confirm("Are you sure you want to delete this collection?")) {
         return
       }
       const that = this
-      const body = {
+      const delete_collection_body = {
         collection_id: this.collection_id,
-        class_name: this.class_name,
       }
       httpClient
-        .post("/org/data_map/delete_collection_class", body)
+        .post("/org/data_map/delete_collection", delete_collection_body)
         .then(function (response) {
-          const index = that.collection.actual_classes.findIndex((collection_class) => collection_class.name === that.class_name)
-          that.collection.actual_classes.splice(index, 1)
-          if (that.collection.actual_classes.length === 0) {
-            that.collection.actual_classes.push({
-              name: "_default",
-              positive_count: 0,
-              negative_count: 0,
-            })
-          }
+          const index = that.appStateStore.collections.findIndex((collection) => collection.id === that.collection_id)
+          that.appStateStore.collections.splice(index, 1)
         })
       this.$emit("close")
     },
@@ -223,7 +215,7 @@ export default {
       </Dialog>
 
       <button
-        @click="delete_collection_class"
+        @click="delete_collection"
         class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </button>

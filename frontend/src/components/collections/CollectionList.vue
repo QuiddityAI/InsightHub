@@ -35,7 +35,8 @@ export default {
       httpClient
         .post("/org/data_map/add_collection", create_collection_body)
         .then(function (response) {
-          that.appStateStore.collections.push(response.data)
+          // put the new collection at the beginning of the list
+          that.appStateStore.collections.unshift(response.data)
           that.appStateStore.last_used_collection_id = response.data.id
           that.appStateStore.last_used_collection_class = response.data.actual_classes[0].name
         })

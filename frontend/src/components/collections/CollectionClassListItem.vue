@@ -1,7 +1,13 @@
+<script setup>
+import {
+  TrashIcon
+} from "@heroicons/vue/24/outline"
+</script>
+
 <script>
 export default {
-  props: ["class_details"],
-  emits: ["collection_selected", "class_selected"],
+  props: ["class_details", "show_trash_button"],
+  emits: ["collection_selected", "class_selected", "delete_collection_class"],
   data() {
     return {}
   },
@@ -32,6 +38,11 @@ export default {
       }">
         - {{ class_details.negative_count }}
       </span>
+      <button v-if="show_trash_button"
+        @click.stop="$emit('delete_collection_class', class_details)"
+        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+        <TrashIcon class="h-4 w-4"></TrashIcon>
+      </button>
       <!-- <button
         @click="$emit('recommend_items_for_collection', collection)"
         class="text-sm font-light text-gray-500 hover:text-blue-500/50">

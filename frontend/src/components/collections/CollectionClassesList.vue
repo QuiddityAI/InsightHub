@@ -43,6 +43,29 @@ export default {
         })
       this.$emit("close")
     },
+    delete_collection_class(class_details) {
+      if (!confirm("Are you sure you want to delete this class and its list of items?")) {
+        return
+      }
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: class_details.name,
+      }
+      httpClient
+        .post("/org/data_map/delete_collection_class", body)
+        .then(function (response) {
+          const index = that.collection.actual_classes.findIndex((collection_class) => collection_class.name === class_details.name)
+          that.collection.actual_classes.splice(index, 1)
+          if (that.collection.actual_classes.length === 0) {
+            that.collection.actual_classes.push({
+              name: "_default",
+              positive_count: 0,
+              negative_count: 0,
+            })
+          }
+        })
+    },
     create_collection_class(class_name) {
       if (!class_name) {
         return
@@ -103,6 +126,8 @@ export default {
         v-for="class_details in collection.actual_classes"
         :key="class_details.name"
         :class_details="class_details"
+        :show_trash_button="true"
+        @delete_collection_class="delete_collection_class"
         @click="$emit('class_selected', class_details.name); $emit('collection_selected', collection.id)">
       </CollectionClassListItem>
     </ul>
