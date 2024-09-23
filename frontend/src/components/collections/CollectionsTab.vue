@@ -48,7 +48,7 @@ export default {
 </script>
 
 <template>
-  <div class="mt-3 mb-3 pt-4 pb-3 px-5 shadow-sm rounded-md bg-white overflow-hidden">
+  <div class="mt-1 pt-4 pb-3 px-5 shadow-sm rounded-md bg-white overflow-hidden">
 
     <div v-if="!appState.logged_in" class="h-full flex flex-row gap-5 items-center justify-center">
       <Message :closable="false">

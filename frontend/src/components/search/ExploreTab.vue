@@ -69,7 +69,7 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center">
+  <div class="mx-3 flex flex-col items-center justify-center">
 
     <div v-if="!show_result_area" class="flex flex-col items-center justify-center w-[900px]">
       <div class="mb-[40px] max-w-lg"
@@ -109,7 +109,7 @@ export default {
       style="grid-auto-rows: minmax(auto, min-content)">
 
       <!-- left column -->
-      <div ref="left_column" class="h-[calc(100vh-6em)] pointer-events-none flex flex-col gap-3">
+      <div ref="left_column" class="h-[calc(100vh-5em)] pointer-events-none flex flex-col gap-3">
 
         <SearchTaskDescriptionCard class="pointer-events-auto">
 

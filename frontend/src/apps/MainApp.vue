@@ -253,7 +253,7 @@ export default {
     <Timings></Timings>
 
     <!-- content area -->
-    <div class="h-screen flex flex-col pointer-events-none relative p-0 md:pt-3 md:px-4">
+    <div class="h-screen flex flex-col pointer-events-none relative p-0">
 
       <TopMenu class="flex-none pointer-events-auto"></TopMenu>
 

@@ -88,7 +88,7 @@ export default {
 </script>
 
 <template>
-  <div class="mt-3 mb-3 p-4 shadow-sm rounded-md bg-white overflow-hidden">
+  <div class="mt-1 p-4 shadow-sm rounded-md bg-white overflow-hidden">
 
     <div v-if="!appState.logged_in" class="h-full flex flex-row items-center justify-center">
       <Message :closable="false">
