@@ -320,6 +320,19 @@ export default {
     <div class="flex-1 flex flex-col overflow-x-hidden">
 
       <div class="w-full flex flex-row gap-3 mb-3">
+        <button @click="show_add_item_dialog = true" class="py-1 px-2 rounded-md bg-gray-100 text-sm font-semibold hover:bg-blue-100/50">
+          Add Items <PlusIcon class="inline h-4 w-4"></PlusIcon>
+        </button>
+        <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
+          <AddItemsToCollectionArea
+            :collection="collection"
+            :collection_class="class_name"
+            @items_added="load_collection_items"
+            ></AddItemsToCollectionArea>
+        </Dialog>
+
+        <div class="flex-1"></div>
+
         <button @click="show_add_column_dialog = true" class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
           Add Column <PlusIcon class="inline h-4 w-4"></PlusIcon>
         </button>
@@ -380,32 +393,10 @@ export default {
             </div>
           </div>
         </Dialog>
-
-        <button @click="show_add_item_dialog = true" class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
-          Add Items <PlusIcon class="inline h-4 w-4"></PlusIcon>
-        </button>
-        <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
-          <AddItemsToCollectionArea
-            :collection="collection"
-            :collection_class="class_name"
-            @items_added="load_collection_items"
-            ></AddItemsToCollectionArea>
-        </Dialog>
-
-        <div class="flex-1"></div>
-        <button @click="event => {$refs.export_dialog.toggle(event)}"
-          class="py-1 px-2 rounded-md bg-gray-100 text-gray-500 text-sm font-semibold hover:bg-blue-100/50">
-          Export Table
-        </button>
         <button v-if="appState.user.is_staff" @click="show_writing_tasks = !show_writing_tasks"
           class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
           {{ show_writing_tasks ? 'Hide' : 'Show' }} Writing Tasks <ChevronRightIcon class="inline h-4 w-4"></ChevronRightIcon>
         </button>
-
-        <OverlayPanel ref="export_dialog">
-          <ExportTableArea :collection_id="collection_id" :class_name="class_name">
-          </ExportTableArea>
-        </OverlayPanel>
       </div>
 
       <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" size="small" class="min-h-0 overflow-x-auto">

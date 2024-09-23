@@ -7,10 +7,12 @@ import {
 } from "@heroicons/vue/24/outline"
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
+import OverlayPanel from 'primevue/overlaypanel';
 
 import ChatList from "../chats/ChatList.vue"
 import CollectionTableView from "./CollectionTableView.vue"
 import ExportCollectionArea from "./ExportCollectionArea.vue";
+import ExportTableArea from "./ExportTableArea.vue";
 import { FieldType } from "../../utils/utils"
 
 import { mapStores } from "pinia"
@@ -178,9 +180,9 @@ export default {
         class="h-6 w-6 rounded text-gray-400 hover:bg-gray-100">
         <ChevronLeftIcon></ChevronLeftIcon>
       </button>
-      <span class="font-bold text-gray-600">{{ collection.name }}:</span>
+      <span class="text-md font-bold text-black">{{ collection.name }}</span>
       <span class="text-medium text-gray-500">
-        {{ class_name === '_default' ? 'Items' : class_name }}
+        {{ class_name === '_default' ? '' : ': ' + class_name }}
       </span>
 
       <div class="flex-1"></div>
@@ -208,6 +210,15 @@ export default {
         class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold text-sm">
           Export Items Only
       </button>
+
+      <button @click="event => {$refs.export_dialog.toggle(event)}"
+        class="py-1 px-2 rounded-md bg-gray-100 text-gray-500 text-sm font-semibold hover:bg-blue-100/50">
+        Export Table
+      </button>
+      <OverlayPanel ref="export_dialog">
+        <ExportTableArea :collection_id="collection_id" :class_name="class_name">
+        </ExportTableArea>
+      </OverlayPanel>
 
       <Dialog v-model:visible="show_export_dialog" modal header="Export">
         <ExportCollectionArea :collection_id="collection_id" :class_name="class_name">
