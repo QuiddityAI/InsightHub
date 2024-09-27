@@ -26,8 +26,8 @@ export default {
   emits: [],
   data() {
     return {
-      currently_selected_collection: null,
-      currently_selected_collection_class: null,
+      selected_collection: null,
+      selected_collection_class: null,
     }
   },
   computed: {
@@ -36,51 +36,66 @@ export default {
   },
   mounted() {
     this.eventBus.on("show_table", ({collection_id, class_name}) => {
-      this.currently_selected_collection = collection_id
-      this.currently_selected_collection_class = class_name
+      this.selected_collection = collection_id
+      this.selected_collection_class = class_name
     })
   },
   watch: {
   },
   methods: {
+    open_collection(collection_id, class_name) {
+      if (this.selected_collection) {
+        this.close_collection()
+        setTimeout(() => {
+          this.selected_collection = collection_id
+          this.selected_collection_class = class_name
+        }, 0)
+      } else {
+        this.selected_collection = collection_id
+        this.selected_collection_class = class_name
+      }
+    },
+    close_collection() {
+      this.selected_collection = null
+      this.selected_collection_class = null
+    },
   },
 }
 </script>
 
 <template>
-  <div class="mt-1 pt-4 pb-3 px-5 shadow-sm rounded-md bg-white overflow-hidden">
+  <div class="overflow-hidden flex flex-row relative">
 
-    <div v-if="!appState.logged_in" class="h-full flex flex-row gap-5 items-center justify-center">
+    <!-- Left Side Bar -->
+    <CollectionList
+      class="z-40"
+      :collapsed="selected_collection && selected_collection_class"
+      :selected_collection="selected_collection"
+      :selected_collection_class="selected_collection_class"
+      @collection_selected="open_collection"
+      @open_new_collection_dialog="close_collection">
+    </CollectionList>
+
+    <!-- Right Side Content -->
+    <div v-if="!appState.logged_in"
+      class="h-full flex flex-row gap-5 items-center justify-center">
       <Message :closable="false">
         Log in to save items in collections and extract information in a table
       </Message>
     </div>
 
-    <div v-if="appState.logged_in" class="h-full flex flex-row gap-5 items-center justify-center">
+    <CollectionClassDetails v-else-if="selected_collection && selected_collection_class"
+      class="flex-1 h-full relative z-20"
+      :collection_id="selected_collection"
+      :class_name="selected_collection_class"
+      @close="close_collection">
+    </CollectionClassDetails>
 
-      <CollectionList
-        v-if="!currently_selected_collection && !currently_selected_collection_class"
-        class="w-[500px] h-full overflow-y-auto"
-        @collection_selected="(collection_id) => currently_selected_collection = collection_id"
-        @class_selected="(class_name) => currently_selected_collection_class = class_name">
-      </CollectionList>
-
-      <CollectionClassesList
-        v-if="currently_selected_collection && !currently_selected_collection_class"
-        class="w-[500px] h-full overflow-y-auto"
-        :collection_id="currently_selected_collection"
-        @class_selected="(class_name) => currently_selected_collection_class = class_name"
-        @close="currently_selected_collection = null">
-      </CollectionClassesList>
-
-      <CollectionClassDetails
-        v-if="currently_selected_collection && currently_selected_collection_class"
-        class="flex-1 h-full"
-        :collection_id="currently_selected_collection"
-        :class_name="currently_selected_collection_class"
-        @close="currently_selected_collection = null; currently_selected_collection_class = null">
-      </CollectionClassDetails>
-
+    <div v-else
+      class="h-full w-full flex flex-col gap-5 justify-center">
+      <Message :closable="false">
+        Select a collection to view its classes
+      </Message>
     </div>
 
   </div>

@@ -63,7 +63,7 @@ export default {
 
 <template>
 
-  <div class="flex flex-col p-2 bg-white md:rounded-md shadow-sm">
+  <div class="flex flex-col p-2 bg-white shadow-md">
 
     <div class="flex-none flex flex-row items-center justify-center mx-3">
 

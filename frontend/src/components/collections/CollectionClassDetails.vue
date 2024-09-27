@@ -173,7 +173,7 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col overflow-hidden">
+  <div class="flex flex-col overflow-hidden pt-1 pl-1">
     <div class="flex-none flex flex-row gap-3">
       <button
         @click="$emit('close')"

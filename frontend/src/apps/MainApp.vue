@@ -210,7 +210,7 @@ export default {
 </script>
 
 <template>
-  <main class="">
+  <main class="relative">
 
     <Toast position="top-right"></Toast>
     <DynamicDialog />
@@ -238,7 +238,7 @@ export default {
     <!-- content area -->
     <div class="h-screen flex flex-col pointer-events-none relative">
 
-      <TopMenu class="flex-none pointer-events-auto"></TopMenu>
+      <TopMenu class="flex-none pointer-events-auto relative z-50"></TopMenu>
 
       <!-- <ExploreTab v-show="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab> -->
 
@@ -248,7 +248,7 @@ export default {
 
       <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab> -->
 
-      <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto"></DatasetsTab>
+      <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto relative"></DatasetsTab>
 
     </div>
 
