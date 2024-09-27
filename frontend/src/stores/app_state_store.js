@@ -36,7 +36,6 @@ export const useAppStateStore = defineStore("appState", {
       load_map_after_search: true,
 
       highlighted_item_id: null,
-      selected_item_id: null,
       highlighted_cluster_id: null,
       selected_cluster_id: null,
 
@@ -73,6 +72,7 @@ export const useAppStateStore = defineStore("appState", {
 
       // selection:
       selected_document_ds_and_id: null,  // (dataset_id, item_id)
+      document_details_dialog_is_visible: false,
 
       // collections:
       collections: [],
@@ -591,7 +591,6 @@ export const useAppStateStore = defineStore("appState", {
       this.cluster_data = []
       this.clusterIdsPerPoint = []
       this.highlighted_item_id = null
-      this.selected_item_id = null
       this.highlighted_cluster_id = null
       this.selected_cluster_id = null
       this.mapState.visited_point_indexes = []
@@ -624,6 +623,7 @@ export const useAppStateStore = defineStore("appState", {
 
       // selection:
       this.selected_document_ds_and_id = null
+      this.document_details_dialog_is_visible = false
       this.mapState.reset_visibility_filters()
 
       this.eventBus.emit("search_results_cleared")
@@ -1299,6 +1299,7 @@ export const useAppStateStore = defineStore("appState", {
     show_document_details(dataset_and_item_id) {
       this.selected_document_ds_and_id = dataset_and_item_id
       const pointIdx = this.mapState.per_point.item_id.indexOf(dataset_and_item_id)
+      this.document_details_dialog_is_visible = true
       if (pointIdx !== -1) {
         this.mapState.markedPointIdx = pointIdx
         this.mapState.visited_point_indexes.push(pointIdx)
