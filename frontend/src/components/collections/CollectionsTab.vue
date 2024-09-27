@@ -4,7 +4,7 @@ import Message from 'primevue/message';
 
 import CollectionList from "../collections/CollectionList.vue"
 import CollectionClassesList from "../collections/CollectionClassesList.vue"
-import CollectionClassDetails from "../collections/CollectionClassDetails.vue"
+import CollectionView from "../collections/CollectionView.vue"
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -84,12 +84,12 @@ export default {
       </Message>
     </div>
 
-    <CollectionClassDetails v-else-if="selected_collection && selected_collection_class"
+    <CollectionView v-else-if="selected_collection && selected_collection_class"
       class="flex-1 h-full relative z-20"
       :collection_id="selected_collection"
       :class_name="selected_collection_class"
       @close="close_collection">
-    </CollectionClassDetails>
+    </CollectionView>
 
     <div v-else
       class="h-full w-full flex flex-col gap-5 justify-center">
