@@ -89,20 +89,20 @@ export default {
       <div class="flex-1"></div>
 
       <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-600">
-        <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'explore'}"
+        <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'explore'}"
           @click="appState.set_app_tab('explore')">
-          Explore</button>
+          Explore</button> -->
          <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'collections'}"
           @click="appState.set_app_tab('collections')">
-          Collect & Process</button>
-         <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
+          Home</button>
+         <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
           v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('chats')">
           Chat</button>
          <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'write'}"
           v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('write')">
-          Write</button>
+          Write</button> -->
          <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'datasets'}"
           @click="appState.set_app_tab('datasets')">
           Upload Files</button>
@@ -130,10 +130,10 @@ export default {
 
     <div class="flex flex-row items-center justify-center">
       <select class="md:hidden rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
-        <option>Explore</option>
-        <option>Collect & Process</option>
-        <option>Chat</option>
-        <option v-if="appState.user?.is_staff">Write</option>
+        <!-- <option>Explore</option> -->
+        <option>Home</option>
+        <!-- <option>Chat</option>
+        <option v-if="appState.user?.is_staff">Write</option> -->
         <option>Upload Files</option>
       </select>
     </div>

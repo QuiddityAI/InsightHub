@@ -25,7 +25,7 @@ export const useAppStateStore = defineStore("appState", {
       username: null,
       dev_mode: false,
 
-      selected_app_tab: "explore",
+      selected_app_tab: "collections",
 
       show_timings: false,
       store_search_history: true,

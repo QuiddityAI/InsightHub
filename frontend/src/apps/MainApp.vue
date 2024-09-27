@@ -41,9 +41,6 @@ export default {
   inject: ["eventBus"],
   data() {
     return {
-      // tabs:
-      selected_tab: "results",
-
       show_details_dialog: false,
 
       score_info_chart: null,
@@ -193,14 +190,6 @@ export default {
     window.addEventListener("resize", this.updateMapPassiveMargin)
     window.addEventListener("popstate", this.evaluate_url_query_parameters)
 
-    this.eventBus.on("show_results_tab", () => {
-      // FIXME: outdated use of selected_tab
-      this.selected_tab = "results"
-    })
-    this.eventBus.on("show_chat", ({chat_id}) => {
-      // FIXME: outdated use of selected_tab
-      this.selected_tab = "chats"
-    })
     this.eventBus.on("show_table", ({collection_id, class_name}) => {
       this.appStateStore.selected_app_tab = "collections"
     })
@@ -257,13 +246,13 @@ export default {
 
       <TopMenu class="flex-none pointer-events-auto"></TopMenu>
 
-      <ExploreTab v-show="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab>
+      <!-- <ExploreTab v-show="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab> -->
 
       <CollectionsTab v-show="appState.selected_app_tab === 'collections'" class="flex-1 pointer-events-auto"></CollectionsTab>
 
-      <ChatsTab v-if="appState.selected_app_tab === 'chats'" class="flex-1 pointer-events-auto"></ChatsTab>
+      <!-- <ChatsTab v-if="appState.selected_app_tab === 'chats'" class="flex-1 pointer-events-auto"></ChatsTab>
 
-      <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab>
+      <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab> -->
 
       <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto"></DatasetsTab>
 
@@ -275,8 +264,8 @@ export default {
       :class="{
         'bottom-1': appState.selected_app_tab === 'explore',
         'right-3': appState.selected_app_tab === 'explore',
-        'bottom-4': appState.selected_app_tab !== 'explore',
-        'right-6': appState.selected_app_tab !== 'explore',
+        'bottom-2': appState.selected_app_tab !== 'explore',
+        'right-3': appState.selected_app_tab !== 'explore',
       }">
       <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/imprint">
         Imprint
