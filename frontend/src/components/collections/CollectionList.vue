@@ -109,7 +109,7 @@ export default {
           @click="$emit('collection_selected', collection.id, collection.actual_classes[0].name)"
           :class="{'w-full': !collapsed}">
           <div v-if="collapsed"
-            v-tooltip="{ value: collection.name, showDelay: 400 }"
+            v-tooltip="{ value: collection.name, showDelay: 0 }"
             class="rounded-full h-7 w-7 text-gray-400 flex flex-row items-center justify-center hover:bg-blue-100 hover:border hover:border-blue-200"
             :class="{
               'bg-gray-100': !(selected_collection == collection.id && selected_collection_class == collection.actual_classes[0].name),

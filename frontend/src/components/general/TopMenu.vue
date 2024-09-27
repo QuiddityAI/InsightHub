@@ -63,7 +63,7 @@ export default {
 
 <template>
 
-  <div class="flex flex-col p-2 bg-white shadow-md">
+  <div class="flex flex-col p-1 bg-white shadow-sm">
 
     <div class="flex-none flex flex-row items-center justify-center mx-3">
 
@@ -88,7 +88,7 @@ export default {
 
       <div class="flex-1"></div>
 
-      <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-600">
+      <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-600 text-sm">
         <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'explore'}"
           @click="appState.set_app_tab('explore')">
           Explore</button> -->

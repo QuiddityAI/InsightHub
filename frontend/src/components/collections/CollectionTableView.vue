@@ -1,36 +1,29 @@
 <script setup>
+
 import {
   TrashIcon,
-  PlusIcon,
-  ChevronRightIcon,
 } from "@heroicons/vue/24/outline"
+
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Button from 'primevue/button';
-import MultiSelect from 'primevue/multiselect';
 import Paginator from "primevue/paginator"
 import OverlayPanel from 'primevue/overlaypanel';
 import Dropdown from 'primevue/dropdown';
-import Message from 'primevue/message';
-import Dialog from "primevue/dialog";
-import Textarea from 'primevue/textarea';
 
-import WritingTaskArea from "./WritingTaskArea.vue";
 import CollectionItem from "./CollectionItem.vue"
-import ExportTableArea from "./ExportTableArea.vue";
 import CollectionTableCell from "./CollectionTableCell.vue";
-import ObjectDetailsModal from "../search/ObjectDetailsModal.vue";
-import AddItemsToCollectionArea from "./AddItemsToCollectionArea.vue";
 
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
+
 </script>
 
 <script>
@@ -38,16 +31,12 @@ const toast = useToast()
 export default {
   inject: ["eventBus"],
   props: ["collection_id", "class_name", "is_positive"],
+  expose: ["collection_items"],
   emits: [],
   data() {
     return {
       collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       collection_items: [],
-
-      show_add_column_dialog: false,
-      show_add_item_dialog: false,
-      selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
-      selected_module: 'openai_gpt_4_o',
 
       first_index: 0,
       per_page: 10,
@@ -55,54 +44,14 @@ export default {
       order_descending: true,
 
       selected_column: null,
-
-      show_writing_tasks: false,
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
-    included_datasets() {
-      const dataset_ids = new Set()
-      for (const item of this.collection_items) {
-        const dataset_id = item.dataset_id
-        dataset_ids.add(dataset_id)
-      }
-      return Array.from(dataset_ids).map((dataset_id) => this.appStateStore.datasets[dataset_id])
-    },
-    available_source_fields() {
-      const available_fields = {}
-      const unsupported_field_types = [FieldType.VECTOR, FieldType.CLASS_PROBABILITY, FieldType.ARBITRARY_OBJECT]
-      function capitalizeFirstLetter(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-      }
-      for (const dataset of this.included_datasets) {
-        if (!dataset?.schema?.object_fields) continue
-        for (const field of Object.values(dataset.schema.object_fields)) {
-          if (unsupported_field_types.includes(field.field_type)) {
-            continue
-          }
-          available_fields[field.identifier] = {
-            identifier: field.identifier,
-            name: `${capitalizeFirstLetter(dataset.schema.entity_name)}: ${field.name || field.identifier}`,
-          }
-        }
-      }
-      for (const column of this.collection.columns) {
-        available_fields[column.identifier] = {
-          identifier: '_column__' + column.identifier,
-          name: `Column: ${column.name}`,
-        }
-      }
-      available_fields['_descriptive_text_fields'] = {
-        identifier: '_descriptive_text_fields',
-        name: 'All short descriptive text fields',
-      }
-      available_fields['_full_text_snippets'] = {
-        identifier: '_full_text_snippets',
-        name: 'Full text excerpts',
-      }
-      return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
+    item_count() {
+      const class_details = this.collection.actual_classes.find((actual_class) => actual_class.name === this.class_name)
+      return class_details["positive_count"]
     },
     available_order_by_fields() {
       const available_fields = {}
@@ -122,16 +71,6 @@ export default {
       }
       return Object.values(available_fields)
     },
-    available_modules() {
-      return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
-    },
-    show_full_text_issue_hint() {
-      return this.selected_source_fields.find((field) => field !== "_full_text_snippets" && field.includes("full_text"))
-    },
-    item_count() {
-      const class_details = this.collection.actual_classes.find((actual_class) => actual_class.name === this.class_name)
-      return class_details["positive_count"]
-    }
   },
   mounted() {
     const that = this
@@ -316,181 +255,92 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-row">
-    <div class="flex-1 flex flex-col overflow-x-hidden">
-
-      <div class="w-full flex flex-row gap-3 mb-3">
-        <button @click="show_add_item_dialog = true" class="py-1 px-2 rounded-md bg-gray-100 text-sm font-semibold hover:bg-blue-100/50">
-          Add Items <PlusIcon class="inline h-4 w-4"></PlusIcon>
-        </button>
-        <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
-          <AddItemsToCollectionArea
-            :collection="collection"
-            :collection_class="class_name"
-            @items_added="load_collection_items"
-            ></AddItemsToCollectionArea>
-        </Dialog>
-
-        <div class="flex-1"></div>
-
-        <button @click="show_add_column_dialog = true" class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
-          Add Column <PlusIcon class="inline h-4 w-4"></PlusIcon>
-        </button>
-        <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
-          <div class="flex flex-col gap-3">
-            <div class="flex flex-row items-center">
-              <input
-                ref="new_question_name"
-                type="text"
-                class="flex-none w-2/3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                placeholder="Column Name"/>
-            </div>
-            <div class="flex flex-row gap-2 items-center">
-              <div class="flex-1 min-w-0">
-                <MultiSelect v-model="selected_source_fields"
-                  :options="available_source_fields"
-                  optionLabel="name"
-                  optionValue="identifier"
-                  placeholder="Select Sources..."
-                  :maxSelectedLabels="0"
-                  selectedItemsLabel="{0} Source(s)"
-                  class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <Dropdown v-model="selected_module"
-                  :options="available_modules"
-                  optionLabel="name"
-                  optionValue="identifier"
-                  placeholder="Select Module.."
-                  class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-              </div>
-            </div>
-            <Message v-if="show_full_text_issue_hint" class="text-gray-500">
-              Using the full text of an item might be slow and expensive. The full text will also be limited to the maximum text length of the AI module, which might lead to unpredictable results.
-              <br>
-              Consider using 'Full Text Excerpts' instead, which selects only the most relevant parts of the full text.
-            </Message>
-            <div class="flex flex-row items-center">
-              <textarea
-                ref="new_question_prompt"
-                type="text"
-                class="flex-auto rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                placeholder="Question / Prompt"/>
-            </div>
-            <div class="flex flex-row gap-3">
-              <button
-                class="rounded-md border-0 px-2 py-1.5 bg-green-100 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                type="button"
-                @click="show_add_column_dialog = false; add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, true)">
-                Add Question & Process Current Page
-              </button>
-              <button
-                class="rounded-md border-0 px-2 py-1.5 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                type="button"
-                @click="show_add_column_dialog = false; add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, false)">
-                Add without Processing
-              </button>
-            </div>
-          </div>
-        </Dialog>
-        <button v-if="appState.user.is_staff" @click="show_writing_tasks = !show_writing_tasks"
-          class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
-          {{ show_writing_tasks ? 'Hide' : 'Show' }} Writing Tasks <ChevronRightIcon class="inline h-4 w-4"></ChevronRightIcon>
-        </button>
-      </div>
-
-      <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" size="small" class="min-h-0 overflow-x-auto">
-        <template #empty>
-          <div class="py-10 flex flex-row justify-center text-gray-500">No items yet</div>
+  <div class="flex-1 flex flex-col overflow-x-hidden">
+    <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" size="small" class="min-h-0 overflow-x-auto">
+      <template #empty>
+        <div class="py-10 flex flex-row justify-center text-gray-500">No items yet</div>
+      </template>
+      <Column header="">
+        <template #header="slotProps">
+          <span class="text-sm">Item</span>
         </template>
-        <Column header="">
-          <template #header="slotProps">
-            <span class="text-sm">Item</span>
-          </template>
-          <template #body="slotProps">
-            <CollectionItem
-              :dataset_id="slotProps.data.dataset_id"
-              :item_id="slotProps.data.item_id"
-              :is_positive="slotProps.data.is_positive"
-              :show_remove_button="true"
-              @remove="appState.remove_item_from_collection([slotProps.data.dataset_id, slotProps.data.item_id], collection_id, class_name)"
-              class="min-w-[350px] max-w-[520px]">
-            </CollectionItem>
-          </template>
-        </Column>
-        <Column v-for="column in collection.columns" :header="false">
-          <template #header="slotProps">
-            <button class="rounded-md bg-gray-100 text-sm hover:bg-blue-100/50 py-1 px-2"
-              @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
-              {{ column.name }}
-            </button>
-          </template>
-          <template #body="slotProps">
-            <CollectionTableCell :item="slotProps.data" :column="column"
-              class="max-w-[400px]"
-              :current_extraction_processes="collection.current_extraction_processes"
-              :show_overlay_buttons="false">
-            </CollectionTableCell>
-          </template>
-        </Column>
-      </DataTable>
+        <template #body="slotProps">
+          <CollectionItem
+            :dataset_id="slotProps.data.dataset_id"
+            :item_id="slotProps.data.item_id"
+            :is_positive="slotProps.data.is_positive"
+            :show_remove_button="true"
+            @remove="appState.remove_item_from_collection([slotProps.data.dataset_id, slotProps.data.item_id], collection_id, class_name)"
+            class="min-w-[350px] max-w-[520px]">
+          </CollectionItem>
+        </template>
+      </Column>
+      <Column v-for="column in collection.columns" :header="false">
+        <template #header="slotProps">
+          <button class="rounded-md bg-gray-100 text-sm hover:bg-blue-100/50 py-1 px-2"
+            @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
+            {{ column.name }}
+          </button>
+        </template>
+        <template #body="slotProps">
+          <CollectionTableCell :item="slotProps.data" :column="column"
+            class="max-w-[400px]"
+            :current_extraction_processes="collection.current_extraction_processes"
+            :show_overlay_buttons="false">
+          </CollectionTableCell>
+        </template>
+      </Column>
+    </DataTable>
 
-      <div class="flex flex-row items-center justify-center">
-        <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
-          class="mt-[0px]"></Paginator>
-        <Dropdown v-model="order_by_field"
-          :options="available_order_by_fields"
-          optionLabel="name"
-          optionValue="identifier"
-          placeholder="Order By..."
-          class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-        <button @click="order_descending = !order_descending"
-          v-tooltip="{'value': 'Sort Order', showDelay: 500}"
-          class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
-          {{ order_descending ? '▼' : '▲' }}
-        </button>
-      </div>
-
-      <OverlayPanel ref="column_options">
-          <div class="w-[400px] flex flex-col gap-2">
-            <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
-            <div class="flex flex-row">
-              <p class="flex-1">{{ selected_column.expression }}</p>
-              <button
-                @click="delete_column(selected_column.id); $refs.column_options.hide()"
-                class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
-                <TrashIcon class="h-4 w-4"></TrashIcon>
-              </button>
-            </div>
-            <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
-            <p class="text-xs text-gray-500">{{ human_readable_module_name(selected_column.module) }}</p>
-            <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
-              <button @click="extract_question(selected_column.id, true); $refs.column_options.hide()"
-                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-                Extract <span class="text-gray-500">(current page)</span></button>
-              <button @click="extract_question(selected_column.id, false); $refs.column_options.hide()"
-                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-                Extract <span class="text-gray-500">(all)</span></button>
-            </div>
-
-            <div class="flex flex-row gap-2">
-              <button @click="remove_results(selected_column.id, true)"
-                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-                Remove results<br><span class="text-gray-500">(current page)</span></button>
-              <button @click="remove_results(selected_column.id, false)"
-                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-                Remove results<br><span class="text-gray-500">(all)</span></button>
-            </div>
-          </div>
-      </OverlayPanel>
+    <div class="flex flex-row items-center justify-center">
+      <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
+        class="mt-[0px]"></Paginator>
+      <Dropdown v-model="order_by_field"
+        :options="available_order_by_fields"
+        optionLabel="name"
+        optionValue="identifier"
+        placeholder="Order By..."
+        class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+      <button @click="order_descending = !order_descending"
+        v-tooltip="{'value': 'Sort Order', showDelay: 500}"
+        class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
+        {{ order_descending ? '▼' : '▲' }}
+      </button>
     </div>
 
-    <WritingTaskArea v-if="show_writing_tasks" class="flex-none w-[500px]"
-      :collection_id="collection_id" :class_name="class_name">
-    </WritingTaskArea>
+    <OverlayPanel ref="column_options">
+        <div class="w-[400px] flex flex-col gap-2">
+          <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
+          <div class="flex flex-row">
+            <p class="flex-1">{{ selected_column.expression }}</p>
+            <button
+              @click="delete_column(selected_column.id); $refs.column_options.hide()"
+              class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+              <TrashIcon class="h-4 w-4"></TrashIcon>
+            </button>
+          </div>
+          <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
+          <p class="text-xs text-gray-500">{{ human_readable_module_name(selected_column.module) }}</p>
+          <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
+            <button @click="extract_question(selected_column.id, true); $refs.column_options.hide()"
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
+              Extract <span class="text-gray-500">(current page)</span></button>
+            <button @click="extract_question(selected_column.id, false); $refs.column_options.hide()"
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
+              Extract <span class="text-gray-500">(all)</span></button>
+          </div>
 
+          <div class="flex flex-row gap-2">
+            <button @click="remove_results(selected_column.id, true)"
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
+              Remove results<br><span class="text-gray-500">(current page)</span></button>
+            <button @click="remove_results(selected_column.id, false)"
+              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
+              Remove results<br><span class="text-gray-500">(all)</span></button>
+          </div>
+        </div>
+    </OverlayPanel>
   </div>
-
 </template>
 
 <style scoped>
