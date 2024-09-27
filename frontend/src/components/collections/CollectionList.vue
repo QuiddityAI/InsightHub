@@ -106,7 +106,8 @@ export default {
       <div v-for="collection in appState.collections" :key="collection.id"
         class="flex flex-row" :class="{ 'justify-center': collapsed }">
         <button
-          @click="$emit('collection_selected', collection.id, collection.actual_classes[0].name)">
+          @click="$emit('collection_selected', collection.id, collection.actual_classes[0].name)"
+          :class="{'w-full': !collapsed}">
           <div v-if="collapsed"
             v-tooltip="{ value: collection.name, showDelay: 400 }"
             class="rounded-full h-7 w-7 text-gray-400 flex flex-row items-center justify-center hover:bg-blue-100 hover:border hover:border-blue-200"
@@ -116,8 +117,10 @@ export default {
               }">
             {{ collection.name.slice(0, 1) }}
           </div>
-          <h3 v-else class="text-left text-[15px] text-md pl-4 hover:text-blue-500"
-            :class="{'text-blue-500': selected_collection == collection.id && selected_collection_class == collection.actual_classes[0].name}">
+          <h3 v-else class="text-left text-[15px] text-md ml-3 mr-3 px-2 h-7 flex flex-row items-center rounded-md hover:text-blue-500 hover:bg-gray-100"
+            :class="{
+              'text-blue-500': selected_collection == collection.id && selected_collection_class == collection.actual_classes[0].name,
+              }">
             {{ collection.name }}
           </h3>
         </button>
