@@ -58,6 +58,7 @@ export default {
           subtitle: 'Search + Eval',
           help_text: 'Search and evaluate the results',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
+          supports_filters: true,
         },
         {
           id: 'auto_select',
@@ -72,7 +73,7 @@ export default {
           name: 'Question',
           subtitle: 'auto select + summary',
           help_text: 'Ask a question and get a summary of the results',
-          query_field_hint: (entity_name) => `Your question...`,
+          query_field_hint: (entity_name) => `Your question`,
           supports_filters: true,
         },
         {
@@ -172,6 +173,9 @@ export default {
       // show AI features when not logged in as an example, is restricted elsewhere
       return !this.appStateStore.logged_in || this.appStateStore.user.used_ai_credits < this.appStateStore.user.total_ai_credits
     },
+    selected_mode() {
+      return this.modes.find(mode => mode.id === this.new_settings.mode)
+    },
   },
   mounted() {
     this.new_settings = JSON.parse(JSON.stringify(this.settings_template))
@@ -180,6 +184,8 @@ export default {
       this.example_query_index = this.example_query_index + 1
     }, 6000)
 
+    this.new_settings.ranking_settings = this.appStateStore.settings.search.ranking_settings
+    this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
     this.eventBus.on("datasets_are_loaded", () => {
       this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
     })
@@ -224,7 +230,7 @@ export default {
 
 <template>
 
-  <div class="flex flex-col gap-10 w-[650px]">
+  <div class="mt-24 flex flex-col gap-10 w-[650px]">
 
     <div class="flex flex-row gap-2 items-center">
       <div class="flex-none min-w-0">
@@ -260,7 +266,7 @@ export default {
       <div class="relative flex-1 h-9 flex flex-row gap-3 items-center">
         <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.query"
           autocomplete="off"
-          :placeholder="modes.find(mode => mode.id == new_settings.mode).query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
+          :placeholder="selected_mode.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
           class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
         <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
           <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
@@ -275,7 +281,7 @@ export default {
         </button>
       </div>
 
-      <div v-if="!new_settings.auto_set_filters" class="flex flex-row gap-1 items-center">
+      <div v-if="!new_settings.auto_set_filters && selected_mode.supports_filters" class="flex flex-row gap-1 items-center">
         <div class="flex flex-row items-center gap-0 h-6">
           <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
             @click="new_settings.search_algorithm = 'keyword'"
@@ -341,7 +347,8 @@ export default {
 
       <SearchFilterList v-if="!new_settings.auto_set_filters"></SearchFilterList>
 
-      <div class="ml-1 mb-5 flex flex-row items-center"
+      <div v-if="selected_mode.supports_filters"
+        class="ml-1 mb-5 flex flex-row items-center"
         v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
         <Checkbox v-model="new_settings.auto_set_filters" class="" :binary="true" :disabled="!ai_is_available" />
         <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"

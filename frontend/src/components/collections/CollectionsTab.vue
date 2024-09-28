@@ -92,7 +92,7 @@ export default {
     </CollectionView>
 
     <div v-else
-      class="h-full w-full flex flex-col gap-5 justify-center items-center">
+      class="h-full w-full flex flex-col gap-5 items-center overflow-y-auto">
       <CreateCollectionArea
         @collection_created="open_collection"
       ></CreateCollectionArea>
