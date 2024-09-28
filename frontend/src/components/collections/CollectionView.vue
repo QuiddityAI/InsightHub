@@ -99,7 +99,7 @@ export default {
 
     <div class="flex-none pb-2 flex flex-col gap-3 overflow-hidden bg-white shadow-md z-40">
 
-      <div class="mt-4 ml-5 mr-5 flex-none flex flex-row gap-3">
+      <div class="mt-3 ml-5 mr-5 flex-none flex flex-row gap-3">
 
         <span class="text-xl font-serif font-bold text-black">{{ collection.name }}</span>
         <!-- <span class="text-medium text-gray-500">
@@ -192,7 +192,7 @@ export default {
     <!-- -------------------------------------------------------------- -->
 
     <div class="flex-1 overflow-hidden flex flex-row">
-      <CollectionTableView class="pl-3 pt-3 z-20" ref="collection_table_view" :collection_id="collection_id"
+      <CollectionTableView class="pl-3 pt-2 z-20" ref="collection_table_view" :collection_id="collection_id"
         :class_name="class_name" :is_positive="true">
       </CollectionTableView>
 

@@ -3,8 +3,8 @@
 import Message from 'primevue/message';
 
 import CollectionList from "../collections/CollectionList.vue"
-import CollectionClassesList from "../collections/CollectionClassesList.vue"
 import CollectionView from "../collections/CollectionView.vue"
+import CreateCollectionArea from './CreateCollectionArea.vue';
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -92,10 +92,8 @@ export default {
     </CollectionView>
 
     <div v-else
-      class="h-full w-full flex flex-col gap-5 justify-center">
-      <Message :closable="false">
-        Select a collection to view its classes
-      </Message>
+      class="h-full w-full flex flex-col gap-5 justify-center items-center">
+      <CreateCollectionArea></CreateCollectionArea>
     </div>
 
   </div>
