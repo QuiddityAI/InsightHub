@@ -22,6 +22,7 @@ from django.contrib.auth import views as auth_views
 from .views import login_from_app, signup_from_app, change_password_from_app
 from data_map_backend.views import data_backend_proxy_views
 from data_map_backend.views import other_views
+from preparation.views import api as preparation_api
 
 
 def redirect_to_admin(request):
@@ -40,6 +41,7 @@ urlpatterns = [
 
     path('legacy_backend/', include('legacy_backend.urls')),
     path('data_backend/<path:sub_path>', data_backend_proxy_views.data_backend_proxy_view, name='data_backend_proxy_view'),
+    path('api/v1/preparation/', preparation_api.urls),
 
     # Login and Logout
     path('org/login/', auth_views.LoginView.as_view(), name='login'),

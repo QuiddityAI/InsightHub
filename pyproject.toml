@@ -57,6 +57,7 @@ pacmap = "*"
 cuml-cu12 = {version = "24.6.*", source = "nvidia"}
 cachetools = "*"
 django-prometheus = "*"
+django_ninja = "*"
 
 
 [tool.poetry.group.dev.dependencies]

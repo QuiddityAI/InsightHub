@@ -1,5 +1,6 @@
 from typing import Any, Iterable
 from copy import deepcopy
+import os
 
 from .models import DatasetField
 
@@ -94,3 +95,10 @@ def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, **d_kwargs):
 
         return wrapper
     return decorator
+
+
+BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
+
+
+def is_from_backend(request):
+    return request.headers.get("Authorization") == BACKEND_AUTHENTICATION_SECRET

@@ -40,17 +40,11 @@ from ..serializers import (
     TrainedClassifierSerializer,
 )
 from ..notifier import default_notifier
+from ..utils import is_from_backend
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
-
-
-BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
-
-
-def is_from_backend(request):
-    return request.headers.get("Authorization") == BACKEND_AUTHENTICATION_SECRET
 
 
 @csrf_exempt

@@ -39,6 +39,7 @@ export default {
         result_language: 'en',
         search_algorithm: 'hybrid',
         ranking_settings: null,
+        related_organization_id: null,
       },
       new_settings: {
         dataset_id: null,
@@ -46,6 +47,9 @@ export default {
         auto_set_filters: true,
         query: '',
         result_language: 'en',
+        search_algorithm: 'hybrid',
+        ranking_settings: null,
+        related_organization_id: null,
       },
       modes: [
         {
@@ -197,14 +201,15 @@ export default {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please enter a query', life: 2000 })
         return
       }
+      this.new_settings.related_organization_id = this.appStateStore.organization_id
       httpClient
-        .post("/org/data_map/create_collection", this.new_settings)
+        .post("/api/v1/preparation/create_collection", this.new_settings)
         .then(function (response) {
           // put the new collection at the beginning of the list
           that.appStateStore.collections.unshift(response.data)
           that.appStateStore.last_used_collection_id = response.data.id
           that.appStateStore.last_used_collection_class = response.data.actual_classes[0].name
-          that.$emit("collection_created", response.data)
+          that.$emit("collection_created", response.data.id, response.data.actual_classes[0].name)
         })
     },
     run_example_query(example) {

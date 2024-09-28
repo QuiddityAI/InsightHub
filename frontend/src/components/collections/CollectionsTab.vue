@@ -93,7 +93,9 @@ export default {
 
     <div v-else
       class="h-full w-full flex flex-col gap-5 justify-center items-center">
-      <CreateCollectionArea></CreateCollectionArea>
+      <CreateCollectionArea
+        @collection_created="open_collection"
+      ></CreateCollectionArea>
     </div>
 
   </div>
