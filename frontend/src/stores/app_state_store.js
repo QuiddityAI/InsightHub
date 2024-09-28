@@ -336,6 +336,26 @@ export const useAppStateStore = defineStore("appState", {
           that.chats = response.data
         })
     },
+    update_collection(collection_id, on_success = null) {
+      const that = this
+      const body = {
+        collection_id: collection_id,
+      }
+      httpClient.post("/org/data_map/get_collection", body).then(function (response) {
+        let new_collection = response.data
+        let old_collection = that.collections.find((collection) => collection.id === collection_id)
+        if (old_collection) {
+          for (let key in new_collection) {
+            old_collection[key] = new_collection[key]
+          }
+        } else {
+          that.collections.push(new_collection)
+        }
+        if (on_success) {
+          on_success(new_collection)
+        }
+      })
+    },
     retrieve_available_organizations(on_success = null) {
       const that = this
       httpClient.post("/org/data_map/available_organizations", {}).then(function (response) {

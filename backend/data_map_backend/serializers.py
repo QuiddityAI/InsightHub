@@ -99,7 +99,7 @@ class CollectionSerializer(drf_serializers.ModelSerializer):
     user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
     related_organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
     parent_collection = drf_serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    dataset_specific_settings = DatasetSpecificSettingsOfCollectionSerializer(many=True, read_only=True)
+    # dataset_specific_settings = DatasetSpecificSettingsOfCollectionSerializer(many=True, read_only=True)
     columns = CollectionColumnSerializer(many=True, read_only=True)
     actual_classes = drf_serializers.ReadOnlyField()
 

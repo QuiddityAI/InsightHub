@@ -1079,20 +1079,26 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=True,
     )
-    extraction_questions = models.JSONField(
-        verbose_name="Extraction Questions",
+    table_columns = models.JSONField(
+        verbose_name="Table Columns", help_text="", default=list, blank=True, null=True
+    )
+    columns_with_running_processes = models.JSONField(
+        verbose_name="Current Extraction Processes",
         help_text="",
         default=list,
         blank=True,
         null=True,
     )
-    table_columns = models.JSONField(
-        verbose_name="Table Columns", help_text="", default=list, blank=True, null=True
+    agent_is_running = models.BooleanField(
+        verbose_name="Agent is running", default=False, blank=False, null=False
     )
-    current_extraction_processes = models.JSONField(
-        verbose_name="Current Extraction Processes",
+    cancel_agent_flag = models.BooleanField(
+        verbose_name="Cancel Agent Flag", default=False, blank=False, null=False
+    )
+    current_agent_step = models.CharField(
+        verbose_name="Current Agent Step",
         help_text="",
-        default=list,
+        max_length=200,
         blank=True,
         null=True,
     )

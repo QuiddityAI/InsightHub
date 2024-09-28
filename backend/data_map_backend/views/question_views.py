@@ -352,7 +352,7 @@ def extract_question_from_collection_class_items(request):
 
 
 def _extract_question_from_collection_class_items_thread(collection, class_name, column, offset, limit, order_by, collection_item_id, user_id):
-    collection.current_extraction_processes.append(column.identifier)
+    collection.columns_with_running_processes.append(column.identifier)
     collection.save()
     def _run_safe():
         try:
@@ -362,7 +362,7 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
             import traceback
             logging.error(traceback.format_exc())
         finally:
-            collection.current_extraction_processes.remove(column.identifier)
+            collection.columns_with_running_processes.remove(column.identifier)
             collection.save()
 
     try:
@@ -370,7 +370,7 @@ def _extract_question_from_collection_class_items_thread(collection, class_name,
         thread.start()
     except Exception as e:
         logging.error(e)
-        collection.current_extraction_processes.remove(column.identifier)
+        collection.columns_with_running_processes.remove(column.identifier)
         collection.save()
 
 

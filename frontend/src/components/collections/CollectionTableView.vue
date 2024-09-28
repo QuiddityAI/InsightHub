@@ -136,7 +136,7 @@ export default {
         if (JSON.stringify(response.data.columns) !== JSON.stringify(that.collection.columns)) {
           that.collection.columns = response.data.columns
         }
-        that.collection.current_extraction_processes = response.data.current_extraction_processes
+        that.collection.columns_with_running_processes = response.data.columns_with_running_processes
 
         if (on_success) {
           on_success()
@@ -226,7 +226,7 @@ export default {
       }
       httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
       .then(function (response) {
-        that.collection.current_extraction_processes = response.data.current_extraction_processes
+        that.collection.columns_with_running_processes = response.data.columns_with_running_processes
         that.get_extraction_results(column_id)
       })
       .catch(function (error) {
@@ -237,7 +237,7 @@ export default {
       const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
       this.load_collection_items([column_identifier])
       this.update_collection(() => {
-        if (this.collection.current_extraction_processes.includes(column_identifier)) {
+        if (this.collection.columns_with_running_processes.includes(column_identifier)) {
           setTimeout(() => {
             this.get_extraction_results(column_id)
           }, 1000)
@@ -285,7 +285,7 @@ export default {
         <template #body="slotProps">
           <CollectionTableCell :item="slotProps.data" :column="column"
             class="max-w-[400px]"
-            :current_extraction_processes="collection.current_extraction_processes"
+            :columns_with_running_processes="collection.columns_with_running_processes"
             :show_overlay_buttons="false">
           </CollectionTableCell>
         </template>

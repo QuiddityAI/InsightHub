@@ -29,7 +29,7 @@ const _window = window
 
 export default {
   inject: ["eventBus"],
-  props: ["item", "column", "current_extraction_processes", "show_overlay_buttons"],
+  props: ["item", "column", "columns_with_running_processes", "show_overlay_buttons"],
   emits: ["run_cell"],
   data() {
     return {
@@ -67,7 +67,7 @@ export default {
       return !this.item.column_data[this.column.identifier]?.value
     },
     is_processing() {
-      return this.is_empty && this.current_extraction_processes.includes(this.column.identifier)
+      return this.is_empty && this.columns_with_running_processes.includes(this.column.identifier)
     }
   },
   mounted() {

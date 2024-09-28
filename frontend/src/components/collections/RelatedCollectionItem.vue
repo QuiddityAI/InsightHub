@@ -53,7 +53,7 @@ export default {
       }
       httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
       .then(function (response) {
-        that.collection.current_extraction_processes = response.data.current_extraction_processes
+        that.collection.columns_with_running_processes = response.data.columns_with_running_processes
         that.get_extraction_results(column)
       })
       .catch(function (error) {
@@ -62,7 +62,7 @@ export default {
     },
     get_extraction_results(column) {
       const that = this
-      if (!that.collection.current_extraction_processes.includes(column.identifier)) {
+      if (!that.collection.columns_with_running_processes.includes(column.identifier)) {
         this.$emit('refresh_item')
       } else {
         setTimeout(() => {
@@ -78,7 +78,7 @@ export default {
         collection_id: this.collection.id,
       }
       httpClient.post("/org/data_map/get_collection", body).then(function (response) {
-        that.collection.current_extraction_processes = response.data.current_extraction_processes
+        that.collection.columns_with_running_processes = response.data.columns_with_running_processes
 
         if (on_success) {
           on_success()
@@ -119,7 +119,7 @@ export default {
           </span>
         </div>
         <CollectionTableCell :item="collection_item" :column="column" class="bg-white border rounded-md"
-          :current_extraction_processes="collection.current_extraction_processes"
+          :columns_with_running_processes="collection.columns_with_running_processes"
           :show_overlay_buttons="true"
           @run_cell="run_cell(column)">
         </CollectionTableCell>

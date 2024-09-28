@@ -11,8 +11,8 @@ import {
 } from "@heroicons/vue/24/outline"
 
 import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
 import OverlayPanel from 'primevue/overlaypanel';
+import Message from "primevue/message";
 
 import CollectionTableView from "./CollectionTableView.vue"
 import ExportCollectionArea from "./ExportCollectionArea.vue";
@@ -60,6 +60,7 @@ export default {
     }
   },
   mounted() {
+    this.check_for_agent_status()
   },
   methods: {
     delete_collection() {
@@ -77,6 +78,16 @@ export default {
           that.appStateStore.collections.splice(index, 1)
         })
       this.$emit("close")
+    },
+    check_for_agent_status() {
+      const that = this
+      if (this.collection.agent_is_running) {
+        setTimeout(() => {
+          that.appStateStore.update_collection(that.collection_id, (collection) => {
+            that.check_for_agent_status()
+          })
+        }, 500)
+      }
     },
     show_map() {
       this.appStateStore.reset_search_box()
@@ -187,6 +198,13 @@ export default {
           Summary
         </button>
       </div>
+
+      <Message v-if="collection.agent_is_running"
+        class="mx-5 -mt-0 mb-1"
+        severity="info">
+        Agent is running: {{ collection.current_agent_step }}
+      </Message>
+
     </div>
 
     <!-- -------------------------------------------------------------- -->
