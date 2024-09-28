@@ -254,7 +254,7 @@ export default {
 
     <!-- <HoverLabel class="absolute top-0 h-screen w-screen" /> -->
 
-    <LegalFooter class="absolute"
+    <LegalFooter class="absolute z-50"
       :class="{
         'bottom-1': appState.selected_app_tab === 'explore',
         'right-3': appState.selected_app_tab === 'explore',
