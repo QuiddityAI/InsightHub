@@ -1,11 +1,13 @@
 from enum import StrEnum
 import threading
-import time
 
 from django.utils import timezone
 
-from data_map_backend.models import DataCollection, User
+from data_map_backend.models import DataCollection, User, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType
+from search.schemas import SearchTaskSettings
+from search.logic import run_search_task
 from .schemas import CreateCollectionSettings
+from .prompts import item_relevancy_prompt
 
 
 class CollectionCreationModes(StrEnum):
@@ -27,9 +29,7 @@ def create_collection_using_mode(
 
     def thread_function():
         try:
-            item.current_agent_step = "Finding name..."
-            item.save()
-            time.sleep(3)
+            prepare_collection(item, settings)
         finally:
             item.agent_is_running = False
             item.save()
@@ -43,4 +43,27 @@ def create_collection_using_mode(
 def prepare_collection(
     collection: DataCollection, settings: CreateCollectionSettings
 ) -> DataCollection:
+    if settings.mode == CollectionCreationModes.QUICK_SEARCH:
+        prepare_for_quick_search(collection, settings)
     return collection
+
+
+def prepare_for_quick_search(collection: DataCollection, settings: CreateCollectionSettings) -> None:
+    eval_column = CollectionColumn(
+        collection=collection,
+        name="Relevancy?",
+        identifier="relevancy"
+    )
+    assert settings.query is not None
+    eval_column.field_type = FieldType.TEXT
+    eval_column.expression = item_relevancy_prompt.replace("{{ question }}", settings.query)
+    eval_column.source_fields = [COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS]  # type: ignore
+    eval_column.module = 'groq_llama_3_70b'
+    eval_column.save()
+
+    search_task = SearchTaskSettings(
+        dataset_id=settings.dataset_id,
+        query=settings.query,
+        result_language=settings.result_language,
+    )
+    run_search_task(collection, search_task)

@@ -846,7 +846,12 @@ def get_collection_items(request):
     if not include_column_data:
         for item in serialized_data:
             item.pop("column_data", None)
-    result = json.dumps(serialized_data)
+    collection = DataCollection.objects.get(id=collection_id)
+    result = {
+        "items": serialized_data,
+        "items_last_changed": collection.items_last_changed.isoformat(),
+    }
+    result = json.dumps(result)
 
     return HttpResponse(result, status=200, content_type="application/json")
 

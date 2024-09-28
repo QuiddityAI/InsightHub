@@ -89,7 +89,7 @@ def get_collection_items(collection_id: int, class_name: str, field_type: str | 
     if result.status_code != 200:
         logging.warning("Couldn't find collection items")
         return []
-    return result.json()
+    return result.json()['items']
 
 
 def add_item_to_collection(collection_id: int, class_name: str, is_positive: bool,

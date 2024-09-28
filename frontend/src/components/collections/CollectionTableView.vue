@@ -44,6 +44,7 @@ export default {
       order_descending: true,
 
       selected_column: null,
+      items_last_updated: new Date(2021, 1, 1),
     }
   },
   computed: {
@@ -70,6 +71,9 @@ export default {
         name: 'Last Changed',
       }
       return Object.values(available_fields)
+    },
+    available_modules() {
+      return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
     },
   },
   mounted() {
@@ -99,6 +103,11 @@ export default {
     order_descending() {
       this.load_collection_items()
     },
+    'collection.items_last_changed'(new_value, old_value) {
+      if (new_value > this.items_last_updated) {
+        this.load_collection_items()
+      }
+    },
   },
   methods: {
     load_collection_items(only_update_specific_columns=null) {
@@ -114,8 +123,9 @@ export default {
         include_column_data: true,
       }
       httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
+        const items = response.data['items']
         if (only_update_specific_columns) {
-          for (const item of response.data) {
+          for (const item of items) {
             const existing_item = that.collection_items.find((i) => i.id === item.id)
             if (!existing_item) continue
             for (const column_identifier of only_update_specific_columns) {
@@ -123,7 +133,8 @@ export default {
             }
           }
         } else {
-          that.collection_items = response.data
+          that.collection_items = items
+          that.items_last_updated = response.data['items_last_changed']
         }
       })
     },
@@ -142,36 +153,6 @@ export default {
           on_success()
         }
       })
-    },
-    add_extraction_question(name, prompt, process_current_page=false) {
-      if (!name || !this.selected_source_fields.length) {
-        return
-      }
-      const that = this
-      const body = {
-        collection_id: this.collection_id,
-        field_type: FieldType.TEXT,
-        name: name,
-        expression: prompt,
-        source_fields: this.selected_source_fields,
-        module: this.selected_module,
-      }
-      httpClient.post(`/org/data_map/add_collection_column`, body)
-      .then(function (response) {
-        if (!that.collection.columns) {
-          that.collection.columns = []
-        }
-        const column = response.data
-        that.collection.columns.push(column)
-        if (process_current_page) {
-          that.extract_question(column.id, true)
-        }
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-      this.$refs.new_question_name.value = ''
-      this.$refs.new_question_prompt.value = ''
     },
     delete_column(column_id) {
       const that = this
@@ -245,7 +226,8 @@ export default {
       })
     },
     human_readable_source_fields(fields) {
-      return fields.map((field) => this.available_source_fields.find((f) => f.identifier === field).name).join(", ")
+      const available_source_fields = this.appStateStore.available_source_fields(this.collection, this.appStateStore.included_datasets(this.collection_items))
+      return fields.map((field) => available_source_fields.find((f) => f.identifier === field).name).join(", ")
     },
     human_readable_module_name(module_identifier) {
       return this.available_modules.find((m) => m.identifier === module_identifier)?.name

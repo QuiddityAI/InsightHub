@@ -30,48 +30,6 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
-    included_datasets() {
-      const dataset_ids = new Set()
-      for (const item of this.collection_items) {
-        const dataset_id = item.dataset_id
-        dataset_ids.add(dataset_id)
-      }
-      return Array.from(dataset_ids).map((dataset_id) => this.appStateStore.datasets[dataset_id])
-    },
-    available_source_fields() {
-      const available_fields = {}
-      const unsupported_field_types = [FieldType.VECTOR, FieldType.CLASS_PROBABILITY, FieldType.ARBITRARY_OBJECT]
-      function capitalizeFirstLetter(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-      }
-      for (const dataset of this.included_datasets) {
-        if (!dataset?.schema?.object_fields) continue
-        for (const field of Object.values(dataset.schema.object_fields)) {
-          if (unsupported_field_types.includes(field.field_type)) {
-            continue
-          }
-          available_fields[field.identifier] = {
-            identifier: field.identifier,
-            name: `${capitalizeFirstLetter(dataset.schema.entity_name)}: ${field.name || field.identifier}`,
-          }
-        }
-      }
-      for (const column of this.collection.columns) {
-        available_fields[column.identifier] = {
-          identifier: '_column__' + column.identifier,
-          name: `Column: ${column.name}`,
-        }
-      }
-      available_fields['_descriptive_text_fields'] = {
-        identifier: '_descriptive_text_fields',
-        name: 'All short descriptive text fields',
-      }
-      available_fields['_full_text_snippets'] = {
-        identifier: '_full_text_snippets',
-        name: 'Full text excerpts',
-      }
-      return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
-    },
     available_modules() {
       return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
     },
@@ -84,7 +42,36 @@ export default {
   watch: {
   },
   methods: {
-
+    add_extraction_question(name, prompt, process_current_page=false) {
+      if (!name || !this.selected_source_fields.length) {
+        return
+      }
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        field_type: FieldType.TEXT,
+        name: name,
+        expression: prompt,
+        source_fields: this.selected_source_fields,
+        module: this.selected_module,
+      }
+      httpClient.post(`/org/data_map/add_collection_column`, body)
+      .then(function (response) {
+        if (!that.collection.columns) {
+          that.collection.columns = []
+        }
+        const column = response.data
+        that.collection.columns.push(column)
+        if (process_current_page) {
+          that.extract_question(column.id, true)
+        }
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+      this.$refs.new_question_name.value = ''
+      this.$refs.new_question_prompt.value = ''
+    },
   },
 }
 </script>
@@ -98,7 +85,7 @@ export default {
     </div>
     <div class="flex flex-row gap-2 items-center">
       <div class="flex-1 min-w-0">
-        <MultiSelect v-model="selected_source_fields" :options="available_source_fields" optionLabel="name"
+        <MultiSelect v-model="selected_source_fields" :options="appState.available_source_fields(appState.included_datasets(collection_items))" optionLabel="name"
           optionValue="identifier" placeholder="Select Sources..." :maxSelectedLabels="0"
           selectedItemsLabel="{0} Source(s)"
           class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />

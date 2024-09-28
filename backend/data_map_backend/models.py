@@ -1072,12 +1072,12 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=True,
     )
-    items_last_changed = models.JSONField(
+    items_last_changed = models.DateTimeField(
         verbose_name="Items Last Changed",
-        help_text="For each class, the last time an item was added or removed",
-        default=dict,
-        blank=True,
-        null=True,
+        help_text="Last time items were added or their relevance was changed",
+        default=timezone.now,
+        blank=False,
+        null=False,
     )
     table_columns = models.JSONField(
         verbose_name="Table Columns", help_text="", default=list, blank=True, null=True
@@ -1212,6 +1212,11 @@ class DatasetSpecificSettingsOfCollection(models.Model):
 
 def get_random_string():
     return "".join(random.choices(string.ascii_lowercase, k=9))
+
+
+class COLUMN_META_SOURCE_FIELDS:
+    DESCRIPTIVE_TEXT_FIELDS = "_descriptive_text_fields"
+    FULL_TEXT_SNIPPETS = "_full_text_snippets"
 
 
 class CollectionColumn(models.Model):
