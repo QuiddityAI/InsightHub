@@ -11,9 +11,11 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 
 </script>
@@ -26,39 +28,26 @@ export default {
   emits: [],
   data() {
     return {
-      selected_collection: null,
-      selected_collection_class: null,
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
     this.eventBus.on("show_table", ({collection_id, class_name}) => {
-      this.selected_collection = collection_id
-      this.selected_collection_class = class_name
+      this.collectionStore.open_collection(collection_id, class_name)
     })
   },
   watch: {
-  },
-  methods: {
-    open_collection(collection_id, class_name) {
-      if (this.selected_collection) {
-        this.close_collection()
-        setTimeout(() => {
-          this.selected_collection = collection_id
-          this.selected_collection_class = class_name
-        }, 0)
-      } else {
-        this.selected_collection = collection_id
-        this.selected_collection_class = class_name
+    'appStateStore.organization'(newVal, oldVal) {
+      if (newVal) {
+        this.collectionStore.get_available_collections(this.appStateStore.organization.id)
       }
     },
-    close_collection() {
-      this.selected_collection = null
-      this.selected_collection_class = null
-    },
+  },
+  methods: {
   },
 }
 </script>
@@ -68,12 +57,7 @@ export default {
 
     <!-- Left Side Bar -->
     <CollectionList
-      class="z-40"
-      :collapsed="selected_collection && selected_collection_class"
-      :selected_collection="selected_collection"
-      :selected_collection_class="selected_collection_class"
-      @collection_selected="open_collection"
-      @open_new_collection_dialog="close_collection">
+      class="z-40">
     </CollectionList>
 
     <!-- Right Side Content -->
@@ -84,17 +68,13 @@ export default {
       </Message>
     </div>
 
-    <CollectionView v-else-if="selected_collection && selected_collection_class"
-      class="flex-1 h-full relative z-20"
-      :collection_id="selected_collection"
-      :class_name="selected_collection_class"
-      @close="close_collection">
+    <CollectionView v-else-if="collectionStore.collection"
+      class="flex-1 h-full relative z-20">
     </CollectionView>
 
     <div v-else
       class="h-full w-full flex flex-col gap-5 items-center overflow-y-auto">
       <CreateCollectionArea
-        @collection_created="open_collection"
       ></CreateCollectionArea>
     </div>
 

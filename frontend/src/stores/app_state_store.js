@@ -13,7 +13,6 @@ export const useAppStateStore = defineStore("appState", {
     return {
       eventBus: inject("eventBus"),
       mapState: useMapStateStore(),
-      toast: useToast(),
 
       available_organizations: [],
       organization_id: null,
@@ -335,26 +334,6 @@ export const useAppStateStore = defineStore("appState", {
         .then(function (response) {
           that.chats = response.data
         })
-    },
-    update_collection(collection_id, on_success = null) {
-      const that = this
-      const body = {
-        collection_id: collection_id,
-      }
-      httpClient.post("/org/data_map/get_collection", body).then(function (response) {
-        let new_collection = response.data
-        let old_collection = that.collections.find((collection) => collection.id === collection_id)
-        if (old_collection) {
-          for (let key in new_collection) {
-            old_collection[key] = new_collection[key]
-          }
-        } else {
-          that.collections.push(new_collection)
-        }
-        if (on_success) {
-          on_success(new_collection)
-        }
-      })
     },
     retrieve_available_organizations(on_success = null) {
       const that = this
@@ -1451,7 +1430,7 @@ export const useAppStateStore = defineStore("appState", {
       for (const ds_and_item_id of this.visible_result_ids) {
         this.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, false)
       }
-      this.toast.add({severity: 'success', summary: 'Items added to collection', detail: `${this.visible_result_ids.length} items added to the collection`, life: 3000})
+      useToast().add({severity: 'success', summary: 'Items added to collection', detail: `${this.visible_result_ids.length} items added to the collection`, life: 3000})
     },
     add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, show_toast=true) {
       const that = this
@@ -1492,7 +1471,7 @@ export const useAppStateStore = defineStore("appState", {
       for (const ds_and_item_id of this.visible_result_ids) {
         this.remove_item_from_collection(ds_and_item_id, collection_id, class_name, false)
       }
-      this.toast.add({severity: 'success', summary: 'Items removed from collection', detail: `${this.visible_result_ids.length} items removed from the collection`, life: 3000})
+      useToast().add({severity: 'success', summary: 'Items removed from collection', detail: `${this.visible_result_ids.length} items removed from the collection`, life: 3000})
     },
     remove_item_from_collection(ds_and_item_id, collection_id, class_name, show_toast=true) {
       const that = this
@@ -1525,48 +1504,6 @@ export const useAppStateStore = defineStore("appState", {
             that.toast.add({severity: 'success', summary: 'Item removed from collection', detail: 'Item removed from the collection', life: 3000})
           }
         })
-    },
-    included_datasets(collection_items) {
-      const dataset_ids = new Set()
-      for (const item of collection_items) {
-        const dataset_id = item.dataset_id
-        dataset_ids.add(dataset_id)
-      }
-      return Array.from(dataset_ids).map((dataset_id) => this.datasets[dataset_id])
-    },
-    available_source_fields(collection, included_datasets) {
-      const available_fields = {}
-      const unsupported_field_types = [FieldType.VECTOR, FieldType.CLASS_PROBABILITY, FieldType.ARBITRARY_OBJECT]
-      function capitalizeFirstLetter(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-      }
-      for (const dataset of included_datasets) {
-        if (!dataset?.schema?.object_fields) continue
-        for (const field of Object.values(dataset.schema.object_fields)) {
-          if (unsupported_field_types.includes(field.field_type)) {
-            continue
-          }
-          available_fields[field.identifier] = {
-            identifier: field.identifier,
-            name: `${capitalizeFirstLetter(dataset.schema.entity_name)}: ${field.name || field.identifier}`,
-          }
-        }
-      }
-      for (const column of collection.columns) {
-        available_fields[column.identifier] = {
-          identifier: '_column__' + column.identifier,
-          name: `Column: ${column.name}`,
-        }
-      }
-      available_fields['_descriptive_text_fields'] = {
-        identifier: '_descriptive_text_fields',
-        name: 'All short descriptive text fields',
-      }
-      available_fields['_full_text_snippets'] = {
-        identifier: '_full_text_snippets',
-        name: 'Full text excerpts',
-      }
-      return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
   },
 })

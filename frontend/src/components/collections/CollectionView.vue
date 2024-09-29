@@ -25,18 +25,19 @@ import WritingTaskArea from "./WritingTaskArea.vue";
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 
 const appState = useAppStateStore()
+const collectionStore = useCollectionStore()
 
 </script>
 
 <script>
 export default {
-  props: ["collection_id", "class_name"],
-  emits: ["close"],
+  props: [],
+  emits: [],
   data() {
     return {
-      collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       trained_classifier: null,
       is_retraining: false,
       retraining_progress: 0.0,
@@ -55,6 +56,13 @@ export default {
   },
   computed: {
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
+    collection() {
+      return this.collectionStore.collection
+    },
+    class_name() {
+      return this.collectionStore.class_name
+    },
     class_details() {
       return this.collection.actual_classes.find((collection_class) => collection_class.name === this.class_name)
     },
@@ -70,23 +78,13 @@ export default {
       if (!confirm("Are you sure you want to delete this collection?")) {
         return
       }
-      const that = this
-      const delete_collection_body = {
-        collection_id: this.collection_id,
-      }
-      httpClient
-        .post("/org/data_map/delete_collection", delete_collection_body)
-        .then(function (response) {
-          const index = that.appStateStore.collections.findIndex((collection) => collection.id === that.collection_id)
-          that.appStateStore.collections.splice(index, 1)
-        })
-      this.$emit("close")
+      this.collectionStore.delete_collection(this.collectionStore.collection_id)
     },
     check_for_agent_status() {
       const that = this
       if (this.collection.agent_is_running) {
         setTimeout(() => {
-          that.appStateStore.update_collection(that.collection_id, (collection) => {
+          that.appStateStore.update_collection(that.collectionStore.collection_id, (collection) => {
             that.check_for_agent_status()
           })
         }, 500)
@@ -161,7 +159,7 @@ export default {
           <DocumentIcon class="h-4 w-4 inline" />
         </button>
         <Dialog v-model:visible="show_export_dialog" modal header="Export">
-          <ExportCollectionArea :collection_id="collection_id" :class_name="class_name">
+          <ExportCollectionArea :collection_id="collectionStore.collection_id" :class_name="class_name">
           </ExportCollectionArea>
         </Dialog>
 
@@ -171,7 +169,7 @@ export default {
           <TableCellsIcon class="h-4 w-4 inline" />
         </button>
         <OverlayPanel ref="export_dialog">
-          <ExportTableArea :collection_id="collection_id" :class_name="class_name">
+          <ExportTableArea :collection_id="collectionStore.collection_id" :class_name="class_name">
           </ExportTableArea>
         </OverlayPanel>
 
@@ -219,7 +217,7 @@ export default {
     <!-- -------------------------------------------------------------- -->
 
     <div class="flex-1 overflow-hidden flex flex-row">
-      <CollectionTableView class="pl-3 pt-2 z-20" ref="collection_table_view" :collection_id="collection_id"
+      <CollectionTableView class="pl-3 pt-2 z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
         :class_name="class_name" :is_positive="true">
       </CollectionTableView>
 
@@ -238,7 +236,7 @@ export default {
 
         <WritingTaskArea v-if="right_side_view === 'summary'"
           class=""
-          :collection_id="collection_id" :class_name="class_name">
+          :collection_id="collectionStore.collection_id" :class_name="class_name">
         </WritingTaskArea>
       </div>
     </div>

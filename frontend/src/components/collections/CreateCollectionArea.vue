@@ -17,9 +17,11 @@ import { languages } from "../../utils/utils"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
 
@@ -28,7 +30,7 @@ const toast = useToast()
 export default {
   inject: ["eventBus"],
   props: [],
-  emits: ["collection_created"],
+  emits: [],
   data() {
     return {
       settings_template: {
@@ -116,6 +118,7 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
     grouped_available_datasets() {
       const grouped = {}
       for (const dataset of Object.values(this.appStateStore.datasets)) {
@@ -215,7 +218,7 @@ export default {
           that.appStateStore.collections.unshift(response.data)
           that.appStateStore.last_used_collection_id = response.data.id
           that.appStateStore.last_used_collection_class = response.data.actual_classes[0].name
-          that.$emit("collection_created", response.data.id, response.data.actual_classes[0].name)
+          that.collectionStore.open_collection(response.data.id, response.data.actual_classes[0].name)
         })
     },
     run_example_query(example) {

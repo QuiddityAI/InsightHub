@@ -8,10 +8,12 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 import { FieldType } from "../../utils/utils"
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
 
@@ -30,6 +32,7 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
     available_modules() {
       return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
     },
@@ -85,7 +88,7 @@ export default {
     </div>
     <div class="flex flex-row gap-2 items-center">
       <div class="flex-1 min-w-0">
-        <MultiSelect v-model="selected_source_fields" :options="appState.available_source_fields(appState.included_datasets(collection_items))" optionLabel="name"
+        <MultiSelect v-model="selected_source_fields" :options="collectionStore.available_source_fields" optionLabel="name"
           optionValue="identifier" placeholder="Select Sources..." :maxSelectedLabels="0"
           selectedItemsLabel="{0} Source(s)"
           class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />

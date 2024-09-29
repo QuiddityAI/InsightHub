@@ -15,6 +15,7 @@ import markedKatex from "marked-katex-extension";
 import "./style.css"
 import MainApp from "./apps/MainApp.vue"
 import { get_download_url } from "./utils/utils";  // used in item rendering definitions
+import { useAppStateStore } from "./stores/app_state_store";
 
 globalThis.get_download_url = get_download_url;
 
@@ -41,4 +42,8 @@ app.directive('tooltip', Tooltip);
 app.use(VueApexCharts)
 
 app.use(pinia)
+const appState = useAppStateStore()
+app.provide('appState', appState);
+
 app.mount("#app")
+
