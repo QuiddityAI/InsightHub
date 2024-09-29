@@ -849,11 +849,12 @@ def get_collection_items(request):
         return_items = candidates
         return_items = return_items.order_by('-search_score')
     else:
-        return_items = all_items
+        return_items = all_items.filter(relevance__gte=2)
+        logging.warning(f"returning {return_items.count()} items")
         return_items = return_items.order_by(order_by)
 
     return_items = return_items[offset : offset + limit]
-    serialized_data = CollectionItemSerializer(all_items, many=True).data
+    serialized_data = CollectionItemSerializer(return_items, many=True).data
 
     if not include_column_data:
         for item in serialized_data:
@@ -967,6 +968,35 @@ def add_item_to_collection(request):
     collection.save()
 
     return HttpResponse(serialized_data, status=200, content_type="application/json")
+
+
+@csrf_exempt
+def set_collection_item_relevance(request):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        collection_item_id: int = data["collection_item_id"]
+        relevance: int = data["relevance"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        collection_item = CollectionItem.objects.get(id=collection_item_id)
+    except CollectionItem.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection_item.collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    collection_item.relevance = relevance
+    collection_item.save()
+
+    # TODO: check if actions need to be done for approved item
+
+    return HttpResponse(None, status=204)
 
 
 @csrf_exempt

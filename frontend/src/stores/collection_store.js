@@ -201,6 +201,19 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     // ------------------
+    set_item_relevance(collection_item, relevance) {
+      const that = this
+      const body = {
+        collection_item_id: collection_item.id,
+        relevance: relevance,
+      }
+      httpClient
+        .post("/org/data_map/set_collection_item_relevance", body)
+        .then((response) => {
+          collection_item.relevance = relevance
+        })
+    },
+    // ------------------
     exit_search_mode() {
       const that = this
       const body = {

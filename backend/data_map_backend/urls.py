@@ -23,6 +23,7 @@ urlpatterns=[
     path("get_related_collection_items", other_views.get_related_collection_items),
     path("delete_collection", other_views.delete_collection),
     path("add_item_to_collection", other_views.add_item_to_collection),
+    path("set_collection_item_relevance", other_views.set_collection_item_relevance),
     path("remove_collection_item", other_views.remove_collection_item),
     path("remove_collection_item_by_value", other_views.remove_collection_item_by_value),
     path("add_stored_map", other_views.add_stored_map),

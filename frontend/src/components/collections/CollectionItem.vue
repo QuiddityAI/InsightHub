@@ -1,19 +1,25 @@
 <script setup>
 import {
   TrashIcon,
+  HandThumbUpIcon,
+  HandThumbDownIcon,
 } from "@heroicons/vue/24/outline"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 
 const appState = useAppStateStore()
+const collectionStore = useCollectionStore()
+
 </script>
 
 <script>
 import { httpClient } from "../../api/httpClient"
+import { useCollectionStore } from "../../stores/collection_store";
 
 export default {
-  props: ["dataset_id", "item_id", "initial_item", "is_positive", "show_remove_button"],
+  props: ["dataset_id", "item_id", "initial_item", "is_positive", "show_remove_button", "collection_item"],
   emits: ["remove"],
   data() {
     return {
@@ -22,6 +28,7 @@ export default {
   },
   computed: {
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
     rendering() {
       return this.appStateStore.datasets[this.dataset_id]?.schema.result_list_rendering
     },
@@ -74,15 +81,32 @@ export default {
           @click="appState.show_document_details([dataset_id, item_id])"
           >
         </button>
+        <div class="flex-1"></div>
+        <span v-if="collection_item.relevance >= -1 && collection_item.relevance <= 1"
+          class="ml-2 text-xs text-orange-300">
+          Candidate
+        </span>
       </div>
       <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
 
       <div class="flex-1"></div>
-      <div class="mt-2 flex flex-row items-center">
-        <span class="mr-3 rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+      <div class="mt-2 flex flex-row gap-3 items-center">
+        <span class="rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
           {{ appState.datasets[dataset_id]?.name }}
         </span>
         <div class="flex-1"></div>
+        <button class="hover:text-green-500"
+          :class="{ 'text-green-500': collection_item.relevance > 0 }"
+          v-tooltip="{ value: 'Add this item permanently' }"
+          @click="collectionStore.set_item_relevance(collection_item, 3)">
+          <HandThumbUpIcon class="h-4 w-4"></HandThumbUpIcon>
+        </button>
+        <button class="hover:text-red-500"
+          :class="{ 'text-red-500': collection_item.relevance < 0 }"
+          v-tooltip="{ value: 'Mark this item as irrelevant, hide from future searches in this collection' }"
+          @click="collectionStore.set_item_relevance(collection_item, -3)">
+          <HandThumbDownIcon class="h-4 w-4"></HandThumbDownIcon>
+        </button>
         <button v-if="show_remove_button"
           @click.stop="$emit('remove')"
           v-tooltip.right="{ value: 'Remove from this collection', showDelay: 400 }"
