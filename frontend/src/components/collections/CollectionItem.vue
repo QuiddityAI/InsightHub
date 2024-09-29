@@ -24,6 +24,9 @@ export default {
   data() {
     return {
       item: {},
+      loading_item: false,
+      body_text_collapsed: true,
+      show_more_button: false,
     }
   },
   computed: {
@@ -51,9 +54,8 @@ export default {
 
       if (this.initial_item && this.initial_item._dataset_id === this.dataset_id && this.initial_item._id === this.item_id) {
         this.item = this.initial_item
-      } else {
-        this.get_full_item()
       }
+      this.get_full_item()
     },
     get_full_item() {
       const that = this
@@ -63,8 +65,14 @@ export default {
         item_id: this.item_id,
         fields: this.rendering.required_fields,
       }
+      that.loading_item = true
       httpClient.post("/data_backend/document/details_by_id", payload).then(function (response) {
         that.item = response.data
+          // height of text is only available after rendering:
+          setTimeout(() => {
+            that.show_more_button = that.$refs.body_text?.scrollHeight > that.$refs.body_text?.clientHeight
+          }, 100)
+          that.loading_item = false
       })
     },
   },
@@ -72,11 +80,11 @@ export default {
 </script>
 
 <template>
-  <div v-if="rendering && item" class="rounded bg-gray-100/50 p-3 flex flex-row gap-2">
-    <div class="flex-1">
-      <div class="flex flex-row">
+  <div v-if="rendering && item" class="flex flex-row gap-3 mb-4">
+    <div class="flex-1 flex flex-col gap-1">
+      <div class="flex flex-row items-start">
         <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
-        <button class="text-left text-sm font-medium leading-tight hover:text-sky-600"
+        <button class="text-left text-[15px] font-medium leading-tight text-black hover:text-sky-600"
           v-html="rendering.title(item)"
           @click="appState.show_document_details([dataset_id, item_id])"
           >
@@ -86,15 +94,51 @@ export default {
           class="ml-2 text-xs text-orange-300">
           Candidate
         </span>
+        <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"
+          v-tooltip.bottom="{ value: tag.tooltip, showDelay: 500 }"
+          class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
+          {{ tag.label }}
+        </span>
       </div>
+
       <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
 
+      <p ref="body_text" class="mt-1 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
+       v-html="rendering.body(item)"></p>
+
       <div class="flex-1"></div>
-      <div class="mt-2 flex flex-row gap-3 items-center">
-        <span class="rounded-xl bg-gray-200 px-2 text-xs text-gray-500">
+
+      <div class="mt-1 flex flex-row gap-3 items-center">
+        <div v-if="show_more_button" class="text-xs text-gray-700">
+          <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
+            {{ body_text_collapsed ? "Show more" : "Show less" }}
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <span v-if="main_relevance_influence === 'vector'"
+          v-tooltip.bottom="{ value: 'This item was mainly found because it matches the meaning of the search query.', showDelay: 500 }"
+          class="text-xs text-gray-400">
+          Found by Meaning
+        </span>
+        <span v-if="main_relevance_influence === 'keyword'"
+          v-tooltip.bottom="{ value: 'This item was mainly found because it contains keywords of the search query.', showDelay: 500 }"
+          class="text-xs text-gray-400">
+          Found by Keywords
+        </span>
+        <span v-if="main_relevance_influence === 'both'"
+          v-tooltip.bottom="{ value: 'This item was found by meaning and keywords.', showDelay: 500 }"
+          class="text-xs text-gray-400">
+          Found by Meaning & Keywords
+        </span>
+
+        <span class="italic px-2 text-xs text-gray-500">
           {{ appState.datasets[dataset_id]?.name }}
         </span>
+
         <div class="flex-1"></div>
+
         <button class="hover:text-green-500"
           :class="{ 'text-green-500': collection_item.relevance > 0 }"
           v-tooltip="{ value: 'Add this item permanently' }"

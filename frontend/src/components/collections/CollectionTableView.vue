@@ -174,7 +174,8 @@ export default {
 
 <template>
   <div class="flex-1 flex flex-col overflow-x-hidden">
-    <DataTable :value="collectionStore.collection_items" tableStyle="" scrollable scrollHeight="flex" size="small" class="min-h-0 overflow-x-auto">
+    <DataTable :value="collectionStore.collection_items" tableStyle="" scrollable scrollHeight="flex" size="small"
+      class="min-h-0 overflow-x-auto ml-5">
       <template #empty>
         <div class="py-10 flex flex-row justify-center text-gray-500">No items yet</div>
       </template>

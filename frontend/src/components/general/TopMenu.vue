@@ -18,12 +18,14 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store";
 
 import UserMenu from "../search/UserMenu.vue";
 import LoginButton from "../general/LoginButton.vue";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
 
@@ -41,6 +43,7 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
     this.internal_organization_id = this.appStateStore.organization_id
@@ -93,7 +96,7 @@ export default {
           @click="appState.set_app_tab('explore')">
           Explore</button> -->
          <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'collections'}"
-          @click="appState.set_app_tab('collections')">
+          @click="appState.set_app_tab('collections'); collectionStore.close_collection()">
           Home</button>
          <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
           v-if="appState.user?.is_staff"

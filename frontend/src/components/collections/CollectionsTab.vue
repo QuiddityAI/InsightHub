@@ -56,7 +56,7 @@ export default {
   <div class="overflow-hidden flex flex-row relative">
 
     <!-- Left Side Bar -->
-    <CollectionList
+    <CollectionList v-if="collectionStore.collection_id === null"
       class="z-40">
     </CollectionList>
 

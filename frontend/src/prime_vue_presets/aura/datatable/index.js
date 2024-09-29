@@ -114,7 +114,7 @@ export default {
 
                 // Shape
                 { 'first:border-l border-y border-r': context?.showGridlines },
-                'border-0 border-b border-solid',
+                'border-0 border-b-0 border-solid',
 
                 // Spacing
                 context?.size === 'small' ? 'py-[0.375rem] px-2' : context?.size === 'large' ? 'py-[0.9375rem] px-5' : 'py-3 px-4',
@@ -156,7 +156,7 @@ export default {
                 'text-left',
 
                 // Shape
-                'border-0 border-b border-solid',
+                'border-0 border-b-0 border-solid',
                 { 'first:border-l border-r border-b': context?.showGridlines },
                 { 'bg-surface-0 dark:bg-surface-900': parent.instance.frozenRow || props.frozen || props.frozen === '' },
 
