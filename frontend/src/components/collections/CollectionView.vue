@@ -57,7 +57,10 @@ export default {
     ...mapStores(useAppStateStore),
     class_details() {
       return this.collection.actual_classes.find((collection_class) => collection_class.name === this.class_name)
-    }
+    },
+    search_mode() {
+      return this.$refs.collection_table_view?.search_mode
+    },
   },
   mounted() {
     this.check_for_agent_status()
@@ -203,6 +206,12 @@ export default {
         class="mx-5 -mt-0 mb-1"
         severity="info">
         Agent is running: {{ collection.current_agent_step }}
+      </Message>
+
+      <Message v-if="search_mode"
+        class="mx-5 -mt-0 mb-1"
+        severity="warn">
+        Search Mode: Only candidates are shown
       </Message>
 
     </div>

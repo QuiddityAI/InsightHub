@@ -35,13 +35,18 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings)
         }
     }
     results = get_search_results(json.dumps(params), 'list')
+    items_by_dataset = results['items_by_dataset']
     new_items = []
     for ds_and_item_id in results['sorted_ids']:
+        value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
         item = CollectionItem(
             collection=collection,
+            relevance=0,
             field_type=FieldType.IDENTIFIER,
             dataset_id=ds_and_item_id[0],
             item_id=ds_and_item_id[1],
+            metadata=value,
+            search_score=value['_score'],
         )
         new_items.append(item)
     CollectionItem.objects.bulk_create(new_items)

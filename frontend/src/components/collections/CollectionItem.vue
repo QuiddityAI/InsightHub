@@ -13,16 +13,18 @@ const appState = useAppStateStore()
 import { httpClient } from "../../api/httpClient"
 
 export default {
-  props: ["dataset_id", "item_id", "is_positive", "show_remove_button"],
+  props: ["dataset_id", "item_id", "initial_item", "is_positive", "show_remove_button"],
   emits: ["remove"],
   data() {
     return {
       item: {},
-      rendering: null,
     }
   },
   computed: {
     ...mapStores(useAppStateStore),
+    rendering() {
+      return this.appStateStore.datasets[this.dataset_id]?.schema.result_list_rendering
+    },
   },
   watch: {
     dataset_id() {
@@ -39,14 +41,16 @@ export default {
     init() {
       const that = this
       if (!this.dataset_id || !this.item_id) return
-      if (this.item._dataset_id === this.dataset_id && this.item._id === this.item_id) return
-      // reset item to avoid showing old data with new rendering settings
-      this.item = {}
-      this.rendering = this.appStateStore.datasets[this.dataset_id]?.schema.result_list_rendering
-      if (!this.rendering) {
-        this.item = {}
-        return
+
+      if (this.initial_item && this.initial_item._dataset_id === this.dataset_id && this.initial_item._id === this.item_id) {
+        this.item = this.initial_item
+      } else {
+        this.get_full_item()
       }
+    },
+    get_full_item() {
+      const that = this
+      if (!this.dataset_id || !this.item_id) return
       const payload = {
         dataset_id: this.dataset_id,
         item_id: this.item_id,

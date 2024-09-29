@@ -1263,6 +1263,12 @@ class CollectionColumn(models.Model):
         blank=True,
         null=True,
     )
+    prompt_template = models.TextField(
+        verbose_name="Prompt Template",
+        help_text="Template for the prompt if this column uses an LLM'",
+        blank=True,
+        null=True,
+    )
     source_fields = models.JSONField(
         verbose_name="Source Fields",
         help_text="List of source fields to be used for this column",
@@ -1275,6 +1281,12 @@ class CollectionColumn(models.Model):
     )
     parameters = models.JSONField(
         verbose_name="Parameters", default=dict, blank=True, null=True
+    )
+    auto_run_for_approved_items = models.BooleanField(
+        verbose_name="Auto Run for Approved Items", default=False, blank=False, null=False
+    )
+    auto_run_for_candidates = models.BooleanField(
+        verbose_name="Auto Run for Candidates", default=False, blank=False, null=False
     )
 
     def __str__(self):
@@ -1309,6 +1321,19 @@ class CollectionItem(models.Model):
         blank=False,
         null=False,
     )
+    relevance = models.IntegerField(
+        verbose_name="Relevance",
+        help_text="From +3 to -3. 0 is a new, non-reviewed candidate",
+        default=0,
+        blank=False,
+        null=False,
+    )
+    search_score = models.FloatField(
+        verbose_name="Search Score",
+        help_text="Score from the search engine",
+        blank=True,
+        null=True,
+    )
     is_positive = models.BooleanField(
         verbose_name="Is positive", default=True, blank=False, null=False
     )
@@ -1325,6 +1350,13 @@ class CollectionItem(models.Model):
         blank=False,
         null=False,
     )
+    origins = models.JSONField(
+        verbose_name="Sources",
+        help_text="Searches where this item came from",
+        default=list,
+        blank=True,
+        null=True,
+    )
     dataset_id = models.IntegerField(
         verbose_name="Dataset ID (in case this is an item reference aka IDENTIFIER)",
         blank=True,
@@ -1336,9 +1368,29 @@ class CollectionItem(models.Model):
         blank=True,
         null=True,
     )
+    metadata = models.JSONField(
+        verbose_name="Metadata",
+        help_text="Item content except for full text etc.",
+        default=dict,
+        blank=True,
+        null=True,
+    )
     value = models.TextField(
         verbose_name="Value",
         help_text="Any non-identifier value, e.g. plain text or image URL",
+        blank=True,
+        null=True,
+    )
+    relevant_parts = models.JSONField(
+        verbose_name="Relevant Parts",
+        help_text="Highlights from text search, relevant chunks from vector search, image regions etc.",
+        default=list,
+        blank=True,
+        null=True,
+    )
+    full_text = models.TextField(
+        verbose_name="Full Text",
+        help_text="Full text extracted from PDF or web page etc.",
         blank=True,
         null=True,
     )

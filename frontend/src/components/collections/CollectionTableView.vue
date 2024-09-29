@@ -31,12 +31,13 @@ const toast = useToast()
 export default {
   inject: ["eventBus"],
   props: ["collection_id", "class_name", "is_positive"],
-  expose: ["collection_items"],
+  expose: ["collection_items", "search_mode"],
   emits: [],
   data() {
     return {
       collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       collection_items: [],
+      search_mode: false,
 
       first_index: 0,
       per_page: 10,
@@ -135,6 +136,7 @@ export default {
         } else {
           that.collection_items = items
           that.items_last_updated = response.data['items_last_changed']
+          that.search_mode = response.data['search_mode']
         }
       })
     },
@@ -250,6 +252,7 @@ export default {
           <CollectionItem
             :dataset_id="slotProps.data.dataset_id"
             :item_id="slotProps.data.item_id"
+            :initial_item="slotProps.data.metadata"
             :is_positive="slotProps.data.is_positive"
             :show_remove_button="true"
             @remove="appState.remove_item_from_collection([slotProps.data.dataset_id, slotProps.data.item_id], collection_id, class_name)"

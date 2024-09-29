@@ -841,15 +841,29 @@ def get_collection_items(request):
         all_items = CollectionItem.objects.filter(
             collection_id=collection_id, classes__contains=[class_name]
         )
-    all_items = all_items.order_by(order_by)[offset : offset + limit]
+
+    candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
+    search_mode = candidates.exists()
+
+    if search_mode:
+        return_items = candidates
+        return_items = return_items.order_by('-search_score')
+    else:
+        return_items = all_items
+        return_items = return_items.order_by(order_by)
+
+    return_items = return_items[offset : offset + limit]
     serialized_data = CollectionItemSerializer(all_items, many=True).data
+
     if not include_column_data:
         for item in serialized_data:
             item.pop("column_data", None)
+
     collection = DataCollection.objects.get(id=collection_id)
     result = {
         "items": serialized_data,
         "items_last_changed": collection.items_last_changed.isoformat(),
+        "search_mode": search_mode,
     }
     result = json.dumps(result)
 
