@@ -129,7 +129,7 @@ export default {
         </button>
         <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
           <SearchTaskDialog :collection="collection" :collection_class="class_name"
-            @close="show_search_task_dialog = false"></SearchTaskDialog>
+            @close="show_search_task_dialog = false; check_for_agent_status()"></SearchTaskDialog>
         </Dialog>
 
         <button @click="show_add_item_dialog = true"

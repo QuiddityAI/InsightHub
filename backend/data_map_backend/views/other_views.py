@@ -850,7 +850,6 @@ def get_collection_items(request):
         return_items = return_items.order_by('-search_score')
     else:
         return_items = all_items.filter(relevance__gte=2)
-        logging.warning(f"returning {return_items.count()} items")
         return_items = return_items.order_by(order_by)
 
     return_items = return_items[offset : offset + limit]
