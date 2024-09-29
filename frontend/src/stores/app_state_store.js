@@ -12,6 +12,7 @@ export const useAppStateStore = defineStore("appState", {
   state: () => {
     return {
       eventBus: inject("eventBus"),
+      toast: useToast(),
       mapState: useMapStateStore(),
 
       available_organizations: [],
@@ -1428,82 +1429,16 @@ export const useAppStateStore = defineStore("appState", {
     add_selected_points_to_collection(collection_id, class_name, is_positive) {
       // TODO: implement more efficient way
       for (const ds_and_item_id of this.visible_result_ids) {
-        this.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, false)
+        this.collectionStore.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, false)
       }
-      useToast().add({severity: 'success', summary: 'Items added to collection', detail: `${this.visible_result_ids.length} items added to the collection`, life: 3000})
-    },
-    add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, show_toast=true) {
-      const that = this
-      this.last_used_collection_id = collection_id
-      this.last_used_collection_class = class_name
-      const add_item_to_collection_body = {
-        collection_id: collection_id,
-        is_positive: is_positive,
-        class_name: class_name,
-        field_type: FieldType.IDENTIFIER,
-        value: null,
-        dataset_id: ds_and_item_id[0],
-        item_id: ds_and_item_id[1],
-        weight: 1.0,
-      }
-      httpClient
-        .post("/org/data_map/add_item_to_collection", add_item_to_collection_body)
-        .then(function (created_item) {
-          const collection = that.collections.find((collection) => collection.id === collection_id)
-          if (!collection) return
-          const class_details = collection.actual_classes.find(
-            (actual_class) => actual_class.name === class_name
-          )
-          class_details[is_positive ? "positive_count" : "negative_count"] += 1
-          that.eventBus.emit("collection_item_added", {
-            collection_id: collection.id,
-            class_name,
-            is_positive,
-            created_item: created_item.data,
-          })
-          if (show_toast) {
-            that.toast.add({severity: 'success', summary: 'Item added to collection', detail: 'Item added to the collection', life: 3000})
-          }
-        })
+      this.toast.add({severity: 'success', summary: 'Items added to collection', detail: `${this.visible_result_ids.length} items added to the collection`, life: 3000})
     },
     remove_selected_points_from_collection(collection_id, class_name) {
       // TODO: implement more efficient way
       for (const ds_and_item_id of this.visible_result_ids) {
-        this.remove_item_from_collection(ds_and_item_id, collection_id, class_name, false)
+        this.collectionStore.remove_item_from_collection(ds_and_item_id, collection_id, class_name, false)
       }
-      useToast().add({severity: 'success', summary: 'Items removed from collection', detail: `${this.visible_result_ids.length} items removed from the collection`, life: 3000})
-    },
-    remove_item_from_collection(ds_and_item_id, collection_id, class_name, show_toast=true) {
-      const that = this
-      const body = {
-        collection_id: collection_id,
-        class_name: class_name,
-        value: null,
-        dataset_id: ds_and_item_id[0],
-        item_id: ds_and_item_id[1],
-      }
-      httpClient
-        .post("/org/data_map/remove_collection_item_by_value", body)
-        .then(function (response) {
-          for (const item of response.data) {
-            const collection_item_id = item.id
-            that.eventBus.emit("collection_item_removed", {
-              collection_id,
-              class_name,
-              collection_item_id,
-            })
-            const collection = that.collections.find(
-              (collection) => collection.id === collection_id
-            )
-            const class_details = collection.actual_classes.find(
-              (actual_class) => actual_class.name === class_name
-            )
-            class_details[item.is_positive ? "positive_count" : "negative_count"] -= 1
-          }
-          if (show_toast) {
-            that.toast.add({severity: 'success', summary: 'Item removed from collection', detail: 'Item removed from the collection', life: 3000})
-          }
-        })
+      this.toast.add({severity: 'success', summary: 'Items removed from collection', detail: `${this.visible_result_ids.length} items removed from the collection`, life: 3000})
     },
   },
 })

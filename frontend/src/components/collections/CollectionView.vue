@@ -84,7 +84,7 @@ export default {
       const that = this
       if (this.collection.agent_is_running) {
         setTimeout(() => {
-          that.appStateStore.update_collection(that.collectionStore.collection_id, (collection) => {
+          that.collectionStore.update_collection((collection) => {
             that.check_for_agent_status()
           })
         }, 500)
@@ -206,11 +206,18 @@ export default {
         Agent is running: {{ collection.current_agent_step }}
       </Message>
 
-      <Message v-if="search_mode"
-        class="mx-5 -mt-0 mb-1"
-        severity="warn">
-        Search Mode: Only candidates are shown
-      </Message>
+      <div v-if="collectionStore.search_mode"
+        class="flex flex-row gap-3 mx-5">
+        <Message
+          class="flex-1 -mt-0 mb-1"
+          severity="warn">
+          Search Mode: Only candidates are shown
+        </Message>
+        <button @click="collectionStore.exit_search_mode"
+          class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50">
+          Exit Search Mode
+        </button>
+      </div>
 
     </div>
 

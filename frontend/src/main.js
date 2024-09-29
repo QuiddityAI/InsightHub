@@ -16,6 +16,7 @@ import "./style.css"
 import MainApp from "./apps/MainApp.vue"
 import { get_download_url } from "./utils/utils";  // used in item rendering definitions
 import { useAppStateStore } from "./stores/app_state_store";
+import { useCollectionStore } from "./stores/collection_store";
 
 globalThis.get_download_url = get_download_url;
 
@@ -43,7 +44,9 @@ app.use(VueApexCharts)
 
 app.use(pinia)
 const appState = useAppStateStore()
-app.provide('appState', appState);
+const collectionStore = useCollectionStore()
+window.appState = appState
+window.collectionStore = collectionStore
 
 app.mount("#app")
 

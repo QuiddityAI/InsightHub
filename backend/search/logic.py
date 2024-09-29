@@ -42,6 +42,7 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings)
         item = CollectionItem(
             collection=collection,
             relevance=0,
+            classes=['_default'],
             field_type=FieldType.IDENTIFIER,
             dataset_id=ds_and_item_id[0],
             item_id=ds_and_item_id[1],
