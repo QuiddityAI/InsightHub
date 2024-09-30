@@ -1,17 +1,20 @@
 from enum import StrEnum
 import threading
+import time
 
 from django.utils import timezone
 
-from data_map_backend.models import DataCollection, User, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType
+from data_map_backend.models import DataCollection, User, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType, WritingTask
 from search.schemas import SearchTaskSettings
 from search.logic import run_search_task
+from data_map_backend.views.question_views import _execute_writing_task_thread
 from .schemas import CreateCollectionSettings
 from .prompts import item_relevancy_prompt
 
 
 class CollectionCreationModes(StrEnum):
     QUICK_SEARCH = 'quick_search'
+    QUESTION = 'question'
     EMPTY_COLLECTION = 'empty_collection'
 
 
@@ -45,6 +48,8 @@ def prepare_collection(
 ) -> DataCollection:
     if settings.mode == CollectionCreationModes.QUICK_SEARCH:
         prepare_for_quick_search(collection, settings)
+    elif settings.mode == CollectionCreationModes.QUESTION:
+        prepare_for_question(collection, settings)
     return collection
 
 
@@ -67,3 +72,20 @@ def prepare_for_quick_search(collection: DataCollection, settings: CreateCollect
         result_language=settings.result_language,
     )
     run_search_task(collection, search_task)
+
+
+def prepare_for_question(collection: DataCollection, settings: CreateCollectionSettings) -> None:
+    prepare_for_quick_search(collection, settings)
+
+    writing_task = WritingTask(
+        collection=collection,
+        class_name="_default",
+        name="Answer",
+        source_fields=[COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS],
+        use_all_items=True,
+        module="groq_llama_3_70b",
+    )
+    writing_task.prompt = settings.query
+    writing_task.save()
+    time.sleep(2)
+    _execute_writing_task_thread(writing_task)

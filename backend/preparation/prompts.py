@@ -13,3 +13,15 @@ Reply using json with the following format:
 }
 Reply only with the requested json, without introductory sentence.
 """
+
+# writing_task_prompt = """\
+# You are an expert in writing a summary of a document.
+
+# Answer the following question based on the provided information:
+
+#         "{{ question }}"
+
+# Answer the question in less than 100 words.
+# Use bullet points if necessary.
+
+# """
