@@ -90,7 +90,7 @@ export default {
               }">
             {{ collection.name.slice(0, 1) }}
           </div>
-          <h3 v-else class="text-left text-[15px] text-md ml-3 mr-3 px-2 h-7 flex flex-row items-center rounded-md hover:text-blue-500 hover:bg-gray-100"
+          <h3 v-else class="text-left text-[15px] text-md ml-3 mr-3 px-2 py-1 flex flex-row items-center rounded-md hover:text-blue-500 hover:bg-gray-100"
             :class="{
               'text-blue-500': collectionStore.collection_id == collection.id && collectionStore.class_name == collection.actual_classes[0].name,
               }">

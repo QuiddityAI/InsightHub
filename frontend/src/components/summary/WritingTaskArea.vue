@@ -109,11 +109,6 @@ export default {
       httpClient.post(`/org/data_map/add_writing_task`, body)
       .then(function (response) {
         const task = response.data
-        task.module = 'openai_gpt_4_o'
-        that.writing_task_ids.push({id: task.id, name: task.name})
-        that.appStateStore.selected_writing_task_id = task.id
-        that.appStateStore.selected_writing_task = task
-        that.new_writing_task_name = ''
       })
       .catch(function (error) {
         console.error(error)
@@ -132,6 +127,22 @@ export default {
         console.error(error)
       })
     },
+    summarize_top_results() {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+        name: 'Summary+',  // hack to notify WritingTask.vue to summarize
+      }
+      httpClient.post(`/org/data_map/add_writing_task`, body)
+      .then(function (response) {
+        const task = response.data
+        that.writing_task_ids.push({id: task.id, name: task.name})
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
   },
 }
 </script>
@@ -144,10 +155,16 @@ export default {
       @delete="delete_writing_task(task.id)"
       />
 
-    <button @click="add_writing_task('New Writing Task')"
-      class="px-2 py-1 rounded text-sm bg-gray-100 hover:bg-blue-100/50">
-      Add New Writing Task
-    </button>
+    <div class="flex flex-row gap-3">
+      <button @click="add_writing_task('New Writing Task')"
+        class="flex-1 px-2 py-1 rounded text-sm bg-gray-100 hover:bg-blue-100/50">
+        Add New Writing Task
+      </button>
+      <button @click="summarize_top_results()"
+        class="flex-1 px-2 py-1 rounded text-sm bg-gray-100 hover:bg-blue-100/50">
+        Summarize top results
+      </button>
+    </div>
 
     <!-- <div class="flex flex-row gap-2 items-center justify-center" v-if="false">
       <Dropdown

@@ -119,7 +119,11 @@ export default {
 
     <div class="flex-none pb-2 flex flex-col gap-3 overflow-hidden bg-white shadow-md z-40">
 
-      <div class="mt-3 ml-5 mr-5 flex-none flex flex-row gap-3">
+      <div class="mt-3 ml-5 mr-5 flex-none flex flex-row gap-3 items-center">
+
+        <ChevronLeftIcon class="h-6 w-6 text-gray-400 cursor-pointer hover:text-blue-500"
+          @click="collectionStore.close_collection()">
+        </ChevronLeftIcon>
 
         <span class="text-xl font-serif font-bold text-black">{{ collection.name }}</span>
         <!-- <span class="text-medium text-gray-500">

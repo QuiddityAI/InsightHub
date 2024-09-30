@@ -709,7 +709,7 @@ def get_writing_tasks(request):
         return HttpResponse(status=401)
 
     tasks = WritingTask.objects.filter(collection_id=collection_id, class_name=class_name)
-    tasks = tasks.order_by('-created_at')
+    tasks = tasks.order_by('created_at')
 
     task_ids = [{'id': task.id, 'name': task.name} for task in tasks]  # type: ignore
 

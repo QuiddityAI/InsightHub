@@ -85,10 +85,20 @@ export default {
     },
   },
   mounted() {
-    this.get_writing_task()
+    this.get_writing_task(() => {
+      if (this.writing_task.name !== 'Summary+') return
+      this.writing_task.name = 'Summary'
+      this.writing_task.module = 'groq_llama_3_70b'
+      this.writing_task.source_fields = ['_full_text_snippets', '_descriptive_text_fields']
+      this.writing_task.use_all_items = true
+      this.writing_task.prompt = "Summarize the items in three short bullet points. Use markdown syntax."
+      this.update_writing_task(() => {
+        this.execute_writing_task()
+      })
+    })
   },
   methods: {
-    get_writing_task() {
+    get_writing_task(on_success=null) {
       const that = this
       const body = {
         task_id: this.writing_task_id,
@@ -100,6 +110,9 @@ export default {
           setTimeout(() => {
             that.get_writing_task()
           }, 1000)
+        }
+        if (on_success) {
+          on_success()
         }
       })
       .catch(function (error) {
@@ -208,7 +221,7 @@ export default {
     <div class="relative flex-1 mt-2 flex flex-col overflow-hidden">
       <textarea v-if="edit_mode"
         v-model="writing_task.text"
-        class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
+        class="w-full h-[300px] rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
       <div v-if="!edit_mode" class="w-full h-full">
         <div v-html="marked.parse(writing_task.text || 'No text yet') "
           class="w-full h-full text-sm use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>

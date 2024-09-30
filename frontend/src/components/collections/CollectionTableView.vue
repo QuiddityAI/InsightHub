@@ -181,7 +181,7 @@ export default {
       </template>
       <Column header="">
         <template #header="slotProps">
-          <span class="text-sm">Item</span>
+          <span class="text-sm">{{ collectionStore.search_mode ? 'Search Results' : 'Items' }}</span>
         </template>
         <template #body="slotProps">
           <CollectionItem

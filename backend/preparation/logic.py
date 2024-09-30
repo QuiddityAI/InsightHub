@@ -76,6 +76,8 @@ def prepare_for_quick_search(collection: DataCollection, settings: CreateCollect
 
 def prepare_for_question(collection: DataCollection, settings: CreateCollectionSettings) -> None:
     prepare_for_quick_search(collection, settings)
+    # TODO: auto-approve candidates
+    # TODO: exit search mode
 
     writing_task = WritingTask(
         collection=collection,
