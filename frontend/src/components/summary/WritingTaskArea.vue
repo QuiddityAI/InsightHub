@@ -1,25 +1,17 @@
 <script setup>
 import {
-  TrashIcon,
-  PencilIcon,
-  BackwardIcon,
+
 } from "@heroicons/vue/24/outline"
+
 import { useToast } from 'primevue/usetoast';
-import Button from 'primevue/button';
-import MultiSelect from 'primevue/multiselect';
-import Dropdown from 'primevue/dropdown';
-import InputText from 'primevue/inputtext';
-import InputGroup from 'primevue/inputgroup';
-import Dialog from "primevue/dialog";
-import Textarea from 'primevue/textarea';
-import SelectButton from 'primevue/selectbutton';
-import Message from "primevue/message";
- import {marked} from "marked";
+
+import WritingTask from "./WritingTask.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
@@ -91,14 +83,6 @@ export default {
     this.get_writing_tasks()
   },
   watch: {
-    'appStateStore.selected_writing_task_id'() {
-      this.get_writing_task()
-    },
-    'appStateStore.selected_writing_task.use_all_items'() {
-      if (this.appStateStore.selected_writing_task.use_all_items === null) {
-        this.appStateStore.selected_writing_task.use_all_items = true
-      }
-    },
   },
   methods: {
     get_writing_tasks() {
@@ -110,24 +94,6 @@ export default {
       httpClient.post(`/org/data_map/get_writing_tasks`, body)
       .then(function (response) {
         that.writing_task_ids = response.data
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    get_writing_task() {
-      const that = this
-      const body = {
-        task_id: this.appStateStore.selected_writing_task_id,
-      }
-      httpClient.post(`/org/data_map/get_writing_task_by_id`, body)
-      .then(function (response) {
-        that.appStateStore.selected_writing_task = response.data
-        if (that.appStateStore.selected_writing_task.is_processing) {
-          setTimeout(() => {
-            that.get_writing_task()
-          }, 1000)
-        }
       })
       .catch(function (error) {
         console.error(error)
@@ -153,112 +119,37 @@ export default {
         console.error(error)
       })
     },
-    update_writing_task(on_success=null) {
-      const that = this
-      const task = this.appStateStore.selected_writing_task
-      const body = {
-        task_id: this.appStateStore.selected_writing_task_id,
-        name: task.name,
-        source_fields: task.source_fields,
-        selected_item_ids: task.selected_item_ids,
-        module: task.module,
-        parameters: task.parameters,
-        prompt: task.prompt,
-        text: task.text,
-      }
-      httpClient.post(`/org/data_map/update_writing_task`, body)
-      .then(function (response) {
-        if (on_success) {
-          on_success()
-        }
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    delete_writing_task() {
+    delete_writing_task(writing_task_id) {
       const that = this
       const body = {
-        task_id: this.appStateStore.selected_writing_task_id,
+        task_id: writing_task_id,
       }
       httpClient.post(`/org/data_map/delete_writing_task`, body)
       .then(function (response) {
-        that.writing_task_ids = that.writing_task_ids.filter((task) => task.id !== that.appStateStore.selected_writing_task_id)
-        that.appStateStore.selected_writing_task = null
+        that.writing_task_ids = that.writing_task_ids.filter((task) => task.id !== writing_task_id)
       })
       .catch(function (error) {
         console.error(error)
       })
-    },
-    execute_writing_task() {
-      const that = this
-      this.update_writing_task(() => {
-        const body = {
-          task_id: this.appStateStore.selected_writing_task_id,
-        }
-        httpClient.post(`/org/data_map/execute_writing_task`, body)
-        .then(function (response) {
-          that.appStateStore.selected_writing_task.is_processing = true
-          setTimeout(() => {
-            that.get_writing_task()
-          }, 1000)
-        })
-        .catch(function (error) {
-          console.error(error)
-        })
-      })
-    },
-    revert_changes() {
-      if (!confirm('Are you sure you want to revert to the last version? This cannot be undone.')) {
-        return
-      }
-      const that = this
-      const last_version = that.appStateStore.selected_writing_task.previous_versions?.pop()
-      if (!last_version) {
-        return
-      }
-      that.appStateStore.selected_writing_task.text = last_version.text
-      that.appStateStore.selected_writing_task.additional_results = last_version.additional_results
-      const body = {
-        task_id: this.appStateStore.selected_writing_task_id,
-      }
-      httpClient.post(`/org/data_map/revert_writing_task`, body)
-      .then(function (response) {
-        // pass
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    convert_to_html(text) {
-      // escape html
-      text = text.replace(/&/g, "&amp;")
-      text = text.replace(/</g, "&lt;")
-      text = text.replace(/>/g, "&gt;")
-      // convert newlines to <br>
-      return text.replace(/(?:\r\n|\r|\n)/g, '<br>')
     },
   },
 }
 </script>
 
 <template>
-  <div class="mt-2 ml-5 mr-6 pl-2 flex flex-col gap-2">
+  <div class="pt-7 pb-10 ml-5 mr-10 pl-2 flex flex-col gap-10">
 
-    <h2 class="text-lg font-bold font-serif">Summary: How can Mxenes be used?</h2>
-    <p class="text-sm text-gray-700">
-      MXenes have been investigated experimentally in lithium-ion batteries (LIBs) (e.g. V2CTx ,[25] Nb2CTx ,[25] Ti2CTx ,[78] and Ti3C2Tx[42]). V2CTx has demonstrated the highest reversible charge storage capacity among MXenes in multi-layer form (280 mAhg−1 at 1C rate and 125 mAhg−1 at 10C rate). Multi-layer Nb2CTx showed a stable, reversible capacity of 170 mAhg−1 at 1C rate and 110 mAhg−1 at a 10C rate.
-    </p>
-    <p class="text-sm text-gray-700">
-      Although Ti3C2Tx shows the lowest capacity among the four MXenes in multi-layer form, it can be delaminated via sonication of the multi-layer powder. By virtue of higher electrochemically active and accessible surface area, delaminated Ti3C2Tx paper demonstrates a reversible capacity of 410 mAhg−1 at 1C and 110 mAhg−1 at 36C rate.
-    </p>
+    <WritingTask v-for="task in writing_task_ids" :key="task.id"
+      :writing_task_id="task.id"
+      @delete="delete_writing_task(task.id)"
+      />
 
-    <h2 class="mt-5 text-lg font-bold font-serif">Potential Research Areas</h2>
-    <p class="text-sm text-gray-700">
-      MXenes have been investigated experimentally in lithium-ion batteries (LIBs) (e.g. V2CTx ,[25] Nb2CTx ,[25] Ti2CTx ,[78] and Ti3C2Tx[42]). V2CTx has demonstrated the highest reversible charge storage capacity among MXenes in multi-layer form (280 mAhg−1 at 1C rate and 125 mAhg−1 at 10C rate). Multi-layer Nb2CTx showed a stable, reversible capacity of 170 mAhg−1 at 1C rate and 110 mAhg−1 at a 10C rate.
-    </p>
+    <button @click="add_writing_task('New Writing Task')"
+      class="px-2 py-1 rounded text-sm bg-gray-100 hover:bg-blue-100/50">
+      Add New Writing Task
+    </button>
 
-    <div class="flex flex-row gap-2 items-center justify-center" v-if="false">
+    <!-- <div class="flex flex-row gap-2 items-center justify-center" v-if="false">
       <Dropdown
         v-model="appState.selected_writing_task_id"
         :options="writing_task_ids"
@@ -358,7 +249,7 @@ export default {
       <textarea v-model="references" readonly
         class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
 
-    </div>
+    </div> -->
   </div>
 
 </template>

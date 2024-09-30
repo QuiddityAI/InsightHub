@@ -1129,6 +1129,11 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
 
     actual_classes_formatted.short_description = "Actual Classes"
 
+    @property
+    def writing_task_count(self):
+        return WritingTask.objects.filter(collection=self).count()
+    writing_task_count.fget.short_description = "Writing Task Count"  # type: ignore
+
     # def simplified_trained_classifiers(self):
     #     data = copy.deepcopy(self.trained_classifiers) or {}
     #     for embedding_space_data in data.values():

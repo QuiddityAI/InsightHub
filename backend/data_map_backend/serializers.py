@@ -102,6 +102,7 @@ class CollectionSerializer(drf_serializers.ModelSerializer):
     # dataset_specific_settings = DatasetSpecificSettingsOfCollectionSerializer(many=True, read_only=True)
     columns = CollectionColumnSerializer(many=True, read_only=True)
     actual_classes = drf_serializers.ReadOnlyField()
+    writing_task_count = drf_serializers.ReadOnlyField()
 
     class Meta:
         model = DataCollection

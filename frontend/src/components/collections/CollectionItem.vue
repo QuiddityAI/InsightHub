@@ -35,6 +35,23 @@ export default {
     rendering() {
       return this.appStateStore.datasets[this.dataset_id]?.schema.result_list_rendering
     },
+    main_relevance_influence() {
+      const origins = this.item._origins
+      if (!origins) return null
+      // find origin.type of origins with lowest origin.rank:
+      const min_rank = Math.min(...origins.filter(origin => ['vector', 'keyword'].includes(origin.type)).map((origin) => origin.rank))
+      const min_rank_origins = origins.filter((origin) => origin.rank === min_rank)
+      const min_rank_origin_types = min_rank_origins.map((origin) => origin.type)
+      if (min_rank_origin_types.includes("vector") && min_rank_origin_types.includes("keyword")) {
+        return "both"
+      } else if (min_rank_origin_types.includes("vector")) {
+        return "vector"
+      } else if (min_rank_origin_types.includes("keyword")) {
+        return "keyword"
+      } else {
+        return null
+      }
+    },
   },
   watch: {
     dataset_id() {

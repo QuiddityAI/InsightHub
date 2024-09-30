@@ -1,0 +1,274 @@
+<script setup>
+
+import {
+  TrashIcon,
+  AdjustmentsHorizontalIcon,
+  PlayIcon,
+  PencilIcon,
+  BackwardIcon,
+ } from "@heroicons/vue/24/outline"
+import {marked} from "marked";
+
+import { useToast } from 'primevue/usetoast';
+import Dropdown from 'primevue/dropdown';
+import ProgressSpinner from "primevue/progressspinner";
+import Dialog from "primevue/dialog";
+import MultiSelect from "primevue/multiselect";
+
+import SearchFilterList from "../search/SearchFilterList.vue"
+import AddFilterMenu from "../search/AddFilterMenu.vue"
+
+import { httpClient, djangoClient } from "../../api/httpClient"
+import { languages } from "../../utils/utils"
+
+import { mapStores } from "pinia"
+import { useAppStateStore } from "../../stores/app_state_store"
+import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
+
+const appState = useAppStateStore()
+const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
+const toast = useToast()
+</script>
+
+<script>
+
+export default {
+  inject: ["eventBus"],
+  props: ["writing_task_id"],
+  emits: ["delete"],
+  data() {
+    return {
+      writing_task: null,
+      edit_mode: false,
+
+      show_settings_dialog: false,
+    }
+  },
+  computed: {
+    ...mapStores(useMapStateStore),
+    ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
+    available_source_fields() {
+      const available_fields = {}
+      // for (const dataset of this.included_datasets) {
+      //   for (const field of Object.values(dataset.schema.object_fields)) {
+      //     available_fields[field.identifier] = {
+      //       identifier: field.identifier,
+      //       name: field.name || field.identifier,
+      //     }
+      //   }
+      // }
+      for (const column of this.collectionStore.collection.columns) {
+        available_fields[column.identifier] = {
+          identifier: '_column__' + column.identifier,
+          name: column.name,
+        }
+      }
+      available_fields['_descriptive_text_fields'] = {
+        identifier: '_descriptive_text_fields',
+        name: 'Descriptive Text',
+      }
+      available_fields['_full_text_snippets'] = {
+        identifier: '_full_text_snippets',
+        name: 'Full Text Excerpts',
+      }
+      return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
+    },
+  },
+  watch: {
+    edit_mode(new_val, old_val) {
+      if (!new_val) {
+        this.update_writing_task()
+      }
+    },
+  },
+  mounted() {
+    this.get_writing_task()
+  },
+  methods: {
+    get_writing_task() {
+      const that = this
+      const body = {
+        task_id: this.writing_task_id,
+      }
+      httpClient.post(`/org/data_map/get_writing_task_by_id`, body)
+      .then(function (response) {
+        that.writing_task = response.data
+        if (that.writing_task.is_processing) {
+          setTimeout(() => {
+            that.get_writing_task()
+          }, 1000)
+        }
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    update_writing_task(on_success=null) {
+      const that = this
+      const task = this.writing_task
+      const body = {
+        task_id: this.writing_task_id,
+        name: task.name,
+        source_fields: task.source_fields,
+        selected_item_ids: task.selected_item_ids,
+        module: task.module,
+        parameters: task.parameters,
+        prompt: task.prompt,
+        text: task.text,
+      }
+      httpClient.post(`/org/data_map/update_writing_task`, body)
+      .then(function (response) {
+        if (on_success) {
+          on_success()
+        }
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    execute_writing_task() {
+      const that = this
+      this.update_writing_task(() => {
+        const body = {
+          task_id: this.writing_task_id,
+        }
+        httpClient.post(`/org/data_map/execute_writing_task`, body)
+        .then(function (response) {
+          that.writing_task.is_processing = true
+          setTimeout(() => {
+            that.get_writing_task()
+          }, 1000)
+        })
+        .catch(function (error) {
+          console.error(error)
+        })
+      })
+    },
+    revert_changes() {
+      if (!confirm('Are you sure you want to revert to the last version? This cannot be undone.')) {
+        return
+      }
+      const that = this
+      const last_version = that.writing_task.previous_versions?.pop()
+      if (!last_version) {
+        return
+      }
+      that.writing_task.text = last_version.text
+      that.writing_task.additional_results = last_version.additional_results
+      const body = {
+        task_id: this.writing_task_id,
+      }
+      httpClient.post(`/org/data_map/revert_writing_task`, body)
+      .then(function (response) {
+        // pass
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    convert_to_html(text) {
+      // escape html
+      text = text.replace(/&/g, "&amp;")
+      text = text.replace(/</g, "&lt;")
+      text = text.replace(/>/g, "&gt;")
+      // convert newlines to <br>
+      return text.replace(/(?:\r\n|\r|\n)/g, '<br>')
+    },
+  },
+}
+</script>
+
+<template>
+  <div class="flex flex-col gap-3" v-if="writing_task">
+
+    <div class="flex flex-row gap-3">
+      <h2 class="text-lg font-bold font-serif">
+        {{ writing_task.name || "New Writing Task" }}
+      </h2>
+      <div class="flex-1"></div>
+      <button v-if="!writing_task.is_processing"
+        @click="execute_writing_task" v-tooltip.bottom="{ value: 'Execute this writing task' }"
+        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-green-500">
+        <PlayIcon class="h-4 w-4"></PlayIcon>
+      </button>
+      <ProgressSpinner v-if="writing_task.is_processing" class="h-6 w-6" strokeWidth="8" style="color: #4CAF50" />
+      <button @click="show_settings_dialog = true" v-tooltip.bottom="{ value: 'Configure this writing task' }"
+        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-blue-500">
+        <AdjustmentsHorizontalIcon class="h-4 w-4"></AdjustmentsHorizontalIcon>
+      </button>
+      <button @click="$emit('delete')" v-tooltip.bottom="{ value: 'Delete writing task' }"
+        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+        <TrashIcon class="h-4 w-4"></TrashIcon>
+      </button>
+    </div>
+
+    <div class="relative flex-1 mt-2 flex flex-col overflow-hidden">
+      <textarea v-if="edit_mode"
+        v-model="writing_task.text"
+        class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
+      <div v-if="!edit_mode" class="w-full h-full">
+        <div v-html="marked.parse(writing_task.text || 'No text yet') "
+          class="w-full h-full text-sm use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
+      </div>
+      <button @click="edit_mode = !edit_mode"
+        v-tooltip.left="{'value': 'Edit', showDelay: 500}"
+        class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 hover:text-blue-500"
+        :class="{'text-gray-500': !edit_mode, 'text-blue-500': edit_mode}">
+        <PencilIcon class="m-1"></PencilIcon>
+      </button>
+    </div>
+
+
+    <Dialog v-model:visible="show_settings_dialog" modal header="Writing Task">
+
+      <div class="flex flex-col gap-5">
+
+        <input v-model="writing_task.name" placeholder="Name"
+          class="" />
+
+        <textarea v-model="writing_task.prompt" placeholder="prompt"
+          class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
+
+          <div class="flex flex-row gap-2 items-center">
+        <div class="flex-1 min-w-0">
+          <MultiSelect v-model="writing_task.source_fields"
+            :options="available_source_fields"
+            optionLabel="name"
+            optionValue="identifier"
+            placeholder="Select Sources..."
+            :maxSelectedLabels="0"
+            selectedItemsLabel="{0} Source(s)"
+            class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <Dropdown v-model="writing_task.module"
+            :options="appState.available_ai_modules"
+            optionLabel="name"
+            optionValue="identifier"
+            placeholder="Select Module.."
+            class="w-full h-full text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+        </div>
+      </div>
+
+      <button v-if="writing_task.previous_versions?.length > 0"
+        @click="revert_changes()"
+        v-tooltip.left="{'value': 'Go back to last version', showDelay: 500}"
+        class="h-6 w-6 rounded bg-gray-100 hover:text-blue-500">
+        <BackwardIcon class="m-1"></BackwardIcon>
+      </button>
+
+      <button @click="update_writing_task(); show_settings_dialog = false" class="px-2 py-1 rounded text-sm bg-gray-100 hover:bg-blue-100/50">
+        Save Changes
+      </button>
+
+      </div>
+
+    </Dialog>
+
+  </div>
+</template>
+
+<style scoped></style>

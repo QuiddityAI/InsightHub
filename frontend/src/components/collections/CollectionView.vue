@@ -20,7 +20,7 @@ import ExportTableArea from "./ExportTableArea.vue";
 import AddItemsToCollectionArea from "./AddItemsToCollectionArea.vue";
 import SearchTaskDialog from "./SearchTaskDialog.vue";
 import AddColumnDialog from "./AddColumnDialog.vue";
-import WritingTaskArea from "./WritingTaskArea.vue";
+import WritingTaskArea from "../summary/WritingTaskArea.vue";
 
 
 import { mapStores } from "pinia"
@@ -53,6 +53,11 @@ export default {
     }
   },
   watch: {
+    'collectionStore.collection.writing_task_count'() {
+      if (this.collection.writing_task_count > 0) {
+        this.right_side_view = 'summary'
+      }
+    },
   },
   computed: {
     ...mapStores(useAppStateStore),
@@ -72,6 +77,9 @@ export default {
   },
   mounted() {
     this.check_for_agent_status()
+    if (this.collection.writing_task_count > 0) {
+      this.right_side_view = 'summary'
+    }
   },
   methods: {
     delete_collection() {
@@ -224,12 +232,22 @@ export default {
     <!-- -------------------------------------------------------------- -->
 
     <div class="flex-1 overflow-hidden flex flex-row">
+
+      <div v-if="right_side_view === 'summary'"
+        class="flex-none w-[600px] bg-white shadow-md z-30">
+
+        <WritingTaskArea v-if="right_side_view === 'summary'"
+          class="overflow-y-auto h-full"
+          :collection_id="collectionStore.collection_id" :class_name="class_name">
+        </WritingTaskArea>
+      </div>
+
       <CollectionTableView class="pl-3 pt-2 pr-3 z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
         :class_name="class_name" :is_positive="true">
       </CollectionTableView>
 
-      <div v-if="right_side_view"
-        class="flex-none pt-5 w-[500px] bg-white shadow-md z-30">
+      <div v-if="right_side_view === 'chart' || right_side_view === 'map'"
+        class="flex-none w-[600px] bg-white shadow-md z-30">
 
         <div v-if="right_side_view === 'chart'"
           class="p-3">
@@ -240,11 +258,6 @@ export default {
           class="p-3">
           Map
         </div>
-
-        <WritingTaskArea v-if="right_side_view === 'summary'"
-          class=""
-          :collection_id="collectionStore.collection_id" :class_name="class_name">
-        </WritingTaskArea>
       </div>
     </div>
 
