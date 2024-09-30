@@ -51,7 +51,7 @@ export default {
       }
       const that = this
       const body = {
-        collection_id: this.collection_id,
+        collection_id: this.collectionStore.collection_id,
         field_type: FieldType.TEXT,
         name: name,
         expression: prompt,

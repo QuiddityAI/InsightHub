@@ -80,11 +80,11 @@ export default {
 </script>
 
 <template>
-  <div v-if="rendering && item" class="flex flex-row gap-3 mb-4">
+  <div v-if="rendering && item" class="flex flex-row gap-3 mb-3 mt-3">
     <div class="flex-1 flex flex-col gap-1">
       <div class="flex flex-row items-start">
         <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
-        <button class="text-left text-[15px] font-medium leading-tight text-black hover:text-sky-600"
+        <button class="text-left text-[15px] font-serif font-bold leading-tight text-black hover:text-sky-600"
           v-html="rendering.title(item)"
           @click="appState.show_document_details([dataset_id, item_id])"
           >

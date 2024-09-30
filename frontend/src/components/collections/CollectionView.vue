@@ -224,7 +224,7 @@ export default {
     <!-- -------------------------------------------------------------- -->
 
     <div class="flex-1 overflow-hidden flex flex-row">
-      <CollectionTableView class="pl-3 pt-2 z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
+      <CollectionTableView class="pl-3 pt-2 pr-3 z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
         :class_name="class_name" :is_positive="true">
       </CollectionTableView>
 

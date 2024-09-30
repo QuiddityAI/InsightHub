@@ -156,7 +156,7 @@ export default {
                 'text-left',
 
                 // Shape
-                'border-0 border-b-0 border-solid',
+                'border-0 border-b border-solid',
                 { 'first:border-l border-r border-b': context?.showGridlines },
                 { 'bg-surface-0 dark:bg-surface-900': parent.instance.frozenRow || props.frozen || props.frozen === '' },
 

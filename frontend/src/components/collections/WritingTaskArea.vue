@@ -243,9 +243,22 @@ export default {
 </script>
 
 <template>
-  <div class=" ml-2 pl-2 flex flex-col gap-2 border-l">
+  <div class="mt-2 ml-5 mr-6 pl-2 flex flex-col gap-2">
 
-    <div class="flex flex-row gap-2 items-center justify-center">
+    <h2 class="text-lg font-bold font-serif">Summary: How can Mxenes be used?</h2>
+    <p class="text-sm text-gray-700">
+      MXenes have been investigated experimentally in lithium-ion batteries (LIBs) (e.g. V2CTx ,[25] Nb2CTx ,[25] Ti2CTx ,[78] and Ti3C2Tx[42]). V2CTx has demonstrated the highest reversible charge storage capacity among MXenes in multi-layer form (280 mAhg−1 at 1C rate and 125 mAhg−1 at 10C rate). Multi-layer Nb2CTx showed a stable, reversible capacity of 170 mAhg−1 at 1C rate and 110 mAhg−1 at a 10C rate.
+    </p>
+    <p class="text-sm text-gray-700">
+      Although Ti3C2Tx shows the lowest capacity among the four MXenes in multi-layer form, it can be delaminated via sonication of the multi-layer powder. By virtue of higher electrochemically active and accessible surface area, delaminated Ti3C2Tx paper demonstrates a reversible capacity of 410 mAhg−1 at 1C and 110 mAhg−1 at 36C rate.
+    </p>
+
+    <h2 class="mt-5 text-lg font-bold font-serif">Potential Research Areas</h2>
+    <p class="text-sm text-gray-700">
+      MXenes have been investigated experimentally in lithium-ion batteries (LIBs) (e.g. V2CTx ,[25] Nb2CTx ,[25] Ti2CTx ,[78] and Ti3C2Tx[42]). V2CTx has demonstrated the highest reversible charge storage capacity among MXenes in multi-layer form (280 mAhg−1 at 1C rate and 125 mAhg−1 at 10C rate). Multi-layer Nb2CTx showed a stable, reversible capacity of 170 mAhg−1 at 1C rate and 110 mAhg−1 at a 10C rate.
+    </p>
+
+    <div class="flex flex-row gap-2 items-center justify-center" v-if="false">
       <Dropdown
         v-model="appState.selected_writing_task_id"
         :options="writing_task_ids"
