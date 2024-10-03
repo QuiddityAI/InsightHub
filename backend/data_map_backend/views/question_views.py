@@ -728,6 +728,8 @@ def add_writing_task(request):
         collection_id: int = data['collection_id']
         class_name: str = data['class_name']
         name: str = data['name']
+        options: dict | None = data.get('options', None)
+        run_now: bool = data.get('run_now', False)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
@@ -738,12 +740,19 @@ def add_writing_task(request):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    task = WritingTask.objects.create(
+    task = WritingTask(
         collection_id=collection_id,
         class_name=class_name,
         name=name,
         module='openai_gpt_4_o',
     )
+    if options:
+        for key, value in options.items():
+            setattr(task, key, value)
+    task.save()
+
+    if run_now:
+        _execute_writing_task_thread(task)
 
     data = WritingTaskSerializer(task).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=201)
