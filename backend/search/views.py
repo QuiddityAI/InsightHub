@@ -20,7 +20,7 @@ from data_map_backend.utils import is_from_backend
 from .schemas import SearchTaskSettings
 from .logic import run_search_task
 
-api = NinjaAPI()
+api = NinjaAPI(urls_namespace="search")
 
 
 class CollectionIdentifier(Schema):

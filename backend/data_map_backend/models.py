@@ -1329,7 +1329,7 @@ class CollectionItem(models.Model):
     relevance = models.IntegerField(
         verbose_name="Relevance",
         help_text="From +3 to -3. 0 is a new, non-reviewed candidate",
-        default=0,
+        default=3,
         blank=False,
         null=False,
     )

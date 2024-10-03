@@ -18,7 +18,7 @@ from data_map_backend.utils import is_from_backend
 from .schemas import CreateCollectionSettings
 from .logic import create_collection_using_mode
 
-api = NinjaAPI()
+api = NinjaAPI(urls_namespace="preparation")
 
 
 @api.post("create_collection")

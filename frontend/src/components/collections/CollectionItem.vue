@@ -99,7 +99,7 @@ export default {
 </script>
 
 <template>
-  <div v-if="rendering && item" class="flex flex-col gap-3 pb-2 pt-4 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md">
+  <div v-if="rendering && item && collection_item" class="flex flex-col gap-3 pb-2 pt-4 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md">
 
     <div class="flex flex-row">
 
