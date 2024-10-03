@@ -259,7 +259,7 @@ export default {
         'bottom-1': appState.selected_app_tab === 'explore',
         'right-3': appState.selected_app_tab === 'explore',
         'bottom-2': appState.selected_app_tab !== 'explore',
-        'left-3': appState.selected_app_tab !== 'explore',
+        'right-3': appState.selected_app_tab !== 'explore',
       }">
     </LegalFooter>
 

@@ -5,6 +5,8 @@ import {
   HandThumbDownIcon,
 } from "@heroicons/vue/24/outline"
 
+import BorderlessButton from "../widgets/BorderlessButton.vue"
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useCollectionStore } from "../../stores/collection_store"
@@ -97,35 +99,51 @@ export default {
 </script>
 
 <template>
-  <div v-if="rendering && item" class="flex flex-row gap-3 mb-3 mt-3">
-    <div class="flex-1 flex flex-col gap-1">
-      <div class="flex flex-row items-start">
-        <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
-        <button class="text-left text-[15px] font-serif font-bold leading-tight text-black hover:text-sky-600"
-          v-html="rendering.title(item)"
-          @click="appState.show_document_details([dataset_id, item_id])"
-          >
-        </button>
+  <div v-if="rendering && item" class="flex flex-col gap-3 pb-2 pt-4 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md">
+
+    <div class="flex flex-row">
+
+      <!-- Left side (content, not image) -->
+      <div class="flex-1 flex flex-col gap-1">
+
+        <!-- Heading -->
+        <div class="flex flex-row items-start">
+          <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
+          <button class="text-left text-[15px] font-serif font-bold leading-tight text-black hover:text-sky-600"
+            v-html="rendering.title(item)"
+            @click="appState.show_document_details([dataset_id, item_id])">
+          </button>
+          <div class="flex-1"></div>
+          <span v-if="collection_item.relevance >= -1 && collection_item.relevance <= 1"
+            class="ml-2 text-xs text-orange-300">
+            Candidate
+          </span>
+          <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"
+            v-tooltip.bottom="{ value: tag.tooltip, showDelay: 500 }"
+            class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
+            {{ tag.label }}
+          </span>
+        </div>
+
+        <!-- Subtitle -->
+        <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
+
+        <!-- Body -->
+        <p ref="body_text" class="mt-1 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
+        v-html="rendering.body(item)"></p>
+
+        <!-- Sapcer if image on the right is larger than body -->
         <div class="flex-1"></div>
-        <span v-if="collection_item.relevance >= -1 && collection_item.relevance <= 1"
-          class="ml-2 text-xs text-orange-300">
-          Candidate
-        </span>
-        <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"
-          v-tooltip.bottom="{ value: tag.tooltip, showDelay: 500 }"
-          class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
-          {{ tag.label }}
-        </span>
       </div>
 
-      <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
+      <!-- Right side (image) -->
+      <div v-if="rendering.image(item)" class="flex-none w-24 flex flex-col justify-center">
+        <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />
+      </div>
+    </div>
 
-      <p ref="body_text" class="mt-1 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
-       v-html="rendering.body(item)"></p>
-
-      <div class="flex-1"></div>
-
-      <div class="mt-1 flex flex-row gap-3 items-center">
+    <!-- Footer -->
+    <div class="flex flex-row gap-1 items-center">
         <div v-if="show_more_button" class="text-xs text-gray-700">
           <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
             {{ body_text_collapsed ? "Show more" : "Show less" }}
@@ -156,30 +174,31 @@ export default {
 
         <div class="flex-1"></div>
 
-        <button class="hover:text-green-500"
-          :class="{ 'text-green-500': collection_item.relevance > 0 }"
+        <BorderlessButton
+          hover_color="hover:text-green-500" highlight_color="text-green-500"
+          :highlighted="collection_item.relevance > 0" :default_padding="false" class="p-1"
           v-tooltip="{ value: 'Add this item permanently' }"
           @click="collectionStore.set_item_relevance(collection_item, 3)">
           <HandThumbUpIcon class="h-4 w-4"></HandThumbUpIcon>
-        </button>
-        <button class="hover:text-red-500"
-          :class="{ 'text-red-500': collection_item.relevance < 0 }"
+        </BorderlessButton>
+        <BorderlessButton
+          hover_color="hover:text-red-500" highlight_color="text-red-500"
+          :highlighted="collection_item.relevance < 0" :default_padding="false" class="p-1"
           v-tooltip="{ value: 'Mark this item as irrelevant, hide from future searches in this collection' }"
           @click="collectionStore.set_item_relevance(collection_item, -3)">
           <HandThumbDownIcon class="h-4 w-4"></HandThumbDownIcon>
-        </button>
-        <button v-if="show_remove_button"
+        </BorderlessButton>
+        <BorderlessButton v-if="show_remove_button"
+          hover_color="hover:text-red-500" :default_padding="false" class="p-1"
           @click.stop="$emit('remove')"
-          v-tooltip.right="{ value: 'Remove from this collection', showDelay: 400 }"
-          class="text-sm text-gray-400 hover:text-red-600">
+          v-tooltip.right="{ value: 'Remove from this collection', showDelay: 400 }">
           <TrashIcon class="h-4 w-4"></TrashIcon>
-        </button>
+        </BorderlessButton>
       </div>
-    </div>
-    <div v-if="rendering.image(item)" class="flex-none w-24 flex flex-col justify-center">
-      <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />
-    </div>
+
   </div>
+
+  <!-- Alternative if rendering doesn't work to still be able to remove the item (e.g. if its deleted in the dataset) -->
   <div v-else>
     <button v-if="show_remove_button"
         @click.stop="$emit('remove')"
@@ -188,4 +207,5 @@ export default {
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </button>
   </div>
+
 </template>

@@ -82,7 +82,7 @@ export default {
         <select
           v-model="internal_organization_id"
           @change="organization_id_changed_by_user"
-          class="w-full rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
+          class="w-full rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500">
           <option v-for="item in appState.available_organizations" :value="item.id" selected>
             {{ item.name }}
           </option>
@@ -91,11 +91,11 @@ export default {
 
       <div class="flex-1"></div>
 
-      <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-600 text-sm">
+      <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-500 text-sm">
         <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'explore'}"
           @click="appState.set_app_tab('explore')">
           Explore</button> -->
-         <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'collections'}"
+         <button class="hover:text-blue-500" :class="{'font-bold': appState.selected_app_tab === 'collections'}"
           @click="appState.set_app_tab('collections'); collectionStore.close_collection()">
           Home</button>
          <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
@@ -106,7 +106,7 @@ export default {
           v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('write')">
           Write</button> -->
-         <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'datasets'}"
+         <button class="hover:text-blue-500" :class="{'font-bold': appState.selected_app_tab === 'datasets'}"
           @click="appState.set_app_tab('datasets')">
           Upload Files</button>
       </div>

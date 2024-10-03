@@ -148,7 +148,7 @@ export default {
 </script>
 
 <template>
-  <div class="pt-7 pb-10 ml-5 mr-10 pl-2 flex flex-col gap-10">
+  <div class="pt-7 pb-10 pl-10 pr-10 flex flex-col gap-10">
 
     <WritingTask v-for="task in writing_task_ids" :key="task.id"
       :writing_task_id="task.id"

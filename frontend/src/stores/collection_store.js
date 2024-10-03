@@ -201,6 +201,44 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     // ------------------
+    extract_question(column_id, only_current_page=true) {
+      const that = this
+      if (!only_current_page && !confirm("This will extract the question for all items in the collection. This might be long running and expensive. Are you sure?")) {
+        return
+      }
+      const body = {
+        column_id: column_id,
+        class_name: this.class_name,
+        offset: only_current_page ? this.first_index : 0,
+        limit: only_current_page ? this.per_page : -1,
+        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
+      }
+      httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
+      .then(function (response) {
+        that.collection.columns_with_running_processes = response.data.columns_with_running_processes
+        that.get_extraction_results(column_id)
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
+    get_extraction_results(column_id) {
+      const that = this
+      const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
+      this.load_collection_items([column_identifier])
+      this.update_collection(() => {
+        // if (JSON.stringify(response.data.columns) !== JSON.stringify(that.collection.columns)) {
+        //   that.collection.columns = response.data.columns
+        // }
+        // that.collection.columns_with_running_processes = response.data.columns_with_running_processes
+        if (this.collection.columns_with_running_processes.includes(column_identifier)) {
+          setTimeout(() => {
+            this.get_extraction_results(column_id)
+          }, 1000)
+        }
+      })
+    },
+    // ------------------
     set_item_relevance(collection_item, relevance) {
       const that = this
       const body = {

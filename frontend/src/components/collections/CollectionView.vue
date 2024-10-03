@@ -21,6 +21,7 @@ import AddItemsToCollectionArea from "./AddItemsToCollectionArea.vue";
 import SearchTaskDialog from "./SearchTaskDialog.vue";
 import AddColumnDialog from "./AddColumnDialog.vue";
 import WritingTaskArea from "../summary/WritingTaskArea.vue";
+import BorderButton from "../widgets/BorderButton.vue";
 
 
 import { mapStores } from "pinia"
@@ -54,7 +55,7 @@ export default {
   },
   watch: {
     'collectionStore.collection.writing_task_count'() {
-      if (this.collection.writing_task_count > 0) {
+      if (this.collection?.writing_task_count > 0) {
         this.right_side_view = 'summary'
       }
     },
@@ -119,6 +120,7 @@ export default {
 
     <div class="flex-none pb-2 flex flex-col gap-3 overflow-hidden bg-white shadow-md z-40">
 
+      <!-- Heading -->
       <div class="mt-3 ml-5 mr-5 flex-none flex flex-row gap-3 items-center">
 
         <ChevronLeftIcon class="h-6 w-6 text-gray-400 cursor-pointer hover:text-blue-500"
@@ -131,85 +133,69 @@ export default {
         </span> -->
       </div>
 
-      <!-- -------------------------------------------------------------- -->
-
+      <!-- Toolbar -->
       <div class="ml-5 mr-5 flex flex-row gap-3 mb-1">
 
-        <button class="text-sm font-bold text-gray-800 border border-gray-200 rounded-md px-2 hover:text-blue-500"
-          @click="show_search_task_dialog = true">
+        <BorderButton @click="show_search_task_dialog = true">
           <PlusIcon class="inline h-4 w-4"></PlusIcon> Items by search
-        </button>
+        </BorderButton>
         <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
           <SearchTaskDialog :collection="collection" :collection_class="class_name"
             @close="show_search_task_dialog = false; check_for_agent_status()"></SearchTaskDialog>
         </Dialog>
 
-        <button @click="show_add_item_dialog = true"
-          class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50">
+        <BorderButton @click="show_add_item_dialog = true">
           <PlusIcon class="inline h-4 w-4"></PlusIcon> Items manually
-        </button>
+        </BorderButton>
         <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
           <AddItemsToCollectionArea :collection="collection" :collection_class="class_name"
             @items_added="$refs.collection_table_view.load_collection_items"></AddItemsToCollectionArea>
         </Dialog>
 
-        <button @click="show_add_column_dialog = true"
-          class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50">
-          <PlusIcon class="inline h-4 w-4"></PlusIcon> Column
-        </button>
-        <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
-          <AddColumnDialog :collection="collection" :collection_class="class_name"
-            :collection_items="$refs.collection_table_view.collection_items" @close="show_add_column_dialog = false">
-          </AddColumnDialog>
-        </Dialog>
-
         <div class="flex-1"></div>
 
-        <button @click="show_export_dialog = true" v-tooltip.bottom="{ value: 'Export items only' }"
-          class="rounded-md bg-gray-100 hover:bg-blue-100/50 py-1 px-2 text-gray-500 font-semibold text-sm">
+        <BorderButton @click="show_export_dialog = true"
+          v-tooltip.bottom="{ value: 'Export items only' }">
           <ArchiveBoxArrowDownIcon class="h-4 w-4 mr-2 inline" />
           <DocumentIcon class="h-4 w-4 inline" />
-        </button>
+        </BorderButton>
         <Dialog v-model:visible="show_export_dialog" modal header="Export">
           <ExportCollectionArea :collection_id="collectionStore.collection_id" :class_name="class_name">
           </ExportCollectionArea>
         </Dialog>
 
-        <button @click="event => { $refs.export_dialog.toggle(event) }" v-tooltip.bottom="{ value: 'Export table' }"
-          class="py-1 px-2 rounded-md bg-gray-100 text-gray-500 text-sm font-semibold hover:bg-blue-100/50">
+        <BorderButton @click="event => { $refs.export_dialog.toggle(event) }"
+          v-tooltip.bottom="{ value: 'Export table' }">
           <ArchiveBoxArrowDownIcon class="h-4 w-4 mr-2 inline" />
           <TableCellsIcon class="h-4 w-4 inline" />
-        </button>
+        </BorderButton>
         <OverlayPanel ref="export_dialog">
           <ExportTableArea :collection_id="collectionStore.collection_id" :class_name="class_name">
           </ExportTableArea>
         </OverlayPanel>
 
-        <button @click="delete_collection" v-tooltip.bottom="{ value: 'Delete collection' }"
-          class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+        <BorderButton @click="delete_collection" v-tooltip.bottom="{ value: 'Delete collection' }"
+          hover_color="hover:text-red-500">
           <TrashIcon class="h-4 w-4"></TrashIcon>
-        </button>
+        </BorderButton>
 
         <div class="flex-1"></div>
 
         <span class="text-gray-400">
           Views:
         </span>
-        <button v-if="appState.user.is_staff" @click="show_right_side_view('chart')"
-          class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
-          :class="{'text-blue-500': right_side_view === 'chart'}">
+        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('chart')"
+          :highlighted="right_side_view === 'chart'">
           Chart
-        </button>
-        <button v-if="appState.user.is_staff" @click="show_right_side_view('map')"
-          class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
-          :class="{'text-blue-500': right_side_view === 'map'}">
+        </BorderButton>
+        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('map')"
+          :highlighted="right_side_view === 'map'">
           Map
-        </button>
-        <button v-if="appState.user.is_staff" @click="show_right_side_view('summary')"
-          class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
-          :class="{'text-blue-500': right_side_view === 'summary'}">
+        </BorderButton>
+        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('summary')"
+          :highlighted="right_side_view === 'summary'">
           Summary
-        </button>
+        </BorderButton>
       </div>
 
       <Message v-if="collection.agent_is_running"
@@ -225,10 +211,10 @@ export default {
           severity="warn">
           Search Mode: Only candidates are shown
         </Message>
-        <button @click="collectionStore.exit_search_mode"
+        <BorderButton @click="collectionStore.exit_search_mode"
           class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50">
           Exit Search Mode
-        </button>
+        </BorderButton>
       </div>
 
     </div>
@@ -237,20 +223,18 @@ export default {
 
     <div class="flex-1 overflow-hidden flex flex-row">
 
-      <div v-if="right_side_view === 'summary'"
-        class="flex-none w-[600px] bg-white shadow-md z-30">
-
-        <WritingTaskArea v-if="right_side_view === 'summary'"
-          class="overflow-y-auto h-full"
-          :collection_id="collectionStore.collection_id" :class_name="class_name">
-        </WritingTaskArea>
-      </div>
-
-      <CollectionTableView class="pl-3 pt-2 pr-3 z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
-        :class_name="class_name" :is_positive="true">
+      <CollectionTableView class="z-20 bg-gray-200" ref="collection_table_view" :collection_id="collectionStore.collection_id"
+        :class_name="class_name" :is_positive="true"
+        @add_column="show_add_column_dialog = true">
       </CollectionTableView>
 
-      <div v-if="right_side_view === 'chart' || right_side_view === 'map'"
+      <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
+        <AddColumnDialog :collection="collection" :collection_class="class_name"
+          :collection_items="$refs.collection_table_view.collection_items" @close="show_add_column_dialog = false">
+        </AddColumnDialog>
+      </Dialog>
+
+      <div v-if="right_side_view"
         class="flex-none w-[600px] bg-white shadow-md z-30">
 
         <div v-if="right_side_view === 'chart'"
@@ -262,6 +246,11 @@ export default {
           class="p-3">
           Map
         </div>
+
+        <WritingTaskArea v-if="right_side_view === 'summary'"
+          class="overflow-y-auto h-full"
+          :collection_id="collectionStore.collection_id" :class_name="class_name">
+        </WritingTaskArea>
       </div>
     </div>
 

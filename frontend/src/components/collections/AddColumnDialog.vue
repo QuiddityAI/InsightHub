@@ -66,7 +66,7 @@ export default {
         const column = response.data
         that.collection.columns.push(column)
         if (process_current_page) {
-          that.extract_question(column.id, true)
+          that.collectionStore.extract_question(column.id, true)
         }
       })
       .catch(function (error) {
@@ -74,6 +74,7 @@ export default {
       })
       this.$refs.new_question_name.value = ''
       this.$refs.new_question_prompt.value = ''
+      this.$emit('close')
     },
   },
 }
@@ -114,13 +115,13 @@ export default {
       <button
         class="rounded-md border-0 px-2 py-1.5 bg-green-100 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
-        @click="show_add_column_dialog = false; add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, true)">
+        @click="add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, true)">
         Add Question & Process Current Page
       </button>
       <button
         class="rounded-md border-0 px-2 py-1.5 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
-        @click="show_add_column_dialog = false; add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, false)">
+        @click="add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, false)">
         Add without Processing
       </button>
     </div>

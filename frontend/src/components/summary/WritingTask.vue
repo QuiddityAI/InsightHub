@@ -17,6 +17,7 @@ import MultiSelect from "primevue/multiselect";
 
 import SearchFilterList from "../search/SearchFilterList.vue"
 import AddFilterMenu from "../search/AddFilterMenu.vue"
+import BorderlessButton from "../widgets/BorderlessButton.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { languages } from "../../utils/utils"
@@ -202,20 +203,22 @@ export default {
         {{ writing_task.name || "New Writing Task" }}
       </h2>
       <div class="flex-1"></div>
-      <button v-if="!writing_task.is_processing"
+      <BorderlessButton v-if="!writing_task.is_processing"
         @click="execute_writing_task" v-tooltip.bottom="{ value: 'Execute this writing task' }"
-        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-green-500">
+        hover_color="hover:text-green-500" :default_padding="false" class="h-6 w-6">
         <PlayIcon class="h-4 w-4"></PlayIcon>
-      </button>
+      </BorderlessButton>
       <ProgressSpinner v-if="writing_task.is_processing" class="h-6 w-6" strokeWidth="8" style="color: #4CAF50" />
-      <button @click="show_settings_dialog = true" v-tooltip.bottom="{ value: 'Configure this writing task' }"
-        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-blue-500">
+      <BorderlessButton @click="show_settings_dialog = true"
+        v-tooltip.bottom="{ value: 'Configure this writing task' }"
+        :default_padding="false" class="h-6 w-6">
         <AdjustmentsHorizontalIcon class="h-4 w-4"></AdjustmentsHorizontalIcon>
-      </button>
-      <button @click="$emit('delete')" v-tooltip.bottom="{ value: 'Delete writing task' }"
-        class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+      </BorderlessButton>
+      <BorderlessButton @click="$emit('delete')"
+        v-tooltip.bottom="{ value: 'Delete writing task' }"
+        hover_color="hover:text-red-500" :default_padding="false" class="h-6 w-6">
         <TrashIcon class="h-4 w-4"></TrashIcon>
-      </button>
+      </BorderlessButton>
     </div>
 
     <div class="relative flex-1 mt-2 flex flex-col overflow-hidden">

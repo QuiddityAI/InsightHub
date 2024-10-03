@@ -1,6 +1,7 @@
 <script setup>
 
 import {
+  PlusIcon,
   TrashIcon,
 } from "@heroicons/vue/24/outline"
 
@@ -34,7 +35,7 @@ export default {
   inject: ["eventBus"],
   props: ["collection_id", "class_name", "is_positive"],
   expose: [],
-  emits: [],
+  emits: ["add_column"],
   data() {
     return {
       selected_column: null,
@@ -124,43 +125,6 @@ export default {
         console.error(error)
       })
     },
-    extract_question(column_id, only_current_page=true) {
-      const that = this
-      if (!only_current_page && !confirm("This will extract the question for all items in the collection. This might be long running and expensive. Are you sure?")) {
-        return
-      }
-      const body = {
-        column_id: column_id,
-        class_name: this.collectionStore.class_name,
-        offset: only_current_page ? this.collectionStore.first_index : 0,
-        limit: only_current_page ? this.collectionStore.per_page : -1,
-        order_by: (this.collectionStore.order_descending ? "-" : "") + this.collectionStore.order_by_field,
-      }
-      httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
-      .then(function (response) {
-        that.collectionStore.collection.columns_with_running_processes = response.data.columns_with_running_processes
-        that.get_extraction_results(column_id)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    get_extraction_results(column_id) {
-      const that = this
-      const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
-      this.collectionStore.load_collection_items([column_identifier])
-      this.collectionStore.update_collection(() => {
-        // if (JSON.stringify(response.data.columns) !== JSON.stringify(that.collection.columns)) {
-        //   that.collection.columns = response.data.columns
-        // }
-        // that.collection.columns_with_running_processes = response.data.columns_with_running_processes
-        if (this.collection.columns_with_running_processes.includes(column_identifier)) {
-          setTimeout(() => {
-            this.get_extraction_results(column_id)
-          }, 1000)
-        }
-      })
-    },
     human_readable_source_fields(fields) {
       const available_source_fields = this.collectionStore.available_source_fields
       return fields.map((field) => available_source_fields.find((f) => f.identifier === field).name).join(", ")
@@ -173,15 +137,16 @@ export default {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col overflow-x-hidden">
+  <div class="flex-1 flex flex-col items-center overflow-x-hidden" v-if="collection">
+
     <DataTable :value="collectionStore.collection_items" tableStyle="" scrollable scrollHeight="flex" size="small"
-      class="min-h-0 overflow-x-auto ml-5">
+      class="min-h-0 overflow-x-auto pt-3 xl:pt-6 max-w-full">
       <template #empty>
-        <div class="py-10 flex flex-row justify-center text-gray-500">No items yet</div>
+        <div class="pl-3 xl:pl-8 py-10 flex flex-row justify-center text-gray-500">No items yet</div>
       </template>
-      <Column header="">
+      <Column header="" class="pl-5 xl:pl-10 min-w-[520px]">
         <template #header="slotProps">
-          <span class="text-sm">{{ collectionStore.search_mode ? 'Search Results' : 'Items' }}</span>
+          <span class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center">{{ collectionStore.search_mode ? 'Search Results' : 'Items' }}</span>
         </template>
         <template #body="slotProps">
           <CollectionItem
@@ -192,28 +157,38 @@ export default {
             :show_remove_button="true"
             :collection_item="slotProps.data"
             @remove="collectionStore.remove_item_from_collection([slotProps.data.dataset_id, slotProps.data.item_id], collection_id, class_name)"
-            class="min-w-[450px] max-w-[520px]">
+            class="min-w-[520px] max-w-[520px]">
           </CollectionItem>
         </template>
       </Column>
-      <Column v-for="column in collection.columns" :header="false">
+      <Column v-for="(column, index) in collection.columns" :header="false">
         <template #header="slotProps">
-          <button class="rounded-md bg-gray-100 text-sm hover:bg-blue-100/50 py-1 px-2"
+          <button class="rounded-md bg-white shadow-sm text-sm hover:text-blue-500 py-1 px-2 w-full"
             @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
             {{ column.name }}
           </button>
         </template>
         <template #body="slotProps">
           <CollectionTableCell :item="slotProps.data" :column="column"
-            class="max-w-[400px]"
             :columns_with_running_processes="collection.columns_with_running_processes"
             :show_overlay_buttons="false">
           </CollectionTableCell>
         </template>
       </Column>
+      <Column class="pr-5 xl:pr-10">
+        <template #header="slotProps">
+          <button class="rounded-md bg-gray-100 shadow-sm text-sm hover:text-blue-500 py-1 px-3 w-[120px]"
+            @click="$emit('add_column')">
+            <PlusIcon class="h-4 w-4 inline"></PlusIcon> Column
+          </button>
+        </template>
+        <template #body="slotProps">
+
+        </template>
+      </Column>
     </DataTable>
 
-    <div class="flex flex-row items-center justify-center">
+    <div class="w-full flex flex-row items-center justify-center bg-white border-t">
       <Paginator v-model:first="collectionStore.first_index" :rows="collectionStore.per_page" :total-records="collectionStore.item_count"
         class="mt-[0px]"></Paginator>
       <Dropdown v-if="!collectionStore.search_mode"
@@ -263,6 +238,7 @@ export default {
           </div>
         </div>
     </OverlayPanel>
+
   </div>
 </template>
 

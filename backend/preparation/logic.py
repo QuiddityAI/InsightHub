@@ -54,17 +54,17 @@ def prepare_collection(
 
 
 def prepare_for_quick_search(collection: DataCollection, settings: CreateCollectionSettings) -> None:
-    eval_column = CollectionColumn(
-        collection=collection,
-        name="Relevancy?",
-        identifier="relevancy"
-    )
+    # eval_column = CollectionColumn(
+    #     collection=collection,
+    #     name="Relevancy?",
+    #     identifier="relevancy"
+    # )
     assert settings.query is not None
-    eval_column.field_type = FieldType.TEXT
-    eval_column.expression = item_relevancy_prompt.replace("{{ question }}", settings.query)
-    eval_column.source_fields = [COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS]  # type: ignore
-    eval_column.module = 'groq_llama_3_70b'
-    eval_column.save()
+    # eval_column.field_type = FieldType.TEXT
+    # eval_column.expression = item_relevancy_prompt.replace("{{ question }}", settings.query)
+    # eval_column.source_fields = [COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS]  # type: ignore
+    # eval_column.module = 'groq_llama_3_70b'
+    # eval_column.save()
 
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
