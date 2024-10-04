@@ -37,9 +37,11 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings)
     results = get_search_results(json.dumps(params), 'list')
     items_by_dataset = results['items_by_dataset']
     new_items = []
+    now = timezone.now()
     for ds_and_item_id in results['sorted_ids']:
         value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
         item = CollectionItem(
+            date_added=now,
             collection=collection,
             relevance=0,
             classes=['_default'],

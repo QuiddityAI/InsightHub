@@ -850,7 +850,7 @@ def get_collection_items(request):
         return_items = return_items.order_by('-search_score')
     else:
         return_items = all_items.filter(relevance__gte=2)
-        return_items = return_items.order_by(order_by)
+        return_items = return_items.order_by(order_by, '-search_score')
 
     return_items = return_items[offset : offset + limit]
     serialized_data = CollectionItemSerializer(return_items, many=True).data

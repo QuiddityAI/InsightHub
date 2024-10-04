@@ -197,7 +197,7 @@ export default {
         optionLabel="name"
         optionValue="identifier"
         placeholder="Order By..."
-        class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+        class="w-44 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       <button v-if="!collectionStore.search_mode"
         @click="collectionStore.order_descending = !collectionStore.order_descending"
         v-tooltip="{'value': 'Sort Order', showDelay: 500}"

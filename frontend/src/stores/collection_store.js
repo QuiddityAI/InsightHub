@@ -279,6 +279,10 @@ export const useCollectionStore = defineStore("collection", {
           name: column.name,
         }
       }
+      available_fields['changed_at'] = {
+        identifier: 'changed_at',
+        name: 'Last Changed',
+      }
       available_fields['date_added'] = {
         identifier: 'date_added',
         name: 'Date Added',
