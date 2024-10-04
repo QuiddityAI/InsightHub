@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='collectionitem',
             name='relevance',
-            field=models.IntegerField(default=0, help_text='From +3 to -3. 0 is a new, non-reviewed candidate', verbose_name='Relevance'),
+            field=models.IntegerField(default=3, help_text='From +3 to -3. 0 is a new, non-reviewed candidate', verbose_name='Relevance'),
         ),
         migrations.AddField(
             model_name='collectionitem',
