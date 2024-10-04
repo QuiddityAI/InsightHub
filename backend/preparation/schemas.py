@@ -10,5 +10,6 @@ class CreateCollectionSettings(Schema):
     auto_set_filters: bool
     query: Optional[str]
     result_language: Optional[str]
-    search_algorithm: Optional[str]
+    retrieval_mode: Optional[str]
     ranking_settings: Optional[dict]
+    # TODO filters

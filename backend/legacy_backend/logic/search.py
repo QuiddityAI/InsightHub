@@ -45,7 +45,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         score_info = {}
         total_matches = 0
 
-        check_filters(dataset, params.search.filters, params.search.search_algorithm)
+        check_filters(dataset, params.search.filters, params.search.retrieval_mode)
 
         if dataset.source_plugin == SourcePlugin.BING_WEB_API and params.search.search_type == "external_input":
             query = params.search.all_field_query
@@ -130,7 +130,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
     # TODO: currently only first page is returned
 
     queries = QueryInput.from_raw_query(raw_query, negative_query, image_query, negative_image_query)
-    filters = adapt_filters_to_dataset(search_settings.filters, dataset, limit, search_settings.search_algorithm, search_settings.result_language)
+    filters = adapt_filters_to_dataset(search_settings.filters, dataset, limit, search_settings.retrieval_mode, search_settings.result_language)
     if not (filters or queries):
         raise ValueError("No search queries or filters provided")
     actual_total_matches = 0
@@ -140,7 +140,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
         for field in dataset.schema.object_fields.values():
             if not field.is_available_for_search or field.identifier not in enabled_fields:
                 continue
-            if search_settings.search_algorithm in ['vector', 'hybrid'] and field.field_type == FieldType.VECTOR:
+            if search_settings.retrieval_mode in ['vector', 'hybrid'] and field.field_type == FieldType.VECTOR:
                 score_threshold = get_field_similarity_threshold(field, input_is_image=bool(query.positive_image_url or query.negative_image_url))
                 score_threshold = score_threshold if search_settings.use_similarity_thresholds else None
                 results = get_vector_search_results(dataset, field.identifier, query, None, filters, required_fields=[],
@@ -150,7 +150,7 @@ def get_search_results_using_combined_query(dataset, search_settings: DotDict, v
                 result_sets.append(results)
                 actual_total_matches = max(actual_total_matches, len(results))
                 timings.log("vector database query")
-            elif search_settings.search_algorithm in ['keyword', 'hybrid'] and field.field_type == FieldType.TEXT:
+            elif search_settings.retrieval_mode in ['keyword', 'hybrid'] and field.field_type == FieldType.TEXT:
                 text_fields.append(field.identifier)
             else:
                 continue

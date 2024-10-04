@@ -26,7 +26,7 @@ def get_global_question_context(search_settings: dict) -> dict:
     chunk_rerank = True
     oversample_for_reranking = 3 if item_rerank else 0
     search_settings["result_list_items_per_page"] = num_results_in_context + oversample_for_reranking
-    search_settings["search_algorithm"] = "hybrid"
+    search_settings["retrieval_mode"] = "hybrid"
     search_settings["max_sub_items_per_item"] = 2
     search_settings["return_highlights"] = True
     search_settings["use_bolding_in_highlights"] = False

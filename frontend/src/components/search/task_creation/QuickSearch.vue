@@ -67,7 +67,7 @@ export default {
       return groups
     },
     query_uses_operators_and_meaning() {
-      const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.search_algorithm)
+      const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.retrieval_mode)
       const operators = [" AND ", " OR ", " NOT "]
       const uses_operators = operators.some((op) => this.appStateStore.settings.search.all_field_query.includes(op))
       return uses_operators && uses_meaning
@@ -78,7 +78,7 @@ export default {
       return other_quotes.some((quote) => query.includes(" " + quote) || query.includes(quote + " "))
     },
     using_meaning_for_non_english_search() {
-      return this.appStateStore.settings.search.result_language !== "en" && ["vector", "hybrid"].includes(this.appStateStore.settings.search.search_algorithm)
+      return this.appStateStore.settings.search.result_language !== "en" && ["vector", "hybrid"].includes(this.appStateStore.settings.search.retrieval_mode)
     },
     example_queries() {
       if (this.appStateStore.settings.search.dataset_ids.length === 0) {
@@ -87,7 +87,7 @@ export default {
       return this.appStateStore.datasets[this.appStateStore.settings.search.dataset_ids[0]]?.advanced_options.example_queries || []
     },
     show_warning_about_missing_meaning_search() {
-      const non_keyword = this.appStateStore.settings.search.search_algorithm !== 'keyword'
+      const non_keyword = this.appStateStore.settings.search.retrieval_mode !== 'keyword'
       return non_keyword && false  // disable warning for now
     },
     available_languages() {
@@ -139,7 +139,7 @@ export default {
         if (search_parameters.search_type == "meaning") {
           search_parameters.search_type = "vector"
         }
-        this.appStateStore.settings.search.search_algorithm = search_parameters.search_type
+        this.appStateStore.settings.search.retrieval_mode = search_parameters.search_type
         this.appStateStore.settings.search.ranking_settings = this.appStateStore.available_ranking_options[0]
         if (languages.find(lang => lang.code == search_parameters.query_language)) {
           this.appStateStore.settings.search.result_language = search_parameters.query_language
@@ -159,7 +159,7 @@ export default {
     run_example_query(example) {
       this.appStateStore.settings.search.all_field_query = example.query
       this.appStateStore.settings.search.filters = example.filters || []
-      this.appStateStore.settings.search.search_algorithm = example.search_type
+      this.appStateStore.settings.search.retrieval_mode = example.search_type
       this.use_smart_search = example.use_smart_search || true
     },
   },
@@ -252,26 +252,26 @@ export default {
         <div v-if="!use_smart_search" class="mt-3 ml-0 flex flex-row gap-1 items-center">
           <div class="flex flex-row items-center gap-0 h-6">
             <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="appState.settings.search.search_algorithm = 'keyword'"
+              @click="appState.settings.search.retrieval_mode = 'keyword'"
               v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
-              :class="{'text-blue-500': appState.settings.search.search_algorithm === 'keyword', 'text-gray-400': appState.settings.search.search_algorithm != 'keyword'}">
+              :class="{'text-blue-500': appState.settings.search.retrieval_mode === 'keyword', 'text-gray-400': appState.settings.search.retrieval_mode != 'keyword'}">
               Keywords
             </button>
             <button class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="appState.settings.search.search_algorithm = 'vector'"
+              @click="appState.settings.search.retrieval_mode = 'vector'"
               v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-              :class="{'text-blue-500': appState.settings.search.search_algorithm === 'vector', 'text-gray-400': appState.settings.search.search_algorithm != 'vector'}">
+              :class="{'text-blue-500': appState.settings.search.retrieval_mode === 'vector', 'text-gray-400': appState.settings.search.retrieval_mode != 'vector'}">
               Meaning
             </button>
             <button class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="appState.settings.search.search_algorithm = 'hybrid'"
+              @click="appState.settings.search.retrieval_mode = 'hybrid'"
               v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-              :class="{'text-blue-500': appState.settings.search.search_algorithm === 'hybrid', 'text-gray-400': appState.settings.search.search_algorithm != 'hybrid'}">
+              :class="{'text-blue-500': appState.settings.search.retrieval_mode === 'hybrid', 'text-gray-400': appState.settings.search.retrieval_mode != 'hybrid'}">
               Both
             </button>
           </div>
           <div class="flex-1"></div>
-          <select v-model="appState.settings.search.ranking_settings" v-if="appState.available_ranking_options.length > 1 && appState.settings.search.search_algorithm === 'keyword'"
+          <select v-model="appState.settings.search.ranking_settings" v-if="appState.available_ranking_options.length > 1 && appState.settings.search.retrieval_mode === 'keyword'"
             class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
             v-tooltip.bottom="{ value: appState.settings.search.ranking_settings?.tooltip, showDelay: 400}">
             <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">

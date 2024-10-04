@@ -4,7 +4,7 @@
   "entity_name_plural": "articles",
   "short_description": null,
   "created_at": "2023-10-31T11:24:26.188Z",
-  "changed_at": "2024-07-02T14:24:34.756Z",
+  "changed_at": "2024-10-04T16:21:42.804Z",
   "primary_key": "openalex_id",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -32,8 +32,8 @@
         "display_name": "Citations"
       }
     ],
+    "retrieval_mode": "keyword",
     "map_vector_field": "embedding",
-    "search_algorithm": "keyword",
     "export_button_name": "Cite",
     "ignored_keyword_highlight_fields": [
       "title",

@@ -35,7 +35,7 @@ export default {
         'high_precision_search': 'High Precision Search',
         'custom_search': 'Custom Search',
       },
-      search_algorithms: {
+      retrieval_modes: {
         'keyword': { title: 'Keyword', tooltip: 'Searching by matching keywords' },
         'vector': { title: 'Meaning', tooltip: 'Searching by similar meaning (AI-based)' },
         'hybrid': { title: 'Hybrid', tooltip: 'Searching using both keywords and meaning' },
@@ -74,8 +74,8 @@ export default {
       </span>
       <div class="flex-1"></div>
       <div class="text-xs text-gray-400"
-        v-tooltip.bottom="{ value: search_algorithms[mapState.map_parameters?.search.search_algorithm]?.tooltip }">
-        {{ search_algorithms[mapState.map_parameters?.search.search_algorithm]?.title }}
+        v-tooltip.bottom="{ value: retrieval_modes[mapState.map_parameters?.search.retrieval_mode]?.tooltip }">
+        {{ retrieval_modes[mapState.map_parameters?.search.retrieval_mode]?.title }}
       </div>
       <div v-if="mapState.map_parameters?.search.result_language?.length && mapState.map_parameters?.search.result_language !== 'en'"
         class="text-sm"

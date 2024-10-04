@@ -4,7 +4,7 @@
   "entity_name_plural": "articles",
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-08-02T17:36:42.481Z",
+  "changed_at": "2024-10-04T16:21:28.491Z",
   "primary_key": "corpus_id",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -33,6 +33,7 @@
         "display_name": "Citations"
       }
     ],
+    "retrieval_mode": "keyword",
     "example_queries": [
       {
         "query": "papers about Mxene before 2020"
@@ -54,7 +55,7 @@
               "field_value_factor": {
                 "field": "cited_by",
                 "factor": 0.003,
-                "missing": 0.0,
+                "missing": 0,
                 "modifier": "log2p"
               }
             },
@@ -107,7 +108,6 @@
       }
     ],
     "map_vector_field": "embedding_specter_v2",
-    "search_algorithm": "keyword",
     "example_questions": [
       {
         "question": "What can Mxenes be used for?"

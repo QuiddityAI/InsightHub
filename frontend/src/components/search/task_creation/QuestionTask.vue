@@ -59,7 +59,7 @@ export default {
       return [grouped["Public Sources"], grouped["Your Files"]]
     },
     query_uses_operators_and_meaning() {
-      const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.search_algorithm)
+      const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.retrieval_mode)
       const operators = [" AND ", " OR ", " NOT "]
       const uses_operators = operators.some((op) => this.appStateStore.settings.search.all_field_query.includes(op))
       return uses_operators && uses_meaning
@@ -113,7 +113,7 @@ export default {
         if (search_parameters.search_type == "meaning") {
           search_parameters.search_type = "vector"
         }
-        this.appStateStore.settings.search.search_algorithm = search_parameters.search_type
+        this.appStateStore.settings.search.retrieval_mode = search_parameters.search_type
         this.appStateStore.settings.search.question = question
         this.appStateStore.request_search_results()
       }).catch((error) => {
@@ -126,7 +126,7 @@ export default {
     run_example_query(example) {
       this.appStateStore.settings.search.all_field_query = example.question
       this.appStateStore.settings.search.filters = example.filters || []
-      this.appStateStore.settings.search.search_algorithm = example.search_type
+      this.appStateStore.settings.search.retrieval_mode = example.search_type
     },
   },
 }

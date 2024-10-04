@@ -38,7 +38,7 @@ export default {
         auto_set_filters: true,
         query: '',
         result_language: 'en',
-        search_algorithm: 'hybrid',
+        retrieval_mode: 'hybrid',
         ranking_settings: null,
         related_organization_id: null,
       },
@@ -47,7 +47,7 @@ export default {
         auto_set_filters: true,
         query: '',
         result_language: 'en',
-        search_algorithm: 'hybrid',
+        retrieval_mode: 'hybrid',
         ranking_settings: null,
         related_organization_id: null,
       },
@@ -87,7 +87,7 @@ export default {
       return this.appStateStore.available_language_filters.map(item => languages.find(lang => lang.code == item[1]))
     },
     query_uses_operators_and_meaning() {
-      const uses_meaning = ["vector", "hybrid"].includes(this.new_settings.search_algorithm)
+      const uses_meaning = ["vector", "hybrid"].includes(this.new_settings.retrieval_mode)
       const operators = [" AND ", " OR ", " NOT "]
       const uses_operators = operators.some((op) => this.new_settings.query.includes(op))
       return uses_operators && uses_meaning
@@ -98,10 +98,10 @@ export default {
       return other_quotes.some((quote) => query.includes(" " + quote) || query.includes(quote + " "))
     },
     using_meaning_for_non_english_search() {
-      return this.new_settings.result_language !== "en" && ["vector", "hybrid"].includes(this.new_settings.search_algorithm)
+      return this.new_settings.result_language !== "en" && ["vector", "hybrid"].includes(this.new_settings.retrieval_mode)
     },
     show_warning_about_missing_meaning_search() {
-      const non_keyword = this.new_settings.search_algorithm !== 'keyword'
+      const non_keyword = this.new_settings.retrieval_mode !== 'keyword'
       return non_keyword && false  // disable warning for now
     },
     ai_is_available() {
@@ -196,29 +196,29 @@ export default {
       <div v-if="!new_settings.auto_set_filters" class="flex flex-row gap-1 items-center">
         <div class="flex flex-row items-center gap-0 h-6">
           <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-            @click="new_settings.search_algorithm = 'keyword'"
+            @click="new_settings.retrieval_mode = 'keyword'"
             v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
-            :class="{ 'text-blue-500': new_settings.search_algorithm === 'keyword', 'text-gray-400': new_settings.search_algorithm != 'keyword' }">
+            :class="{ 'text-blue-500': new_settings.retrieval_mode === 'keyword', 'text-gray-400': new_settings.retrieval_mode != 'keyword' }">
             Keywords
           </button>
           <button
             class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-            @click="new_settings.search_algorithm = 'vector'"
+            @click="new_settings.retrieval_mode = 'vector'"
             v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-            :class="{ 'text-blue-500': new_settings.search_algorithm === 'vector', 'text-gray-400': new_settings.search_algorithm != 'vector' }">
+            :class="{ 'text-blue-500': new_settings.retrieval_mode === 'vector', 'text-gray-400': new_settings.retrieval_mode != 'vector' }">
             Meaning
           </button>
           <button
             class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-            @click="new_settings.search_algorithm = 'hybrid'"
+            @click="new_settings.retrieval_mode = 'hybrid'"
             v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-            :class="{ 'text-blue-500': new_settings.search_algorithm === 'hybrid', 'text-gray-400': new_settings.search_algorithm != 'hybrid' }">
+            :class="{ 'text-blue-500': new_settings.retrieval_mode === 'hybrid', 'text-gray-400': new_settings.retrieval_mode != 'hybrid' }">
             Both
           </button>
         </div>
         <div class="flex-1"></div>
         <select v-model="new_settings.ranking_settings"
-          v-if="appState.available_ranking_options.length > 1 && new_settings.search_algorithm === 'keyword'"
+          v-if="appState.available_ranking_options.length > 1 && new_settings.retrieval_mode === 'keyword'"
           class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
           v-tooltip.bottom="{ value: new_settings.ranking_settings?.tooltip, showDelay: 400 }">
           <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">

@@ -107,7 +107,7 @@ export const useAppStateStore = defineStore("appState", {
           dataset_ids: [],
           task_type: null,  // one of quick_search, custom_search etc.
           search_type: "external_input", // or cluster, collection or similar item
-          search_algorithm: "hybrid",  // "keyword", "vector", "hybrid"
+          retrieval_mode: "hybrid",  // "keyword", "vector", "hybrid"
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
@@ -449,7 +449,7 @@ export const useAppStateStore = defineStore("appState", {
       history.replaceState(null, null, "?" + queryParams.toString())
       this.populate_search_fields_based_on_selected_datasets()
       // update default search settings:
-      this.settings.search.search_algorithm = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].merged_advanced_options.search_algorithm).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
+      this.settings.search.retrieval_mode = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].merged_advanced_options.retrieval_mode).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
       this.settings.frontend.rendering.max_opacity = this.default_settings.frontend.rendering.max_opacity
       this.settings.frontend.rendering.point_size_factor = this.default_settings.frontend.rendering.point_size_factor
       for (const dataset_id of this.settings.search.dataset_ids) {
@@ -709,10 +709,10 @@ export const useAppStateStore = defineStore("appState", {
 
       // postprocess search query:
       if (this.settings.search.search_type == "external_input"
-          && ["vector", "hybrid"].includes(this.settings.search.search_algorithm)) {
+          && ["vector", "hybrid"].includes(this.settings.search.retrieval_mode)) {
         this.convert_quoted_parts_to_filter()
       }
-      if (this.settings.search.search_algorithm != "keyword") {
+      if (this.settings.search.retrieval_mode != "keyword") {
         // for now, ranking settings are not supported in vector or hybrid search:
         this.settings.search.ranking_settings = {}
       }
@@ -1333,7 +1333,7 @@ export const useAppStateStore = defineStore("appState", {
     show_similar_items(item_ds_and_id, full_item=null) {
       this.settings.search.search_type = "similar_to_item"
       this.settings.search.similar_to_item_id = item_ds_and_id
-      this.settings.search.search_algorithm = "vector"
+      this.settings.search.retrieval_mode = "vector"
       // use currently selected datasets, no need to change them
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""

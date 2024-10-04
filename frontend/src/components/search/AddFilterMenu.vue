@@ -40,7 +40,7 @@ export default {
           if (!field.is_available_for_filtering) continue
           const index_params = field.index_parameters || {}
           const no_index_in_vector_db = index_params.no_index_in_vector_database || index_params.exclude_from_vector_database
-          if (this.appStateStore.settings.search.search_algorithm !== 'keyword' && no_index_in_vector_db) continue
+          if (this.appStateStore.settings.search.retrieval_mode !== 'keyword' && no_index_in_vector_db) continue
           available_fields[field.identifier] = {
             identifier: field.identifier,
             dataset_id: dataset_id,  // for now, filters are applied to all matching fields in any dataset, but we need one dataset as a reference for the field description

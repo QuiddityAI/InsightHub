@@ -12,7 +12,7 @@ class SearchTaskSettings(Schema):
     feedback_loop_steps: int = 0
     auto_set_filters: bool = False  # and algorithm and ranking
     filters: Optional[dict] = None
-    search_algorithm: Optional[str] = None
+    retrieval_mode: Optional[str] = None
     ranking_settings: Optional[dict] = None
     auto_select: bool = False
     min_selections: int = 1

@@ -14,12 +14,18 @@ from .schemas import SearchTaskSettings
 def run_search_task(collection: DataCollection, search_task: SearchTaskSettings):
     collection.current_agent_step = "Running search task..."
     collection.save()
+
+    source = dict(
+        dataset_id=search_task.dataset_id,
+        retrieval_mode=search_task.retrieval_mode or 'hybrid',
+    )
+
     params = {
         'search': {
             'dataset_ids': [search_task.dataset_id],
             'task_type': 'quick_search',
             'search_type': 'external_input',
-            'search_algorithm': search_task.search_algorithm or 'hybrid',
+            'retrieval_mode': search_task.retrieval_mode or 'hybrid',
             'use_separate_queries': False,
             'all_field_query': search_task.query,
             'auto_relax_query': True,
