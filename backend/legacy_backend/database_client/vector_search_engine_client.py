@@ -282,7 +282,7 @@ class VectorSearchEngineClient(object):
 
 
     def get_items_near_vector(self, dataset: DotDict, vector_field: str, query_vector: list,
-                              filters: list[dict] | None, return_vectors: bool, limit: int,
+                              filters: list[dict] | None, return_vectors: bool, limit: int, page: int,
                               score_threshold: float | None, min_results: int = 10,
                               is_array_field: bool=False, max_sub_items: int = 1) -> list:
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
@@ -305,6 +305,7 @@ class VectorSearchEngineClient(object):
                 with_payload=['array_index'],
                 with_vectors=return_vectors,
                 limit=limit,
+                offset=page * limit,
                 score_threshold=score_threshold,
                 group_by='parent_id',
                 group_size=max_sub_items,
@@ -320,7 +321,7 @@ class VectorSearchEngineClient(object):
                 }))
             if min_results > 0 and len(hits) < min_results and score_threshold:
                 # try again without score threshold
-                return self.get_items_near_vector(dataset, vector_field, query_vector, filters, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
+                return self.get_items_near_vector(dataset, vector_field, query_vector, filters, return_vectors, min(min_results, limit), page, None, min_results, is_array_field, max_sub_items)
             return hits  # type: ignore
 
         hits = self.client.search(
@@ -329,6 +330,7 @@ class VectorSearchEngineClient(object):
             with_payload=False,
             with_vectors=return_vectors,
             limit=limit,
+            offset=page * limit,
             score_threshold=score_threshold,
             query_filter=qdrant_filters,
             search_params=models.SearchParams(
@@ -337,7 +339,7 @@ class VectorSearchEngineClient(object):
         )
         if min_results > 0 and len(hits) < min_results and score_threshold:
             # try again without score threshold
-            return self.get_items_near_vector(dataset, vector_field, query_vector, filters, return_vectors, min(min_results, limit), None, min_results, is_array_field, max_sub_items)
+            return self.get_items_near_vector(dataset, vector_field, query_vector, filters, return_vectors, min(min_results, limit), page, None, min_results, is_array_field, max_sub_items)
         return hits
 
 

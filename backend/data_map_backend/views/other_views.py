@@ -829,6 +829,11 @@ def get_collection_items(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
+    try:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+
     if field_type or is_positive:
         all_items = CollectionItem.objects.filter(
             collection_id=collection_id,
@@ -842,11 +847,12 @@ def get_collection_items(request):
             collection_id=collection_id, classes__contains=[class_name]
         )
 
-    candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
-    search_mode = candidates.exists()
+    active_sources = [s for s in collection.search_sources if s['is_active']]
+    search_mode = len(active_sources) > 0
+    search_results = all_items.filter(search_source_id__in=[s['id_hash'] for s in active_sources])
 
     if search_mode:
-        return_items = candidates
+        return_items = search_results
         return_items = return_items.order_by('-search_score')
     else:
         return_items = all_items.filter(relevance__gte=2)
@@ -861,7 +867,6 @@ def get_collection_items(request):
         for item in serialized_data:
             item.pop("column_data", None)
 
-    collection = DataCollection.objects.get(id=collection_id)
     result = {
         "items": serialized_data,
         "items_last_changed": collection.items_last_changed.isoformat(),

@@ -62,8 +62,11 @@ export default {
     available_results() {
       return Math.max(this.active_search_sources.map((source) => source.available))
     },
+    any_source_is_estimated() {
+      return this.active_search_sources.some((source) => !source.available_is_exact)
+    },
     more_results_are_available() {
-      return this.retrieved_results < this.available_results
+      return this.retrieved_results < this.available_results || this.any_source_is_estimated
     },
     is_last_page() {
       return (collectionStore.first_index + collectionStore.per_page) >= collectionStore.filtered_count
@@ -188,7 +191,7 @@ export default {
             class="my-5 w-full flex flex-row justify-center">
             <BorderButton @click="collectionStore.add_items_from_active_sources"
               class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
-              v-tooltip.top="{ value: `${retrieved_results} of ${available_results} results retrieved`}">
+              v-tooltip.top="{ value: `${retrieved_results} of ${available_results}${any_source_is_estimated ? '+': ''} results retrieved`}">
               Show More Results <PlusIcon class="h-4 w-4 inline"></PlusIcon>
             </BorderButton>
           </div>

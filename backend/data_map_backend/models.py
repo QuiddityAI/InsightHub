@@ -1347,6 +1347,13 @@ class CollectionItem(models.Model):
         blank=False,
         null=False,
     )
+    search_source_id = models.CharField(
+        verbose_name="Search Source ID",
+        help_text="ID of the search source that generated this item",
+        max_length=50,
+        blank=True,
+        null=True,
+    )
     search_score = models.FloatField(
         verbose_name="Search Score",
         help_text="Score from the search engine",

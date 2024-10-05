@@ -182,7 +182,7 @@ export default {
             @items_added="$refs.collection_table_view.load_collection_items"></AddItemsToCollectionArea>
         </Dialog>
 
-        <SearchModeBar v-if="collectionStore.search_mode"
+        <SearchModeBar v-if="collectionStore.search_mode && !collection.agent_is_running"
           @edit_search_task="show_search_task_dialog = true" />
 
         <AgentModeBar v-if="collection.agent_is_running" />

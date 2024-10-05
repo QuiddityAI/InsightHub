@@ -109,7 +109,7 @@ export default {
         <!-- Heading -->
         <div class="flex flex-row items-start">
           <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
-          <button class="text-left text-[15px] font-serif font-bold leading-tight text-black hover:text-sky-600"
+          <button class="text-left text-[15px] font-serif font-bold leading-tight text-sky-700 hover:underline"
             v-html="rendering.title(item)"
             @click="appState.show_document_details([dataset_id, item_id])">
           </button>

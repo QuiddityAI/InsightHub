@@ -19,6 +19,7 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings)
 
     source = SearchSource(
         id_hash=uuid.uuid4().hex,
+        created_at=timezone.now().isoformat(),
         search_type=SearchType.EXTERNAL_INPUT,
         dataset_id=search_task.dataset_id,
         stack_index=stack_index,
@@ -91,11 +92,11 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> i
     results = get_search_results(json.dumps(params), 'list')
     items_by_dataset = results['items_by_dataset']
     new_items = []
-    now = timezone.now()
     for ds_and_item_id in results['sorted_ids']:
         value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
         item = CollectionItem(
-            date_added=now,
+            date_added=source.created_at,
+            search_source_id=source.id_hash,
             collection=collection,
             relevance=0,
             classes=['_default'],
@@ -109,7 +110,8 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> i
     CollectionItem.objects.bulk_create(new_items)
 
     source.retrieved += len(results['sorted_ids'])
-    source.available = results['total_matches']
+    source.available = max(results['total_matches'], source.retrieved)
+    source.available_is_exact = source.retrieval_mode == RetrievalMode.KEYWORD or len(results['sorted_ids']) == 0
 
     collection.search_sources = [s for s in collection.search_sources if s['id_hash'] != source.id_hash]
     collection.search_sources.append(source.dict())

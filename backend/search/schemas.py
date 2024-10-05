@@ -36,6 +36,7 @@ class RetrievalMode(StrEnum):
 
 class SearchSource(Schema):
     id_hash: str
+    created_at: str  # datetime
     search_type: SearchType = SearchType.EXTERNAL_INPUT
     dataset_id: int
     stack_index: int

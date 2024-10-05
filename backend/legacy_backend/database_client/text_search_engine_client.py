@@ -306,6 +306,7 @@ class TextSearchEngineClient(object):
             )
         if filters:
             query = {
+                'from': page * limit,
                 'size': limit,
                 'query': {
                     'bool': {
@@ -324,6 +325,7 @@ class TextSearchEngineClient(object):
                 }
         else:
             query = {
+                'from': page * limit,
                 'size': limit,
                 'query': {
                     'simple_query_string': {

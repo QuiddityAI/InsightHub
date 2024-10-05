@@ -305,7 +305,7 @@ def get_vector_search_results(dataset: DotDict, vector_field: str, query: QueryI
     is_array_field = dataset.schema.object_fields[vector_field].is_array
     array_source_field = dataset.schema.object_fields[vector_field].source_fields[0] if is_array_field and dataset.schema.object_fields[vector_field].source_fields else None
     vector_search_result = vector_db_client.get_items_near_vector(dataset, vector_field, query_vector,
-                                                                  filters, return_vectors=False, limit=limit,
+                                                                  filters, return_vectors=False, limit=limit, page=page,
                                                                   score_threshold=score_threshold, is_array_field=is_array_field,
                                                                   max_sub_items=max_sub_items or 1) # type: ignore
     items = {}
