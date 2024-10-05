@@ -1102,6 +1102,20 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=True,
     )
+    search_sources = models.JSONField(
+        verbose_name="Search Sources",
+        help_text="A list of active and past search sources",
+        default=list,
+        blank=True,
+        null=False,
+    )
+    last_search_task = models.JSONField(
+        verbose_name="Last Search Task",
+        help_text="",
+        default=dict,
+        blank=True,
+        null=False,
+    )
 
     history = HistoricalRecords()
 

@@ -852,6 +852,8 @@ def get_collection_items(request):
         return_items = all_items.filter(relevance__gte=2)
         return_items = return_items.order_by(order_by, '-search_score')
 
+    filtered_count = return_items.count()
+
     return_items = return_items[offset : offset + limit]
     serialized_data = CollectionItemSerializer(return_items, many=True).data
 
@@ -864,6 +866,7 @@ def get_collection_items(request):
         "items": serialized_data,
         "items_last_changed": collection.items_last_changed.isoformat(),
         "search_mode": search_mode,
+        "filtered_count": filtered_count,
     }
     result = json.dumps(result)
 

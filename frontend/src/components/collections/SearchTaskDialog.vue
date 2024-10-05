@@ -110,7 +110,7 @@ export default {
     },
   },
   mounted() {
-    this.new_settings = JSON.parse(JSON.stringify(this.settings_template))
+    this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.last_search_task || this.settings_template))
 
     this.new_settings.ranking_settings = this.appStateStore.settings.search.ranking_settings
     this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null

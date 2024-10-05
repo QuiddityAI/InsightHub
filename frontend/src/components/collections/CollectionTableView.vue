@@ -14,6 +14,7 @@ import Dropdown from 'primevue/dropdown';
 
 import CollectionItem from "./CollectionItem.vue"
 import CollectionTableCell from "./CollectionTableCell.vue";
+import BorderButton from "../widgets/BorderButton.vue";
 
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -22,6 +23,7 @@ import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 import { useCollectionStore } from "../../stores/collection_store"
+
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const collectionStore = useCollectionStore()
@@ -51,6 +53,21 @@ export default {
     available_modules() {
       return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
     },
+    active_search_sources() {
+      return this.collectionStore.collection.search_sources.filter((source) => source.is_active)
+    },
+    retrieved_results() {
+      return Math.max(this.active_search_sources.map((source) => source.retrieved))
+    },
+    available_results() {
+      return Math.max(this.active_search_sources.map((source) => source.available))
+    },
+    more_results_are_available() {
+      return this.retrieved_results < this.available_results
+    },
+    is_last_page() {
+      return (collectionStore.first_index + collectionStore.per_page) >= collectionStore.filtered_count
+    },
   },
   mounted() {
     const that = this
@@ -72,6 +89,8 @@ export default {
   watch: {
     'collectionStore.first_index'() {
       this.collectionStore.load_collection_items()
+      // scroll table to top:
+      this.$refs.table.$el.querySelector('div').scrollTop = 0
     },
     'collectionStore.order_by_field'() {
       this.collectionStore.load_collection_items()
@@ -140,7 +159,7 @@ export default {
   <div class="flex-1 flex flex-col items-center overflow-x-hidden" v-if="collection">
 
     <DataTable :value="collectionStore.collection_items" tableStyle="" scrollable scrollHeight="flex" size="small"
-      class="min-h-0 overflow-x-auto pt-3 xl:pt-6 max-w-full">
+      class="min-h-0 overflow-x-auto pt-3 xl:pt-6 max-w-full" ref="table">
       <template #empty>
         <div class="pl-3 xl:pl-8 py-10 flex flex-row justify-center text-gray-500">No items yet</div>
       </template>
@@ -149,6 +168,11 @@ export default {
           <span class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center">{{ collectionStore.search_mode ? 'Search Results' : 'Items' }}</span>
         </template>
         <template #body="slotProps">
+          <div v-if="slotProps.index == 0 && collectionStore.search_mode"
+            class="mb-3 text-xs text-gray-500 text-center w-full">
+            Only search results are shown. &nbsp Exit search to remove results and show saved items.
+          </div>
+
           <CollectionItem
             :dataset_id="slotProps.data.dataset_id"
             :item_id="slotProps.data.item_id"
@@ -159,6 +183,15 @@ export default {
             @remove="collectionStore.remove_item_from_collection([slotProps.data.dataset_id, slotProps.data.item_id], collection_id, class_name)"
             class="min-w-[520px] max-w-[520px]">
           </CollectionItem>
+
+          <div v-if="collectionStore.search_mode && more_results_are_available && is_last_page && slotProps.index == collectionStore.collection_items.length - 1"
+            class="my-5 w-full flex flex-row justify-center">
+            <BorderButton @click="collectionStore.add_items_from_active_sources"
+              class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
+              v-tooltip.top="{ value: `${retrieved_results} of ${available_results} results retrieved`}">
+              Show More Results <PlusIcon class="h-4 w-4 inline"></PlusIcon>
+            </BorderButton>
+          </div>
         </template>
       </Column>
       <Column v-for="(column, index) in collection.columns" :header="false">
@@ -189,7 +222,8 @@ export default {
     </DataTable>
 
     <div class="w-full flex flex-row items-center justify-center bg-white border-t">
-      <Paginator v-model:first="collectionStore.first_index" :rows="collectionStore.per_page" :total-records="collectionStore.item_count"
+      <Paginator v-model:first="collectionStore.first_index" :rows="collectionStore.per_page"
+        :total-records="collectionStore.filtered_count"
         class="mt-[0px]"></Paginator>
       <Dropdown v-if="!collectionStore.search_mode"
         v-model="collectionStore.order_by_field"
@@ -207,36 +241,36 @@ export default {
     </div>
 
     <OverlayPanel ref="column_options">
-        <div class="w-[400px] flex flex-col gap-2">
-          <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
-          <div class="flex flex-row">
-            <p class="flex-1">{{ selected_column.expression }}</p>
-            <button
-              @click="delete_column(selected_column.id); $refs.column_options.hide()"
-              class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
-              <TrashIcon class="h-4 w-4"></TrashIcon>
-            </button>
-          </div>
-          <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
-          <p class="text-xs text-gray-500">{{ human_readable_module_name(selected_column.module) }}</p>
-          <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
-            <button @click="extract_question(selected_column.id, true); $refs.column_options.hide()"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-              Extract <span class="text-gray-500">(current page)</span></button>
-            <button @click="extract_question(selected_column.id, false); $refs.column_options.hide()"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-              Extract <span class="text-gray-500">(all)</span></button>
-          </div>
-
-          <div class="flex flex-row gap-2">
-            <button @click="remove_results(selected_column.id, true)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-              Remove results<br><span class="text-gray-500">(current page)</span></button>
-            <button @click="remove_results(selected_column.id, false)"
-              class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-              Remove results<br><span class="text-gray-500">(all)</span></button>
-          </div>
+      <div class="w-[400px] flex flex-col gap-2">
+        <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
+        <div class="flex flex-row">
+          <p class="flex-1">{{ selected_column.expression }}</p>
+          <button
+            @click="delete_column(selected_column.id); $refs.column_options.hide()"
+            class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
+            <TrashIcon class="h-4 w-4"></TrashIcon>
+          </button>
         </div>
+        <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
+        <p class="text-xs text-gray-500">{{ human_readable_module_name(selected_column.module) }}</p>
+        <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
+          <button @click="extract_question(selected_column.id, true); $refs.column_options.hide()"
+            class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
+            Extract <span class="text-gray-500">(current page)</span></button>
+          <button @click="extract_question(selected_column.id, false); $refs.column_options.hide()"
+            class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
+            Extract <span class="text-gray-500">(all)</span></button>
+        </div>
+
+        <div class="flex flex-row gap-2">
+          <button @click="remove_results(selected_column.id, true)"
+            class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
+            Remove results<br><span class="text-gray-500">(current page)</span></button>
+          <button @click="remove_results(selected_column.id, false)"
+            class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
+            Remove results<br><span class="text-gray-500">(all)</span></button>
+        </div>
+      </div>
     </OverlayPanel>
 
   </div>

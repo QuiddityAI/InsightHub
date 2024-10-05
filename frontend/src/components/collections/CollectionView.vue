@@ -22,6 +22,8 @@ import SearchTaskDialog from "./SearchTaskDialog.vue";
 import AddColumnDialog from "./AddColumnDialog.vue";
 import WritingTaskArea from "../summary/WritingTaskArea.vue";
 import BorderButton from "../widgets/BorderButton.vue";
+import SearchModeBar from "../search/SearchModeBar.vue";
+import AgentModeBar from "./AgentModeBar.vue";
 
 
 import { mapStores } from "pinia"
@@ -131,30 +133,10 @@ export default {
         <!-- <span class="text-medium text-gray-500">
           {{ class_name === '_default' ? '' : ': ' + class_name }}
         </span> -->
-      </div>
-
-      <!-- Toolbar -->
-      <div class="ml-5 mr-5 flex flex-row gap-3 mb-1">
-
-        <BorderButton @click="show_search_task_dialog = true">
-          <PlusIcon class="inline h-4 w-4"></PlusIcon> Items by search
-        </BorderButton>
-        <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
-          <SearchTaskDialog :collection="collection" :collection_class="class_name"
-            @close="show_search_task_dialog = false; check_for_agent_status()"></SearchTaskDialog>
-        </Dialog>
-
-        <BorderButton @click="show_add_item_dialog = true">
-          <PlusIcon class="inline h-4 w-4"></PlusIcon> Items manually
-        </BorderButton>
-        <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
-          <AddItemsToCollectionArea :collection="collection" :collection_class="class_name"
-            @items_added="$refs.collection_table_view.load_collection_items"></AddItemsToCollectionArea>
-        </Dialog>
 
         <div class="flex-1"></div>
 
-        <BorderButton @click="show_export_dialog = true"
+        <BorderButton @click="show_export_dialog = true" class="h-6"
           v-tooltip.bottom="{ value: 'Export items only' }">
           <ArchiveBoxArrowDownIcon class="h-4 w-4 mr-2 inline" />
           <DocumentIcon class="h-4 w-4 inline" />
@@ -164,7 +146,7 @@ export default {
           </ExportCollectionArea>
         </Dialog>
 
-        <BorderButton @click="event => { $refs.export_dialog.toggle(event) }"
+        <BorderButton @click="event => { $refs.export_dialog.toggle(event) }" class="h-6"
           v-tooltip.bottom="{ value: 'Export table' }">
           <ArchiveBoxArrowDownIcon class="h-4 w-4 mr-2 inline" />
           <TableCellsIcon class="h-4 w-4 inline" />
@@ -174,10 +156,36 @@ export default {
           </ExportTableArea>
         </OverlayPanel>
 
-        <BorderButton @click="delete_collection" v-tooltip.bottom="{ value: 'Delete collection' }"
+        <BorderButton @click="delete_collection" class="h-6"
+          v-tooltip.bottom="{ value: 'Delete collection' }"
           hover_color="hover:text-red-500">
           <TrashIcon class="h-4 w-4"></TrashIcon>
         </BorderButton>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="ml-5 mr-5 flex flex-row gap-3 mb-1 items-end h-7">
+
+        <BorderButton @click="show_search_task_dialog = true" v-if="!collectionStore.search_mode && !collection.agent_is_running">
+          <PlusIcon class="inline h-4 w-4"></PlusIcon> Items by search
+        </BorderButton>
+        <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
+          <SearchTaskDialog :collection="collection" :collection_class="class_name"
+            @close="show_search_task_dialog = false; check_for_agent_status()"></SearchTaskDialog>
+        </Dialog>
+
+        <BorderButton @click="show_add_item_dialog = true" v-if="!collectionStore.search_mode && !collection.agent_is_running">
+          <PlusIcon class="inline h-4 w-4"></PlusIcon> Items manually
+        </BorderButton>
+        <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
+          <AddItemsToCollectionArea :collection="collection" :collection_class="class_name"
+            @items_added="$refs.collection_table_view.load_collection_items"></AddItemsToCollectionArea>
+        </Dialog>
+
+        <SearchModeBar v-if="collectionStore.search_mode"
+          @edit_search_task="show_search_task_dialog = true" />
+
+        <AgentModeBar v-if="collection.agent_is_running" />
 
         <div class="flex-1"></div>
 
@@ -195,25 +203,6 @@ export default {
         <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('summary')"
           :highlighted="right_side_view === 'summary'">
           Summary
-        </BorderButton>
-      </div>
-
-      <Message v-if="collection.agent_is_running"
-        class="mx-5 -mt-0 mb-1"
-        severity="info">
-        Agent is running: {{ collection.current_agent_step }}
-      </Message>
-
-      <div v-if="collectionStore.search_mode"
-        class="flex flex-row gap-3 mx-5">
-        <Message
-          class="flex-1 -mt-0 mb-1"
-          severity="warn">
-          Search Mode: Only candidates are shown
-        </Message>
-        <BorderButton @click="collectionStore.exit_search_mode"
-          class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50">
-          Exit Search Mode
         </BorderButton>
       </div>
 

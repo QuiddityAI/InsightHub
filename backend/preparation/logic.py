@@ -70,6 +70,10 @@ def prepare_for_quick_search(collection: DataCollection, settings: CreateCollect
         dataset_id=settings.dataset_id,
         query=settings.query,
         result_language=settings.result_language,
+        auto_set_filters=settings.auto_set_filters,
+        filters=settings.filters,
+        retrieval_mode=settings.retrieval_mode,
+        ranking_settings=settings.ranking_settings,
     )
     run_search_task(collection, search_task)
 

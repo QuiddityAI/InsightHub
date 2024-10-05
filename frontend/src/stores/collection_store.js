@@ -10,15 +10,18 @@ export const useCollectionStore = defineStore("collection", {
     return {
       eventBus: inject("eventBus"),
       toast: useToast(),
+
+      available_collections: [],
+
       collection_id: null,
       class_name: null,
-      available_collections: [],
-      is_positive: true,
+      is_positive: true,  // deprecated
 
       // The following are used to store the current collection's data
       collection: null,
       collection_items: null,
       search_mode: false,
+      filtered_count: null,
       items_last_updated: new Date(2020, 1, 1),
 
       // Pagination
@@ -64,6 +67,13 @@ export const useCollectionStore = defineStore("collection", {
       this.class_name = null
       this.collection = null
       this.collection_items = []
+      this.search_mode = false
+      this.filtered_count = null
+      this.items_last_updated = new Date(2020, 1, 1)
+      this.first_index = 0
+      this.per_page = 10
+      this.order_by_field = 'date_added'
+      this.order_descending = true
       this.eventBus.emit("collection_changed", {collection_id: null, class_name: null})
     },
     update_collection(on_success = null) {
@@ -131,6 +141,7 @@ export const useCollectionStore = defineStore("collection", {
           that.collection_items = items
           that.items_last_updated = response.data['items_last_changed']
           that.search_mode = response.data['search_mode']
+          that.filtered_count = response.data['filtered_count']
         }
       })
     },
@@ -252,6 +263,27 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     // ------------------
+    add_items_from_active_sources() {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+      }
+      const go_to_next_page = this.first_index + this.per_page == this.item_count
+      httpClient
+        .post("/api/v1/search/add_items_from_active_sources", body)
+        .then((response) => {
+          const new_item_count = response.data.new_item_count
+          if (new_item_count > 0) {
+            if (go_to_next_page) {
+              that.first_index += that.per_page
+            }
+            that.update_collection(() => {
+              that.load_collection_items()
+            })
+          }
+        })
+    },
     exit_search_mode() {
       const that = this
       const body = {
@@ -265,6 +297,18 @@ export const useCollectionStore = defineStore("collection", {
           this.load_collection_items()
         })
     },
+    cancel_agent() {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+      }
+      httpClient
+        .post("/api/v1/preparation/cancel_agent", body)
+        .then((response) => {
+          that.update_collection()
+        })
+    }
   },
   getters: {
     item_count() {
