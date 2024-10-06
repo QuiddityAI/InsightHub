@@ -14,7 +14,8 @@ from .create_columns import create_relevance_column
 
 
 class CollectionCreationModes(StrEnum):
-    QUICK_SEARCH = 'quick_search'
+    ASSISTED_SEARCH = 'assisted_search'
+    CLASSIC_SEARCH = 'classic_search'
     QUESTION = 'question'
     EMPTY_COLLECTION = 'empty_collection'
 
@@ -48,14 +49,32 @@ def create_collection_using_mode(
 def prepare_collection(
     collection: DataCollection, settings: CreateCollectionSettings, user: User
 ) -> DataCollection:
-    if settings.mode == CollectionCreationModes.QUICK_SEARCH:
-        prepare_for_quick_search(collection, settings, user)
+    if settings.mode == CollectionCreationModes.CLASSIC_SEARCH:
+        prepare_for_classic_search(collection, settings, user)
+    elif settings.mode == CollectionCreationModes.ASSISTED_SEARCH:
+        prepare_for_assisted_search(collection, settings, user)
     elif settings.mode == CollectionCreationModes.QUESTION:
         prepare_for_question(collection, settings, user)
     return collection
 
 
-def prepare_for_quick_search(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
+def prepare_for_classic_search(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
+    assert settings.query is not None
+    search_task = SearchTaskSettings(
+        dataset_id=settings.dataset_id,
+        query=settings.query,
+        result_language=settings.result_language,
+        auto_set_filters=settings.auto_set_filters,
+        filters=settings.filters,
+        retrieval_mode=settings.retrieval_mode,
+        ranking_settings=settings.ranking_settings,
+    )
+    run_search_task(collection, search_task, user.id)  # type: ignore
+    collection.agent_is_running = False
+    collection.save()
+
+
+def prepare_for_assisted_search(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     assert settings.query is not None
     create_relevance_column(collection, settings.query)
 

@@ -35,7 +35,7 @@ export default {
     return {
       settings_template: {
         dataset_id: null,
-        mode: 'quick_search',
+        mode: 'assisted_search',
         auto_set_filters: true,
         filters: [],
         query: '',
@@ -46,7 +46,7 @@ export default {
       },
       new_settings: {
         dataset_id: null,
-        mode: 'quick_search',
+        mode: 'assisted_search',
         auto_set_filters: true,
         filters: [],
         query: '',
@@ -57,21 +57,29 @@ export default {
       },
       modes: [
         {
-          id: 'quick_search',
-          name: 'Quick Search',
+          id: 'assisted_search',
+          name: 'Assisted Search',
           subtitle: 'Search + Eval',
           help_text: 'Search and evaluate the results',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
         },
         {
-          id: 'auto_select',
-          name: 'Auto Select',
-          subtitle: 'curate / high precision search',
-          help_text: 'Curate the results to select the best candidates',
-          query_field_hint: (entity_name) => `Describe what ${entity_name} should be selected`,
+          id: 'classic_search',
+          name: 'Classic Search',
+          subtitle: 'Just Search',
+          help_text: 'Just search, no LLMs',
+          query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
         },
+        // {
+        //   id: 'auto_select',
+        //   name: 'Auto Select',
+        //   subtitle: 'curate / high precision search',
+        //   help_text: 'Curate the results to select the best candidates',
+        //   query_field_hint: (entity_name) => `Describe what ${entity_name} should be selected`,
+        //   supports_filters: true,
+        // },
         {
           id: 'question',
           name: 'Question',
