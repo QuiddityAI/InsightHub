@@ -476,9 +476,12 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
                     "openai_gpt_4_turbo": OPENAI_MODELS.GPT4_TURBO,
                     "openai_gpt_4_o": OPENAI_MODELS.GPT4_O,
                 }
-                prompt = table_cell_prompt.replace("{{ document }}", input_data)
-                # logging.warning(prompt)
-                history = [ { "role": "system", "content": prompt }, { "role": "user", "content": column.expression } ]
+                if column.prompt_template:
+                    prompt = column.prompt_template.replace("{{ document }}", input_data).replace("{{ expression }}", column.expression)
+                    history = [ { "role": "system", "content": prompt } ]
+                else:
+                    prompt = table_cell_prompt.replace("{{ document }}", input_data)
+                    history = [ { "role": "system", "content": prompt }, { "role": "user", "content": column.expression } ]
                 response_text = get_chatgpt_response_using_history(history, openai_model[module])
                 cell_data = {
                     'value': response_text,
@@ -492,9 +495,12 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
                     "groq_llama_3_8b": GROQ_MODELS.LLAMA_3_8B,
                     "groq_llama_3_70b": GROQ_MODELS.LLAMA_3_70B,
                 }
-                prompt = table_cell_prompt.replace("{{ document }}", input_data)
-                # logging.warning(prompt)
-                history = [ { "role": "system", "content": prompt }, { "role": "user", "content": column.expression } ]
+                if column.prompt_template:
+                    prompt = column.prompt_template.replace("{{ document }}", input_data).replace("{{ expression }}", column.expression)
+                    history = [ { "role": "system", "content": prompt } ]
+                else:
+                    prompt = table_cell_prompt.replace("{{ document }}", input_data)
+                    history = [ { "role": "system", "content": prompt }, { "role": "user", "content": column.expression } ]
                 response_text = get_groq_response_using_history(history, groq_models[module])
                 cell_data = {
                     'value': response_text,

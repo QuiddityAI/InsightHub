@@ -45,8 +45,24 @@ export default {
       if (this.item.column_data[this.column.identifier]?.collapsed_label) {
         return this.item.column_data[this.column.identifier]?.collapsed_label
       }
-      const value = this.item.column_data[this.column.identifier]?.value || ""
-      return marked.parse(value)
+      let value = this.item.column_data[this.column.identifier]?.value || ""
+      if (this.column.determines_relevance && value) {
+        let relevance_obj
+        try {
+          relevance_obj = JSON.parse(value)
+        } catch (e) {
+          console.error("Could not parse JSON", value, e)
+          return value
+        }
+        const document_type = relevance_obj.document_type ? marked.parse(relevance_obj.document_type) : ""
+        const relevant_content = relevance_obj.relevant_content ? marked.parse(relevance_obj.relevant_content) : ""
+        const irrelevance_reasons = relevance_obj.irrelevance_reasons ? marked.parse(relevance_obj.irrelevance_reasons) : ""
+        return `<div class="text-gray-700 font-bold mb-1">${document_type}</div>` +
+               `<div class="text-green-700">${relevant_content}</div>` +
+               `<div class="text-orange-700">${irrelevance_reasons}</div>`
+      } else {
+        return marked.parse(value)
+      }
     },
     value_as_plain_text() {
       const value = this.item.column_data[this.column.identifier]?.value || ""
@@ -136,6 +152,7 @@ export default {
     :class="{'min-w-[120px]': !item.column_data[column.identifier] || item.column_data[column.identifier]?.value.length <= 10,
              'min-w-[270px]': item.column_data[column.identifier]?.value.length > 10 && item.column_data[column.identifier]?.value.length <= 100,
              'min-w-[350px]': item.column_data[column.identifier]?.value.length > 100}">
+
     <div ref="scroll_area" class="min-h-[70px] max-h-[210px] overflow-y-scroll">
       <div v-if="!edit_mode" v-html="value_as_html" class="text-sm use-default-html-styles py-2 pl-1 text-gray-700"></div>
       <textarea v-if="edit_mode"
@@ -150,7 +167,7 @@ export default {
       <ProgressSpinner class="w-6 h-6"></ProgressSpinner>
     </div>
 
-    <div v-if="is_empty && !edit_mode && !is_processing && show_overlay_buttons"
+    <div v-if="is_empty && !edit_mode && !is_processing"
       class="absolute top-0 w-full h-full flex flex-row gap-2 justify-center items-center text-gray-500 text-sm">
       <button
         @click="edit_mode = true" class="hover:text-sky-500">

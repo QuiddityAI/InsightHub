@@ -124,29 +124,6 @@ export default {
         console.error(error)
       })
     },
-    remove_results(column_id, only_current_page=true, force=false, on_success=null) {
-      const that = this
-      if (!only_current_page && !force && !confirm("This will remove the column content for all items in the collection. Are you sure?")) {
-        return
-      }
-      const body = {
-        column_id: column_id,
-        class_name: this.collectionStore.class_name,
-        offset: only_current_page ? this.collectionStore.first_index : 0,
-        limit: only_current_page ? this.collectionStore.per_page : -1,
-        order_by: (this.collectionStore.order_descending ? "-" : "") + this.collectionStore.order_by_field,
-      }
-      httpClient.post(`/org/data_map/remove_collection_class_column_data`, body)
-      .then(function (response) {
-        if (on_success) {
-          on_success()
-        }
-        that.get_extraction_results(column_id)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
     human_readable_source_fields(fields) {
       const available_source_fields = this.collectionStore.available_source_fields
       return fields.map((field) => available_source_fields.find((f) => f.identifier === field).name).join(", ")
@@ -257,19 +234,19 @@ export default {
         <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
         <p class="text-xs text-gray-500">{{ human_readable_module_name(selected_column.module) }}</p>
         <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
-          <button @click="extract_question(selected_column.id, true); $refs.column_options.hide()"
+          <button @click="collectionStore.extract_question(selected_column.id, true); $refs.column_options.hide()"
             class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
             Extract <span class="text-gray-500">(current page)</span></button>
-          <button @click="extract_question(selected_column.id, false); $refs.column_options.hide()"
+          <button @click="collectionStore.extract_question(selected_column.id, false); $refs.column_options.hide()"
             class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
             Extract <span class="text-gray-500">(all)</span></button>
         </div>
 
         <div class="flex flex-row gap-2">
-          <button @click="remove_results(selected_column.id, true)"
+          <button @click="collectionStore.remove_results(selected_column.id, true)"
             class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
             Remove results<br><span class="text-gray-500">(current page)</span></button>
-          <button @click="remove_results(selected_column.id, false)"
+          <button @click="collectionStore.remove_results(selected_column.id, false)"
             class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
             Remove results<br><span class="text-gray-500">(all)</span></button>
         </div>

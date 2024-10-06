@@ -268,6 +268,29 @@ export const useCollectionStore = defineStore("collection", {
         }
       })
     },
+    remove_results(column_id, only_current_page=true, force=false, on_success=null) {
+      const that = this
+      if (!only_current_page && !force && !confirm("This will remove the column content for all items in the collection. Are you sure?")) {
+        return
+      }
+      const body = {
+        column_id: column_id,
+        class_name: this.class_name,
+        offset: only_current_page ? this.first_index : 0,
+        limit: only_current_page ? this.per_page : -1,
+        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
+      }
+      httpClient.post(`/org/data_map/remove_collection_class_column_data`, body)
+      .then(function (response) {
+        if (on_success) {
+          on_success()
+        }
+        that.get_extraction_results(column_id)
+      })
+      .catch(function (error) {
+        console.error(error)
+      })
+    },
     // ------------------
     set_item_relevance(collection_item, relevance) {
       const that = this

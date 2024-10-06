@@ -4,12 +4,12 @@ import time
 
 from django.utils import timezone
 
-from data_map_backend.models import DataCollection, User, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType, WritingTask
+from data_map_backend.models import DataCollection, User, COLUMN_META_SOURCE_FIELDS, WritingTask
 from search.schemas import SearchTaskSettings
 from search.logic import run_search_task
 from data_map_backend.views.question_views import _execute_writing_task_thread
 from .schemas import CreateCollectionSettings
-from .prompts import item_relevancy_prompt
+from .create_columns import create_relevance_column
 
 
 class CollectionCreationModes(StrEnum):
@@ -54,17 +54,8 @@ def prepare_collection(
 
 
 def prepare_for_quick_search(collection: DataCollection, settings: CreateCollectionSettings) -> None:
-    # eval_column = CollectionColumn(
-    #     collection=collection,
-    #     name="Relevancy?",
-    #     identifier="relevancy"
-    # )
     assert settings.query is not None
-    # eval_column.field_type = FieldType.TEXT
-    # eval_column.expression = item_relevancy_prompt.replace("{{ question }}", settings.query)
-    # eval_column.source_fields = [COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS]  # type: ignore
-    # eval_column.module = 'groq_llama_3_70b'
-    # eval_column.save()
+    create_relevance_column(collection, settings.query)
 
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,

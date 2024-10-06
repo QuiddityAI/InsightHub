@@ -1284,7 +1284,8 @@ class CollectionColumn(models.Model):
     )
     prompt_template = models.TextField(
         verbose_name="Prompt Template",
-        help_text="Template for the prompt if this column uses an LLM'",
+        help_text="Template for the prompt if this column uses an LLM. If empty, a default template is used. " + \
+            "There are some special variables like {{ document }} and {{ expression }} that can be used.",
         blank=True,
         null=True,
     )
@@ -1293,7 +1294,7 @@ class CollectionColumn(models.Model):
         help_text="List of source fields to be used for this column",
         default=list,
         blank=True,
-        null=True,
+        null=False,
     )
     module = models.CharField(
         verbose_name="Code Module Name", max_length=200, blank=True, null=True
@@ -1306,6 +1307,13 @@ class CollectionColumn(models.Model):
     )
     auto_run_for_candidates = models.BooleanField(
         verbose_name="Auto Run for Candidates", default=False, blank=False, null=False
+    )
+    determines_relevance = models.BooleanField(
+        verbose_name="Determines Relevance",
+        help_text="In this case, the value needs to be a JSON object with a boolean 'is_relevant' field, textual 'relevant_content' field, and optionally a 0.0-1.0 'relevance_score' field",
+        default=False,
+        blank=False,
+        null=False
     )
 
     def __str__(self):
