@@ -483,8 +483,16 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
                     prompt = table_cell_prompt.replace("{{ document }}", input_data)
                     history = [ { "role": "system", "content": prompt }, { "role": "user", "content": column.expression } ]
                 response_text = get_chatgpt_response_using_history(history, openai_model[module])
+                if column.determines_relevance and response_text:
+                    try:
+                        value = json.loads(response_text)
+                    except json.JSONDecodeError as e:
+                        logging.warning(f"Could not parse response from AI: {response_text} {e}")
+                        value = response_text
+                else:
+                    value = response_text
                 cell_data = {
-                    'value': response_text,
+                    'value': value,
                     'changed_at': timezone.now().isoformat(),
                     'is_ai_generated': True,
                     'is_manually_edited': False,
@@ -502,8 +510,16 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
                     prompt = table_cell_prompt.replace("{{ document }}", input_data)
                     history = [ { "role": "system", "content": prompt }, { "role": "user", "content": column.expression } ]
                 response_text = get_groq_response_using_history(history, groq_models[module])
+                if column.determines_relevance and response_text:
+                    try:
+                        value = json.loads(response_text)
+                    except json.JSONDecodeError as e:
+                        logging.warning(f"Could not parse response from AI: {response_text} {e}")
+                        value = response_text
+                else:
+                    value = response_text
                 cell_data = {
-                    'value': response_text,
+                    'value': value,
                     'changed_at': timezone.now().isoformat(),
                     'is_ai_generated': True,
                     'is_manually_edited': False,

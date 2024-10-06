@@ -21,7 +21,7 @@ import { httpClient } from "../../api/httpClient"
 import { useCollectionStore } from "../../stores/collection_store";
 
 export default {
-  props: ["dataset_id", "item_id", "initial_item", "is_positive", "show_remove_button", "collection_item"],
+  props: ["dataset_id", "item_id", "initial_item", "is_positive", "show_remove_button", "collection_item", "size_mode"],
   emits: ["remove"],
   data() {
     return {
@@ -53,6 +53,25 @@ export default {
       } else {
         return null
       }
+    },
+    is_irrelevant_according_to_ai() {
+      if (this.collection_item?.column_data && this.collection_item.column_data['relevance']) {
+        const value = this.collection_item.column_data['relevance'].value
+        if (typeof value === "object") {
+          if (value.is_relevant === false) {
+            console.log("is_irrelevant_according_to_ai", this.collection_item)
+            return true
+          }
+        }
+      }
+      console.log("is_irrelevant_according_to_ai", this.collection_item)
+      return false
+    },
+    actual_size_mode() {
+      if (this.is_irrelevant_according_to_ai) {
+        return "small"
+      }
+      return this.size_mode || "full"
     },
   },
   watch: {
@@ -99,7 +118,9 @@ export default {
 </script>
 
 <template>
-  <div v-if="rendering && item && collection_item" class="flex flex-col gap-3 pb-2 pt-4 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md">
+  <div v-if="rendering && item && collection_item"
+    class="flex flex-col gap-3 pb-2 pt-4 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md"
+    :class="{'opacity-60': is_irrelevant_according_to_ai}">
 
     <div class="flex flex-row">
 
@@ -129,7 +150,8 @@ export default {
         <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
 
         <!-- Body -->
-        <p ref="body_text" class="mt-1 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
+        <p ref="body_text" v-if="actual_size_mode === 'full'"
+          class="mt-1 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
         v-html="rendering.body(item)"></p>
 
         <!-- Sapcer if image on the right is larger than body -->
@@ -144,7 +166,7 @@ export default {
 
     <!-- Footer -->
     <div class="flex flex-row gap-1 items-center">
-        <div v-if="show_more_button" class="text-xs text-gray-700">
+        <div v-if="show_more_button && actual_size_mode === 'full'" class="text-xs text-gray-700">
           <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
             {{ body_text_collapsed ? "Show more" : "Show less" }}
           </button>

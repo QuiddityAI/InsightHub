@@ -46,17 +46,10 @@ export default {
         return this.item.column_data[this.column.identifier]?.collapsed_label
       }
       let value = this.item.column_data[this.column.identifier]?.value || ""
-      if (this.column.determines_relevance && value) {
-        let relevance_obj
-        try {
-          relevance_obj = JSON.parse(value)
-        } catch (e) {
-          console.error("Could not parse JSON", value, e)
-          return value
-        }
-        const document_type = relevance_obj.document_type ? marked.parse(relevance_obj.document_type) : ""
-        const relevant_content = relevance_obj.relevant_content ? marked.parse(relevance_obj.relevant_content) : ""
-        const irrelevance_reasons = relevance_obj.irrelevance_reasons ? marked.parse(relevance_obj.irrelevance_reasons) : ""
+      if (this.column.determines_relevance && value && typeof value === "object") {
+        const document_type = value.document_type ? marked.parse(value.document_type) : ""
+        const relevant_content = value.relevant_content ? marked.parse(value.relevant_content) : ""
+        const irrelevance_reasons = value.irrelevance_reasons ? marked.parse(value.irrelevance_reasons) : ""
         return `<div class="text-gray-700 font-bold mb-1">${document_type}</div>` +
                `<div class="text-green-700">${relevant_content}</div>` +
                `<div class="text-orange-700">${irrelevance_reasons}</div>`
