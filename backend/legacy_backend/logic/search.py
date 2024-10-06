@@ -6,6 +6,7 @@ import logging
 
 import numpy as np
 
+
 from ..utils.field_types import FieldType
 from ..utils.collect_timings import Timings
 from ..utils.dotdict import DotDict
@@ -17,6 +18,8 @@ from ..database_client.django_client import get_trained_classifier, get_dataset,
 from ..database_client.vector_search_engine_client import VectorSearchEngineClient
 from ..database_client.text_search_engine_client import TextSearchEngineClient
 from ..logic.local_map_cache import local_maps
+from ..logic.extract_pipeline import get_pipeline_steps
+from ..logic.generate_missing_values import generate_missing_values_for_given_elements
 from ..logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
     get_vector_search_results_matching_collection, get_fulltext_search_results, \
     combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold, \
@@ -54,6 +57,8 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
             sorted_ids, full_items, total_matches = bing_web_search_formatted(dataset.id, query, limit=limit, website_filter=dataset.source_plugin_parameters.get("website_filter"))
             sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
             all_items_by_dataset[dataset_id] = full_items
+            pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=['favicon_url'])
+            generate_missing_values_for_given_elements(pipeline_steps, list(full_items.values()))
             continue
 
         if dataset.source_plugin == SourcePlugin.SEMANTIC_SCHOLAR_API and params.search.search_type == "external_input":

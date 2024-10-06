@@ -103,7 +103,7 @@ export default {
       }
       that.loading_item = true
       httpClient.post("/data_backend/document/details_by_id", payload).then(function (response) {
-        that.item = response.data
+        that.item = { ...that.item, ...response.data }
           // height of text is only available after rendering:
           setTimeout(() => {
             that.show_more_button = that.$refs.body_text?.scrollHeight > that.$refs.body_text?.clientHeight

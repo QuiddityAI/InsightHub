@@ -63,7 +63,7 @@ def bing_web_search(query: str, website_filter: str | None = None, limit: int = 
 def bing_web_search_call(query: str, website_filter: str | None = None, limit: int = 50, offset: int = 0) -> tuple[list, int]:
     if website_filter:
         query = f'site:{website_filter} {query}'
-    market = 'en-US'
+    market = 'de-DE'
     params = {
               'q': query,
               'mkt': market,
