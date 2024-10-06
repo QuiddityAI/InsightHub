@@ -15,6 +15,7 @@ from .schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
 
 
 def run_search_task(collection: DataCollection, search_task: SearchTaskSettings, user_id: int, after_columns_were_processed: Callable | None=None):
+    exit_search_mode(collection, '_default')
     collection.current_agent_step = "Running search task..."
     collection.last_search_task = search_task.dict()
     collection.save()
