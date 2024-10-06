@@ -108,7 +108,7 @@ def jsonify(data, status_code=200):
 def send_from_directory(directory, filename):
     full_path = os.path.join(directory, filename)
 
-    if not os.path.realpath(full_path).startswith(os.path.realpath(UPLOADED_FILES_FOLDER)):
+    if not os.path.realpath(full_path).startswith(os.path.realpath(directory)):
         return "file not found", 404
 
     if not os.path.exists(full_path):
@@ -442,7 +442,7 @@ def retrieve_local_image(request, image_path):
     if image_path is None or not os.path.exists(image_path):
         return "image not found", 404
 
-    return send_from_directory('/data/', image_path.replace("/data/", ""))
+    return send_from_directory('/data', image_path.replace("/data/", ""))
 
 
 @convert_flask_to_django_route('/data_backend/download_file/<path:file_path>', methods=['GET'])
