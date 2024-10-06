@@ -19,7 +19,7 @@ from data_map_backend.utils import is_from_backend
 from data_map_backend.schemas import CollectionIdentifier
 
 from .schemas import SearchTaskSettings, SearchSource
-from .logic import run_search_task, add_items_from_active_sources
+from .logic import run_search_task, add_items_from_active_sources, exit_search_mode
 
 api = NinjaAPI(urls_namespace="search")
 
@@ -49,7 +49,7 @@ def run_search_task_route(request, payload: RunSearchTaskPayload):
 
     def thread_function():
         try:
-            run_search_task(collection, payload.search_task)
+            run_search_task(collection, payload.search_task, request.user.id)
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
@@ -73,14 +73,14 @@ def add_items_from_active_sources_route(request, payload: CollectionIdentifier):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    new_item_count = add_items_from_active_sources(collection)
+    new_item_count = add_items_from_active_sources(collection, request.user.id)
     result = {"new_item_count": new_item_count}
 
     return HttpResponse(json.dumps(result), status=200, content_type="application/json")
 
 
 @api.post("exit_search_mode")
-def exit_search_mode(request, payload: CollectionIdentifier):
+def exit_search_mode_route(request, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -92,14 +92,6 @@ def exit_search_mode(request, payload: CollectionIdentifier):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    all_items = CollectionItem.objects.filter(collection_id=payload.collection_id, classes__contains=[payload.class_name])
-    candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
-    candidates.delete()
-    collection.items_last_changed = timezone.now()
-
-    for source in collection.search_sources:
-        source['is_active'] = False
-
-    collection.save()
+    exit_search_mode(collection, payload.class_name)
 
     return HttpResponse(None, status=204, content_type="application/json")

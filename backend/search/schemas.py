@@ -15,7 +15,11 @@ class SearchTaskSettings(Schema):
     filters: Optional[list] = None
     retrieval_mode: Optional[str] = None
     ranking_settings: Optional[dict] = None
-    auto_select: bool = False
+
+    auto_approve: bool = False
+    auto_disapprove: bool = False
+    exit_search_mode: bool = False
+
     min_selections: int = 1
     max_selections: int = 3
     max_selection_candidates: int = 10

@@ -37,6 +37,7 @@ const collectionStore = useCollectionStore()
 
 <script>
 export default {
+  inject: ["eventBus"],
   props: [],
   emits: [],
   data() {
@@ -96,7 +97,18 @@ export default {
       if (this.collection.agent_is_running) {
         setTimeout(() => {
           that.collectionStore.update_collection((collection) => {
-            that.check_for_agent_status()
+            that.collectionStore.load_collection_items()
+            if (collection.agent_is_running) {
+              that.check_for_agent_status()
+            } else {
+              // agent has stopped
+              that.eventBus.emit("agent_stopped")  // triggers writing task to reload
+              for (let column_identifier of collection.columns_with_running_processes) {
+                 // TODO: this could be more elegant
+                const column_id = that.collectionStore.collection.columns.find((column) => column.identifier === column_identifier).id
+                that.collectionStore.get_extraction_results(column_id)
+              }
+            }
           })
         }, 500)
       }

@@ -17,6 +17,7 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { FieldType } from "../../utils/utils";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
@@ -72,6 +73,13 @@ export default {
       }
       return extractContent(html)
     },
+    value_for_editing() {
+      if (this.column.field_type === FieldType.ARBITRARY_OBJECT) {
+        return JSON.stringify(this.item.column_data[this.column.identifier]?.value, null, 2)
+      } else {
+        return this.item.column_data[this.column.identifier]?.value || ""
+      }
+    },
     is_empty() {
       return !this.item.column_data[this.column.identifier]?.value
     },
@@ -99,7 +107,10 @@ export default {
     },
     submit_changes() {
       const that = this
-      const value = this.$refs.edit_text_area.value
+      let value = this.$refs.edit_text_area.value
+      if (this.column.field_type === FieldType.ARBITRARY_OBJECT) {
+        value = JSON.parse(value || "{}")
+      }
       if (!this.item.column_data) {
         this.item.column_data = {}
       }
@@ -142,15 +153,15 @@ export default {
 
 <template>
   <div class="relative" id="cell"
-    :class="{'min-w-[120px]': !item.column_data[column.identifier] || item.column_data[column.identifier]?.value.length <= 10,
-             'min-w-[270px]': item.column_data[column.identifier]?.value.length > 10 && item.column_data[column.identifier]?.value.length <= 100,
-             'min-w-[350px]': item.column_data[column.identifier]?.value.length > 100}">
+    :class="{'min-w-[120px]': !item.column_data[column.identifier] || value_as_html.length <= 10,
+             'min-w-[270px]': value_as_html.length > 10 && value_as_html.length <= 100,
+             'min-w-[350px]': value_as_html.length > 100}">
 
     <div ref="scroll_area" class="min-h-[70px] max-h-[210px] overflow-y-scroll">
       <div v-if="!edit_mode" v-html="value_as_html" class="text-sm use-default-html-styles py-2 pl-1 text-gray-700"></div>
       <textarea v-if="edit_mode"
         class="w-full h-[150px] p-1 border border-gray-300 rounded text-sm py-2 pl-1"
-        :value="item.column_data[column.identifier]?.value"
+        :value="value_for_editing"
         ref="edit_text_area">
       </textarea>
     </div>

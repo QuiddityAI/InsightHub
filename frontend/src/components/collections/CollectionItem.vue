@@ -59,12 +59,10 @@ export default {
         const value = this.collection_item.column_data['relevance'].value
         if (typeof value === "object") {
           if (value.is_relevant === false) {
-            console.log("is_irrelevant_according_to_ai", this.collection_item)
             return true
           }
         }
       }
-      console.log("is_irrelevant_according_to_ai", this.collection_item)
       return false
     },
     actual_size_mode() {

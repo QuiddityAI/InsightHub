@@ -1440,7 +1440,7 @@ class CollectionItem(models.Model):
         help_text="Extracted answers, notes, etc.",
         default=dict,
         blank=True,
-        null=True,
+        null=False,
     )
 
     # def __str__(self):

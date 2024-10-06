@@ -318,7 +318,7 @@ def set_collection_cell_data(request):
 
 
 @csrf_exempt
-def extract_question_from_collection_class_items(request):
+def extract_question_from_collection_class_items_route(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -345,52 +345,50 @@ def extract_question_from_collection_class_items(request):
     if not column.module or column.module == "notes":
         pass
     else:
-        _extract_question_from_collection_class_items_thread(column.collection, class_name, column, offset, limit, order_by, collection_item_id, request.user.id)
+        _extract_question_from_collection_class_item_query(column.collection, class_name, column, offset, limit, order_by, collection_item_id, request.user.id)
 
     data = CollectionSerializer(column.collection).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
 
 
-def _extract_question_from_collection_class_items_thread(collection, class_name, column, offset, limit, order_by, collection_item_id, user_id):
-    collection.columns_with_running_processes.append(column.identifier)
-    collection.save()
-    def _run_safe():
-        try:
-            _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, collection_item_id, user_id)
-        except Exception as e:
-            logging.error(e)
-            import traceback
-            logging.error(traceback.format_exc())
-        finally:
-            collection.columns_with_running_processes.remove(column.identifier)
-            collection.save()
-
-    try:
-        thread = threading.Thread(target=_run_safe)
-        thread.start()
-    except Exception as e:
-        logging.error(e)
-        collection.columns_with_running_processes.remove(column.identifier)
-        collection.save()
-
-
-def _extract_question_from_collection_class_items(collection, class_name, column, offset, limit, order_by, collection_item_id, user_id):
+def _extract_question_from_collection_class_item_query(collection, class_name, column, offset, limit, order_by, collection_item_id, user_id):
     if collection_item_id:
         collection_items = CollectionItem.objects.filter(id=collection_item_id)
     else:
         collection_items = CollectionItem.objects.filter(collection=collection, is_positive=True, classes__contains=[class_name])
         collection_items = collection_items.order_by(order_by)
         collection_items = collection_items[offset:offset+limit] if limit > 0 else collection_items[offset:]
-    included_items = 0
-    batch_size = 10
-    for i in range(0, len(collection_items), batch_size):
-        batch = collection_items[i:i+batch_size]
-        _extract_question_from_collection_class_items_batch(batch, column, collection, user_id)
-        included_items += len(batch)
-        if included_items % 100 == 0:
-            logging.warning(f"Extracted {included_items} items for question {column.name}.")
 
-    logging.warning("Done extracting question from collection class items.")
+    def in_thread():
+        extract_question_from_collection_class_items(collection_items, column, collection, user_id)
+
+    thread = threading.Thread(target=in_thread)
+    thread.start()
+    # wait till at least columns_with_running_processes is set:
+    time.sleep(0.1)
+
+
+def extract_question_from_collection_class_items(collection_items, column, collection, user_id):
+    collection.columns_with_running_processes.append(column.identifier)
+    collection.save()
+    try:
+        included_items = 0
+        batch_size = 10
+        for i in range(0, len(collection_items), batch_size):
+            batch = collection_items[i:i+batch_size]
+            _extract_question_from_collection_class_items_batch(batch, column, collection, user_id)
+            included_items += len(batch)
+            if included_items % 100 == 0:
+                logging.warning(f"Extracted {included_items} items for question {column.name}.")
+
+        logging.warning("Done extracting question from collection class items.")
+    except Exception as e:
+        logging.error(e)
+        import traceback
+        logging.error(traceback.format_exc())
+    finally:
+        collection.columns_with_running_processes.remove(column.identifier)
+        collection.save()
 
 
 def _extract_question_from_collection_class_items_batch(collection_items, column, collection, user_id):

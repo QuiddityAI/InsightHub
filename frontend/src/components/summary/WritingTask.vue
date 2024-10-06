@@ -97,9 +97,15 @@ export default {
         this.execute_writing_task()
       })
     })
+    this.eventBus.on("agent_stopped", () => {
+      this.get_writing_task()
+    })
   },
   methods: {
     get_writing_task(on_success=null) {
+      if (!this.writing_task_id) {
+        return
+      }
       const that = this
       const body = {
         task_id: this.writing_task_id,

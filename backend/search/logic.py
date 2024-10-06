@@ -3,15 +3,18 @@ import time
 import json
 import logging
 import uuid
+from typing import Callable, Iterable
 
 from django.utils import timezone
+from django.db.models import Q
 
 from data_map_backend.models import DataCollection, User, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType, CollectionItem
+from data_map_backend.views.question_views import extract_question_from_collection_class_items
 from legacy_backend.logic.search import get_search_results
 from .schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
 
 
-def run_search_task(collection: DataCollection, search_task: SearchTaskSettings):
+def run_search_task(collection: DataCollection, search_task: SearchTaskSettings, user_id: int, after_columns_were_processed: Callable | None=None):
     collection.current_agent_step = "Running search task..."
     collection.last_search_task = search_task.dict()
     collection.save()
@@ -54,20 +57,89 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings)
 
     collection.search_sources.append(source.dict())
     collection.save()
-    add_items_from_active_sources(collection)
+
+    def after_columns_were_processed_internal(new_items):
+        logging.warning("run_search_task: after_columns_were_processed_internal")
+        if search_task.auto_approve:
+            logging.warning("auto_approve")
+            _auto_approve_items(collection, new_items, search_task)
+
+        if search_task.exit_search_mode:
+            logging.warning("exit_search_mode")
+            exit_search_mode(collection, '_default')
+
+        if after_columns_were_processed:
+            after_columns_were_processed(new_items)
+
+    add_items_from_active_sources(collection, user_id, after_columns_were_processed_internal)
 
 
-def add_items_from_active_sources(collection: DataCollection) -> int:
-    new_item_count = 0
+def _auto_approve_items(collection: DataCollection, new_items: Iterable[CollectionItem], search_task: SearchTaskSettings):
+    relevance_columns = [column for column in collection.columns.all() if column.determines_relevance]  # type: ignore
+    if not relevance_columns:
+        return
+    changed_items = []
+    relevant_items = []
+    for item in new_items:
+        for column in relevance_columns:  # should be only one in most cases
+            assert isinstance(column, CollectionColumn)
+            column_content = item.column_data.get(column.identifier)
+            if column_content is None:
+                continue
+            value = column_content.get('value')
+            if isinstance(value, dict):
+                is_relevant = value.get('is_relevant')
+                if is_relevant:
+                    relevant_items.append([item, value.get('relevance_score', 0.5)])
+    if not relevant_items:
+        return
+    if min([x[1] for x in relevant_items]) != max([x[1] for x in relevant_items]):
+        sorted_items = sorted(relevant_items, key=lambda x: x[1], reverse=True)
+    else:
+        # no relevance scores, don't change the order
+        sorted_items = relevant_items
+    for item, relevance_score in sorted_items[:search_task.max_selections]:
+        item.relevance = 2
+        changed_items.append(item)
+    CollectionItem.objects.bulk_update(changed_items, ['relevance'])
+
+
+def exit_search_mode(collection: DataCollection, class_name: str):
+    all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
+    candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
+    candidates.delete()
+    collection.items_last_changed = timezone.now()
+
+    for source in collection.search_sources:
+        source['is_active'] = False
+
+    collection.save()
+
+
+def add_items_from_active_sources(collection: DataCollection, user_id: int, after_columns_were_processed: Callable | None=None) -> int:
+    new_items = []
     for source in collection.search_sources:
         source = SearchSource(**source)
         if not source.is_active:
             continue
-        new_item_count += add_items_from_source(collection, source)
-    return new_item_count
+        new_items.extend(add_items_from_source(collection, source))
+
+    def in_thread():
+        logging.warning("add_items_from_active_sources: in_thread")
+        max_evaluated_candidates = 10
+        for column in collection.columns.all():  # type: ignore
+            assert isinstance(column, CollectionColumn)
+            if column.auto_run_for_candidates:
+                extract_question_from_collection_class_items(new_items[:max_evaluated_candidates], column, collection, user_id)
+        if after_columns_were_processed:
+            after_columns_were_processed(new_items)
+
+    threading.Thread(target=in_thread).start()
+
+    return len(new_items)
 
 
-def add_items_from_source(collection: DataCollection, source: SearchSource) -> int:
+def add_items_from_source(collection: DataCollection, source: SearchSource) -> Iterable[CollectionItem]:
     params = {
         'search': {
             'dataset_ids': [source.dataset_id],
@@ -117,4 +189,4 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> i
     collection.search_sources.append(source.dict())
     collection.items_last_changed = timezone.now()
     collection.save()
-    return len(new_items)
+    return new_items
