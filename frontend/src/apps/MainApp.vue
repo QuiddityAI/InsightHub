@@ -28,8 +28,10 @@ import { httpClient } from "../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../stores/app_state_store"
 import { useMapStateStore } from "../stores/map_state_store"
+import { useCollectionStore } from '../stores/collection_store';
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 
 const _window = window
 
@@ -110,6 +112,7 @@ export default {
         this.appStateStore.reset_search_box()
         this.appStateStore.reset_search_results_and_map()
       }
+      this.collectionStore.check_url_parameters()
     },
     // show_score_info_chart() {
     //   if (this.score_info_chart) this.score_info_chart.destroy()
@@ -166,6 +169,7 @@ export default {
   computed: {
     ...mapStores(useAppStateStore),
     ...mapStores(useMapStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
     const that = this

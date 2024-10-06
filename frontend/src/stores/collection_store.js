@@ -42,24 +42,37 @@ export const useCollectionStore = defineStore("collection", {
         .post("/org/data_map/get_collections", get_collections_body)
         .then(function (response) {
           that.available_collections = response.data || []
+          that.check_url_parameters()
         })
     },
-    open_collection(collection_id, class_name) {
+    check_url_parameters() {
+      if (!this.available_collections.length) return
+      const queryParams = new URLSearchParams(window.location.search)
+      if (queryParams.get("collection_id") !== null) {
+        this.open_collection(parseInt(queryParams.get("collection_id")))
+      } else {
+        this.close_collection()
+      }
+    },
+    open_collection(collection_id, class_name=null) {
+      class_name = class_name || '_default'
       if (this.collection_id) {
         this.close_collection()
         setTimeout(() => {
-          this.collection_id = collection_id
-          this.class_name = class_name
-          this.collection_items = []
-          this.collection = this.available_collections.find((c) => c.id === collection_id)
-          this.eventBus.emit("collection_changed", {collection_id, class_name})
+          this.open_collection(collection_id, class_name)
         }, 0)
-      } else {
-        this.collection_id = collection_id
-        this.class_name = class_name
-        this.collection_items = []
-        this.collection = this.available_collections.find((c) => c.id === collection_id)
-        this.eventBus.emit("collection_changed", {collection_id, class_name})
+        return
+      }
+      this.collection_id = collection_id
+      this.class_name = class_name
+      this.collection_items = []
+      this.collection = this.available_collections.find((c) => c.id === collection_id)
+      this.eventBus.emit("collection_changed", {collection_id, class_name})
+
+      const queryParams = new URLSearchParams(window.location.search)
+      if (queryParams.get("collection_id") !== collection_id.toString()) {
+        queryParams.set("collection_id", collection_id)
+        history.pushState(null, null, "?" + queryParams.toString())
       }
     },
     close_collection() {
@@ -75,6 +88,12 @@ export const useCollectionStore = defineStore("collection", {
       this.order_by_field = 'date_added'
       this.order_descending = true
       this.eventBus.emit("collection_changed", {collection_id: null, class_name: null})
+
+      const queryParams = new URLSearchParams(window.location.search)
+      if (queryParams.get("collection_id") !== null) {
+        queryParams.delete("collection_id")
+        history.pushState(null, null, "?" + queryParams.toString())
+      }
     },
     update_collection(on_success = null) {
       if (!this.collection_id) {
