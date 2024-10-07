@@ -28,6 +28,8 @@ from ..logic.reranking import rerank
 
 from ..database_client.django_client import get_dataset
 
+from data_map_backend.views.other_views import get_serialized_dataset_cached
+
 
 #@lru_cache()
 def get_search_results(params_str: str, purpose: str, timings: Timings | None = None) -> dict:
@@ -44,7 +46,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         similar_item_info = _get_item_for_similarity_search(params.search)
 
     for dataset_id in params.search.dataset_ids:
-        dataset = get_dataset(dataset_id)
+        dataset = DotDict(get_serialized_dataset_cached(dataset_id))
         score_info = {}
         total_matches = 0
 

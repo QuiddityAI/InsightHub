@@ -155,7 +155,7 @@ def get_dataset(request):
         if not ((dataset.is_organization_wide and is_member) or is_admin):
             return HttpResponse(status=401)
 
-    dataset_dict = get_serialized_dataset(dataset_id, additional_fields)
+    dataset_dict = get_serialized_dataset_cached(dataset_id, additional_fields)
 
     result = json.dumps(dataset_dict)
     return HttpResponse(result, status=200, content_type="application/json")
@@ -176,7 +176,7 @@ def get_dataset_cached(dataset_id: int) -> Dataset:
 
 
 @lru_cache(maxsize=128)
-def get_serialized_dataset(dataset_id: int, additional_fields: tuple=tuple()) -> dict:
+def get_serialized_dataset_cached(dataset_id: int, additional_fields: tuple=tuple()) -> dict:
     dataset: Dataset = get_dataset_cached(dataset_id)
 
     dataset_dict = DatasetSerializer(instance=dataset).data

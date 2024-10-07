@@ -31,10 +31,13 @@ def create_collection_using_mode(
     collection.current_agent_step = "Preparing..."
     collection.cancel_agent_flag = False
     collection.save()
+    # above takes about 17 ms
 
     def thread_function():
         try:
+            # creating thread takes about 0.6ms
             prepare_collection(collection, settings, user)
+            # preparing collection just for classic search takes up to 100ms
         except Exception as e:
             collection.agent_is_running = False
             collection.save()
@@ -69,9 +72,9 @@ def prepare_for_classic_search(collection: DataCollection, settings: CreateColle
         retrieval_mode=settings.retrieval_mode,
         ranking_settings=settings.ranking_settings,
     )
-    run_search_task(collection, search_task, user.id)  # type: ignore
+    run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
     collection.agent_is_running = False
-    collection.save()
+    collection.save()  # 7 ms
 
 
 def prepare_for_assisted_search(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
@@ -87,7 +90,7 @@ def prepare_for_assisted_search(collection: DataCollection, settings: CreateColl
         retrieval_mode=settings.retrieval_mode,
         ranking_settings=settings.ranking_settings,
     )
-    run_search_task(collection, search_task, user.id)  # type: ignore
+    run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
     collection.agent_is_running = False
     collection.save()
 
@@ -129,5 +132,5 @@ def prepare_for_question(collection: DataCollection, settings: CreateCollectionS
         collection.agent_is_running = False
         collection.save()
 
-    run_search_task(collection, search_task, user.id, after_columns_were_processed)  # type: ignore
+    run_search_task(collection, search_task, user.id, after_columns_were_processed, is_new_collection=True)  # type: ignore
     collection.current_agent_step = "Waiting for search results and columns..."

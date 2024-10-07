@@ -26,6 +26,8 @@ from ..logic.autocut import get_number_of_useful_items
 
 from ..utils.helpers import normalize_array
 
+from data_map_backend.views.other_views import get_serialized_dataset_cached
+
 
 class QueryInput(object):
     def __init__(self, positive_query_str: str, negative_query_str: str = "",
@@ -568,7 +570,7 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
                                relevant_parts: str | None=None, database_name: str | None = None,
                                top_n_full_text_chunks: int | None=None, get_text_search_highlights: bool = False,
                                query: str | None=None, include_related_collection_items: bool = False) -> dict | None:
-    dataset = get_dataset(dataset_id)
+    dataset = DotDict(get_serialized_dataset_cached(dataset_id))
     if not database_name:
         database_name = dataset.actual_database_name
         assert database_name is not None
