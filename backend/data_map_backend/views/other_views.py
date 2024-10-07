@@ -1,3 +1,4 @@
+from functools import lru_cache
 import json
 import logging
 import os
@@ -136,11 +137,11 @@ def get_dataset(request):
     try:
         data = json.loads(request.body)
         dataset_id: int = data["dataset_id"]
-        additional_fields: list = data.get("additional_fields", [])
+        additional_fields: tuple = tuple(data.get("additional_fields", []))
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    dataset: Dataset = Dataset.objects.get(id=dataset_id)
+    dataset: Dataset = get_dataset_cached(dataset_id)
 
     if not is_from_backend(request) and not dataset.is_public:
         is_member = (
@@ -153,6 +154,30 @@ def get_dataset(request):
         )
         if not ((dataset.is_organization_wide and is_member) or is_admin):
             return HttpResponse(status=401)
+
+    dataset_dict = get_serialized_dataset(dataset_id, additional_fields)
+
+    result = json.dumps(dataset_dict)
+    return HttpResponse(result, status=200, content_type="application/json")
+
+
+@lru_cache(maxsize=128)
+def get_dataset_cached(dataset_id: int) -> Dataset:
+    return Dataset.objects.select_related(
+        "schema",
+    ).prefetch_related(
+        "schema__object_fields",
+        "schema__applicable_import_converters",
+        "schema__applicable_export_converters",
+        "schema__object_fields__generator",
+        "schema__object_fields__generator__embedding_space",
+        "schema__object_fields__embedding_space",
+    ).get(id=dataset_id)
+
+
+@lru_cache(maxsize=128)
+def get_serialized_dataset(dataset_id: int, additional_fields: tuple=tuple()) -> dict:
+    dataset: Dataset = get_dataset_cached(dataset_id)
 
     dataset_dict = DatasetSerializer(instance=dataset).data
     assert isinstance(dataset_dict, dict)
@@ -168,9 +193,7 @@ def get_dataset(request):
     dataset_dict["schema"]["applicable_export_converters"].extend(serialized_exporters)
     if "item_count" in additional_fields:
         dataset_dict["item_count"] = dataset.item_count
-
-    result = json.dumps(dataset_dict)
-    return HttpResponse(result, status=200, content_type="application/json")
+    return dataset_dict
 
 
 @csrf_exempt
