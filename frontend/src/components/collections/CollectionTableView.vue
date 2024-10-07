@@ -174,7 +174,7 @@ export default {
           </div>
         </template>
       </Column>
-      <Column v-for="(column, index) in collection.columns" :header="false">
+      <Column v-for="(column, index) in collection.columns" :key="column.identifier" :header="false">
         <template #header="slotProps">
           <button class="rounded-md bg-white shadow-sm text-sm hover:text-blue-500 py-1 px-2 w-full"
             @click="event => {selected_column = column; $refs.column_options.toggle(event)}">

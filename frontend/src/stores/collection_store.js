@@ -2,6 +2,8 @@ import { defineStore } from "pinia"
 import { inject } from "vue"
 import { useToast } from "primevue/usetoast"
 
+import { update_object } from "../utils/utils"
+
 import { httpClient, djangoClient } from "../api/httpClient"
 import { FieldType } from "../utils/utils"
 
@@ -107,9 +109,9 @@ export const useCollectionStore = defineStore("collection", {
         let new_collection = response.data
         const old_collection = that.collection
         if (old_collection) {
-          for (let key in new_collection) {
-            old_collection[key] = new_collection[key]
-          }
+          // using update_object to update it in-place to keep references to old objects
+          // to minimize flicker in the UI due to unneeded updates
+          update_object(old_collection, new_collection)
         } else {
           that.collection = new_collection
         }

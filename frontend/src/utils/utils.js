@@ -111,3 +111,40 @@ export const languages = [
   { 'name': 'Czech', 'code': 'cs', 'flag': '🇨🇿' },
   { 'name': 'Hungarian', 'code': 'hu', 'flag': '🇭🇺' },
 ]
+
+export function update_array(old_arr, new_arr) {
+  // update the array in-place
+  // Ensure old_arr has enough elements
+  while (old_arr.length < new_arr.length) {
+    old_arr.push(undefined);
+  }
+  for (let i = 0; i < new_arr.length; i++) {
+    if (typeof new_arr[i] === "object" && new_arr[i] !== null && !Array.isArray(new_arr[i])
+      && typeof old_arr[i] === "object" && old_arr[i] !== null && !Array.isArray(old_arr[i])) {
+      update_object(old_arr[i], new_arr[i])
+    } else if (Array.isArray(new_arr[i]) && Array.isArray(old_arr[i])) {
+      update_array(old_arr[i], new_arr[i])
+    } else {
+      old_arr[i] = new_arr[i]
+    }
+  }
+  // Remove extra elements
+  while (old_arr.length > new_arr.length) {
+    old_arr.pop();
+  }
+}
+
+export function update_object(old_obj, new_obj) {
+  // update the object in-place
+  for (const key in new_obj) {
+    if (typeof new_obj[key] === "object" && new_obj[key] !== null && !Array.isArray(new_obj[key])
+      && typeof old_obj[key] === "object" && old_obj[key] !== null && !Array.isArray(old_obj[key])) {
+      update_object(old_obj[key], new_obj[key])
+    } else if (Array.isArray(new_obj[key]) && Array.isArray(old_obj[key])) {
+      update_array(old_obj[key], new_obj[key])
+    } else {
+      old_obj[key] = new_obj[key]
+    }
+  }
+}
+
