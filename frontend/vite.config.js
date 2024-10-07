@@ -34,6 +34,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "/_kolo": {  // allows the browser to access endpoints of the backend directly
+        target: (process.env.backend_host || "http://127.0.0.1:55125"),
+        changeOrigin: true,
+        secure: false,
+        //rewrite: (path) => path.replace(/^\/org/, '/'),
+      },
     },
   },
   plugins: [vue()],
