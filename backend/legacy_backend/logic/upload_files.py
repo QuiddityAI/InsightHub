@@ -326,6 +326,8 @@ def get_import_converter_by_name(code_module_name: str) -> Callable:
         return _import_csv
     elif code_module_name == "website_url":
         return _import_website_url
+    elif code_module_name == "office_document":
+        return _import_office_document
     raise ValueError(f"import converter {code_module_name} not found")
 
 
@@ -488,3 +490,43 @@ def _import_website_url(raw_items, parameters, on_progress=None) -> tuple[list[d
             on_progress(0.5 + (len(items) / len(raw_items)) * 0.5)
 
     return items, []
+
+
+def _import_office_document(paths, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+    from pdferret import PDFerret
+
+    extractor = PDFerret(meta_extractor="dummy", text_extractor="unstructured")
+    if on_progress:
+        on_progress(0.1)
+    parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
+
+    if on_progress:
+        on_progress(0.5)
+    failed_files = [{"filename": pdferror.file, "reason": pdferror.exc} for pdferror in failed]
+    items = []
+    for parsed_file, sub_path in zip(parsed, paths):
+        file_metainfo = parsed_file.metainfo
+        if not file_metainfo.title and not len(parsed_file.chunks):
+            failed_files.append({"filename": sub_path, "reason": "no title or text found, skipping"})
+            continue
+
+        full_text_original_chunks = [asdict(chunk) for chunk in parsed_file.chunks]
+        full_text = " ".join([chunk['text'] for chunk in full_text_original_chunks])
+
+        items.append({
+            "id": file_metainfo.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
+            "doi": file_metainfo.doi,
+            "title": file_metainfo.title.strip() or sub_path.split("/")[-1],
+            "abstract": file_metainfo.abstract,
+            "authors": file_metainfo.authors,
+            "journal": "",
+            "publication_year": None,
+            "cited_by": 0,
+            "file_path": sub_path,  # relative to UPLOADED_FILES_FOLDER
+            "thumbnail_path": None,  # relative to UPLOADED_FILES_FOLDER
+            "full_text": full_text,
+            "full_text_original_chunks": full_text_original_chunks,
+        })
+        if on_progress:
+            on_progress(0.5 + (len(items) / len(paths)) * 0.5)
+    return items, failed_files

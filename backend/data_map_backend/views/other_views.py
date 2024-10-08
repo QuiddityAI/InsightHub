@@ -994,7 +994,7 @@ def add_item_to_collection(request):
     dataset_dict = CollectionItemSerializer(instance=item).data
     serialized_data = json.dumps(dataset_dict)
 
-    collection.items_last_changed[class_name] = timezone.now().isoformat()  # type: ignore
+    collection.items_last_changed = timezone.now().isoformat()  # type: ignore
     collection.save()
 
     return HttpResponse(serialized_data, status=200, content_type="application/json")
@@ -1050,7 +1050,7 @@ def remove_collection_item(request):
         return HttpResponse(status=401)
 
     for class_name in collection_item.classes:  # type: ignore
-        collection_item.collection.items_last_changed[class_name] = timezone.now().isoformat()  # type: ignore
+        collection_item.collection.items_last_changed = timezone.now().isoformat()  # type: ignore
     collection_item.collection.save()
 
     collection_item.delete()
