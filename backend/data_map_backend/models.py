@@ -1333,6 +1333,7 @@ class CollectionItem(models.Model):
         on_delete=models.CASCADE,
         blank=False,
         null=False,
+        db_index=True,
     )
     date_added = models.DateTimeField(
         verbose_name="Date added",
@@ -1361,6 +1362,7 @@ class CollectionItem(models.Model):
         max_length=50,
         blank=True,
         null=True,
+        db_index=True,
     )
     search_score = models.FloatField(
         verbose_name="Search Score",
@@ -1372,7 +1374,8 @@ class CollectionItem(models.Model):
         verbose_name="Is positive", default=True, blank=False, null=False
     )
     classes = models.JSONField(
-        verbose_name="Classes", default=class_field_default, blank=False, null=False
+        verbose_name="Classes", default=class_field_default, blank=False, null=False,
+        db_index=True,
     )
     field_type = models.CharField(
         verbose_name="Type",
@@ -1395,12 +1398,14 @@ class CollectionItem(models.Model):
         verbose_name="Dataset ID (in case this is an item reference aka IDENTIFIER)",
         blank=True,
         null=True,
+        db_index=True,
     )
     item_id = models.CharField(
         verbose_name="Item ID (in case this is an item reference aka IDENTIFIER)",
         max_length=200,
         blank=True,
         null=True,
+        db_index=True,
     )
     metadata = models.JSONField(
         verbose_name="Metadata",

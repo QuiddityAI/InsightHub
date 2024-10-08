@@ -169,7 +169,10 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> I
     results = get_search_results(json.dumps(params), 'list')
     items_by_dataset = results['items_by_dataset']
     new_items = []
+    existing_item_ids = CollectionItem.objects.filter(collection=collection, dataset_id=source.dataset_id, item_id__in=[ds_and_item_id[1] for ds_and_item_id in results['sorted_ids']]).values_list('item_id', flat=True)
     for ds_and_item_id in results['sorted_ids']:
+        if ds_and_item_id[1] in existing_item_ids:
+            continue
         value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
         item = CollectionItem(
             date_added=source.created_at,
@@ -188,7 +191,7 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> I
 
     source.retrieved += len(results['sorted_ids'])
     source.available = max(results['total_matches'], source.retrieved)
-    source.available_is_exact = source.retrieval_mode == RetrievalMode.KEYWORD or len(results['sorted_ids']) == 0
+    source.available_is_exact = source.retrieval_mode == RetrievalMode.KEYWORD or len(results['sorted_ids']) < source.page_size
 
     collection.search_sources = [s for s in collection.search_sources if s['id_hash'] != source.id_hash]
     collection.search_sources.append(source.dict())

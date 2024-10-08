@@ -48,7 +48,7 @@ export default {
       {{ collectionStore.collection.current_agent_step }}
     </span>
     <div class="flex-1"></div>
-    <BorderlessButton @click="collectionStore.cancel_agent">
+    <BorderlessButton @click="collectionStore.cancel_agent" class="py-1">
       <NoSymbolIcon class="h-5 w-5 inline" /> Cancel
     </BorderlessButton>
   </div>

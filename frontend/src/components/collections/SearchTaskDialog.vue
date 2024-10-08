@@ -110,7 +110,11 @@ export default {
     },
   },
   mounted() {
-    this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.last_search_task || this.settings_template))
+    if (this.collectionStore.collection.last_search_task && Object.keys(this.collectionStore.collection.last_search_task).length > 0) {
+      this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.last_search_task))
+    } else {
+      this.new_settings = JSON.parse(JSON.stringify(this.settings_template))
+    }
 
     this.new_settings.ranking_settings = this.appStateStore.settings.search.ranking_settings
     if (this.new_settings.dataset_id === null) {

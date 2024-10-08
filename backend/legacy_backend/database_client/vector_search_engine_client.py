@@ -304,8 +304,7 @@ class VectorSearchEngineClient(object):
                 query_vector=NamedVector(name=vector_field, vector=query_vector),
                 with_payload=['array_index'],
                 with_vectors=return_vectors,
-                limit=limit,
-                offset=page * limit,
+                limit=(page * limit) + limit,
                 score_threshold=score_threshold,
                 group_by='parent_id',
                 group_size=max_sub_items,
@@ -313,7 +312,9 @@ class VectorSearchEngineClient(object):
             )
             # hits.groups is a list of {'id': parent_id, 'hits': [{'id': sub_id, 'score': score, 'payload': dict} ...]}
             hits = []
-            for group in group_hits.groups:
+            if len(group_hits.groups) <= page * limit:
+                return hits
+            for group in group_hits.groups[page * limit:]:
                 hits.append(DotDict({
                     'id': group.id,
                     'score': group.hits[0].score,
