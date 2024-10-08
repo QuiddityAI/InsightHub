@@ -238,7 +238,7 @@ export default {
             + Filter
           </button>
           <OverlayPanel ref="add_filter_menu">
-            <AddFilterMenu @close="$refs.add_filter_menu.hide()">
+            <AddFilterMenu @close="$refs.add_filter_menu.hide()" :filters="new_settings.filters">
             </AddFilterMenu>
           </OverlayPanel>
         </div>
@@ -261,7 +261,9 @@ export default {
         Note: use double quotes instead of single quotes to search for phrases.
       </div>
 
-      <SearchFilterList v-if="!new_settings.auto_set_filters"></SearchFilterList>
+      <SearchFilterList v-if="!new_settings.auto_set_filters"
+        :removable="true"
+        :filters="new_settings.filters"></SearchFilterList>
 
       <div
         class="ml-1 mb-5 flex flex-row items-center"

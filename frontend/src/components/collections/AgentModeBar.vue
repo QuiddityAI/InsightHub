@@ -42,7 +42,7 @@ export default {
 </script>
 
 <template>
-  <div class="px-3 h-7 flex flex-row items-center gap-4 rounded border border-orange-500">
+  <div class="w-full px-5 py-1 flex flex-row items-center gap-4">
     <span class="text-orange-500">Processing:</span>
     <span class="text-gray-700">
       {{ collectionStore.collection.current_agent_step }}

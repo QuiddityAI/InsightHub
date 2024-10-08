@@ -13,7 +13,7 @@ const mapState = useMapStateStore()
 
 export default {
   inject: ["eventBus"],
-  props: ["show_filters_of_current_task"],
+  props: ["filters", "removable"],
   emits: [],
   data() {
     return {
@@ -22,12 +22,6 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
-    filters() {
-      if (this.show_filters_of_current_task) {
-        return this.mapStateStore.map_parameters?.search.filters || []
-      }
-      return this.appStateStore.settings.search.filters || []
-    }
   },
   mounted() {
   },
@@ -35,7 +29,7 @@ export default {
   },
   methods: {
     remove_filter(index) {
-      this.appStateStore.settings.search.filters.splice(index, 1)
+      this.filters.splice(index, 1)
       this.eventBus.emit("search_filters_changed")
     },
     get_filter_label(filter) {
@@ -54,10 +48,10 @@ export default {
 </script>
 
 <template>
-  <div v-if="filters.length" class="mt-3 flex flex-row flex-wrap gap-2">
+  <div v-if="filters.length" class="flex flex-row flex-wrap gap-2">
     <Chip v-for="filter, index in filters"
-      :removable="!show_filters_of_current_task" @remove="remove_filter(index)">
-      <span class="text-sm">{{ get_filter_label(filter) }}</span>
+      :removable="removable" @remove="remove_filter(index)">
+      <span class="text-xs">{{ get_filter_label(filter) }}</span>
     </Chip>
   </div>
 

@@ -66,7 +66,7 @@ export default {
 
 <template>
 
-  <div class="flex flex-col p-1 bg-white shadow-sm">
+  <div class="flex flex-col px-2 py-[2px] bg-white shadow-sm">
 
     <div class="flex-none flex flex-row items-center justify-center mx-3">
 

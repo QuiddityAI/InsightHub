@@ -3,14 +3,13 @@
 import {
   PlusIcon,
   TrashIcon,
+  InformationCircleIcon,
 } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Paginator from "primevue/paginator"
 import OverlayPanel from 'primevue/overlaypanel';
-import Dropdown from 'primevue/dropdown';
 
 import CollectionItem from "./CollectionItem.vue"
 import CollectionTableCell from "./CollectionTableCell.vue";
@@ -136,23 +135,28 @@ export default {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col items-center overflow-x-hidden" v-if="collection">
+  <div class="flex flex-col items-center" v-if="collection">
 
-    <DataTable :value="collectionStore.collection_items" tableStyle="" scrollable scrollHeight="flex" size="small"
-      class="min-h-0 overflow-x-auto pt-3 xl:pt-6 max-w-full" ref="table">
+    <DataTable :value="collectionStore.collection_items" tableStyle="" scrollable size="small"
+      class="min-h-0 overflow-x-auto max-w-full" ref="table">
       <template #empty>
         <div class="pl-3 xl:pl-8 py-10 flex flex-row justify-center text-gray-500">No items yet</div>
       </template>
       <Column header="" class="pl-5 xl:pl-10 min-w-[520px]">
         <template #header="slotProps">
-          <span class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center">{{ collectionStore.search_mode ? 'Search Results' : 'Items' }}</span>
+          <span v-if="collectionStore.search_mode"
+            class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center"
+            v-tooltip.bottom="{value: 'Only search results are shown. &nbsp Exit search to remove results and show saved items.'}">
+            Search Results
+            <InformationCircleIcon class="h-4 w-4 inline text-blue-500">
+            </InformationCircleIcon>
+          </span>
+          <span v-else
+            class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center">
+            Items
+          </span>
         </template>
         <template #body="slotProps">
-          <div v-if="slotProps.index == 0 && collectionStore.search_mode"
-            class="mb-3 text-xs text-gray-500 text-center w-full">
-            Only search results are shown. &nbsp Exit search to remove results and show saved items.
-          </div>
-
           <CollectionItem
             :dataset_id="slotProps.data.dataset_id"
             :item_id="slotProps.data.item_id"
@@ -200,25 +204,6 @@ export default {
         </template>
       </Column>
     </DataTable>
-
-    <div class="w-full flex flex-row items-center justify-center bg-white border-t">
-      <Paginator v-model:first="collectionStore.first_index" :rows="collectionStore.per_page"
-        :total-records="collectionStore.filtered_count"
-        class="mt-[0px]"></Paginator>
-      <Dropdown v-if="!collectionStore.search_mode"
-        v-model="collectionStore.order_by_field"
-        :options="collectionStore.available_order_by_fields"
-        optionLabel="name"
-        optionValue="identifier"
-        placeholder="Order By..."
-        class="w-44 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-      <button v-if="!collectionStore.search_mode"
-        @click="collectionStore.order_descending = !collectionStore.order_descending"
-        v-tooltip="{'value': 'Sort Order', showDelay: 500}"
-        class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
-        {{ collectionStore.order_descending ? '▼' : '▲' }}
-      </button>
-    </div>
 
     <OverlayPanel ref="column_options">
       <div class="w-[400px] flex flex-col gap-2">

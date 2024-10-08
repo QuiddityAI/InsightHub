@@ -21,7 +21,7 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: ["collection", "collection_class", "collection_items"],
+  props: ["collection", "collection_class"],
   emits: ["close"],
   data() {
     return {

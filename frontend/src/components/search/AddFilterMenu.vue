@@ -14,7 +14,7 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: [],
+  props: ["filters"],
   emits: ["close"],
   data() {
     return {
@@ -87,7 +87,7 @@ export default {
         this.$toast.add({ severity: 'warn', summary: 'Missing field', detail: 'A field is missing', life: 2000 })
         return
       }
-      this.appStateStore.settings.search.filters.push({
+      this.filters.push({
         field: this.selected_filter_field.identifier,
         dataset_id: this.selected_filter_field.dataset_id,
         operator: this.selected_operator,

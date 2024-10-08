@@ -182,12 +182,14 @@ export default {
 </script>
 
 <template>
-  <div class="pt-7 pb-10 pl-10 pr-10 flex flex-col gap-10">
+  <div class="pt-7 pb-10 pl-10 pr-10 flex flex-col gap-5">
 
     <WritingTask v-for="task in writing_task_ids" :key="task.id"
       :writing_task_id="task.id"
       @delete="delete_writing_task(task.id)"
     />
+
+    <div class="flex-1"></div>
 
     <div class="flex flex-col gap-2">
       <span class="text-xs text-gray-400 text-center">

@@ -4,15 +4,16 @@ import { httpClient } from "../../api/httpClient"
 import {
   ChevronLeftIcon,
   TrashIcon,
+  PlusIcon,
   ArchiveBoxArrowDownIcon,
   DocumentIcon,
   TableCellsIcon,
-  PlusIcon,
 } from "@heroicons/vue/24/outline"
 
 import Dialog from 'primevue/dialog';
 import OverlayPanel from 'primevue/overlaypanel';
-import Message from "primevue/message";
+import Paginator from "primevue/paginator"
+import Dropdown from 'primevue/dropdown';
 
 import CollectionTableView from "./CollectionTableView.vue"
 import ExportCollectionArea from "./ExportCollectionArea.vue";
@@ -132,74 +133,35 @@ export default {
 <template>
   <div class="flex flex-col overflow-hidden">
 
+    <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
+      <SearchTaskDialog :collection="collection" :collection_class="class_name"
+        @close="show_search_task_dialog = false; check_for_agent_status()"></SearchTaskDialog>
+    </Dialog>
+
+    <!-- Top Area -->
     <div class="flex-none pb-2 flex flex-col gap-3 overflow-hidden bg-white shadow-md z-40">
 
-      <!-- Heading -->
-      <div class="mt-3 ml-5 mr-5 flex-none flex flex-row gap-3 items-center">
+      <!-- Heading + Action Buttons -->
+      <div class="mt-3 ml-5 mr-5 flex-none flex flex-row gap-3 flex-wrap items-center">
 
         <ChevronLeftIcon class="h-6 w-6 text-gray-400 cursor-pointer hover:text-blue-500"
           @click="collectionStore.close_collection()">
         </ChevronLeftIcon>
 
-        <span class="text-xl font-serif font-bold text-black">{{ collection.name }}</span>
+        <p class="text-xl font-serif font-bold text-black min-w-[300px] max-w-[calc(100%-380px)]">
+          {{ collection.name }}
+        </p>
         <!-- <span class="text-medium text-gray-500">
           {{ class_name === '_default' ? '' : ': ' + class_name }}
         </span> -->
 
         <div class="flex-1"></div>
 
-        <BorderButton @click="show_export_dialog = true" class="h-6"
-          v-tooltip.bottom="{ value: 'Export items only' }">
-          <ArchiveBoxArrowDownIcon class="h-4 w-4 mr-2 inline" />
-          <DocumentIcon class="h-4 w-4 inline" />
-        </BorderButton>
-        <Dialog v-model:visible="show_export_dialog" modal header="Export">
-          <ExportCollectionArea :collection_id="collectionStore.collection_id" :class_name="class_name">
-          </ExportCollectionArea>
-        </Dialog>
-
-        <BorderButton @click="event => { $refs.export_dialog.toggle(event) }" class="h-6"
-          v-tooltip.bottom="{ value: 'Export table' }">
-          <ArchiveBoxArrowDownIcon class="h-4 w-4 mr-2 inline" />
-          <TableCellsIcon class="h-4 w-4 inline" />
-        </BorderButton>
-        <OverlayPanel ref="export_dialog">
-          <ExportTableArea :collection_id="collectionStore.collection_id" :class_name="class_name">
-          </ExportTableArea>
-        </OverlayPanel>
-
         <BorderButton @click="delete_collection" class="h-6"
           v-tooltip.bottom="{ value: 'Delete collection' }"
           hover_color="hover:text-red-500">
           <TrashIcon class="h-4 w-4"></TrashIcon>
         </BorderButton>
-      </div>
-
-      <!-- Toolbar -->
-      <div class="ml-5 mr-5 flex flex-row gap-3 mb-1 items-end h-7">
-
-        <BorderButton @click="show_search_task_dialog = true" v-if="!collectionStore.search_mode && !collection.agent_is_running">
-          <PlusIcon class="inline h-4 w-4"></PlusIcon> Items by search
-        </BorderButton>
-        <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
-          <SearchTaskDialog :collection="collection" :collection_class="class_name"
-            @close="show_search_task_dialog = false; check_for_agent_status()"></SearchTaskDialog>
-        </Dialog>
-
-        <BorderButton @click="show_add_item_dialog = true" v-if="!collectionStore.search_mode && !collection.agent_is_running">
-          <PlusIcon class="inline h-4 w-4"></PlusIcon> Items manually
-        </BorderButton>
-        <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
-          <AddItemsToCollectionArea :collection="collection" :collection_class="class_name"
-            @items_added="$refs.collection_table_view.load_collection_items"></AddItemsToCollectionArea>
-        </Dialog>
-
-        <SearchModeBar v-if="collectionStore.search_mode && !collection.agent_is_running"
-          @edit_search_task="show_search_task_dialog = true" />
-
-        <AgentModeBar v-if="collection.agent_is_running" />
-
-        <div class="flex-1"></div>
 
         <span class="text-gray-400">
           Views:
@@ -217,25 +179,112 @@ export default {
           Summary
         </BorderButton>
       </div>
-
     </div>
 
-    <!-- -------------------------------------------------------------- -->
+    <!-- Lower Area -->
+    <div class="flex-1 flex flex-row bg-gray-200 overflow-hidden">
 
-    <div class="flex-1 overflow-hidden flex flex-row">
+      <!-- Left Side: Summary -->
+      <div v-if="right_side_view === 'summary'"
+        class="flex-none w-[600px] bg-white shadow-md z-30">
+        <WritingTaskArea v-if="right_side_view === 'summary'"
+          class="overflow-y-auto h-full"
+          :collection_id="collectionStore.collection_id" :class_name="class_name">
+        </WritingTaskArea>
+      </div>
 
-      <CollectionTableView class="z-20 bg-gray-200" ref="collection_table_view" :collection_id="collectionStore.collection_id"
-        :class_name="class_name" :is_positive="true"
-        @add_column="show_add_column_dialog = true">
-      </CollectionTableView>
+      <!-- Middle: Content Area-->
+      <div class="flex-1 flex flex-col gap-3 xl:gap-5 overflow-y-auto pt-4 xl:pt-6">
 
-      <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
-        <AddColumnDialog :collection="collection" :collection_class="class_name"
-          :collection_items="$refs.collection_table_view.collection_items" @close="show_add_column_dialog = false">
-        </AddColumnDialog>
-      </Dialog>
+        <!-- Search / Agent Bar -->
+        <div v-if="collectionStore.search_mode || collection.agent_is_running"
+          class="flex-none px-5">
+          <div class="mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row">
 
-      <div v-if="right_side_view"
+            <SearchModeBar v-if="collectionStore.search_mode && !collection.agent_is_running"
+              @edit_search_task="show_search_task_dialog = true" />
+
+            <AgentModeBar v-if="collection.agent_is_running" />
+
+          </div>
+        </div>
+
+        <CollectionTableView class="z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
+          :class_name="class_name" :is_positive="true"
+          @add_column="show_add_column_dialog = true">
+        </CollectionTableView>
+
+        <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
+          <AddColumnDialog :collection="collection" :collection_class="class_name"
+            @close="show_add_column_dialog = false">
+          </AddColumnDialog>
+        </Dialog>
+
+        <div class="flex flex-row gap-5 justify-center"
+            v-if="!collectionStore.search_mode && !collection.agent_is_running">
+          <BorderButton @click="show_search_task_dialog = true"
+            class="py-1 bg-white rounded-xl shadow-md">
+            <PlusIcon class="inline h-4 w-4"></PlusIcon> Items by search
+          </BorderButton>
+
+          <BorderButton @click="show_add_item_dialog = true"
+            class="py-1 bg-white rounded-xl shadow-md">
+            <PlusIcon class="inline h-4 w-4"></PlusIcon> Items manually
+          </BorderButton>
+          <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
+            <AddItemsToCollectionArea :collection="collection" :collection_class="class_name"
+              @items_added="$refs.collection_table_view.load_collection_items"></AddItemsToCollectionArea>
+          </Dialog>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="w-full pl-4 pr-2 flex flex-row gap-2 flex-wrap items-center bg-white border-t">
+          <BorderButton @click="show_export_dialog = true" class="h-6"
+            v-tooltip.top="{ value: 'Export items only' }">
+            <ArchiveBoxArrowDownIcon class="h-4 w-4 mr-2 inline" />
+            <DocumentIcon class="h-4 w-4 inline" />
+          </BorderButton>
+          <Dialog v-model:visible="show_export_dialog" modal header="Export">
+            <ExportCollectionArea :collection_id="collectionStore.collection_id" :class_name="class_name">
+            </ExportCollectionArea>
+          </Dialog>
+
+          <BorderButton @click="event => { $refs.export_dialog.toggle(event) }" class="h-6"
+            v-tooltip.top="{ value: 'Export table' }">
+            <ArchiveBoxArrowDownIcon class="h-4 w-4 mr-2 inline" />
+            <TableCellsIcon class="h-4 w-4 inline" />
+          </BorderButton>
+          <OverlayPanel ref="export_dialog">
+            <ExportTableArea :collection_id="collectionStore.collection_id" :class_name="class_name">
+            </ExportTableArea>
+          </OverlayPanel>
+
+          <div class="flex-1"></div>
+
+          <Paginator v-model:first="collectionStore.first_index" :rows="collectionStore.per_page"
+            :total-records="collectionStore.filtered_count"
+            class="mt-[0px]"></Paginator>
+          <Dropdown v-if="!collectionStore.search_mode"
+            v-model="collectionStore.order_by_field"
+            :options="collectionStore.available_order_by_fields"
+            optionLabel="name"
+            optionValue="identifier"
+            placeholder="Order By..."
+            class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+          <button v-if="!collectionStore.search_mode"
+            @click="collectionStore.order_descending = !collectionStore.order_descending"
+            v-tooltip="{'value': 'Sort Order', showDelay: 500}"
+            class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
+            {{ collectionStore.order_descending ? '▼' : '▲' }}
+          </button>
+          <div class="flex-1"></div>
+        </div>
+
+      </div>
+
+      <!-- Right Side: Chart / Map / Summary -->
+      <div v-if="right_side_view && right_side_view !== 'summary'"
         class="flex-none w-[600px] bg-white shadow-md z-30">
 
         <div v-if="right_side_view === 'chart'"
@@ -247,12 +296,8 @@ export default {
           class="p-3">
           Map
         </div>
-
-        <WritingTaskArea v-if="right_side_view === 'summary'"
-          class="overflow-y-auto h-full"
-          :collection_id="collectionStore.collection_id" :class_name="class_name">
-        </WritingTaskArea>
       </div>
+
     </div>
 
   </div>

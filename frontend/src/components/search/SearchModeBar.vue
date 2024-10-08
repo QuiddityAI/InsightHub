@@ -6,6 +6,7 @@ import {
 
 
 import BorderlessButton from "../widgets/BorderlessButton.vue";
+import SearchFilterList from "./SearchFilterList.vue";
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -47,18 +48,34 @@ export default {
 </script>
 
 <template>
-  <div class="px-3 h-7 flex flex-row items-center gap-4 rounded border border-blue-500">
-    <span class="text-blue-500">Search Mode:</span>
-    <span class="text-gray-700" v-for="source in active_search_sources">
-      {{ source.query }}
-    </span>
-    <div class="flex-1"></div>
-    <BorderlessButton @click="$emit('edit_search_task')">
-      <PencilIcon class="h-5 w-5 inline" /> Edit
-    </BorderlessButton>
-    <BorderlessButton @click="collectionStore.exit_search_mode">
-      <NoSymbolIcon class="h-5 w-5 inline" /> Exit
-    </BorderlessButton>
+  <div class="w-full px-5 py-1 flex flex-col gap-1">
+    <div class="flex flex-row items-center gap-4">
+      <span class="flex-none text-blue-500">Search Mode:</span>
+
+      <div class="flex flex-col gap-2">
+        <div v-for="source in active_search_sources" :key="source.id">
+          <span class="text-gray-700">
+            {{ source.query }}
+          </span>
+          <SearchFilterList v-for="source in active_search_sources"
+            :filters="source.filters || []" :key="source.id"
+            :removable="false"
+            class="-ml-1 mt-1 mb-1">
+          </SearchFilterList>
+        </div>
+      </div>
+
+      <div class="flex-1"></div>
+
+      <BorderlessButton @click="$emit('edit_search_task')" class="py-1"
+        v-tooltip.bottom="{value: 'Edit the search query and filters', showDelay: 400}">
+        <PencilIcon class="h-5 w-5 inline" /> Edit
+      </BorderlessButton>
+      <BorderlessButton @click="collectionStore.exit_search_mode" class="py-1"
+        v-tooltip.bottom="{value: 'Remove search results and show saved items', showDelay: 400}">
+        <NoSymbolIcon class="h-5 w-5 inline" /> Exit
+      </BorderlessButton>
+    </div>
   </div>
 </template>
 
