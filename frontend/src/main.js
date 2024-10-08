@@ -30,6 +30,7 @@ const pinia = createPinia()
 const app = createApp(MainApp)
 
 const eventBus = mitt();
+window.eventBus = eventBus;
 app.provide('eventBus', eventBus);
 
 app.use(PrimeVue, {

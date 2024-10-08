@@ -14,13 +14,12 @@ import Dropdown from 'primevue/dropdown';
 import ProgressSpinner from "primevue/progressspinner";
 import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
+import OverlayPanel from "primevue/overlaypanel";
 
-import SearchFilterList from "../search/SearchFilterList.vue"
-import AddFilterMenu from "../search/AddFilterMenu.vue"
 import BorderlessButton from "../widgets/BorderlessButton.vue";
+import ReferenceHoverInfo from "../collections/ReferenceHoverInfo.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
-import { languages } from "../../utils/utils"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -31,6 +30,19 @@ const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const collectionStore = useCollectionStore()
 const toast = useToast()
+
+window.reference_clicked = function (dataset_id, item_id, event) {
+  appState.show_document_details([dataset_id, item_id])
+}
+
+window.reference_mouse_enter = function (dataset_id, item_id, event) {
+  window.eventBus.emit("reference_mouse_enter", {dataset_id, item_id, event})
+}
+
+window.reference_mouse_leave = function (dataset_id, item_id, event) {
+  window.eventBus.emit("reference_mouse_leave", {dataset_id, item_id, event})
+}
+
 </script>
 
 <script>
@@ -45,6 +57,8 @@ export default {
       edit_mode: false,
 
       show_settings_dialog: false,
+      selected_citation_dataset_id: null,
+      selected_citation_item_id: null,
     }
   },
   computed: {
@@ -77,6 +91,35 @@ export default {
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
+    text_with_links() {
+      if (!this.writing_task || !this.writing_task.text) {
+        return 'No text yet'
+      }
+      let text = this.writing_task.text;
+      const regex = /\[([0-9]+),\s([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\]/g;
+      let match;
+      let i = 0;
+      while ((match = regex.exec(text)) !== null) {
+        i++
+        try {
+          const dataset_id = match[1]
+          const item_id = match[2]
+          const item = this.writing_task.additional_results.reference_metadata[dataset_id][item_id]
+          const rendering = this.appStateStore.datasets[dataset_id].schema.result_list_rendering
+          const title = rendering.title(item)
+          const replacement = `<span \
+            onmouseenter="reference_mouse_enter('${dataset_id}', '${item_id}', event); return false;" \
+            onmouseleave="reference_mouse_leave('${dataset_id}', '${item_id}', event); return false;" \
+            onclick="reference_clicked('${dataset_id}', '${item_id}', event); return false;" \
+            class="text-sky-700 cursor-pointer">[${i}]</span>`;
+          text = text.replace(match[0], replacement);
+        } catch (error) {
+          console.error(error)
+          text = text.replace(match[0], `[${i}]`);
+        }
+      }
+      return marked.parse(text)
+    },
   },
   watch: {
     edit_mode(new_val, old_val) {
@@ -99,6 +142,18 @@ export default {
     })
     this.eventBus.on("agent_stopped", () => {
       this.get_writing_task()
+    })
+    this.eventBus.on("reference_mouse_enter", ({dataset_id, item_id, event}) => {
+      // TODO: this is not unregistered when the component is destroyed
+      if (!dataset_id || !item_id || !event) {
+        return
+      }
+      this.selected_citation_dataset_id = dataset_id
+      this.selected_citation_item_id = item_id
+      this.$refs.citation_tooltip?.toggle(event)
+    })
+    this.eventBus.on("reference_mouse_leave", ({dataset_id, item_id, event}) => {
+      this.$refs.citation_tooltip?.hide()
     })
   },
   methods: {
@@ -232,7 +287,7 @@ export default {
         v-model="writing_task.text"
         class="w-full h-[300px] rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
       <div v-if="!edit_mode" class="w-full h-full">
-        <div v-html="marked.parse(writing_task.text || 'No text yet') "
+        <div v-html="text_with_links"
           class="w-full h-full text-sm use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
       </div>
       <button @click="edit_mode = !edit_mode"
@@ -243,6 +298,13 @@ export default {
       </button>
     </div>
 
+    <OverlayPanel ref="citation_tooltip">
+      <ReferenceHoverInfo
+        class="w-[500px]"
+        :dataset_id="selected_citation_dataset_id"
+        :item_id="selected_citation_item_id">
+      </ReferenceHoverInfo>
+    </OverlayPanel>
 
     <Dialog v-model:visible="show_settings_dialog" modal header="Writing Task">
 

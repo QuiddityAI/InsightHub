@@ -1,3 +1,4 @@
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import datetime
 import json
@@ -24,8 +25,11 @@ from ..groq_client import GROQ_MODELS, get_groq_response_using_history
 from ..prompts import table_cell_prompt, writing_task_prompt, search_question_prompt, item_relevancy_prompt
 from .. import prompts
 from ..notifier import default_notifier
+from ..utils import DotDict
 
 from .other_views import is_from_backend
+
+from legacy_backend.logic.search_common import get_document_details_by_id, get_serialized_dataset_cached
 
 
 @csrf_exempt
@@ -1067,6 +1071,19 @@ def _execute_writing_task(task):
     #response_text = "n/a"
     # logging.warning(response_text)
 
+    assert response_text is not None
+    used_references = []
+    for i, reference in enumerate(references):
+        if f"[{i + 1}]" in response_text:
+            used_references.append(reference)
+            response_text = response_text.replace(f"[{i + 1}]", f"[{reference[0]}, {reference[1]}]")
+
+    metadata = defaultdict(dict)
+    for reference in used_references:
+        dataset = DotDict(get_serialized_dataset_cached(reference[0]))
+        item = get_document_details_by_id(reference[0], reference[1], tuple(dataset.schema.result_list_rendering.required_fields))
+        metadata[reference[0]][reference[1]] = item
+
     if not task.previous_versions:
         task.previous_versions = []  # type: ignore
     task.previous_versions.append({
@@ -1080,6 +1097,7 @@ def _execute_writing_task(task):
     task.additional_results = {
         'used_prompt': full_prompt,
         'references': references,
+        'reference_metadata': metadata,
     }
     task.is_processing = False
     task.save()
