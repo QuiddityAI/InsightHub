@@ -157,8 +157,8 @@ export default {
     quick_question(question) {
       const options = {
         prompt: question,
-        source_fields: ['_descriptive_text_fields'],
-        module: 'groq_llama_3_70b',
+        source_fields: ['_descriptive_text_fields', '_all_columns'],
+        module: 'openai_gpt_4_o',
         use_all_items: true,
       }
       this.add_writing_task(question, options, true)

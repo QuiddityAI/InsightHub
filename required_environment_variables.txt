@@ -59,3 +59,5 @@ TELEGRAM_TOKEN=
 TELEGRAM_CHAT_ID=
 
 LLM temperature can be set using LLM_TEMPERATURE env var
+
+USE_SCRAPER_API_KEY=

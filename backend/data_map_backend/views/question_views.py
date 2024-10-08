@@ -4,6 +4,8 @@ import json
 import logging
 import threading
 import time
+import os
+import re
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -561,6 +563,42 @@ def _scrape_website_module(item, source_fields):
             "is_computed": True,
             "is_manually_edited": False,
         }
+
+    payload = {
+        "url": url,
+        "format": "markdown"
+    }
+    headers = {
+        "Authorization": f"Bearer {os.getenv('USE_SCRAPER_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+
+    scraper_url = "https://api.usescraper.com/scraper/scrape"
+    response = requests.request("POST", scraper_url, json=payload, headers=headers)
+    text = response.json().get("text", "")
+    text = re.sub(r'(#+)(\S)', r'\1 \2', text)
+
+    return {
+        "collapsed_label": f"<i>Website Content<br>({len(text.split())} words)</i>",
+        "value": text,
+        "changed_at": timezone.now().isoformat(),
+        "is_ai_generated": False,
+        "is_computed": True,
+        "is_manually_edited": False,
+    }
+
+
+def _scrape_website_module_plain(item, source_fields):
+    import requests
+    url = item.get(source_fields[0], "")
+    if not url:
+        return {
+            "value": "No URL found",
+            "changed_at": timezone.now().isoformat(),
+            "is_ai_generated": False,
+            "is_computed": True,
+            "is_manually_edited": False,
+        }
     headers = {'headers':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:51.0) Gecko/20100101 Firefox/51.0'}
     result = requests.get(url, headers=headers)
     html = result.text
@@ -958,8 +996,11 @@ def _execute_writing_task_thread(task):
 
 
 def _execute_writing_task(task):
-    source_column_identifiers = [name.replace("_column__", "") for name in task.source_fields if name.startswith("_column__")]
-    source_columns = CollectionColumn.objects.filter(collection=task.collection, identifier__in=source_column_identifiers)
+    if '_all_columns' in task.source_fields:
+        source_columns = CollectionColumn.objects.filter(collection=task.collection)
+    else:
+        source_column_identifiers = [name.replace("_column__", "") for name in task.source_fields if name.startswith("_column__")]
+        source_columns = CollectionColumn.objects.filter(collection=task.collection, identifier__in=source_column_identifiers)
     contexts = []
     items = task.collection.collectionitem_set.all() if task.use_all_items else [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
     references = []
