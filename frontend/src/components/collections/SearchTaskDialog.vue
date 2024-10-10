@@ -37,7 +37,7 @@ export default {
         dataset_id: null,
         auto_set_filters: true,
         query: '',
-        result_language: 'en',
+        result_language: null,
         retrieval_mode: 'hybrid',
         ranking_settings: null,
         related_organization_id: null,
@@ -46,7 +46,7 @@ export default {
         dataset_id: null,
         auto_set_filters: true,
         query: '',
-        result_language: 'en',
+        result_language: null,
         retrieval_mode: 'hybrid',
         ranking_settings: null,
         related_organization_id: null,
@@ -84,7 +84,9 @@ export default {
       return groups
     },
     available_languages() {
-      return this.appStateStore.available_language_filters.map(item => languages.find(lang => lang.code == item[1]))
+      const dataset_languages = this.appStateStore.available_language_filters.map(item => languages.find(lang => lang.code == item[1]))
+      const any_language = [{ name: 'any', code: null, flag: '🌍' }]
+      return any_language.concat(dataset_languages)
     },
     query_uses_operators_and_meaning() {
       const uses_meaning = ["vector", "hybrid"].includes(this.new_settings.retrieval_mode)
@@ -114,6 +116,7 @@ export default {
       this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.last_search_task))
     } else {
       this.new_settings = JSON.parse(JSON.stringify(this.settings_template))
+      this.new_settings.result_language = this.appStateStore.settings.search.result_language
     }
 
     this.new_settings.ranking_settings = this.appStateStore.settings.search.ranking_settings
@@ -130,6 +133,9 @@ export default {
     'appStateStore.settings.search.ranking_settings'(new_val, old_val) {
       // TODO: change this?
       this.new_settings.ranking_settings = new_val
+    },
+    'appStateStore.settings.search.result_language'(new_val, old_val) {
+      this.new_settings.result_language = new_val
     },
   },
   methods: {
@@ -252,9 +258,9 @@ export default {
         Meaning / hybrid search is not yet available for this dataset.
       </Message>
 
-      <Message v-if="!new_settings.auto_set_filters && using_meaning_for_non_english_search" class="" :closable="false">
+      <!-- <Message v-if="!new_settings.auto_set_filters && using_meaning_for_non_english_search" class="" :closable="false">
         Meaning / hybrid search only works for English queries.
-      </Message>
+      </Message> -->
 
       <div v-if="!new_settings.auto_set_filters && query_uses_operators_and_meaning" class="text-xs text-gray-400">
         The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br>
