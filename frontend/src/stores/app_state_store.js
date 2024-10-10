@@ -72,6 +72,9 @@ export const useAppStateStore = defineStore("appState", {
 
       // selection:
       selected_document_ds_and_id: null,  // (dataset_id, item_id)
+      selected_document_relevant_parts: [],
+      selected_document_query: "",
+      selected_document_initial_item: null,
       document_details_dialog_is_visible: false,
 
       // collections:
@@ -623,6 +626,9 @@ export const useAppStateStore = defineStore("appState", {
 
       // selection:
       this.selected_document_ds_and_id = null
+      this.selected_document_relevant_parts = []
+      this.selected_document_query = ""
+      this.selected_document_initial_item = null
       this.document_details_dialog_is_visible = false
       this.mapState.reset_visibility_filters()
 
@@ -1296,8 +1302,11 @@ export const useAppStateStore = defineStore("appState", {
       this.set_two_dimensional_projection()
       this.request_search_results()
     },
-    show_document_details(dataset_and_item_id) {
+    show_document_details(dataset_and_item_id, initial_item=null, relevant_parts=null, query=null) {
+      this.selected_document_relevant_parts = relevant_parts
+      this.selected_document_query = query
       this.selected_document_ds_and_id = dataset_and_item_id
+      this.selected_document_initial_item = initial_item
       const pointIdx = this.mapState.per_point.item_id.indexOf(dataset_and_item_id)
       this.document_details_dialog_is_visible = true
       if (pointIdx !== -1) {
@@ -1309,6 +1318,9 @@ export const useAppStateStore = defineStore("appState", {
     },
     close_document_details() {
       this.selected_document_ds_and_id = null
+      this.selected_document_relevant_parts = []
+      this.selected_document_query = ""
+      this.selected_document_initial_item = null
       this.mapState.markedPointIdx = -1
     },
     set_polar_projection() {

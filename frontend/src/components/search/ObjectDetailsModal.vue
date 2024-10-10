@@ -43,6 +43,7 @@ export default {
     }
   },
   computed: {
+    ...mapStores(useAppStateStore),
     ...mapStores(useMapStateStore),
     relevant_chunks() {
       return this.item?._relevant_parts?.filter((part) => part.origin === "vector_array") || []
@@ -66,7 +67,7 @@ export default {
         relevant_parts: this.item._relevant_parts,
         get_text_search_highlights: true,
         top_n_full_text_chunks: 3,
-        query: this.mapStateStore.map_parameters?.search.all_field_query,
+        query: this.appStateStore.selected_document_query,
         include_related_collection_items: true,
       }
       this.loading_item = true
@@ -141,7 +142,8 @@ export default {
   },
   watch: {
     initial_item() {
-      this.item = this.initial_item
+      this.item = {...this.initial_item, ...this.appStateStore.selected_document_initial_item}
+      this.item._relevant_parts = this.appStateStore.selected_document_relevant_parts
       this.checking_for_fulltext = false
       this.checked_for_fulltext = false
       this.fulltext_url = false
@@ -197,7 +199,7 @@ export default {
           </p>
 
           <p ref="body_text" class="mt-2 text-sm text-gray-700 custom-cite-style" :class="{ 'line-clamp-[12]': body_text_collapsed }"
-            v-html="loading_item ? 'loading...' : rendering ? highlight_words_in_text(rendering.body(item), mapState.map_parameters?.search.all_field_query.split(' ')) || '-' : null"></p>
+            v-html="(rendering && rendering.body(item)) ? highlight_words_in_text(rendering.body(item), appState.selected_document_query.split(' ')) : (loading_item ? 'loading...' : '-')"></p>
           <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
             <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500 hover:text-blue-500">
               {{ body_text_collapsed ? "Show more" : "Show less" }}
@@ -231,7 +233,7 @@ export default {
             </div>
           </div>
           <div class="mt-1 text-gray-700 text-xs"
-            v-html="highlight_words_in_text(relevant_chunk.value.text, mapState.map_parameters.search.all_field_query.split(' '))"></div>
+            v-html="highlight_words_in_text(relevant_chunk.value.text, appState.selected_document_query.split(' '))"></div>
           <a :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_chunk.value.page}`" target="_blank"
             class="mt-1 text-gray-500 text-xs">Open PDF at this page</a>
         </div>

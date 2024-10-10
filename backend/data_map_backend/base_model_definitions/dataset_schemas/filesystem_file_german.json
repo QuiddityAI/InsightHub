@@ -4,7 +4,7 @@
   "entity_name_plural": "files",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-10-10T15:34:06.651Z",
+  "changed_at": "2024-10-10T17:22:29.918Z",
   "primary_key": "full_path",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -254,9 +254,9 @@
     },
     {
       "identifier": "full_text",
-      "name": null,
+      "name": "full text",
       "created_at": "2024-06-24T11:12:19.458Z",
-      "changed_at": "2024-10-10T08:00:46.620Z",
+      "changed_at": "2024-10-10T17:22:29.920Z",
       "schema": "filesystem_file_german",
       "description": null,
       "field_type": "TEXT",
@@ -280,9 +280,9 @@
     },
     {
       "identifier": "full_text_chunks",
-      "name": null,
+      "name": "full text chunks",
       "created_at": "2024-06-24T11:26:59.057Z",
-      "changed_at": "2024-10-10T08:00:46.622Z",
+      "changed_at": "2024-10-10T17:22:29.920Z",
       "schema": "filesystem_file_german",
       "description": null,
       "field_type": "CHUNK",

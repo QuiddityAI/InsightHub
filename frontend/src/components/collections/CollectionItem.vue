@@ -77,6 +77,9 @@ export default {
       }
       return this.size_mode || "full"
     },
+    original_query() {
+      return this.collectionStore.collection.search_sources.find(source => source.id_hash === this.collection_item.search_source_id)?.query || ""
+    },
   },
   watch: {
     dataset_id() {
@@ -136,7 +139,7 @@ export default {
           <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
           <button class="min-w-0 text-left text-[15px] font-serif font-bold leading-tight break-words text-sky-700 hover:underline"
             v-html="rendering.title(item)"
-            @click="appState.show_document_details([dataset_id, item_id])">
+            @click="appState.show_document_details([dataset_id, item_id], collection_item.metadata, collection_item.relevant_parts, original_query)">
           </button>
           <div class="flex-1"></div>
           <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"

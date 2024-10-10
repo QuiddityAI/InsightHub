@@ -76,7 +76,7 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 
-    add_items_from_active_sources(collection, user_id, after_columns_were_processed_internal)
+    add_items_from_active_sources(collection, user_id, is_new_collection, after_columns_were_processed_internal)
 
 
 def _auto_approve_items(collection: DataCollection, new_items: Iterable[CollectionItem], search_task: SearchTaskSettings):
@@ -121,13 +121,13 @@ def exit_search_mode(collection: DataCollection, class_name: str):
     collection.save()
 
 
-def add_items_from_active_sources(collection: DataCollection, user_id: int, after_columns_were_processed: Callable | None=None) -> int:
+def add_items_from_active_sources(collection: DataCollection, user_id: int, is_new_collection: bool = False, after_columns_were_processed: Callable | None=None) -> int:
     new_items = []
     for source in collection.search_sources:
         source = SearchSource(**source)
         if not source.is_active:
             continue
-        new_items.extend(add_items_from_source(collection, source))
+        new_items.extend(add_items_from_source(collection, source, is_new_collection))
 
     def in_thread():
         logging.warning("add_items_from_active_sources: in_thread")
@@ -144,7 +144,7 @@ def add_items_from_active_sources(collection: DataCollection, user_id: int, afte
     return len(new_items)
 
 
-def add_items_from_source(collection: DataCollection, source: SearchSource) -> Iterable[CollectionItem]:
+def add_items_from_source(collection: DataCollection, source: SearchSource, is_new_collection: bool = False) -> Iterable[CollectionItem]:
     params = {
         'search': {
             'dataset_ids': [source.dataset_id],
@@ -161,7 +161,7 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> I
             'result_list_items_per_page': source.page_size,
             'result_list_current_page': source.retrieved // source.page_size if source.retrieved else 0,
             'max_sub_items_per_item': 1,
-            'return_highlights': False,
+            'return_highlights': True,
             'use_bolding_in_highlights': True,
             # TODO: add support for vector search, similar to item, similar to collection
         }
@@ -169,7 +169,8 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> I
     results = get_search_results(json.dumps(params), 'list')
     items_by_dataset = results['items_by_dataset']
     new_items = []
-    existing_item_ids = CollectionItem.objects.filter(collection=collection, dataset_id=source.dataset_id, item_id__in=[ds_and_item_id[1] for ds_and_item_id in results['sorted_ids']]).values_list('item_id', flat=True)
+    if not is_new_collection:
+        existing_item_ids = CollectionItem.objects.filter(collection=collection, dataset_id=source.dataset_id, item_id__in=[ds_and_item_id[1] for ds_and_item_id in results['sorted_ids']]).values_list('item_id', flat=True)
     for i, ds_and_item_id in enumerate(results['sorted_ids']):
         if ds_and_item_id[1] in existing_item_ids:
             continue
@@ -185,6 +186,7 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> I
             item_id=ds_and_item_id[1],
             metadata=value,
             search_score=1 / (source.retrieved + i + 1),
+            relevant_parts=value.get('_relevant_parts', []),
         )
         new_items.append(item)
     CollectionItem.objects.bulk_create(new_items)
