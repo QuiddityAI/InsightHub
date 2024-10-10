@@ -46,3 +46,54 @@ If it is relevant to only some aspects, the score should be 0.5. If it is not re
 
 Respond directly with the JSON object. Do not summarize the question again.
 """
+
+item_relevancy_prompt_de = """\
+Du bist ein hilfreicher Assistent, um die Relevanz eines Dokuments für eine Frage oder Suchanfrage zu bewerten.
+Das Dokument beginnt mit <document> und endet mit </document>.
+
+<document>
+{{ document }}
+</document>
+
+Bewerte, ob und wie das Dokument relevant für die folgende Frage oder Suchanfrage ist:
+
+"{{ expression }}"
+
+Antworte mit einem JSON-Objekt im folgenden Format:
+{
+    "document_type": "Paper über einen neuen Algorithmus",
+    "relevant_content": "- wichtiger Punkt 1\\n- wichtiger Punkt 2\\n- wichtiger Punkt 3",
+    "irrelevance_reasons": "- Grund 1\\n- Grund 2",
+    "is_relevant": true,
+    "relevance_score": 0.8,
+}
+
+Das Feld "document_type" sollte den abstrakten Typ des Dokuments enthalten, z.B. "Paper über einen neuen Algorithmus", "Studie zum Vergleich zweier Methoden", "Webseite eines Unternehmens", "Bericht über eine neue Entdeckung".
+Wiederhole nicht den Titel des Dokuments oder die Suchanfrage. Halte es unter 10 Wörtern.
+
+Das Feld "relevant_content" sollte die relevanten Teile des Dokuments in drei Aufzählungspunkten zusammenfassen.
+Hebe hervor, was das Dokument besonders macht.
+Wenn das Dokument nicht relevant ist, lasse dieses Feld leer.
+
+Das Feld "irrelevance_reasons" kann bis zu drei Aspekte enthalten, warum das Dokument nicht relevant für die Frage oder Teile davon ist.
+Wenn alle Aspekte abgedeckt sind, lasse dieses Feld leer.
+
+Für "relevant_content" und "irrelevance_reasons":
+Antworte mit sehr kurzen Aufzählungspunkten im Markdown-Format.
+Jeder Aufzählungspunkt sollte höchstens aus wenigen Wörtern oder einer kurzen Phrase bestehen.
+Du kannst wichtige Wörter mit zwei Sternchen hervorheben.
+Schreibe chemische und mathematische Formeln im LaTeX-Mathematikformat und setze sie in Dollarzeichen.
+Zum Beispiel sollte ein mathematischer Ausdruck wie e = mc^2 als $e = mc^2$ geschrieben werden.
+Eine chemische Formel wie Wasser (H2O) sollte als $H_2O$ geschrieben werden (dies ist kein Teil des Dokuments, es ist nur ein Beispiel).
+
+Der Inhalt der Felder soll in deutsche Sprache beantwortet werden.
+
+Das Feld "is_relevant" sollte auf "true" gesetzt werden, wenn das Dokument im Allgemeinen relevant für die Frage ist, und auf "false" gesetzt werden, wenn dies nicht der Fall ist.
+
+Das Feld "relevance_score" sollte eine Zahl zwischen 0 und 1 sein, die die Relevanz des Dokuments für die Frage angibt.
+Wenn das Dokument in allen Aspekten relevant ist, sollte die Punktzahl 1 sein.
+Wenn es nur teilweise relevant ist, sollte der Wert 0.5 betragen.
+Wenn es überhaupt nicht relevant ist, sollte der Wert 0 sein.
+
+Antworte direkt mit dem JSON-Objekt. Wiederhole die Frage nicht.
+"""

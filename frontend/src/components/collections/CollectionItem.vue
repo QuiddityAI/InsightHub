@@ -58,6 +58,10 @@ export default {
       }
     },
     is_irrelevant_according_to_ai() {
+      if (this.collection_item.relevance >= 2) {
+         // overriden by user or other AI judgment
+        return false
+      }
       if (this.collection_item?.column_data && this.collection_item.column_data['relevance']) {
         const value = this.collection_item.column_data['relevance'].value
         if (typeof value === "object") {

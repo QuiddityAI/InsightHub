@@ -84,6 +84,7 @@ def _auto_approve_items(collection: DataCollection, new_items: Iterable[Collecti
     if not relevance_columns:
         return
     changed_items = []
+    fallback_items = []
     relevant_items = []
     for item in new_items:
         for column in relevance_columns:  # should be only one in most cases
@@ -96,8 +97,17 @@ def _auto_approve_items(collection: DataCollection, new_items: Iterable[Collecti
                 is_relevant = value.get('is_relevant')
                 if is_relevant:
                     relevant_items.append([item, value.get('relevance_score', 0.5)])
+                elif value.get('relevance_score', 0.0) > 0.0:
+                    fallback_items.append([item, value.get('relevance_score', 0.5)])
     if not relevant_items:
-        return
+        if fallback_items:
+            # if there are not truly relevant items, but some with a relevance score > 0, we take the best one to have at least one
+            # (sometimes even items with a low relevance score can be useful by using their fulltext)
+            if min([x[1] for x in fallback_items]) != max([x[1] for x in fallback_items]):
+                sorted_items = sorted(fallback_items, key=lambda x: x[1], reverse=True)
+            relevant_items = fallback_items[:1]
+        else:
+            return
     if min([x[1] for x in relevant_items]) != max([x[1] for x in relevant_items]):
         sorted_items = sorted(relevant_items, key=lambda x: x[1], reverse=True)
     else:
@@ -169,6 +179,7 @@ def add_items_from_source(collection: DataCollection, source: SearchSource, is_n
     results = get_search_results(json.dumps(params), 'list')
     items_by_dataset = results['items_by_dataset']
     new_items = []
+    existing_item_ids = []
     if not is_new_collection:
         existing_item_ids = CollectionItem.objects.filter(collection=collection, dataset_id=source.dataset_id, item_id__in=[ds_and_item_id[1] for ds_and_item_id in results['sorted_ids']]).values_list('item_id', flat=True)
     for i, ds_and_item_id in enumerate(results['sorted_ids']):

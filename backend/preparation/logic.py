@@ -79,7 +79,7 @@ def prepare_for_classic_search(collection: DataCollection, settings: CreateColle
 
 def prepare_for_assisted_search(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     assert settings.query is not None
-    create_relevance_column(collection, settings.query)
+    create_relevance_column(collection, settings.query, settings.result_language)
 
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
@@ -98,7 +98,7 @@ def prepare_for_assisted_search(collection: DataCollection, settings: CreateColl
 def prepare_for_question(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     logging.warning("prepare_for_question: start")
     assert settings.query is not None
-    create_relevance_column(collection, settings.query)
+    create_relevance_column(collection, settings.query, settings.result_language)
 
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,

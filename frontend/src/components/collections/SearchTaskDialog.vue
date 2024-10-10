@@ -114,6 +114,8 @@ export default {
   mounted() {
     if (this.collectionStore.collection.last_search_task && Object.keys(this.collectionStore.collection.last_search_task).length > 0) {
       this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.last_search_task))
+      this.new_settings.auto_approve = false
+      this.new_settings.exit_search_mode = false
     } else {
       this.new_settings = JSON.parse(JSON.stringify(this.settings_template))
       this.new_settings.result_language = this.appStateStore.settings.search.result_language
