@@ -3,7 +3,10 @@ import {
   TrashIcon,
   HandThumbUpIcon,
   HandThumbDownIcon,
+  ArrowRightIcon,
 } from "@heroicons/vue/24/outline"
+
+import Image from "primevue/image"
 
 import BorderlessButton from "../widgets/BorderlessButton.vue"
 
@@ -65,6 +68,9 @@ export default {
       }
       return false
     },
+    is_candidate() {
+      return this.collection_item.relevance >= -1 && this.collection_item.relevance <= 1
+    },
     actual_size_mode() {
       if (this.is_irrelevant_according_to_ai) {
         return "small"
@@ -120,7 +126,7 @@ export default {
     class="flex flex-col gap-3 pb-2 pt-4 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md"
     :class="{'opacity-60': is_irrelevant_according_to_ai}">
 
-    <div class="flex flex-row">
+    <div class="flex flex-row gap-2">
 
       <!-- Left side (content, not image) -->
       <div class="flex-1 min-w-0 flex flex-col gap-1">
@@ -133,10 +139,6 @@ export default {
             @click="appState.show_document_details([dataset_id, item_id])">
           </button>
           <div class="flex-1"></div>
-          <span v-if="collection_item.relevance >= -1 && collection_item.relevance <= 1"
-            class="ml-2 text-xs text-orange-300">
-            Candidate
-          </span>
           <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"
             v-tooltip.bottom="{ value: tag.tooltip, showDelay: 500 }"
             class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
@@ -145,7 +147,7 @@ export default {
         </div>
 
         <!-- Subtitle -->
-        <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
+        <p class="mt-1 text-xs break-words leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
 
         <!-- Body -->
         <p ref="body_text" v-if="actual_size_mode === 'full'"
@@ -158,7 +160,7 @@ export default {
 
       <!-- Right side (image) -->
       <div v-if="rendering.image(item)" class="flex-none w-24 flex flex-col justify-center">
-        <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />
+        <Image class="w-full rounded-lg shadow-md" :src="rendering.image(item)" preview />
       </div>
     </div>
 
@@ -194,6 +196,11 @@ export default {
 
         <div class="flex-1"></div>
 
+        <div v-if="is_candidate" class="mr-2 h-5 w-5 text-orange-400"
+            v-tooltip.bottom="{value: 'This item is temporary. Save it, otherwise it will be removed.'}">
+          <ArrowRightIcon class="w-full h-full">
+          </ArrowRightIcon>
+        </div>
         <BorderlessButton
           hover_color="hover:text-green-500" highlight_color="text-green-500"
           :highlighted="collection_item.relevance > 0" :default_padding="false" class="p-1"

@@ -9,6 +9,8 @@ import hashlib
 import threading
 import datetime
 import csv
+import json
+import subprocess
 from dataclasses import asdict
 
 from werkzeug.datastructures import FileStorage
@@ -499,34 +501,71 @@ def _import_office_document(paths, parameters, on_progress=None) -> tuple[list[d
     if on_progress:
         on_progress(0.1)
     parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
+    failed_files = [{"filename": pdferror.file, "reason": pdferror.exc} for pdferror in failed]
 
     if on_progress:
         on_progress(0.5)
-    failed_files = [{"filename": pdferror.file, "reason": pdferror.exc} for pdferror in failed]
+
     items = []
     for parsed_file, sub_path in zip(parsed, paths):
         file_metainfo = parsed_file.metainfo
+
+        info_dict = file_metainfo.__dict__
+        info_dict.pop('file_features')
+        # -> empty for now
+
         if not file_metainfo.title and not len(parsed_file.chunks):
             failed_files.append({"filename": sub_path, "reason": "no title or text found, skipping"})
             continue
 
-        full_text_original_chunks = [asdict(chunk) for chunk in parsed_file.chunks]
-        full_text = " ".join([chunk['text'] for chunk in full_text_original_chunks])
+        full_text_chunks = [asdict(chunk) for chunk in parsed_file.chunks]
+        for chunk in full_text_chunks:
+            chunk.pop('chunk_type')
+        full_text = " ".join([chunk['text'] for chunk in full_text_chunks])
 
+        file_name = sub_path.split("/")[-1]
         items.append({
-            "id": file_metainfo.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
-            "doi": file_metainfo.doi,
-            "title": file_metainfo.title.strip() or sub_path.split("/")[-1],
+            "title": file_metainfo.title.strip() or file_name,
             "abstract": file_metainfo.abstract,
-            "authors": file_metainfo.authors,
-            "journal": "",
-            "publication_year": None,
-            "cited_by": 0,
-            "file_path": sub_path,  # relative to UPLOADED_FILES_FOLDER
-            "thumbnail_path": None,  # relative to UPLOADED_FILES_FOLDER
+            "created_at": None,
+            "file_type": sub_path.split(".")[-1],
+            "language": "de",  # TODO: detect language
+            "uploaded_file_path": sub_path,  # relative to UPLOADED_FILES_FOLDER
+            "thumbnail_path": get_thumbnail_office(sub_path),  # relative to UPLOADED_FILES_FOLDER
             "full_text": full_text,
-            "full_text_original_chunks": full_text_original_chunks,
+            "full_text_chunks": full_text_chunks,
+            "file_name": file_name,
+            "path": sub_path.replace(file_name, ""),  # TODO: should be original path from file system
+            "full_path": sub_path,  # TODO: should be original path from file system
         })
         if on_progress:
             on_progress(0.5 + (len(items) / len(paths)) * 0.5)
     return items, failed_files
+
+
+def get_thumbnail_office(sub_path) -> str | None:
+    suffix = sub_path.split('.')[-1]
+    file_path = f'{UPLOADED_FILES_FOLDER}/{sub_path}'
+    folder = os.path.dirname(file_path)
+
+    try:
+        subprocess.run([
+            'libreoffice', '--headless',
+            '--convert-to','pdf:writer_pdf_Export:{"PageRange":{"type":"string","value":"1"}}',
+            '--outdir', folder, file_path
+            ], check=True)
+        pdf_path = file_path.replace(suffix, 'pdf')
+    except Exception as e:
+        logging.warning(f"Failed to convert office document to pdf: {e}")
+        return None
+
+    try:
+        pdf = pdfium.PdfDocument(pdf_path)
+        first_page = pdf[0]
+        image = first_page.render(scale=1).to_pil()
+        thumbnail_path = f'{sub_path}.thumbnail.jpg'
+        image.save(f'{UPLOADED_FILES_FOLDER}/{thumbnail_path}', 'JPEG', quality=60)
+    except Exception as e:
+        logging.warning(f"Failed to create thumbnail for {sub_path}: {e}")
+        thumbnail_path = None
+    return thumbnail_path

@@ -3321,7 +3321,7 @@ develop = false
 type = "git"
 url = "https://trel725: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@github.com/Trel725/pdferret.git"
 reference = "HEAD"
-resolved_reference = "e33e5c264e9e99ca18b4ce44372163683b5e6c1c"
+resolved_reference = "b82d4c80c004bc5871981bd3168e0abbfc90b50d"
 
 [[package]]
 name = "pillow"

@@ -473,7 +473,7 @@ def get_default_detail_view_rendering():
 class DatasetSchema(models.Model):
     identifier = models.CharField(
         verbose_name="Identifier",
-        help_text="Do not change this after being used elsewhere",
+        help_text="Do not change this after being used elsewhere (or after creating fields, its the PK)",
         max_length=200,
         primary_key=True,
         unique=True,

@@ -185,14 +185,14 @@ export default {
       <div class="flex flex-row w-full mb-3">
         <div class="flex-1 flex min-w-0 flex-col w-full">
 
-          <div class="flex flex-row mb-1">
+          <div class="flex flex-row min-w-0 mb-1">
             <img v-if="rendering ? rendering.icon(item) : false" :src="rendering.icon(item)"
               class="h-5 w-5 mr-2" />
-            <p class="text-md font-medium leading-tight text-gray-900"
+            <p class="min-w-0 text-md font-medium leading-tight break-words text-gray-900"
               v-html="rendering ? rendering.title(item) : ''"></p>
           </div>
 
-          <p class="mt-1 flex-none text-xs leading-normal text-gray-500"
+          <p class="mt-1 min-w-0 flex-none text-xs leading-normal break-words text-gray-500"
             v-html="rendering ? rendering.subtitle(item) : ''">
           </p>
 
