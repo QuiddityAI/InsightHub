@@ -170,7 +170,7 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> I
     items_by_dataset = results['items_by_dataset']
     new_items = []
     existing_item_ids = CollectionItem.objects.filter(collection=collection, dataset_id=source.dataset_id, item_id__in=[ds_and_item_id[1] for ds_and_item_id in results['sorted_ids']]).values_list('item_id', flat=True)
-    for ds_and_item_id in results['sorted_ids']:
+    for i, ds_and_item_id in enumerate(results['sorted_ids']):
         if ds_and_item_id[1] in existing_item_ids:
             continue
         value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
@@ -184,7 +184,7 @@ def add_items_from_source(collection: DataCollection, source: SearchSource) -> I
             dataset_id=ds_and_item_id[0],
             item_id=ds_and_item_id[1],
             metadata=value,
-            search_score=value['_score'],
+            search_score=1 / (source.retrieved + i + 1),
         )
         new_items.append(item)
     CollectionItem.objects.bulk_create(new_items)
