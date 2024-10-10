@@ -112,6 +112,14 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
                 result = get_relevant_parts_of_item_using_query_vector(
                     dataset, item_id, chunk_vector_field_name, query_vector, score_threshold,
                     max_selected_chunks, rerank=True, query=question, source_texts=chunks)
+
+                include_beginning_and_end = (not max_characters_per_field or max_characters_per_field >= 5000) and len(chunks) > max_selected_chunks
+                if include_beginning_and_end:
+                    # being generous and including beginning and end of full text as those contain important information usually
+                    beginning = " ".join([chunk.get('text', '') for chunk in chunks[:3]])
+                    text += f'Beginning of Full Text:\n'
+                    text += f'{beginning}\n\n'
+
                 for part in result.get('_relevant_parts', []):
                     chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
                     this_chunk = chunks[part.get("index")].get('text', '')
@@ -123,6 +131,11 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
                     text += f"    {relevant_text}\n\n"
                     if max_total_characters and len(text) >= max_total_characters:
                         break
+
+                if include_beginning_and_end:
+                    end = " ".join([chunk.get('text', '') for chunk in chunks[-3:]])
+                    text += f'End of Full Text:\n'
+                    text += f'{end}\n\n'
 
     if max_total_characters and len(text) > max_total_characters:
         text = text[:max_total_characters]

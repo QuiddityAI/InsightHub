@@ -29,6 +29,7 @@ from ..utils import DotDict
 
 from .other_views import is_from_backend
 
+from legacy_backend.logic.chat_and_extraction import get_item_question_context as get_item_question_context_native
 from legacy_backend.logic.search_common import get_document_details_by_id, get_serialized_dataset_cached
 
 
@@ -1016,7 +1017,7 @@ def _execute_writing_task(task):
         if item.field_type == FieldType.IDENTIFIER:
             assert item.dataset_id is not None
             assert item.item_id is not None
-            text = f"Document ID: {len(references) + 1}\n" + get_item_question_context(item.dataset_id, item.item_id, task.source_fields, task.prompt)
+            text = f"Document ID: {len(references) + 1}\n" + get_item_question_context_native(item.dataset_id, item.item_id, task.source_fields, task.prompt)['context']
             for additional_source_column in source_columns:
                 if not item.column_data:
                     continue
@@ -1034,7 +1035,7 @@ def _execute_writing_task(task):
     context = "\n\n".join(contexts)
 
     full_prompt = writing_task_prompt.replace("{{ context }}", context)
-    # logging.warning(prompt)
+    # logging.warning(full_prompt)
     history = [ { "role": "system", "content": full_prompt }, { "role": "user", "content": task.prompt }]
     cost_per_module = {
         'openai_gpt_3_5': 1.0,
