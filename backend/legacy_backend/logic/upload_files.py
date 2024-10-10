@@ -13,6 +13,7 @@ import json
 import subprocess
 from dataclasses import asdict
 
+from ninja import Schema
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 import pypdfium2 as pdfium
@@ -25,6 +26,7 @@ from ..database_client.text_search_engine_client import TextSearchEngineClient
 from ..database_client.django_client import get_dataset, get_import_converter, add_item_to_collection, get_service_usage, track_service_usage
 from ..logic.insert_logic import insert_many, update_database_layout
 from ..logic.local_map_cache import clear_local_map_cache
+from data_map_backend.groq_client import GROQ_MODELS, get_groq_response_using_history
 
 UPLOADED_FILES_FOLDER = "/data/quiddity_data/uploaded_files"
 
@@ -129,6 +131,11 @@ def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float
     upload_tasks[dataset_id][task_id]["progress"] = progress
 
 
+class UploadedFile(Schema):
+    local_path: str
+    original_filename: str
+
+
 def _store_files_and_import_them(dataset_id: int, import_converter_identifier: str, files: Iterable[File],
                  collection_id: int | None, collection_class: str | None, task_id: str,
                  user_id: int) -> tuple[list[tuple], list[str]]:
@@ -145,7 +152,7 @@ def _store_files_and_import_them(dataset_id: int, import_converter_identifier: s
     if len(files) > remaining_allowed_items:
         raise ValueError(f"Too many files, limit is {remaining_allowed_items}")
 
-    paths = []
+    paths: list[UploadedFile] = []
     failed_files = []
     for i, file in enumerate(files):
         if not file.name: continue
@@ -157,7 +164,7 @@ def _store_files_and_import_them(dataset_id: int, import_converter_identifier: s
         logging.warning(f"saving file: {file.name}")
         try:
             sub_path = _store_uploaded_file(file, dataset_id)
-            paths.append(sub_path)
+            paths.append(UploadedFile(local_path=sub_path, original_filename=file.name))
         except Exception as e:
             logging.warning(f"failed to save file: {e}")
             # print traceback
@@ -226,10 +233,10 @@ def _store_uploaded_file(file: File, dataset_id: int):
     return sub_path
 
 
-def _unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[str], list[str]]:
+def _unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[UploadedFile], list[str]]:
     assert file.name
     failed_files = []
-    paths = []
+    paths: list[UploadedFile] = []
     logging.warning(f"extracting archive file: {file.name}")
     is_tar = file.name.endswith(".tar.gz")
     tempfile = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}" + (".tar.gz" if is_tar else f".zip")
@@ -267,7 +274,7 @@ def _unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[str
                 failed_files.append({"filename": filename, "reason": str(e)})
                 sub_path = None
             if sub_path:
-                paths.append(sub_path)
+                paths.append(UploadedFile(local_path=sub_path, original_filename=filename))
     except Exception as e:
         logging.warning(f"failed to extract archive file: {e}")
         # print stacktrace
@@ -333,7 +340,7 @@ def get_import_converter_by_name(code_module_name: str) -> Callable:
     raise ValueError(f"import converter {code_module_name} not found")
 
 
-def _scientific_article_pdf(paths, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+def _scientific_article_pdf(paths: list[UploadedFile], parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
     from pdferret import PDFerret
     import nltk
     nltk.download('punkt')
@@ -341,15 +348,15 @@ def _scientific_article_pdf(paths, parameters, on_progress=None) -> tuple[list[d
     extractor = PDFerret(text_extractor="grobid")
     if on_progress:
         on_progress(0.1)
-    parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
+    parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}' for uploaded_file in paths])
     if on_progress:
         on_progress(0.5)
     failed_files = [{"filename": pdferror.file, "reason": pdferror.exc} for pdferror in failed]
     items = []
-    for parsed_pdf, sub_path in zip(parsed, paths):
+    for parsed_pdf, uploaded_file in zip(parsed, paths):
         pdf_metainfo = parsed_pdf.metainfo
         if not pdf_metainfo.title and not len(parsed_pdf.chunks):
-            failed_files.append({"filename": sub_path, "reason": "no title or text found, skipping"})
+            failed_files.append({"filename": uploaded_file.original_filename, "reason": "no title or text found, skipping"})
             continue
         # if not pdf_metainfo.title:
             # failed_files.append({"filename": sub_path, "reason": "no title found, still adding to database"})
@@ -364,25 +371,25 @@ def _scientific_article_pdf(paths, parameters, on_progress=None) -> tuple[list[d
         full_text = " ".join([chunk['text'] for chunk in full_text_original_chunks])
 
         try:
-            pdf = pdfium.PdfDocument(f'{UPLOADED_FILES_FOLDER}/{sub_path}')
+            pdf = pdfium.PdfDocument(f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}')
             first_page = pdf[0]
             image = first_page.render(scale=1).to_pil()
-            thumbnail_path = f'{sub_path}.thumbnail.jpg'
+            thumbnail_path = f'{uploaded_file.local_path}.thumbnail.jpg'
             image.save(f'{UPLOADED_FILES_FOLDER}/{thumbnail_path}', 'JPEG', quality=60)
         except Exception as e:
-            logging.warning(f"Failed to create thumbnail for {sub_path}: {e}")
+            logging.warning(f"Failed to create thumbnail for {uploaded_file.local_path}: {e}")
             thumbnail_path = None
 
         items.append({
-            "id": pdf_metainfo.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path)),
+            "id": pdf_metainfo.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, uploaded_file.local_path)),
             "doi": pdf_metainfo.doi,
-            "title": pdf_metainfo.title.strip() or sub_path.split("/")[-1],
+            "title": pdf_metainfo.title.strip() or uploaded_file.original_filename,
             "abstract": pdf_metainfo.abstract,
             "authors": pdf_metainfo.authors,
             "journal": "",
             "publication_year": pub_year,
             "cited_by": 0,
-            "file_path": sub_path,  # relative to UPLOADED_FILES_FOLDER
+            "file_path": uploaded_file.local_path,  # relative to UPLOADED_FILES_FOLDER
             "thumbnail_path": thumbnail_path,  # relative to UPLOADED_FILES_FOLDER
             "full_text": full_text,
             "full_text_original_chunks": full_text_original_chunks,
@@ -401,15 +408,15 @@ def _safe_to_int(s: str | None) -> int | None:
         return None
 
 
-def _scientific_article_csv(paths, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+def _scientific_article_csv(paths: list[UploadedFile], parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
     items = []
-    for sub_path in paths:
-        csv_reader = csv.DictReader(open(f'{UPLOADED_FILES_FOLDER}/{sub_path}', 'r'))
+    for uploaded_file in paths:
+        csv_reader = csv.DictReader(open(f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}', 'r'))
         for i, row in enumerate(csv_reader):
             row = {k.strip().lower(): v.strip() for k, v in row.items()}
             try:
                 items.append({
-                    "id": row.get("doi") or str(uuid.uuid5(uuid.NAMESPACE_URL, sub_path + str(i))),
+                    "id": row.get("doi") or str(uuid.uuid5(uuid.NAMESPACE_URL, uploaded_file.local_path + str(i))),
                     "doi": row.get("doi"),
                     "title": row.get("title"),
                     "abstract": row.get("abstract"),
@@ -423,7 +430,7 @@ def _scientific_article_csv(paths, parameters, on_progress=None) -> tuple[list[d
                     "full_text_original_chunks": [],
                 })
             except Exception as e:
-                logging.warning(f"Failed to parse row {i} in {sub_path}: {e}")
+                logging.warning(f"Failed to parse row {i} in {uploaded_file.local_path}: {e}")
         if on_progress:
             on_progress(0.5 + (len(items) / len(paths)) * 0.5)
 
@@ -456,14 +463,14 @@ def _scientific_article_form(raw_items, parameters, on_progress=None) -> tuple[l
     return items, []
 
 
-def _import_csv(paths, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+def _import_csv(paths: list[UploadedFile], parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
     items = []
     if '__all__' not in parameters.get("fields", []):
         # TODO: implement custom field set
         raise ValueError("custom field set not yet implemented for csv import")
 
-    for sub_path in paths:
-        csv_reader = csv.DictReader(open(f'{UPLOADED_FILES_FOLDER}/{sub_path}', 'r'))
+    for uploaded_file in paths:
+        csv_reader = csv.DictReader(open(f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}', 'r'))
         for i, row in enumerate(csv_reader):
             row = {k.strip().lower(): v.strip() for k, v in row.items()}
             items.append(row)
@@ -494,20 +501,21 @@ def _import_website_url(raw_items, parameters, on_progress=None) -> tuple[list[d
     return items, []
 
 
-def _import_office_document(paths, parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+def _import_office_document(paths: list[UploadedFile], parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
     from pdferret import PDFerret
 
     extractor = PDFerret(meta_extractor="dummy", text_extractor="unstructured")
     if on_progress:
         on_progress(0.1)
-    parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{sub_path}' for sub_path in paths])
+    parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}' for uploaded_file in paths])
     failed_files = [{"filename": pdferror.file, "reason": pdferror.exc} for pdferror in failed]
 
     if on_progress:
         on_progress(0.5)
 
     items = []
-    for parsed_file, sub_path in zip(parsed, paths):
+    for parsed_file, uploaded_file in zip(parsed, paths):
+        sub_path = uploaded_file.local_path
         file_metainfo = parsed_file.metainfo
 
         info_dict = file_metainfo.__dict__
@@ -523,10 +531,12 @@ def _import_office_document(paths, parameters, on_progress=None) -> tuple[list[d
             chunk.pop('chunk_type')
         full_text = " ".join([chunk['text'] for chunk in full_text_chunks])
 
-        file_name = sub_path.split("/")[-1]
+        ai_title, ai_document_type, ai_abstract = get_ai_summary(file_metainfo.title.strip() or uploaded_file.original_filename, full_text)
+
         items.append({
-            "title": file_metainfo.title.strip() or file_name,
-            "abstract": file_metainfo.abstract,
+            "title": ai_title or file_metainfo.title.strip() or uploaded_file.original_filename,
+            "type_description": ai_document_type,
+            "abstract": ai_abstract or file_metainfo.abstract,
             "created_at": None,
             "file_type": sub_path.split(".")[-1],
             "language": "de",  # TODO: detect language
@@ -534,13 +544,75 @@ def _import_office_document(paths, parameters, on_progress=None) -> tuple[list[d
             "thumbnail_path": get_thumbnail_office(sub_path),  # relative to UPLOADED_FILES_FOLDER
             "full_text": full_text,
             "full_text_chunks": full_text_chunks,
-            "file_name": file_name,
-            "path": sub_path.replace(file_name, ""),  # TODO: should be original path from file system
+            "file_name": uploaded_file.original_filename,
+            "path": "example/path/to/the/document",  # TODO: should be original path from file system
             "full_path": sub_path,  # TODO: should be original path from file system
         })
         if on_progress:
             on_progress(0.5 + (len(items) / len(paths)) * 0.5)
     return items, failed_files
+
+
+def get_ai_summary(title: str, full_text: str) -> tuple[str, str, str]:
+    prompt = """
+You are an expert in extracting titles and short summaries from documents.
+The available information about the document start with <document> and end with </document>.
+
+<document>
+Title: {{ title }}
+Content: {{ content }}
+</document>
+
+Try to extract the title, the abstract document type and a one-sentence summary of the content as a JSON object.
+The abstract document type should be something like: "paper about a new algorithm", "report about a waste plant", "presentation about a new product".
+The summary should be a single sentence that captures the essence of the document.
+Leave any field empty if you can't find the information.
+
+Schema:
+{
+    "title": "Title of the document",
+    "document_type": "Abstract document type",
+    "summary": "One-sentence summary of the content"
+}
+
+Reply only with the json object.
+    """
+
+    prompt_de = """
+Du bist ein Experte im Extrahieren von Titeln und kurzen Zusammenfassungen aus Dokumenten.
+Die verfügbaren Informationen über das Dokument beginnen mit <document> und enden mit </document>.
+
+<document>
+Titel: {{ title }}
+Inhalt: {{ content }}
+</document>
+
+Versuche, den Titel, den abstrakten Dokumenttyp und eine Ein-Satz-Zusammenfassung des Inhalts als JSON-Objekt zu extrahieren.
+Der abstrakte Dokumenttyp sollte etwas sein wie: "Aufsatz über einen neuen Algorithmus", "Bericht über eine Müllverbrennungsanlage", "Präsentation über ein neues Produkt".
+Die Zusammenfassung sollte ein einzelner Satz sein, der das Wesentliche des Dokuments erfasst.
+Lasse ein Feld leer, wenn du die Information nicht finden kannst.
+
+Schema:
+{
+"title": "Titel des Dokuments",
+"document_type": "Abstrakter Dokumenttyp",
+"summary": "Ein-Satz-Zusammenfassung des Inhalts"
+}
+
+Antworte nur mit dem JSON-Objekt.
+    """
+
+    prompt = prompt_de.replace("{{ title }}", title).replace("{{ content }}", full_text[:1000])
+
+    history = [ { "role": "system", "content": prompt } ]
+    response_text = get_groq_response_using_history(history, GROQ_MODELS.LLAMA_3_70B)  # type: ignore
+    assert response_text
+    try:
+        info = json.loads(response_text)
+    except (KeyError, ValueError):
+        logging.warning(f"Failed to parse AI response: {response_text}")
+        return "", "", ""
+    return info.get("title", ""), info.get("document_type", ""), info.get("summary", "")
 
 
 def get_thumbnail_office(sub_path) -> str | None:

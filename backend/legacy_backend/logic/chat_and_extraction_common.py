@@ -63,7 +63,7 @@ def _item_to_context(item: dict, dataset: DotDict, reranked_chunks: int=0, quest
         else:
             # the relevant part comes from a chunk field
             chunks = item.get(part.get('field'), [])
-            if len(chunks) <= part.get("index"):
+            if not chunks or len(chunks) <= part.get("index"):
                 logging.warning(f"Chunk field {part.get('field')} has less chunks than expected.")
                 continue
             chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
