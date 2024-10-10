@@ -56,7 +56,8 @@ export function highlight_words_in_text(text, words) {
   // strip quotation marks at the beginning or end from words
   words = words.map(word => word.replace(/^["']|["']$/g, ""))
   const stopWords = ["a", "an", "and", "be", "the", "in", "on", "is", "are", "was", "were", "to", "for", "of", "can"]
-  const filteredWords = words.filter(word => !stopWords.includes(word.toLowerCase()))
+  const filteredWords = words.filter(word => word && !stopWords.includes(word.toLowerCase()))
+  if (filteredWords.length === 0) return text
   const regex = new RegExp(`\\b(${filteredWords.join("|")})\\b`, "gi")
   return text.replace(regex, (match) => `<b>${match}</b>`)
 }

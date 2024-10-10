@@ -1303,10 +1303,10 @@ export const useAppStateStore = defineStore("appState", {
       this.request_search_results()
     },
     show_document_details(dataset_and_item_id, initial_item=null, relevant_parts=null, query=null) {
-      this.selected_document_relevant_parts = relevant_parts
-      this.selected_document_query = query
+      this.selected_document_relevant_parts = relevant_parts || []
+      this.selected_document_query = query || ""
       this.selected_document_ds_and_id = dataset_and_item_id
-      this.selected_document_initial_item = initial_item
+      this.selected_document_initial_item = initial_item || this.get_item_by_ds_and_id(dataset_and_item_id)
       const pointIdx = this.mapState.per_point.item_id.indexOf(dataset_and_item_id)
       this.document_details_dialog_is_visible = true
       if (pointIdx !== -1) {

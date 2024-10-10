@@ -230,7 +230,7 @@ export default {
       :style="{'max-width': '650px', width: '650px'}"
       @hide="appState.close_document_details">
       <ObjectDetailsModal
-        :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
+        :initial_item="appState.selected_document_initial_item"
         :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
         :show_close_button="false"></ObjectDetailsModal>
     </Dialog>

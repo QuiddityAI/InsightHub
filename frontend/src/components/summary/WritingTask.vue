@@ -98,13 +98,18 @@ export default {
       let text = this.writing_task.text;
       const regex = /\[([0-9]+),\s([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\]/g;
       let match;
-      let i = 0;
+      let reference_order = []
       while ((match = regex.exec(text)) !== null) {
-        i++
         try {
           const dataset_id = match[1]
           const item_id = match[2]
           const item = this.writing_task.additional_results.reference_metadata[dataset_id][item_id]
+          let i = reference_order.length + 1
+          if (reference_order.includes(item_id)) {
+            i = reference_order.indexOf(item_id) + 1
+          } else {
+            reference_order.push(item_id)
+          }
           const rendering = this.appStateStore.datasets[dataset_id].schema.result_list_rendering
           const title = rendering.title(item)
           const replacement = `<span \
@@ -282,7 +287,7 @@ export default {
       </BorderlessButton>
     </div>
 
-    <div class="relative flex-1 mt-2 flex flex-col overflow-hidden">
+    <div class="relative flex-1 mt-2 flex flex-col">
       <textarea v-if="edit_mode"
         v-model="writing_task.text"
         class="w-full h-[300px] rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
@@ -292,7 +297,7 @@ export default {
       </div>
       <button @click="edit_mode = !edit_mode"
         v-tooltip.left="{'value': 'Edit', showDelay: 500}"
-        class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 hover:text-blue-500"
+        class="absolute bottom-0 -right-5 h-6 w-6 rounded bg-gray-100 hover:text-blue-500"
         :class="{'text-gray-500': !edit_mode, 'text-blue-500': edit_mode}">
         <PencilIcon class="m-1"></PencilIcon>
       </button>
