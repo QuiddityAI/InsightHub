@@ -143,7 +143,7 @@ export default {
         <div v-if="collectionStore.search_mode"
           class="pl-3 xl:pl-8 py-10 flex flex-col gap-3 items-center text-gray-500">
           No items found
-          <p class="block text-xs">Or all items are already part of the collection</p>
+          <p class="block text-xs">Already saved items are not show. Is the item you are looking for maybe already added?</p>
         </div>
         <div v-else
           class="pl-3 xl:pl-8 py-10 flex flex-row justify-center text-gray-500">

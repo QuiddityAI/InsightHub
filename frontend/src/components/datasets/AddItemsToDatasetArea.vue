@@ -14,6 +14,7 @@ import Checkbox from 'primevue/checkbox';
 
 import CollectionItem from "../collections/CollectionItem.vue";
 import SelectCollection from '../collections/SelectCollection.vue';
+import ReferenceHoverInfo from "../collections/ReferenceHoverInfo.vue";
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -382,12 +383,10 @@ export default {
           v-for="ds_and_item_id in task.inserted_ids.slice(0, 10)"
           :key="ds_and_item_id.join('_')"
           class="justify-between pb-3">
-          <CollectionItem
+          <ReferenceHoverInfo class="border border-gray-200 m-2 p-2 rounded-md"
             :dataset_id="ds_and_item_id[0]"
-            :item_id="ds_and_item_id[1]"
-            :is_positive="true"
-            :show_remove_button="false">
-          </CollectionItem>
+            :item_id="ds_and_item_id[1]">
+          </ReferenceHoverInfo>
         </li>
       </ul>
     </div>
