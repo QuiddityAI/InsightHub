@@ -15,6 +15,7 @@ import ProgressSpinner from "primevue/progressspinner";
 import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
 import OverlayPanel from "primevue/overlaypanel";
+import Skeleton from "primevue/skeleton";
 
 import BorderlessButton from "../widgets/BorderlessButton.vue";
 import ReferenceHoverInfo from "../collections/ReferenceHoverInfo.vue";
@@ -287,15 +288,18 @@ export default {
       </BorderlessButton>
     </div>
 
-    <div class="relative flex-1 mt-2 flex flex-col">
-      <textarea v-if="edit_mode"
+    <div class="relative flex-1 mt-2 flex flex-col gap-1">
+      <Skeleton v-if="writing_task.is_processing" height="1rem" width="80%" class="flex-none" />
+      <Skeleton v-if="writing_task.is_processing" height="1rem" class="flex-none" />
+
+      <textarea v-if="edit_mode && !writing_task.is_processing"
         v-model="writing_task.text"
         class="w-full h-[300px] rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
-      <div v-if="!edit_mode" class="w-full h-full">
+      <div v-if="!edit_mode && !writing_task.is_processing" class="w-full h-full">
         <div v-html="text_with_links"
           class="w-full h-full text-sm use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
       </div>
-      <button @click="edit_mode = !edit_mode"
+      <button @click="edit_mode = !edit_mode" v-if="!writing_task.is_processing"
         v-tooltip.left="{'value': 'Edit', showDelay: 500}"
         class="absolute bottom-0 -right-5 h-6 w-6 rounded bg-gray-100 hover:text-blue-500"
         :class="{'text-gray-500': !edit_mode, 'text-blue-500': edit_mode}">
