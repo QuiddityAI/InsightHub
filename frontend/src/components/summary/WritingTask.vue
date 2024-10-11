@@ -6,6 +6,7 @@ import {
   AdjustmentsHorizontalIcon,
   PencilIcon,
   BackwardIcon,
+  CheckIcon,
  } from "@heroicons/vue/24/outline"
 import {marked} from "marked";
 
@@ -288,7 +289,7 @@ export default {
       </BorderlessButton>
     </div>
 
-    <div class="relative flex-1 mt-2 flex flex-col gap-1">
+    <div class="relative flex-1 mt-2 flex flex-col gap-1" id="writing_task_body">
       <Skeleton v-if="writing_task.is_processing" height="1rem" width="80%" class="flex-none" />
       <Skeleton v-if="writing_task.is_processing" height="1rem" class="flex-none" />
 
@@ -300,10 +301,11 @@ export default {
           class="w-full h-full text-sm use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
       </div>
       <button @click="edit_mode = !edit_mode" v-if="!writing_task.is_processing"
-        v-tooltip.left="{'value': 'Edit', showDelay: 500}"
-        class="absolute bottom-0 -right-5 h-6 w-6 rounded bg-gray-100 hover:text-blue-500"
+        v-tooltip.left="{'value': edit_mode ? 'Save' : 'Edit', showDelay: 500}"
+        class="absolute bottom-0 right-0 h-6 w-6 rounded bg-gray-100 hover:text-blue-500 show-when-parent-is-hovered transition-opacity"
         :class="{'text-gray-500': !edit_mode, 'text-blue-500': edit_mode}">
-        <PencilIcon class="m-1"></PencilIcon>
+        <PencilIcon class="m-1" v-if="!edit_mode"></PencilIcon>
+        <CheckIcon class="m-1" v-else></CheckIcon>
       </button>
     </div>
 
@@ -364,4 +366,12 @@ export default {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.show-when-parent-is-hovered {
+  opacity: 0;
+}
+
+#writing_task_body:hover > .show-when-parent-is-hovered{
+  opacity: 1;
+}
+</style>

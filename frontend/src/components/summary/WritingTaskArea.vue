@@ -186,7 +186,7 @@ export default {
   <div class="pt-10 pb-10 pl-14 pr-16 flex flex-col gap-5 relative">
 
     <BorderlessButton @click="$emit('close')" class="absolute right-3 top-3"
-      v-tooltip.bottom="{value: 'Close', showDelay: 400}">
+      v-tooltip.bottom="{value: 'Hide', showDelay: 400}">
       <XMarkIcon class="h-6 w-6"></XMarkIcon>
     </BorderlessButton>
 
