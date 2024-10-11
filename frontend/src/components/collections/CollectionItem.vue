@@ -167,7 +167,7 @@ export default {
 
       <!-- Right side (image) -->
       <div v-if="rendering.image(item)" class="flex-none w-24 flex flex-col justify-center">
-        <Image class="w-full rounded-lg shadow-md" :src="rendering.image(item)" preview />
+        <Image class="w-full rounded-lg shadow-md" image-class="rounded-lg" :src="rendering.image(item)" preview />
       </div>
     </div>
 
@@ -203,31 +203,34 @@ export default {
 
         <div class="flex-1"></div>
 
-        <div v-if="is_candidate" class="mr-2 h-5 w-5 text-orange-400"
-            v-tooltip.bottom="{value: 'This item is temporary. Save it, otherwise it will be removed.'}">
-          <ArrowRightIcon class="w-full h-full">
-          </ArrowRightIcon>
+        <div class="flex flex-row gap-1 items-center ring-orange-200 rounded"
+          :class="{'ring-[1px]': is_candidate}">
+          <div v-if="is_candidate" class="ml-1 mr-2 h-5 w-5 text-orange-400"
+              v-tooltip.bottom="{value: 'This item is temporary. Save it, otherwise it will be removed.'}">
+            <ArrowRightIcon class="w-full h-full">
+            </ArrowRightIcon>
+          </div>
+          <BorderlessButton
+            hover_color="hover:text-green-500" highlight_color="text-green-500"
+            :highlighted="collection_item.relevance > 0" :default_padding="false" class="p-1"
+            v-tooltip.bottom="{ value: 'Add this item permanently' }"
+            @click="collectionStore.set_item_relevance(collection_item, 3)">
+            <HandThumbUpIcon class="h-4 w-4"></HandThumbUpIcon>
+          </BorderlessButton>
+          <BorderlessButton
+            hover_color="hover:text-red-500" highlight_color="text-red-500"
+            :highlighted="collection_item.relevance < 0" :default_padding="false" class="p-1"
+            v-tooltip.bottom="{ value: 'Mark this item as irrelevant, hide from future searches in this collection' }"
+            @click="collectionStore.set_item_relevance(collection_item, -3)">
+            <HandThumbDownIcon class="h-4 w-4"></HandThumbDownIcon>
+          </BorderlessButton>
+          <BorderlessButton v-if="show_remove_button"
+            hover_color="hover:text-red-500" :default_padding="false" class="p-1"
+            @click.stop="$emit('remove')"
+            v-tooltip.bottom="{ value: 'Remove from this collection', showDelay: 400 }">
+            <TrashIcon class="h-4 w-4"></TrashIcon>
+          </BorderlessButton>
         </div>
-        <BorderlessButton
-          hover_color="hover:text-green-500" highlight_color="text-green-500"
-          :highlighted="collection_item.relevance > 0" :default_padding="false" class="p-1"
-          v-tooltip="{ value: 'Add this item permanently' }"
-          @click="collectionStore.set_item_relevance(collection_item, 3)">
-          <HandThumbUpIcon class="h-4 w-4"></HandThumbUpIcon>
-        </BorderlessButton>
-        <BorderlessButton
-          hover_color="hover:text-red-500" highlight_color="text-red-500"
-          :highlighted="collection_item.relevance < 0" :default_padding="false" class="p-1"
-          v-tooltip="{ value: 'Mark this item as irrelevant, hide from future searches in this collection' }"
-          @click="collectionStore.set_item_relevance(collection_item, -3)">
-          <HandThumbDownIcon class="h-4 w-4"></HandThumbDownIcon>
-        </BorderlessButton>
-        <BorderlessButton v-if="show_remove_button"
-          hover_color="hover:text-red-500" :default_padding="false" class="p-1"
-          @click.stop="$emit('remove')"
-          v-tooltip.right="{ value: 'Remove from this collection', showDelay: 400 }">
-          <TrashIcon class="h-4 w-4"></TrashIcon>
-        </BorderlessButton>
       </div>
 
   </div>
