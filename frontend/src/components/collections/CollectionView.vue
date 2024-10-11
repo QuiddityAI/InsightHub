@@ -182,13 +182,14 @@ export default {
     </div>
 
     <!-- Lower Area -->
-    <div class="flex-1 flex flex-row bg-gray-200 overflow-hidden">
+    <div class="flex-1 flex flex-row overflow-hidden">
 
       <!-- Left Side: Summary -->
       <div v-if="right_side_view === 'summary'"
         class="flex-none w-[620px] bg-white shadow-md z-30">
         <WritingTaskArea v-if="right_side_view === 'summary'"
           class="overflow-y-auto h-full"
+          @close="right_side_view = null"
           :collection_id="collectionStore.collection_id" :class_name="class_name">
         </WritingTaskArea>
       </div>

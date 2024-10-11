@@ -1,9 +1,9 @@
 <script setup>
 
 import {
+  ArrowPathIcon,
   TrashIcon,
   AdjustmentsHorizontalIcon,
-  PlayIcon,
   PencilIcon,
   BackwardIcon,
  } from "@heroicons/vue/24/outline"
@@ -270,9 +270,9 @@ export default {
       </h2>
       <div class="flex-1"></div>
       <BorderlessButton v-if="!writing_task.is_processing"
-        @click="execute_writing_task" v-tooltip.bottom="{ value: 'Execute this writing task' }"
+        @click="execute_writing_task" v-tooltip.bottom="{ value: 'Re-generate this writing task' }"
         hover_color="hover:text-green-500" :default_padding="false" class="h-6 w-6">
-        <PlayIcon class="h-4 w-4"></PlayIcon>
+        <ArrowPathIcon class="h-4 w-4"></ArrowPathIcon>
       </BorderlessButton>
       <ProgressSpinner v-if="writing_task.is_processing" class="h-6 w-6" strokeWidth="8" style="color: #4CAF50" />
       <BorderlessButton @click="show_settings_dialog = true"

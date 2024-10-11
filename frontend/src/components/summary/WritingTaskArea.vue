@@ -1,12 +1,13 @@
 <script setup>
 import {
-
+  XMarkIcon,
 } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
 
 import WritingTask from "./WritingTask.vue";
 import BorderButton from "../widgets/BorderButton.vue";
+import BorderlessButton from "../widgets/BorderlessButton.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -23,7 +24,7 @@ const toast = useToast()
 export default {
   inject: ["eventBus"],
   props: ["collection_id", "class_name"],
-  emits: [],
+  emits: ["close"],
   data() {
     return {
       collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
@@ -182,7 +183,12 @@ export default {
 </script>
 
 <template>
-  <div class="pt-10 pb-10 pl-14 pr-16 flex flex-col gap-5">
+  <div class="pt-10 pb-10 pl-14 pr-16 flex flex-col gap-5 relative">
+
+    <BorderlessButton @click="$emit('close')" class="absolute right-3 top-3"
+      v-tooltip.bottom="{value: 'Close', showDelay: 400}">
+      <XMarkIcon class="h-6 w-6"></XMarkIcon>
+    </BorderlessButton>
 
     <WritingTask v-for="task in writing_task_ids" :key="task.id"
       :writing_task_id="task.id"
@@ -190,6 +196,17 @@ export default {
     />
 
     <div class="flex-1"></div>
+
+    <div class="flex flex-col gap-2 items-start mb-10" v-if="writing_task_ids.length === 0">
+      <span class="text-sm text-gray-500">
+        Ideas:
+      </span>
+      <button v-for="template in templates" :key="template.intent"
+        @click="create_from_template(template)"
+        class="flex-1 px-3 py-1 rounded text-sm text-gray-500 bg-gray-100 hover:text-blue-500">
+        {{ template.intent }}
+      </button>
+    </div>
 
     <div class="flex flex-col gap-2">
       <span class="text-xs text-gray-400 text-center">
@@ -213,17 +230,6 @@ export default {
           Create custom writing task
         </BorderButton>
       </div>
-    </div>
-
-    <div class="flex flex-col gap-2 items-start" v-if="writing_task_ids.length === 0">
-      <span class="text-sm text-gray-500">
-        Ideas:
-      </span>
-      <button v-for="template in templates" :key="template.intent"
-        @click="create_from_template(template)"
-        class="flex-1 px-3 py-1 rounded text-sm text-gray-500 bg-gray-100 hover:text-blue-500">
-        {{ template.intent }}
-      </button>
     </div>
 
     <!-- <div class="flex flex-row gap-2 items-center justify-center" v-if="false">

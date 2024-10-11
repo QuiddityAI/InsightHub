@@ -53,12 +53,15 @@ export default {
 </script>
 
 <template>
-  <div class="overflow-hidden flex flex-row relative">
+  <div class="overflow-hidden flex flex-row relative bg-gray-200">
 
     <!-- Left Side Bar -->
-    <CollectionList v-if="collectionStore.collection_id === null"
-      class="z-40">
+    <CollectionList
+      class="absolute z-40">
     </CollectionList>
+
+    <!-- placeholder for collection list (which is absolute positioned) -->
+    <div class="w-[230px]" v-if="!collectionStore.collection"></div>
 
     <!-- Right Side Content -->
     <div v-if="!appState.logged_in"

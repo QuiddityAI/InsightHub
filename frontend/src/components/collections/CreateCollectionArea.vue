@@ -281,7 +281,7 @@ export default {
       </button>
     </div>
 
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-3 bg-white p-3 rounded-lg shadow-md">
 
       <div class="relative flex-1 h-9 flex flex-row gap-3 items-center">
         <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.query"
