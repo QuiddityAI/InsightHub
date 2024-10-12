@@ -18,9 +18,11 @@ import Dialog from 'primevue/dialog';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
 
@@ -45,6 +47,7 @@ export default {
   computed: {
     ...mapStores(useAppStateStore),
     ...mapStores(useMapStateStore),
+    ...mapStores(useCollectionStore),
     relevant_chunks() {
       return this.item?._relevant_parts?.filter((part) => part.origin === "vector_array") || []
     },
@@ -303,7 +306,7 @@ export default {
 
       <button
         v-tooltip.bottom="{ value: `Show similar ${dataset.schema.entity_name_plural} in currently selected datasets\n(based on 'meaning')`, showDelay: 500 }"
-        @click="appState.show_similar_items(appState.selected_document_ds_and_id, item)"
+        @click="collectionStore.run_search_task_similar_to_item(appState.selected_document_ds_and_id, rendering.title(item)); appState.close_document_details();"
         class="h-full flex flex-row items-center gap-2 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
         <MagnifyingGlassIcon class="h-3 w-3"></MagnifyingGlassIcon> Similar Items
       </button>

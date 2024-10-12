@@ -120,6 +120,27 @@ export const useCollectionStore = defineStore("collection", {
         }
       })
     },
+    check_for_agent_status() {
+      const that = this
+      if (this.collection.agent_is_running) {
+        setTimeout(() => {
+          that.update_collection((collection) => {
+            that.load_collection_items()
+            if (collection.agent_is_running) {
+              that.check_for_agent_status()
+            } else {
+              // agent has stopped
+              that.eventBus.emit("agent_stopped")  // triggers writing task to reload
+              for (let column_identifier of collection.columns_with_running_processes) {
+                 // TODO: this could be more elegant
+                const column_id = that.collection.columns.find((column) => column.identifier === column_identifier).id
+                that.get_extraction_results(column_id)
+              }
+            }
+          })
+        }, 500)
+      }
+    },
     delete_collection(collection_id) {
       const that = this
       const delete_collection_body = {
@@ -326,6 +347,32 @@ export const useCollectionStore = defineStore("collection", {
               that.load_collection_items()
             })
           }
+        })
+    },
+    run_search_task_similar_to_item(dataset_and_item_id, title) {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+        search_task: {
+          search_type: 'similar_to_item',
+          dataset_id: dataset_and_item_id[0],
+          query: `Similar to: ${title}`,  // ?
+          result_language: null,  // ?
+          filters: null,
+          ranking_settings: null,
+          reference_dataset_id: dataset_and_item_id[0],
+          reference_item_id: dataset_and_item_id[1],
+          origin_name: title,
+        },
+      }
+      httpClient
+        .post("/api/v1/search/run_search_task", body)
+        .then((response) => {
+          that.update_collection(() => {
+            that.check_for_agent_status()
+            that.load_collection_items()
+          })
         })
     },
     exit_search_mode() {

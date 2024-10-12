@@ -229,9 +229,9 @@ export default {
       v-model:visible="appState.document_details_dialog_is_visible"
       :style="{'max-width': '650px', width: '650px'}"
       @hide="appState.close_document_details">
-      <ObjectDetailsModal
+      <ObjectDetailsModal v-if="appState.selected_document_ds_and_id"
         :initial_item="appState.selected_document_initial_item"
-        :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
+        :dataset="appState.selected_document_ds_and_id ? appState.datasets[appState.selected_document_ds_and_id[0]] : null"
         :show_close_button="false"></ObjectDetailsModal>
     </Dialog>
 

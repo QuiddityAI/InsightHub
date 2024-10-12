@@ -4,7 +4,15 @@ from enum import StrEnum
 from ninja import Schema
 
 
+class SearchType(StrEnum):
+    EXTERNAL_INPUT = "external_input"
+    SIMILAR_TO_ITEM = "similar_to_item"
+    SIMILAR_TO_COLLECTION = "similar_to_collection"
+    RANDOM_SAMPLE = "random_sample"
+
+
 class SearchTaskSettings(Schema):
+    search_type: SearchType = SearchType.EXTERNAL_INPUT
     dataset_id: int
     query: str
     result_language: Optional[str] = None
@@ -24,12 +32,11 @@ class SearchTaskSettings(Schema):
     max_selections: int = 3
     max_selection_candidates: int = 10
 
+    reference_dataset_id: Optional[int] = None
+    reference_item_id: Optional[str] = None
+    origin_name: Optional[str] = None
 
-class SearchType(StrEnum):
-    EXTERNAL_INPUT = "external_input"
-    SIMILAR_TO_ITEM = "similar_to_item"
-    SIMILAR_TO_COLLECTION = "similar_to_collection"
-    RANDOM_SAMPLE = "random_sample"
+    reference_collection_id: Optional[int] = None
 
 
 class RetrievalMode(StrEnum):
@@ -55,8 +62,8 @@ class SearchSource(Schema):
     use_reranking: bool = True
 
     # similar_to_item
-    reference_item_id: Optional[str] = None
     reference_dataset_id: Optional[int] = None
+    reference_item_id: Optional[str] = None
     origin_name: Optional[str] = None
 
     # similar_to_collection (also origin_name)

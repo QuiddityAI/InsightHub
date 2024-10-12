@@ -82,7 +82,7 @@ export default {
     },
   },
   mounted() {
-    this.check_for_agent_status()
+    this.collectionStore.check_for_agent_status()
     if (this.collection.writing_task_count > 0) {
       this.side_view = 'summary'
     }
@@ -93,27 +93,6 @@ export default {
         return
       }
       this.collectionStore.delete_collection(this.collectionStore.collection_id)
-    },
-    check_for_agent_status() {
-      const that = this
-      if (this.collection.agent_is_running) {
-        setTimeout(() => {
-          that.collectionStore.update_collection((collection) => {
-            that.collectionStore.load_collection_items()
-            if (collection.agent_is_running) {
-              that.check_for_agent_status()
-            } else {
-              // agent has stopped
-              that.eventBus.emit("agent_stopped")  // triggers writing task to reload
-              for (let column_identifier of collection.columns_with_running_processes) {
-                 // TODO: this could be more elegant
-                const column_id = that.collectionStore.collection.columns.find((column) => column.identifier === column_identifier).id
-                that.collectionStore.get_extraction_results(column_id)
-              }
-            }
-          })
-        }, 500)
-      }
     },
     show_map() {
       this.appStateStore.reset_search_box()
@@ -136,7 +115,7 @@ export default {
 
     <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
       <SearchTaskDialog :collection="collection" :collection_class="class_name"
-        @close="show_search_task_dialog = false; check_for_agent_status()"></SearchTaskDialog>
+        @close="show_search_task_dialog = false; collectionStore.check_for_agent_status()"></SearchTaskDialog>
     </Dialog>
 
     <!-- Top Area -->

@@ -32,9 +32,16 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
     source = SearchSource(
         id_hash=uuid.uuid4().hex,
         created_at=timezone.now().isoformat(),
-        search_type=SearchType.EXTERNAL_INPUT,
-        dataset_id=search_task.dataset_id,
         stack_index=stack_index,
+        retrieved=0,
+        available=None,
+        available_is_exact=True,
+        is_active=True,
+
+        search_type=search_task.search_type,
+        dataset_id=search_task.dataset_id,
+        result_language=search_task.result_language or 'en',
+        page_size=search_task.candidates_per_step,
 
         # external_input
         query=search_task.query,
@@ -46,22 +53,14 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
         use_reranking=True,
 
         # similar_to_item
-        reference_item_id=None,
-        reference_dataset_id=None,
-        origin_name=None,
+        reference_item_id=search_task.reference_item_id,
+        reference_dataset_id=search_task.reference_dataset_id,
+        origin_name=search_task.origin_name,
 
         # similar_to_collection
-        reference_collection_id=None,
+        reference_collection_id=search_task.reference_collection_id,
 
         # random_sample: no parameters, always same seed
-
-        result_language=search_task.result_language or 'en',
-        page_size=10,
-        retrieved=0,
-        available=None,
-        available_is_exact=True,
-        is_active=True,
-
     )
 
     collection.search_sources.append(source.dict())
@@ -170,17 +169,21 @@ def add_items_from_source(collection: DataCollection, source: SearchSource, is_n
             'retrieval_mode': source.retrieval_mode or 'hybrid',
             'use_separate_queries': False,
             'all_field_query': source.query,
+            'internal_input_weight': 0.7,
+            'use_similarity_thresholds': True,
             'auto_relax_query': source.auto_relax_query,
-            'use_reranking': source.use_reranking,
+            'use_reranking': source.use_reranking if source.search_type == SearchType.EXTERNAL_INPUT else False,
             'filters': source.filters or [],
             'result_language': source.result_language or 'en',
             'ranking_settings': source.ranking_settings or {},
+            'similar_to_item_id': [source.reference_dataset_id, source.reference_item_id] if source.reference_item_id else None,
+
             'result_list_items_per_page': source.page_size,
             'result_list_current_page': source.retrieved // source.page_size if source.retrieved else 0,
             'max_sub_items_per_item': 1,
             'return_highlights': True,
             'use_bolding_in_highlights': True,
-            # TODO: add support for vector search, similar to item, similar to collection
+            # TODO: add support for vector search, similar to collection
         }
     }
     results = get_search_results(json.dumps(params), 'list')

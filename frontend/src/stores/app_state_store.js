@@ -1317,6 +1317,7 @@ export const useAppStateStore = defineStore("appState", {
       }
     },
     close_document_details() {
+      this.document_details_dialog_is_visible = false
       this.selected_document_ds_and_id = null
       this.selected_document_relevant_parts = []
       this.selected_document_query = ""
