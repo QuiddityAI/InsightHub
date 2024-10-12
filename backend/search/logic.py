@@ -25,6 +25,10 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
     collection.save()
     stack_index = max([s.get('stack_index', 0) for s in collection.search_sources if s['is_active']] or [-1]) + 1
 
+    if search_task.auto_set_filters:
+        collection.log_explanation("Use AI model to generate **suitable query** and determine **best filter and ranking settings** (skipped)", save=False)
+        # TODO: implement smart search
+
     source = SearchSource(
         id_hash=uuid.uuid4().hex,
         created_at=timezone.now().isoformat(),
@@ -79,7 +83,7 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
     add_items_from_active_sources(collection, user_id, is_new_collection, after_columns_were_processed_internal)
 
 
-def _auto_approve_items(collection: DataCollection, new_items: Iterable[CollectionItem], search_task: SearchTaskSettings):
+def _auto_approve_items(collection: DataCollection, new_items: list[CollectionItem], search_task: SearchTaskSettings):
     relevance_columns = [column for column in collection.columns.all() if column.determines_relevance]  # type: ignore
     if not relevance_columns:
         return
@@ -117,17 +121,21 @@ def _auto_approve_items(collection: DataCollection, new_items: Iterable[Collecti
         item.relevance = 2
         changed_items.append(item)
     CollectionItem.objects.bulk_update(changed_items, ['relevance'])
+    collection.log_explanation(f"Evaluated top {len(new_items)} items **one-by-one using an LLM** and approved {len(changed_items)} of them", save=True)
 
 
 def exit_search_mode(collection: DataCollection, class_name: str):
     all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
     candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
+    num_candidates = candidates.count()
     candidates.delete()
     collection.items_last_changed = timezone.now()
 
     for source in collection.search_sources:
         source['is_active'] = False
 
+    if num_candidates:
+        collection.log_explanation(f"Removed {num_candidates} **not approved** items", save=False)
     collection.save()
 
 
@@ -140,7 +148,6 @@ def add_items_from_active_sources(collection: DataCollection, user_id: int, is_n
         new_items.extend(add_items_from_source(collection, source, is_new_collection))
 
     def in_thread():
-        logging.warning("add_items_from_active_sources: in_thread")
         max_evaluated_candidates = 10
         for column in collection.columns.all():  # type: ignore
             assert isinstance(column, CollectionColumn)
@@ -209,5 +216,13 @@ def add_items_from_source(collection: DataCollection, source: SearchSource, is_n
     collection.search_sources = [s for s in collection.search_sources if s['id_hash'] != source.id_hash]
     collection.search_sources.append(source.dict())
     collection.items_last_changed = timezone.now()
+    if source.retrieval_mode == RetrievalMode.KEYWORD:
+        collection.log_explanation(f"Added {len(new_items)} search results found by **included keywords**", save=False)
+    elif source.retrieval_mode == RetrievalMode.VECTOR:
+        collection.log_explanation(f"Added {len(new_items)} search results found by **AI-based semantic similarity** (vector search)", save=False)
+    elif source.retrieval_mode == RetrievalMode.HYBRID:
+        collection.log_explanation(f"Added {len(new_items)} search results found by a combination of **included keywords** and **AI-based semantic similarity** (vector search)", save=False)
+    if source.use_reranking:
+        collection.log_explanation("Re-ordered top results using an **AI-based re-ranking model**", save=False)
     collection.save()
     return new_items

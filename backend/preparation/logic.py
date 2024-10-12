@@ -129,6 +129,7 @@ def prepare_for_question(collection: DataCollection, settings: CreateCollectionS
         logging.warning("prepare_for_question: after_columns_were_processed")
         collection.current_agent_step = "Executing writing task..."
         _execute_writing_task_thread(writing_task)
+        collection.log_explanation(f"Read approved items and **wrote a summary** using an LLM", save=False)
         collection.agent_is_running = False
         collection.save()
 

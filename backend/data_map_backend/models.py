@@ -1116,6 +1116,13 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
+    explanation_log = models.JSONField(
+        verbose_name="Explanation Log",
+        help_text="List of explanations what was done (e.g. using AI)",
+        default=list,
+        blank=True,
+        null=False,
+    )
 
     history = HistoricalRecords()
 
@@ -1156,6 +1163,13 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
     #                 embedding_space_data[class_name]["decision_vector"] = f"&ltarray of length {len(embedding_space_data[class_name]['decision_vector'])}, stdev {np.std(embedding_space_data[class_name]['decision_vector']):.4f}&gt"
     #     return mark_safe(json.dumps(data, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>"))
     # simplified_trained_classifiers.short_description = "Trained Classifiers"
+
+    def log_explanation(self, explanation: str, save=True):
+        self.explanation_log.append(
+            {"time": timezone.now().isoformat(), "explanation": explanation}
+        )
+        if save:
+            self.save()
 
     def __str__(self):
         return f"{self.name}"

@@ -30,6 +30,7 @@ import AgentModeBar from "./AgentModeBar.vue";
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useCollectionStore } from "../../stores/collection_store"
+import ExplanationLog from "./ExplanationLog.vue";
 
 const appState = useAppStateStore()
 const collectionStore = useCollectionStore()
@@ -54,13 +55,13 @@ export default {
       show_add_column_dialog: false,
       show_add_item_dialog: false,
 
-      right_side_view: null,  // one of 'chart', 'map', 'summary'
+      side_view: null,  // one of 'more', 'map', 'summary'
     }
   },
   watch: {
     'collectionStore.collection.writing_task_count'() {
       if (this.collection?.writing_task_count > 0) {
-        this.right_side_view = 'summary'
+        this.side_view = 'summary'
       }
     },
   },
@@ -83,7 +84,7 @@ export default {
   mounted() {
     this.check_for_agent_status()
     if (this.collection.writing_task_count > 0) {
-      this.right_side_view = 'summary'
+      this.side_view = 'summary'
     }
   },
   methods: {
@@ -120,11 +121,11 @@ export default {
       this.appStateStore.request_search_results()
     },
     show_right_side_view(view) {
-      if (this.right_side_view === view) {
-        this.right_side_view = null
+      if (this.side_view === view) {
+        this.side_view = null
         return
       }
-      this.right_side_view = view
+      this.side_view = view
     },
   },
 }
@@ -166,17 +167,17 @@ export default {
         <span class="text-gray-400">
           Views:
         </span>
-        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('chart')"
-          :highlighted="right_side_view === 'chart'">
-          Chart
+        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('summary')"
+          :highlighted="side_view === 'summary'">
+          Summary
         </BorderButton>
         <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('map')"
-          :highlighted="right_side_view === 'map'">
+          :highlighted="side_view === 'map'">
           Map
         </BorderButton>
-        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('summary')"
-          :highlighted="right_side_view === 'summary'">
-          Summary
+        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('more')"
+          :highlighted="side_view === 'more'">
+          More
         </BorderButton>
       </div>
     </div>
@@ -185,11 +186,11 @@ export default {
     <div class="flex-1 flex flex-row overflow-hidden">
 
       <!-- Left Side: Summary -->
-      <div v-if="right_side_view === 'summary'"
+      <div v-if="side_view === 'summary'"
         class="flex-none w-[620px] bg-white shadow-md z-30">
-        <WritingTaskArea v-if="right_side_view === 'summary'"
+        <WritingTaskArea v-if="side_view === 'summary'"
           class="overflow-y-auto h-full"
-          @close="right_side_view = null"
+          @close="side_view = null"
           :collection_id="collectionStore.collection_id" :class_name="class_name">
         </WritingTaskArea>
       </div>
@@ -284,16 +285,17 @@ export default {
 
       </div>
 
-      <!-- Right Side: Chart / Map / Summary -->
-      <div v-if="right_side_view && right_side_view !== 'summary'"
+      <!-- Right Side: More / Map -->
+      <div v-if="side_view && side_view !== 'summary'"
         class="flex-none w-[600px] bg-white shadow-md z-30">
 
-        <div v-if="right_side_view === 'chart'"
-          class="p-3">
-          Chart
+        <div v-if="side_view === 'more'"
+          class="py-7 px-10">
+          <ExplanationLog>
+          </ExplanationLog>
         </div>
 
-        <div v-if="right_side_view === 'map'"
+        <div v-if="side_view === 'map'"
           class="p-3">
           Map
         </div>

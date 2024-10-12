@@ -368,7 +368,7 @@ export default {
       <SearchFilterList v-if="!new_settings.auto_set_filters"></SearchFilterList>
 
       <div v-if="selected_mode.supports_filters"
-        class="ml-1 mb-5 flex flex-row items-center"
+        class="ml-1 flex flex-row items-center"
         v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
         <Checkbox v-model="new_settings.auto_set_filters" class="" :binary="true" :disabled="!ai_is_available" />
         <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
