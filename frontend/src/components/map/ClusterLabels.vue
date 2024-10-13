@@ -36,8 +36,8 @@ export default {
       class="pointer-events-auto absolute"
       v-tooltip.bottom="{ value: 'Click to narrow down on this cluster', showDelay: 600 }"
       :style="{
-        left: mapState.screenLeftFromRelative(cluster_label.center[0]) + 'px',
-        bottom: mapState.screenBottomFromRelative(cluster_label.center[1]) + 'px',
+        left: mapState.mapLeftFromRelative(cluster_label.center[0]) + 'px',
+        bottom: mapState.mapBottomFromRelative(cluster_label.center[1]) + 'px',
       }">
       <button
         v-if="

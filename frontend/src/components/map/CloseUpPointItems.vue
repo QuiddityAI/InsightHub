@@ -40,8 +40,8 @@ export default {
         :key="pointIndex"
         class="pointer-events-none absolute"
         :style="{
-          left: mapState.screenLeftFromRelative(mapState.per_point.x[pointIndex]) - 220 + 'px',
-          bottom: mapState.screenBottomFromRelative(mapState.per_point.y[pointIndex]) + 'px',
+          left: mapState.mapLeftFromRelative(mapState.per_point.x[pointIndex]) - 220 + 'px',
+          bottom: mapState.mapBottomFromRelative(mapState.per_point.y[pointIndex]) + 'px',
         }"
         style="transform: translate(0%, 50%)">
         <button

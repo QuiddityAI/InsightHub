@@ -73,14 +73,14 @@ export const useMapStateStore = defineStore("mapState", {
       const [ds_id, item_id] = this.per_point.item_id[index]
       return this.text_data[ds_id][item_id]
     },
-    screenLeftFromRelative(x) {
+    mapLeftFromRelative(x) {
       const normalizedPos = (x + this.baseOffset[0]) * this.baseScale[0]
       const shiftedToActiveAreaPos =
         normalizedPos * this.activeAreaWidth + this.passiveMarginsLRTB[0]
       const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPan[0]
       return pannedAndZoomed
     },
-    screenBottomFromRelative(y) {
+    mapBottomFromRelative(y) {
       const normalizedPos = (y + this.baseOffset[1]) * this.baseScale[1]
       const shiftedToActiveAreaPos =
         normalizedPos * this.activeAreaHeight + this.passiveMarginsLRTB[3]
@@ -89,14 +89,14 @@ export const useMapStateStore = defineStore("mapState", {
       const pannedAndZoomed = zoomed - this.currentPan[1]
       return pannedAndZoomed
     },
-    screenRightFromRelative(x) {
+    mapRightFromRelative(x) {
       const normalizedPos = (x + this.baseOffset[0]) * this.baseScale[0]
       const shiftedToActiveAreaPos =
         normalizedPos * this.activeAreaWidth + this.passiveMarginsLRTB[0]
       const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPan[0]
       return this.map_client_width - pannedAndZoomed
     },
-    screenTopFromRelative(y) {
+    mapTopFromRelative(y) {
       const normalizedPos = (y + this.baseOffset[1]) * this.baseScale[1]
       const shiftedToActiveAreaPos =
         normalizedPos * this.activeAreaHeight + this.passiveMarginsLRTB[3]

@@ -278,8 +278,8 @@ export default {
         class="flex-none w-[600px] bg-white shadow-md z-30">
 
         <div v-if="side_view === 'more'"
-          class="py-7 px-10">
-          <ExplanationLog>
+          class="overflow-hidden h-full">
+          <ExplanationLog class="h-full overflow-y-auto">
           </ExplanationLog>
         </div>
 
