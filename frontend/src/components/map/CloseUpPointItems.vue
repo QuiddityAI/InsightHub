@@ -33,12 +33,12 @@ export default {
   <div class="pointer-events-none">
 
     <div
-      class="pointer-events-none fixed transition-opacity duration-300"
+      class="pointer-events-none absolute transition-opacity duration-300"
       :class="{'opacity-0': !mapState.show_html_points, 'opacity-100': mapState.show_html_points}">
       <div
         v-for="pointIndex in mapState.visiblePointIndexes"
         :key="pointIndex"
-        class="pointer-events-none fixed"
+        class="pointer-events-none absolute"
         :style="{
           left: mapState.screenLeftFromRelative(mapState.per_point.x[pointIndex]) - 220 + 'px',
           bottom: mapState.screenBottomFromRelative(mapState.per_point.y[pointIndex]) + 'px',

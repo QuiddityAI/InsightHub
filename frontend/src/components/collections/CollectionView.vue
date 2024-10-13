@@ -25,14 +25,17 @@ import WritingTaskArea from "../summary/WritingTaskArea.vue";
 import BorderButton from "../widgets/BorderButton.vue";
 import SearchModeBar from "../search/SearchModeBar.vue";
 import AgentModeBar from "./AgentModeBar.vue";
+import MapWithLabelsAndButtons from "../map/MapWithLabelsAndButtons.vue";
 
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
+import { useMapStateStore } from "../../stores/map_state_store";
 import { useCollectionStore } from "../../stores/collection_store"
 import ExplanationLog from "./ExplanationLog.vue";
 
 const appState = useAppStateStore()
+const mapState = useMapStateStore()
 const collectionStore = useCollectionStore()
 
 </script>
@@ -67,6 +70,7 @@ export default {
   },
   computed: {
     ...mapStores(useAppStateStore),
+    ...mapStores(useMapStateStore),
     ...mapStores(useCollectionStore),
     collection() {
       return this.collectionStore.collection
@@ -105,6 +109,11 @@ export default {
         return
       }
       this.side_view = view
+      if (view == 'map') {
+        this.mapStateStore.per_point.x = [0.0, 0.5, 0.7, 1.0]
+        this.mapStateStore.per_point.y = [0.0, 0.7, 0.5, 1.0]
+        this.eventBus.emit("map_update_geometry")
+      }
     },
   },
 }
@@ -275,8 +284,9 @@ export default {
         </div>
 
         <div v-if="side_view === 'map'"
-          class="p-3">
-          Map
+          class="w-full h-full">
+          <MapWithLabelsAndButtons class="w-full h-full">
+          </MapWithLabelsAndButtons>
         </div>
       </div>
 

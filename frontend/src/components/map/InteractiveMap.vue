@@ -68,6 +68,8 @@ export default {
     }
   },
   computed: {
+    ...mapStores(useMapStateStore),
+    ...mapStores(useAppStateStore),
     pointsVertexShader() {
       return this.appStateStore.settings.frontend.rendering.style == "plotly"
         ? pointsVertexShaderPlotly
@@ -78,8 +80,6 @@ export default {
         ? pointsFragmentShaderPlotly
         : pointsFragmentShader3D
     },
-    ...mapStores(useMapStateStore),
-    ...mapStores(useAppStateStore),
   },
   mounted() {
     const that = this
@@ -226,13 +226,20 @@ export default {
       this.camera.position.z = 1
 
 
-      function resize() {
-        that.renderer.setSize(window.innerWidth, window.innerHeight)
+      function on_resize() {
+        that.mapStateStore.map_client_x = that.$refs.webGlArea.getBoundingClientRect().x
+        that.mapStateStore.map_client_y = that.$refs.webGlArea.getBoundingClientRect().y
+        that.mapStateStore.map_client_width = that.$refs.webGlArea.clientWidth
+        that.mapStateStore.map_client_height = that.$refs.webGlArea.clientHeight
+        that.renderer.setSize(that.$refs.webGlArea.clientWidth, that.$refs.webGlArea.clientHeight)
         //that.camera.perspective({ aspect: that.glContext.canvas.width / that.glContext.canvas.height });
         that.updateGeometry()
       }
-      window.addEventListener("resize", resize, false)
-      resize()
+      window.addEventListener("resize", on_resize, false)
+      new ResizeObserver(() => {
+        on_resize()
+      }).observe(this.$refs.webGlArea)
+      on_resize()
       this.updateGeometry()
 
       let lastUpdateTimeInMs = performance.now()
@@ -732,8 +739,8 @@ export default {
       this.glMesh.setParent(this.glScene)
     },
     getUniforms() {
-      const ww = window.innerWidth
-      const wh = window.innerHeight
+      const ww = this.$refs.webGlArea.clientWidth
+      const wh = this.$refs.webGlArea.clientHeight
       let selectedClusterId =
         (this.appStateStore.selected_cluster_id !== null && this.appStateStore.selected_cluster_id !== undefined)
           ? this.appStateStore.selected_cluster_id
@@ -936,10 +943,10 @@ export default {
 </script>
 
 <template>
-  <div>
-    <div class="fixed h-full w-full" ref="panZoomProxy"></div>
+  <div class="" id="interactive_map">
+    <div class="absolute h-full w-full" ref="panZoomProxy"></div>
 
-    <div
+    <div id="webGlArea"
       ref="webGlArea"
       @mousemove="updateOnHover"
       @touchmove="updateOnHover"
@@ -948,7 +955,7 @@ export default {
       @touchstart="onMouseDown"
       @touchend="onMouseUp"
       @mouseleave="onMouseLeave"
-      class="fixed h-full w-full"
+      class="absolute h-full w-full"
       :class="{
         'cursor-crosshair': mapStateStore.selected_map_tool === 'lasso',
         'cursor-pointer': mapState.hovered_point_idx !== -1,

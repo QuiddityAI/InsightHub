@@ -9,7 +9,6 @@ import {
   XMarkIcon,
 } from "@heroicons/vue/24/outline"
 
-import Button from 'primevue/button';
 import OverlayPanel from "primevue/overlaypanel"
 
 import MapWithLabels from "./MapWithLabels.vue"
@@ -50,9 +49,9 @@ export default {
 </script>
 
 <template>
-  <div class="absolute h-screen w-screen">
+  <div class="relative">
 
-    <MapWithLabels class="absolute top-0 h-screen w-screen"/>
+    <MapWithLabels class="absolute w-full h-full"/>
 
     <div
       v-if="appState.map_id && mapState.map_parameters?.search.search_type === 'similar_to_item'"

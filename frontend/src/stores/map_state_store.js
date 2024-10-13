@@ -5,8 +5,12 @@ export const useMapStateStore = defineStore("mapState", {
   state: () => {
     return {
       eventBus: inject("eventBus"),
+      map_client_x: 0,
+      map_client_y: 0,
+      map_client_width: 100,
+      map_client_height: 100,
 
-      passiveMarginsLRTB: [0, 0, 0, 0],
+      passiveMarginsLRTB: [50, 50, 50, 50],
 
       map_parameters: null,
       text_data: {},
@@ -58,10 +62,10 @@ export const useMapStateStore = defineStore("mapState", {
   },
   getters: {
     activeAreaWidth() {
-      return window.innerWidth - this.passiveMarginsLRTB[0] - this.passiveMarginsLRTB[1]
+      return this.map_client_width - this.passiveMarginsLRTB[0] - this.passiveMarginsLRTB[1]
     },
     activeAreaHeight() {
-      return window.innerHeight - this.passiveMarginsLRTB[2] - this.passiveMarginsLRTB[3]
+      return this.map_client_height - this.passiveMarginsLRTB[2] - this.passiveMarginsLRTB[3]
     },
   },
   actions: {
@@ -81,7 +85,7 @@ export const useMapStateStore = defineStore("mapState", {
       const shiftedToActiveAreaPos =
         normalizedPos * this.activeAreaHeight + this.passiveMarginsLRTB[3]
       const zoomed =
-        (shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom + window.innerHeight
+        (shiftedToActiveAreaPos - this.map_client_height) * this.currentZoom + this.map_client_height
       const pannedAndZoomed = zoomed - this.currentPan[1]
       return pannedAndZoomed
     },
@@ -90,28 +94,30 @@ export const useMapStateStore = defineStore("mapState", {
       const shiftedToActiveAreaPos =
         normalizedPos * this.activeAreaWidth + this.passiveMarginsLRTB[0]
       const pannedAndZoomed = shiftedToActiveAreaPos * this.currentZoom + this.currentPan[0]
-      return window.innerWidth - pannedAndZoomed
+      return this.map_client_width - pannedAndZoomed
     },
     screenTopFromRelative(y) {
       const normalizedPos = (y + this.baseOffset[1]) * this.baseScale[1]
       const shiftedToActiveAreaPos =
         normalizedPos * this.activeAreaHeight + this.passiveMarginsLRTB[3]
       const zoomed =
-        (shiftedToActiveAreaPos - window.innerHeight) * this.currentZoom + window.innerHeight
+        (shiftedToActiveAreaPos - this.map_client_height) * this.currentZoom + this.map_client_height
       const pannedAndZoomed = zoomed - this.currentPan[1]
-      return window.innerHeight - pannedAndZoomed
+      return this.map_client_height - pannedAndZoomed
     },
     screenToEmbeddingX(screenX) {
-      const notPannedAndZoomedX = (screenX - this.currentPan[0]) / this.currentZoom
+      const mapX = screenX - this.map_client_x
+      const notPannedAndZoomedX = (mapX - this.currentPan[0]) / this.currentZoom
       const notShiftedToActiveAreaX =
         (notPannedAndZoomedX - this.passiveMarginsLRTB[0]) / this.activeAreaWidth
       const notNormalizedX = notShiftedToActiveAreaX / this.baseScale[0] - this.baseOffset[0]
       return notNormalizedX
     },
     screenToEmbeddingY(screenY) {
-      const notPannedY = window.innerHeight - screenY + this.currentPan[1]
+      const mapY = screenY - this.map_client_y
+      const notPannedY = this.map_client_height - mapY + this.currentPan[1]
       const notPannedAndZoomedY =
-        (notPannedY - window.innerHeight) / this.currentZoom + window.innerHeight
+        (notPannedY - this.map_client_height) / this.currentZoom + this.map_client_height
       const notShiftedToActiveAreaY =
         (notPannedAndZoomedY - this.passiveMarginsLRTB[3]) / this.activeAreaHeight
       const notNormalizedY = notShiftedToActiveAreaY / this.baseScale[1] - this.baseOffset[1]

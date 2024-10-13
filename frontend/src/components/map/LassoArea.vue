@@ -38,7 +38,7 @@ export default {
   <svg
       v-if="lasso_points_str"
       id="lasso_area"
-      class="pointer-events-none fixed h-full w-full"
+      class="pointer-events-none"
       xmlns="http://www.w3.org/2000/svg">
       <polygon
         :points="lasso_points_str"
