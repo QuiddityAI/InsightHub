@@ -14,21 +14,27 @@ from data_map_backend.models import DataCollection, FieldType, Dataset
 from legacy_backend.logic.search import get_items_by_ids
 from legacy_backend.utils.dotdict import DotDict
 from legacy_backend.logic.clusters_and_titles import clusterize_results
+from legacy_backend.utils.collect_timings import Timings
 
 
 def generate_new_map(collection: DataCollection, parameters: MapParameters) -> ProjectionData | str:
+    logging.warning("Generating new map")
+    timings: Timings = Timings()
     # generate projections
     top_dataset_id, collection_items, reference_ds_and_item_id = _get_collection_items(collection)
     if not collection_items.count():
         return "No items found"
+    timings.log("get_collection_items")
     dataset: Dataset = get_dataset_cached(top_dataset_id)
     dataset_serialized = get_serialized_dataset_cached(top_dataset_id)
+    timings.log("get_dataset_cached")
 
     map_vector_field = dataset.merged_advanced_options.get('map_vector_field', 'w2v_vector')
     assert dataset.schema.hover_label_rendering is not None
     hover_required_fields = dataset.schema.hover_label_rendering.get('required_fields', [])
     item_ids = [item.item_id for item in collection_items]
     items: list[dict] = get_items_by_ids(dataset.id, item_ids, [map_vector_field] + hover_required_fields)  # type: ignore
+    timings.log("get_items_by_ids")
     if map_vector_field == "w2v_vector":
         # add_w2v_vectors(ds_items, query, similar_map, origin_map, dataset.schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
         return "W2V vectors are not supported in the new map"
@@ -43,8 +49,10 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
     dummy_vector = np.zeros(vector_size)
     vectors = [item.get(map_vector_field, dummy_vector) for item in items]
     raw_projections = do_umap(np.array(vectors), {}, 2)
+    timings.log("do umap")
     final_positions = raw_projections  # TODO: re-add polar coordinates
     cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, DotDict())
+    timings.log("clusterize_results")
 
     per_point = PerPointData(
         ds_and_item_id=[(top_dataset_id, item['_id']) for item in items],
@@ -83,11 +91,15 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
         thumbnail_data=None,
     )
     collection.map_data = map_data.dict()
+    timings.log("set data")
     collection.save()
+    timings.log("save data")
 
     # start thread for cluster titles and thumbnails
     threading.Thread(target=get_cluster_titles, args=()).start()
     threading.Thread(target=get_thumbnails, args=()).start()
+
+    timings.print_to_logger()
 
     # return projections
     return projection_data
@@ -109,9 +121,9 @@ def get_vector_field_dimensions(field: DotDict):
 
 
 def do_umap(vectors: np.ndarray, projection_parameters: dict, reduced_dimensions_required: int) -> np.ndarray:
-    #import cuml
-    import umap  # import it only when needed as it slows down the startup time
-    reducer = umap.UMAP(n_components=reduced_dimensions_required, random_state=99,  # type: ignore
+    from cuml.manifold.umap import UMAP
+    # from umap import UMAP  # import it only when needed as it slows down the startup time
+    reducer = UMAP(n_components=reduced_dimensions_required, random_state=99,  # type: ignore
                         min_dist=projection_parameters.get("min_dist", 0.17),
                         n_epochs=projection_parameters.get("n_epochs", 500),
                         n_neighbors=projection_parameters.get("n_neighbors", 15),

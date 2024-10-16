@@ -1,11 +1,13 @@
 import time
+import logging
 
 
 class Timings(object):
 
     def __init__(self) -> None:
         self.timings = []
-        self.last_timestamp = time.time()
+        self.start = time.time()
+        self.last_timestamp = self.start
 
     def log(self, description):
         now = time.time()
@@ -15,3 +17,8 @@ class Timings(object):
 
     def get_timestamps(self):
         return self.timings
+
+    def print_to_logger(self):
+        for timing in self.timings:
+            logging.warning(f"{timing['part']}: {timing['duration'] * 1000:.2f}ms")
+        logging.warning(f"Total time: {(self.last_timestamp - self.start):.3f}s")

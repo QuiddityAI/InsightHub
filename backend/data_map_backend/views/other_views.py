@@ -558,12 +558,14 @@ def get_search_history(request):
     try:
         data = json.loads(request.body)
         organization_id: int = data["organization_id"]
+        limit: int = data.get("limit", 10)
+        offset: int = data.get("offset", 0)
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
     items = SearchHistoryItem.objects.filter(
         user_id=request.user.id, organization_id=organization_id
-    ).order_by("-created_at")[:25:-1]
+    ).order_by("-created_at")[offset:offset + limit:-1]
     serialized_data = SearchHistoryItemSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 

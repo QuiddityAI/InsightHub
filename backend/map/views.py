@@ -24,12 +24,9 @@ def get_new_map_route(request, payload: NewMapPayload):
 
     projections = generate_new_map(collection, payload.parameters)
     if isinstance(projections, str):
-        collection.map_data = {}
+        collection.map_data = None
         collection.save()
         return HttpResponse(status=500)
-    else:
-        collection.map_data = projections.dict()
-        collection.save()
     return projections
 
 

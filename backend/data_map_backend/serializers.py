@@ -106,7 +106,7 @@ class CollectionSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = DataCollection
-        exclude = []
+        exclude = ['map_data']
 
 
 class CollectionItemSerializer(drf_serializers.ModelSerializer):
