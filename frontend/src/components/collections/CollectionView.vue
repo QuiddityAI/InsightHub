@@ -1,5 +1,6 @@
 <script setup>
 import { httpClient } from "../../api/httpClient"
+import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../../utils/utils"
 
 import {
   ChevronLeftIcon,
@@ -90,6 +91,21 @@ export default {
     if (this.collection.writing_task_count > 0) {
       this.side_view = 'summary'
     }
+    this.eventBus.on("map_generated", (map_data) => {
+      console.log("map_generated", map_data)
+      this.mapStateStore.per_point.x = map_data.per_point.x
+      this.mapStateStore.per_point.y = map_data.per_point.y
+      this.mapStateStore.per_point.cluster_id = map_data.per_point.cluster_id
+      map_data.per_point.hue.push(Math.max(...map_data.per_point.hue) + 1)
+      this.mapStateStore.per_point.hue = normalizeArrayMedianGamma(
+        map_data.per_point.hue,
+        2.0
+      ).slice(0, map_data.per_point.hue.length - 1)
+
+      this.eventBus.emit("map_center_and_fit_data_to_active_area_smooth")
+      this.eventBus.emit("map_update_geometry")
+      console.log(this.mapStateStore.per_point.x)
+    })
   },
   methods: {
     delete_collection() {
@@ -284,7 +300,10 @@ export default {
         </div>
 
         <div v-if="side_view === 'map'"
-          class="w-full h-full">
+          class="w-full h-full relative">
+          <button @click="collectionStore.generate_map()" class="absolute top-0 left-0 z-50">
+            Generate Map
+          </button>
           <MapWithLabelsAndButtons class="w-full h-full">
           </MapWithLabelsAndButtons>
         </div>

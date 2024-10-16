@@ -1123,6 +1123,13 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
+    map_data = models.JSONField(
+        verbose_name="Map Data",
+        help_text="",
+        default=dict,
+        blank=True,
+        null=False,
+    )
 
     history = HistoricalRecords()
 

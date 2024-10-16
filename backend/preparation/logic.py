@@ -17,6 +17,7 @@ class CollectionCreationModes(StrEnum):
     ASSISTED_SEARCH = 'assisted_search'
     CLASSIC_SEARCH = 'classic_search'
     QUESTION = 'question'
+    OVERVIEW_MAP = 'overview_map'
     EMPTY_COLLECTION = 'empty_collection'
 
 
@@ -56,6 +57,8 @@ def prepare_collection(
         prepare_for_classic_search(collection, settings, user)
     elif settings.mode == CollectionCreationModes.ASSISTED_SEARCH:
         prepare_for_assisted_search(collection, settings, user)
+    elif settings.mode == CollectionCreationModes.OVERVIEW_MAP:
+        prepare_for_overview_map(collection, settings, user)
     elif settings.mode == CollectionCreationModes.QUESTION:
         prepare_for_question(collection, settings, user)
     return collection
@@ -71,6 +74,23 @@ def prepare_for_classic_search(collection: DataCollection, settings: CreateColle
         filters=settings.filters,
         retrieval_mode=settings.retrieval_mode,
         ranking_settings=settings.ranking_settings,
+    )
+    run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+    collection.agent_is_running = False
+    collection.save()  # 7 ms
+
+
+def prepare_for_overview_map(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
+    assert settings.query is not None
+    search_task = SearchTaskSettings(
+        dataset_id=settings.dataset_id,
+        query=settings.query,
+        result_language=settings.result_language,
+        auto_set_filters=settings.auto_set_filters,
+        filters=settings.filters,
+        retrieval_mode=settings.retrieval_mode,
+        ranking_settings=settings.ranking_settings,
+        candidates_per_step=2000,
     )
     run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
     collection.agent_is_running = False

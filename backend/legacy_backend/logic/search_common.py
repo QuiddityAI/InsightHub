@@ -215,13 +215,13 @@ def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
 
 def separate_text_and_vector_fields(dataset: DotDict, fields: Iterable[str]):
     vector_fields = []
-    text_felds = []
+    text_fields = []
     for field in fields:
         if dataset.schema.object_fields[field].field_type == FieldType.VECTOR:
             vector_fields.append(field)
         else:
-            text_felds.append(field)
-    return text_felds, vector_fields
+            text_fields.append(field)
+    return text_fields, vector_fields
 
 
 def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query: QueryInput, filters: list[dict],

@@ -23,7 +23,7 @@ from ..logic.generate_missing_values import generate_missing_values_for_given_el
 from ..logic.search_common import QueryInput, get_required_fields, get_vector_search_results, \
     get_vector_search_results_matching_collection, get_fulltext_search_results, \
     combine_and_sort_result_sets, sort_items_and_complete_them, get_field_similarity_threshold, \
-    fill_in_vector_data_list, adapt_filters_to_dataset, check_filters
+    fill_in_vector_data_list, adapt_filters_to_dataset, check_filters, separate_text_and_vector_fields
 from ..logic.reranking import rerank
 
 from ..database_client.django_client import get_dataset
@@ -261,6 +261,15 @@ def _get_item_for_similarity_search(search_settings):
     item = items[0]
     item['_dataset_id'] = dataset.id
     return item, vector_fields
+
+
+def get_items_by_ids(dataset_id: int, item_ids: list[str], required_fields: list[str]) -> list:
+    dataset = get_serialized_dataset_cached(dataset_id)
+    text_fields, vector_fields = separate_text_and_vector_fields(dataset, required_fields)
+    search_engine_client = TextSearchEngineClient.get_instance()
+    items = search_engine_client.get_items_by_ids(dataset, item_ids, fields=text_fields)
+    fill_in_vector_data_list(dataset, items, vector_fields)
+    return items
 
 
 def get_search_results_similar_to_item(dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings, similar_item_info: tuple) -> tuple[list, dict, dict]:

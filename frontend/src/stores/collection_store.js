@@ -399,7 +399,23 @@ export const useCollectionStore = defineStore("collection", {
         .then((response) => {
           that.update_collection()
         })
-    }
+    },
+    // ------------------
+    generate_map() {
+      const that = this
+      const body = {
+        collection: {
+          collection_id: this.collection_id,
+          class_name: this.class_name,
+        },
+        parameters: {},
+      }
+      httpClient
+        .post("/api/v1/map/get_new_map", body)
+        .then((response) => {
+          this.eventBus.emit("map_generated", response.data)
+        })
+    },
   },
   getters: {
     item_count() {

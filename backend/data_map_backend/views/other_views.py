@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.utils import timezone
+from django.db.models.manager import BaseManager
 
 from ..models import (
     DataCollection,
@@ -42,6 +43,7 @@ from ..serializers import (
 )
 from ..notifier import default_notifier
 from ..utils import is_from_backend
+from legacy_backend.utils.dotdict import DotDict
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -176,7 +178,7 @@ def get_dataset_cached(dataset_id: int) -> Dataset:
 
 
 @lru_cache(maxsize=128)
-def get_serialized_dataset_cached(dataset_id: int, additional_fields: tuple=tuple()) -> dict:
+def get_serialized_dataset_cached(dataset_id: int, additional_fields: tuple=tuple()) -> DotDict:
     dataset: Dataset = get_dataset_cached(dataset_id)
 
     dataset_dict = DatasetSerializer(instance=dataset).data
@@ -193,7 +195,7 @@ def get_serialized_dataset_cached(dataset_id: int, additional_fields: tuple=tupl
     dataset_dict["schema"]["applicable_export_converters"].extend(serialized_exporters)
     if "item_count" in additional_fields:
         dataset_dict["item_count"] = dataset.item_count
-    return dataset_dict
+    return DotDict(dataset_dict)
 
 
 @csrf_exempt
@@ -857,29 +859,9 @@ def get_collection_items(request):
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
 
-    if field_type or is_positive:
-        all_items = CollectionItem.objects.filter(
-            collection_id=collection_id,
-            field_type=field_type,
-            is_positive=is_positive,
-            classes__contains=[class_name],
-        )
-    else:
-        # return all examples
-        all_items = CollectionItem.objects.filter(
-            collection_id=collection_id, classes__contains=[class_name]
-        )
-
-    active_sources = [s for s in collection.search_sources if s['is_active']]
-    search_mode = len(active_sources) > 0
-    search_results = all_items.filter(search_source_id__in=[s['id_hash'] for s in active_sources])
-
-    if search_mode:
-        return_items = search_results
-        return_items = return_items.order_by('-search_score')
-    else:
-        return_items = all_items.filter(relevance__gte=2)
-        return_items = return_items.order_by(order_by, '-search_score')
+    return_items, search_mode, reference_ds_and_item_id = get_filtered_collection_items(
+        collection, class_name, field_type, is_positive, order_by
+    )
 
     filtered_count = return_items.count()
 
@@ -899,6 +881,41 @@ def get_collection_items(request):
     result = json.dumps(result)
 
     return HttpResponse(result, status=200, content_type="application/json")
+
+
+def get_filtered_collection_items(
+    collection, class_name, field_type=None,
+    is_positive=None, order_by="-date_added") -> tuple[BaseManager[CollectionItem], bool, tuple[int, str] | None]:
+    if field_type or is_positive:
+        all_items = CollectionItem.objects.filter(
+            collection_id=collection.id,
+            field_type=field_type,
+            is_positive=is_positive,
+            classes__contains=[class_name],
+        )
+    else:
+        # return all items
+        all_items = CollectionItem.objects.filter(
+            collection_id=collection.id, classes__contains=[class_name]
+        )
+
+    active_sources = [s for s in collection.search_sources if s['is_active']]
+    reference_ds_and_item_id = None
+    if len(active_sources) == 1:
+        source = active_sources[0]
+        if source.get('reference_dataset_id') and source.get('reference_item_id'):
+            reference_ds_and_item_id = (source['reference_dataset_id'], source['reference_item_id'])
+    search_mode = len(active_sources) > 0
+    search_results = all_items.filter(search_source_id__in=[s['id_hash'] for s in active_sources])
+
+    if search_mode:
+        return_items = search_results
+        return_items = return_items.order_by('-search_score')
+    else:
+        return_items = all_items.filter(relevance__gte=2)
+        return_items = return_items.order_by(order_by, '-search_score')
+
+    return return_items, search_mode, reference_ds_and_item_id
 
 
 @csrf_exempt
