@@ -41,6 +41,7 @@ class TextSearchEngineClient(object):
             ssl_assert_hostname = False,
             ssl_show_warn = False,
             timeout = 90,  # seconds, especially on AWS EBS volumes, requests can take very long
+            pool_maxsize = 25,  # default is 10, but we have a lot of parallel requests (to get rid of "Connection pool is full" errors)
         )
 
 
