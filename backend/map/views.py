@@ -7,7 +7,7 @@ from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
 
 from .schemas import NewMapPayload, MapData
-from .logic import generate_new_map
+from .logic.map_generation_pipeline import generate_new_map
 
 api = NinjaAPI(urls_namespace="map")
 
