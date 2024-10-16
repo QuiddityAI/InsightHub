@@ -15,7 +15,7 @@ from legacy_backend.utils.dotdict import DotDict
 from legacy_backend.logic.clusters_and_titles import clusterize_results
 from legacy_backend.utils.collect_timings import Timings
 
-from map.logic.map_generation_steps import _get_collection_items, get_vector_field_dimensions, do_umap, _save_projections, get_cluster_titles, get_thumbnails
+from map.logic.map_generation_steps import get_collection_items, get_vector_field_dimensions, do_umap, save_projections, get_cluster_titles_new, get_thumbnails
 
 
 def generate_new_map(
@@ -25,7 +25,7 @@ def generate_new_map(
     timings: Timings = Timings()
 
     # get collection items and top dataset:
-    top_dataset_id, collection_items, reference_ds_and_item_id = _get_collection_items(
+    top_dataset_id, collection_items, reference_ds_and_item_id = get_collection_items(
         collection
     )
     if not collection_items.count():
@@ -43,8 +43,8 @@ def generate_new_map(
     hover_required_fields = dataset.schema.hover_label_rendering.get(
         "required_fields", []
     )
-    item_ids = [item.item_id for item in collection_items]
-    items: list[dict] = get_items_by_ids(dataset.id, item_ids, [map_vector_field] + hover_required_fields)  # type: ignore
+    data_item_ids = [item.item_id for item in collection_items]
+    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, [map_vector_field] + hover_required_fields)  # type: ignore
     timings.log("get_items_by_ids")
 
     # get vectors:
@@ -54,7 +54,7 @@ def generate_new_map(
         return "W2V vectors are not supported in the new map"
     else:
         all_map_vectors_present = all(
-            [item.get(map_vector_field) is not None for item in items]
+            [item.get(map_vector_field) is not None for item in data_items]
         )
         if not all_map_vectors_present:
             logging.warning("Not all items have map vectors")
@@ -68,7 +68,7 @@ def generate_new_map(
     )
     # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
     dummy_vector = np.zeros(vector_size)
-    vectors = [item.get(map_vector_field, dummy_vector) for item in items]
+    vectors = [item.get(map_vector_field, dummy_vector) for item in data_items]
 
     # get projections:
     raw_projections = do_umap(np.array(vectors), {}, 2)
@@ -80,10 +80,10 @@ def generate_new_map(
     timings.log("clusterize_results")
 
     # save projections to collection:
-    projection_data = _save_projections(
+    projection_data = save_projections(
         collection,
         parameters,
-        items,
+        data_items,
         collection_items,
         dataset,
         map_vector_field,
@@ -93,7 +93,7 @@ def generate_new_map(
     )
 
     # start thread for cluster titles and thumbnails
-    threading.Thread(target=get_cluster_titles, args=()).start()
+    threading.Thread(target=get_cluster_titles_new, args=(collection, dataset_serialized, projection_data)).start()
     threading.Thread(target=get_thumbnails, args=()).start()
 
     timings.print_to_logger()

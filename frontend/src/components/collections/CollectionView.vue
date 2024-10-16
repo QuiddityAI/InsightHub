@@ -91,20 +91,26 @@ export default {
     if (this.collection.writing_task_count > 0) {
       this.side_view = 'summary'
     }
-    this.eventBus.on("map_generated", (map_data) => {
-      console.log("map_generated", map_data)
-      this.mapStateStore.per_point.x = map_data.per_point.x
-      this.mapStateStore.per_point.y = map_data.per_point.y
-      this.mapStateStore.per_point.cluster_id = map_data.per_point.cluster_id
-      map_data.per_point.hue.push(Math.max(...map_data.per_point.hue) + 1)
+    this.eventBus.on("map_generated", (projection_data) => {
+      console.log("map_generated", projection_data)
+      this.mapStateStore.per_point.item_id = projection_data.per_point.ds_and_item_id
+      this.mapStateStore.per_point.x = projection_data.per_point.x
+      this.mapStateStore.per_point.y = projection_data.per_point.y
+      this.mapStateStore.per_point.cluster_id = projection_data.per_point.cluster_id
+      projection_data.per_point.hue.push(Math.max(...projection_data.per_point.hue) + 1)
       this.mapStateStore.per_point.hue = normalizeArrayMedianGamma(
-        map_data.per_point.hue,
+        projection_data.per_point.hue,
         2.0
-      ).slice(0, map_data.per_point.hue.length - 1)
+      ).slice(0, projection_data.per_point.hue.length - 1)
+      this.mapStateStore.text_data = projection_data.text_data_by_item
 
       this.eventBus.emit("map_center_and_fit_data_to_active_area_smooth")
       this.eventBus.emit("map_update_geometry")
-      console.log(this.mapStateStore.per_point.x)
+
+      this.collectionStore.get_map_cluster_info((cluster_info) => {
+        this.mapStateStore.clusterData = cluster_info
+        this.eventBus.emit("map_update_geometry")
+      })
     })
   },
   methods: {

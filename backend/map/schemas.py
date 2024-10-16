@@ -24,7 +24,7 @@ class PerPointData(Schema):
     collection_item_id: list[int]
     x: list[float]
     y: list[float]
-    cluster_id: list[float]
+    cluster_id: list[int]
     size: list[float]
     hue: list[float]
     sat: list[float]
@@ -42,10 +42,14 @@ class ProjectionData(Schema):
 
 
 class ClusterDescription(Schema):
-    cluster_id: int
-    center_x: float
-    center_y: float
+    id: int
+    center: list[float]
     title: str
+    title_html: str
+    min_score: float
+    max_score: float
+    avg_score: float
+    important_words: list[tuple[str, float]]
 
 
 class ThumbnailData(Schema):

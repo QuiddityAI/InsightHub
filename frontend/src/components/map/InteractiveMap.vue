@@ -206,6 +206,7 @@ export default {
       this.glContext = this.renderer.gl
       this.$refs.webGlArea.appendChild(this.glContext.canvas)
       this.glContext.clearColor(0.93, 0.94, 0.95, 1)
+      //this.glContext.clearColor(1, 1, 1, 1)
 
       // not tested yet, but should handle context loss
       this.glContext.canvas.addEventListener("webglcontextlost", (event) => {

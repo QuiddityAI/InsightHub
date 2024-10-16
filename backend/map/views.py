@@ -59,6 +59,7 @@ def get_cluster_info_route(request, payload: CollectionIdentifier):
     map_data = MapData(**collection.map_data)
     while not map_data.clusters_are_ready:
         time.sleep(0.1)
+        # FIXME: loads up to 2MB every 100ms from database
         collection.refresh_from_db()
         map_data = MapData(**collection.map_data)
         if (time.time() - start) > timeout:

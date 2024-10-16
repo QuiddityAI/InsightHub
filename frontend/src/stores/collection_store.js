@@ -416,6 +416,18 @@ export const useCollectionStore = defineStore("collection", {
           this.eventBus.emit("map_generated", response.data)
         })
     },
+    get_map_cluster_info(on_success) {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+      }
+      httpClient
+        .post("/api/v1/map/get_cluster_info", body)
+        .then((response) => {
+          on_success(response.data)
+        })
+    },
   },
   getters: {
     item_count() {

@@ -6,7 +6,7 @@ import numpy as np
 from django.db.models.manager import BaseManager
 from django.utils.timezone import now
 
-from ..schemas import MapParameters, ProjectionData, PerPointData, MapData
+from ..schemas import MapParameters, ProjectionData, PerPointData, MapData, ClusterDescription
 
 from data_map_backend.views.other_views import (
     get_filtered_collection_items,
@@ -14,14 +14,16 @@ from data_map_backend.views.other_views import (
 from data_map_backend.models import DataCollection, FieldType, Dataset
 from legacy_backend.utils.dotdict import DotDict
 from legacy_backend.utils.collect_timings import Timings
+from legacy_backend.logic.clusters_and_titles import get_cluster_titles
 
 
-def _get_collection_items(
+def get_collection_items(
     collection: DataCollection,
 ) -> tuple[int, BaseManager, tuple | None]:
     items, is_search_mode, reference_ds_and_item_id = get_filtered_collection_items(
         collection, "_default", field_type=FieldType.IDENTIFIER, is_positive=True
     )
+    items = items.only("id", "dataset_id", "item_id")
     item_count_per_ds_id = defaultdict(int)
     for item in items:
         item_count_per_ds_id[item.dataset_id] += 1
@@ -67,7 +69,7 @@ def do_umap(
     return raw_projections
 
 
-def _save_projections(
+def save_projections(
     collection: DataCollection,
     parameters: MapParameters,
     data_items: list[dict],
@@ -122,9 +124,29 @@ def _save_projections(
     return projection_data
 
 
-def get_cluster_titles():
-    time.sleep(5)
-    return None
+def get_cluster_titles_new(collection: DataCollection, dataset: DotDict, projection_data: ProjectionData):
+    timings: Timings = Timings()
+    cluster_id_per_point = projection_data.per_point.cluster_id
+    final_positions = np.column_stack([projection_data.per_point.x, projection_data.per_point.y])
+    sorted_ids = projection_data.per_point.ds_and_item_id
+    items_by_dataset = projection_data.text_data_by_item
+    datasets = {dataset.id: dataset}  # type: ignore
+    item_count_per_language = defaultdict(int)
+    for ds_id, ds_items in items_by_dataset.items():
+        for item in ds_items.values():
+            item_count_per_language[item.get("language", "en")] += 1
+    result_language = max(item_count_per_language, key=lambda x: item_count_per_language[x])
+    cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, timings)
+    map_data = MapData(**collection.map_data)
+    map_data.clusters_are_ready = True
+    clusters_by_id = {}
+    for cluster in cluster_data:
+        clusters_by_id[cluster["id"]] = ClusterDescription(**cluster)
+    map_data.clusters_by_id = clusters_by_id
+    collection.map_data = map_data.dict()
+    collection.save()
+    timings.log("save data")
+    timings.print_to_logger()
 
 
 def get_thumbnails():

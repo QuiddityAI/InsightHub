@@ -82,7 +82,7 @@ def join_extracted_text_sources(source_texts: list[str | list]) -> str:
     return " ".join(texts)
 
 
-def get_field_from_all_items(items_by_dataset: dict[str, dict[str, dict]], sorted_ids: list[tuple[str, str]], field_name: str, default_value: Any):
+def get_field_from_all_items(items_by_dataset: dict[int, dict[str, dict]], sorted_ids: list[tuple[int, str]], field_name: str, default_value: Any):
     return [items_by_dataset[ds_id][item_id].get(field_name, default_value) for (ds_id, item_id) in sorted_ids]
 
 

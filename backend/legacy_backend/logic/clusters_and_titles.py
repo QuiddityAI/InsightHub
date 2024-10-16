@@ -28,7 +28,7 @@ def clusterize_results(projections, clusterizer_parameters: DotDict):
     return clusterer.labels_
 
 
-def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[str, str]], items_by_dataset: dict[str, dict[str, dict]], datasets: dict[str, DotDict], result_language: str | None, timings: Timings):
+def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[int, str]], items_by_dataset: dict[int, dict[str, dict]], datasets: dict[int, DotDict], result_language: str | None, timings: Timings):
     num_clusters: int = max(cluster_id_per_point) + 1
     if num_clusters <= 0:
         return []
