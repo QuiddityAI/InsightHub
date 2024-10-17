@@ -62,6 +62,11 @@ export default {
     }
   },
   watch: {
+    'collectionStore.first_index'() {
+      this.collectionStore.load_collection_items()
+      // scroll table to top:
+      this.$refs.content_area.scrollTop = 0
+    },
     'collectionStore.collection.writing_task_count'() {
       if (this.collection?.writing_task_count > 0) {
         this.side_view = 'summary'
@@ -179,7 +184,8 @@ export default {
       </div>
 
       <!-- Middle: Content Area-->
-      <div class="flex-1 flex flex-col gap-3 xl:gap-5 overflow-y-auto pt-4 xl:pt-6 z-30 relative shadow-lg bg-gray-200">
+      <div ref="content_area"
+        class="flex-1 flex flex-col gap-3 xl:gap-5 overflow-y-auto pt-4 xl:pt-6 z-30 relative shadow-lg bg-gray-200">
 
         <!-- Search / Agent Bar -->
         <div v-if="collectionStore.search_mode || collection.agent_is_running"

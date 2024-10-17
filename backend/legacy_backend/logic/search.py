@@ -14,6 +14,7 @@ from ..utils.source_plugin_types import SourcePlugin
 
 from ..api_clients.bing_web_search import bing_web_search_formatted
 from ..api_clients.semantic_scholar_client import semantic_scholar_search_formatted
+from ..api_clients.kleinanzeigen_client import get_kleinanzeigen_results
 from ..database_client.django_client import get_trained_classifier, get_dataset, get_collection
 from ..database_client.vector_search_engine_client import VectorSearchEngineClient
 from ..database_client.text_search_engine_client import TextSearchEngineClient
@@ -69,6 +70,15 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
             limit = params.search.result_list_items_per_page if purpose == "list" else params.search.max_items_used_for_mapping
             required_fields = get_required_fields(dataset, params.vectorize, purpose)
             sorted_ids, full_items = semantic_scholar_search_formatted(dataset.id, query, required_fields, limit=limit)
+            sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
+            all_items_by_dataset[dataset_id] = full_items
+            continue
+
+        if dataset.source_plugin == SourcePlugin.KLEINANZEIGEN and params.search.search_type == "external_input":
+            query = params.search.all_field_query
+            limit = params.search.result_list_items_per_page if purpose == "list" else params.search.max_items_used_for_mapping
+            offset = params.search.result_list_current_page * limit if purpose == "list" else 0
+            sorted_ids, full_items = get_kleinanzeigen_results(dataset.id, query, limit=limit, offset=offset)
             sorted_id_sets.append([(dataset_id, item_id) for item_id in sorted_ids])
             all_items_by_dataset[dataset_id] = full_items
             continue

@@ -89,11 +89,6 @@ export default {
     })
   },
   watch: {
-    'collectionStore.first_index'() {
-      this.collectionStore.load_collection_items()
-      // scroll table to top:
-      this.$refs.table.$el.querySelector('div').scrollTop = 0
-    },
     'collectionStore.order_by_field'() {
       this.collectionStore.load_collection_items()
     },

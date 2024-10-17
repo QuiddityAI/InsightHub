@@ -77,6 +77,7 @@ class SourcePlugin(models.TextChoices):
     BRAVE_WEB_API = "BRAVE_WEB_API", "Brave Web Search API"
     BING_WEB_API = "BING_WEB_API", "Bing Web Search API"
     SEMANTIC_SCHOLAR_API = "SEMANTIC_SCHOLAR_API", "Semantic Scholar API"
+    KLEINANZEIGEN = "KLEINANZEIGEN", "Kleinanzeigen Search"
 
 
 class User(AbstractUser):
