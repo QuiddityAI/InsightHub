@@ -34,8 +34,8 @@ export default {
       v-if="mapState.hovered_point_idx !== -1"
       class="pointer-events-none fixed"
       :style="{
-        right: mapState.mapRightFromRelative(mapState.per_point.x[mapState.hovered_point_idx]) + 'px',
-        top: mapState.mapTopFromRelative(mapState.per_point.y[mapState.hovered_point_idx]) + 'px',
+        right: mapState.mapRightFromRelative(mapState.per_point.x[mapState.hovered_point_idx]) + 'px',  // assuming map ends at right screen edge for now
+        top: mapState.mapTopFromRelative(mapState.per_point.y[mapState.hovered_point_idx]) + mapState.map_client_y + 'px',
         'max-width': '200px',
       }">
       <div

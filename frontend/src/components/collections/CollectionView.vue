@@ -193,11 +193,11 @@ export default {
     </div>
 
     <!-- Lower Area -->
-    <div class="flex-1 flex flex-row overflow-hidden">
+    <div class="flex-1 flex flex-row overflow-hidden z-30 relative">
 
       <!-- Left Side: Summary -->
       <div v-if="side_view === 'summary'"
-        class="flex-none w-[620px] bg-white shadow-md z-30">
+        class="flex-none w-[620px] bg-white shadow-md z-40 relative">
         <WritingTaskArea v-if="side_view === 'summary'"
           class="overflow-y-auto h-full"
           @close="side_view = null"
@@ -206,7 +206,7 @@ export default {
       </div>
 
       <!-- Middle: Content Area-->
-      <div class="flex-1 flex flex-col gap-3 xl:gap-5 overflow-y-auto pt-4 xl:pt-6">
+      <div class="flex-1 flex flex-col gap-3 xl:gap-5 overflow-y-auto pt-4 xl:pt-6 z-30 relative shadow-lg bg-gray-200">
 
         <!-- Search / Agent Bar -->
         <div v-if="collectionStore.search_mode || collection.agent_is_running"
@@ -297,17 +297,18 @@ export default {
 
       <!-- Right Side: More / Map -->
       <div v-if="side_view && side_view !== 'summary'"
-        class="flex-none w-[600px] bg-white shadow-md z-30">
+        class="flex-none w-[600px] bg-white relative"
+        :class="{'z-0': side_view === 'map', 'z-40': side_view === 'more'}">
 
         <div v-if="side_view === 'more'"
-          class="overflow-hidden h-full">
+          class="overflow-hidden h-full shadow-md">
           <ExplanationLog class="h-full overflow-y-auto">
           </ExplanationLog>
         </div>
 
         <div v-if="side_view === 'map'"
           class="w-full h-full relative">
-          <button @click="collectionStore.generate_map()" class="absolute top-0 left-0 z-50">
+          <button @click="collectionStore.generate_map()" class="absolute top-0 left-0 z-50 opacity-0">
             Generate Map
           </button>
           <MapWithLabelsAndButtons class="w-full h-full">

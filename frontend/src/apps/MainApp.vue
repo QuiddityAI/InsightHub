@@ -21,6 +21,7 @@ import LegalFooter from '../components/general/LegalFooter.vue';
 // import ExploreTab from "../components/search/ExploreTab.vue"
 // import WriteTab from "../components/collections/WriteTab.vue"
 // import ChatsTab from "../components/chats/ChatsTab.vue"
+import HoverLabel from "../components/map/HoverLabel.vue"
 
 import { httpClient } from "../api/httpClient"
 
@@ -263,6 +264,8 @@ export default {
         'right-3': appState.selected_app_tab !== 'explore',
       }">
     </LegalFooter>
+
+    <HoverLabel class="absolute w-full h-full z-50" />
 
   </main>
 </template>

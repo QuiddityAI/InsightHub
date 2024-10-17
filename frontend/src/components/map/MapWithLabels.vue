@@ -4,7 +4,6 @@ import InteractiveMap from "./InteractiveMap.vue"
 import ClusterLabels from "./ClusterLabels.vue"
 import CloseUpPointItems from "./CloseUpPointItems.vue"
 import LassoArea from "./LassoArea.vue"
-import HoverLabel from "./HoverLabel.vue"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -46,8 +45,6 @@ export default {
     <CloseUpPointItems class="absolute w-full h-full" />
 
     <ClusterLabels class="absolute w-full h-full" />
-
-    <HoverLabel class="absolute w-full h-full" />
 
     <LassoArea class="absolute w-full h-full" />
   </div>

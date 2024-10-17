@@ -205,7 +205,7 @@ export default {
       this.renderer = new Renderer({ depth: false, dpr: window.devicePixelRatio || 1.0 })
       this.glContext = this.renderer.gl
       this.$refs.webGlArea.appendChild(this.glContext.canvas)
-      this.glContext.clearColor(0.93, 0.94, 0.95, 1)
+      this.glContext.clearColor(0.85, 0.86, 0.89, 1)
       //this.glContext.clearColor(1, 1, 1, 1)
 
       // not tested yet, but should handle context loss
