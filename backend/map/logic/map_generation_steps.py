@@ -6,7 +6,7 @@ import numpy as np
 from django.db.models.manager import BaseManager
 from django.utils.timezone import now
 
-from ..schemas import MapParameters, ProjectionData, PerPointData, MapData, ClusterDescription
+from ..schemas import MapParameters, ProjectionData, PerPointData, MapData, ClusterDescription, MapMetadata
 
 from data_map_backend.views.other_views import (
     get_filtered_collection_items,
@@ -80,6 +80,15 @@ def save_projections(
     cluster_id_per_point: np.ndarray,
     timings: Timings,
 ):
+    metadata = MapMetadata(
+        created_at=now().isoformat(),
+        parameters=parameters,
+        projections_are_ready=True,
+        clusters_are_ready=False,
+        thumbnails_are_ready=False,
+    )
+    collection.map_metadata = metadata.dict()
+
     per_point = PerPointData(
         ds_and_item_id=[(dataset.id, item["_id"]) for item in data_items],  # type: ignore
         collection_item_id=[item.id for item in collection_items],
@@ -101,19 +110,14 @@ def save_projections(
         text_data_by_item[dataset.id][item["_id"]] = item  # type: ignore
 
     projection_data = ProjectionData(
-        created_at=now().isoformat(),
-        parameters=parameters,
         per_point=per_point,
         text_data_by_item=text_data_by_item,
         colorize_by_cluster_id=True,
     )
 
     map_data = MapData(
-        projections_are_ready=True,
         projections=projection_data,
-        clusters_are_ready=False,
         clusters_by_id={},
-        thumbnails_are_ready=False,
         thumbnail_data=None,
     )
     collection.map_data = map_data.dict()
@@ -137,8 +141,10 @@ def get_cluster_titles_new(collection: DataCollection, dataset: DotDict, project
             item_count_per_language[item.get("language", "en")] += 1
     result_language = max(item_count_per_language, key=lambda x: item_count_per_language[x])
     cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, timings)
+    metadata = MapMetadata(**collection.map_metadata)
+    metadata.clusters_are_ready = True
+    collection.map_metadata = metadata.dict()
     map_data = MapData(**collection.map_data)
-    map_data.clusters_are_ready = True
     clusters_by_id = {}
     for cluster in cluster_data:
         clusters_by_id[cluster["id"]] = ClusterDescription(**cluster)

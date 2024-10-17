@@ -1,4 +1,5 @@
 import time
+import logging
 
 from django.http import HttpResponse
 from ninja import NinjaAPI
@@ -6,7 +7,7 @@ from ninja import NinjaAPI
 from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
 
-from .schemas import NewMapPayload, MapData
+from .schemas import NewMapPayload, MapData, MapMetadata, ProjectionsEndpointResponse
 from .logic.map_generation_pipeline import generate_new_map
 
 api = NinjaAPI(urls_namespace="map")
@@ -24,10 +25,14 @@ def get_new_map_route(request, payload: NewMapPayload):
 
     projections = generate_new_map(collection, payload.parameters)
     if isinstance(projections, str):
-        collection.map_data = None
+        # there was an error
+        logging.error(projections)
+        collection.map_metadata = {}
+        collection.map_data = {}
         collection.save()
-        return HttpResponse(status=500)
-    return projections
+        return HttpResponse(status=204)
+    result  = ProjectionsEndpointResponse(projections=projections, metadata=collection.map_metadata)
+    return result.dict()
 
 
 @api.post("get_existing_projections")
@@ -36,12 +41,15 @@ def get_existing_projections_route(request, payload: CollectionIdentifier):
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.get(id=payload.collection_id)
+        collection = DataCollection.objects.only("map_data", "map_metadata").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
 
+    if not collection.map_data:
+        return None
     map_data = MapData(**collection.map_data)
-    return map_data.projections
+    result  = ProjectionsEndpointResponse(projections=map_data.projections, metadata=collection.map_metadata)
+    return result.dict()
 
 
 @api.post("get_cluster_info")
@@ -50,21 +58,22 @@ def get_cluster_info_route(request, payload: CollectionIdentifier):
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.get(id=payload.collection_id)
+        collection = DataCollection.objects.only("map_metadata").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
 
     timeout = 60
     start = time.time()
-    map_data = MapData(**collection.map_data)
-    while not map_data.clusters_are_ready:
+    map_metadata = MapMetadata(**collection.map_metadata) if collection.map_metadata else None
+    while not map_metadata or not map_metadata.clusters_are_ready:
         time.sleep(0.1)
-        # FIXME: loads up to 2MB every 100ms from database
-        collection.refresh_from_db()
-        map_data = MapData(**collection.map_data)
         if (time.time() - start) > timeout:
             return HttpResponse(status=500)
+        collection.refresh_from_db(fields=["map_metadata"])
+        map_metadata = MapMetadata(**collection.map_metadata) if collection.map_metadata else None
 
+    collection.refresh_from_db(fields=["map_data"])
+    map_data = MapData(**collection.map_data)
     return map_data.clusters_by_id
 
 
@@ -74,18 +83,20 @@ def get_thumbnail_data_route(request, payload: CollectionIdentifier):
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.get(id=payload.collection_id)
+        collection = DataCollection.objects.only("map_metadata").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
 
     timeout = 60
     start = time.time()
-    map_data = MapData(**collection.map_data)
-    while not map_data.thumbnails_are_ready:
+    map_metadata = MapMetadata(**collection.map_metadata) if collection.map_metadata else None
+    while not map_metadata or not map_metadata.clusters_are_ready:
         time.sleep(0.1)
-        collection.refresh_from_db()
-        map_data = MapData(**collection.map_data)
         if (time.time() - start) > timeout:
             return HttpResponse(status=500)
+        collection.refresh_from_db(fields=["map_metadata"])
+        map_metadata = MapMetadata(**collection.map_metadata) if collection.map_metadata else None
 
+    collection.refresh_from_db(fields=["map_data"])
+    map_data = MapData(**collection.map_data)
     return map_data.thumbnail_data

@@ -15,7 +15,8 @@ from legacy_backend.utils.dotdict import DotDict
 from legacy_backend.logic.clusters_and_titles import clusterize_results
 from legacy_backend.utils.collect_timings import Timings
 
-from map.logic.map_generation_steps import get_collection_items, get_vector_field_dimensions, do_umap, save_projections, get_cluster_titles_new, get_thumbnails
+from map.logic.map_generation_steps import (get_collection_items, get_vector_field_dimensions,
+    do_umap, save_projections, get_cluster_titles_new, get_thumbnails)
 
 
 def generate_new_map(
@@ -44,7 +45,8 @@ def generate_new_map(
         "required_fields", []
     )
     data_item_ids = [item.item_id for item in collection_items]
-    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, [map_vector_field] + hover_required_fields)  # type: ignore
+    required_fields = [map_vector_field] + hover_required_fields if map_vector_field != "w2v_vector" else hover_required_fields
+    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)  # type: ignore
     timings.log("get_items_by_ids")
 
     # get vectors:

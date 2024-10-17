@@ -199,6 +199,13 @@ export default {
     //   this.show_score_info_chart()
     // })
 
+    this.eventBus.on("projections_received", ({projections}) => {
+      this.mapStateStore.set_projection_data(projections)
+    })
+    this.eventBus.on("cluster_info_received", ({cluster_info}) => {
+      this.mapStateStore.set_cluster_info(cluster_info)
+    })
+
     if (window.innerWidth < 768) {
       this.appStateStore.error_dialog_message = "This application doesn't work correctly on mobile devices. Please use a desktop browser."
       this.appStateStore.show_error_dialog = true

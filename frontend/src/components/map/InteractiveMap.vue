@@ -141,32 +141,7 @@ export default {
   },
   methods: {
     resetData() {
-      this.mapStateStore.text_data = {}
-      this.mapStateStore.per_point = {
-        item_id: [],
-        cluster_id: [],
-        x: [],
-        y: [],
-        size: [],
-        hue: [],
-        sat: [],
-        val: [],
-        opacity: [],
-        secondary_hue: [],
-        secondary_sat: [],
-        secondary_val: [],
-        secondary_opacity: [],
-        flatness: [],
-        thumbnail_aspect_ratio: [],
-      }
-
-      this.mapStateStore.clusterData = []
-      this.mapStateStore.textureAtlas = null
-      this.mapStateStore.thumbnailSpriteSize = 64
-
-      this.mapStateStore.markedPointIdx = -1
-      this.mapStateStore.hovered_point_idx = -1
-
+      this.mapStateStore.reset_data()
       this.updateGeometry()
     },
     resetPanAndZoom() {
@@ -228,6 +203,7 @@ export default {
 
 
       function on_resize() {
+        if (!that.$refs.webGlArea) return
         that.mapStateStore.map_client_x = that.$refs.webGlArea.getBoundingClientRect().x
         that.mapStateStore.map_client_y = that.$refs.webGlArea.getBoundingClientRect().y
         that.mapStateStore.map_client_width = that.$refs.webGlArea.clientWidth
@@ -494,6 +470,7 @@ export default {
       this.updateGeometry()
     },
     updateGeometry() {
+      if (!this.$refs.webGlArea) return
       const pointCount = this.mapStateStore.per_point.x.length
       this.mapStateStore.per_point.y = ensureLength(this.mapStateStore.per_point.y, pointCount, 0.0)
 
@@ -778,6 +755,7 @@ export default {
       }
     },
     updateUniforms() {
+      if (!this.$refs.webGlArea) return
       this.glProgram.uniforms = this.getUniforms()
       this.glProgramShadows.uniforms = this.getUniforms()
       this.renderer.render({ scene: this.glScene, camera: this.camera })

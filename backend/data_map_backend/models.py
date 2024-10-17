@@ -1123,9 +1123,16 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
+    map_metadata = models.JSONField(
+        verbose_name="Map Metadata",
+        help_text="Last update, progress, readiness etc.",
+        default=dict,
+        blank=True,
+        null=False,
+    )
     map_data = models.JSONField(
         verbose_name="Map Data",
-        help_text="",
+        help_text="The actual map data like positions and labels",
         default=dict,
         blank=True,
         null=False,
@@ -1180,6 +1187,8 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
 
     def __str__(self):
         return f"{self.name}"
+
+    objects = models.Manager().defer("map_data")
 
     class Meta:
         verbose_name = "Data Collection"

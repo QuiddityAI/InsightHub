@@ -1,6 +1,8 @@
 import { defineStore } from "pinia"
 import { inject } from "vue"
 
+import { normalizeArrayMedianGamma } from "../utils/utils"
+
 export const useMapStateStore = defineStore("mapState", {
   state: () => {
     return {
@@ -10,7 +12,7 @@ export const useMapStateStore = defineStore("mapState", {
       map_client_width: 100,
       map_client_height: 100,
 
-      passiveMarginsLRTB: [50, 50, 50, 50],
+      passiveMarginsLRTB: [70, 70, 100, 100],
 
       map_parameters: null,
       text_data: {},
@@ -69,6 +71,34 @@ export const useMapStateStore = defineStore("mapState", {
     },
   },
   actions: {
+    reset_data() {
+      this.text_data = {}
+      this.per_point = {
+        item_id: [],
+        cluster_id: [],
+        x: [],
+        y: [],
+        size: [],
+        hue: [],
+        sat: [],
+        val: [],
+        opacity: [],
+        secondary_hue: [],
+        secondary_sat: [],
+        secondary_val: [],
+        secondary_opacity: [],
+        flatness: [],
+        thumbnail_aspect_ratio: [],
+      }
+
+      this.clusterData = []
+      this.textureAtlas = null
+      this.thumbnailSpriteSize = 64
+
+      this.markedPointIdx = -1
+      this.hovered_point_idx = -1
+    },
+    // -------------------------------------------------------
     get_item_by_index(index) {
       const [ds_id, item_id] = this.per_point.item_id[index]
       return this.text_data[ds_id][item_id]
@@ -192,5 +222,27 @@ export const useMapStateStore = defineStore("mapState", {
       this.eventBus.emit("visibility_filters_changed")
     },
     // ------------------------------------------------------
+    set_projection_data(projection_data) {
+      if (!projection_data) {
+        return this.reset_data()
+      }
+      this.per_point.item_id = projection_data.per_point.ds_and_item_id
+      this.per_point.x = projection_data.per_point.x
+      this.per_point.y = projection_data.per_point.y
+      this.per_point.cluster_id = projection_data.per_point.cluster_id
+      projection_data.per_point.hue.push(Math.max(...projection_data.per_point.hue) + 1)
+      this.per_point.hue = normalizeArrayMedianGamma(
+        projection_data.per_point.hue,
+        2.0
+      ).slice(0, projection_data.per_point.hue.length - 1)
+      this.text_data = projection_data.text_data_by_item
+
+      this.eventBus.emit("map_center_and_fit_data_to_active_area_smooth")
+      this.eventBus.emit("map_update_geometry")
+    },
+    set_cluster_info(cluster_info) {
+      this.clusterData = cluster_info
+      this.eventBus.emit("map_update_geometry")
+    },
   },
 })

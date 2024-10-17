@@ -7,6 +7,7 @@ import {
   MinusIcon,
   ViewfinderCircleIcon,
   XMarkIcon,
+  ArrowPathIcon,
 } from "@heroicons/vue/24/outline"
 
 import OverlayPanel from "primevue/overlaypanel"
@@ -19,6 +20,7 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
@@ -38,8 +40,13 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
+    this.collectionStore.get_existing_projections()
+  },
+  unmounted() {
+    this.eventBus.emit("reset_map")
   },
   watch: {
   },
@@ -165,6 +172,29 @@ export default {
         @removeFromCollection="appState.remove_selected_points_from_collection">
       </AddToCollectionButtons>
     </OverlayPanel>
+
+    <button class="absolute top-4 right-4 bg-white rounded-md p-1 shadow-md text-gray-600 hover:text-blue-500"
+      v-tooltip.left="{ value: 'Re-generate the map from the current selection', showDelay: 400 }"
+      @click="collectionStore.generate_map()">
+      <ArrowPathIcon class="h-4 w-4"></ArrowPathIcon>
+    </button>
+
+    <div v-if="collectionStore.collection?.map_metadata && collectionStore.collection.map_metadata.projections_are_ready === false"
+      class="absolute top-0 w-full h-full flex items-center justify-center backdrop-blur-sm">
+      <div
+        class="text-2xl text-gray-400 bg-white p-5 rounded-lg shadow-xl">
+        Loading...
+      </div>
+    </div>
+
+    <div v-else-if="mapState.per_point.x.length === 0"
+      class="absolute top-0 w-full h-full flex items-center justify-center">
+      <button class=" bg-white rounded-md p-3 shadow-lg text-gray-600 hover:text-blue-500"
+        v-tooltip.bottom="{ value: 'Generate a map from the current selection', showDelay: 400 }"
+        @click="collectionStore.generate_map()">
+        Generate Map
+      </button>
+    </div>
 
   </div>
 </template>

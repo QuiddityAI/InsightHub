@@ -401,8 +401,28 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     // ------------------
+    get_existing_projections() {
+      this.collection.map_metadata.projections_are_ready = false
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+      }
+      httpClient
+        .post("/api/v1/map/get_existing_projections", body)
+        .then((response) => {
+          if (!response.data) {
+            this.generate_map()
+            return
+          }
+          const {projections, metadata} = response.data
+          this.collection.map_metadata = metadata
+          // the following signal is connected to the map state store in MainApp:
+          this.eventBus.emit("projections_received", {projections})
+          this.get_map_cluster_info()
+        })
+    },
     generate_map() {
-      const that = this
+      this.collection.map_metadata.projections_are_ready = false
       const body = {
         collection: {
           collection_id: this.collection_id,
@@ -413,11 +433,15 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/map/get_new_map", body)
         .then((response) => {
-          this.eventBus.emit("map_generated", response.data)
+          const {projections, metadata} = response.data
+          this.collection.map_metadata = metadata
+          if (!projections) return
+          // the following signal is connected to the map state store in MainApp:
+          this.eventBus.emit("projections_received", {projections})
+          this.get_map_cluster_info()
         })
     },
-    get_map_cluster_info(on_success) {
-      const that = this
+    get_map_cluster_info() {
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
@@ -425,7 +449,9 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/map/get_cluster_info", body)
         .then((response) => {
-          on_success(response.data)
+          const cluster_info = response.data
+          // the following signal is connected to the map state store in MainApp:
+          this.eventBus.emit("cluster_info_received", {cluster_info})
         })
     },
   },

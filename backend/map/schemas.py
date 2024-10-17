@@ -34,8 +34,6 @@ class PerPointData(Schema):
 
 
 class ProjectionData(Schema):
-    created_at: str  # isoformat
-    parameters: MapParameters
     per_point: PerPointData
     text_data_by_item: dict
     colorize_by_cluster_id: bool
@@ -59,11 +57,19 @@ class ThumbnailData(Schema):
 
 
 class MapData(Schema):
-    projections_are_ready: bool
     projections: ProjectionData
-
-    clusters_are_ready: bool
     clusters_by_id: dict[int, ClusterDescription]
-
-    thumbnails_are_ready: bool
     thumbnail_data: ThumbnailData | None
+
+
+class MapMetadata(Schema):
+    created_at: str  # isoformat
+    parameters: MapParameters
+    projections_are_ready: bool
+    clusters_are_ready: bool
+    thumbnails_are_ready: bool
+
+
+class ProjectionsEndpointResponse(Schema):
+    projections: ProjectionData
+    metadata: dict

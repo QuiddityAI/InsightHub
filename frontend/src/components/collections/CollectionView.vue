@@ -1,6 +1,5 @@
 <script setup>
 import { httpClient } from "../../api/httpClient"
-import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../../utils/utils"
 
 import {
   ChevronLeftIcon,
@@ -91,27 +90,6 @@ export default {
     if (this.collection.writing_task_count > 0) {
       this.side_view = 'summary'
     }
-    this.eventBus.on("map_generated", (projection_data) => {
-      console.log("map_generated", projection_data)
-      this.mapStateStore.per_point.item_id = projection_data.per_point.ds_and_item_id
-      this.mapStateStore.per_point.x = projection_data.per_point.x
-      this.mapStateStore.per_point.y = projection_data.per_point.y
-      this.mapStateStore.per_point.cluster_id = projection_data.per_point.cluster_id
-      projection_data.per_point.hue.push(Math.max(...projection_data.per_point.hue) + 1)
-      this.mapStateStore.per_point.hue = normalizeArrayMedianGamma(
-        projection_data.per_point.hue,
-        2.0
-      ).slice(0, projection_data.per_point.hue.length - 1)
-      this.mapStateStore.text_data = projection_data.text_data_by_item
-
-      this.eventBus.emit("map_center_and_fit_data_to_active_area_smooth")
-      this.eventBus.emit("map_update_geometry")
-
-      this.collectionStore.get_map_cluster_info((cluster_info) => {
-        this.mapStateStore.clusterData = cluster_info
-        this.eventBus.emit("map_update_geometry")
-      })
-    })
   },
   methods: {
     delete_collection() {
@@ -131,11 +109,6 @@ export default {
         return
       }
       this.side_view = view
-      if (view == 'map') {
-        this.mapStateStore.per_point.x = [0.0, 0.5, 0.7, 1.0]
-        this.mapStateStore.per_point.y = [0.0, 0.7, 0.5, 1.0]
-        this.eventBus.emit("map_update_geometry")
-      }
     },
   },
 }
@@ -308,9 +281,6 @@ export default {
 
         <div v-if="side_view === 'map'"
           class="w-full h-full relative">
-          <button @click="collectionStore.generate_map()" class="absolute top-0 left-0 z-50 opacity-0">
-            Generate Map
-          </button>
           <MapWithLabelsAndButtons class="w-full h-full">
           </MapWithLabelsAndButtons>
         </div>
