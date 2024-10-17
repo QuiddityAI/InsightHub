@@ -72,17 +72,12 @@ export default {
 
 <template>
   <div class="flex flex-col gap-3">
-    <span class="text-gray-500">
-      You can add items either by searching for them in the 'Explore' tab and adding them there to this collection, or by uploading external items here.
-    </span>
-    <div class="flex flex-row items-center">
+    <div class="flex flex-row items-center gap-3">
       <Dropdown id="schema_dropdown"
         v-model="selected_schema"
         :options="available_schemas" optionLabel="name"
         placeholder="Select Data Type"
         class="" />
-    </div>
-    <div class="flex flex-row items-center">
       <Dropdown id="dataset_dropdown"
         v-if="selected_schema"
         v-model="selected_dataset_id"

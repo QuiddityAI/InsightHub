@@ -216,7 +216,7 @@ export default {
             class="py-1 bg-white rounded-xl shadow-md">
             <PlusIcon class="inline h-4 w-4"></PlusIcon> Items manually
           </BorderButton>
-          <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
+          <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items Manually">
             <AddItemsToCollectionArea :collection="collection" :collection_class="class_name"
               @items_added="$refs.collection_table_view.load_collection_items"></AddItemsToCollectionArea>
           </Dialog>

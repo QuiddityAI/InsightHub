@@ -88,7 +88,7 @@ export default {
 </script>
 
 <template>
-  <div class="mt-1 p-4 shadow-sm rounded-md bg-white overflow-hidden">
+  <div class="overflow-hidden bg-gray-200">
 
     <div v-if="!appState.logged_in" class="h-full flex flex-row items-center justify-center">
       <Message :closable="false">
@@ -96,9 +96,11 @@ export default {
       </Message>
     </div>
 
-    <div v-if="appState.logged_in" class="h-full">
-      <div class="h-full flex flex-row gap-4">
-        <!-- left side --> <div class="flex-none w-[300px] flex flex-col gap-3 overflow-y-auto">
+    <div v-if="appState.logged_in" class="h-full w-full">
+
+      <div class="h-full flex flex-row">
+
+        <!-- left side --> <div class="flex-none w-[250px] flex flex-col gap-3 p-3 overflow-y-auto bg-white shadow-md z-30">
           <div
             v-for="category in categories"
             class="w-full rounded-md bg-gray-100 pb-2 pl-3 pr-2 pt-2">
@@ -138,7 +140,7 @@ export default {
           </div>
         </div>
 
-        <!-- right side --> <div class="flex-1 h-full flex flex-col overflow-y-auto">
+        <!-- right side --> <div class="flex-1 h-full flex flex-col overflow-hidden">
 
           <div v-if="!selected_dataset" class="flex-1 flex flex-col items-center justify-center gap-6">
             <h2 class="text-xl font-bold text-gray-500">Upload your own files</h2>
@@ -156,7 +158,7 @@ export default {
             </div>
           </div>
 
-          <DatasetDetails
+          <DatasetDetails class="w-full h-full"
             v-if="shown_dataset"
             :dataset="shown_dataset"
             @close="selected_dataset = null"
