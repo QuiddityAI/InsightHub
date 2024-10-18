@@ -433,7 +433,8 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
                     if column_data and column_data.get('value'):
                         input_data += f"{additional_source_column.name}: {column_data['value']}\n"
             elif input_type == "json":
-                input_data = get_item_by_id(item.dataset_id, item.item_id, item_source_fields)
+                input_data = get_document_details_by_id(item.dataset_id, item.item_id, tuple(item_source_fields))
+                assert input_data is not None
                 for additional_source_column in source_columns:
                     if not item.column_data:
                         continue

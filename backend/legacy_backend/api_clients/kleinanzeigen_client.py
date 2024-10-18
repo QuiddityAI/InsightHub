@@ -69,6 +69,7 @@ def _extract_items(html):
         description = item.find('p', class_='aditem-main--middle--description').text.strip()
         image_url = item.find('meta', itemprop='contentUrl')['content']
         thumbnail_url = item.find('img')['src']
+        url = 'https://www.kleinanzeigen.de' + item.find('a')['href']
 
         price = item.find('p', class_='aditem-main--middle--price-shipping--price')
         price = price.text.strip() if price else 'N/A'
@@ -83,6 +84,7 @@ def _extract_items(html):
             'item_id': item_id,
             'title': name,
             'description': description,
+            'url': url,
             'image_url': image_url,
             'thumbnail_url': thumbnail_url,
             'price': price,

@@ -33,7 +33,7 @@ export default {
   <div class="pointer-events-none">
 
     <div
-      class="pointer-events-none absolute transition-opacity duration-300"
+      class="pointer-events-none absolute transition-opacity duration-300 w-full h-full"
       :class="{'opacity-0': !mapState.show_html_points, 'opacity-100': mapState.show_html_points}">
       <div
         v-for="pointIndex in mapState.visiblePointIndexes"
