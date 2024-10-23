@@ -67,6 +67,22 @@ export function get_download_url(local_path) {
   return local_path ? `/data_backend/download_file/${local_path}` : null
 }
 
+export function icon_for_file_suffix(suffix) {
+  if (!suffix) return "https://www.svgrepo.com/show/81310/file.svg"
+  const lowerSuffix = suffix.toLowerCase()
+  if (lowerSuffix === "pdf") return "https://www.svgrepo.com/show/56192/pdf.svg"
+  if (lowerSuffix === "doc" || lowerSuffix === "docx") return "https://www.svgrepo.com/show/54310/doc.svg"
+  if (lowerSuffix === "xls" || lowerSuffix === "xlsx") return "https://www.svgrepo.com/show/44103/xls.svg"
+  if (lowerSuffix === "ppt" || lowerSuffix === "pptx") return "https://www.svgrepo.com/show/146106/ppt.svg"
+  if (lowerSuffix === "zip" || lowerSuffix === "tar" || lowerSuffix === "gz" || lowerSuffix === "7z") return "https://www.svgrepo.com/show/6172/zip.svg"
+  if (lowerSuffix === "jpg" || lowerSuffix === "jpeg") return "https://www.svgrepo.com/show/21642/jpg.svg"
+  if (lowerSuffix === "png") return "https://www.svgrepo.com/show/21675/png.svg"
+  if (lowerSuffix === "mp3" || lowerSuffix === "wav" || lowerSuffix === "flac") return "https://www.svgrepo.com/show/22847/mp3.svg"
+  if (lowerSuffix === "mp4" || lowerSuffix === "avi" || lowerSuffix === "mov" || lowerSuffix === "mkv") return "https://www.svgrepo.com/show/41018/mp4.svg"
+  if (lowerSuffix === "txt" || lowerSuffix === "log" || lowerSuffix === "csv") return "https://www.svgrepo.com/show/22837/txt.svg"
+  return "https://www.svgrepo.com/show/81310/file.svg"
+}
+
 export const available_filter_operators = [
   { id: "contains", title: "contains" },
   { id: "does_not_contain", title: "does not contain" },

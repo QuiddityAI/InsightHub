@@ -14,11 +14,12 @@ import markedKatex from "marked-katex-extension";
 
 import "./style.css"
 import MainApp from "./apps/MainApp.vue"
-import { get_download_url } from "./utils/utils";  // used in item rendering definitions
+import { get_download_url, icon_for_file_suffix } from "./utils/utils";  // used in item rendering definitions
 import { useAppStateStore } from "./stores/app_state_store";
 import { useCollectionStore } from "./stores/collection_store";
 
 globalThis.get_download_url = get_download_url;
+globalThis.icon_for_file_suffix = icon_for_file_suffix;
 
 const katex_options = {
   throwOnError: false
