@@ -504,7 +504,7 @@ def _import_website_url(raw_items, parameters, on_progress=None) -> tuple[list[d
 def _import_office_document(paths: list[UploadedFile], parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
     from pdferret import PDFerret
 
-    extractor = PDFerret(meta_extractor="dummy", text_extractor="unstructured")
+    extractor = PDFerret(meta_extractor="dummy", text_extractor="unstructured", llm_summary=False)
     if on_progress:
         on_progress(0.1)
     parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}' for uploaded_file in paths])
@@ -517,6 +517,11 @@ def _import_office_document(paths: list[UploadedFile], parameters, on_progress=N
     for parsed_file, uploaded_file in zip(parsed, paths):
         sub_path = uploaded_file.local_path
         file_metainfo = parsed_file.metainfo
+        # MetaInfo(doi='', title='', abstract='', authors=[], pub_date='', language='de',
+        # file_features=FileFeatures(filename='/data/quiddity_data/uploaded_files/94/80/1_DE_annexe_autre_acte_part1_v2_80001b4184169e45010efa735fa533d2.DOCX',
+        # file='/data/quiddity_data/uploaded_files/94/80/1_DE_annexe_autre_acte_part1_v2_80001b4184169e45010efa735fa533d2.DOCX',
+        # is_scanned=None), npages=None, thumbnail=b'\x89PNG
+        # logging.warning(f"parsed file: {file_metainfo.title} {file_metainfo.abstract}")
 
         info_dict = file_metainfo.__dict__
         info_dict.pop('file_features')
@@ -528,10 +533,13 @@ def _import_office_document(paths: list[UploadedFile], parameters, on_progress=N
 
         full_text_chunks = [asdict(chunk) for chunk in parsed_file.chunks]
         for chunk in full_text_chunks:
+            if len(chunk['non_embeddable_content']) > 1500:
+                chunk['non_embeddable_content'] = chunk['non_embeddable_content'][:1500] + "..."
             chunk.pop('chunk_type')
         full_text = " ".join([chunk['text'] for chunk in full_text_chunks])
 
         ai_title, ai_document_type, ai_abstract = get_ai_summary(file_metainfo.title.strip() or uploaded_file.original_filename, full_text)
+        # logging.warning(f"AI title: {ai_title}, AI doc type: {ai_document_type}, AI summary: {ai_abstract}")
 
         items.append({
             "title": ai_title or file_metainfo.title.strip() or uploaded_file.original_filename,
@@ -541,7 +549,7 @@ def _import_office_document(paths: list[UploadedFile], parameters, on_progress=N
             "file_type": sub_path.split(".")[-1],
             "language": "de",  # TODO: detect language
             "uploaded_file_path": sub_path,  # relative to UPLOADED_FILES_FOLDER
-            "thumbnail_path": get_thumbnail_office(sub_path),  # relative to UPLOADED_FILES_FOLDER
+            "thumbnail_path": store_thumbnail(file_metainfo.thumbnail, sub_path) if file_metainfo.thumbnail else None,  # relative to UPLOADED_FILES_FOLDER
             "full_text": full_text,
             "full_text_chunks": full_text_chunks,
             "file_name": uploaded_file.original_filename,
@@ -559,11 +567,11 @@ You are an expert in extracting titles and short summaries from documents.
 The available information about the document start with <document> and end with </document>.
 
 <document>
-Title: {{ title }}
+File Name: {{ title }}
 Content: {{ content }}
 </document>
 
-Try to extract the title, the abstract document type and a one-sentence summary of the content as a JSON object.
+Try to extract the title (not necessarily the file name), the abstract document type and a one-sentence summary of the content as a JSON object.
 The abstract document type should be something like: "paper about a new algorithm", "report about a waste plant", "presentation about a new product".
 The summary should be a single sentence that captures the essence of the document.
 Leave any field empty if you can't find the information.
@@ -572,7 +580,8 @@ Schema:
 {
     "title": "Title of the document",
     "document_type": "Abstract document type",
-    "summary": "One-sentence summary of the content"
+    "summary": "One-sentence summary of the content",
+    "date": "Date of the document (if mentioned) in YYYY-MM-DD format"
 }
 
 Reply only with the json object.
@@ -583,11 +592,11 @@ Du bist ein Experte im Extrahieren von Titeln und kurzen Zusammenfassungen aus D
 Die verfügbaren Informationen über das Dokument beginnen mit <document> und enden mit </document>.
 
 <document>
-Titel: {{ title }}
+Dateiname: {{ title }}
 Inhalt: {{ content }}
 </document>
 
-Versuche, den Titel, den abstrakten Dokumenttyp und eine Ein-Satz-Zusammenfassung des Inhalts als JSON-Objekt zu extrahieren.
+Versuche, den Titel (nicht zwingend gleich mit dem Dateinamen), den abstrakten Dokumenttyp und eine Ein-Satz-Zusammenfassung des Inhalts als JSON-Objekt zu extrahieren.
 Der abstrakte Dokumenttyp sollte etwas sein wie: "Aufsatz über einen neuen Algorithmus", "Bericht über eine Müllverbrennungsanlage", "Präsentation über ein neues Produkt".
 Die Zusammenfassung sollte ein einzelner Satz sein, der das Wesentliche des Dokuments erfasst.
 Lasse ein Feld leer, wenn du die Information nicht finden kannst.
@@ -604,8 +613,16 @@ Antworte nur mit dem JSON-Objekt.
 
     prompt = prompt_de.replace("{{ title }}", title).replace("{{ content }}", full_text[:1000])
 
-    history = [ { "role": "system", "content": prompt } ]
-    response_text = get_groq_response_using_history(history, GROQ_MODELS.LLAMA_3_70B)  # type: ignore
+    from llmonkey.llmonkey import LLMonkey
+    from llmonkey.models import ModelProvider
+    from llmonkey.providers.openai_like import IonosProvider
+    llmonkey_instance = LLMonkey()
+    response = llmonkey_instance.generate_prompt_response(
+        provider=ModelProvider.ionos,
+        model_name=IonosProvider.Models.META_LLAMA_3_1_70B.identifier,
+        system_prompt=prompt,
+    )
+    response_text = response.conversation[-1].content
     assert response_text
     try:
         info = json.loads(response_text)
@@ -613,6 +630,12 @@ Antworte nur mit dem JSON-Objekt.
         logging.warning(f"Failed to parse AI response: {response_text}")
         return "", "", ""
     return info.get("title", ""), info.get("document_type", ""), info.get("summary", "")
+
+
+def store_thumbnail(png_data: bytes, sub_path):
+    with open(f'{UPLOADED_FILES_FOLDER}/{sub_path}.thumbnail.png', 'wb') as f:
+        f.write(png_data)
+    return f'{sub_path}.thumbnail.png'
 
 
 def get_thumbnail_office(sub_path) -> str | None:

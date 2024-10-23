@@ -519,6 +519,7 @@ export const useAppStateStore = defineStore("appState", {
           }
         }
         if (dataset.merged_advanced_options.default_result_language) {
+          // FIXME: this is not called for new workflow with collections as the core
           that.settings.search.result_language = dataset.merged_advanced_options.default_result_language
         }
       }

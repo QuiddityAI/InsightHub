@@ -134,27 +134,7 @@ export default {
       </button>
     </div>
 
-    <div class="flex flex-col gap-7 overflow-y-auto py-7 px-7">
-
-      <!-- Metadata -->
-      <div class="py-4 px-5 flex flex-col gap-1 bg-white rounded-md shadow-sm">
-        <p class="text-gray-600 text-sm">
-          Items in this dataset: <b>{{ dataset.item_count !== undefined ? dataset.item_count.toLocaleString() : 'unknown' }}</b>
-        </p>
-        <div>
-
-        </div>
-        <div class="flex flex-col gap-2">
-          <label class="flex items-center" v-if="appState.user.is_staff || dataset.is_public">
-            <input type="checkbox" v-model="dataset.is_public" :disabled="!dataset.admins?.includes(appState.user.id) || !appState.user.is_staff">
-            <span class="ml-2 text-sm text-gray-600">Public for everyone on the internet {{ !appState.user.is_staff ? '(can only be changed by staff)': '' }}</span>
-          </label>
-          <label class="flex items-center" v-if="!appState.organization.is_public">
-            <input type="checkbox" v-model="dataset.is_organization_wide" :disabled="!dataset.admins?.includes(appState.user.id)">
-            <span class="ml-2 text-sm text-gray-600">Available to other organization members</span>
-          </label>
-        </div>
-      </div>
+    <div class="flex flex-col gap-7 overflow-y-auto py-8 px-7">
 
       <!-- Upload Files -->
       <div v-if="dataset.admins?.includes(appState.user.id)"
@@ -195,6 +175,27 @@ export default {
           You can't upload files to this dataset because you are not an admin.
         </span>
       </div>
+
+      <!-- Metadata -->
+      <div class="py-4 px-5 flex flex-col gap-1 bg-white rounded-md shadow-sm">
+        <p class="text-gray-600 text-sm">
+          Items in this dataset: <b>{{ dataset.item_count !== undefined ? dataset.item_count.toLocaleString() : 'unknown' }}</b>
+        </p>
+        <div>
+
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="flex items-center" v-if="appState.user.is_staff || dataset.is_public">
+            <input type="checkbox" v-model="dataset.is_public" :disabled="!dataset.admins?.includes(appState.user.id) || !appState.user.is_staff">
+            <span class="ml-2 text-sm text-gray-600">Public for everyone on the internet {{ !appState.user.is_staff ? '(can only be changed by staff)': '' }}</span>
+          </label>
+          <label class="flex items-center" v-if="!appState.organization.is_public">
+            <input type="checkbox" v-model="dataset.is_organization_wide" :disabled="!dataset.admins?.includes(appState.user.id)">
+            <span class="ml-2 text-sm text-gray-600">Available to other organization members</span>
+          </label>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>

@@ -366,7 +366,7 @@ export default {
       Always keep a local copy of the files, we don't guarantee their availability.
     </div>
 
-    <p v-if="upload_tasks.length !== 0" class="text-gray-700">
+    <p v-if="upload_tasks.length !== 0" class="text-gray-700 mt-5 mb-3">
       Recent uploads:
     </p>
 

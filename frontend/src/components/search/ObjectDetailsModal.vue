@@ -68,8 +68,8 @@ export default {
         item_id: this.item._id,
         fields: this.dataset.schema.detail_view_rendering.required_fields,
         relevant_parts: this.item._relevant_parts,
-        get_text_search_highlights: true,
-        top_n_full_text_chunks: 3,
+        get_text_search_highlights: false,
+        top_n_full_text_chunks: 0,
         query: this.appStateStore.selected_document_query,
         include_related_collection_items: true,
       }
