@@ -40,7 +40,6 @@ def data_backend_proxy_view(request, sub_path: str):
     checks_for_routes_always_needing_authentication = {
         "/data_backend/classifier/retrain": lambda x: True,  # TODO, but not very harmful
         "/data_backend/classifier/retraining_status": lambda x: True,  # TODO, but not very harmful
-        "/data_backend/upload_files": lambda x: True,  # TODO, but not very harmful
         "/data_backend/map/store": lambda x: True,  # TODO, but not very harmful
         "/data_backend/download_file": _check_download_request,
         "/data_backend/upload_files/status": lambda x: True,  # TODO, but not very harmful

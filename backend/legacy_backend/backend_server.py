@@ -283,40 +283,6 @@ def delete_dataset_content_endpoint(request, ):
     return "", 204
 
 
-@convert_flask_to_django_route('/data_backend/upload_files', methods=['POST'])
-def upload_files_endpoint(request, ):
-    """ Upload individual files or zip archives.
-    Will be stored, extracted and post-processed (OCR etc.), then imported. """
-    try:
-        dataset_id: int = int(request.form["dataset_id"])  # type: ignore
-        schema_identifier: str = request.form["schema_identifier"]  # type: ignore
-        user_id: int = int(request.form["user_id"])  # type: ignore
-        organization_id: int = int(request.form["organization_id"])  # type: ignore
-        import_converter: str = request.form["import_converter"]
-        collection_id_str: str | None = request.form.get("collection_id")
-        collection_class: str | None = request.form.get("collection_class")
-    except KeyError as e:
-        return f"parameter missing: {e}", 400
-    collection_id: int | None = int(collection_id_str) if collection_id_str else None
-    if dataset_id == -1:
-        dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
-    FILES: MultiValueDict = request.FILES
-    custom_uploaded_files = []
-    for key, file in FILES.items():
-        custom_file = CustomUploadedFile(uploaded_file=file)
-        metadata = request.form.get(f"{key}_metadata")
-        if metadata:
-            custom_file.metadata = UploadedFileMetadata(**json.loads(metadata))
-        custom_uploaded_files.append(custom_file)
-    task_id = upload_files_or_forms(dataset_id, import_converter, custom_uploaded_files, None, collection_id, collection_class, user_id)
-    # usually, all in-memory files of the request would be closed and deleted after the request is done
-    # in this case, we want to keep them open and close them manually in the background thread
-    # so we need to remove the files from the request object:
-    # (this was ported from flask to Django, not sure if it's necessary in Django)
-    FILES.clear()
-    return jsonify({"task_id": task_id, "dataset_id": dataset_id}), 200
-
-
 @convert_flask_to_django_route('/data_backend/import_forms', methods=['POST'])
 def import_forms_endpoint(request, ):
     """ Import items directly from JSON data.
