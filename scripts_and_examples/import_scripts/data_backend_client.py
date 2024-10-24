@@ -1,12 +1,14 @@
 import os
 import logging
 from typing import Tuple
+import json
+import datetime
 
 import requests
 import cbor2
 
 
-data_backend_url = os.getenv("data_backend_host", "http://localhost:55123")
+data_backend_url = os.getenv("data_backend_host", "http://localhost:55125")
 
 
 def update_database_layout(dataset_id: int):
@@ -48,6 +50,48 @@ def insert_vectors(dataset_id: int, vector_field: str, item_pks: list[str], vect
         raise Exception(response)
 
 
-def files_in_folder(path, extensions:Tuple[str]=(".gz",)):
+def upload_files(
+    dataset_id: int,
+    schema_identifier: str,
+    user_id: int,
+    organization_id: int,
+    import_converter: str,
+    collection_id: str | None = None,
+    collection_class: str | None = None,
+    file_paths: list[str] = [],
+    exclude_prefix: str | None = None,
+):
+    url = data_backend_url + "/api/v1/ingest/upload_files"
+    data = {
+        'dataset_id': dataset_id,
+        'schema_identifier': schema_identifier,
+        'user_id': user_id,
+        'organization_id': organization_id,
+        'import_converter': import_converter,
+        'collection_id': collection_id,
+        'collection_class': collection_class,
+        'dataset_auth_token': 'fixme',  # TODO: use proper auth token
+        'blocking': True,
+    }
+    files = {}
+    for i, file_path in enumerate(file_paths):
+        files[f'file_{i}'] = open(file_path, 'rb')
+        sub_path = file_path.replace(exclude_prefix, '') if exclude_prefix else file_path
+        data[f'file_{i}_metadata'] = json.dumps({
+            'folder': os.path.dirname(sub_path),
+            'created_at': datetime.datetime.fromtimestamp(os.path.getctime(file_path)).isoformat(),
+            'updated_at': datetime.datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat(),
+            'size_in_bytes': os.path.getsize(file_path),
+            'mime_type': None,
+            'md5_hex': None,
+        })
+    response = requests.post(url, data=data, files=files)
+    if response.status_code != 200:
+        logging.error(f"Error during upload_files: {repr(response)}, {response.text}")
+        raise Exception(response)
+    return response.json()
+
+
+def files_in_folder(path, extensions:Tuple[str, ...]=(".gz",)):
     return sorted([os.path.join(path, name) for path, subdirs, files in os.walk(path)
             for name in files if name.lower().endswith(extensions)])

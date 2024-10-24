@@ -125,14 +125,15 @@ export default {
   <div class="rounded bg-gray-100/50 p-3 flex flex-row gap-2"
     :class="{'opacity-30': relevancy && hide_irrelevant_items && relevancy.decision === false }">
     <div class="flex-1">
+
       <div class="flex flex-row items-center w-full" @click="$emit('selected')">
         <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
         <button class="text-md text-left font-medium leading-tight text-sky-800 hover:underline" v-html="rendering.title(item)"></button>
         <div class="flex-1"></div>
-        <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"
-          v-tooltip.bottom="{ value: tag.tooltip, showDelay: 500 }"
+        <span v-for="badge in rendering.badges(item)?.filter(badge => badge.applies)"
+          v-tooltip.bottom="{ value: badge.tooltip, showDelay: 500 }"
           class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
-          {{ tag.label }}
+          {{ badge.label }}
         </span>
       </div>
       <p class="mt-1 text-xs leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>

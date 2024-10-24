@@ -25,6 +25,7 @@ from data_map_backend.views import other_views
 from preparation.views import api as preparation_api
 from search.views import api as search_api
 from map.views import api as map_api
+from ingest.views import api as ingest_api
 
 
 def redirect_to_admin(request):
@@ -46,6 +47,7 @@ urlpatterns = [
     path('api/v1/preparation/', preparation_api.urls),
     path('api/v1/search/', search_api.urls),
     path('api/v1/map/', map_api.urls),
+    path('api/v1/ingest/', ingest_api.urls),
 
     # Login and Logout
     path('org/login/', auth_views.LoginView.as_view(), name='login'),

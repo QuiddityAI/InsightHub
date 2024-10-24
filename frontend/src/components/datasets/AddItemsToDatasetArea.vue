@@ -237,7 +237,7 @@ export default {
         items: [this.manually_created_item],
       }
       httpClient
-        .post("/data_backend/import_items", body)
+        .post("/data_backend/import_forms", body)
         .then(function (response) {
           that.set_actual_dataset_id(response.data.dataset_id)
           that.get_upload_task_status()
@@ -313,7 +313,7 @@ export default {
         v-if="selected_import_converter && !selected_import_converter.manual_insert_form?.length"
         ref="fileUploader"
         name="files[]"
-        url="/data_backend/upload_files"
+        url="/api/v1/ingest/upload_files"
         :multiple="true"
         :maxFileSize="10000000000"
         :fileLimit="500"

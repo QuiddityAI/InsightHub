@@ -5,6 +5,7 @@ from threading import Thread
 import logging
 
 import cbor2
+from django.utils.datastructures import MultiValueDict
 
 from .utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
 from .utils.dotdict import DotDict
@@ -16,7 +17,8 @@ from .logic.search_common import get_document_details_by_id
 from .logic.generate_missing_values import delete_field_content, generate_missing_values
 from .logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
 from .logic.classifiers import get_retraining_status, start_retrain
-from .logic.upload_files import import_items, upload_files, get_upload_task_status, UPLOADED_FILES_FOLDER
+from ingest.logic.upload_files import upload_files_or_forms, get_upload_task_status, UPLOADED_FILES_FOLDER
+from ingest.schemas import CustomUploadedFile, UploadedFileMetadata
 from .logic.chat_and_extraction import get_global_question_context, get_item_question_context
 from .logic.export_converters import export_collection, export_collection_table, export_item
 
@@ -298,19 +300,27 @@ def upload_files_endpoint(request, ):
     collection_id: int | None = int(collection_id_str) if collection_id_str else None
     if dataset_id == -1:
         dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
-    task_id = upload_files(dataset_id, import_converter, request.FILES.getlist("files[]"), collection_id, collection_class, user_id)
+    FILES: MultiValueDict = request.FILES
+    custom_uploaded_files = []
+    for key, file in FILES.items():
+        custom_file = CustomUploadedFile(uploaded_file=file)
+        metadata = request.form.get(f"{key}_metadata")
+        if metadata:
+            custom_file.metadata = UploadedFileMetadata(**json.loads(metadata))
+        custom_uploaded_files.append(custom_file)
+    task_id = upload_files_or_forms(dataset_id, import_converter, custom_uploaded_files, None, collection_id, collection_class, user_id)
     # usually, all in-memory files of the request would be closed and deleted after the request is done
     # in this case, we want to keep them open and close them manually in the background thread
     # so we need to remove the files from the request object:
     # (this was ported from flask to Django, not sure if it's necessary in Django)
-    request.FILES.clear()
+    FILES.clear()
     return jsonify({"task_id": task_id, "dataset_id": dataset_id}), 200
 
 
-@convert_flask_to_django_route('/data_backend/import_items', methods=['POST'])
-def import_items_endpoint(request, ):
+@convert_flask_to_django_route('/data_backend/import_forms', methods=['POST'])
+def import_forms_endpoint(request, ):
     """ Import items directly from JSON data.
-    (No file upload, no extraction, no OCR etc.) """
+    (No file upload, no extraction, no OCR, but converting, e.g. for URLs) """
     try:
         params = request.json or {}
         dataset_id: int = params["dataset_id"]
@@ -325,7 +335,7 @@ def import_items_endpoint(request, ):
         return f"parameter missing: {e}", 400
     if dataset_id == -1:
         dataset_id = get_or_create_default_dataset(user_id, schema_identifier, organization_id).id
-    task_id = import_items(dataset_id, import_converter, items, collection_id, collection_class, user_id)
+    task_id = upload_files_or_forms(dataset_id, import_converter, None, items, collection_id, collection_class, user_id)
     return jsonify({"task_id": task_id, "dataset_id": dataset_id}), 200
 
 

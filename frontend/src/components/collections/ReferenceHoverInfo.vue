@@ -133,10 +133,10 @@ export default {
             @click="appState.show_document_details([dataset_id, item_id])">
           </button>
           <div class="flex-1"></div>
-          <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"
-            v-tooltip.bottom="{ value: tag.tooltip, showDelay: 500 }"
+          <span v-for="badge in rendering.badges(item)?.filter(badge => badge.applies)"
+            v-tooltip.bottom="{ value: badge.tooltip, showDelay: 500 }"
             class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
-            {{ tag.label }}
+            {{ badge.label }}
           </span>
         </div>
 

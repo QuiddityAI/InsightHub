@@ -416,10 +416,13 @@ export const useAppStateStore = defineStore("appState", {
     prepare_dataset_object(dataset) {
       // convert strings to functions:
       const result_list_rendering = dataset.schema.result_list_rendering
-      for (const field of ["title", "subtitle", "body", "image", "url", "icon", "tags"]) {
+      for (const field of ["title", "subtitle", "body", "image", "url", "icon", "badges", "tagline", "sub_tagline"]) {
         // eval?.('"use strict"; ' + code) prevents access to local variables and
         // any new variable or function declarations are scoped instead of global
         // (still a major security risk, more meant to prevent accidental bugs)
+        if (field === "badges" && !result_list_rendering[field]) {
+          result_list_rendering["badges"] = result_list_rendering["tags"]
+        }
         result_list_rendering[field] = eval?.('"use strict"; ' + result_list_rendering[field]) || ((item) => null)
       }
       dataset.schema.result_list_rendering = result_list_rendering

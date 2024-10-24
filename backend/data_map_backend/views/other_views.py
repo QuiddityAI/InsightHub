@@ -314,7 +314,7 @@ def create_dataset_from_schema(request):
 
 
 @csrf_exempt
-def get_or_create_default_dataset(request):
+def get_or_create_default_dataset_route(request):
     if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -328,6 +328,18 @@ def get_or_create_default_dataset(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
+    result = get_or_create_default_dataset(user_id, schema_identifier, organization_id)
+    if isinstance(result, HttpResponse):
+        return result
+
+    dataset = result
+    dataset_dict = DatasetSerializer(instance=dataset).data
+    result = json.dumps(dataset_dict)
+
+    return HttpResponse(result, status=200, content_type="application/json")
+
+
+def get_or_create_default_dataset(user_id: int, schema_identifier: str, organization_id: int) -> Dataset | HttpResponse:
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
@@ -369,11 +381,8 @@ def get_or_create_default_dataset(request):
         dataset.save()
         dataset.admins.add(user)
         dataset.save()
-
-    dataset_dict = DatasetSerializer(instance=dataset).data
-    result = json.dumps(dataset_dict)
-
-    return HttpResponse(result, status=200, content_type="application/json")
+    assert isinstance(dataset, Dataset)
+    return dataset
 
 
 @csrf_exempt

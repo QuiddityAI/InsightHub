@@ -138,23 +138,41 @@ export default {
       <!-- Left side (content, not image) -->
       <div class="flex-1 min-w-0 flex flex-col gap-1">
 
+        <!-- Tagline -->
+        <div class="flex flex-row items-start mb-3" v-if="rendering.tagline(item)">
+
+          <div class="flex-none h-full flex flex-row items-center">
+            <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-6 w-6 mr-3" />
+          </div>
+
+          <div class="h-full min-w-0 flex flex-col gap-1">
+            <div class="text-left text-[12px] leading-tight break-words text-gray-600"
+              v-html="rendering.tagline(item)">
+            </div>
+            <div class="text-left text-[11px] leading-tight break-words text-gray-500"
+              v-html="rendering.sub_tagline(item)">
+            </div>
+          </div>
+
+        </div>
+
         <!-- Heading -->
         <div class="flex flex-row items-start">
-          <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
-          <button class="min-w-0 text-left text-[15px] font-serif font-bold leading-tight break-words text-sky-700 hover:underline"
+          <img v-if="rendering.icon(item) && !rendering.tagline(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
+          <button class="min-w-0 text-left text-[16px] font-serif font-bold leading-tight break-words text-sky-700 hover:underline"
             v-html="rendering.title(item)"
             @click="appState.show_document_details([dataset_id, item_id], collection_item.metadata, collection_item.relevant_parts, original_query)">
           </button>
           <div class="flex-1"></div>
-          <span v-for="tag in rendering.tags(item)?.filter(tag => tag.applies)"
-            v-tooltip.bottom="{ value: tag.tooltip, showDelay: 500 }"
+          <span v-for="badge in rendering.badges(item)?.filter(badge => badge.applies)"
+            v-tooltip.bottom="{ value: badge.tooltip, showDelay: 500 }"
             class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
-            {{ tag.label }}
+            {{ badge.label }}
           </span>
         </div>
 
         <!-- Subtitle -->
-        <p class="mt-1 text-xs break-words leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
+        <p class="mt-0 text-[13px] break-words leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
 
         <!-- Body -->
         <p ref="body_text" v-if="actual_size_mode === 'full'"
