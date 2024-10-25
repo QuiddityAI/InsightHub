@@ -8,6 +8,7 @@ import InputGroupAddon from 'primevue/inputgroupaddon';
 import InputText from 'primevue/inputtext';
 import InlineMessage from 'primevue/inlinemessage';
 import Checkbox from 'primevue/checkbox';
+import Message from 'primevue/message';
 import { useToast } from 'primevue/usetoast';
 import { UserIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
 
@@ -100,7 +101,9 @@ export default {
     </button>
 
     <Dialog v-model:visible="dialog_visible" modal header="Login / Register">
-      <p>{{ message }}</p>
+
+      <Message v-if="message">{{ message }}</Message>
+
       <Accordion :activeIndex="accordion_index" class="mb-2">
         <AccordionTab header="Login with an existing account">
           <form ref="login_form" :action="`/org/login_from_app/?next=/`" method="post" class="flex flex-col gap-3">

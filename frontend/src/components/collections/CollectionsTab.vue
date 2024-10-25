@@ -64,14 +64,7 @@ export default {
     <div class="w-[230px]" v-if="!collectionStore.collection"></div>
 
     <!-- Right Side Content -->
-    <div v-if="!appState.logged_in"
-      class="h-full flex flex-row gap-5 items-center justify-center">
-      <Message :closable="false">
-        Log in to save items in collections and extract information in a table
-      </Message>
-    </div>
-
-    <CollectionView v-else-if="collectionStore.collection"
+    <CollectionView v-if="collectionStore.collection"
       class="flex-1 h-full relative z-20">
     </CollectionView>
 

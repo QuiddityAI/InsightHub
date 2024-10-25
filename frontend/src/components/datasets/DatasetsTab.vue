@@ -92,7 +92,8 @@ export default {
 
     <div v-if="!appState.logged_in" class="h-full flex flex-row items-center justify-center">
       <Message :closable="false">
-        Log in to upload your own files (PDF, CSV, txt, etc.) to make them searchable and process them using AI.
+        Log in to upload your own files (PDF, CSV, txt, etc.).<br><br>
+        You can then search and process them using AI.
       </Message>
     </div>
 

@@ -1,6 +1,6 @@
 <script setup>
 
-import { PaperAirplaneIcon } from "@heroicons/vue/24/outline"
+import { PaperAirplaneIcon, TableCellsIcon } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
 import Dropdown from 'primevue/dropdown';
@@ -218,6 +218,10 @@ export default {
   methods: {
     create_collection() {
       const that = this
+      if (!this.appStateStore.logged_in) {
+        this.eventBus.emit("show_login_dialog", {message: "Login or register to continue searching"})
+        return
+      }
       if (!this.new_settings.dataset_id) {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please select a source dataset', life: 2000 })
         return
