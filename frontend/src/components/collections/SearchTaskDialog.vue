@@ -141,6 +141,12 @@ export default {
     'appStateStore.settings.search.result_language'(new_val, old_val) {
       this.new_settings.result_language = new_val
     },
+    'new_settings.dataset_id'(new_val, old_val) {
+      // TODO: the logic to change dataset dependend options should be moved somewhere else, this is just retrofitting
+      if (new_val === null && new_val === undefined) return
+      this.appStateStore.settings.search.dataset_ids = [new_val]
+      this.appStateStore.on_selected_datasets_changed()
+    },
   },
   methods: {
     run_search_task() {
