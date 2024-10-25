@@ -4,7 +4,7 @@
   "entity_name_plural": "files",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-10-24T10:01:29.040Z",
+  "changed_at": "2024-10-24T17:09:34.941Z",
   "primary_key": "full_path",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -74,13 +74,13 @@
   },
   "result_list_rendering": {
     "url": "item => null",
-    "body": "item => `${item.abstract} ${item.language} ${item.ai_tags} ${item.content_date} ${item.content_time}`",
+    "body": "item => `${item.abstract} <br><br>${item.language} - ${item.ai_tags}`",
     "icon": "item => icon_for_file_suffix(item.file_type)",
     "image": "item => get_download_url(item.thumbnail_path)",
     "title": "item => `${item.title}`",
     "tagline": "item => `${item.file_name}`",
-    "subtitle": "item => `${item.type_description}`",
-    "sub_tagline": "item => `${item.folder}`",
+    "subtitle": "item => `${item.type_description} ${item.content_date ? '- ' + item.content_date : ''} ${item.content_time ? '- ' + item.content_time : ''}`",
+    "sub_tagline": "item => `${item.folder?.replaceAll('/', ' \u203a ')}`",
     "required_fields": [
       "title",
       "abstract",

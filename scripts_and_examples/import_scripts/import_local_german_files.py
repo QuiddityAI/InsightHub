@@ -15,7 +15,7 @@ def import_files(path, dataset_id, max_items=1000000):
     total_items = 0
     extensions = (".doc", ".docx", ".pdf", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", )
 
-    for file_path in files_in_folder(path, extensions=extensions)[20:]:
+    for file_path in files_in_folder(path, extensions=extensions):
         if "/_" in file_path:
             # this is probably a hidden file (e.g. a template)
             continue
@@ -62,6 +62,8 @@ def import_files(path, dataset_id, max_items=1000000):
         t2 = time.time()
         print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(batch))*1000:.2f} ms")
 
+    print(f"Total items: {total_items}")
+
 
 if __name__ == "__main__":
-    import_files("/data/remondis/", 96, 10)
+    import_files("/data/remondis/", 96, 500)

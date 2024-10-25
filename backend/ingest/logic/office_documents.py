@@ -4,8 +4,15 @@ import os
 import json
 import subprocess
 from dataclasses import asdict
+import base64
 
 import pypdfium2 as pdfium
+from openpyxl import load_workbook
+import PIL
+
+from llmonkey.llmonkey import LLMonkey
+from llmonkey.models import ModelProvider
+from llmonkey.providers.openai_like import IonosProvider, MistralProvider
 
 from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult
 from ingest.logic.common import UPLOADED_FILES_FOLDER
@@ -13,10 +20,12 @@ from ingest.logic.common import UPLOADED_FILES_FOLDER
 
 def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
     from pdferret import PDFerret
+    from pdferret.datamodels import ChunkType, PDFChunk, PDFDoc
+    import nltk
+    nltk.download('punkt')
 
-    extractor = PDFerret(meta_extractor="dummy", text_extractor="tika", llm_summary=False)
-    #logging.warning("TIKA_CLIENT_ONLY=" + (os.environ.get("TIKA_CLIENT_ONLY") or ""))
-    #logging.warning("PDFERRET_TIKA_SERVER_URL=" + (os.environ.get("PDFERRET_TIKA_SERVER_URL") or ""))
+    extractor = PDFerret(meta_extractor="grobid", text_extractor="unstructured", general_extractor="tika", llm_summary=False, llm_table_description=False)
+
     if on_progress:
         on_progress(0.1)
     parsed, failed = extractor.extract_batch([f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}' for uploaded_file in files])
@@ -29,11 +38,68 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
 
     def postprocess_item(parsed_file, uploaded_file):
         file_metainfo = parsed_file.metainfo
-        # MetaInfo(doi='', title='', abstract='', authors=[], pub_date='', language='de',
-        # file_features=FileFeatures(filename='/data/quiddity_data/uploaded_files/94/80/1_DE_annexe_autre_acte_part1_v2_80001b4184169e45010efa735fa533d2.DOCX',
-        # file='/data/quiddity_data/uploaded_files/94/80/1_DE_annexe_autre_acte_part1_v2_80001b4184169e45010efa735fa533d2.DOCX',
-        # is_scanned=None), npages=None, thumbnail=b'\x89PNG
-        # logging.warning(f"parsed file: {file_metainfo.title} {file_metainfo.abstract}")
+        # MetaInfo({'doi': '', 'title': ['Protokoll', 'Druck'], 'abstract': '',
+        # 'authors': ['Georg T...', 'Klaus H...'], 'pub_date': ['2023-04-05T12:56:00Z',
+        # '2023-04-11T07:13:20Z', '2013-08-07T11:41:02'], 'language': '',
+        # 'file_features': FileFeatures(filename='...',
+        # file='...', is_scanned=None), 'npages': None, 'thumbnail': b'\x89PNG...
+
+        if file_metainfo.file_features.filename.endswith((".docx")):
+            import pypandoc
+            markdown = pypandoc.convert_file(file_metainfo.file_features.file,
+                                 'markdown-escaped_line_breaks',
+                                 format='docx', extra_args=['--columns=130'])
+            chunks = []
+            line_chunk = []
+            for line in markdown.split("\n"):
+                line_chunk.append(line)
+                if len(line_chunk) == 12:
+                    chunk = PDFChunk(text="\n".join(line_chunk), chunk_type=ChunkType.TEXT)
+                    chunks.append(chunk)
+                    line_chunk = []
+            if line_chunk:
+                chunk = PDFChunk(text="\n".join(line_chunk), chunk_type=ChunkType.TEXT)
+                chunks.append(chunk)
+            parsed_file.chunks = chunks
+        elif file_metainfo.file_features.filename.endswith((".xls", ".xlsx")):
+            for chunk in parsed_file.chunks:
+                if chunk.chunk_type == ChunkType.TABLE:
+                    chunk.text = chunk.non_embeddable_content[:800]
+
+            sheetnames = get_sheet_names(file_metainfo.file_features.file)
+            text = "This Excel spreadsheet contains the following sheets: " + ", ".join(sheetnames)
+            text_de = "Diese Excel-Tabelle enthält die folgenden Arbeitsblätter: " + ", ".join(sheetnames)
+            logging.warning(f"Prepending sheet names to text: {text_de}")
+            chunk = PDFChunk(text=text_de, chunk_type=ChunkType.TEXT)
+            parsed_file.chunks = [chunk] + parsed_file.chunks
+        elif file_metainfo.file_features.filename.endswith((".pdf", )):
+            thumbnail = file_metainfo.thumbnail
+            if thumbnail:
+                url_encoded = "data:image/png;base64," + base64.b64encode(thumbnail).decode("utf-8")
+                text_de = """Du erhälst die erste Seite eines PDF-Dokuments. Fasse das Dokument in bis zu drei Sätzen zusammen."""
+                prompt = [
+                    {
+                        "type": "text",
+                        "text": text_de
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": url_encoded
+                    }
+                ]
+                llmonkey_instance = LLMonkey()
+                response = llmonkey_instance.generate_prompt_response(
+                    provider=ModelProvider.mistral,
+                    model_name=MistralProvider.Models.PIXTRAL.identifier,
+                    user_prompt=prompt,
+                    max_tokens=2000,
+                )
+                response_text = response.conversation[-1].content
+
+                assert isinstance(response_text, str)
+                summary_chunk = PDFChunk(text="AI Summary: " + response_text, chunk_type=ChunkType.TEXT)
+                #text_chunk = PDFChunk(text=info['text'], chunk_type=ChunkType.TEXT)
+                parsed_file.chunks = [summary_chunk] + parsed_file.chunks
 
         if not file_metainfo.title and not len(parsed_file.chunks):
             failed_files.append({"filename": uploaded_file.local_path, "reason": "no title or text found, skipping"})
@@ -48,13 +114,13 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
             chunk.pop('chunk_type')
         full_text = " ".join([chunk['text'] for chunk in full_text_chunks])
 
-        ai_metadata = get_ai_summary(file_metainfo.title.strip() or uploaded_file.original_filename,
+        ai_metadata = get_ai_summary(uploaded_file.original_filename,
                                      uploaded_file.metadata.folder if uploaded_file.metadata else None,
                                      full_text)
 
         folder = uploaded_file.metadata.folder if uploaded_file.metadata else None
         item = {
-            "title": (ai_metadata and ai_metadata.title) or file_metainfo.title.strip() or uploaded_file.original_filename,
+            "title": (ai_metadata and ai_metadata.title) or uploaded_file.original_filename,
             "type_description": (ai_metadata and ai_metadata.document_type) or None,
             "abstract": (ai_metadata and ai_metadata.summary) or file_metainfo.abstract,
             "ai_tags": (ai_metadata and ai_metadata.tags) or [],
@@ -79,7 +145,21 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
     with ThreadPool(processes=10) as pool:
         items = pool.map(lambda args: postprocess_item(args[0], args[1]), zip(parsed, files))
 
+    items = [item for item in items if item]
+
     return items, failed_files
+
+
+def get_sheet_names(file_path):
+    try:
+        # Load the workbook without loading all data
+        workbook = load_workbook(filename=file_path, read_only=True)
+        # Get the list of sheet names
+        sheet_names = workbook.sheetnames
+        return sheet_names
+    except Exception as e:
+        logging.warning(f"Failed to get sheet names from {file_path}: {e}")
+        return []
 
 
 def get_ai_summary(title: str, folder: str | None, full_text: str) -> AiMetadataResult | None:
@@ -148,7 +228,8 @@ document_type: Der abstrakte Dokumenttyp. Beispiele sind: "Aufsatz über einen n
 summary: Die Zusammenfassung sollten zwei Sätze sein, die das Wesentliche des Dokuments erfassen.
 Fasse die Sätz kurz, ohne Füllwörter. Konzentriere dich auf Informationen, die wichtig sein können um das Dokument zu finden, z.B. Wer, Was, Wann, Wo, Warum.
 
-tags: Bis zu 10 Stichwörter, die das Dokument beschreiben. Nutze sowohl allgemeine Stichworte als auch spezifische Begriffe, die im Dokument vorkommen, zum Beispiel Orte, Personen oder Technologien.
+tags: Bis zu 10 Stichwörter, die das Dokument beschreiben. Nutze sowohl allgemeine Stichworte als auch spezifische Begriffe,
+die im Dokument vorkommen, zum Beispiel Orte, Personen oder Technologien. Füge alle direkt beteiligten Personen als Tags hinzu.
 
 date: Das Datum des Dokuments, falls es im Text oder Dateinamen erwähnt wird. Gib das Datum im Format JJJJ-MM-TT an. Falls nur ein Jahr oder Monat genannt wird, nutze den 01. des entsprechenden Monats.
 
@@ -158,21 +239,18 @@ Lasse ein Feld leer, wenn du die Information nicht finden kannst.
 Texte und Stichwörter sollen in deutscher Sprache sein, egal in welcher Sprache das Dokument verfasst ist.
 Nutze auch den Ordnername für Hinweise aus die Bedeutung eines Dokuments.
 
-Antworte nur mit dem JSON-Objekt.
+Antworte nur mit dem JSON-Objekt. Antworte mit einem vollständigen JSON-Objekt, auch wenn du nicht alle Felder ausfüllen kannst.
     """
 
     prompt = (prompt_de.replace("{{ title }}", title)
               .replace("{{ folder }}", folder or "")
               .replace("{{ content }}", full_text[:1000]))
-
-    from llmonkey.llmonkey import LLMonkey
-    from llmonkey.models import ModelProvider
-    from llmonkey.providers.openai_like import IonosProvider
     llmonkey_instance = LLMonkey()
     response = llmonkey_instance.generate_prompt_response(
         provider=ModelProvider.ionos,
         model_name=IonosProvider.Models.META_LLAMA_3_1_70B.identifier,
         system_prompt=prompt,
+        max_tokens=1000,
     )
     response_text = response.conversation[-1].content
     assert response_text
