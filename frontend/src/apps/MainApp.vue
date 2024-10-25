@@ -234,7 +234,7 @@ export default {
 
     <Dialog
       v-model:visible="appState.document_details_dialog_is_visible"
-      :style="{'max-width': '650px', width: '650px'}"
+      :style="{'max-width': '650px', width: '650px'}" modal closeOnEscape :dismissableMask="true"
       @hide="appState.close_document_details">
       <ObjectDetailsModal v-if="appState.selected_document_ds_and_id"
         :initial_item="appState.selected_document_initial_item"

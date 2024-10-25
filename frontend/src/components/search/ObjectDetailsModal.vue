@@ -182,25 +182,46 @@ export default {
 </script>
 
 <template>
-  <div class="p-[2px] flex flex-col">
+  <div class="flex flex-col">
 
-    <div class="p-[2px] flex flex-col overflow-y-auto" ref="scroll_area"
+    <div class="p-[1px] flex flex-col overflow-y-auto" ref="scroll_area"
       :class="{'shadow-[inset_0_-10px_20px_-20px_rgba(0,0,0,0.3)]': show_scroll_indicator}">
 
       <div class="flex flex-row w-full mb-3">
+
+        <!-- Left side (content, not image) -->
         <div class="flex-1 flex min-w-0 flex-col w-full">
 
+          <!-- Tagline -->
+          <div class="flex flex-row items-start mb-3 -mt-1" v-if="rendering.tagline(item)">
+            <div class="flex-none h-full flex flex-row items-center">
+              <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-6 w-6 mr-3" />
+            </div>
+
+            <div class="h-full min-w-0 flex flex-col gap-1">
+              <div class="text-left text-[13px] leading-tight break-words text-gray-600"
+                v-html="rendering.tagline(item)">
+              </div>
+              <div class="text-left text-[12px] leading-tight break-words text-gray-500"
+                v-html="rendering.sub_tagline(item)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Heading -->
           <div class="flex flex-row min-w-0 mb-1">
-            <img v-if="rendering ? rendering.icon(item) : false" :src="rendering.icon(item)"
+            <img v-if="rendering && !rendering.tagline(item) ? rendering.icon(item) : false" :src="rendering.icon(item)"
               class="h-5 w-5 mr-2" />
-            <p class="min-w-0 text-md font-medium leading-tight break-words text-gray-900"
+            <p class="min-w-0 text-[16px] font-['Lexend'] font-medium leading-tight break-words text-gray-900"
               v-html="rendering ? rendering.title(item) : ''"></p>
           </div>
 
-          <p class="mt-1 min-w-0 flex-none text-xs leading-normal break-words text-gray-500"
+          <!-- Subtitle -->
+          <p class="mt-1 min-w-0 flex-none text-[13px] leading-normal break-words text-gray-500"
             v-html="rendering ? rendering.subtitle(item) : ''">
           </p>
 
+          <!-- Body -->
           <p ref="body_text" class="mt-2 text-sm text-gray-700 custom-cite-style" :class="{ 'line-clamp-[12]': body_text_collapsed }"
             v-html="(rendering && rendering.body(item)) ? highlight_words_in_text(rendering.body(item), appState.selected_document_query.split(' ')) : (loading_item ? 'loading...' : '-')"></p>
           <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
@@ -210,11 +231,14 @@ export default {
           </div>
 
         </div>
+
+        <!-- Right side (image) -->
         <div v-if="rendering ? rendering.image(item) : false" class="flex-none w-32 flex flex-col justify-center ml-2">
           <Image class="w-full rounded-lg shadow-md" :src="rendering.image(item)" preview />
         </div>
       </div>
 
+      <!-- Relevant Vector Parts -->
       <div v-if="relevant_chunks.length" v-for="relevant_chunk in [relevant_chunks[vector_chunk_index]]" class="mt-2 rounded-md bg-gray-50 py-2 px-2">
         <div v-if="relevant_chunk.value">
           <div class="flex flex-row items-center">
@@ -236,12 +260,16 @@ export default {
             </div>
           </div>
           <div class="mt-1 text-gray-700 text-xs"
-            v-html="highlight_words_in_text(relevant_chunk.value.text, appState.selected_document_query.split(' '))"></div>
-          <a :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_chunk.value.page}`" target="_blank"
+            v-html="highlight_words_in_text(relevant_chunk.value.text, appState.selected_document_query.split(' '))">
+          </div>
+
+          <a v-if="rendering.full_text_pdf_url(item)"
+            :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_chunk.value.page}`" target="_blank"
             class="mt-1 text-gray-500 text-xs">Open PDF at this page</a>
         </div>
       </div>
 
+      <!-- Relevant Keyword Parts -->
       <div v-for="highlight in relevant_keyword_highlights" class="mt-2 rounded-md bg-gray-50 py-2 px-2">
         <div class="font-semibold text-gray-600 text-sm">Relevant Part in
           {{ appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.name || appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.identifier }}
@@ -250,6 +278,7 @@ export default {
         <div class="mt-1 text-gray-700 text-xs" v-html="highlight.value"></div>
       </div>
 
+      <!-- Export & Buttons -->
       <div class="mt-2 flex flex-none flex-row">
         <button
           v-tooltip.bottom="{ value: `Export this item in different formats`, showDelay: 500 }"
@@ -270,6 +299,7 @@ export default {
         </ExportSingleItem>
       </Dialog>
 
+      <!-- Collection Memberships -->
       <div v-for="collection_item in item._related_collection_items" class="mt-3">
         <RelatedCollectionItem :collection_item="collection_item"
           @refresh_item="update_column_data_only()">

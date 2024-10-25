@@ -139,17 +139,17 @@ export default {
       <div class="flex-1 min-w-0 flex flex-col gap-1">
 
         <!-- Tagline -->
-        <div class="flex flex-row items-start mb-3" v-if="rendering.tagline(item)">
+        <div class="flex flex-row items-start mb-3 -mt-1" v-if="rendering.tagline(item)">
 
           <div class="flex-none h-full flex flex-row items-center">
             <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-6 w-6 mr-3" />
           </div>
 
           <div class="h-full min-w-0 flex flex-col gap-1">
-            <div class="text-left text-[12px] leading-tight break-words text-gray-600"
+            <div class="text-left text-[13px] leading-tight break-words text-gray-600"
               v-html="rendering.tagline(item)">
             </div>
-            <div class="text-left text-[11px] leading-tight break-words text-gray-500"
+            <div class="text-left text-[12px] leading-tight break-words text-gray-500"
               v-html="rendering.sub_tagline(item)">
             </div>
           </div>
@@ -159,7 +159,7 @@ export default {
         <!-- Heading -->
         <div class="flex flex-row items-start">
           <img v-if="rendering.icon(item) && !rendering.tagline(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
-          <button class="min-w-0 text-left text-[16px] font-serif font-bold leading-tight break-words text-sky-700 hover:underline"
+          <button class="min-w-0 text-left text-[16px] font-['Lexend'] font-medium leading-tight break-words text-sky-700 hover:underline"
             v-html="rendering.title(item)"
             @click="appState.show_document_details([dataset_id, item_id], collection_item.metadata, collection_item.relevant_parts, original_query)">
           </button>

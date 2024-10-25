@@ -436,7 +436,10 @@ export const useAppStateStore = defineStore("appState", {
       dataset.schema.hover_label_rendering = hover_label_rendering
 
       const detail_view_rendering = dataset.schema.detail_view_rendering
-      for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon", "tags", "full_text_pdf_url"]) {
+      for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon", "badges", "full_text_pdf_url", "tagline", "sub_tagline"]) {
+        if (field === "badges" && !result_list_rendering[field]) {
+          result_list_rendering["badges"] = result_list_rendering["tags"]
+        }
         detail_view_rendering[field] = detail_view_rendering[field]
           ? eval?.('"use strict"; ' + detail_view_rendering[field])
           : (item) => ""

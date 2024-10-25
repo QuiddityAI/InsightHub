@@ -5,7 +5,7 @@ import {
   HandThumbDownIcon,
 } from "@heroicons/vue/24/outline"
 
-import BorderlessButton from "../widgets/BorderlessButton.vue"
+import Image from "primevue/image"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -53,17 +53,6 @@ export default {
       } else {
         return null
       }
-    },
-    is_irrelevant_according_to_ai() {
-      if (this.collection_item?.column_data && this.collection_item.column_data['relevance']) {
-        const value = this.collection_item.column_data['relevance'].value
-        if (typeof value === "object") {
-          if (value.is_relevant === false) {
-            return true
-          }
-        }
-      }
-      return false
     },
     actual_size_mode() {
       if (this.is_irrelevant_according_to_ai) {
@@ -117,18 +106,35 @@ export default {
 
 <template>
   <div v-if="rendering && item"
-    class="flex flex-col gap-3"
-    :class="{'opacity-60': is_irrelevant_according_to_ai}">
+    class="flex flex-col gap-3">
 
-    <div class="flex flex-row">
+    <div class="flex flex-row gap-2">
 
       <!-- Left side (content, not image) -->
       <div class="flex-1 min-w-0 flex flex-col gap-1">
 
+        <!-- Tagline -->
+        <div class="flex flex-row items-start mb-3" v-if="rendering.tagline(item)">
+
+          <div class="flex-none h-full flex flex-row items-center">
+            <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-6 w-6 mr-3" />
+          </div>
+
+          <div class="h-full min-w-0 flex flex-col gap-1">
+            <div class="text-left text-[13px] leading-tight break-words text-gray-600"
+              v-html="rendering.tagline(item)">
+            </div>
+            <div class="text-left text-[12px] leading-tight break-words text-gray-500"
+              v-html="rendering.sub_tagline(item)">
+            </div>
+          </div>
+
+        </div>
+
         <!-- Heading -->
         <div class="flex flex-row items-start">
-          <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
-          <button class="min-w-0 text-left text-[15px] font-serif font-bold leading-tight break-words text-sky-700 hover:underline"
+          <img v-if="rendering.icon(item) && !rendering.tagline(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
+          <button class="min-w-0 text-left text-[16px] font-['Lexend'] font-medium leading-tight break-words text-sky-700 hover:underline"
             v-html="rendering.title(item)"
             @click="appState.show_document_details([dataset_id, item_id])">
           </button>
@@ -154,7 +160,7 @@ export default {
 
       <!-- Right side (image) -->
       <div v-if="rendering.image(item)" class="flex-none w-24 flex flex-col justify-center">
-        <img class="w-full rounded-lg shadow-md" :src="rendering.image(item)" />
+        <Image class="w-full rounded-lg shadow-md" image-class="rounded-lg" :src="rendering.image(item)" preview />
       </div>
     </div>
 
