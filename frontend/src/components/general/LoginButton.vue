@@ -12,6 +12,8 @@ import Message from 'primevue/message';
 import { useToast } from 'primevue/usetoast';
 import { UserIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
 
+import BorderButton from "../widgets/BorderButton.vue"
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -87,6 +89,25 @@ export default {
       }
       this.$refs.register_form.submit()
     },
+    continue_without_login() {
+      if (!this.terms_accepted) {
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please accept the terms of service and privacy policy' })
+        return
+      }
+      if (document.cookie.includes("anonymous_user_email")) {
+        this.email = document.cookie.split('; ').find(row => row.startsWith('anonymous_user_email')).split('=')[1]
+        this.password = document.cookie.split('; ').find(row => row.startsWith('anonymous_user_password')).split('=')[1]
+      } else {
+        const random_six_letter_id = Math.random().toString(36).substring(2, 8)
+        this.email = `anonymous_user_${random_six_letter_id}`
+        const random_password = Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 8)
+        this.password = random_password
+        // max-age is in seconds, 365 days = 365*24*60*60
+        document.cookie = `anonymous_user_email=${this.email}; max-age=${365*24*60*60}; path=/`
+        document.cookie = `anonymous_user_password=${this.password}; max-age=${365*24*60*60}; path=/`
+      }
+      this.$refs.register_form.submit()
+    }
   },
 }
 </script>
@@ -124,6 +145,7 @@ export default {
             <Button label="Login" class="w-full" @click="login" />
           </form>
         </AccordionTab>
+
         <AccordionTab header="Register / Create a new account">
           <form ref="register_form" :action="`/org/signup_from_app/?next=/`" method="post" class="flex flex-col gap-3">
             <InputGroup>
@@ -159,6 +181,29 @@ export default {
             <!-- put tooltip in div because it doesn't work when button is disabled otherwise -->
             <div v-tooltip.bottom="{ value: terms_accepted ? '' : 'You need to accept the terms of services and privacy policy to register.', showDelay: 400 }">
               <Button label="Register" class="w-full" @click="register" :disabled="!terms_accepted" />
+            </div>
+          </form>
+        </AccordionTab>
+
+        <AccordionTab header="Try without logging in">
+          <form ref="register_form" :action="`/org/signup_from_app/?next=/`" method="post" class="flex flex-col gap-3">
+
+            <div class="text-gray-700">
+              Only a limited set of features is available without logging in.<br>
+              We recommend creating an account above, its free and just one step.
+            </div>
+
+            <div class="mt-3 mb-3 text-sm text-gray-500">
+              <Checkbox v-model="terms_accepted" binary class="mr-2" />
+              I agree to the
+              <a href="https://absclust.com/disclaimers/terms_of_services" class="text-blue-500 hover:underline" target="_blank">Terms of Service</a>
+              and
+              <a href="https://absclust.com/disclaimers/privacy" class="text-blue-500 hover:underline" target="_blank">Privacy Policy</a>.
+            </div>
+
+            <!-- put tooltip in div because it doesn't work when button is disabled otherwise -->
+            <div v-tooltip.bottom="{ value: terms_accepted ? '' : 'You need to accept the terms of services and privacy policy to register.', showDelay: 400 }">
+              <Button label="Continue without login" class="w-full" @click="continue_without_login" :disabled="!terms_accepted" />
             </div>
           </form>
         </AccordionTab>
