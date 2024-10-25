@@ -4,11 +4,11 @@
       Imprint
     </a>
     |
-    <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/terms_of_services">
+    <a class="hover:underline" target="_blank" href="https://absclust.com/terms-of-service">
       Terms of Services
     </a>
     |
-    <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/privacy">
+    <a class="hover:underline" target="_blank" href="https://absclust.com/privacy-policy">
       Privacy Policy
     </a>
   </div>

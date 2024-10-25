@@ -173,9 +173,9 @@ export default {
             <div class="mt-3 mb-3 text-sm text-gray-500">
               <Checkbox v-model="terms_accepted" binary class="mr-2" />
               I agree to the
-              <a href="https://absclust.com/disclaimers/terms_of_services" class="text-blue-500 hover:underline" target="_blank">Terms of Service</a>
+              <a href="https://absclust.com/terms-of-service" class="text-blue-500 hover:underline" target="_blank">Terms of Service</a>
               and
-              <a href="https://absclust.com/disclaimers/privacy" class="text-blue-500 hover:underline" target="_blank">Privacy Policy</a>.
+              <a href="https://absclust.com/privacy-policy" class="text-blue-500 hover:underline" target="_blank">Privacy Policy</a>.
             </div>
 
             <!-- put tooltip in div because it doesn't work when button is disabled otherwise -->
@@ -196,9 +196,9 @@ export default {
             <div class="mt-3 mb-3 text-sm text-gray-500">
               <Checkbox v-model="terms_accepted" binary class="mr-2" />
               I agree to the
-              <a href="https://absclust.com/disclaimers/terms_of_services" class="text-blue-500 hover:underline" target="_blank">Terms of Service</a>
+              <a href="https://absclust.com/terms-of-service" class="text-blue-500 hover:underline" target="_blank">Terms of Service</a>
               and
-              <a href="https://absclust.com/disclaimers/privacy" class="text-blue-500 hover:underline" target="_blank">Privacy Policy</a>.
+              <a href="https://absclust.com/privacy-policy" class="text-blue-500 hover:underline" target="_blank">Privacy Policy</a>.
             </div>
 
             <!-- put tooltip in div because it doesn't work when button is disabled otherwise -->
