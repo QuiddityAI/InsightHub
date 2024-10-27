@@ -1331,7 +1331,7 @@ class CollectionColumn(models.Model):
         verbose_name="Code Module Name", max_length=200, blank=True, null=True
     )
     parameters = models.JSONField(
-        verbose_name="Parameters", default=dict, blank=True, null=True
+        verbose_name="Parameters", default=dict, blank=True, null=False
     )
     auto_run_for_approved_items = models.BooleanField(
         verbose_name="Auto Run for Approved Items", default=False, blank=False, null=False

@@ -1,6 +1,8 @@
 from data_map_backend.models import DataCollection, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType
 from .prompts import item_relevancy_prompt, item_relevancy_prompt_de
 
+from llmonkey.providers import IonosProvider
+
 
 def create_relevance_column(collection: DataCollection, query: str, language: str | None) -> CollectionColumn:
     column = CollectionColumn(
@@ -17,7 +19,8 @@ def create_relevance_column(collection: DataCollection, query: str, language: st
         column.expression = f"How is this item relevant to the query '{query}'?"
         column.prompt_template = item_relevancy_prompt.replace("{{ expression }}", query)
     column.source_fields = [COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS]
-    column.module = 'groq_llama_3_70b'
+    column.module = 'llm'
+    column.parameters = {'provider': IonosProvider.identifier, 'model': IonosProvider.Models.Llama_3_1_70B}
     column.auto_run_for_candidates = True
     column.determines_relevance = True
     column.save()

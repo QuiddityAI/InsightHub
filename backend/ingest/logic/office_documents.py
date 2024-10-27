@@ -183,7 +183,7 @@ Schema:
     "document_language": "Two-letter code of the document language",
     "title": "Title of the document",
     "document_type": "Abstract document type",
-    "summary": "One-sentence summary of the content",
+    "summary": "Two-sentence summary of the content",
     "tags": ["list", "of", "tags", "related", "to", "the", "document"],
     "date": "Date of the document (if mentioned) in YYYY-MM-DD format",
     "time": "Time of the document (if mentioned) in HH:MM:SS format"

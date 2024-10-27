@@ -403,11 +403,7 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
     source_column_identifiers = [name.replace("_column__", "") for name in column.source_fields if name.startswith("_column__")]
     source_columns = CollectionColumn.objects.filter(collection=collection, identifier__in=source_column_identifiers)
     module_definitions = {
-        'openai_gpt_3_5': {"input_type": "natural_language"},
-        'openai_gpt_4_turbo': {"input_type": "natural_language"},
-        'openai_gpt_4_o': {"input_type": "natural_language"},
-        'groq_llama_3_8b': {"input_type": "natural_language"},
-        'groq_llama_3_70b': {"input_type": "natural_language"},
+        'llm': {"input_type": "natural_language"},
         'python_expression': {"input_type": "json"},
         'website_scraping': {"input_type": "json"},
         'web_search': {"input_type": "json"},
@@ -445,17 +441,13 @@ def _extract_question_from_collection_class_items_batch(collection_items, column
             logging.warning(f"Could not extract question for item {item.id}.")
             return
         cost_per_module = {
-            'openai_gpt_3_5': 1.0,
-            'openai_gpt_4_turbo': 5.0,
-            'openai_gpt_4_o': 2.5,
-            'groq_llama_3_8b': 0.2,
-            'groq_llama_3_70b': 0.5,
+            'llm': 0.2,
             'python_expression': 0.0,
             'website_scraping': 0.0,
             'web_search': 0.0,
             'notes': 0.0,
         }
-        module = column.module or "openai_gpt_3_5"
+        module = column.module
         cost = cost_per_module.get(module, 1.0)
 
         if cost > 0:

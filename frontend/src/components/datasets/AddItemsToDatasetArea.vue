@@ -217,8 +217,8 @@ export default {
       if (!this.check_service_usage(1)) {
         return
       }
-      const collection_id = this.target_collection?.id
-      const collection_class = this.target_collection_class
+      let collection_id = this.target_collection?.id
+      let collection_class = this.target_collection_class
       if (this.add_to_collection) {
         const collection_selection = this.$refs.collection_selection
         if (collection_selection.selected_collection_id) {
