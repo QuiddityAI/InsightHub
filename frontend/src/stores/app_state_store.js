@@ -533,7 +533,7 @@ export const useAppStateStore = defineStore("appState", {
       // ranking options are only supported if there is only one dataset selected:
       if (this.settings.search.dataset_ids.length == 1) {
         const dataset = this.datasets[this.settings.search.dataset_ids[0]]
-        if (dataset.merged_advanced_options.ranking_options.length > 0) {
+        if (dataset.merged_advanced_options.ranking_options?.length > 0) {
           that.available_ranking_options = dataset.merged_advanced_options.ranking_options
           that.settings.search.ranking_settings = dataset.merged_advanced_options.ranking_options[0]
         }
