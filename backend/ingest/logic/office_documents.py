@@ -5,9 +5,7 @@ import json
 import base64
 import time
 
-from llmonkey.llmonkey import LLMonkey
-from llmonkey.models import ModelProvider
-from llmonkey.providers.openai_like import IonosProvider, MistralProvider
+from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
 
 from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult
 from ingest.logic.common import UPLOADED_FILES_FOLDER
@@ -177,12 +175,10 @@ Antworte nur mit dem JSON-Objekt. Antworte mit einem vollständigen JSON-Objekt,
     prompt = (prompt_de.replace("{{ title }}", title)
               .replace("{{ folder }}", folder or "")
               .replace("{{ content }}", full_text[:1000]))
-    llmonkey_instance = LLMonkey()
-    response = llmonkey_instance.generate_prompt_response(
-        provider=ModelProvider.ionos,
-        model_name=IonosProvider.Models.META_LLAMA_3_1_70B.identifier,
+    model = BaseLLMModel.load(Mistral_Mistral_Small.__name__)
+    response = model.generate_prompt_response(
         system_prompt=prompt,
-        max_tokens=1000,
+        max_tokens=2000,
     )
     response_text = response.conversation[-1].content
     assert isinstance(response_text, str)
