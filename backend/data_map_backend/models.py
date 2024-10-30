@@ -1088,7 +1088,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         help_text="",
         default=list,
         blank=True,
-        null=True,
+        null=False,
     )
     agent_is_running = models.BooleanField(
         verbose_name="Agent is running", default=False, blank=False, null=False

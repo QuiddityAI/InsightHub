@@ -570,7 +570,7 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
                                relevant_parts: str | None=None, database_name: str | None = None,
                                top_n_full_text_chunks: int | None=None, get_text_search_highlights: bool = False,
                                query: str | None=None, include_related_collection_items: bool = False) -> dict | None:
-    dataset = DotDict(get_serialized_dataset_cached(dataset_id))
+    dataset = get_serialized_dataset_cached(dataset_id)
     if not database_name:
         database_name = dataset.actual_database_name
         assert database_name is not None

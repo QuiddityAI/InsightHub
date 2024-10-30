@@ -1,0 +1,59 @@
+import json
+import logging
+
+from django.utils import timezone
+from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
+
+from data_map_backend.models import CollectionColumn, ServiceUsage
+from data_map_backend.prompts import table_cell_prompt
+
+
+def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: int) -> dict:
+    cell_data = {
+        "value": "",
+        "changed_at": timezone.now().isoformat(),
+        "is_ai_generated": True,
+        "is_computed": True,
+        "is_manually_edited": False,
+    }
+    # if not column.parameters.get("model"):
+    #     logging.error("No model specified for LLM column.")
+    #     cell_data["value"] = "No model specified"
+    #     return cell_data
+    default_model = Mistral_Mistral_Small.__name__
+    model = BaseLLMModel.load(column.parameters.get("model") or default_model)
+
+    # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:
+    ai_credits = model.config.euro_per_1M_output_tokens / 5.0
+    usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
+    result = usage_tracker.track_usage(ai_credits, f"extract information using {model.__class__.__name__}")
+    if result['approved'] != True:
+        cell_data["value"] = "AI usage limit exceeded"
+        return cell_data
+
+    system_prompt = None
+    user_prompt = None
+    if column.prompt_template:
+        system_prompt = column.prompt_template.replace("{{ document }}", input_data).replace("{{ expression }}", column.expression or "")
+    else:
+        system_prompt = table_cell_prompt.replace("{{ document }}", input_data)
+        user_prompt = column.expression
+
+    response = model.generate_prompt_response(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt or "",
+        max_tokens=2000,
+    )
+    response_text = response.conversation[-1].content
+
+    if column.determines_relevance and response_text:
+        try:
+            value = json.loads(response_text)
+        except json.JSONDecodeError as e:
+            logging.warning(f"Could not parse response from AI: {response_text} {e}")
+            value = response_text
+    else:
+        value = response_text
+    cell_data["value"] = value
+    cell_data["used_prompt"] = f"system_prompt:\n{system_prompt}\n---\n\nuser_prompt:\n{user_prompt}"
+    return cell_data

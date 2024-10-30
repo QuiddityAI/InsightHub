@@ -50,7 +50,7 @@ export default {
       return this.collectionStore.collection
     },
     available_modules() {
-      return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
+      return this.appStateStore.available_ai_modules.concat(this.appStateStore.column_modules)
     },
     active_search_sources() {
       return this.collectionStore.collection.search_sources.filter((source) => source.is_active)
@@ -220,7 +220,10 @@ export default {
           </button>
         </div>
         <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
-        <p class="text-xs text-gray-500">{{ human_readable_module_name(selected_column.module) }}</p>
+        <p class="text-xs text-gray-500">
+          {{ human_readable_module_name(selected_column.module) }}
+          {{ selected_column.module === 'llm' ? `(${selected_column.parameters.model})` : '' }}
+        </p>
         <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
           <button @click="collectionStore.extract_question(selected_column.id, true); $refs.column_options.hide()"
             class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">

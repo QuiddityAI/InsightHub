@@ -1,14 +1,18 @@
+from dataclasses import asdict
 import logging
 import json
+import threading
+import time
 
 from ninja import NinjaAPI
 from django.http import HttpResponse
+from llmonkey.llms import BaseLLMModel
 
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
 from data_map_backend.utils import is_from_backend
 from data_map_backend.serializers import CollectionSerializer, CollectionColumnSerializer
 from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier
-from columns.logic.process_column import extract_question_from_collection_class_item_query, remove_column_data_from_collection_items
+from columns.logic.process_column import remove_column_data_from_collection_items, get_collection_items_from_cell_range, process_cells_blocking
 
 api = NinjaAPI(urls_namespace="columns")
 
@@ -108,7 +112,15 @@ def process_column_route(request, payload: ColumnCellRange):
     if not column.module or column.module == "notes":
         pass
     else:
-        extract_question_from_collection_class_item_query(column.collection, payload.class_name, column, payload.offset, payload.limit, payload.order_by, payload.collection_item_id, request.user.id)
+        collection_items = get_collection_items_from_cell_range(column, payload)
+
+        def in_thread():
+            process_cells_blocking(collection_items, column, column.collection, request.user.id)
+
+        thread = threading.Thread(target=in_thread)
+        thread.start()
+        # wait till at least columns_with_running_processes is set:
+        time.sleep(0.1)
 
     data = CollectionSerializer(column.collection).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)
@@ -126,11 +138,18 @@ def remove_column_data_route(request, payload: ColumnCellRange):
     if column.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    # remove data from collection items:
-    collection_items = CollectionItem.objects.filter(collection=column.collection, classes__contains=[payload.class_name])
-    collection_items = collection_items.order_by(payload.order_by)
-    collection_items = collection_items[payload.offset:payload.offset+payload.limit] if payload.limit > 0 else collection_items[payload.offset:]
+    collection_items = get_collection_items_from_cell_range(column, payload)
     remove_column_data_from_collection_items(collection_items, column.identifier)
 
     return HttpResponse(None, status=204)
+
+
+@api.get("available_llm_models")
+def get_available_llm_models_route(request):
+    model_classes = BaseLLMModel.available_models()
+    models = {}
+    for model_class in model_classes.values():
+        config = model_class.config.dict()
+        models[model_class.__name__] = {"config": config, "provider": model_class.provider, "identifier": model_class.__name__}
+    return models
 

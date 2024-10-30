@@ -98,7 +98,8 @@ export const useAppStateStore = defineStore("appState", {
         { identifier: 'groq_llama_3_8b', name: 'Llama 3 8B (lowest cost, low accuracy, super fast)' },
         { identifier: 'groq_llama_3_70b', name: 'Llama 3 70B (low cost, medium accuracy, fast)' },
       ],
-      additional_column_modules: [
+      column_modules: [
+        { identifier: 'llm', name: 'LLM' },
         // { identifier: 'python_expression', name: 'Python Expression' },
         { identifier: 'website_scraping', name: 'Website Text Extraction' },
         { identifier: 'web_search', name: 'Web Search' },

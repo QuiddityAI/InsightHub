@@ -26,7 +26,9 @@ export default {
   data() {
     return {
       selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
-      selected_module: 'openai_gpt_4_o',
+      selected_module: 'llm',
+      selected_llm: 'Mistral_Mistral_Small',
+      available_llm_models: [],
     }
   },
   computed: {
@@ -34,13 +36,14 @@ export default {
     ...mapStores(useAppStateStore),
     ...mapStores(useCollectionStore),
     available_modules() {
-      return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
+      return this.appStateStore.column_modules
     },
     show_full_text_issue_hint() {
       return this.selected_source_fields.find((field) => field !== "_full_text_snippets" && field.includes("full_text"))
     },
   },
   mounted() {
+    this.get_available_llm_models()
   },
   watch: {
   },
@@ -57,6 +60,9 @@ export default {
         expression: prompt,
         source_fields: this.selected_source_fields,
         module: this.selected_module,
+        parameters: this.selected_module === 'llm' ? {
+          model: this.selected_llm,
+        } : {},
       }
       httpClient.post(`/api/v1/columns/add_column`, body)
       .then(function (response) {
@@ -75,6 +81,12 @@ export default {
       this.$refs.new_question_name.value = ''
       this.$refs.new_question_prompt.value = ''
       this.$emit('close')
+    },
+    get_available_llm_models() {
+      httpClient.get(`/api/v1/columns/available_llm_models`)
+      .then((response) => {
+        this.available_llm_models = response.data
+      })
     },
   },
 }
@@ -96,7 +108,15 @@ export default {
       </div>
       <div class="flex-1 min-w-0">
         <Dropdown v-model="selected_module" :options="available_modules" optionLabel="name" optionValue="identifier"
-          placeholder="Select Module.."
+          placeholder="Select Module..."
+          class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+      </div>
+    </div>
+    <div v-if="selected_module === 'llm'"
+      class="flex flex-row gap-2 items-center">
+      <div class="flex-1 min-w-0">
+        <Dropdown v-model="selected_llm" :options="Object.values(available_llm_models)" optionLabel="identifier" optionValue="identifier"
+          placeholder="Select LLM..."
           class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       </div>
     </div>

@@ -11,7 +11,7 @@ from django.db.models import Q
 from data_map_backend.models import DataCollection, User, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType, CollectionItem
 from legacy_backend.logic.search import get_search_results
 from search.schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
-from columns.logic.process_column import extract_question_from_collection_class_items
+from columns.logic.process_column import process_cells_blocking
 
 
 def run_search_task(collection: DataCollection, search_task: SearchTaskSettings, user_id: int,
@@ -151,7 +151,7 @@ def add_items_from_active_sources(collection: DataCollection, user_id: int, is_n
         for column in collection.columns.all():  # type: ignore
             assert isinstance(column, CollectionColumn)
             if column.auto_run_for_candidates:
-                extract_question_from_collection_class_items(new_items[:max_evaluated_candidates], column, collection, user_id)
+                process_cells_blocking(new_items[:max_evaluated_candidates], column, collection, user_id)
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 

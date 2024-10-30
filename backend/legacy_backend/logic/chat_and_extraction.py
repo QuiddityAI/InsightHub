@@ -6,7 +6,7 @@ from ..utils.dotdict import DotDict
 from ..logic.search import get_search_results
 from ..logic.search_common import get_relevant_parts_of_item_using_query_vector, get_field_similarity_threshold, get_suitable_generator, get_document_details_by_id
 from ..logic.chat_and_extraction_common import get_context_for_each_item_in_search_results, _sort_fields_logically
-from ..database_client.django_client import get_dataset
+from data_map_backend.views.other_views import get_serialized_dataset_cached
 
 
 def get_global_question_context(search_settings: dict) -> dict:
@@ -57,7 +57,7 @@ def get_global_question_context(search_settings: dict) -> dict:
 
 def get_item_question_context(dataset_id: int, item_id: str, source_fields: list[str], question: str,
                               max_characters_per_field: int | None = 5000, max_total_characters: int | None = None) -> dict:
-    dataset = get_dataset(dataset_id)
+    dataset = get_serialized_dataset_cached(dataset_id)
     required_fields = {'_id'}
     source_fields_set = set(source_fields)
     if "_descriptive_text_fields" in source_fields_set:
