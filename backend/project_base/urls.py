@@ -22,7 +22,7 @@ from django.contrib.auth import views as auth_views
 from .views import login_from_app, signup_from_app, change_password_from_app
 from data_map_backend.views import data_backend_proxy_views
 from data_map_backend.views import other_views
-from preparation.views import api as preparation_api
+from workflows.views import api as workflows_api
 from search.views import api as search_api
 from map.views import api as map_api
 from ingest.views import api as ingest_api
@@ -44,7 +44,7 @@ urlpatterns = [
 
     path('legacy_backend/', include('legacy_backend.urls')),
     path('data_backend/<path:sub_path>', data_backend_proxy_views.data_backend_proxy_view, name='data_backend_proxy_view'),
-    path('api/v1/preparation/', preparation_api.urls),
+    path('api/v1/workflows/', workflows_api.urls),
     path('api/v1/search/', search_api.urls),
     path('api/v1/map/', map_api.urls),
     path('api/v1/ingest/', ingest_api.urls),

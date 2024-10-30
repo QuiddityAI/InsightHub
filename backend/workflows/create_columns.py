@@ -1,7 +1,7 @@
-from data_map_backend.models import DataCollection, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType
-from .prompts import item_relevancy_prompt, item_relevancy_prompt_de
+from llmonkey.llms import Mistral_Mistral_Small
 
-from llmonkey.providers import IonosProvider
+from data_map_backend.models import DataCollection, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType
+from workflows.prompts import item_relevancy_prompt, item_relevancy_prompt_de
 
 
 def create_relevance_column(collection: DataCollection, query: str, language: str | None) -> CollectionColumn:
@@ -20,7 +20,7 @@ def create_relevance_column(collection: DataCollection, query: str, language: st
         column.prompt_template = item_relevancy_prompt.replace("{{ expression }}", query)
     column.source_fields = [COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS]
     column.module = 'llm'
-    column.parameters = {'provider': IonosProvider.identifier, 'model': IonosProvider.Models.Llama_3_1_70B}
+    column.parameters = {'model': Mistral_Mistral_Small.__name__}
     column.auto_run_for_candidates = True
     column.determines_relevance = True
     column.save()

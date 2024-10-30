@@ -395,7 +395,7 @@ export const useCollectionStore = defineStore("collection", {
         class_name: this.class_name,
       }
       httpClient
-        .post("/api/v1/preparation/cancel_agent", body)
+        .post("/api/v1/workflows/cancel_agent", body)
         .then((response) => {
           that.update_collection()
         })

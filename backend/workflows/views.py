@@ -19,7 +19,7 @@ from data_map_backend.schemas import CollectionIdentifier
 from .schemas import CreateCollectionSettings
 from .logic import create_collection_using_mode
 
-api = NinjaAPI(urls_namespace="preparation")
+api = NinjaAPI(urls_namespace="workflows")
 
 
 @api.post("create_collection")

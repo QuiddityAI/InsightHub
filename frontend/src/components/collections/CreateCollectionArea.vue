@@ -238,7 +238,7 @@ export default {
       }
       this.new_settings.related_organization_id = this.appStateStore.organization_id
       httpClient
-        .post("/api/v1/preparation/create_collection", this.new_settings)
+        .post("/api/v1/workflows/create_collection", this.new_settings)
         .then(function (response) {
           // put the new collection at the beginning of the list
           const collection = response.data
