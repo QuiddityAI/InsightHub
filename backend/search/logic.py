@@ -9,9 +9,9 @@ from django.utils import timezone
 from django.db.models import Q
 
 from data_map_backend.models import DataCollection, User, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType, CollectionItem
-from data_map_backend.views.question_views import extract_question_from_collection_class_items
 from legacy_backend.logic.search import get_search_results
-from .schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
+from search.schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
+from columns.logic.process_column import extract_question_from_collection_class_items
 
 
 def run_search_task(collection: DataCollection, search_task: SearchTaskSettings, user_id: int,

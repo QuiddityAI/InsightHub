@@ -26,6 +26,7 @@ from workflows.views import api as workflows_api
 from search.views import api as search_api
 from map.views import api as map_api
 from ingest.views import api as ingest_api
+from columns.views import api as columns_api
 
 
 def redirect_to_admin(request):
@@ -44,10 +45,12 @@ urlpatterns = [
 
     path('legacy_backend/', include('legacy_backend.urls')),
     path('data_backend/<path:sub_path>', data_backend_proxy_views.data_backend_proxy_view, name='data_backend_proxy_view'),
+
+    path('api/v1/ingest/', ingest_api.urls),
     path('api/v1/workflows/', workflows_api.urls),
     path('api/v1/search/', search_api.urls),
+    path('api/v1/columns/', columns_api.urls),
     path('api/v1/map/', map_api.urls),
-    path('api/v1/ingest/', ingest_api.urls),
 
     # Login and Logout
     path('org/login/', auth_views.LoginView.as_view(), name='login'),

@@ -51,7 +51,7 @@ export default {
         class_name: this.collection_item.classes[0],
         collection_item_id: this.collection_item.id,
       }
-      httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
+      httpClient.post(`/api/v1/columns/process_column`, body)
       .then(function (response) {
         that.collection.columns_with_running_processes = response.data.columns_with_running_processes
         that.get_extraction_results(column)

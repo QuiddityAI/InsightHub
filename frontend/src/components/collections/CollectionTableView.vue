@@ -110,7 +110,7 @@ export default {
       const body = {
         column_id: column_id,
       }
-      httpClient.post(`/org/data_map/delete_collection_column`, body)
+      httpClient.post(`/api/v1/columns/delete_column`, body)
       .then(function (response) {
         that.collectionStore.collection.columns = that.collectionStore.collection.columns.filter((column) => column.id !== column_id)
       })

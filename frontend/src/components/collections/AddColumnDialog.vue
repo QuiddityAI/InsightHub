@@ -58,7 +58,7 @@ export default {
         source_fields: this.selected_source_fields,
         module: this.selected_module,
       }
-      httpClient.post(`/org/data_map/add_collection_column`, body)
+      httpClient.post(`/api/v1/columns/add_column`, body)
       .then(function (response) {
         if (!that.collection.columns) {
           that.collection.columns = []

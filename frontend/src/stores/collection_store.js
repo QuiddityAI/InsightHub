@@ -266,7 +266,7 @@ export const useCollectionStore = defineStore("collection", {
         limit: only_current_page ? this.per_page : -1,
         order_by: (this.order_descending ? "-" : "") + this.order_by_field,
       }
-      httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
+      httpClient.post(`/api/v1/columns/process_column`, body)
       .then(function (response) {
         that.collection.columns_with_running_processes = response.data.columns_with_running_processes
         that.get_extraction_results(column_id)
@@ -303,7 +303,7 @@ export const useCollectionStore = defineStore("collection", {
         limit: only_current_page ? this.per_page : -1,
         order_by: (this.order_descending ? "-" : "") + this.order_by_field,
       }
-      httpClient.post(`/org/data_map/remove_collection_class_column_data`, body)
+      httpClient.post(`/api/v1/columns/remove_column_data`, body)
       .then(function (response) {
         if (on_success) {
           on_success()

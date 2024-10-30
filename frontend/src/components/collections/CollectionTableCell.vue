@@ -127,11 +127,11 @@ export default {
         this.item.column_data[this.column.identifier].collapsed_label = ""
       }
       const body = {
-        item_id: this.item.id,
+        collection_item_id: this.item.id,
         column_identifier: this.column.identifier,
         cell_data: this.item.column_data[this.column.identifier],
       }
-      httpClient.post(`/org/data_map/set_collection_cell_data`, body)
+      httpClient.post(`/api/v1/columns/set_cell_data`, body)
       .then(function (response) {
         that.edit_mode = false
       })
