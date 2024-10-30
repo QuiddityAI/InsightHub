@@ -37,6 +37,9 @@ export default {
       show_more_indicator: false,
       edit_mode: false,
       show_used_prompt: false,
+      show_typing_animation: false,
+      typing_animation_start: null,
+      typed_characters: 0,
     }
   },
   computed: {
@@ -55,6 +58,9 @@ export default {
                `<div class="text-green-700">${relevant_content}</div>` +
                `<div class="text-orange-700">${irrelevance_reasons}</div>`
       } else {
+        if (this.show_typing_animation) {
+          value = value.slice(0, this.typed_characters)
+        }
         return marked.parse(value)
       }
     },
@@ -97,6 +103,26 @@ export default {
       this.$nextTick(() => {
         this.update_show_more_indicator()
       })
+    },
+    value_as_plain_text() {
+      const column_data = this.item.column_data[this.column.identifier]
+      if (column_data && column_data.is_ai_generated
+        && !column_data.is_manually_edited) {
+        const seconds_since_changed = (new Date() - new Date(column_data.changed_at )) / 1000
+        if (seconds_since_changed < 5) {
+          this.show_typing_animation = true
+          this.typing_animation_start = new Date()
+          this.typed_characters = 0
+          const value = column_data.value || ""
+          const interval = setInterval(() => {
+            const seconds_since_start = (new Date() - this.typing_animation_start) / 1000
+            this.typed_characters = Math.floor(seconds_since_start * 120)
+            if (this.typed_characters >= value.length) {
+              clearInterval(interval)
+            }
+          }, 100)
+        }
+      }
     },
   },
   methods: {
