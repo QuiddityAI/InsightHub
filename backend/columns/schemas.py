@@ -10,6 +10,9 @@ class ColumnConfig(Schema):
     expression: str | None = None
     source_fields: list = []
     module: str | None = None
+    prompt_template: str | None = None
+    auto_run_for_approved_items: bool = False
+    auto_run_for_candidates: bool = False
     parameters: dict = {}
 
 

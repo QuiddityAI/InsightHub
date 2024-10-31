@@ -13,7 +13,7 @@ from data_map_backend.utils import is_from_backend
 from data_map_backend.serializers import CollectionSerializer, CollectionColumnSerializer
 from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier, UpdateColumnConfig
 from columns.logic.process_column import remove_column_data_from_collection_items, get_collection_items_from_cell_range, process_cells_blocking
-from columns.logic.column_prompts import column_name_prompt
+from columns.logic.column_prompts import column_name_prompt, column_language_prompt
 
 api = NinjaAPI(urls_namespace="columns")
 
@@ -25,17 +25,33 @@ def add_column_route(request, payload: ColumnConfig):
 
     payload.name = payload.name.strip() if payload.name else None
     payload.expression = payload.expression.strip() if payload.expression else None
-    if not (payload.name or payload.expression):
+    if payload.module in ["llm", "relevance"] and not (payload.name or payload.expression):
         return HttpResponse(status=400)
 
     if not payload.name:
-        assert payload.expression
-        response = Mistral_Ministral3b().generate_prompt_response(system_prompt=column_name_prompt.replace("{{ expression }}", payload.expression))
-        payload.name = response.conversation[-1].content
-        payload.name = payload.name.strip().strip('"').strip("'")
-        if not payload.name:
-            logging.error("Could not generate name for column.")
-            return HttpResponse(status=400)
+        if payload.module == "llm":
+            assert payload.expression
+            response = Mistral_Ministral3b().generate_prompt_response(system_prompt=column_name_prompt.replace("{{ expression }}", payload.expression))
+            payload.name = response.conversation[-1].content
+            payload.name = payload.name.strip().strip('"').strip("'")
+            if not payload.name:
+                logging.error("Could not generate name for column.")
+                return HttpResponse(status=400)
+        elif payload.module == "relevance":
+            payload.name = "Relevance"
+        elif payload.module == "web_search":
+            payload.name = "Web Search"
+        elif payload.module == "item_field":
+            payload.name = payload.source_fields[0]
+        elif payload.module == "notes":
+            payload.name = "Notes"
+        elif payload.module == "website_scraping":
+            payload.name = "Website Text"
+        elif payload.module == "email":
+            payload.name = "E-Mail"
+        else:
+            payload.name = "Column"
+    assert payload.name
 
     if not payload.identifier:
         identifier = payload.name.replace(" ", "_").lower()
@@ -46,6 +62,16 @@ def add_column_route(request, payload: ColumnConfig):
             if tries > 10:
                 logging.error("Could not create unique identifier for collection column.")
                 return HttpResponse(status=400)
+
+    if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
+        prompt = column_language_prompt.replace("{{ expression }}", payload.expression or "").replace("{{ title }}", payload.name)
+        response = Mistral_Ministral3b().generate_prompt_response(system_prompt=prompt)
+        language = response.conversation[-1].content
+        language = language.strip().strip('"').strip("'")
+        if len(language) != 2:
+            logging.error("Could not generate language for column.")
+            language = "en"
+        payload.parameters["language"] = language
 
     try:
         collection = DataCollection.objects.get(id=payload.collection_id)
@@ -62,6 +88,9 @@ def add_column_route(request, payload: ColumnConfig):
         expression=payload.expression,
         source_fields=payload.source_fields,
         module=payload.module,
+        prompt_template=payload.prompt_template,
+        auto_run_for_approved_items=payload.auto_run_for_approved_items,
+        auto_run_for_candidates=payload.auto_run_for_candidates,
         parameters=payload.parameters,
     )
 

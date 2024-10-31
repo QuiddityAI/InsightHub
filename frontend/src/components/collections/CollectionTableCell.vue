@@ -57,15 +57,20 @@ export default {
         return `<div class="text-gray-700 font-bold mb-1">${document_type}</div>` +
                `<div class="text-green-700">${relevant_content}</div>` +
                `<div class="text-orange-700">${irrelevance_reasons}</div>`
-      } else {
+      } else if (typeof value === "string") {
         if (this.show_typing_animation) {
           value = value.slice(0, this.typed_characters)
         }
         return marked.parse(value)
+      } else {
+        return value
       }
     },
     value_as_plain_text() {
       const value = this.item.column_data[this.column.identifier]?.value || ""
+      if (typeof value !== "string") {
+        return value
+      }
       const katex_options = {
         output: "html",  // otherwise MathML is included for accesibility, but messes with copyable text
       }

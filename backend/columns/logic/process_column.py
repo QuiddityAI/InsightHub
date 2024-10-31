@@ -69,9 +69,12 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
     module_definitions = {
         'llm': {"input_type": "natural_language"},
         'python_expression': {"input_type": "json"},
-        'website_scraping': {"input_type": "json"},
         'web_search': {"input_type": "json"},
+        'item_field': {"input_type": "json"},
         'notes': {"input_type": None},
+        'website_scraping': {"input_type": "json"},
+        'email': {"input_type": "json"},
+        'relevance': {"input_type": "natural_language"},
     }
     if column.module not in module_definitions:
         logging.warning(f"Column Processing: Module {column.module} not found.")
@@ -131,6 +134,15 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
         elif module == "llm":
             assert isinstance(input_data, str)
             cell_data = generate_llm_cell_data(input_data, column, user_id)
+        elif module == "item_field":
+            assert isinstance(input_data, dict)
+            cell_data = {
+                "value": input_data.get(column.source_fields[0]),
+                "changed_at": timezone.now().isoformat(),
+                "is_ai_generated": False,
+                "is_computed": True,
+                "is_manually_edited": False,
+            }
         else:
             cell_data = {
                 "value": "Module not found",

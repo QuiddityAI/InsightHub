@@ -76,7 +76,12 @@ export default {
     },
     human_readable_source_fields(fields) {
       const available_source_fields = this.collectionStore.available_source_fields
-      return fields.map((field) => available_source_fields.find((f) => f.identifier === field).name).join(", ")
+      try {
+        return fields.map((field) => available_source_fields.find((f) => f.identifier === field).name).join(", ")
+      } catch (error) {
+        console.error(error)
+        return "?"
+      }
     },
     human_readable_module_name(module_identifier) {
       return this.available_modules.find((m) => m.identifier === module_identifier)?.name

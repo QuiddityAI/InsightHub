@@ -171,6 +171,9 @@ export default {
         expression: this.expression,
         source_fields: this.selected_source_fields,
         module: this.selected_module,
+        prompt_template: this.custom_prompt,
+        auto_run_for_approved_items: this.auto_run_for_approved_items,
+        auto_run_for_candidates: this.auto_run_for_candidates,
         parameters: parameters,
       }
       httpClient.post(`/api/v1/columns/add_column`, body)

@@ -29,7 +29,7 @@ export default {
   inject: ["eventBus"],
   props: ["collection_id", "class_name", "is_positive", "item_size_mode"],
   expose: [],
-  emits: ["add_column"],
+  emits: [],
   data() {
     return {
       selected_column: null,
