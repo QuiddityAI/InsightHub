@@ -17,7 +17,7 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: ['modelValue', "available_language_codes", "offer_wildcard", "tooltip"],
+  props: ['modelValue', "available_language_codes", "offer_wildcard", "tooltip", "use_last_used_language"],
   emits: ['update:modelValue'],
   data() {
     return {
@@ -45,7 +45,9 @@ export default {
         return this.modelValue
       },
       set(value) {
-        this.appStateStore.last_used_language = value
+        if (this.use_last_used_language) {
+          this.appStateStore.last_used_language = value
+        }
         this.$emit('update:modelValue', value)
       }
     }
@@ -53,8 +55,12 @@ export default {
   mounted() {
     if (this.modelValue) {
       this.selected_language = this.modelValue
-    } else {
+    } else if (this.use_last_used_language) {
       this.selected_language = this.appStateStore.last_used_language
+    } else if (this.available_languages.length > 0) {
+      this.selected_language = this.available_languages[0].code
+    } else {
+      this.selected_language = null
     }
   },
   watch: {

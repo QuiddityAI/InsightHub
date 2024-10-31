@@ -100,11 +100,14 @@ export const useAppStateStore = defineStore("appState", {
         { identifier: 'groq_llama_3_70b', name: 'Llama 3 70B (low cost, medium accuracy, fast)' },
       ],
       column_modules: [
-        { identifier: 'llm', name: 'LLM' },
-        // { identifier: 'python_expression', name: 'Python Expression' },
-        { identifier: 'website_scraping', name: 'Website Text Extraction' },
-        { identifier: 'web_search', name: 'Web Search' },
-        { identifier: 'notes', name: 'No AI, just notes' },
+        { identifier: 'llm', name: 'LLM', help_text: 'Uses AI to answer a question based on each item separately', highlight: true },
+        { identifier: 'relevance', name: 'Relevance', help_text: 'Uses AI to check if an item is relevant given a set of criteria', highlight: true },
+        { identifier: 'web_search', name: 'Web Search', help_text: 'Searches for the item on the internet and extracts the text of the top webpages', highlight: true },
+        { identifier: 'website_scraping', name: 'Website Text', help_text: 'Extracts the text of a given URL', highlight: false },
+        { identifier: 'item_field', name: 'Item Field', help_text: 'Copies the value of a field of the original item. It can then be used for sorting, maps and charts.', highlight: true },
+        { identifier: 'notes', name: 'Manual Notes', help_text: 'A column for your own notes', highlight: true },
+        // { identifier: 'python_expression', name: 'Python Expression', help_text: 'Allows to use Python to process an item', highlight: false },
+        { identifier: 'email', name: 'E-Mail', help_text: 'Send an e-mail with information about the item', highlight: false },
       ],
 
       settings: {
