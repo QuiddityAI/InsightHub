@@ -5,7 +5,7 @@ from django.utils import timezone
 from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
 
 from data_map_backend.models import CollectionColumn, ServiceUsage
-from data_map_backend.prompts import table_cell_prompt
+from data_map_backend.prompts import table_cell_prompt, table_cell_prompt_de
 
 
 def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: int) -> dict:
@@ -36,7 +36,12 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
     if column.prompt_template:
         system_prompt = column.prompt_template.replace("{{ document }}", input_data).replace("{{ expression }}", column.expression or "")
     else:
-        system_prompt = table_cell_prompt.replace("{{ document }}", input_data)
+        tranlated_prompts = {
+            'en': table_cell_prompt,
+            'de': table_cell_prompt_de,
+        }
+        language = column.parameters.get("language") or "en"
+        system_prompt = tranlated_prompts.get(language, table_cell_prompt).replace("{{ document }}", input_data)
         user_prompt = column.expression
 
     response = model.generate_prompt_response(

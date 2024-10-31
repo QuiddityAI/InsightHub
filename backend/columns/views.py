@@ -6,13 +6,14 @@ import time
 
 from ninja import NinjaAPI
 from django.http import HttpResponse
-from llmonkey.llms import BaseLLMModel
+from llmonkey.llms import BaseLLMModel, Mistral_Ministral3b
 
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
 from data_map_backend.utils import is_from_backend
 from data_map_backend.serializers import CollectionSerializer, CollectionColumnSerializer
 from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier
 from columns.logic.process_column import remove_column_data_from_collection_items, get_collection_items_from_cell_range, process_cells_blocking
+from columns.logic.column_prompts import column_name_prompt
 
 api = NinjaAPI(urls_namespace="columns")
 
@@ -22,8 +23,19 @@ def add_column_route(request, payload: ColumnConfig):
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
-    if not payload.name.strip():
+    payload.name = payload.name.strip() if payload.name else None
+    payload.expression = payload.expression.strip() if payload.expression else None
+    if not (payload.name or payload.expression):
         return HttpResponse(status=400)
+
+    if not payload.name:
+        assert payload.expression
+        response = Mistral_Ministral3b().generate_prompt_response(system_prompt=column_name_prompt.replace("{{ expression }}", payload.expression))
+        payload.name = response.conversation[-1].content
+        payload.name = payload.name.strip().strip('"').strip("'")
+        if not payload.name:
+            logging.error("Could not generate name for column.")
+            return HttpResponse(status=400)
 
     if not payload.identifier:
         identifier = payload.name.replace(" ", "_").lower()

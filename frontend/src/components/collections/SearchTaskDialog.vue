@@ -10,6 +10,7 @@ import OverlayPanel from 'primevue/overlaypanel';
 
 import SearchFilterList from "../search/SearchFilterList.vue"
 import AddFilterMenu from "../search/AddFilterMenu.vue"
+import LanguageSelect from "../widgets/LanguageSelect.vue"
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { languages } from "../../utils/utils"
@@ -204,12 +205,12 @@ export default {
           autocomplete="off"
           :placeholder="`Search...`"
           class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
-        <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
-          <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
-            v-tooltip.bottom="{ value: 'Language of the query and search results', showDelay: 400 }">
-            <option v-for="language in available_languages" :value="language.code">{{ language.flag }}</option>
-          </select>
-        </div>
+        <LanguageSelect v-if="available_languages.length && !new_settings.auto_set_filters"
+          :available_language_codes="appState.available_language_filters.map(item => item[1])"
+          v-model="new_settings.result_language"
+          :offer_wildcard="true"
+          tooltip="Language of the query and search results">
+        </LanguageSelect>
         <button v-tooltip.bottom="{ value: 'Submit', showDelay: 400 }"
           class="px-2 h-9 w-60 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
           @click="run_search_task">

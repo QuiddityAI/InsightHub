@@ -4,7 +4,7 @@ from ninja import Schema
 
 class ColumnConfig(Schema):
     collection_id: int
-    name: str
+    name: str | None = None
     identifier: str | None = None
     field_type: str
     expression: str | None = None

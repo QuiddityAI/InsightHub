@@ -2,7 +2,7 @@
 
 table_cell_prompt = """\
 You are a helpful assistant to extract information from a document.
-The document starts with <document> and ends with </document>.
+The document (also called item) starts with <document> and ends with </document>.
 
 <document>
 {{ document }}
@@ -26,6 +26,31 @@ Respond directly with the answer. Do not summarize the question again.
 E.g. if asked to produce bullet points, NEVER start with 'Here are three bullet points...'.
 Instead, start with just the bullet points itself."""
 
+table_cell_prompt_de = """\
+Du bist ein hilfreicher Assistent, der Informationen aus einem Dokument extrahiert.
+Das Dokument beginnt mit <document> und endet mit </document>.
+
+<document>
+{{ document }}
+</document>
+
+Beantworte die folgenden Fragen basierend auf dem Dokument.
+Falls nicht anders angegeben, antworte in einem knappen Satz, Wort oder einer Liste.
+Halte die Antwort nahe am Wortlaut des Dokuments.
+Nutze nur Informationen, die direkt im Dokument angegeben sind.
+Falls die Antwort nicht im Dokument enthalten ist, antworte mit „n/a“.
+Falls die Antwort unklar ist, antworte mit „?“.
+
+Nutze Markdown, um deine Antwort zu formatieren.
+Bei längeren Sätzen hebe wichtige Wörter oder Phrasen mit zwei Sternchen hervor.
+Schreibe chemische und mathematische Formeln mit LaTeX-Syntax und setze sie in Dollarzeichen.
+Zum Beispiel sollte eine mathematische Formel wie $e = mc^2$ geschrieben werden.
+Eine chemische Formel wie Wasser (H2O) sollte als $H_2O$ geschrieben werden (dies ist kein Teil des Dokuments, nur ein Beispiel).
+
+Antworte direkt mit der Antwort. Wiederhole die Frage nicht erneut.
+Zum Beispiel, wenn du Stichpunkte geben sollst, beginne NIE mit „Hier sind drei Stichpunkte...“.
+Stattdessen beginne direkt mit den Stichpunkten.
+"""
 
 writing_task_prompt = """\
 You are an expert in writing. You will be given a task to write a text based on the provided documents.

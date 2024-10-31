@@ -4,6 +4,8 @@ import Dropdown from 'primevue/dropdown';
 import MultiSelect from 'primevue/multiselect';
 import Message from 'primevue/message';
 
+import LanguageSelect from "../widgets/LanguageSelect.vue"
+
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -29,6 +31,7 @@ export default {
       selected_module: 'llm',
       selected_llm: 'Mistral_Mistral_Small',
       available_llm_models: [],
+      selected_language: null,
     }
   },
   computed: {
@@ -49,7 +52,7 @@ export default {
   },
   methods: {
     add_extraction_question(name, prompt, process_current_page=false) {
-      if (!name || !this.selected_source_fields.length) {
+      if (!(name || prompt) || !this.selected_source_fields.length) {
         return
       }
       const that = this
@@ -62,6 +65,7 @@ export default {
         module: this.selected_module,
         parameters: this.selected_module === 'llm' ? {
           model: this.selected_llm,
+          language: this.selected_language,
         } : {},
       }
       httpClient.post(`/api/v1/columns/add_column`, body)
@@ -97,7 +101,7 @@ export default {
     <div class="flex flex-row items-center">
       <input ref="new_question_name" type="text"
         class="flex-none w-2/3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-        placeholder="Column Name" />
+        placeholder="Column Name (or leave blank for auto-name)" />
     </div>
     <div class="flex flex-row gap-2 items-center">
       <div class="flex-1 min-w-0">
@@ -130,6 +134,12 @@ export default {
       <textarea ref="new_question_prompt" type="text"
         class="flex-auto rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         placeholder="Question / Prompt" />
+      <LanguageSelect
+        :available_language_codes="['en', 'de']"
+        v-model="selected_language"
+        :offer_wildcard="false"
+        tooltip="Language of the question and results">
+      </LanguageSelect>
     </div>
     <div class="flex flex-row gap-3">
       <button

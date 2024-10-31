@@ -43,6 +43,7 @@ export const useAppStateStore = defineStore("appState", {
       available_number_fields: [],
       available_language_filters: [],
       available_ranking_options: [],
+      last_used_language: "en",
 
       // results:
       is_loading_search_results: false,
