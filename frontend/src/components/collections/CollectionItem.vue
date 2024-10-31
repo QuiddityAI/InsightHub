@@ -10,6 +10,8 @@ import Image from "primevue/image"
 
 import BorderlessButton from "../widgets/BorderlessButton.vue"
 
+import { CollectionItemSizeMode } from "../../utils/utils.js"
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useCollectionStore } from "../../stores/collection_store"
@@ -76,10 +78,10 @@ export default {
       return this.collection_item.relevance >= -1 && this.collection_item.relevance <= 1
     },
     actual_size_mode() {
-      if (this.is_irrelevant_according_to_ai) {
-        return "small"
+      if (this.is_irrelevant_according_to_ai && this.size_mode > CollectionItemSizeMode.SMALL) {
+        return CollectionItemSizeMode.SMALL
       }
-      return this.size_mode || "full"
+      return this.size_mode || CollectionItemSizeMode.FULL
     },
     original_query() {
       return this.collectionStore.collection.search_sources.find(source => source.id_hash === this.collection_item.search_source_id)?.query || ""
@@ -130,8 +132,11 @@ export default {
 
 <template>
   <div v-if="rendering && item && collection_item"
-    class="flex flex-col gap-3 pb-2 pt-4 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md"
-    :class="{'opacity-60': is_irrelevant_according_to_ai}">
+    class="flex flex-col gap-3 pb-2 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md"
+    :class="[
+      actual_size_mode <= CollectionItemSizeMode.SINGLE_LINE ? ['pt-2', 'pb-2'] : ['pt-4', 'pb-4'],
+      {'opacity-60': is_irrelevant_according_to_ai, },
+    ]">
 
     <div class="flex flex-row gap-2">
 
@@ -139,7 +144,7 @@ export default {
       <div class="flex-1 min-w-0 flex flex-col gap-1">
 
         <!-- Tagline -->
-        <div class="flex flex-row items-start mb-3 -mt-1" v-if="rendering.tagline(item)">
+        <div class="flex flex-row items-start mb-3 -mt-1" v-if="rendering.tagline(item) && actual_size_mode >= CollectionItemSizeMode.SMALL">
 
           <div class="flex-none h-full flex flex-row items-center">
             <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-6 w-6 mr-3" />
@@ -172,10 +177,12 @@ export default {
         </div>
 
         <!-- Subtitle -->
-        <p class="mt-0 text-[13px] break-words leading-normal text-gray-500" v-html="rendering.subtitle(item)"></p>
+        <p v-if="actual_size_mode >= CollectionItemSizeMode.SMALL"
+          class="mt-0 text-[13px] break-words leading-normal text-gray-500"
+          v-html="rendering.subtitle(item)"></p>
 
         <!-- Body -->
-        <p ref="body_text" v-if="actual_size_mode === 'full'"
+        <p ref="body_text" v-if="actual_size_mode >= CollectionItemSizeMode.FULL"
           class="mt-1 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
         v-html="rendering.body(item)"></p>
 
@@ -184,14 +191,14 @@ export default {
       </div>
 
       <!-- Right side (image) -->
-      <div v-if="rendering.image(item)" class="flex-none w-24 flex flex-col justify-center">
+      <div v-if="rendering.image(item) && actual_size_mode >= CollectionItemSizeMode.SMALL" class="flex-none w-24 flex flex-col justify-center">
         <Image class="w-full rounded-lg shadow-md" image-class="rounded-lg" :src="rendering.image(item)" preview />
       </div>
     </div>
 
     <!-- Footer -->
     <div class="flex flex-row gap-1 items-center">
-        <div v-if="show_more_button && actual_size_mode === 'full'" class="text-xs text-gray-700">
+        <div v-if="show_more_button && actual_size_mode >= CollectionItemSizeMode.FULL" class="text-xs text-gray-700">
           <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
             {{ body_text_collapsed ? "Show more" : "Show less" }}
           </button>

@@ -32,6 +32,12 @@ export class FieldType {
   static ARBITRARY_OBJECT = "ARBITRARY_OBJECT"
 }
 
+export class CollectionItemSizeMode {
+  static SINGLE_LINE = 1
+  static SMALL = 2
+  static FULL = 3
+}
+
 export function ellipse(text, length) {
   if (!text) return ""
   let re = new RegExp("(.{" + length + "})..+")

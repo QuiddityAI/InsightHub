@@ -26,7 +26,9 @@ import BorderButton from "../widgets/BorderButton.vue";
 import SearchModeBar from "../search/SearchModeBar.vue";
 import AgentModeBar from "./AgentModeBar.vue";
 import MapWithLabelsAndButtons from "../map/MapWithLabelsAndButtons.vue";
+import CollectionItemGrid from "./CollectionItemGrid.vue";
 
+import { CollectionItemSizeMode } from "../../utils/utils.js"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -53,6 +55,8 @@ export default {
       show_retrain_success_label: false,
       table_visible: false,
       show_export_dialog: false,
+      use_grid_view: false,
+      item_size_mode: CollectionItemSizeMode.FULL,
 
       show_search_task_dialog: false,
       show_add_column_dialog: false,
@@ -146,6 +150,29 @@ export default {
 
         <div class="flex-1"></div>
 
+        <div class="flex flex-row">
+          <BorderButton @click="item_size_mode = CollectionItemSizeMode.SINGLE_LINE" class="h-6"
+            :highlighted="item_size_mode === CollectionItemSizeMode.SINGLE_LINE"
+            v-tooltip.bottom="{ value: 'Single Line Items' }">
+            S
+          </BorderButton>
+          <BorderButton @click="item_size_mode = CollectionItemSizeMode.SMALL" class="h-6"
+            :highlighted="item_size_mode === CollectionItemSizeMode.SMALL"
+            v-tooltip.bottom="{ value: 'Small Items' }">
+            M
+          </BorderButton>
+          <BorderButton @click="item_size_mode = CollectionItemSizeMode.FULL" class="h-6"
+            :highlighted="item_size_mode === CollectionItemSizeMode.FULL"
+            v-tooltip.bottom="{ value: 'Full Items' }">
+            L
+          </BorderButton>
+        </div>
+
+        <BorderButton @click="use_grid_view = !use_grid_view" class="h-6"
+          v-tooltip.bottom="{ value: 'Use grid view' }" :highlighted="use_grid_view">
+          <TableCellsIcon class="h-4 w-4"></TableCellsIcon>
+        </BorderButton>
+
         <BorderButton @click="delete_collection" class="h-6"
           v-tooltip.bottom="{ value: 'Delete collection' }"
           hover_color="hover:text-red-500">
@@ -200,10 +227,18 @@ export default {
           </div>
         </div>
 
-        <CollectionTableView class="z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
+        <CollectionTableView v-if="!use_grid_view"
+          class="z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
           :class_name="class_name" :is_positive="true"
+          :item_size_mode="item_size_mode"
           @add_column="show_add_column_dialog = true">
         </CollectionTableView>
+
+        <CollectionItemGrid v-if="use_grid_view"
+          class="z-20" ref="collection_grid_view" :collection_id="collectionStore.collection_id"
+          :class_name="class_name" :is_positive="true"
+          :item_size_mode="item_size_mode">
+        </CollectionItemGrid>
 
         <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
           <AddColumnDialog :collection="collection" :collection_class="class_name"

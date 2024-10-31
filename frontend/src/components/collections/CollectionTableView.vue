@@ -34,7 +34,7 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: ["collection_id", "class_name", "is_positive"],
+  props: ["collection_id", "class_name", "is_positive", "item_size_mode"],
   expose: [],
   emits: ["add_column"],
   data() {
@@ -167,6 +167,7 @@ export default {
             :is_positive="slotProps.data.is_positive"
             :show_remove_button="true"
             :collection_item="slotProps.data"
+            :size_mode="item_size_mode"
             @remove="collectionStore.remove_item_from_collection([slotProps.data.dataset_id, slotProps.data.item_id], collection_id, class_name)"
             class="min-w-[520px] max-w-[520px]">
           </CollectionItem>
