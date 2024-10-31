@@ -9,11 +9,11 @@ import {
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import OverlayPanel from 'primevue/overlaypanel';
 
 import CollectionItem from "./CollectionItem.vue"
 import CollectionTableCell from "./CollectionTableCell.vue";
 import BorderButton from "../widgets/BorderButton.vue";
+import EditColumnArea from "../columns/EditColumnArea.vue";
 
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -36,7 +36,7 @@ export default {
   inject: ["eventBus"],
   props: ["collection_id", "class_name", "is_positive", "item_size_mode"],
   expose: [],
-  emits: ["add_column"],
+  emits: [],
   data() {
     return {
       selected_column: null,
@@ -48,9 +48,6 @@ export default {
     ...mapStores(useCollectionStore),
     collection() {
       return this.collectionStore.collection
-    },
-    available_modules() {
-      return this.appStateStore.available_ai_modules.concat(this.appStateStore.column_modules)
     },
     active_search_sources() {
       return this.collectionStore.collection.search_sources.filter((source) => source.is_active)
@@ -102,29 +99,6 @@ export default {
     },
   },
   methods: {
-    delete_column(column_id) {
-      const that = this
-      if (!confirm("Are you sure you want to delete this column and all of the extraction results and notes?")) {
-        return
-      }
-      const body = {
-        column_id: column_id,
-      }
-      httpClient.post(`/api/v1/columns/delete_column`, body)
-      .then(function (response) {
-        that.collectionStore.collection.columns = that.collectionStore.collection.columns.filter((column) => column.id !== column_id)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    human_readable_source_fields(fields) {
-      const available_source_fields = this.collectionStore.available_source_fields
-      return fields.map((field) => available_source_fields.find((f) => f.identifier === field).name).join(", ")
-    },
-    human_readable_module_name(module_identifier) {
-      return this.available_modules.find((m) => m.identifier === module_identifier)?.name
-    },
   },
 }
 </script>
@@ -209,41 +183,8 @@ export default {
       </Column>
     </DataTable>
 
-    <OverlayPanel ref="column_options">
-      <div class="w-[400px] flex flex-col gap-2">
-        <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
-        <div class="flex flex-row">
-          <p class="flex-1">{{ selected_column.expression }}</p>
-          <button
-            @click="delete_column(selected_column.id); $refs.column_options.hide()"
-            class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
-            <TrashIcon class="h-4 w-4"></TrashIcon>
-          </button>
-        </div>
-        <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
-        <p class="text-xs text-gray-500">
-          {{ human_readable_module_name(selected_column.module) }}
-          {{ selected_column.module === 'llm' ? `(${selected_column.parameters.model})` : '' }}
-        </p>
-        <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
-          <button @click="collectionStore.extract_question(selected_column.id, true); $refs.column_options.hide()"
-            class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-            Extract <span class="text-gray-500">(current page)</span></button>
-          <button @click="collectionStore.extract_question(selected_column.id, false); $refs.column_options.hide()"
-            class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-            Extract <span class="text-gray-500">(all)</span></button>
-        </div>
-
-        <div class="flex flex-row gap-2">
-          <button @click="collectionStore.remove_results(selected_column.id, true)"
-            class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-            Remove results<br><span class="text-gray-500">(current page)</span></button>
-          <button @click="collectionStore.remove_results(selected_column.id, false)"
-            class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-            Remove results<br><span class="text-gray-500">(all)</span></button>
-        </div>
-      </div>
-    </OverlayPanel>
+    <EditColumnArea ref="column_options" :selected_column="selected_column">
+    </EditColumnArea>
 
   </div>
 </template>

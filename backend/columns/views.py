@@ -11,7 +11,7 @@ from llmonkey.llms import BaseLLMModel, Mistral_Ministral3b
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
 from data_map_backend.utils import is_from_backend
 from data_map_backend.serializers import CollectionSerializer, CollectionColumnSerializer
-from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier
+from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier, UpdateColumnConfig
 from columns.logic.process_column import remove_column_data_from_collection_items, get_collection_items_from_cell_range, process_cells_blocking
 from columns.logic.column_prompts import column_name_prompt
 
@@ -64,6 +64,35 @@ def add_column_route(request, payload: ColumnConfig):
         module=payload.module,
         parameters=payload.parameters,
     )
+
+    data = CollectionColumnSerializer(column).data
+    return HttpResponse(json.dumps(data), content_type="application/json", status=200)
+
+
+@api.post("update_column")
+def update_column_route(request, payload: UpdateColumnConfig):
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        column = CollectionColumn.objects.select_related("collection").get(id=payload.column_id)
+    except CollectionColumn.DoesNotExist:
+        return HttpResponse(status=404)
+    if column.collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    if payload.name:
+        column.name = payload.name
+    if payload.expression:
+        column.expression = payload.expression
+    if payload.prompt_template:
+        column.prompt_template = payload.prompt_template
+    if payload.parameters:
+        column.parameters = payload.parameters
+    column.auto_run_for_approved_items = payload.auto_run_for_approved_items
+    column.auto_run_for_candidates = payload.auto_run_for_candidates
+
+    column.save()
 
     data = CollectionColumnSerializer(column).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=200)

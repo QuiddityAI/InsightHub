@@ -13,6 +13,16 @@ class ColumnConfig(Schema):
     parameters: dict = {}
 
 
+class UpdateColumnConfig(Schema):
+    column_id: int
+    name: str | None = None
+    expression: str | None = None
+    prompt_template: str | None = None
+    auto_run_for_approved_items: bool = False
+    auto_run_for_candidates: bool = False
+    parameters: dict = {}
+
+
 class CellDataPayload(Schema):
     collection_item_id: int
     column_identifier: str
