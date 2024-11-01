@@ -83,7 +83,7 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
 
 
 def _auto_approve_items(collection: DataCollection, new_items: list[CollectionItem], search_task: SearchTaskSettings):
-    relevance_columns = [column for column in collection.columns.all() if column.determines_relevance]  # type: ignore
+    relevance_columns = [column for column in collection.columns.all() if column.module == 'relevance']  # type: ignore
     if not relevance_columns:
         return
     changed_items = []

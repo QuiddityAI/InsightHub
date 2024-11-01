@@ -1339,13 +1339,6 @@ class CollectionColumn(models.Model):
     auto_run_for_candidates = models.BooleanField(
         verbose_name="Auto Run for Candidates", default=False, blank=False, null=False
     )
-    determines_relevance = models.BooleanField(
-        verbose_name="Determines Relevance",
-        help_text="In this case, the value needs to be a JSON object with a boolean 'is_relevant' field, textual 'relevant_content' field, and optionally a 0.0-1.0 'relevance_score' field",
-        default=False,
-        blank=False,
-        null=False
-    )
 
     def __str__(self):
         return f"{self.collection.name} - {self.name}"

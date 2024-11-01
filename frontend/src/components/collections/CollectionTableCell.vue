@@ -53,7 +53,7 @@ export default {
         return this.item.column_data[this.column.identifier]?.collapsed_label
       }
       let value = this.item.column_data[this.column.identifier]?.value || ""
-      if (this.column.determines_relevance && value && typeof value === "object") {
+      if (this.column.module === 'relevance' && value && typeof value === "object") {
         const document_type = value.document_type ? marked.parse(value.document_type) : ""
         const relevant_content = value.relevant_content ? marked.parse(value.relevant_content) : ""
         const irrelevance_reasons = value.irrelevance_reasons ? marked.parse(value.irrelevance_reasons) : ""

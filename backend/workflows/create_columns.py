@@ -15,7 +15,6 @@ def create_relevance_column(collection: DataCollection, criteria: str, language:
         module='relevance',
         parameters={'model': Mistral_Mistral_Small.__name__, language: language},
         auto_run_for_candidates=True,
-        determines_relevance=True,
     )
     column.save()
     return column
