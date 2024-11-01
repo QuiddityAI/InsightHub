@@ -3,18 +3,18 @@ import os
 
 from django.utils import timezone
 
+from columns.schemas import CellData
 
-def scrape_website_module(item, source_fields):
+
+def scrape_website_module(item, source_fields) -> CellData:
     import requests
     url = item.get(source_fields[0], "")
     if not url:
-        return {
-            "value": "No URL found",
-            "changed_at": timezone.now().isoformat(),
-            "is_ai_generated": False,
-            "is_computed": True,
-            "is_manually_edited": False,
-        }
+        return CellData(
+            value="No URL found",
+            changed_at=timezone.now().isoformat(),
+            is_computed=True,
+        )
 
     payload = {
         "url": url,
@@ -30,14 +30,12 @@ def scrape_website_module(item, source_fields):
     text = response.json().get("text", "")
     text = re.sub(r'(#+)(\S)', r'\1 \2', text)
 
-    return {
-        "collapsed_label": f"<i>Website Content<br>({len(text.split())} words)</i>",
-        "value": text,
-        "changed_at": timezone.now().isoformat(),
-        "is_ai_generated": False,
-        "is_computed": True,
-        "is_manually_edited": False,
-    }
+    return CellData(
+        collapsed_label=f"<i>Website Content<br>({len(text.split())} words)</i>",
+        value=text,
+        changed_at=timezone.now().isoformat(),
+        is_computed=True,
+    )
 
 
 def scrape_website_module_plain(item, source_fields):

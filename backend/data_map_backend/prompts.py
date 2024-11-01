@@ -24,7 +24,11 @@ Do not use any headings.
 
 Respond directly with the answer. Do not summarize the question again.
 E.g. if asked to produce bullet points, NEVER start with 'Here are three bullet points...'.
-Instead, start with just the bullet points itself."""
+Instead, start with just the bullet points itself.
+
+The user question / task is:
+"{{ expression }}"
+"""
 
 table_cell_prompt_de = """\
 Du bist ein hilfreicher Assistent, der Informationen aus einem Dokument extrahiert.

@@ -6,16 +6,17 @@ from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
 
 from data_map_backend.models import CollectionColumn, ServiceUsage
 from data_map_backend.prompts import table_cell_prompt, table_cell_prompt_de
+from columns.logic.column_prompts import item_relevancy_prompt, item_relevancy_prompt_de
+from columns.schemas import CellData
 
 
-def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: int) -> dict:
-    cell_data = {
-        "value": "",
-        "changed_at": timezone.now().isoformat(),
-        "is_ai_generated": True,
-        "is_computed": True,
-        "is_manually_edited": False,
-    }
+def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: int, is_relevance_column: bool = False) -> CellData:
+    cell_data = CellData(
+        changed_at=timezone.now().isoformat(),
+        is_ai_generated=True,
+        is_computed=True,
+        is_manually_edited=False,
+    )
     # if not column.parameters.get("model"):
     #     logging.error("No model specified for LLM column.")
     #     cell_data["value"] = "No model specified"
@@ -28,21 +29,35 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
     usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
     result = usage_tracker.track_usage(ai_credits, f"extract information using {model.__class__.__name__}")
     if result['approved'] != True:
-        cell_data["value"] = "AI usage limit exceeded"
+        cell_data.value = "AI usage limit exceeded"
         return cell_data
 
     system_prompt = None
     user_prompt = None
     if column.prompt_template:
-        system_prompt = column.prompt_template.replace("{{ document }}", input_data).replace("{{ expression }}", column.expression or "")
+        system_prompt = column.prompt_template
+    elif is_relevance_column:
+        translated_prompts = {
+            'en': item_relevancy_prompt,
+            'de': item_relevancy_prompt_de,
+        }
+        language = column.parameters.get("language") or "en"
+        system_prompt = translated_prompts.get(language, item_relevancy_prompt)
     else:
-        tranlated_prompts = {
+        translated_prompts = {
             'en': table_cell_prompt,
             'de': table_cell_prompt_de,
         }
         language = column.parameters.get("language") or "en"
-        system_prompt = tranlated_prompts.get(language, table_cell_prompt).replace("{{ document }}", input_data)
-        user_prompt = column.expression
+        system_prompt = translated_prompts.get(language, table_cell_prompt)
+
+    replacements = {
+        "title": column.name,
+        "document": input_data,
+        "expression": column.expression or "",
+    }
+    for key, value in replacements.items():
+        system_prompt = system_prompt.replace("{{ " + key + " }}", input_data)
 
     response = model.generate_prompt_response(
         system_prompt=system_prompt,
@@ -51,7 +66,8 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
     )
     response_text = response.conversation[-1].content
 
-    if column.determines_relevance and response_text:
+    if is_relevance_column and response_text:
+        # TODO: replace with structured response method
         try:
             value = json.loads(response_text)
         except json.JSONDecodeError as e:
@@ -59,6 +75,7 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
             value = response_text
     else:
         value = response_text
-    cell_data["value"] = value
-    cell_data["used_prompt"] = f"system_prompt:\n{system_prompt}\n---\n\nuser_prompt:\n{user_prompt}"
+
+    cell_data.value = value
+    cell_data.used_prompt = f"system_prompt:\n{system_prompt}\n---\n\nuser_prompt:\n{user_prompt}"
     return cell_data

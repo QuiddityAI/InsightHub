@@ -14,7 +14,7 @@ from legacy_backend.logic.search_common import get_document_details_by_id, get_s
 from columns.logic.website_scraping_column import scrape_website_module
 from columns.logic.web_search_column import google_search
 from columns.logic.llm_column import generate_llm_cell_data
-from columns.schemas import ColumnCellRange
+from columns.schemas import ColumnCellRange, CellData
 
 
 def remove_column_data_from_collection_items(collection_items: Iterable[CollectionItem], column_identifier: str):
@@ -68,13 +68,13 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
 
     module_definitions = {
         'llm': {"input_type": "natural_language"},
+        'relevance': {"input_type": "natural_language"},
         'python_expression': {"input_type": "json"},
         'web_search': {"input_type": "json"},
         'item_field': {"input_type": "json"},
         'notes': {"input_type": None},
         'website_scraping': {"input_type": "json"},
         'email': {"input_type": "json"},
-        'relevance': {"input_type": "natural_language"},
     }
     if column.module not in module_definitions:
         logging.warning(f"Column Processing: Module {column.module} not found.")
@@ -119,14 +119,13 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
 
         module = column.module
 
+        cell_data: CellData = CellData(
+            changed_at=timezone.now().isoformat(),
+        )
+
         if module == "python_expression":
-            cell_data = {
-                "value": "n/a",
-                "changed_at": timezone.now().isoformat(),
-                "is_ai_generated": False,
-                "is_computed": True,
-                "is_manually_edited": False,
-            }
+            cell_data.value = "Not implemented"
+            cell_data.is_computed = True
         elif module == "website_scraping":
             cell_data = scrape_website_module(input_data, column.source_fields)
         elif module == "web_search":
@@ -134,27 +133,20 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
         elif module == "llm":
             assert isinstance(input_data, str)
             cell_data = generate_llm_cell_data(input_data, column, user_id)
+        elif module == "relevance":
+            assert isinstance(input_data, str)
+            cell_data = generate_llm_cell_data(input_data, column, user_id, is_relevance_column=True)
         elif module == "item_field":
             assert isinstance(input_data, dict)
-            cell_data = {
-                "value": input_data.get(column.source_fields[0]) or "-",
-                "changed_at": timezone.now().isoformat(),
-                "is_ai_generated": False,
-                "is_computed": True,
-                "is_manually_edited": False,
-            }
+            cell_data.value = input_data.get(column.source_fields[0]) or "-"
+            cell_data.is_computed = True
         else:
-            cell_data = {
-                "value": "Module not found",
-                "changed_at": timezone.now().isoformat(),
-                "is_ai_generated": False,
-                "is_computed": True,
-                "is_manually_edited": False,
-            }
+            cell_data.value = "Module not found"
+            cell_data.is_computed = True
 
         if collection_item.column_data is None:
             collection_item.column_data = {}  # type: ignore
-        collection_item.column_data[column.identifier] = cell_data
+        collection_item.column_data[column.identifier] = cell_data.dict()
         collection_item.save()
 
     with ThreadPoolExecutor(max_workers=10) as executor:

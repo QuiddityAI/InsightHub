@@ -91,6 +91,7 @@ def add_column_route(request, payload: ColumnConfig):
         prompt_template=payload.prompt_template,
         auto_run_for_approved_items=payload.auto_run_for_approved_items,
         auto_run_for_candidates=payload.auto_run_for_candidates,
+        determines_relevance=payload.module == "relevance",
         parameters=payload.parameters,
     )
 

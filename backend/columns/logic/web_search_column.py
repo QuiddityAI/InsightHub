@@ -3,22 +3,21 @@ import logging
 from django.utils import timezone
 
 from columns.logic.website_scraping_column import scrape_website_module
+from columns.schemas import CellData
 
 
 
-def google_search(input_data, source_fields):
+def google_search(input_data, source_fields) -> CellData:
     from bs4 import BeautifulSoup
     import requests
 
     search = input_data.get(source_fields[0], "")
     if not search:
-        return {
-            "value": "No search query found",
-            "changed_at": timezone.now().isoformat(),
-            "is_ai_generated": False,
-            "is_computed": True,
-            "is_manually_edited": False,
-        }
+        return CellData(
+            value="No search query found",
+            changed_at=timezone.now().isoformat(),
+            is_computed=True,
+        )
 
     url = 'https://www.google.de/search'
 
@@ -38,12 +37,10 @@ def google_search(input_data, source_fields):
     url = first_link.get('href') if first_link else ""  # type: ignore
 
     if not url:
-        return {
-            "value": "No URL found",
-            "changed_at": timezone.now().isoformat(),
-            "is_ai_generated": False,
-            "is_computed": True,
-            "is_manually_edited": False,
-        }
+        return CellData(
+            value="No URL found",
+            changed_at=timezone.now().isoformat(),
+            is_computed=True,
+        )
 
     return scrape_website_module({"url": url}, ["url"])

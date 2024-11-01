@@ -96,7 +96,10 @@ export default {
       }
     },
     show_process_now_button() {
-      return !['item_field', 'email', 'notes'].includes(this.selected_module)
+      return !['email', 'notes'].includes(this.selected_module)
+    },
+    show_add_without_processing_button() {
+      return !['item_field'].includes(this.selected_module)
     },
   },
   mounted() {
@@ -164,9 +167,13 @@ export default {
       if (['llm', 'relevance', 'email'].includes(this.selected_module)) {
         parameters.language = this.selected_language
       }
+      let field_type = FieldType.TEXT
+      if (['relevance'].includes(this.selected_module)) {
+        field_type = FieldType.ARBITRARY_OBJECT
+      }
       const body = {
         collection_id: this.collectionStore.collection_id,
-        field_type: FieldType.TEXT,
+        field_type: field_type,
         name: this.title,
         expression: this.expression,
         source_fields: this.selected_source_fields,
@@ -375,7 +382,7 @@ export default {
         @click="add_extraction_question(true)">
         Add & Process Current Page
       </button>
-      <button
+      <button v-if="show_add_without_processing_button"
         class="rounded-md border-0 px-2 py-1.5 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
         @click="add_extraction_question(false)">

@@ -45,3 +45,13 @@ class ColumnCellRange(Schema):
     order_by: str = '-date_added'
 
     collection_item_id: Optional[int] = None  # if provided, only the item with this id will be processed
+
+
+class CellData(Schema):
+    value: str | dict | None = None
+    collapsed_label: str | None = None
+    used_prompt: str | None = None
+    changed_at: str
+    is_ai_generated: bool = False
+    is_computed: bool = False
+    is_manually_edited: bool = False
