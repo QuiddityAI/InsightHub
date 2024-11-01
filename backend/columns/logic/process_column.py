@@ -137,7 +137,7 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
         elif module == "item_field":
             assert isinstance(input_data, dict)
             cell_data = {
-                "value": input_data.get(column.source_fields[0]),
+                "value": input_data.get(column.source_fields[0]) or "-",
                 "changed_at": timezone.now().isoformat(),
                 "is_ai_generated": False,
                 "is_computed": True,

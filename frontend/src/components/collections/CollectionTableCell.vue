@@ -17,10 +17,12 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 import { FieldType } from "../../utils/utils";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 
 const _window = window
@@ -45,6 +47,7 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
     value_as_html() {
       if (this.item.column_data[this.column.identifier]?.collapsed_label) {
         return this.item.column_data[this.column.identifier]?.collapsed_label
@@ -210,8 +213,8 @@ export default {
       </button>
       <span v-if="column.module !== 'notes'"> | </span>
       <button v-if="column.module !== 'notes'"
-        @click="$emit('run_cell')" class="hover:text-sky-500">
-        Extract
+        @click="collectionStore.extract_question(column.id, true, item.id)" class="hover:text-sky-500">
+        Execute
       </button>
     </div>
 
