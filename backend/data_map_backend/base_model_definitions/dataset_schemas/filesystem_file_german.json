@@ -4,12 +4,13 @@
   "entity_name_plural": "files",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-10-25T14:41:32.021Z",
+  "changed_at": "2024-11-01T15:59:19.857Z",
   "primary_key": "full_path",
   "thumbnail_image": null,
   "descriptive_text_fields": [
     "title",
-    "abstract"
+    "abstract",
+    "full_path"
   ],
   "default_search_fields": [
     "title",

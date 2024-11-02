@@ -328,6 +328,20 @@ export const useCollectionStore = defineStore("collection", {
           collection_item.relevance = relevance
         })
     },
+    approve_relevant_search_results() {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+      }
+      httpClient
+        .post("/api/v1/search/approve_relevant_search_results", body)
+        .then((response) => {
+          that.update_collection(() => {
+            that.load_collection_items()
+          })
+        })
+    },
     // ------------------
     add_items_from_active_sources() {
       const that = this

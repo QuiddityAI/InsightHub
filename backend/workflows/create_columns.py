@@ -13,7 +13,7 @@ def create_relevance_column(collection: DataCollection, criteria: str, language:
         prompt_template=None,
         source_fields=[COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS],
         module='relevance',
-        parameters={'model': Mistral_Mistral_Small.__name__, language: language},
+        parameters={'model': Mistral_Mistral_Small.__name__, 'language': language},
         auto_run_for_candidates=True,
     )
     column.save()

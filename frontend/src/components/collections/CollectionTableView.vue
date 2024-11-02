@@ -13,6 +13,7 @@ import Column from 'primevue/column';
 import CollectionItem from "./CollectionItem.vue"
 import CollectionTableCell from "./CollectionTableCell.vue";
 import BorderButton from "../widgets/BorderButton.vue";
+import BorderlessButton from "../widgets/BorderlessButton.vue";
 import EditColumnArea from "../columns/EditColumnArea.vue";
 
 import { FieldType } from "../../utils/utils"
@@ -121,13 +122,20 @@ export default {
       </template>
       <Column header="" class="pl-5 xl:pl-10 min-w-[520px]">
         <template #header="slotProps">
-          <span v-if="collectionStore.search_mode"
-            class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center"
-            v-tooltip.bottom="{value: 'Only search results are shown. &nbsp Exit search to remove results and show saved items.'}">
-            Search Results
-            <InformationCircleIcon class="h-4 w-4 inline text-blue-500">
-            </InformationCircleIcon>
-          </span>
+          <div v-if="collectionStore.search_mode" class="rounded-md bg-white shadow-sm w-full py-1 px-2 flex flex-row justify-between">
+            <div class="w-20"></div>
+            <span
+              class="text-sm text-center"
+              v-tooltip.bottom="{value: 'Only search results are shown. &nbsp Exit search to remove results and show saved items.'}">
+              Search Results
+              <InformationCircleIcon class="h-4 w-4 inline text-blue-500">
+              </InformationCircleIcon>
+            </span>
+            <BorderlessButton @click="collectionStore.approve_relevant_search_results"
+              v-tooltip.bottom="{ value: 'Approve all (relevant) search results and leave search mode', showDelay: 400}">
+              Approve All
+            </BorderlessButton>
+          </div>
           <span v-else
             class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center">
             Items

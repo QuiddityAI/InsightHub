@@ -48,7 +48,7 @@ class ColumnCellRange(Schema):
 
 
 class CellData(Schema):
-    value: str | dict | None = None
+    value: str | dict | list | None = None
     collapsed_label: str | None = None
     used_prompt: str | None = None
     changed_at: str

@@ -1,6 +1,7 @@
 import json
 import logging
 
+import json5
 from django.utils import timezone
 from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
 
@@ -51,13 +52,13 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
         language = column.parameters.get("language") or "en"
         system_prompt = translated_prompts.get(language, table_cell_prompt)
 
-    replacements = {
-        "title": column.name,
-        "document": input_data,
-        "expression": column.expression or "",
-    }
-    for key, value in replacements.items():
-        system_prompt = system_prompt.replace("{{ " + key + " }}", input_data)
+    replacements = [
+        ("title", column.name),
+        ("expression", column.expression or ""),
+        ("document", input_data.strip()),
+    ]
+    for key, value in replacements:
+        system_prompt = system_prompt.replace("{{ " + key + " }}", value)
 
     response = model.generate_prompt_response(
         system_prompt=system_prompt,
@@ -68,11 +69,22 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
 
     if is_relevance_column and response_text:
         # TODO: replace with structured response method
+        response_text = response_text.strip("```json").strip("```")
         try:
-            value = json.loads(response_text)
+            criteria_review = json.loads(response_text)
         except json.JSONDecodeError as e:
-            logging.warning(f"Could not parse response from AI: {response_text} {e}")
-            value = response_text
+            try:
+                criteria_review = json5.loads(response_text)
+            except json.JSONDecodeError as e:
+                logging.warning(f"Could not parse response from AI: {response_text} {e}")
+                criteria_review = response_text
+        assert isinstance(criteria_review, list)
+        relevance_score = len([c.get("fulfilled") for c in criteria_review if c.get("fulfilled")]) / max(len(criteria_review), 1)
+        value = {
+            "criteria_review": criteria_review,
+            "is_relevant": relevance_score > 0.6,
+            "relevance_score": relevance_score,
+        }
     else:
         value = response_text
 

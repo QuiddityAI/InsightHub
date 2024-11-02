@@ -39,6 +39,12 @@ class SearchTaskSettings(Schema):
     reference_collection_id: Optional[int] = None
 
 
+class RunSearchTaskPayload(Schema):
+    collection_id: int
+    class_name: str
+    search_task: SearchTaskSettings
+
+
 class RetrievalMode(StrEnum):
     HYBRID = "hybrid"
     KEYWORD = "keyword"

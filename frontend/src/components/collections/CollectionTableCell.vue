@@ -54,12 +54,17 @@ export default {
       }
       let value = this.item.column_data[this.column.identifier]?.value || ""
       if (this.column.module === 'relevance' && value && typeof value === "object") {
-        const document_type = value.document_type ? marked.parse(value.document_type) : ""
-        const relevant_content = value.relevant_content ? marked.parse(value.relevant_content) : ""
-        const irrelevance_reasons = value.irrelevance_reasons ? marked.parse(value.irrelevance_reasons) : ""
-        return `<div class="text-gray-700 font-bold mb-1">${document_type}</div>` +
-               `<div class="text-green-700">${relevant_content}</div>` +
-               `<div class="text-orange-700">${irrelevance_reasons}</div>`
+        return value.criteria_review.map(item => {
+            const checkbox = item.fulfilled ? "☑ " : "☐ "
+            const criteria = item.criteria ? marked.parse(checkbox + item.criteria) : ""
+            const reason = item.reason ? marked.parse(item.reason) : ""
+            const supporting_quote = item.supporting_quote || ""
+            const fulfilledClass = item.fulfilled ? "text-green-700" : "text-red-700"
+
+            return `<div class="${fulfilledClass} font-bold mt-1">${criteria}</div>` +
+                    `<div class="text-gray-700" title="Quote: ${supporting_quote}">${reason}</div>`
+                    //`<div class="text-gray-700">${supporting_quote}</div>`
+          }).join('')
       } else if (typeof value === "string") {
         if (this.show_typing_animation) {
           value = value.slice(0, this.typed_characters)
@@ -186,7 +191,7 @@ export default {
 </script>
 
 <template>
-  <div class="relative" id="cell"
+  <div class="relative max-w-[420px]" id="cell"
     :class="{'min-w-[120px]': !item.column_data[column.identifier] || value_as_html.length <= 10,
              'min-w-[270px]': value_as_html.length > 10 && value_as_html.length <= 100,
              'min-w-[350px]': value_as_html.length > 100}">

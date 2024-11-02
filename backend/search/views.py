@@ -1,33 +1,17 @@
 import json
-import logging
-import os
-from typing import Optional
 import threading
 
 from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
-from django.utils import timezone
 
 from ninja import NinjaAPI, Schema
 
-from data_map_backend.models import DataCollection, CollectionItem
-from data_map_backend.serializers import CollectionSerializer
-from data_map_backend.utils import is_from_backend
+from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
 
-from .schemas import SearchTaskSettings, SearchSource
-from .logic import run_search_task, add_items_from_active_sources, exit_search_mode
+from search.schemas import RunSearchTaskPayload
+from search.logic import run_search_task, add_items_from_active_sources, exit_search_mode, approve_relevant_search_results
 
 api = NinjaAPI(urls_namespace="search")
-
-
-class RunSearchTaskPayload(Schema):
-    collection_id: int
-    class_name: str
-    search_task: SearchTaskSettings
 
 
 @api.post("run_search_task")
@@ -39,7 +23,6 @@ def run_search_task_route(request, payload: RunSearchTaskPayload):
         collection = DataCollection.objects.get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
@@ -69,7 +52,6 @@ def add_items_from_active_sources_route(request, payload: CollectionIdentifier):
         collection = DataCollection.objects.get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
@@ -88,10 +70,26 @@ def exit_search_mode_route(request, payload: CollectionIdentifier):
         collection = DataCollection.objects.get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
     exit_search_mode(collection, payload.class_name)
+
+    return HttpResponse(None, status=204, content_type="application/json")
+
+
+@api.post("approve_relevant_search_results")
+def approve_relevant_search_results_route(request, payload: CollectionIdentifier):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        collection = DataCollection.objects.get(id=payload.collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    approve_relevant_search_results(collection, payload.class_name)
 
     return HttpResponse(None, status=204, content_type="application/json")
