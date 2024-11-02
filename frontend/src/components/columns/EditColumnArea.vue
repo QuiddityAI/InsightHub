@@ -155,7 +155,7 @@ export default {
         <div class="flex-1 min-w-0">
           <select v-model="selected_column.parameters.model" @change="submit_changes()"
             class="w-full m-0 p-0 text-xs text-gray-500 border-0">
-            <option v-for="model in available_llm_models" :value="model.identifier">{{ model.identifier }}</option>
+            <option v-for="model in available_llm_models" :value="model.model_id">{{ model.verbose_name }}</option>
           </select>
         </div>
       </div>

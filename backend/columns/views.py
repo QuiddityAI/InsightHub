@@ -31,6 +31,8 @@ def add_column_route(request, payload: ColumnConfig):
     if not payload.name:
         if payload.module == "llm":
             assert payload.expression
+            prompt = column_name_prompt.replace("{{ expression }}", payload.expression)
+            payload.name = Mistral_Ministral3b().generate_short_text(prompt) or "Column"
             response = Mistral_Ministral3b().generate_prompt_response(system_prompt=column_name_prompt.replace("{{ expression }}", payload.expression))
             payload.name = response.conversation[-1].content
             payload.name = payload.name.strip().strip('"').strip("'")
@@ -65,13 +67,7 @@ def add_column_route(request, payload: ColumnConfig):
 
     if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
         prompt = column_language_prompt.replace("{{ expression }}", payload.expression or "").replace("{{ title }}", payload.name)
-        response = Mistral_Ministral3b().generate_prompt_response(system_prompt=prompt)
-        language = response.conversation[-1].content
-        language = language.strip().strip('"').strip("'")
-        if len(language) != 2:
-            logging.error("Could not generate language for column.")
-            language = "en"
-        payload.parameters["language"] = language
+        payload.parameters["language"] = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2) or "en"
 
     try:
         collection = DataCollection.objects.get(id=payload.collection_id)
@@ -216,10 +212,12 @@ def remove_column_data_route(request, payload: ColumnCellRange):
 
 @api.get("available_llm_models")
 def get_available_llm_models_route(request):
-    model_classes = BaseLLMModel.available_models()
-    models = {}
-    for model_class in model_classes.values():
-        config = model_class.config.dict()
-        models[model_class.__name__] = {"config": config, "provider": model_class.provider, "identifier": model_class.__name__}
-    return models
+    config_dict = BaseLLMModel.available_model_configs()
+    required_capability = 'chat'
+    configs = []
+    for model_id, config in config_dict.items():  # type: ignore
+        config["model_id"] = model_id
+        if required_capability in config["capabilities"]:
+            configs.append(config)
+    return configs
 

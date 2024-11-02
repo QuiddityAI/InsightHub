@@ -369,7 +369,7 @@ export default {
     <div v-if="['llm', 'relevance'].includes(selected_module) && use_custom_llm"
       class="flex flex-row gap-2 items-center">
       <div class="flex-1 min-w-0">
-        <Dropdown v-model="selected_llm" :options="Object.values(available_llm_models)" optionLabel="identifier" optionValue="identifier"
+        <Dropdown v-model="selected_llm" :options="available_llm_models" optionLabel="verbose_name" optionValue="model_id"
           placeholder="Select LLM..."
           class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       </div>
