@@ -4,7 +4,7 @@
   "entity_name_plural": "files",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-11-01T15:59:19.857Z",
+  "changed_at": "2024-11-03T12:56:37.403Z",
   "primary_key": "full_path",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -15,6 +15,7 @@
   "default_search_fields": [
     "title",
     "abstract",
+    "full_path",
     "full_text",
     "full_text_chunk_embeddings",
     "embedding_e5"
@@ -58,14 +59,7 @@
     ],
     "map_vector_field": "embedding_e5",
     "export_button_name": "Export",
-    "language_filtering": {
-      "field": "language",
-      "format": "iso_639_set_1",
-      "options": [
-        "en",
-        "de"
-      ]
-    },
+    "language_filtering": null,
     "default_result_language": "de",
     "full_text_chunk_embeddings": "full_text_chunk_embeddings",
     "ignored_keyword_highlight_fields": [
@@ -135,6 +129,7 @@
     ]
   },
   "statistics": {},
+  "filter_prompts": "# language: en\r\nReturn an array of filters extracted from a given natural language search query.\r\n\r\nThe filters should be in the following JSON array format:\r\n[\r\n    {\r\n        \"field\": \"field_name\",\r\n        \"operator\": one of \"contains\", \"does_not_contain\", \"is\", \"is_not\", \"gt\", \"lt\", \"gte\", \"lte\",\r\n        \"value\": \"value\"\r\n    },\r\n    ...\r\n]\r\n\r\nRules:\r\n- If a query mentions a folder, filter using the 'folder' field:\r\n[\r\n    {\r\n        \"field\": \"folder\",\r\n        \"operator\": \"contains\" or \"does_not_contain\",\r\n        \"value\": \"folder_name\"\r\n    }\r\n]\r\n\r\nOnly include filters if one or more rules apply.\r\nIf no rules apply, return an empty array.\r\n\r\nExamples:\r\nSearch query: \"technical drawings in the Pila folder\"\r\nFilters:\r\n[\r\n    {\r\n        \"field\": \"folder\",\r\n        \"operator\": \"contains\",\r\n        \"value\": \"Pila\"\r\n    }\r\n]\r\n\r\nSearch query: \"all cost calculations in the Project123 folder\"\r\nFilters:\r\n[\r\n    {\r\n        \"field\": \"folder\",\r\n        \"operator\": \"contains\",\r\n        \"value\": \"Project123\"\r\n    }\r\n]\r\n\r\nSearch query: \"Where can I find technical drawings?\"\r\nFilters:\r\n[]\r\n\r\nSearch query: \"papers about the applications of graphene\"\r\nFilters: []\r\n\r\nThe search query is: {{ user_input }}\r\n\r\nReturn just the filters as a JSON array. Do not repeat the task.\r\n\r\n# language: de\r\nGib ein Array von Filtern zur\u00fcck, das aus einer gegebenen, in nat\u00fcrlicher Sprache verfassten Suchanfrage extrahiert wird.\r\n\r\nDie Filter sollten im folgenden JSON-Array-Format sein:\r\n[\r\n    {\r\n        \"field\": \"field_name\",\r\n        \"operator\": einer von \"contains\", \"does_not_contain\", \"is\", \"is_not\", \"gt\", \"lt\", \"gte\", \"lte\",\r\n        \"value\": \"value\"\r\n    },\r\n    ...\r\n]\r\n\r\nRegeln:\r\nWenn eine Anfrage einen Ordner erw\u00e4hnt, verwende das Feld folder f\u00fcr den Filter:\r\n[\r\n    {\r\n        \"field\": \"folder\",\r\n        \"operator\": \"contains\" oder \"does_not_contain\",\r\n        \"value\": \"folder_name\"\r\n    }\r\n]\r\n\r\nErzeuge nur Filter, wenn eine oder mehrere Regeln zutreffen. Falls keine Regeln zutreffen, gib ein leeres Array zur\u00fcck.\r\n\r\nBeispiele:\r\nSuchanfrage: \"technische Zeichnungen im Pila Ordner\"\r\nFilter:\r\n[\r\n    {\r\n        \"field\": \"folder\",\r\n        \"operator\": \"contains\",\r\n        \"value\": \"Pila\"\r\n    }\r\n]\r\n\r\nSuchanfrage: \"alle Kostenrechnungen im Projekt123 Ordner\"\r\nFilter:\r\n[\r\n    {\r\n        \"field\": \"folder\",\r\n        \"operator\": \"contains\",\r\n        \"value\": \"Projekt123\"\r\n    }\r\n]\r\n\r\nSuchanfrage: \"neuste Besprechungsnotizen im Ordner 'Kartographie'\"\r\nFilter:\r\n[\r\n    {\r\n        \"field\": \"folder\",\r\n        \"operator\": \"contains\",\r\n        \"value\": \"Kartographie\"\r\n    }\r\n]\r\n\r\nSuchanfrage: \"Wo can ich technische Zeichnungen finden?\"\r\nFilter:\r\n[]\r\n\r\nSuchanfrage: \"papers about the applications of graphene\"\r\nFilter:\r\n[]\r\n\r\nDie Suchanfrage ist: {{ user_input }}\r\n\r\nGib nur die Filter als JSON-Array zur\u00fcck. Wiederhole die Aufgabe nicht.",
   "applicable_import_converters": [
     "office_document"
   ],

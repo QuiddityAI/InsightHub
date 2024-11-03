@@ -3,7 +3,6 @@ from collections import defaultdict
 
 search_query_prompt_en = """
 Write a search query that you would use to find the following information.
-The query should be short and concise.
 If the user input is already a search query, write the same query.
 
 Examples:
@@ -25,7 +24,6 @@ Return just the search query. Do not repeat the task.
 
 search_query_prompt_de = """
 Schreibe eine Suchanfrage, die du verwenden würdest, um die folgende Information zu finden.
-Die Anfrage sollte kurz und prägnant sein.
 Falls die Benutzereingabe bereits eine Suchanfrage ist, verwende dieselbe Anfrage.
 
 Beispiele:
