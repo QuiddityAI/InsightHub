@@ -156,7 +156,7 @@ export default {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please select a source dataset', life: 2000 })
         return
       }
-      if (!this.new_settings.user_input) {
+      if (!this.new_settings.user_input && !this.new_settings.filters.length) {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please enter a query', life: 2000 })
         return
       }
