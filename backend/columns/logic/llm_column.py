@@ -8,7 +8,7 @@ from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
 from data_map_backend.models import CollectionColumn, ServiceUsage
 from data_map_backend.prompts import table_cell_prompt, table_cell_prompt_de
 from columns.prompts import item_relevancy_prompt, item_relevancy_prompt_de
-from columns.schemas import CellData
+from columns.schemas import CellData, Criterion
 
 
 def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: int, is_relevance_column: bool = False) -> CellData:
@@ -60,32 +60,26 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
     for key, value in replacements:
         system_prompt = system_prompt.replace("{{ " + key + " }}", value)
 
-    response = model.generate_prompt_response(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt or "",
-        max_tokens=2000,
-    )
-    response_text = response.conversation[-1].content
-
-    if is_relevance_column and response_text:
-        # TODO: replace with structured response method
-        response_text = response_text.strip("```json").strip("```")
-        try:
-            criteria_review = json.loads(response_text)
-        except json.JSONDecodeError as e:
-            try:
-                criteria_review = json5.loads(response_text)
-            except json.JSONDecodeError as e:
-                logging.warning(f"Could not parse response from AI: {response_text} {e}")
-                criteria_review = response_text
-        assert isinstance(criteria_review, list)
-        relevance_score = len([c.get("fulfilled") for c in criteria_review if c.get("fulfilled")]) / max(len(criteria_review), 1)
+    if is_relevance_column:
+        criteria_review, response = model.generate_structured_array_response(
+            Criterion,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt or "",
+            max_tokens=2000,
+        )
+        relevance_score = len([c.fulfilled for c in criteria_review if c.fulfilled]) / max(len(criteria_review), 1)  # type: ignore
         value = {
-            "criteria_review": criteria_review,
+            "criteria_review": [c.model_dump() for c in criteria_review],  # type: ignore
             "is_relevant": relevance_score > 0.6,
             "relevance_score": relevance_score,
         }
     else:
+        response = model.generate_prompt_response(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt or "",
+            max_tokens=2000,
+        )
+        response_text = response.conversation[-1].content
         value = response_text
 
     cell_data.value = value

@@ -55,3 +55,10 @@ class CellData(Schema):
     is_ai_generated: bool = False
     is_computed: bool = False
     is_manually_edited: bool = False
+
+
+class Criterion(Schema):
+    criteria: str
+    fulfilled: bool
+    reason: str
+    supporting_quote: str | None = None
