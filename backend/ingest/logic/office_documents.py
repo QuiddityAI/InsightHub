@@ -47,13 +47,18 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
         #     failed_files.append({"filename": uploaded_file.local_path, "reason": "no title or text found, skipping"})
         #     return None
 
+        # OpenSearch has a limit of 32k characters per field:
+        max_chars_per_chunk = 5000
+        max_chunks = 100
+        chunks = []
         for chunk in parsed_data.chunks:
-            if len(chunk['non_embeddable_content']) > 5000:
-                chunk['non_embeddable_content'] = chunk['non_embeddable_content'][:5000] + "..."
-            if len(chunk['text']) > 10000:
-                chunk['text'] = chunk['text'][:10000] + "..."
-            chunk.pop('chunk_type')
-        full_text = " ".join([chunk['text'] for chunk in parsed_data.chunks])
+            if not chunk['text']:
+                continue
+            chunk['non_embeddable_content'] = None
+            if len(chunk['text']) > max_chars_per_chunk:
+                chunk['text'] = chunk['text'][:max_chars_per_chunk] + "..."
+            chunks.append(chunk)
+        full_text = " ".join([chunk['text'] for chunk in parsed_data.chunks[:max_chunks]])
 
         ai_metadata = get_ai_summary(uploaded_file.original_filename,
                                      uploaded_file.metadata.folder if uploaded_file.metadata else None,
@@ -72,7 +77,7 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
                                               uploaded_file.local_path) if file_metainfo.thumbnail else None,  # relative to UPLOADED_FILES_FOLDER
 
             "full_text": full_text,
-            "full_text_chunks": parsed_data.chunks,
+            "full_text_chunks": chunks,
 
             "file_created_at": uploaded_file.metadata.created_at if uploaded_file.metadata else None,
             "file_updated_at": uploaded_file.metadata.updated_at if uploaded_file.metadata else None,
