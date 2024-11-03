@@ -4,6 +4,7 @@ import time
 import logging
 
 from django.utils import timezone
+from llmonkey.llms import Mistral_Ministral3b
 
 from data_map_backend.models import DataCollection, User, COLUMN_META_SOURCE_FIELDS, WritingTask
 from search.schemas import SearchTaskSettings
@@ -11,6 +12,7 @@ from search.logic import run_search_task
 from data_map_backend.views.question_views import _execute_writing_task_thread
 from .schemas import CreateCollectionSettings
 from .create_columns import create_relevance_column
+from workflows.prompts import query_language_prompt
 
 
 class CollectionCreationModes(StrEnum):
@@ -53,6 +55,9 @@ def create_collection_using_mode(
 def prepare_collection(
     collection: DataCollection, settings: CreateCollectionSettings, user: User
 ) -> DataCollection:
+    if settings.auto_set_filters:
+        prompt = query_language_prompt.replace("{{ query }}", settings.query or "")
+        settings.result_language = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
     if settings.mode == CollectionCreationModes.CLASSIC_SEARCH:
         prepare_for_classic_search(collection, settings, user)
     elif settings.mode == CollectionCreationModes.ASSISTED_SEARCH:

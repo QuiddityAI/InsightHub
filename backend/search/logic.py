@@ -8,11 +8,13 @@ from typing import Callable, Iterable
 from django.utils import timezone
 from django.db.models import Q
 from django.db.models.manager import BaseManager
+from llmonkey.llms import Mistral_Ministral8b
 
 from data_map_backend.models import DataCollection, User, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType, CollectionItem
 from legacy_backend.logic.search import get_search_results
 from search.schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
 from columns.logic.process_column import process_cells_blocking
+from search.prompts import search_query_prompt
 
 
 def run_search_task(collection: DataCollection, search_task: SearchTaskSettings, user_id: int,
@@ -27,8 +29,9 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
     stack_index = max([s.get('stack_index', 0) for s in collection.search_sources if s['is_active']] or [-1]) + 1
 
     if search_task.auto_set_filters:
-        collection.log_explanation("Use AI model to generate **suitable query** and determine **best filter and ranking settings** (skipped)", save=False)
-        # TODO: implement smart search
+        collection.log_explanation("Use AI model to generate **suitable query** and determine **best filter and ranking settings** (filters skipped)", save=False)
+        prompt = search_query_prompt[search_task.result_language or 'en'].replace("{{ user_input }}", search_task.query)
+        search_task.query = Mistral_Ministral8b().generate_short_text(prompt) or search_task.query
 
     source = SearchSource(
         id_hash=uuid.uuid4().hex,

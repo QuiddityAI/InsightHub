@@ -7,7 +7,7 @@ from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
 
 from data_map_backend.models import CollectionColumn, ServiceUsage
 from data_map_backend.prompts import table_cell_prompt, table_cell_prompt_de
-from columns.logic.column_prompts import item_relevancy_prompt, item_relevancy_prompt_de
+from columns.prompts import item_relevancy_prompt, item_relevancy_prompt_de
 from columns.schemas import CellData
 
 
