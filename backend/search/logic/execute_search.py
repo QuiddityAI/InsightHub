@@ -34,13 +34,13 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
         prompt = search_query_prompt[search_task.result_language or 'en'].replace("{{ user_input }}", search_task.user_input)
         search_task.query = Mistral_Ministral8b().generate_short_text(prompt) or search_task.query
 
-        filter_prompt_template = get_filter_prompt(search_task.dataset_id, search_task.result_language or 'en')
-        if filter_prompt_template:
-            collection.log_explanation("Use AI model to determine **best filters settings**", save=False)
-            filter_prompt = filter_prompt_template.replace("{{ user_input }}", search_task.user_input)
-            filters = extract_filters(search_task, filter_prompt)
-            if filters:
-                search_task.filters = filters
+        # filter_prompt_template = get_filter_prompt(search_task.dataset_id, search_task.result_language or 'en')
+        # if filter_prompt_template:
+        #     collection.log_explanation("Use AI model to determine **best filters settings**", save=False)
+        #     filter_prompt = filter_prompt_template.replace("{{ user_input }}", search_task.user_input)
+        #     filters = extract_filters(search_task, filter_prompt)
+        #     if filters:
+        #         search_task.filters = filters
 
         # TODO: also get best ranking mode?
 
