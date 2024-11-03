@@ -1,18 +1,31 @@
-column_name_prompt = """
+from collections import defaultdict
+
+column_name_prompt_en = """
 Return a very short title for the result of following question / expression.
 The title should be at most three words long.
-The title should be in the same language as the question / expression.
 Answer only with the requested title, without anything else.
 
-The question / expression is: {{ expression }}
+The question / task is: {{ expression }}
 """
+
+column_name_prompt_de = """
+Gib einen sehr kurzen Titel für das Ergebnis der folgenden Frage / des folgenden Ausdrucks an.
+Der Titel sollte maximal drei Wörter lang sein.
+Antworte nur mit dem angeforderten Titel, ohne etwas anderes.
+
+Die Frage / die Aufgabe ist: {{ expression }}
+"""
+
+column_name_prompt = defaultdict(lambda: column_name_prompt_en)
+column_name_prompt["en"] = column_name_prompt_en
+column_name_prompt["de"] = column_name_prompt_de
 
 column_language_prompt = """
 Return the two-letter language code (like 'de' or 'en') of the following question / expression.
 Answer only with the language code, without anything else.
 
-The title is: {{ title }}
-The question / expression is: {{ expression }}
+The title is: "{{ title }}"
+The question / expression is: "{{ expression }}"
 """
 
 item_relevancy_prompt = """\

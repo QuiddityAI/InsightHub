@@ -54,6 +54,9 @@ Eine chemische Formel wie Wasser (H2O) sollte als $H_2O$ geschrieben werden (die
 Antworte direkt mit der Antwort. Wiederhole die Frage nicht erneut.
 Zum Beispiel, wenn du Stichpunkte geben sollst, beginne NIE mit „Hier sind drei Stichpunkte...“.
 Stattdessen beginne direkt mit den Stichpunkten.
+
+Die Frage / Aufgabe ist:
+"{{ expression }}"
 """
 
 writing_task_prompt = """\

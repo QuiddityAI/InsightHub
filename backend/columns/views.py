@@ -28,14 +28,15 @@ def add_column_route(request, payload: ColumnConfig):
     if payload.module in ["llm", "relevance"] and not (payload.name or payload.expression):
         return HttpResponse(status=400)
 
+    if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
+        prompt = column_language_prompt.replace("{{ expression }}", payload.expression or "").replace("{{ title }}", payload.name or "")
+        payload.parameters["language"] = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
+
     if not payload.name:
         if payload.module == "llm":
             assert payload.expression
-            prompt = column_name_prompt.replace("{{ expression }}", payload.expression)
+            prompt = column_name_prompt[payload.parameters.get("language") or 'en'].replace("{{ expression }}", payload.expression)
             payload.name = Mistral_Ministral3b().generate_short_text(prompt) or "Column"
-            response = Mistral_Ministral3b().generate_prompt_response(system_prompt=column_name_prompt.replace("{{ expression }}", payload.expression))
-            payload.name = response.conversation[-1].content
-            payload.name = payload.name.strip().strip('"').strip("'")
             if not payload.name:
                 logging.error("Could not generate name for column.")
                 return HttpResponse(status=400)
@@ -64,10 +65,6 @@ def add_column_route(request, payload: ColumnConfig):
             if tries > 10:
                 logging.error("Could not create unique identifier for collection column.")
                 return HttpResponse(status=400)
-
-    if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
-        prompt = column_language_prompt.replace("{{ expression }}", payload.expression or "").replace("{{ title }}", payload.name)
-        payload.parameters["language"] = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
 
     try:
         collection = DataCollection.objects.get(id=payload.collection_id)
