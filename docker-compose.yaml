@@ -18,6 +18,7 @@ services:
     volumes:
       - ./:/source_code/
       - "${DATA_PATH:-/data}:/data"
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55125:55125"
     environment:
@@ -34,6 +35,7 @@ services:
       - PDFERRET_TIKA_SERVER_URL=http://tika:9998
       - TIKA_SERVER_ENDPOINT=http://tika:9998
       - TIKA_CLIENT_ONLY=True
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
   webserver:
     image: visual_data_map/webserver
     build:
