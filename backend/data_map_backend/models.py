@@ -579,6 +579,12 @@ class DatasetSchema(models.Model):
         blank=True,
         null=True,
     )
+    filter_prompts = models.TextField(
+        verbose_name="Filter Prompts",
+        help_text="Prompts for filter detection, start each with '# language: de / en / ...'",
+        blank=True,
+        null=True,
+    )
 
     def __str__(self):
         return f"{self.name}"
@@ -832,6 +838,12 @@ class Dataset(models.Model):
         verbose_name="Advanced Options",
         help_text="Remote access tokens etc., also overrides schema advanced options",
         default=dict,
+        blank=True,
+        null=True,
+    )
+    filter_prompts = models.TextField(
+        verbose_name="Filter Prompts",
+        help_text="Prompts for filter detection, start each with '# language: de / en / ...'. Overrides those of the schema.",
         blank=True,
         null=True,
     )

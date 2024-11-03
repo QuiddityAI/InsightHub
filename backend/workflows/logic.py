@@ -8,7 +8,7 @@ from llmonkey.llms import Mistral_Ministral3b
 
 from data_map_backend.models import DataCollection, User, COLUMN_META_SOURCE_FIELDS, WritingTask
 from search.schemas import SearchTaskSettings
-from search.logic import run_search_task
+from search.logic.execute_search import run_search_task
 from data_map_backend.views.question_views import _execute_writing_task_thread
 from .schemas import CreateCollectionSettings
 from .create_columns import create_relevance_column
@@ -28,7 +28,7 @@ def create_collection_using_mode(
 ) -> DataCollection:
     collection = DataCollection()
     collection.created_by = user
-    collection.name = settings.query or f"Collection {timezone.now().isoformat()}"
+    collection.name = settings.user_input or f"Collection {timezone.now().isoformat()}"
     collection.related_organization_id = settings.related_organization_id  # type: ignore
     collection.agent_is_running = settings.mode != CollectionCreationModes.EMPTY_COLLECTION
     collection.current_agent_step = "Preparing..."
@@ -56,7 +56,7 @@ def prepare_collection(
     collection: DataCollection, settings: CreateCollectionSettings, user: User
 ) -> DataCollection:
     if settings.auto_set_filters:
-        prompt = query_language_prompt.replace("{{ query }}", settings.query or "")
+        prompt = query_language_prompt.replace("{{ query }}", settings.user_input or "")
         settings.result_language = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
     if settings.mode == CollectionCreationModes.CLASSIC_SEARCH:
         prepare_for_classic_search(collection, settings, user)
@@ -70,10 +70,10 @@ def prepare_collection(
 
 
 def prepare_for_classic_search(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
-    assert settings.query is not None
+    assert settings.user_input is not None
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
-        query=settings.query,
+        user_input=settings.user_input or "",
         result_language=settings.result_language,
         auto_set_filters=settings.auto_set_filters,
         filters=settings.filters,
@@ -86,10 +86,10 @@ def prepare_for_classic_search(collection: DataCollection, settings: CreateColle
 
 
 def prepare_for_overview_map(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
-    assert settings.query is not None
+    assert settings.user_input is not None
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
-        query=settings.query,
+        user_input=settings.user_input or "",
         result_language=settings.result_language,
         auto_set_filters=settings.auto_set_filters,
         filters=settings.filters,
@@ -103,12 +103,12 @@ def prepare_for_overview_map(collection: DataCollection, settings: CreateCollect
 
 
 def prepare_for_assisted_search(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
-    assert settings.query is not None
-    create_relevance_column(collection, settings.query, settings.result_language)
+    assert settings.user_input is not None
+    create_relevance_column(collection, settings.user_input, settings.result_language)
 
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
-        query=settings.query,
+        user_input=settings.user_input or "",
         result_language=settings.result_language,
         auto_set_filters=settings.auto_set_filters,
         filters=settings.filters,
@@ -122,12 +122,12 @@ def prepare_for_assisted_search(collection: DataCollection, settings: CreateColl
 
 def prepare_for_question(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     logging.warning("prepare_for_question: start")
-    assert settings.query is not None
-    create_relevance_column(collection, settings.query, settings.result_language)
+    assert settings.user_input is not None
+    create_relevance_column(collection, settings.user_input, settings.result_language)
 
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
-        query=settings.query,
+        user_input=settings.user_input or "",
         result_language=settings.result_language,
         auto_set_filters=settings.auto_set_filters,
         filters=settings.filters,
@@ -147,7 +147,7 @@ def prepare_for_question(collection: DataCollection, settings: CreateCollectionS
         #module="groq_llama_3_70b",
         module="openai_gpt_4_o",
     )
-    writing_task.prompt = settings.query
+    writing_task.prompt = settings.user_input
     writing_task.save()
 
     def after_columns_were_processed(new_items):

@@ -9,7 +9,8 @@ from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
 
 from search.schemas import RunSearchTaskPayload
-from search.logic import run_search_task, add_items_from_active_sources, exit_search_mode, approve_relevant_search_results
+from search.logic.execute_search import run_search_task, add_items_from_active_sources
+from search.logic.approve_items_and_exit_search import approve_relevant_search_results, exit_search_mode
 
 api = NinjaAPI(urls_namespace="search")
 

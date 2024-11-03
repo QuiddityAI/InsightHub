@@ -9,7 +9,7 @@ class CreateCollectionSettings(Schema):
     mode: str
     auto_set_filters: bool
     filters: Optional[list]
-    query: Optional[str]
+    user_input: Optional[str]
     result_language: Optional[str]
     retrieval_mode: Optional[str]
     ranking_settings: Optional[dict]

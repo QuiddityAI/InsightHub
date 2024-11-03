@@ -262,7 +262,7 @@ class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAd
         "applicable_import_converters", "applicable_export_converters",
         "get_field_overview_table_html",
         "result_list_rendering", "hover_label_rendering", "detail_view_rendering",
-        "statistics",
+        "statistics", "filter_prompts",
         "created_at", "changed_at",
     ]
 
@@ -352,6 +352,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         "source_plugin", "source_plugin_parameters",
         "database_name", "advanced_options",
         "item_count", "get_field_overview_table_html",
+        "filter_prompts",
         "random_item",
         "created_at", "changed_at",
         'action_buttons',

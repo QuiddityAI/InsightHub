@@ -14,7 +14,8 @@ class SearchType(StrEnum):
 class SearchTaskSettings(Schema):
     search_type: SearchType = SearchType.EXTERNAL_INPUT
     dataset_id: int
-    query: str
+    user_input: str  # the raw (potentially natural language) user input
+    query: str = ""  # the processed query
     result_language: Optional[str] = None
     candidates_per_step: int = 10
     queries_per_step: int = 1
@@ -83,3 +84,9 @@ class SearchSource(Schema):
     available: Optional[int] = None
     available_is_exact: bool = True
     is_active: bool = True
+
+
+class Filter(Schema):
+    field: str
+    operator: str
+    value: str

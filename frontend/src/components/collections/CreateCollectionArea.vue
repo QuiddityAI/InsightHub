@@ -38,7 +38,7 @@ export default {
         mode: 'assisted_search',
         auto_set_filters: true,
         filters: [],
-        query: '',
+        user_input: '',
         result_language: null,
         retrieval_mode: 'hybrid',
         ranking_settings: null,
@@ -49,7 +49,7 @@ export default {
         mode: 'assisted_search',
         auto_set_filters: true,
         filters: [],
-        query: '',
+        user_input: '',
         result_language: null,
         retrieval_mode: 'hybrid',
         ranking_settings: null,
@@ -163,12 +163,12 @@ export default {
     query_uses_operators_and_meaning() {
       const uses_meaning = ["vector", "hybrid"].includes(this.new_settings.retrieval_mode)
       const operators = [" AND ", " OR ", " NOT "]
-      const uses_operators = operators.some((op) => this.new_settings.query.includes(op))
+      const uses_operators = operators.some((op) => this.new_settings.user_input.includes(op))
       return uses_operators && uses_meaning
     },
     query_includes_other_quotes() {
       const other_quotes = ["'", "`", "´", "‘", "’", "“", "”", "„", "‟", "❛", "❜", "❝", "❞", "＇", "＂"]
-      const query = this.new_settings.query
+      const query = this.new_settings.user_input
       return other_quotes.some((quote) => query.includes(" " + quote) || query.includes(quote + " "))
     },
     using_meaning_for_non_english_search() {
@@ -232,7 +232,7 @@ export default {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please select a source dataset', life: 2000 })
         return
       }
-      if (!this.new_settings.query) {
+      if (!this.new_settings.user_input) {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please enter a query', life: 2000 })
         return
       }
@@ -249,7 +249,7 @@ export default {
         })
     },
     run_example_query(example) {
-      this.new_settings.query = example.query
+      this.new_settings.user_input = example.query
       this.new_settings.filters = example.filters || []
       this.new_settings.retrieval_mode = example.search_type
       this.auto_set_filters = example.use_smart_search || true
@@ -294,7 +294,7 @@ export default {
     <div class="flex flex-col gap-3 bg-white p-3 rounded-lg shadow-md">
 
       <div class="relative flex-1 h-9 flex flex-row gap-3 items-center">
-        <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.query"
+        <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
           autocomplete="off"
           :placeholder="selected_mode.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
           class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
