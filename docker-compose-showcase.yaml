@@ -1,6 +1,6 @@
-name: vsm_staging
+name: vsm_showcase
 services:
-  backend-staging:
+  backend-showcase:
     image: visual_data_map/backend
     build:
       context: ./
@@ -11,7 +11,7 @@ services:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
     environment:
       - data_backend_host=http://localhost:55125
-      - postgres_host=postgres-staging
+      - postgres_host=postgres-showcase
       - BACKEND_AUTHENTICATION_SECRET
       - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
@@ -24,7 +24,7 @@ services:
       - TIKA_SERVER_ENDPOINT=http://tika:9998
       - TIKA_CLIENT_ONLY=True
       - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
-  webserver-prod-staging:
+  webserver-prod-showcase:
     image: visual_data_map/webserver_prod
     build:
       context: ./frontend
@@ -32,10 +32,10 @@ services:
     volumes:
       - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_STAGING_EXPOSED_IP:-127.0.0.1}:55440:55140"
+      - "${WEBSERVER_STAGING_EXPOSED_IP:-127.0.0.1}:55441:55140"
     environment:
-      - backend_host=http://backend-staging:55125
-  postgres-staging:
+      - backend_host=http://backend-showcase:55125
+  postgres-showcase:
     image: postgres:16
     volumes:
       - postgres_data:/var/lib/postgresql/data/

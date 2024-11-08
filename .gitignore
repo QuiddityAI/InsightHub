@@ -49,4 +49,4 @@ swag_https_proxy_config/
 
 trace_*.json
 
-docker-compose.override.yaml
+docker-compose*.override.yaml
