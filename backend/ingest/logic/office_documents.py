@@ -4,8 +4,10 @@ import os
 import json
 import base64
 import time
+import datetime
 
 from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
+from requests import ReadTimeout
 
 from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult
 from ingest.logic.common import UPLOADED_FILES_FOLDER
@@ -20,7 +22,11 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
         on_progress(0.1)
 
     t1 = time.time()
-    parsed, failed = extract_using_pdferret([f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}' for uploaded_file in files], doc_lang='de')
+    try:
+        parsed, failed = extract_using_pdferret([f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}' for uploaded_file in files], doc_lang='de')
+    except ReadTimeout:
+        logging.error("PDFerret timeout")
+        return [], [{"filename": uploaded_file.local_path, "reason": "PDFerret timeout"} for uploaded_file in files]
     duration = time.time() - t1
     logging.warning(f"Extracted {len(parsed)} documents in {duration:.2f}s using pdferret ({duration / len(parsed):.2f}s per document)")
 
@@ -39,9 +45,13 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
         # 'file_features': FileFeatures(filename='...',
         # file='...', is_scanned=None), 'npages': None, 'thumbnail': b'\x89PNG...
 
-        #file_metainfo_copy = deepcopy(file_metainfo)
-        #file_metainfo_copy.thumbnail = None
-        #logging.warning(f"MetaInfo: {json.dumps(file_metainfo_copy, indent=2)}")
+        # try:
+        #     from copy import deepcopy
+        #     file_metainfo_copy = deepcopy(file_metainfo)
+        #     file_metainfo_copy.thumbnail = None
+        #     logging.warning(f"MetaInfo: {json.dumps(file_metainfo_copy, indent=2)}")
+        # except Exception as e:
+        #     logging.warning(f"Failed to log MetaInfo: {e}")
 
         # if not file_metainfo.title and not len(parsed_data.chunks):
         #     failed_files.append({"filename": uploaded_file.local_path, "reason": "no title or text found, skipping"})
@@ -58,21 +68,39 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
             if len(chunk['text']) > max_chars_per_chunk:
                 chunk['text'] = chunk['text'][:max_chars_per_chunk] + "..."
             chunks.append(chunk)
-        full_text = " ".join([chunk['text'] for chunk in parsed_data.chunks[:max_chunks]])
+        full_text = " ".join([chunk['text'] for chunk in chunks[:max_chunks]])
 
-        ai_metadata = get_ai_summary(uploaded_file.original_filename,
-                                     uploaded_file.metadata.folder if uploaded_file.metadata else None,
-                                     full_text)
+        # ai_metadata = get_ai_summary(uploaded_file.original_filename,
+        #                              uploaded_file.metadata.folder if uploaded_file.metadata else None,
+        #                              full_text)
+        ai_metadata = None
+
+        content_date = None
+        if file_metainfo.mentioned_date:
+            # making sure content_date is a valid date, otherwise OpenSearch will throw an error
+            try:
+                content_date = datetime.datetime.fromisoformat(file_metainfo.mentioned_date).date().isoformat()
+            except ValueError:
+                logging.warning(f"Invalid date format: {file_metainfo.mentioned_date}")
+                pass
+        content_time = None
+        if ai_metadata and ai_metadata.time:
+            # making sure content_time is a valid time, otherwise OpenSearch will throw an error
+            try:
+                content_time = datetime.time.fromisoformat(ai_metadata.time).isoformat()
+            except ValueError:
+                logging.warning(f"Invalid time format: {ai_metadata.time}")
+                pass
 
         folder = uploaded_file.metadata.folder if uploaded_file.metadata else None
         item = {
             "title": file_metainfo.title or (ai_metadata and ai_metadata.title) or uploaded_file.original_filename,
-            "type_description": (ai_metadata and ai_metadata.document_type) or None,
+            "type_description": file_metainfo.document_type or (ai_metadata and ai_metadata.document_type) or None,
             "abstract": file_metainfo.abstract or (ai_metadata and ai_metadata.summary),
             "ai_tags": ((ai_metadata and ai_metadata.tags) or []) + [file_metainfo.ai_metadata],
-            "content_date": (ai_metadata and ai_metadata.date) or None,
-            "content_time": (ai_metadata and ai_metadata.time) or None,
-            "language": (ai_metadata and ai_metadata.document_language) or file_metainfo.language or parameters.get("default_language", "de"),
+            "content_date": content_date,
+            "content_time": content_time,
+            "language": file_metainfo.detected_language or (ai_metadata and ai_metadata.document_language) or file_metainfo.language or parameters.get("default_language", "de"),
             "thumbnail_path": store_thumbnail(base64.decodebytes(file_metainfo.thumbnail.encode('utf-8')),
                                               uploaded_file.local_path) if file_metainfo.thumbnail else None,  # relative to UPLOADED_FILES_FOLDER
 

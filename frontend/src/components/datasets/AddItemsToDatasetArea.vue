@@ -99,8 +99,10 @@ export default {
         }
       }
 
+      let i = 0
       for (let file of event.files) {
-        formData.append(fileUploaderComponent.name, file, file.name);
+        formData.append(fileUploaderComponent.name + i, file, file.name);
+        i++
       }
 
       xhr.upload.addEventListener('progress', (event) => {
@@ -312,7 +314,7 @@ export default {
       <FileUpload
         v-if="selected_import_converter && !selected_import_converter.manual_insert_form?.length"
         ref="fileUploader"
-        name="files[]"
+        name="file_"
         url="/api/v1/ingest/upload_files"
         :multiple="true"
         :maxFileSize="10000000000"

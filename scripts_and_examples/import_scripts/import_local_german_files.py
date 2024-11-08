@@ -1,9 +1,10 @@
-import logging
 import time
 import os
-import sys
 
 from data_backend_client import upload_files, files_in_folder
+import csv
+
+csv_log = []
 
 
 def import_files(path, dataset_id, max_items=1000000):
@@ -14,10 +15,17 @@ def import_files(path, dataset_id, max_items=1000000):
     batch_size = 10
     total_items = 0
     extensions = (".doc", ".docx", ".pdf", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", )
+    skip_first = 0
+    csv_log.append([dataset_id, max_items, path, skip_first])
 
-    for file_path in files_in_folder(path, extensions=extensions):
+    for i, file_path in enumerate(files_in_folder(path, extensions=extensions)):
+        if i < skip_first:
+            continue
         if "/_" in file_path:
             # this is probably a hidden file (e.g. a template)
+            continue
+        if file_path.split("/")[-1].startswith("~$"):
+            # this is probably a temporary file
             continue
 
         # fix problems with surrogateescape encoding:
@@ -43,14 +51,31 @@ def import_files(path, dataset_id, max_items=1000000):
                     print(f"Renaming folder / file: {orig_path} -> {new_path} ({part_path})")
                     os.rename(orig_path, new_path)
 
+        # if file bigger than 50MB, skip it
+        if os.path.getsize(file_path) > 50 * 1024 * 1024:
+            print(f"File too big: {file_path}")
+            csv_log.append([i, total_items, file_path, "file too big"])
+            continue
+
         batch.append(file_path)
         total_items += 1
+        print(file_path.split("/")[-1])
 
         if len(batch) >= batch_size:
+            print(f"Uploading batch of {len(batch)} items, index {i}")
             t1 = time.time()
-            upload_files(dataset_id, "filesystem_file_german", 1, 10, "office_document", file_paths=batch, exclude_prefix=path)
+            result = upload_files(dataset_id, "filesystem_file_german", 1, 10, "office_document", file_paths=batch, exclude_prefix=path)
             t2 = time.time()
-            print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(batch))*1000:.2f} ms")
+            duration = t2 - t1
+            per_item = duration / len(batch)
+            print(f"--- Duration: {duration:.3f}s, time per item: {per_item:.2f} s")
+            csv_log.append([i, total_items, duration, per_item])
+            for failed_file in result['status']['failed_files']:
+                csv_log.append([i, total_items, failed_file['filename'], 'failed: ' + failed_file['reason']])
+            failed_filenames = [failed_file['filename'] for failed_file in result['status']['failed_files']]
+            for file in batch:
+                if file.split("/")[-1] not in failed_filenames:
+                    csv_log.append([i, total_items, file, "success"])
             batch = []
 
         if total_items >= max_items:
@@ -60,10 +85,16 @@ def import_files(path, dataset_id, max_items=1000000):
         t1 = time.time()
         upload_files(dataset_id, "filesystem_file_german", 1, 10, "office_document", file_paths=batch, exclude_prefix=path)
         t2 = time.time()
-        print(f"Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(batch))*1000:.2f} ms")
+        print(f"--- Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(batch)):.2f} s")
 
     print(f"Total items: {total_items}")
 
 
 if __name__ == "__main__":
-    import_files("/data/remondis/", 96, 500)
+    try:
+        import_files("/data/remondis/", 98, 500)
+    finally:
+        with open(f"import_log_{time.strftime('%Y%m%d_%H%M%S')}.csv", "w") as f:
+            writer = csv.writer(f)
+            writer.writerows(csv_log)
+

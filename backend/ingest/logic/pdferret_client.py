@@ -2,6 +2,7 @@ import os
 import json
 
 import requests
+from llmonkey.llms import Mistral_Pixtral, Nebius_Llama_3_1_70B_fast, Google_Gemini_Flash_1_5_v1
 
 from data_map_backend.utils import DotDict
 
@@ -10,8 +11,8 @@ PDFERRET_BASE_URL = os.getenv("PDFERRET_BASE_URL", "http://localhost:8000")
 
 def extract_using_pdferret(
     file_paths: list[str],
-    vision_model: str = "Mistral_Pixtral",
-    text_model: str = "Mistral_Mistral_Small",
+    vision_model: str = Google_Gemini_Flash_1_5_v1.__name__,
+    text_model: str = Google_Gemini_Flash_1_5_v1.__name__,
     doc_lang: str = "en",
     return_images: bool = True,
 ) -> tuple[list[DotDict], list[DotDict]]:
@@ -36,7 +37,7 @@ def extract_using_pdferret(
     data = {"params": json.dumps(params)}
 
     # Send the POST request
-    response = requests.post(url, headers=headers, files=files, data=data)
+    response = requests.post(url, headers=headers, files=files, data=data, timeout=30*len(file_paths))
 
     response_json = response.json()
 

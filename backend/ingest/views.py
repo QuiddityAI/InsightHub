@@ -8,7 +8,7 @@ from ninja import NinjaAPI, Form, File, UploadedFile
 from data_map_backend.views.other_views import get_or_create_default_dataset
 
 from ingest.schemas import CustomUploadedFile, UploadedFileMetadata
-from ingest.logic.upload_files import upload_files_or_forms
+from ingest.logic.upload_files import upload_files_or_forms, get_upload_task_status_by_id
 
 api = NinjaAPI(urls_namespace="ingest")
 
@@ -46,7 +46,7 @@ def upload_files_route(
         custom_file = CustomUploadedFile(uploaded_file=file)
         metadata = request.POST.get(f"{key}_metadata")
         if metadata:
-            logging.warning(f"Metadata for file {key}: {metadata}")
+            # logging.warning(f"Metadata for file {key}: {metadata}")
             custom_file.metadata = UploadedFileMetadata(**json.loads(metadata))
         custom_uploaded_files.append(custom_file)
     task_id = upload_files_or_forms(dataset_id, import_converter, custom_uploaded_files, None, collection_id, collection_class, user_id, blocking)
@@ -55,4 +55,7 @@ def upload_files_route(
     # so we need to remove the files from the request object:
     # (this was ported from flask to Django, not sure if it's necessary in Django)
     FILES.clear()
-    return {"task_id": task_id, "dataset_id": dataset_id}
+    result = {"task_id": task_id, "dataset_id": dataset_id}
+    if blocking:
+        result["status"] = get_upload_task_status_by_id(dataset_id, task_id)
+    return result

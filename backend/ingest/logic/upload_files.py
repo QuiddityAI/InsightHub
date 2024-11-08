@@ -90,6 +90,10 @@ def get_upload_task_status(dataset_id: int) -> list[dict]:
     return list(upload_tasks.get(dataset_id, {}).values())
 
 
+def get_upload_task_status_by_id(dataset_id: int, task_id: str) -> dict:
+    return upload_tasks.get(dataset_id, {}).get(task_id, {})
+
+
 def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float):
     upload_tasks[dataset_id][task_id]["status"] = status
     upload_tasks[dataset_id][task_id]["progress"] = progress
