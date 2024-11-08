@@ -149,5 +149,24 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
         collection_item.column_data[column.identifier] = cell_data.dict()
         collection_item.save()
 
+    def process_cell_safe(collection_item: CollectionItem):
+        try:
+            process_cell(collection_item)
+        except Exception as e:
+            logging.error(f"Error processing cell {collection_item.id}: {e}")  # type: ignore
+            import traceback
+            logging.error(traceback.format_exc())
+            try:
+                cell_data = CellData(
+                    value=f"Error processing cell: {e}",
+                    changed_at=timezone.now().isoformat(),
+                )
+                collection_item.column_data[column.identifier] = cell_data.dict()
+                collection_item.save()
+            except Exception as e:
+                logging.error(f"Error saving error message for cell {collection_item.id}: {e}")  # type: ignore
+                import traceback
+                logging.error(traceback.format_exc())
+
     with ThreadPoolExecutor(max_workers=10) as executor:
-        executor.map(process_cell, collection_items)
+        executor.map(process_cell_safe, collection_items)
