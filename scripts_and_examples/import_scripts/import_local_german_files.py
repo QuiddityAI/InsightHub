@@ -52,9 +52,14 @@ def import_files(path, dataset_id, max_items=1000000):
                     os.rename(orig_path, new_path)
 
         # if file bigger than 50MB, skip it
-        if os.path.getsize(file_path) > 50 * 1024 * 1024:
+        file_size_bytes = os.path.getsize(file_path)
+        if file_size_bytes > 50 * 1024 * 1024:
             print(f"File too big: {file_path}")
             csv_log.append([i, total_items, file_path, "file too big"])
+            continue
+        if file_size_bytes == 0:
+            print(f"Empty file: {file_path}")
+            csv_log.append([i, total_items, file_path, "empty file"])
             continue
 
         batch.append(file_path)
@@ -83,9 +88,18 @@ def import_files(path, dataset_id, max_items=1000000):
 
     if batch:
         t1 = time.time()
-        upload_files(dataset_id, "filesystem_file_german", 1, 10, "office_document", file_paths=batch, exclude_prefix=path)
+        result = upload_files(dataset_id, "filesystem_file_german", 1, 10, "office_document_de", file_paths=batch, exclude_prefix=path)
         t2 = time.time()
-        print(f"--- Duration: {t2 - t1:.3f}s, time per item: {((t2 - t1)/len(batch)):.2f} s")
+        duration = t2 - t1
+        per_item = duration / len(batch)
+        print(f"--- Duration: {duration:.3f}s, time per item: {per_item:.2f} s")
+        csv_log.append([i, total_items, duration, per_item])
+        for failed_file in result['status']['failed_files']:
+            csv_log.append([i, total_items, failed_file['filename'], 'failed: ' + failed_file['reason']])
+        failed_filenames = [failed_file['filename'] for failed_file in result['status']['failed_files']]
+        for file in batch:
+            if file.split("/")[-1] not in failed_filenames:
+                csv_log.append([i, total_items, file, "success"])
 
     print(f"Total items: {total_items}")
 
