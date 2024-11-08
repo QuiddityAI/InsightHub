@@ -8,7 +8,7 @@ $(function() {
   function hide_parameters_based_on_field_type(object_field_id, field_type) {
     const parameter_to_field_types = {
       index_parameters: ['VECTOR',],
-      language_analysis: ['TEXT',],
+      language_analysis: ['TEXT', 'STRING',],
       embedding_space: ['VECTOR',],
       text_similarity_threshold: ['VECTOR',],
       image_similarity_threshold: ['VECTOR',],

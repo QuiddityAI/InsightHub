@@ -82,7 +82,7 @@ class TextSearchEngineClient(object):
         field_type_to_open_search_type = defaultdict(lambda: "text")
         field_type_to_open_search_type.update({
             FieldType.TEXT: "text",
-            FieldType.STRING: "keyword",
+            FieldType.STRING: "text",
             FieldType.TAG: "keyword",
             FieldType.INTEGER: "integer",
             FieldType.FLOAT: "float",
@@ -115,9 +115,9 @@ class TextSearchEngineClient(object):
             if open_search_type not in ("object", "flat_object"):
                 indexed = (field.is_available_for_search or field.is_available_for_filtering) and field.field_type != FieldType.VECTOR
                 properties[field.identifier]["index"] = indexed
-            if field.field_type == FieldType.TEXT and field.language_analysis:
+            if open_search_type == 'text' and field.language_analysis:
                 properties[field.identifier]["analyzer"] = field.language_analysis
-            if field.field_type == FieldType.TEXT and field.additional_language_analysis:
+            if open_search_type == 'text' and field.additional_language_analysis:
                 for language in field.additional_language_analysis:
                     properties[field.identifier]["fields"] = {
                         language: {
@@ -125,6 +125,14 @@ class TextSearchEngineClient(object):
                             "analyzer": language,
                         }
                     }
+            if field.field_type == FieldType.STRING:
+                # STRING fields should be searchable by both tokenized and exact values (e.g. filenames), so we need a keyword field
+                properties[field.identifier]["fields"] = {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 512,
+                    }
+                }
 
         mappings = {
             'properties': properties,
@@ -366,6 +374,8 @@ class TextSearchEngineClient(object):
         if sort_settings:
             query['sort'] = sort_settings
             query['track_scores'] = True
+
+        logging.warning(f"Query: {json.dumps(query, indent=2)}")
 
         response = self.client.search(
             body = query,

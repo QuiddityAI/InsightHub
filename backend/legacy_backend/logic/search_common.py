@@ -482,6 +482,8 @@ def adapt_filters_to_dataset(filters: list[dict], dataset: DotDict, limit: int, 
                 except ValueError:
                     logging.warning(f"Could not convert filter value '{filter_['value']}' to float for field '{field.name}'")
                     removed_filters.append(filter_)
+            elif field.field_type == FieldType.STRING and filter_['operator'] in ['is', 'is_not']:
+                filter_['field'] = filter_['field'] + '.keyword'
     for filter_ in removed_filters:
         filters.remove(filter_)
     workaround_to_filter_by_institution_using_openalex(dataset, filters, limit)

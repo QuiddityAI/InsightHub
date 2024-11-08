@@ -635,7 +635,7 @@ class DatasetField(models.Model):
     )
     language_analysis = models.CharField(
         verbose_name="Language Processing",
-        help_text="Only applicable for 'Text' fields",
+        help_text="Only applicable for 'Text' and 'Exact String' fields",
         max_length=50,
         choices=LanguageAnalysis.choices,
         blank=True,
