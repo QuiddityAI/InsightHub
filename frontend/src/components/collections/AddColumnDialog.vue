@@ -31,10 +31,10 @@ export default {
     return {
       selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
       selected_module: 'llm',
-      selected_llm: 'Mistral_Mistral_Small',
+      selected_llm: 'Google_Gemini_Flash_1_5_v1',
       default_models: [
         {'title': 'Small AI', 'subtitle': 'cheap + fast, simple', 'model': 'Mistral_Ministral8b'},
-        {'title': 'Medium AI', 'subtitle': 'balanced', 'model': 'Mistral_Mistral_Small'},
+        {'title': 'Medium AI', 'subtitle': 'balanced', 'model': 'Google_Gemini_Flash_1_5_v1'},
         {'title': 'Large AI', 'subtitle': 'expensive + slow, smart', 'model': 'Mistral_Mistral_Large'},
       ],
       available_llm_models: [],

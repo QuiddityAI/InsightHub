@@ -28,7 +28,7 @@ The title is: "{{ title }}"
 The question / expression is: "{{ expression }}"
 """
 
-item_relevancy_prompt = """\
+item_relevance_prompt = """\
 You are a helpful assistant for evaluating the relevance of a document based on a list of criteria.
 The document starts with <document> and ends with </document>. Only the text between these tags is relevant.
 
@@ -55,7 +55,7 @@ Respond in the following JSON format:
         "criteria": "Criterion...",
         "fulfilled": true / false,
         "reason": "Very brief explanation of why the criterion is fulfilled or not",
-        "supporting_quote": "Short quote from the document matching the criterion"
+        "supporting_quote": "Short quote from the document matching the criterion. Replace double quotes in the text with single quotes."
     },
     ...
 ]
@@ -64,7 +64,7 @@ The explanation should be in English. The quotes can be in the original language
 Respond directly with the JSON array. Do not repeat the question.
 """
 
-item_relevancy_prompt_de = """\
+item_relevance_prompt_de = """\
 Du bist ein hilfreicher Assistent, um die Relevanz eines Dokuments anhand einer Liste von Kriterien zu bewerten.
 Das Dokument beginnt mit <document> und endet mit </document>. Nur der Text zwischen diesen Tags ist relevant.
 
@@ -90,11 +90,11 @@ Antworte in folgendem JSON-Format:
         "criteria": "Kriterium...",
         "fulfilled": true / false,
         "reason": "Sehr kurze Begründung, warum das Kriterium erfüllt oder nicht erfüllt ist",
-        "supporting_quote": "Kurzes Zitat aus dem Dokument passend zum Kriterium"
+        "supporting_quote": "Kurzes Zitat aus dem Dokument passend zum Kriterium. Ersetze doppelte Anführungszeichen im Text durch einfache Anführungszeichen."
     },
     ...
 ]
 
 Die Begründung soll deutschsprachig sein. Die Zitate können in der Originalsprache des Dokuments sein.
-Antworte direkt mit dem JSON-Array. Wiederhole die nicht die Frage.
+Antworte direkt mit dem JSON-Array. Wiederhole nicht die Frage.
 """

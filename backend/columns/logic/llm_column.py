@@ -1,13 +1,12 @@
 import json
 import logging
 
-import json5
 from django.utils import timezone
-from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
+from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
 
 from data_map_backend.models import CollectionColumn, ServiceUsage
 from data_map_backend.prompts import table_cell_prompt, table_cell_prompt_de
-from columns.prompts import item_relevancy_prompt, item_relevancy_prompt_de
+from columns.prompts import item_relevance_prompt, item_relevance_prompt_de
 from columns.schemas import CellData, Criterion
 
 
@@ -22,7 +21,7 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
     #     logging.error("No model specified for LLM column.")
     #     cell_data["value"] = "No model specified"
     #     return cell_data
-    default_model = Mistral_Mistral_Small.__name__
+    default_model = Google_Gemini_Flash_1_5_v1.__name__
     model = BaseLLMModel.load(column.parameters.get("model") or default_model)
 
     # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:
@@ -39,11 +38,11 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
         system_prompt = column.prompt_template
     elif is_relevance_column:
         translated_prompts = {
-            'en': item_relevancy_prompt,
-            'de': item_relevancy_prompt_de,
+            'en': item_relevance_prompt,
+            'de': item_relevance_prompt_de,
         }
         language = column.parameters.get("language") or "en"
-        system_prompt = translated_prompts.get(language, item_relevancy_prompt)
+        system_prompt = translated_prompts.get(language, item_relevance_prompt)
     else:
         translated_prompts = {
             'en': table_cell_prompt,
