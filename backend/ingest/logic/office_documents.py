@@ -6,15 +6,16 @@ import base64
 import time
 import datetime
 
-from llmonkey.llms import BaseLLMModel, Mistral_Mistral_Small
+from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
 from requests import ReadTimeout
 
+from data_map_backend.utils import DotDict
 from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult
 from ingest.logic.common import UPLOADED_FILES_FOLDER
 from ingest.logic.pdferret_client import extract_using_pdferret
 
 
-def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
+def import_office_document(files: list[UploadedOrExtractedFile], parameters: DotDict, on_progress=None) -> tuple[list[dict], list[dict]]:
     if not files:
         return [], []
 
@@ -23,7 +24,7 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
 
     t1 = time.time()
     try:
-        parsed, failed = extract_using_pdferret([f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}' for uploaded_file in files], doc_lang='de')
+        parsed, failed = extract_using_pdferret([f'{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}' for uploaded_file in files], doc_lang=parameters.get("document_language", "en"))
     except ReadTimeout:
         logging.error("PDFerret timeout")
         return [], [{"filename": uploaded_file.local_path, "reason": "PDFerret timeout"} for uploaded_file in files]
@@ -100,7 +101,7 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters, on_
             "ai_tags": ((ai_metadata and ai_metadata.tags) or []) + [file_metainfo.ai_metadata],
             "content_date": content_date,
             "content_time": content_time,
-            "language": file_metainfo.detected_language or (ai_metadata and ai_metadata.document_language) or file_metainfo.language or parameters.get("default_language", "de"),
+            "language": file_metainfo.detected_language or (ai_metadata and ai_metadata.document_language) or file_metainfo.language or parameters.get("document_language", "en"),
             "thumbnail_path": store_thumbnail(base64.decodebytes(file_metainfo.thumbnail.encode('utf-8')),
                                               uploaded_file.local_path) if file_metainfo.thumbnail else None,  # relative to UPLOADED_FILES_FOLDER
 
@@ -208,7 +209,7 @@ Antworte nur mit dem JSON-Objekt. Antworte mit einem vollständigen JSON-Objekt,
     prompt = (prompt_de.replace("{{ title }}", title)
               .replace("{{ folder }}", folder or "")
               .replace("{{ content }}", full_text[:1000]))
-    model = BaseLLMModel.load(Mistral_Mistral_Small.__name__)
+    model = BaseLLMModel.load(Google_Gemini_Flash_1_5_v1.__name__)
     response = model.generate_prompt_response(
         system_prompt=prompt,
         max_tokens=2000,
