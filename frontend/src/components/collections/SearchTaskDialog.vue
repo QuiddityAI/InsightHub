@@ -92,12 +92,12 @@ export default {
     query_uses_operators_and_meaning() {
       const uses_meaning = ["vector", "hybrid"].includes(this.new_settings.retrieval_mode)
       const operators = [" AND ", " OR ", " NOT "]
-      const uses_operators = operators.some((op) => this.new_settings.user_input.includes(op))
+      const uses_operators = operators.some((op) => this.new_settings.user_input?.includes(op))
       return uses_operators && uses_meaning
     },
     query_includes_other_quotes() {
       const other_quotes = ["'", "`", "´", "‘", "’", "“", "”", "„", "‟", "❛", "❜", "❝", "❞", "＇", "＂"]
-      const query = this.new_settings.user_input
+      const query = this.new_settings.user_input || ""
       return other_quotes.some((quote) => query.includes(" " + quote) || query.includes(quote + " "))
     },
     using_meaning_for_non_english_search() {

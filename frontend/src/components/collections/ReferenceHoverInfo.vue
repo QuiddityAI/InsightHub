@@ -55,9 +55,6 @@ export default {
       }
     },
     actual_size_mode() {
-      if (this.is_irrelevant_according_to_ai) {
-        return "small"
-      }
       return this.size_mode || "full"
     },
   },

@@ -83,7 +83,7 @@ export default {
   },
   methods: {
     add_filter() {
-      if (!this.selected_filter_field || !this.selected_operator || !this.filter_value) {
+      if (!this.selected_filter_field || !this.selected_operator) {
         this.$toast.add({ severity: 'warn', summary: 'Missing field', detail: 'A field is missing', life: 2000 })
         return
       }

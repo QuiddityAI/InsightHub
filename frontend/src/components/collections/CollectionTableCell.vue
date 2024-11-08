@@ -135,6 +135,8 @@ export default {
             }
           }, 100)
         }
+      } else {
+        this.show_typing_animation = false
       }
     },
   },
@@ -197,7 +199,7 @@ export default {
              'min-w-[350px]': value_as_html.length > 100}">
 
     <div ref="scroll_area" class="min-h-[70px] max-h-[210px] overflow-y-scroll">
-      <div v-if="!edit_mode" v-html="value_as_html" class="text-sm use-default-html-styles py-2 pl-1 text-gray-700"></div>
+      <div v-if="!edit_mode" v-html="value_as_html" class="text-sm use-default-html-styles py-2 pl-1 text-gray-700 w-full"></div>
       <textarea v-if="edit_mode"
         class="w-full h-[150px] p-1 border border-gray-300 rounded text-sm py-2 pl-1"
         :value="value_for_editing"

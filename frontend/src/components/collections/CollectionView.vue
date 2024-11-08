@@ -141,7 +141,7 @@ export default {
           @click="collectionStore.close_collection()">
         </ChevronLeftIcon>
 
-        <p class="text-xl font-serif font-bold text-black min-w-[300px] max-w-[calc(100%-380px)]">
+        <p class="text-xl font-serif font-bold text-black min-w-[300px] max-w-[calc(100%-520px)]">
           {{ collection.name }}
         </p>
         <!-- <span class="text-medium text-gray-500">
