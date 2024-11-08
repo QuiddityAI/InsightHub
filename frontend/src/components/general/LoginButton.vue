@@ -186,7 +186,7 @@ export default {
         </AccordionTab>
 
         <AccordionTab header="Try without logging in">
-          <form ref="register_form" :action="`/org/signup_from_app/?next=/`" method="post" class="flex flex-col gap-3">
+          <div class="flex flex-col gap-3">
 
             <div class="text-gray-700">
               Only a limited set of features is available without logging in.<br>
@@ -205,7 +205,7 @@ export default {
             <div v-tooltip.bottom="{ value: terms_accepted ? '' : 'You need to accept the terms of services and privacy policy to register.', showDelay: 400 }">
               <Button label="Continue without login" class="w-full" @click="continue_without_login" :disabled="!terms_accepted" />
             </div>
-          </form>
+          </div>
         </AccordionTab>
     </Accordion>
     </Dialog>

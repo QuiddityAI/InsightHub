@@ -39,6 +39,8 @@ def signup_from_app(request):
         return HttpResponse(status=405)
     email = request.POST.get('email')
     password = request.POST.get('password')
+    if not email or not password:
+        return HttpResponse(status=400)
     next_url = request.GET.get('next', '/')
     if "?" not in next_url:
         next_url += "?"
