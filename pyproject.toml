@@ -39,6 +39,7 @@ markdown = "*"
 nltk = "*"
 openai = "*"
 opensearch-py = "*"
+orjson = "*"
 pandas = "*"
 pdferret = {git = "https://trel725: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@github.com/Trel725/pdferret.git"}
 pillow = "*"
@@ -55,6 +56,7 @@ social-auth-app-django = "*"
 torch = "*"
 transformers = "*"
 umap-learn = {git = "https://github.com/luminosuslight/umap_with_progress_callback.git"}
+werkzeug = "*"
 
 
 [tool.poetry.group.dev.dependencies]
