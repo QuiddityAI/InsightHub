@@ -5,8 +5,8 @@ import { PaperAirplaneIcon, TableCellsIcon } from "@heroicons/vue/24/outline"
 import { useToast } from 'primevue/usetoast';
 import Dropdown from 'primevue/dropdown';
 import Message from 'primevue/message';
-import Checkbox from 'primevue/checkbox';
 import OverlayPanel from 'primevue/overlaypanel';
+import InputSwitch from 'primevue/inputswitch';
 
 import SearchFilterList from "../search/SearchFilterList.vue"
 import AddFilterMenu from "../search/AddFilterMenu.vue"
@@ -260,133 +260,137 @@ export default {
 
 <template>
 
-  <div class="mt-24 flex flex-col gap-10 w-[650px]">
+  <div class="mt-[200px] w-[650px]">
 
-    <div class="flex flex-row gap-2 items-center">
-      <div class="flex-none min-w-0">
-        <Dropdown v-model="new_settings.dataset_id" :options="grouped_available_datasets" optionLabel="name"
-          optionGroupLabel="label" optionGroupChildren="items" optionValue="id" placeholder="Select Source..."
-          class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
-          <template #option="slotProps">
-            <div class="flex flex-col">
-              <div class="text-sm">{{ slotProps.option.name }}</div>
-              <!-- inline style instead of tailwind necessary here -->
-              <div class="pl-1 text-xs text-gray-500" style="text-wrap: wrap;">{{ slotProps.option.short_description }}
+    <div class="flex flex-col gap-10 bg-white pt-7 pb-10 rounded-lg shadow-md">
+
+      <div class="flex flex-row gap-2 items-center px-7">
+        <div class="flex-none min-w-0">
+          <Dropdown v-model="new_settings.dataset_id" :options="grouped_available_datasets" optionLabel="name"
+            optionGroupLabel="label" optionGroupChildren="items" optionValue="id" placeholder="Select Source..."
+            class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            <template #option="slotProps">
+              <div class="flex flex-col">
+                <div class="text-sm">{{ slotProps.option.name }}</div>
+                <!-- inline style instead of tailwind necessary here -->
+                <div class="pl-1 text-xs text-gray-500" style="text-wrap: wrap;">{{ slotProps.option.short_description }}
+                </div>
               </div>
-            </div>
-          </template>
-        </Dropdown>
+            </template>
+          </Dropdown>
+        </div>
       </div>
-    </div>
 
-    <div class="flex flex-row items-center justify-center gap-5 text-gray-500 font-semibold flex-wrap">
-      <button v-for="mode in modes" @click="new_settings.mode = mode.id"
-        class="w-[200px] h-[90px] text-md px-3 py-3 bg-gray-100 border-green-300 rounded-xl flex flex-col gap-2 items-center justify-top hover:text-gray-900"
-        :class="{
-          'border': new_settings.mode == mode.id,
-          'bg-green-100': new_settings.mode == mode.id,
-        }" v-tooltip.bottom="{ value: mode.help_text, showDelay: 400 }">
-        {{ mode.name }}
-        <span class="text-xs text-gray-400">{{ mode.subtitle }}</span>
-      </button>
-    </div>
+      <div class="flex flex-row items-center gap-5 pl-7 pr-7 text-gray-500 font-semibold overflow-x-auto">
+        <button v-for="mode in modes" @click="new_settings.mode = mode.id"
+          class="min-w-[180px] w-[180px] h-[90px] text-md px-3 py-3 bg-gray-100 border-green-300 rounded-xl flex flex-col gap-2 items-center justify-top hover:text-gray-900"
+          :class="{
+            'border': new_settings.mode == mode.id,
+            'bg-green-100': new_settings.mode == mode.id,
+          }" v-tooltip.bottom="{ value: mode.help_text, showDelay: 400 }">
+          {{ mode.name }}
+          <span class="text-xs text-gray-400">{{ mode.subtitle }}</span>
+        </button>
+      </div>
 
-    <div class="flex flex-col gap-3 bg-white p-3 rounded-lg shadow-md">
+      <div class="flex flex-col gap-4 px-7">
 
-      <div class="relative flex-1 h-9 flex flex-row gap-3 items-center">
-        <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
-          autocomplete="off"
-          :placeholder="selected_mode.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
-          class="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
-        <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
-          <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
-            v-tooltip.bottom="{ value: 'Language of the query and search results', showDelay: 400 }">
-            <option v-for="language in available_languages" :value="language.code">{{ language.flag }}</option>
+        <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
+          <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
+            autocomplete="off"
+            :placeholder="selected_mode.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
+            class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
+          <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
+            <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
+              v-tooltip.bottom="{ value: 'Language of the query and search results', showDelay: 400 }">
+              <option v-for="language in available_languages" :value="language.code">{{ language.flag }}</option>
+            </select>
+          </div>
+          <button v-tooltip.bottom="{ value: 'Submit', showDelay: 400 }"
+            class="px-2 h-10 w-32 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
+            @click="create_collection">
+            Go <PaperAirplaneIcon class="inline h-5 w-5"></PaperAirplaneIcon>
+          </button>
+        </div>
+
+        <div v-if="!new_settings.auto_set_filters && selected_mode.supports_filters" class="flex flex-row gap-1 items-center">
+          <div class="flex flex-row items-center gap-0 h-6">
+            <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
+              @click="new_settings.retrieval_mode = 'keyword'"
+              v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
+              :class="{ 'text-blue-500': new_settings.retrieval_mode === 'keyword', 'text-gray-400': new_settings.retrieval_mode != 'keyword' }">
+              Keywords
+            </button>
+            <button
+              class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
+              @click="new_settings.retrieval_mode = 'vector'"
+              v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
+              :class="{ 'text-blue-500': new_settings.retrieval_mode === 'vector', 'text-gray-400': new_settings.retrieval_mode != 'vector' }">
+              Meaning
+            </button>
+            <button
+              class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
+              @click="new_settings.retrieval_mode = 'hybrid'"
+              v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
+              :class="{ 'text-blue-500': new_settings.retrieval_mode === 'hybrid', 'text-gray-400': new_settings.retrieval_mode != 'hybrid' }">
+              Both
+            </button>
+          </div>
+          <div class="flex-1"></div>
+          <select v-model="new_settings.ranking_settings"
+            v-if="appState.available_ranking_options.length > 1 && new_settings.retrieval_mode === 'keyword'"
+            class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
+            v-tooltip.bottom="{ value: new_settings.ranking_settings?.tooltip, showDelay: 400 }">
+            <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">
+              {{ ranking_settings.title }}
+            </option>
           </select>
+          <div class="flex-1"></div>
+          <div class="flex flex-row items-center gap-0 h-6">
+            <button
+              class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
+              v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
+              @click="(event) => { $refs.add_filter_menu.toggle(event) }">
+              + Filter
+            </button>
+            <OverlayPanel ref="add_filter_menu">
+              <AddFilterMenu @close="$refs.add_filter_menu.hide()" :filters="new_settings.filters">
+              </AddFilterMenu>
+            </OverlayPanel>
+          </div>
         </div>
-        <button v-tooltip.bottom="{ value: 'Submit', showDelay: 400 }"
-          class="px-2 h-9 w-60 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
-          @click="create_collection">
-          Go <PaperAirplaneIcon class="inline h-5 w-5"></PaperAirplaneIcon>
-        </button>
-      </div>
 
-      <div v-if="!new_settings.auto_set_filters && selected_mode.supports_filters" class="flex flex-row gap-1 items-center">
-        <div class="flex flex-row items-center gap-0 h-6">
-          <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-            @click="new_settings.retrieval_mode = 'keyword'"
-            v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
-            :class="{ 'text-blue-500': new_settings.retrieval_mode === 'keyword', 'text-gray-400': new_settings.retrieval_mode != 'keyword' }">
-            Keywords
-          </button>
-          <button
-            class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-            @click="new_settings.retrieval_mode = 'vector'"
-            v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-            :class="{ 'text-blue-500': new_settings.retrieval_mode === 'vector', 'text-gray-400': new_settings.retrieval_mode != 'vector' }">
-            Meaning
-          </button>
-          <button
-            class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-            @click="new_settings.retrieval_mode = 'hybrid'"
-            v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-            :class="{ 'text-blue-500': new_settings.retrieval_mode === 'hybrid', 'text-gray-400': new_settings.retrieval_mode != 'hybrid' }">
-            Both
+        <Message v-if="show_warning_about_missing_meaning_search" class="" :closable="false">
+          Meaning / hybrid search is not yet available for this dataset.
+        </Message>
+
+        <!-- <Message v-if="!new_settings.auto_set_filters && using_meaning_for_non_english_search" class="" :closable="false">
+          Meaning / hybrid search only works for English queries.
+        </Message> -->
+
+        <div v-if="!new_settings.auto_set_filters && query_uses_operators_and_meaning" class="text-xs text-gray-400">
+          The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br>
+          Please use filters and quoted phrases here or switch to 'keyword' search.
+        </div>
+
+        <div v-if="!new_settings.auto_set_filters && query_includes_other_quotes" class="text-xs text-gray-400">
+          Note: use double quotes instead of single quotes to search for phrases.
+        </div>
+
+        <SearchFilterList v-if="!new_settings.auto_set_filters"
+          :removable="true"
+          :filters="new_settings.filters"></SearchFilterList>
+
+        <div v-if="selected_mode.supports_filters"
+          class="ml-1 flex flex-row items-center"
+          v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
+          <InputSwitch v-model="new_settings.auto_set_filters" :binary="true" :disabled="!ai_is_available" class="scale-75" />
+          <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
+            @click="new_settings.auto_set_filters = !new_settings.auto_set_filters">
+            Auto-detect best search strategy and required filters from query
           </button>
         </div>
-        <div class="flex-1"></div>
-        <select v-model="new_settings.ranking_settings"
-          v-if="appState.available_ranking_options.length > 1 && new_settings.retrieval_mode === 'keyword'"
-          class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
-          v-tooltip.bottom="{ value: new_settings.ranking_settings?.tooltip, showDelay: 400 }">
-          <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">
-            {{ ranking_settings.title }}
-          </option>
-        </select>
-        <div class="flex-1"></div>
-        <div class="flex flex-row items-center gap-0 h-6">
-          <button
-            class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
-            v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
-            @click="(event) => { $refs.add_filter_menu.toggle(event) }">
-            + Filter
-          </button>
-          <OverlayPanel ref="add_filter_menu">
-            <AddFilterMenu @close="$refs.add_filter_menu.hide()" :filters="new_settings.filters">
-            </AddFilterMenu>
-          </OverlayPanel>
-        </div>
-      </div>
 
-      <Message v-if="show_warning_about_missing_meaning_search" class="" :closable="false">
-        Meaning / hybrid search is not yet available for this dataset.
-      </Message>
-
-      <!-- <Message v-if="!new_settings.auto_set_filters && using_meaning_for_non_english_search" class="" :closable="false">
-        Meaning / hybrid search only works for English queries.
-      </Message> -->
-
-      <div v-if="!new_settings.auto_set_filters && query_uses_operators_and_meaning" class="text-xs text-gray-400">
-        The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br>
-        Please use filters and quoted phrases here or switch to 'keyword' search.
-      </div>
-
-      <div v-if="!new_settings.auto_set_filters && query_includes_other_quotes" class="text-xs text-gray-400">
-        Note: use double quotes instead of single quotes to search for phrases.
-      </div>
-
-      <SearchFilterList v-if="!new_settings.auto_set_filters"
-        :removable="true"
-        :filters="new_settings.filters"></SearchFilterList>
-
-      <div v-if="selected_mode.supports_filters"
-        class="ml-1 flex flex-row items-center"
-        v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
-        <Checkbox v-model="new_settings.auto_set_filters" class="" :binary="true" :disabled="!ai_is_available" />
-        <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
-          @click="new_settings.auto_set_filters = !new_settings.auto_set_filters">
-          Auto-detect best search strategy and required filters from query
-        </button>
       </div>
 
     </div>
