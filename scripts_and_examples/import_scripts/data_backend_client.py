@@ -8,7 +8,7 @@ import requests
 import cbor2
 
 
-data_backend_url = os.getenv("data_backend_host", "http://localhost:55125")
+data_backend_url = os.getenv("backend_host", "http://[::1]:55140")
 
 
 def update_database_layout(dataset_id: int):
