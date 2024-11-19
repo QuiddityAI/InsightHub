@@ -36,6 +36,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/update_database_layout": _check_if_from_backend,
         "/data_backend/health": _check_if_from_backend,
         "/data_backend/db_health": _check_if_from_backend,
+        "/data_backend/insert_many_sync": lambda x: True,  # TODO
     }
     checks_for_routes_always_needing_authentication = {
         "/data_backend/classifier/retrain": lambda x: True,  # TODO, but not very harmful
