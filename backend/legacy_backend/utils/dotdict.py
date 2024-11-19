@@ -1,6 +1,8 @@
 from typing import Any, Iterable, List
 from copy import deepcopy
 
+import numpy as np
+
 
 class DotDict(dict):
     """dot.notation access to dictionary attributes"""
@@ -24,7 +26,7 @@ class DotDict(dict):
             return DotDict(val)
         elif isinstance(val, str) or isinstance(val, bytes):
             return val
-        elif isinstance(val, Iterable):
+        elif isinstance(val, Iterable) and not isinstance(val, np.ndarray):
             klass = type(val)
             return klass(DotDict(e) if type(e) is dict else e for e in val)  # type: ignore
         else:
