@@ -20,6 +20,7 @@ export const useMapStateStore = defineStore("mapState", {
       per_point: {
         item_id: [],
         cluster_id: [],
+        collection_item_id: [],
         x: [],
         y: [],
         size: [],
@@ -76,6 +77,7 @@ export const useMapStateStore = defineStore("mapState", {
       this.per_point = {
         item_id: [],
         cluster_id: [],
+        collection_item_id: [],
         x: [],
         y: [],
         size: [],
@@ -230,6 +232,7 @@ export const useMapStateStore = defineStore("mapState", {
       this.per_point.x = projection_data.per_point.x
       this.per_point.y = projection_data.per_point.y
       this.per_point.cluster_id = projection_data.per_point.cluster_id
+      this.per_point.collection_item_id = projection_data.per_point.collection_item_id
       projection_data.per_point.hue.push(Math.max(...projection_data.per_point.hue) + 1)
       this.per_point.hue = normalizeArrayMedianGamma(
         projection_data.per_point.hue,

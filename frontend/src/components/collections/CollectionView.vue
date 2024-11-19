@@ -27,6 +27,7 @@ import SearchModeBar from "../search/SearchModeBar.vue";
 import AgentModeBar from "./AgentModeBar.vue";
 import MapWithLabelsAndButtons from "../map/MapWithLabelsAndButtons.vue";
 import CollectionItemGrid from "./CollectionItemGrid.vue";
+import FilterBar from "./FilterBar.vue";
 
 import { CollectionItemSizeMode } from "../../utils/utils.js"
 
@@ -216,14 +217,21 @@ export default {
 
         <!-- Search / Agent Bar -->
         <div v-if="collectionStore.search_mode || collection.agent_is_running"
-          class="flex-none px-5">
-          <div class="mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row">
+          class="flex-none flex flex-col gap-3 w-full px-5">
+
+          <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row">
 
             <SearchModeBar v-if="collectionStore.search_mode && !collection.agent_is_running"
               @edit_search_task="show_search_task_dialog = true" />
 
             <AgentModeBar v-if="collection.agent_is_running" />
 
+          </div>
+
+          <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row"
+            v-if="collection.filters?.length">
+            <FilterBar
+              @edit_search_task="show_search_task_dialog = true" />
           </div>
         </div>
 

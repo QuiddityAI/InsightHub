@@ -1150,6 +1150,13 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
+    filters = models.JSONField(
+        verbose_name="Filters",
+        help_text="Visibility filters",
+        default=list,
+        blank=True,
+        null=False,
+    )
 
     history = HistoricalRecords()
 

@@ -7,6 +7,7 @@ import { httpClient } from "../api/httpClient"
 
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
 import { useMapStateStore } from "./map_state_store"
+import { useCollectionStore } from "./collection_store";
 
 export const useAppStateStore = defineStore("appState", {
   state: () => {
@@ -14,6 +15,7 @@ export const useAppStateStore = defineStore("appState", {
       eventBus: inject("eventBus"),
       toast: useToast(),
       mapState: useMapStateStore(),
+      collectionStore: useCollectionStore(),
 
       available_organizations: [],
       organization_id: null,
@@ -1259,15 +1261,26 @@ export const useAppStateStore = defineStore("appState", {
       return origin
     },
     narrow_down_on_cluster(cluster_item) {
-      this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])
-      this.settings.search.search_type = "cluster"
-      this.settings.search.cluster_origin_map_id = this.map_id
-      this.settings.search.cluster_id = cluster_item.id
-      this.settings.search.all_field_query = ""
-      this.settings.search.all_field_query_negative = ""
-      this.settings.search.origin_display_name = cluster_item.title
-      this.set_two_dimensional_projection()
-      this.request_search_results()
+      // this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])
+      const collection_item_ids = []
+      for (const pointIdx in this.mapState.per_point.cluster_id) {
+        if (this.mapState.per_point.cluster_id[pointIdx] == cluster_item.id) {
+          collection_item_ids.push(this.mapState.per_point.collection_item_id[pointIdx])
+        }
+      }
+      const filter = {
+        uid: null,
+        display_name: cluster_item.title,
+        exclusive_for: null,
+        removable: true,
+        filter_type: "collection_item_ids",
+        value: collection_item_ids,
+        field: null,
+      }
+      this.collectionStore.add_filter(filter, () => {
+        this.set_two_dimensional_projection()  // correct?
+        this.collectionStore.generate_map()
+      })
     },
     narrow_down_on_selection(selected_items) {
       this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])

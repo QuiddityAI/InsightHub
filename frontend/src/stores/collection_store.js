@@ -469,6 +469,38 @@ export const useCollectionStore = defineStore("collection", {
           this.eventBus.emit("cluster_info_received", {cluster_info})
         })
     },
+    // -----------------------------
+    add_filter(filter, on_success=null) {
+      const body = {
+        collection_id: this.collection_id,
+        filter: filter,
+      }
+      httpClient
+        .post("/api/v1/filter/add_filter", body)
+        .then((response) => {
+          const filter = response.data
+          this.collection.filters.push(filter)
+          this.load_collection_items()
+          if (on_success) {
+            on_success(filter)
+          }
+        })
+    },
+    remove_filter(filter_uid, on_success=null) {
+      const body = {
+        collection_id: this.collection_id,
+        filter_uid: filter_uid,
+      }
+      httpClient
+        .post("/api/v1/filter/remove_filter", body)
+        .then((response) => {
+          this.collection.filters = this.collection.filters.filter((filter) => filter.uid !== filter_uid)
+          this.load_collection_items()
+          if (on_success) {
+            on_success()
+          }
+        })
+    },
   },
   getters: {
     item_count() {

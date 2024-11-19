@@ -44,6 +44,7 @@ from ..serializers import (
 from ..notifier import default_notifier
 from ..utils import is_from_backend
 from legacy_backend.utils.dotdict import DotDict
+from filter.schemas import CollectionFilter
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -925,6 +926,12 @@ def get_filtered_collection_items(
     else:
         return_items = all_items.filter(relevance__gte=2)
         return_items = return_items.order_by(order_by, '-search_score')
+
+    for filter_data in collection.filters:
+        filter = CollectionFilter(**filter_data)
+        if filter.filter_type == 'collection_item_ids':
+            return_items = return_items.filter(id__in=filter.value)
+        # TODO: implement other filters
 
     return return_items, search_mode, reference_ds_and_item_id
 

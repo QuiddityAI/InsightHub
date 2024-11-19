@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "map.apps.MapConfig",
     "search.apps.SearchConfig",
     "workflows.apps.WorkflowsConfig",
+    "filter.apps.FilterConfig",
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
