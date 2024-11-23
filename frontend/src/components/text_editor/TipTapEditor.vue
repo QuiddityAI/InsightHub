@@ -1,5 +1,6 @@
 <script setup>
 import StarterKit from '@tiptap/starter-kit'
+import Placeholder from '@tiptap/extension-placeholder'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import TurndownService from 'turndown'
 import {marked} from "marked";
@@ -48,6 +49,9 @@ export default {
 
   methods: {
     markdownToHtml(markdown) {
+      if (!markdown) {
+        return ''
+      }
       let text = markdown
 
       // replace references in the style [datset_id, item_id] with <item-reference> components:
@@ -103,6 +107,9 @@ export default {
     this.editor = new Editor({
       extensions: [
         StarterKit,
+        Placeholder.configure({
+          placeholder: 'No text yet …',
+        }),
         ItemReferenceExtension,
       ],
       content: this.markdownToHtml(this.modelValue),
@@ -231,6 +238,15 @@ export default {
     border: none;
     border-top: 1px solid var(--gray-2);
     margin: 2rem 0;
+  }
+
+  /* Placeholder (at the top) */
+  p.is-editor-empty:first-child::before {
+    color: gray;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
   }
 }
 </style>
