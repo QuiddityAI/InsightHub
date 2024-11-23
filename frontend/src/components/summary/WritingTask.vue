@@ -4,22 +4,19 @@ import {
   ArrowPathIcon,
   TrashIcon,
   AdjustmentsHorizontalIcon,
-  PencilIcon,
   BackwardIcon,
-  CheckIcon,
  } from "@heroicons/vue/24/outline"
-import {marked} from "marked";
 
 import { useToast } from 'primevue/usetoast';
 import Dropdown from 'primevue/dropdown';
 import ProgressSpinner from "primevue/progressspinner";
 import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
-import OverlayPanel from "primevue/overlaypanel";
 import Skeleton from "primevue/skeleton";
 
 import BorderlessButton from "../widgets/BorderlessButton.vue";
-import ReferenceHoverInfo from "../collections/ReferenceHoverInfo.vue";
+import TipTapEditor from "../text_editor/TipTapEditor.vue";
+import { debounce } from "../../utils/utils"
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 
@@ -33,18 +30,6 @@ const mapState = useMapStateStore()
 const collectionStore = useCollectionStore()
 const toast = useToast()
 
-window.reference_clicked = function (dataset_id, item_id, event) {
-  appState.show_document_details([dataset_id, item_id])
-}
-
-window.reference_mouse_enter = function (dataset_id, item_id, event) {
-  window.eventBus.emit("reference_mouse_enter", {dataset_id, item_id, event})
-}
-
-window.reference_mouse_leave = function (dataset_id, item_id, event) {
-  window.eventBus.emit("reference_mouse_leave", {dataset_id, item_id, event})
-}
-
 </script>
 
 <script>
@@ -56,11 +41,10 @@ export default {
   data() {
     return {
       writing_task: null,
-      edit_mode: false,
-
       show_settings_dialog: false,
-      selected_citation_dataset_id: null,
-      selected_citation_item_id: null,
+      update_writing_task_debounce: debounce((event) => {
+          this.update_writing_task()
+        }, 500),
     }
   },
   computed: {
@@ -93,48 +77,8 @@ export default {
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
-    text_with_links() {
-      if (!this.writing_task || !this.writing_task.text) {
-        return 'No text yet'
-      }
-      let text = this.writing_task.text;
-      const regex = /\[([0-9]+),\s([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\]/g;
-      let match;
-      let reference_order = []
-      while ((match = regex.exec(text)) !== null) {
-        try {
-          const dataset_id = match[1]
-          const item_id = match[2]
-          const item = this.writing_task.additional_results.reference_metadata[dataset_id][item_id]
-          let i = reference_order.length + 1
-          if (reference_order.includes(item_id)) {
-            i = reference_order.indexOf(item_id) + 1
-          } else {
-            reference_order.push(item_id)
-          }
-          const rendering = this.appStateStore.datasets[dataset_id].schema.result_list_rendering
-          const title = rendering.title(item)
-          const replacement = `<span \
-            onmouseenter="reference_mouse_enter('${dataset_id}', '${item_id}', event); return false;" \
-            onmouseleave="reference_mouse_leave('${dataset_id}', '${item_id}', event); return false;" \
-            onclick="reference_clicked('${dataset_id}', '${item_id}', event); return false;" \
-            class="text-sky-700 cursor-pointer">[${i}]</span>`;
-          text = text.replace(match[0], replacement);
-        } catch (error) {
-          console.error(error)
-          text = text.replace(match[0], `[${i}]`);
-        }
-      }
-      return marked.parse(text)
-    },
   },
-  watch: {
-    edit_mode(new_val, old_val) {
-      if (!new_val) {
-        this.update_writing_task()
-      }
-    },
-  },
+  watch: { },
   mounted() {
     this.get_writing_task(() => {
       if (this.writing_task.name !== 'Summary+') return
@@ -149,18 +93,6 @@ export default {
     })
     this.eventBus.on("agent_stopped", () => {
       this.get_writing_task()
-    })
-    this.eventBus.on("reference_mouse_enter", ({dataset_id, item_id, event}) => {
-      // TODO: this is not unregistered when the component is destroyed
-      if (!dataset_id || !item_id || !event) {
-        return
-      }
-      this.selected_citation_dataset_id = dataset_id
-      this.selected_citation_item_id = item_id
-      this.$refs.citation_tooltip?.toggle(event)
-    })
-    this.eventBus.on("reference_mouse_leave", ({dataset_id, item_id, event}) => {
-      this.$refs.citation_tooltip?.hide()
     })
   },
   methods: {
@@ -251,14 +183,6 @@ export default {
         console.error(error)
       })
     },
-    convert_to_html(text) {
-      // escape html
-      text = text.replace(/&/g, "&amp;")
-      text = text.replace(/</g, "&lt;")
-      text = text.replace(/>/g, "&gt;")
-      // convert newlines to <br>
-      return text.replace(/(?:\r\n|\r|\n)/g, '<br>')
-    },
   },
 }
 </script>
@@ -293,29 +217,11 @@ export default {
       <Skeleton v-if="writing_task.is_processing" height="1rem" width="80%" class="flex-none" />
       <Skeleton v-if="writing_task.is_processing" height="1rem" class="flex-none" />
 
-      <textarea v-if="edit_mode && !writing_task.is_processing"
-        v-model="writing_task.text"
-        class="w-full h-[300px] rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
-      <div v-if="!edit_mode && !writing_task.is_processing" class="w-full h-full">
-        <div v-html="text_with_links"
-          class="w-full h-full text-sm use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
+      <div v-if="!writing_task.is_processing" class="w-full h-full">
+        <TipTapEditor v-model="writing_task.text" @change="update_writing_task_debounce"
+          :reference_metadata="writing_task.additional_results.reference_metadata"/>
       </div>
-      <button @click="edit_mode = !edit_mode" v-if="!writing_task.is_processing"
-        v-tooltip.left="{'value': edit_mode ? 'Save' : 'Edit', showDelay: 500}"
-        class="absolute bottom-0 right-0 h-6 w-6 rounded bg-gray-100 hover:text-blue-500 show-when-parent-is-hovered transition-opacity"
-        :class="{'text-gray-500': !edit_mode, 'text-blue-500': edit_mode}">
-        <PencilIcon class="m-1" v-if="!edit_mode"></PencilIcon>
-        <CheckIcon class="m-1" v-else></CheckIcon>
-      </button>
     </div>
-
-    <OverlayPanel ref="citation_tooltip">
-      <ReferenceHoverInfo
-        class="w-[500px]"
-        :dataset_id="selected_citation_dataset_id"
-        :item_id="selected_citation_item_id">
-      </ReferenceHoverInfo>
-    </OverlayPanel>
 
     <Dialog v-model:visible="show_settings_dialog" modal header="Writing Task">
 
