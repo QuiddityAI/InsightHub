@@ -12,9 +12,9 @@ from django.core import serializers
 from djangoql.admin import DjangoQLSearchMixin
 import requests
 from simple_history.admin import SimpleHistoryAdmin
-from jsonsuit.widgets import JSONSuit
 from django_object_actions import DjangoObjectActions, action, takes_instance_or_queryset
 from import_export.admin import ImportExportMixin
+from django_svelte_jsoneditor.widgets import SvelteJSONEditorWidget
 
 from .data_backend_client import DATA_BACKEND_HOST
 
@@ -31,6 +31,39 @@ backend_client.headers.update({'Authorization': BACKEND_AUTHENTICATION_SECRET})
 
 admin.site.site_header = "Quiddity"
 admin.site.site_title = "Quiddity"
+
+
+class MyJsonWidget(SvelteJSONEditorWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attrs['style'] = 'height: 200px;'
+
+    def format_value(self, value):
+        try:
+            value = json.dumps(json.loads(value), indent=2, sort_keys=True)
+            # these lines will try to adjust size of TextArea to fit to content
+            row_lengths = [len(r) for r in value.split('\n')]
+            self.attrs['rows'] = min(max(len(row_lengths) + 2, 10), 30)
+            self.attrs['cols'] = min(max(max(row_lengths) + 2, 40), 120)
+            return value
+        except Exception as e:
+            logging.warning("Error while formatting JSON: {}".format(e))
+            return super().format_value(value)
+
+    class Media:
+        css = {"all": ("json_field.css",)}
+
+
+json_widget = MyJsonWidget(
+    props={
+        "mode": "text",
+        "askToFormat": True,
+        "mainMenuBar": False,
+        "indentation": 2,
+        "tabSize": 2,
+        "statusBar": False,
+    }
+)
 
 
 class UserAdmin(ImportExportMixin, UserAdmin):
@@ -86,7 +119,7 @@ class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit },
+        models.JSONField: {'widget': json_widget },
     }
 
     @takes_instance_or_queryset
@@ -154,7 +187,7 @@ class ImportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit },
+        models.JSONField: {'widget': json_widget },
     }
 
     @takes_instance_or_queryset
@@ -190,7 +223,7 @@ class ExportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit },
+        models.JSONField: {'widget': json_widget },
     }
 
     @takes_instance_or_queryset
@@ -241,7 +274,7 @@ class DatasetFieldInline(admin.StackedInline):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit },
+        models.JSONField: {'widget': json_widget },
     }
 
 
@@ -272,7 +305,7 @@ class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAd
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit }
+        models.JSONField: {'widget': json_widget }
     }
 
 
@@ -360,7 +393,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit }
+        models.JSONField: {'widget': json_widget }
     }
 
     def get_field_overview_table_html(self, obj):
@@ -493,7 +526,7 @@ class SearchHistoryItemAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     readonly_fields = ('changed_at', 'created_at')
 
     formfield_overrides = {
-        models.JSONField: {'widget': JSONSuit },
+        models.JSONField: {'widget': json_widget },
     }
 
 
@@ -563,7 +596,7 @@ class CollectionColumnAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     readonly_fields = ('changed_at', 'created_at')
 
     formfield_overrides = {
-        models.JSONField: {'widget': JSONSuit },
+        models.JSONField: {'widget': json_widget },
     }
 
 
@@ -619,7 +652,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
     exclude = ('decision_vector',)
 
     formfield_overrides = {
-        models.JSONField: {'widget': JSONSuit },
+        models.JSONField: {'widget': json_widget },
     }
 
     def get_retraining_status(self, obj):
@@ -674,7 +707,7 @@ class TrainedClassifierInline(admin.StackedInline):
     extra = 0
 
     formfield_overrides = {
-        models.JSONField: {'widget': JSONSuit },
+        models.JSONField: {'widget': json_widget },
     }
 
     def link_to_change_view(self, obj):
@@ -729,7 +762,7 @@ class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit }
+        models.JSONField: {'widget': json_widget }
     }
 
 
@@ -745,7 +778,7 @@ class ChatAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit }
+        models.JSONField: {'widget': json_widget }
     }
 
 
@@ -757,7 +790,7 @@ class ServiceUsagePeriodInline(admin.TabularInline):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit }
+        models.JSONField: {'widget': json_widget }
     }
 
 
@@ -775,5 +808,5 @@ class ServiceUsageAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows': 2})},
-        models.JSONField: {'widget': JSONSuit }
+        models.JSONField: {'widget': json_widget }
     }

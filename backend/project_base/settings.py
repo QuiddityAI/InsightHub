@@ -69,10 +69,10 @@ INSTALLED_APPS = [
     'corsheaders',
     'social_django',
     'drf_social_oauth2',
-    'jsonsuit.apps.JSONSuitConfig',
     'django_object_actions',
     'import_export',
     'django_prometheus',
+    'django_svelte_jsoneditor',
 ]
 
 MIDDLEWARE = [

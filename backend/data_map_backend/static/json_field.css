@@ -1,0 +1,4 @@
+.svelte-jsoneditor-wrapper {
+  min-height: 0px !important;
+  width: 420px !important;
+}
