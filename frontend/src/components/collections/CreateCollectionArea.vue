@@ -1,6 +1,9 @@
 <script setup>
 
-import { PaperAirplaneIcon, TableCellsIcon } from "@heroicons/vue/24/outline"
+import {
+  PaperAirplaneIcon,
+  ChevronLeftIcon,
+ } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
 import Dropdown from 'primevue/dropdown';
@@ -35,7 +38,7 @@ export default {
     return {
       settings_template: {
         dataset_id: null,
-        mode: 'assisted_search',
+        mode: null,
         auto_set_filters: true,
         filters: [],
         user_input: '',
@@ -46,7 +49,7 @@ export default {
       },
       new_settings: {
         dataset_id: null,
-        mode: 'assisted_search',
+        mode: null,
         auto_set_filters: true,
         filters: [],
         user_input: '',
@@ -57,18 +60,20 @@ export default {
       },
       modes: [
         {
-          id: 'assisted_search',
-          name: 'Assisted Search',
-          subtitle: 'Search + Eval',
-          help_text: 'Search and evaluate the results',
+          id: 'classic_search',
+          prefix: "Find a single",
+          name: 'Known Document',
+          subtitle: 'Just Search',
+          help_text: 'Just search, no LLMs',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
         },
         {
-          id: 'classic_search',
-          name: 'Classic Search',
-          subtitle: 'Just Search',
-          help_text: 'Just search, no LLMs',
+          id: 'assisted_search',
+          prefix: "Find multiple",
+          name: 'Matching Documents',
+          subtitle: 'Search + Eval',
+          help_text: 'Search and evaluate the results',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
         },
@@ -82,7 +87,17 @@ export default {
         // },
         {
           id: 'question',
-          name: 'Question',
+          prefix: "Find a ",
+          name: 'Fact in a Document',
+          subtitle: 'auto select + summary',
+          help_text: 'Ask a question and get a summary of the results',
+          query_field_hint: (entity_name) => `Your question`,
+          supports_filters: true,
+        },
+        {
+          id: 'summary',
+          prefix: "Summarize",
+          name: 'Documents',
           subtitle: 'auto select + summary',
           help_text: 'Ask a question and get a summary of the results',
           query_field_hint: (entity_name) => `Your question`,
@@ -106,6 +121,7 @@ export default {
         // },
         {
           id: 'overview_map',
+          prefix: "Create an",
           name: 'Overview Map',
           subtitle: 'many candidates + map',
           help_text: 'Get a map of the results',
@@ -114,6 +130,7 @@ export default {
         },
         {
           id: 'empty_collection',
+          prefix: "Create an",
           name: 'Empty Collection',
           subtitle: 'empty collection',
           help_text: 'Create an empty collection',
@@ -262,13 +279,21 @@ export default {
 
   <div class="mt-[200px] w-[650px]">
 
-    <div class="flex flex-col gap-10 bg-white pt-7 pb-10 rounded-lg shadow-md">
+    <div class="flex flex-col gap-8 bg-white pt-1 pb-10 rounded-lg shadow-md">
 
-      <div class="flex flex-row gap-2 items-center px-7">
+      <div class="flex flex-row gap-2 items-center justify-between px-3">
+        <div class="flex-none w-10">
+          <button v-if="selected_mode != null" @click="new_settings.mode = null"
+            class="flex-none w-10 rounded-md hover:bg-blue-100/50 text-gray-400">
+            <ChevronLeftIcon class="inline h-5 w-5"></ChevronLeftIcon>
+          </button>
+        </div>
+
         <div class="flex-none min-w-0">
           <Dropdown v-model="new_settings.dataset_id" :options="grouped_available_datasets" optionLabel="name"
             optionGroupLabel="label" optionGroupChildren="items" optionValue="id" placeholder="Select Source..."
-            class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500">
+            @change="new_settings.mode = null"
+            class="h-full border-none text-sm font-medium" id="datasetdropdown"> <!-- see CSS below for text color -->
             <template #option="slotProps">
               <div class="flex flex-col">
                 <div class="text-sm">{{ slotProps.option.name }}</div>
@@ -279,26 +304,35 @@ export default {
             </template>
           </Dropdown>
         </div>
+        <div class="flex-none w-10"></div>
       </div>
 
-      <div class="flex flex-row items-center gap-5 pl-7 pr-7 text-gray-500 font-semibold overflow-x-auto">
-        <button v-for="mode in modes" @click="new_settings.mode = mode.id"
-          class="min-w-[180px] w-[180px] h-[90px] text-md px-3 py-3 bg-gray-100 border-green-300 rounded-xl flex flex-col gap-2 items-center justify-top hover:text-gray-900"
-          :class="{
-            'border': new_settings.mode == mode.id,
-            'bg-green-100': new_settings.mode == mode.id,
-          }" v-tooltip.bottom="{ value: mode.help_text, showDelay: 400 }">
-          {{ mode.name }}
-          <span class="text-xs text-gray-400">{{ mode.subtitle }}</span>
-        </button>
+      <div v-if="selected_mode == null" class="flex flex-col gap-5 items-start">
+
+        <h1 class="pl-11 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
+          What do you want to do?
+        </h1>
+
+        <div class="flex flex-row w-full items-center gap-5 pl-10 pr-7 py-4 overflow-x-auto">
+          <button v-for="mode in modes" @click="new_settings.mode = mode.id"
+            class="min-w-[170px] w-[170px] h-[90px] px-3 py-3 bg-gray-100 shadow-md rounded-xl flex flex-col gap-0 items-start justify-start group"
+            :class="{
+              'border': new_settings.mode == mode.id,
+              'bg-green-100': new_settings.mode == mode.id,
+            }" v-tooltip.bottom="{ value: mode.help_text, showDelay: 600 }">
+            <div class="text-sm font-bold text-gray-500" v-html="mode.prefix"></div>
+            <div class="text-left text-gray-600 font-bold group-hover:text-gray-800 transition-colors" v-html="mode.name"></div>
+          </button>
+        </div>
+
       </div>
 
-      <div class="flex flex-col gap-4 px-7">
+      <div v-if="selected_mode != null" class="flex flex-col gap-4 px-7">
 
         <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
           <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
             autocomplete="off"
-            :placeholder="selected_mode.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
+            :placeholder="selected_mode?.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
             class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
           <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
             <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
@@ -381,7 +415,7 @@ export default {
           :removable="true"
           :filters="new_settings.filters"></SearchFilterList>
 
-        <div v-if="selected_mode.supports_filters"
+        <div v-if="selected_mode?.supports_filters"
           class="ml-1 flex flex-row items-center"
           v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
           <InputSwitch v-model="new_settings.auto_set_filters" :binary="true" :disabled="!ai_is_available" class="scale-75" />
@@ -408,4 +442,11 @@ export default {
 
 </template>
 
-<style scoped></style>
+<style >
+#datasetdropdown > span {
+  color: gray;
+}
+#datasetdropdown > div > svg {
+  color: lightgray;
+}
+</style>

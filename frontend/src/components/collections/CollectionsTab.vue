@@ -61,7 +61,7 @@ export default {
     </CollectionList>
 
     <!-- placeholder for collection list (which is absolute positioned) -->
-    <div class="w-[230px]" v-if="!collectionStore.collection"></div>
+    <div class="min-w-[250px]" v-if="!collectionStore.collection"></div>
 
     <!-- Right Side Content -->
     <CollectionView v-if="collectionStore.collection"
