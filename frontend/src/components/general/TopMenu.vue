@@ -1,13 +1,6 @@
 <script setup>
 import {
-  AdjustmentsHorizontalIcon,
-  MinusCircleIcon,
   HomeIcon,
-  ClockIcon,
-  BookmarkIcon,
-  MagnifyingGlassIcon,
-  ChatBubbleLeftIcon,
-  PaperAirplaneIcon,
   UserCircleIcon,
 } from "@heroicons/vue/24/outline"
 
@@ -66,7 +59,7 @@ export default {
 
 <template>
 
-  <div class="flex flex-col px-2 py-[2px] bg-white shadow-sm">
+  <div class="flex flex-col px-2 py-[0px] bg-white shadow-sm">
 
     <div class="flex-none flex flex-row items-center justify-center mx-3">
 
@@ -82,7 +75,7 @@ export default {
         <select
           v-model="internal_organization_id"
           @change="organization_id_changed_by_user"
-          class="w-full rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm text-gray-500">
+          class="w-full rounded-md border-none pb-1 pl-2 pr-8 pt-1 text-[13px] font-medium text-gray-500 font-[Lexend]">
           <option v-for="item in appState.available_organizations" :value="item.id" selected>
             {{ item.name }}
           </option>
@@ -117,7 +110,7 @@ export default {
       <div class="flex-none flex flex-row place-content-end w-min-0 w-48">
         <LoginButton></LoginButton>
 
-        <button v-if="appState.logged_in" class="pl-2 pr-1 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
+        <button v-if="appState.logged_in" class="pl-2 pr-1 py-1 text-[13px] font-medium text-gray-500 font-[Lexend] rounded-md hover:bg-gray-100"
           v-tooltip.bottom="{ value: 'User Menu (logout etc.)', showDelay: 400 }"
           @click="(event) => $refs.user_menu.toggle(event)">
           {{ appState.user.username.substring(0, 22) + (appState.user.username.length > 22 ? '...' : '') }}
