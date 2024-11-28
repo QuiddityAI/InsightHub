@@ -6,7 +6,7 @@ from ninja import Schema
 class CreateCollectionSettings(Schema):
     related_organization_id: int
     dataset_id: int
-    mode: str
+    workflow_id: str
     auto_set_filters: bool
     filters: Optional[list]
     user_input: Optional[str]

@@ -16,9 +16,12 @@ from workflows.prompts import query_language_prompt
 
 
 class CollectionCreationModes(StrEnum):
-    ASSISTED_SEARCH = 'assisted_search'
     CLASSIC_SEARCH = 'classic_search'
-    QUESTION = 'question'
+    ASSISTED_SEARCH = 'assisted_search'
+    FACT_FROM_SINGLE_DOCUMENT = 'fact_from_single_document'
+    FACTS_FROM_MULTIPLE_DOCUMENTS = 'facts_from_multiple_documents'
+    META_REPORT = 'meta_report'
+    TIMELINE = 'timeline'
     OVERVIEW_MAP = 'overview_map'
     EMPTY_COLLECTION = 'empty_collection'
 
@@ -30,7 +33,7 @@ def create_collection_using_mode(
     collection.created_by = user
     collection.name = settings.user_input or f"Collection {timezone.now().isoformat()}"
     collection.related_organization_id = settings.related_organization_id  # type: ignore
-    collection.agent_is_running = settings.mode != CollectionCreationModes.EMPTY_COLLECTION
+    collection.agent_is_running = settings.workflow_id != CollectionCreationModes.EMPTY_COLLECTION
     collection.current_agent_step = "Preparing..."
     collection.cancel_agent_flag = False
     collection.save()
@@ -46,7 +49,7 @@ def create_collection_using_mode(
             collection.save()
             raise e
 
-    if settings.mode != CollectionCreationModes.EMPTY_COLLECTION:
+    if settings.workflow_id != CollectionCreationModes.EMPTY_COLLECTION:
         threading.Thread(target=thread_function).start()
 
     return collection
@@ -58,14 +61,22 @@ def prepare_collection(
     if settings.auto_set_filters:
         prompt = query_language_prompt.replace("{{ query }}", settings.user_input or "")
         settings.result_language = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
-    if settings.mode == CollectionCreationModes.CLASSIC_SEARCH:
+    if settings.workflow_id == CollectionCreationModes.CLASSIC_SEARCH:
         prepare_for_classic_search(collection, settings, user)
-    elif settings.mode == CollectionCreationModes.ASSISTED_SEARCH:
+    elif settings.workflow_id == CollectionCreationModes.ASSISTED_SEARCH:
         prepare_for_assisted_search(collection, settings, user)
-    elif settings.mode == CollectionCreationModes.OVERVIEW_MAP:
-        prepare_for_overview_map(collection, settings, user)
-    elif settings.mode == CollectionCreationModes.QUESTION:
+    elif settings.workflow_id == CollectionCreationModes.FACT_FROM_SINGLE_DOCUMENT:
         prepare_for_question(collection, settings, user)
+    elif settings.workflow_id == CollectionCreationModes.FACT_FROM_SINGLE_DOCUMENT:
+        # TODO: different implementation
+        prepare_for_question(collection, settings, user)
+    elif settings.workflow_id == CollectionCreationModes.OVERVIEW_MAP:
+        prepare_for_overview_map(collection, settings, user)
+    elif settings.workflow_id == CollectionCreationModes.EMPTY_COLLECTION:
+        # nothing to do
+        pass
+    else:
+        logging.warning(f"Requested unsupported workflow: {settings.workflow_id}")
     return collection
 
 

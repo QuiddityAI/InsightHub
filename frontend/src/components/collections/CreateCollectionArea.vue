@@ -3,6 +3,7 @@
 import {
   PaperAirplaneIcon,
   ChevronLeftIcon,
+  InformationCircleIcon,
  } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
@@ -36,9 +37,10 @@ export default {
   emits: [],
   data() {
     return {
+      container_height: 'auto',
       settings_template: {
         dataset_id: null,
-        mode: null,
+        workflow_id: null,
         auto_set_filters: true,
         filters: [],
         user_input: '',
@@ -49,7 +51,7 @@ export default {
       },
       new_settings: {
         dataset_id: null,
-        mode: null,
+        workflow_id: null,
         auto_set_filters: true,
         filters: [],
         user_input: '',
@@ -58,84 +60,78 @@ export default {
         ranking_settings: null,
         related_organization_id: null,
       },
-      modes: [
+      workflows: [
         {
           id: 'classic_search',
           prefix: "Find a single",
           name: 'Known Document',
-          subtitle: 'Just Search',
-          help_text: 'Just search, no LLMs',
+          help_text: 'Fast + accurate search',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
+          availability: 'general_availability',
         },
         {
           id: 'assisted_search',
-          prefix: "Find multiple",
+          prefix: "Find a set of",
           name: 'Matching Documents',
-          subtitle: 'Search + Eval',
-          help_text: 'Search and evaluate the results',
+          help_text: 'Search + evaluate every single result, good to collect a set of documents',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
+          availability: 'general_availability',
         },
-        // {
-        //   id: 'auto_select',
-        //   name: 'Auto Select',
-        //   subtitle: 'curate / high precision search',
-        //   help_text: 'Curate the results to select the best candidates',
-        //   query_field_hint: (entity_name) => `Describe what ${entity_name} should be selected`,
-        //   supports_filters: true,
-        // },
         {
-          id: 'question',
+          id: 'fact_from_single_document',
           prefix: "Find a ",
           name: 'Fact in a Document',
-          subtitle: 'auto select + summary',
-          help_text: 'Ask a question and get a summary of the results',
+          help_text: 'Ask a question that is answered based on one document',
           query_field_hint: (entity_name) => `Your question`,
           supports_filters: true,
+          availability: 'general_availability',
         },
         {
-          id: 'summary',
-          prefix: "Summarize",
-          name: 'Documents',
-          subtitle: 'auto select + summary',
-          help_text: 'Ask a question and get a summary of the results',
+          id: 'facts_from_multiple_document',
+          prefix: "Collect Facts",
+          name: 'From Multiple Documents',
+          help_text: 'Collect information found in multiple documents',
           query_field_hint: (entity_name) => `Your question`,
           supports_filters: true,
+          availability: 'preview',
         },
-        // {
-        //   id: 'report',
-        //   name: 'Report',
-        //   subtitle: 'auto select + long summary',
-        //   help_text: 'Get a long summary of the results',
-        //   query_field_hint: (entity_name) => `Describe what the report should be about`,
-        //   supports_filters: true,
-        // },
-        // {
-        //   id: 'nested_report',
-        //   name: 'Multi-Aspect Report',
-        //   subtitle: 'multi section + auto select + long summary',
-        //   help_text: 'Get a long summary of the results with multiple sections',
-        //   query_field_hint: (entity_name) => `Describe the report and the sections`,
-        //   supports_filters: true,
-        // },
+        {
+          id: 'meta_report',
+          prefix: "Write a report",
+          name: 'Beyond individual Facts',
+          help_text: 'E.g. analyze the status and history of a project',
+          query_field_hint: (entity_name) => `Your question`,
+          supports_filters: true,
+          availability: 'in_development',
+        },
+        {
+          id: 'timeline',
+          prefix: "Create a",
+          name: 'Timeline of Events',
+          help_text: 'Find specific events in documents and show a timeline',
+          query_field_hint: (entity_name) => `Your question`,
+          supports_filters: true,
+          availability: 'in_development',
+        },
         {
           id: 'overview_map',
           prefix: "Create an",
-          name: 'Overview Map',
-          subtitle: 'many candidates + map',
-          help_text: 'Get a map of the results',
+          name: 'Overview Map of Documents',
+          help_text: 'Show a set of documents on a visual map',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
+          availability: 'preview',
         },
         {
           id: 'empty_collection',
-          prefix: "Create an",
-          name: 'Empty Collection',
-          subtitle: 'empty collection',
-          help_text: 'Create an empty collection',
+          prefix: "Empty Collection",
+          name: 'For Notes and Documents',
+          help_text: 'Create an empty collection to collect notes or documents',
           query_field_hint: (entity_name) => `Name of the collection`,
           supports_filters: false,
+          availability: 'general_availability',
         },
       ],
 
@@ -205,8 +201,8 @@ export default {
       // show AI features when not logged in as an example, is restricted elsewhere
       return !this.appStateStore.logged_in || this.appStateStore.user.used_ai_credits < this.appStateStore.user.total_ai_credits
     },
-    selected_mode() {
-      return this.modes.find(mode => mode.id === this.new_settings.mode)
+    selected_workflow() {
+      return this.workflows.find(workflow => workflow.id === this.new_settings.workflow_id)
     },
   },
   mounted() {
@@ -222,6 +218,16 @@ export default {
     this.eventBus.on("datasets_are_loaded", () => {
       this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
     })
+    // watch this.$refs.container?.scrollHeight and set container_height:
+    const container = this.$refs.container
+    if (container) {
+      const observer = new ResizeObserver((entries) => {
+        for (let entry of entries) {
+          this.container_height = (entry.contentRect.height + 30) + 'px'
+        }
+      })
+      observer.observe(container)
+    }
   },
   watch: {
     'appStateStore.settings.search.ranking_settings'(new_val, old_val) {
@@ -239,6 +245,13 @@ export default {
     },
   },
   methods: {
+    select_workflow(workflow) {
+      if (workflow.availability === 'in_development') {
+        this.$toast.add({ severity: 'warn', summary: 'Coming Soon', detail: 'This feature is not yet available', life: 3000 })
+        return
+      }
+      this.new_settings.workflow_id = workflow.id
+    },
     create_collection() {
       const that = this
       if (!this.appStateStore.logged_in) {
@@ -279,11 +292,13 @@ export default {
 
   <div class="mt-[200px] w-[650px]">
 
-    <div class="flex flex-col gap-8 bg-white pt-1 pb-10 rounded-lg shadow-md">
+    <div class="bg-white rounded-lg shadow-md transition-[height] duration-200 ease-out overflow-hidden min-h-0 max-h-none"
+    :style="{ height: container_height }">
+    <div class="flex flex-col gap-8 pt-1 pb-10" ref="container">
 
       <div class="flex flex-row gap-2 items-center justify-between px-3">
         <div class="flex-none w-10">
-          <button v-if="selected_mode != null" @click="new_settings.mode = null"
+          <button v-if="selected_workflow != null" @click="new_settings.workflow_id = null"
             class="flex-none w-10 rounded-md hover:bg-blue-100/50 text-gray-400">
             <ChevronLeftIcon class="inline h-5 w-5"></ChevronLeftIcon>
           </button>
@@ -292,7 +307,7 @@ export default {
         <div class="flex-none min-w-0">
           <Dropdown v-model="new_settings.dataset_id" :options="grouped_available_datasets" optionLabel="name"
             optionGroupLabel="label" optionGroupChildren="items" optionValue="id" placeholder="Select Source..."
-            @change="new_settings.mode = null"
+            @change="new_settings.workflow_id = null"
             class="h-full border-none text-sm font-medium" id="datasetdropdown"> <!-- see CSS below for text color -->
             <template #option="slotProps">
               <div class="flex flex-col">
@@ -307,32 +322,49 @@ export default {
         <div class="flex-none w-10"></div>
       </div>
 
-      <div v-if="selected_mode == null" class="flex flex-col gap-5 items-start">
+      <div v-if="selected_workflow == null" class="flex flex-col gap-5 items-start">
 
         <h1 class="pl-11 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
           What do you want to do?
         </h1>
 
         <div class="flex flex-row w-full items-center gap-5 pl-10 pr-7 py-4 overflow-x-auto">
-          <button v-for="mode in modes" @click="new_settings.mode = mode.id"
-            class="min-w-[170px] w-[170px] h-[90px] px-3 py-3 bg-gray-100 shadow-md rounded-xl flex flex-col gap-0 items-start justify-start group"
+          <button v-for="workflow in workflows" @click="select_workflow(workflow)"
+            class="min-w-[170px] w-[170px] h-[93px] px-3 py-3 bg-gray-100 shadow-md rounded-xl flex flex-col gap-0 items-start justify-start group"
             :class="{
-              'border': new_settings.mode == mode.id,
-              'bg-green-100': new_settings.mode == mode.id,
-            }" v-tooltip.bottom="{ value: mode.help_text, showDelay: 600 }">
-            <div class="text-sm font-bold text-gray-500" v-html="mode.prefix"></div>
-            <div class="text-left text-gray-600 font-bold group-hover:text-gray-800 transition-colors" v-html="mode.name"></div>
+              'border': new_settings.workflow_id == workflow.id,
+              'bg-green-100': new_settings.workflow_id == workflow.id,
+            }" v-tooltip.bottom="{ value: workflow.help_text + (workflow.availability === 'in_development' ? ' (coming soon)' : ''), showDelay: 600 }">
+            <div class="text-left text-sm font-bold text-gray-500" v-html="workflow.prefix"></div>
+            <div class="text-left font-bold transition-colors"
+              :class="{ 'group-hover:text-gray-800': workflow.availability !== 'in_development',
+                'text-gray-600': workflow.availability !== 'in_development',
+                'group-hover:text-gray-600': workflow.availability === 'in_development',
+                'text-gray-500': workflow.availability === 'in_development', }"
+              v-html="workflow.name + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
           </button>
         </div>
 
       </div>
 
-      <div v-if="selected_mode != null" class="flex flex-col gap-4 px-7">
+      <div v-if="selected_workflow != null" class="flex flex-col gap-4 px-7">
+
+        <div class="text-xl font-bold text-gray-800">
+          {{ selected_workflow.prefix }}
+          <span class="bg-gradient-to-r from-fuchsia-900 via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
+            {{ selected_workflow.name }}
+          </span>:
+        </div>
+
+        <div class="text-xs font-normal text-gray-500 -mt-3 mb-2 flex flex-row items-center gap-1">
+          <InformationCircleIcon class="h-4 w-4 inline"></InformationCircleIcon>
+          {{ selected_workflow.help_text }}
+        </div>
 
         <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
           <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
             autocomplete="off"
-            :placeholder="selected_mode?.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
+            :placeholder="selected_workflow?.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
             class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
           <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
             <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
@@ -347,7 +379,7 @@ export default {
           </button>
         </div>
 
-        <div v-if="!new_settings.auto_set_filters && selected_mode.supports_filters" class="flex flex-row gap-1 items-center">
+        <div v-if="!new_settings.auto_set_filters && selected_workflow.supports_filters" class="flex flex-row gap-1 items-center">
           <div class="flex flex-row items-center gap-0 h-6">
             <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
               @click="new_settings.retrieval_mode = 'keyword'"
@@ -415,18 +447,27 @@ export default {
           :removable="true"
           :filters="new_settings.filters"></SearchFilterList>
 
-        <div v-if="selected_mode?.supports_filters"
+        <div v-if="!new_settings.auto_set_filters" class="text-xs text-gray-400">
+          Coming soon: select folder to search in
+        </div>
+
+        <div v-if="selected_workflow?.supports_filters"
           class="ml-1 flex flex-row items-center"
           v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
           <InputSwitch v-model="new_settings.auto_set_filters" :binary="true" :disabled="!ai_is_available" class="scale-75" />
           <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
             @click="new_settings.auto_set_filters = !new_settings.auto_set_filters">
-            Auto-detect best search strategy and required filters from query
+            Auto-detect language, required filters and search strategy
           </button>
         </div>
 
+        <Message v-if="selected_workflow.availability === 'preview'" class="" :closable="false">
+          This feature is in preview and might not work as expected.
+        </Message>
+
       </div>
 
+    </div>
     </div>
 
     <div class="relative">
