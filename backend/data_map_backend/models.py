@@ -179,7 +179,16 @@ class Generator(models.Model):
         null=False,
     )
     requires_context = models.BooleanField(
-        verbose_name="Requires context", default=False, blank=False, null=False
+        verbose_name="Requires context", default=False, blank=False, null=False,
+        help_text="Requires a set of other documents, generates a non-universal result"
+    )
+    requires_multiple_input_fields = models.BooleanField(
+        verbose_name="Requires multiple input fields", default=False, blank=False, null=False,
+        help_text="Requires multiple different input fields to generate a result"
+    )
+    returns_multiple_fields = models.BooleanField(
+        verbose_name="Returns multiple fields", default=False, blank=False, null=False,
+        help_text="Returns multiple different fields as result"
     )
     module = models.CharField(
         verbose_name="Module", max_length=200, blank=False, null=False
@@ -695,7 +704,7 @@ class DatasetField(models.Model):
     )
     source_fields = models.JSONField(
         verbose_name="Source Fields",
-        help_text="List of source field identifiers",
+        help_text="List of source field identifiers, or dict generator input -> source field",
         default=list,
         blank=True,
         null=True,
