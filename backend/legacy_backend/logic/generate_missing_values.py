@@ -10,8 +10,11 @@ from ..logic.extract_pipeline import get_pipeline_steps
 from ..logic.insert_logic import get_index_settings, update_database_layout
 from ..logic.search_common import separate_text_and_vector_fields, fill_in_vector_data_list
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.field_types import FieldType
+
+from data_map_backend.models import GenerationTask
+from data_map_backend.views.other_views import get_serialized_dataset_cached
 
 
 def delete_field_content(dataset_id: int, field_identifier: str):
@@ -26,23 +29,34 @@ def delete_field_content(dataset_id: int, field_identifier: str):
         search_engine_client.delete_field(dataset.actual_database_name, field_identifier)
 
 
-def generate_missing_values(dataset_id: int, field_identifier: str):
-    logging.warning(f"Generating missing values for dataset {dataset_id}, field {field_identifier}...")
-    dataset = get_dataset(dataset_id)
+def generate_missing_values(task: GenerationTask):
+    task.log = ""
+    task.save()
+    logging.warning(f"Generating missing values for dataset {task.dataset}, field {task.field}...")
+    task.add_log(f"Generating missing values for dataset {task.dataset}, field {task.field}...")
+    dataset_id: int = task.dataset.id  # type: ignore
+    field_identifier: str = task.field.identifier
+    dataset = get_serialized_dataset_cached(dataset_id)
 
     # the field to be filled in might not have the necessary database columns yet:
-    update_database_layout(dataset_id)
+    # update_database_layout(dataset_id)  # TODO
+
+    if task.regenerate_all:
+        task.add_log(f"Deleting content of field {field_identifier} because all items should be regenerated")
+        delete_field_content(dataset_id, field_identifier)
+        task.add_log(f"Deleted content of field {field_identifier}")
 
     pipeline_steps, required_fields, potentially_changed_fields = get_pipeline_steps(dataset, only_fields=[field_identifier])
     potentially_changed_text_fields, potentially_changed_vector_fields = separate_text_and_vector_fields(dataset, potentially_changed_fields)
-    logging.warning(f"The following fields will potentially be changed: text fields {potentially_changed_text_fields}, vector fields {potentially_changed_vector_fields}")
+    task.add_log(f"The following fields will potentially be changed: text fields {potentially_changed_text_fields}, vector fields {potentially_changed_vector_fields}")
     index_settings = get_index_settings(dataset)
     if potentially_changed_vector_fields or (potentially_changed_fields & index_settings.filtering_fields):
         # if vector fields change, all filtering fields are required during the update:
         # (same if a filtering field changes, then the other fields might be required for a full update of the payload in qdrant)
+        # TODO: remove when qdrant isn't used anymore
         required_fields |= index_settings.filtering_fields
     required_text_fields, required_vector_fields = separate_text_and_vector_fields(dataset, required_fields)
-    logging.warning(f"The following fields will be retrieved: text fields {required_text_fields}, vector fields {required_vector_fields}")
+    task.add_log(f"The following fields will be retrieved: text fields {required_text_fields}, vector fields {required_vector_fields}")
 
     search_engine_client = TextSearchEngineClient.get_instance()
     vector_db_client = VectorSearchEngineClient.get_instance()
@@ -52,9 +66,9 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
     is_array_field = dataset.schema.object_fields[field_identifier].is_array
     if is_vector_field:
         total_items_estimated -= vector_db_client.get_item_count(dataset, field_identifier)
-    logging.warning(f"Total items with missing value: {total_items_estimated}")
+    task.add_log(f"Total items with missing value: {total_items_estimated}")
     if total_items_estimated == 0:
-        logging.warning(f"Nothing to do")
+        task.add_log(f"Nothing to do")
         return
 
     def _process(elements):
@@ -67,9 +81,9 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
         index_update_duration = time.time() - t2
         duration = generation_duration + index_update_duration
         items_processed += len(elements)
-        logging.warning(f"Processed {items_processed} of {total_items_estimated} ({(items_processed / float(total_items_estimated)) * 100:.1f} %)")
-        logging.warning(f"Time per item: generation {generation_duration / len(elements) * 1000:.2f} ms, index update {index_update_duration / len(elements) * 1000:.2f} ms, total {duration / len(elements) * 1000:.2f} ms")
-        logging.warning(f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min")
+        task.add_log(f"Processed {items_processed} of {total_items_estimated} ({(items_processed / float(total_items_estimated)) * 100:.1f} %)")
+        task.add_log(f"Time per item: generation {generation_duration / len(elements) * 1000:.2f} ms, index update {index_update_duration / len(elements) * 1000:.2f} ms, total {duration / len(elements) * 1000:.2f} ms")
+        task.add_log(f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min")
 
     batch_size = 512
 
@@ -87,7 +101,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
                     skipped_items += len(elements)
                     elements = []
                     last_batch_time = time.time()
-                    logging.warning(f"Skipping batch, skipped {skipped_items}")
+                    task.add_log(f"Skipping batch, skipped {skipped_items}")
                     continue
                 for item in items_where_vector_already_exists:
                     # TODO: there might be a faster way to do this
@@ -98,7 +112,7 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
             if required_vector_fields:
                 fill_in_vector_data_list(dataset, elements, required_vector_fields)
             element_retrieval_time = time.time() - last_batch_time
-            logging.warning(f"Time to retrieve {len(elements)} items: {element_retrieval_time * 1000:.2f} ms")
+            task.add_log(f"Time to retrieve {len(elements)} items: {element_retrieval_time * 1000:.2f} ms")
             _process(elements)
             elements = []
             last_batch_time = time.time()
@@ -107,9 +121,10 @@ def generate_missing_values(dataset_id: int, field_identifier: str):
         if required_vector_fields:
             fill_in_vector_data_list(dataset, elements, required_vector_fields)
         element_retrieval_time = time.time() - last_batch_time
-        logging.warning(f"Time to retrieve {len(elements)} items: {element_retrieval_time * 1000:.2f} ms")
+        task.add_log(f"Time to retrieve {len(elements)} items: {element_retrieval_time * 1000:.2f} ms")
         _process(elements)
     logging.warning(f"Done")
+    task.add_log(f"Done")
 
 
 def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict]):
@@ -129,19 +144,33 @@ def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]],
                     and not pipeline_step.condition_function(element)):
                     continue
 
-                source_data = []
-                for source_field in pipeline_step.source_fields:
-                    if source_field in element and element[source_field] is not None:
-                        source_data.append(element[source_field])
+                source_data: list | dict = []
+                if pipeline_step.requires_multiple_input_fields:
+                    # we assume that the source fields are already present in the element
+                    # TODO: rename fields
+                    source_data = element
+                else:
+                    for source_field in pipeline_step.source_fields:
+                        if source_field in element and element[source_field] is not None:
+                            source_data.append(element[source_field])
+
                 if source_data:
                     element_indexes.append(i)
                     source_data_total.append(source_data)
 
             results = pipeline_step.generator_function(source_data_total)
 
-            for element_index, result in zip(element_indexes, results):
-                elements[element_index][pipeline_step.target_field] = result
-                changed_fields[element_index].add(pipeline_step.target_field)
+            if pipeline_step.returns_multiple_fields:
+                for element_index, result in zip(element_indexes, results):
+                    target_field_value, result_dict = result
+                    elements[element_index][pipeline_step.target_field] = target_field_value
+                    for output_field, item_field in pipeline_step.output_to_item_mapping.items():
+                        elements[element_index][item_field] = result_dict[output_field]
+                        changed_fields[element_index].add(item_field)
+            else:
+                for element_index, result in zip(element_indexes, results):
+                    elements[element_index][pipeline_step.target_field] = result
+                    changed_fields[element_index].add(pipeline_step.target_field)
     return changed_fields  # elements is changed in-place
 
 

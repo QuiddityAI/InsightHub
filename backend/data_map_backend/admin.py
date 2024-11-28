@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+from threading import Thread
+
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.forms import Textarea
@@ -18,9 +20,10 @@ from django_svelte_jsoneditor.widgets import SvelteJSONEditorWidget
 
 from .data_backend_client import DATA_BACKEND_HOST
 
-from .models import CollectionColumn, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask, User
+from .models import CollectionColumn, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, EmbeddingSpace, ExportConverter, FieldType, Generator, ImportConverter, Organization, Dataset, GenerationTask, SearchHistoryItem, ServiceUsage, ServiceUsagePeriod, StoredMap, DataCollection, CollectionItem, TrainedClassifier, Chat, WritingTask, User
 from .utils import get_vector_field_dimensions
 from .import_export import UserResource
+from legacy_backend.logic.generate_missing_values import generate_missing_values
 
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
@@ -513,6 +516,40 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
     #     return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button> \
     #                      <button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
     # action_buttons.short_description = "Actions"
+
+
+@admin.register(GenerationTask)
+class GenerationTaskAdmin(DjangoObjectActions, admin.ModelAdmin):
+    list_display = ('id', 'dataset', 'field', 'status')
+    list_display_links = ('id',)
+    search_fields = ('id', 'dataset', 'field')
+    ordering = ['dataset', 'field', 'created_at']
+    readonly_fields = ('changed_at', 'created_at', 'action_buttons',
+                       'status', 'progress', 'log')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # only show fields of same dataset for source fields:
+        if db_field.name in ["field", ]:
+            try:
+                item_id = int(request.path.split("/")[-3])  # type: ignore
+            except ValueError:
+                kwargs["queryset"] = DatasetField.objects.all()
+            else:
+                schema = GenerationTask.objects.get(id = item_id).dataset.schema  # type: ignore
+                kwargs["queryset"] = DatasetField.objects.filter(schema = schema)
+        return super(GenerationTaskAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+    @action(label="Start task", description="Generate missing values")
+    def generate_missing_values(self, request, obj: GenerationTask):
+        thread = Thread(target=generate_missing_values, args=(obj,))
+        thread.start()
+        self.message_user(request, "Now generating missing values...")
+
+    change_actions = ('generate_missing_values',)
+
+    def action_buttons(self, obj):
+        return mark_safe(f'<button type=button class="btn-info" onclick="window.location.href=\'/org/admin/data_map_backend/generationtask/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
+    action_buttons.short_description = "Actions"
 
 
 @admin.register(SearchHistoryItem)

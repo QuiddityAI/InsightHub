@@ -16,7 +16,9 @@ class DotDict(dict):
 
     def __getattr__(self, name: str) -> Any:
         val = dict.get(self, name)
-        if type(val) is dict:
+        if type(val) is DotDict:
+            return val
+        elif type(val) is dict:
             return DotDict(val)
         elif isinstance(val, str) or isinstance(val, bytes):
             return val

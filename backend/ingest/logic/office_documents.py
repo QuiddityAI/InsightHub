@@ -10,9 +10,92 @@ from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
 from requests import ReadTimeout
 
 from data_map_backend.utils import DotDict
-from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult
+from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult, AiFileProcessingInput, AiFileProcessingOutput
 from ingest.logic.common import UPLOADED_FILES_FOLDER
 from ingest.logic.pdferret_client import extract_using_pdferret
+
+
+def ai_file_processing_generator(input_items: list[dict], parameters: DotDict) -> list[dict]:
+    results = []
+    target_field_value = True  # just storing that this item was processed
+    batch = []
+    batch_size = 10
+    document_language = parameters.get("document_language", "en")
+    metadata_language = parameters.get("metadata_language", "en")
+
+    def process_batch(batch):
+        try:
+            parsed, failed = extract_using_pdferret([f'{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}' for input_item in batch], doc_lang=document_language)
+        except ReadTimeout:
+            logging.error("PDFerret timeout")
+            failed = batch
+            parsed = []
+        assert len(parsed) == len(batch)  # TODO: handle failed items
+        for parsed_item, input_item in zip(parsed, batch):
+            result = ai_file_processing_single(input_item, parsed_item, parameters)
+            results.append([target_field_value, result.model_dump()])
+
+    for item in input_items:
+        item = AiFileProcessingInput(**item)
+        batch.append(item)
+        if len(batch) >= batch_size:
+            process_batch(batch)
+            batch = []
+    if batch:
+        process_batch(batch)
+    return results
+
+
+def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, parameters: DotDict) -> AiFileProcessingOutput:
+    file_metainfo = parsed_data.metainfo
+    max_chars_per_chunk = 5000
+    max_chunks = 100
+    chunks = []
+    for chunk in parsed_data.chunks:
+        if not chunk['text']:
+            continue
+        chunk['non_embeddable_content'] = None
+        if len(chunk['text']) > max_chars_per_chunk:
+            chunk['text'] = chunk['text'][:max_chars_per_chunk] + "..."
+        chunks.append(chunk)
+    full_text = " ".join([chunk['text'] for chunk in chunks[:max_chunks]])
+
+    # ai_metadata = get_ai_summary(uploaded_file.original_filename,
+    #                              uploaded_file.metadata.folder if uploaded_file.metadata else None,
+    #                              full_text)
+    ai_metadata = None
+
+    content_date = None
+    if file_metainfo.mentioned_date:
+        # making sure content_date is a valid date, otherwise OpenSearch will throw an error
+        try:
+            content_date = datetime.datetime.fromisoformat(file_metainfo.mentioned_date).date().isoformat()
+        except ValueError:
+            logging.warning(f"Invalid date format: {file_metainfo.mentioned_date}")
+            pass
+    content_time = None
+    if ai_metadata and ai_metadata.time:
+        # making sure content_time is a valid time, otherwise OpenSearch will throw an error
+        try:
+            content_time = datetime.time.fromisoformat(ai_metadata.time).isoformat()
+        except ValueError:
+            logging.warning(f"Invalid time format: {ai_metadata.time}")
+            pass
+
+    result = AiFileProcessingOutput(
+        content_date=content_date,
+        content_time=content_time,
+        description="",
+        document_language=file_metainfo.detected_language or parameters.get("document_language", "en"),
+        full_text=full_text,
+        full_text_chunks=chunks,
+        summary=file_metainfo.abstract or (ai_metadata and ai_metadata.summary) or "",
+        thumbnail_path=store_thumbnail(base64.decodebytes(file_metainfo.thumbnail.encode('utf-8')),
+                                       input_item.uploaded_file_path) if file_metainfo.thumbnail else None,  # relative to UPLOADED_FILES_FOLDER
+        title=file_metainfo.title or (ai_metadata and ai_metadata.title) or input_item.file_name,
+        type_description=file_metainfo.document_type or (ai_metadata and ai_metadata.document_type) or "",
+    )
+    return result
 
 
 def import_office_document(files: list[UploadedOrExtractedFile], parameters: DotDict, on_progress=None) -> tuple[list[dict], list[dict]]:

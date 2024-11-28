@@ -925,6 +925,74 @@ class Dataset(models.Model):
         verbose_name_plural = "Datasets"
 
 
+class GenerationTask(models.Model):
+    created_at = models.DateTimeField(
+        verbose_name="Created at", default=timezone.now, blank=False, null=False
+    )
+    changed_at = models.DateTimeField(
+        verbose_name="Changed at",
+        auto_now=True,
+        editable=False,
+        blank=False,
+        null=False,
+    )
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
+        on_delete=models.CASCADE,
+        related_name="generation_tasks",
+        blank=False,
+        null=False,
+    )
+    field = models.ForeignKey(
+        verbose_name="Field",
+        to=DatasetField,
+        on_delete=models.CASCADE,
+        related_name="generation_tasks",
+        blank=False,
+        null=False,
+    )
+    regenerate_all = models.BooleanField(
+        verbose_name="Regenerate all",
+        help_text="Regenerate all items, not only those that have not been generated yet",
+        default=False,
+        blank=False,
+        null=False,
+    )
+    status = models.CharField(
+        verbose_name="Status",
+        max_length=50,
+        choices=[
+            ("not_running", "Not Running"),
+            ("pending", "Pending"),
+            ("running", "Running"),
+            ("finished", "Finished"),
+            ("failed", "Failed"),
+        ],
+        default="not_running",
+        blank=False,
+        null=False,
+    )
+    progress = models.FloatField(
+        verbose_name="Progress", default=0, blank=False, null=False
+    )
+    log = models.TextField(verbose_name="Log", blank=True, null=True)
+
+    def add_log(self, message: str):
+        if self.log is None:
+            self.log = ""
+        timestamp = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.log = self.log + f"{timestamp}: {message}\n"
+        self.save()
+
+    def __str__(self):
+        return f"{self.dataset} - {self.field}"
+
+    class Meta:
+        verbose_name = "Generation Task"
+        verbose_name_plural = "Generation Tasks"
+
+
 class SearchHistoryItem(models.Model):
     name = models.CharField(
         verbose_name="Name", max_length=200, blank=False, null=False

@@ -36,3 +36,24 @@ class AiMetadataResult(Schema):
     date: Optional[str] = None  # isoformat
     time: Optional[str] = None  # isoformat
     document_language: str = ""  # two letter code
+
+
+class AiFileProcessingInput(Schema):
+    file_name: str = ""
+    folder: str | None = None
+    uploaded_file_path: str = ""
+    file_created_at: Optional[str] = None  # isoformat
+    file_updated_at: Optional[str] = None  # isoformat
+
+
+class AiFileProcessingOutput(Schema):
+    content_date: Optional[str] = None  # isoformat
+    content_time: Optional[str] = None  # isoformat
+    description: str = ""
+    document_language: str = ""  # two letter code
+    full_text: str = ""
+    full_text_chunks: list[dict] = []
+    summary: str = ""
+    thumbnail_path: str | None = None
+    title: str = ""
+    type_description: str = ""

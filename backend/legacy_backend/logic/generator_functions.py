@@ -5,13 +5,15 @@ import os
 
 import openai
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.helpers import join_extracted_text_sources
 
 from ..logic.model_client import get_pubmedbert_embeddings, get_sentence_transformer_embeddings, get_clip_text_embeddings, get_clip_image_embeddings, get_infinity_embeddings, add_e5_prefix
 from ..logic.chunking import chunk_text_generator
 
 from ..api_clients import deepinfra_client
+
+from ingest.logic.office_documents import ai_file_processing_generator
 
 
 GPU_IS_AVAILABLE = os.getenv('GPU_IS_AVAILABLE', "False") == "True"
@@ -59,6 +61,8 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
         generator = lambda batch: [get_favicon_url(urls[0]) for urls in batch if urls]
     elif module == 'chunking':
         generator = lambda batch: chunk_text_generator(batch, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
+    elif module == 'ai_file_processing':
+        generator = lambda batch: ai_file_processing_generator(batch, parameters)
 
     if not generator:
         logging.error(f"Generator module {module} not found")
