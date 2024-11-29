@@ -9,7 +9,7 @@ import logging
 from typing import Callable
 
 import tqdm
-from utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 
 from database_client.django_client import get_dataset
 from logic.extract_pipeline import get_pipeline_steps

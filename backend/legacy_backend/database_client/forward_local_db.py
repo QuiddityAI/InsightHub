@@ -6,7 +6,7 @@ import json
 import base64
 
 from ..database_client.django_client import get_dataset
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.custom_json_encoder import CustomJSONEncoder
 
 from ..database_client.text_search_engine_client import TextSearchEngineClient

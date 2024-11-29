@@ -1,7 +1,7 @@
 import json
 import logging
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..logic.search_common import get_document_details_by_id
 from ..database_client.django_client import get_dataset
 

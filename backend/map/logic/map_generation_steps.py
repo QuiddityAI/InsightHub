@@ -12,7 +12,7 @@ from data_map_backend.views.other_views import (
     get_filtered_collection_items,
 )
 from data_map_backend.models import DataCollection, FieldType, Dataset
-from legacy_backend.utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from legacy_backend.utils.collect_timings import Timings
 from legacy_backend.logic.clusters_and_titles import get_cluster_titles
 

@@ -43,7 +43,7 @@ from ..serializers import (
 )
 from ..notifier import default_notifier
 from ..utils import is_from_backend
-from legacy_backend.utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from filter.schemas import CollectionFilter
 
 

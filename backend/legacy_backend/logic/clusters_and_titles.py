@@ -7,7 +7,7 @@ import hdbscan
 
 from ..utils.regex_tokenizer import tokenize
 from ..utils.collect_timings import Timings
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.helpers import normalize_array, join_text_source_fields, get_field_from_all_items
 
 

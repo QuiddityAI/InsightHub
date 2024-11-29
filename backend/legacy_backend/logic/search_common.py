@@ -10,7 +10,7 @@ import cachetools.func
 
 from ..utils.field_types import FieldType
 from ..utils.collect_timings import Timings
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.source_plugin_types import SourcePlugin
 
 from ..api_clients.cohere_reranking import get_reranking_results

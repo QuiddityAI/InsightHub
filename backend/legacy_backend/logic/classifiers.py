@@ -20,7 +20,7 @@ import time
 
 import numpy as np
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.field_types import FieldType
 
 from ..database_client.django_client import get_collection, get_collection_items, get_dataset, set_trained_classifier

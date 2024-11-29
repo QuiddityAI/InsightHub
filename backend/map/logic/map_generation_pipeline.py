@@ -11,7 +11,7 @@ from data_map_backend.views.other_views import (
 )
 from data_map_backend.models import DataCollection, Dataset
 from legacy_backend.logic.search import get_items_by_ids
-from legacy_backend.utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from legacy_backend.logic.clusters_and_titles import clusterize_results
 from legacy_backend.utils.collect_timings import Timings
 

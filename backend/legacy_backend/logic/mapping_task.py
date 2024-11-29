@@ -12,7 +12,7 @@ import numpy as np
 
 from ..utils.collect_timings import Timings
 from ..utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions, get_field_from_all_items
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.source_plugin_types import SourcePlugin
 
 from ..database_client.django_client import answer_question_using_items, get_dataset, get_stored_map_data, get_trained_classifier

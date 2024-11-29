@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.field_types import FieldType
 from ..utils.helpers import join_text_source_fields
 

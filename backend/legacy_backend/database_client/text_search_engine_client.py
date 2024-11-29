@@ -10,7 +10,7 @@ import opensearchpy.helpers
 
 from ..database_client.remote_instance_client import use_remote_db
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.field_types import FieldType
 from ..utils.custom_json_encoder import CustomJSONEncoder
 from ..utils.helpers import run_in_batches_without_result

@@ -5,7 +5,7 @@ import os
 import json
 import base64
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.custom_json_encoder import CustomJSONEncoder
 
 

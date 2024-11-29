@@ -8,7 +8,7 @@ import cbor2
 from django.utils.datastructures import MultiValueDict
 
 from .utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
-from .utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 
 from .logic.mapping_task import get_map_selection_statistics, get_or_create_map, get_map_results
 from .logic.insert_logic import insert_many, insert_vectors, update_database_layout, delete_dataset_content

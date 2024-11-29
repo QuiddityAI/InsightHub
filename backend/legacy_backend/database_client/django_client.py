@@ -8,7 +8,7 @@ import base64
 
 import cachetools.func
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.custom_json_encoder import CustomJSONEncoder
 
 
