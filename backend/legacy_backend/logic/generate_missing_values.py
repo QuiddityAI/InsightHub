@@ -1,6 +1,7 @@
 from collections import defaultdict
 import logging
 import time
+from typing import Callable
 
 from ..database_client.django_client import get_dataset
 from ..database_client.vector_search_engine_client import VectorSearchEngineClient
@@ -39,7 +40,8 @@ def generate_missing_values(task: GenerationTask):
     dataset = get_serialized_dataset_cached(dataset_id)
 
     # the field to be filled in might not have the necessary database columns yet:
-    # update_database_layout(dataset_id)  # TODO
+    # update_database_layout(dataset_id)
+    # TODO: store time of last layout update in dataset and compare with date of last change
 
     if task.regenerate_all:
         task.add_log(f"Deleting content of field {field_identifier} because all items should be regenerated")
@@ -74,7 +76,7 @@ def generate_missing_values(task: GenerationTask):
     def _process(elements):
         nonlocal items_processed
         t1 = time.time()
-        changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements)
+        changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements, task.add_log)
         t2 = time.time()
         generation_duration = t2 - t1
         _update_indexes_with_generated_values(dataset, elements, changed_fields)
@@ -127,7 +129,8 @@ def generate_missing_values(task: GenerationTask):
     task.add_log(f"Done")
 
 
-def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict]):
+def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict], log_error: Callable) -> dict:
+    # when adapting this function, also adapt insert_many() in insert_logic.py
     changed_fields = defaultdict(set)
     for phase in pipeline_steps:
         for pipeline_step in phase:  # TODO: this could be done in parallel
@@ -146,9 +149,12 @@ def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]],
 
                 source_data: list | dict = []
                 if pipeline_step.requires_multiple_input_fields:
-                    # we assume that the source fields are already present in the element
-                    # TODO: rename fields
-                    source_data = element
+                    assert isinstance(pipeline_step.source_fields, dict)
+                    # pipeline_step.source_fields maps generator input -> source_field
+                    source_data = {}
+                    for generator_input, source_field in pipeline_step.source_fields.items():
+                        source_data[generator_input] = element.get(source_field, None)
+                    source_data = source_data
                 else:
                     for source_field in pipeline_step.source_fields:
                         if source_field in element and element[source_field] is not None:
@@ -158,12 +164,15 @@ def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]],
                     element_indexes.append(i)
                     source_data_total.append(source_data)
 
-            results = pipeline_step.generator_function(source_data_total)
+            results = pipeline_step.generator_function(source_data_total, log_error)
 
             if pipeline_step.returns_multiple_fields:
                 for element_index, result in zip(element_indexes, results):
                     target_field_value, result_dict = result
                     elements[element_index][pipeline_step.target_field] = target_field_value
+                    if not result_dict:
+                        # e.g. when an error happened during the generation
+                        continue
                     for output_field, item_field in pipeline_step.output_to_item_mapping.items():
                         elements[element_index][item_field] = result_dict[output_field]
                         changed_fields[element_index].add(item_field)

@@ -1,4 +1,3 @@
-from typing import Iterable
 import uuid
 from uuid import uuid4, uuid5
 import logging
@@ -8,7 +7,7 @@ from ..database_client.vector_search_engine_client import VectorSearchEngineClie
 from ..database_client.text_search_engine_client import TextSearchEngineClient
 from ..logic.extract_pipeline import get_pipeline_steps
 
-from ..utils.dotdict import DotDict
+from data_map_backend.utils import DotDict
 from ..utils.field_types import FieldType
 
 
@@ -24,7 +23,7 @@ def update_database_layout(dataset_id: int):
     search_engine_client.ensure_dataset_exists(dataset)
 
 
-def insert_many(dataset_id: int, elements: Iterable[dict]) -> list[tuple]:
+def insert_many(dataset_id: int, elements: list[dict]) -> list[tuple]:
     dataset = get_dataset(dataset_id)
 
     for element in elements:
@@ -61,20 +60,37 @@ def insert_many(dataset_id: int, elements: Iterable[dict]) -> list[tuple]:
                     and not pipeline_step.condition_function(element)):
                     continue
 
-                source_data = []
-                for source_field in pipeline_step.source_fields:
-                    if source_field in element and element[source_field] is not None:
-                        source_data.append(element[source_field])
+                source_data: list | dict = []
+                if pipeline_step.requires_multiple_input_fields:
+                    assert isinstance(pipeline_step.source_fields, dict)
+                    # pipeline_step.source_fields maps generator input -> source_field
+                    source_data = {}
+                    for generator_input, source_field in pipeline_step.source_fields.items():
+                        source_data[generator_input] = element.get(source_field, None)
+                    source_data = source_data
+                else:
+                    for source_field in pipeline_step.source_fields:
+                        if source_field in element and element[source_field] is not None:
+                            source_data.append(element[source_field])
+
                 if source_data:
                     element_indexes.append(i)
                     source_data_total.append(source_data)
 
             results = pipeline_step.generator_function(source_data_total)
 
-            for element_index, result in zip(element_indexes, results):
-                elements[element_index][pipeline_step.target_field] = result  # type: ignore
-                # for update case: add that field to changed fields:
-                # changed_fields_total[element_index].insert(pipeline_step.target_field)
+            if pipeline_step.returns_multiple_fields:
+                for element_index, result in zip(element_indexes, results):
+                    target_field_value, result_dict = result
+                    elements[element_index][pipeline_step.target_field] = target_field_value
+                    if not result_dict:
+                        # e.g. when an error happened during the generation
+                        continue
+                    for output_field, item_field in pipeline_step.output_to_item_mapping.items():
+                        elements[element_index][item_field] = result_dict[output_field]
+            else:
+                for element_index, result in zip(element_indexes, results):
+                    elements[element_index][pipeline_step.target_field] = result
 
     for field in dataset.schema.object_fields.values():
         if field.field_type == FieldType.CLASS_PROBABILITY and not field.is_array:

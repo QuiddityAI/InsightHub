@@ -38,13 +38,14 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
     # the same applies to non-text fields, just with e.g. image paths instead of text
     parameters = DotDict(parameters)
     generator: Callable | None = None
+    default_log = logging.warning
     if module == 'pubmedbert':
-        generator = lambda batch: get_pubmedbert_embeddings([join_extracted_text_sources(source_fields_list) for source_fields_list in batch])
+        generator = lambda batch, log_error=default_log: get_pubmedbert_embeddings([join_extracted_text_sources(source_fields_list) for source_fields_list in batch])
     elif module == 'open_ai_text_embedding_ada_002':
-        generator = lambda batch: get_openai_embedding_batch([join_extracted_text_sources(t) for t in batch])
+        generator = lambda batch, log_error=default_log: get_openai_embedding_batch([join_extracted_text_sources(t) for t in batch])
     elif module == 'sentence_transformer':
         if parameters.model_name == 'intfloat/e5-base-v2':
-            def generator_fn(batch):
+            def generator_fn(batch, log_error=default_log):
                 preprocessed_texts = [join_extracted_text_sources(t) for t in batch]
                 preprocessed_texts = add_e5_prefix(preprocessed_texts, parameters.prefix)
                 if GPU_IS_AVAILABLE or len(batch) == 1:
@@ -52,17 +53,17 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
                 return deepinfra_client.get_embeddings(preprocessed_texts, parameters.model_name)
             generator = generator_fn
         else:
-            generator = lambda batch: get_sentence_transformer_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name, parameters.prefix)
+            generator = lambda batch, log_error=default_log: get_sentence_transformer_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name, parameters.prefix)
     elif module == 'clip_text':
-        generator = lambda batch: get_clip_text_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name)
+        generator = lambda batch, log_error=default_log: get_clip_text_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name)
     elif module == 'clip_image':
-        generator = lambda batch: get_clip_image_embeddings([field for source_fields in batch for field in source_fields], parameters.model_name)
+        generator = lambda batch, log_error=default_log: get_clip_image_embeddings([field for source_fields in batch for field in source_fields], parameters.model_name)
     elif module == 'favicon_url':
-        generator = lambda batch: [get_favicon_url(urls[0]) for urls in batch if urls]
+        generator = lambda batch, log_error=default_log: [get_favicon_url(urls[0]) for urls in batch if urls]
     elif module == 'chunking':
-        generator = lambda batch: chunk_text_generator(batch, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
+        generator = lambda batch, log_error=default_log: chunk_text_generator(batch, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
     elif module == 'ai_file_processing':
-        generator = lambda batch: ai_file_processing_generator(batch, parameters)
+        generator = lambda batch, log_error=default_log: ai_file_processing_generator(batch, log_error, parameters)
 
     if not generator:
         logging.error(f"Generator module {module} not found")
