@@ -201,7 +201,7 @@ export default {
         </div>
 
         <!-- Right side (image) -->
-        <div v-if="rendering ? rendering.image(item) : false" class="flex-none w-32 flex flex-col justify-center ml-2">
+        <div v-if="rendering ? rendering.image(item) : false" class="flex-none w-32 flex flex-col justify-center ml-4">
           <Image class="w-full rounded-lg shadow-md" image-class="rounded-lg" :src="rendering.image(item)" preview />
         </div>
       </div>

@@ -194,11 +194,13 @@ export default {
           v-if="actual_size_mode >= CollectionItemSizeMode.FULL" />
 
         <!-- Relevant Parts -->
-        <RelevantPartsKeyword :highlights="relevant_keyword_highlights"
+        <RelevantPartsKeyword v-if="actual_size_mode >= CollectionItemSizeMode.FULL"
+          :highlights="relevant_keyword_highlights"
           class="mt-2" :dataset_id="collection_item.dataset_id">
         </RelevantPartsKeyword>
 
-        <RelevantPartsVector :highlights="relevant_chunks"
+        <RelevantPartsVector v-if="actual_size_mode >= CollectionItemSizeMode.FULL"
+          :highlights="relevant_chunks"
           class="mt-2" :item="item || initial_item"
           :rendering="rendering">
         </RelevantPartsVector>
@@ -243,7 +245,7 @@ export default {
         <div class="flex flex-row gap-1 items-center ring-orange-200 rounded"
           :class="{'ring-[1px]': is_candidate}">
           <div v-if="is_candidate" class="ml-1 mr-2 h-5 w-5 text-orange-400"
-              v-tooltip.bottom="{value: 'This item is temporary. Save it, otherwise it will be removed.'}">
+              v-tooltip.bottom="{value: 'This item is temporary. Save it, otherwise it will be removed from the collection.'}">
             <ArrowRightIcon class="w-full h-full">
             </ArrowRightIcon>
           </div>

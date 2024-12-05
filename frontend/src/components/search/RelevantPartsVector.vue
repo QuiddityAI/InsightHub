@@ -5,6 +5,7 @@ import {
  } from "@heroicons/vue/24/outline"
 
 import BorderlessButton from '../widgets/BorderlessButton.vue';
+import ExpandableTextArea from "../widgets/ExpandableTextArea.vue";
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -64,9 +65,9 @@ export default {
         </BorderlessButton>
       </div>
     </div>
-    <div class="mt-1 text-gray-700 text-xs break-words"
-      v-html="highlight_words_in_text(relevant_chunk.value.text, appState.selected_document_query.split(' '))">
-    </div>
+    <ExpandableTextArea class="mt-1 text-gray-700 text-xs break-words" :max_lines="12"
+      :html_content="highlight_words_in_text(relevant_chunk.value.text, appState.selected_document_query.split(' '))">
+    </ExpandableTextArea>
 
     <a v-if="rendering.full_text_pdf_url && rendering.full_text_pdf_url(item)"
       :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_chunk.value.page}`" target="_blank"
