@@ -214,6 +214,8 @@ def get_available_llm_models_route(request):
     configs = []
     for model_id, config in config_dict.items():  # type: ignore
         config["model_id"] = model_id
+        if config["location"] != "EU":
+            config["verbose_name"] += f" (non-EU)"
         if required_capability in config["capabilities"]:
             configs.append(config)
     return configs
