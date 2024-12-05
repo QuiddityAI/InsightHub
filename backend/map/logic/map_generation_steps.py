@@ -24,6 +24,8 @@ def get_collection_items(
         collection, "_default", field_type=FieldType.IDENTIFIER, is_positive=True
     )
     items = items.only("id", "dataset_id", "item_id")
+    if not items:
+        return -1, items, reference_ds_and_item_id
     item_count_per_ds_id = defaultdict(int)
     for item in items:
         item_count_per_ds_id[item.dataset_id] += 1
