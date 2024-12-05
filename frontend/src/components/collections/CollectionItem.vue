@@ -9,6 +9,7 @@ import {
 import Image from "primevue/image"
 
 import BorderlessButton from "../widgets/BorderlessButton.vue"
+import ExpandableTextArea from "../widgets/ExpandableTextArea.vue"
 
 import { CollectionItemSizeMode } from "../../utils/utils.js"
 
@@ -32,8 +33,6 @@ export default {
     return {
       item: {},
       loading_item: false,
-      body_text_collapsed: true,
-      show_more_button: false,
     }
   },
   computed: {
@@ -119,10 +118,6 @@ export default {
       that.loading_item = true
       httpClient.post("/data_backend/document/details_by_id", payload).then(function (response) {
         that.item = { ...that.item, ...response.data }
-          // height of text is only available after rendering:
-          setTimeout(() => {
-            that.show_more_button = that.$refs.body_text?.scrollHeight > that.$refs.body_text?.clientHeight
-          }, 100)
           that.loading_item = false
       })
     },
@@ -132,9 +127,9 @@ export default {
 
 <template>
   <div v-if="rendering && item && collection_item"
-    class="flex flex-col gap-3 pb-2 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md"
+    class="flex flex-col gap-3 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md"
     :class="[
-      actual_size_mode <= CollectionItemSizeMode.SINGLE_LINE ? ['pt-2', 'pb-2'] : ['pt-4', 'pb-4'],
+      actual_size_mode <= CollectionItemSizeMode.SINGLE_LINE ? ['pt-2', 'pb-2'] : ['pt-4', 'pb-3'],
       {'opacity-60': is_irrelevant_according_to_ai, },
     ]">
 
@@ -182,11 +177,10 @@ export default {
           v-html="rendering.subtitle(item)"></p>
 
         <!-- Body -->
-        <p ref="body_text" v-if="actual_size_mode >= CollectionItemSizeMode.FULL"
-          class="mt-1 text-[13px] text-gray-700" :class="{ 'line-clamp-[6]': body_text_collapsed }"
-        v-html="rendering.body(item)"></p>
+        <ExpandableTextArea :html_content="rendering.body(item)" max_lines="3"
+          v-if="actual_size_mode >= CollectionItemSizeMode.FULL" />
 
-        <!-- Sapcer if image on the right is larger than body -->
+        <!-- Spacer if image on the right is larger than body -->
         <div class="flex-1"></div>
       </div>
 
@@ -198,11 +192,6 @@ export default {
 
     <!-- Footer -->
     <div class="flex flex-row gap-1 items-center">
-        <div v-if="show_more_button && actual_size_mode >= CollectionItemSizeMode.FULL" class="text-xs text-gray-700">
-          <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500">
-            {{ body_text_collapsed ? "Show more" : "Show less" }}
-          </button>
-        </div>
 
         <div class="flex-1"></div>
 
