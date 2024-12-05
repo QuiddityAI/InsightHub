@@ -97,7 +97,7 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-row flex-wrap justify-center gap-2 lg:gap-4" v-if="collection">
+  <div class="flex flex-row flex-wrap justify-center items-start gap-2 lg:gap-4" v-if="collection">
 
     <CollectionItem v-for="collection_item in collectionStore.collection_items"
       :dataset_id="collection_item.dataset_id"

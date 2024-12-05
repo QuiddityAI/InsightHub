@@ -44,7 +44,7 @@ export default {
 
 
 <template>
-  <div class="border-l-4 px-2 flex flex-col gap-1 pb-1" v-if="highlights.length && relevant_chunk.value">
+  <div class="border-l-4 px-2 flex flex-col gap-1 pb-1" v-if="highlights.length && relevant_chunk.value && item._dataset_id">
     <div class="flex flex-row items-center">
       <div class="font-semibold text-gray-500 text-xs">Part in
         {{ appState.datasets[item._dataset_id].schema.object_fields[relevant_chunk.field]?.name }}{{ relevant_chunk.value?.page ? `, Page ${relevant_chunk.value.page}` : "" }}

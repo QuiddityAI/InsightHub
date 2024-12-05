@@ -57,8 +57,8 @@ export default {
         return value.criteria_review.map(item => {
             const checkbox = item.fulfilled ? "☑ " : "☐ "
             const criteria = item.criteria ? marked.parse(checkbox + item.criteria) : ""
-            const reason = item.reason ? marked.parse(item.reason) : ""
             const supporting_quote = item.supporting_quote || ""
+            const reason = item.reason ? marked.parse(item.reason + (supporting_quote ? ' *[hover for quote]*': '')) : ""
             const fulfilledClass = item.fulfilled ? "text-green-700" : "text-red-700"
 
             return `<div class="${fulfilledClass} font-bold mt-1">${criteria}</div>` +
