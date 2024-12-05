@@ -5,7 +5,7 @@ import uuid
 from typing import Callable, Iterable
 
 from django.utils import timezone
-from llmonkey.llms import Mistral_Ministral8b
+from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
 from data_map_backend.models import DataCollection, CollectionColumn, FieldType, CollectionItem
 from legacy_backend.logic.search import get_search_results
@@ -32,7 +32,7 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
     if search_task.auto_set_filters:
         collection.log_explanation("Use AI model to generate **suitable query**", save=False)
         prompt = search_query_prompt[search_task.result_language or 'en'].replace("{{ user_input }}", search_task.user_input)
-        search_task.query = Mistral_Ministral8b().generate_short_text(prompt) or search_task.query
+        search_task.query = Google_Gemini_Flash_1_5_v1().generate_short_text(prompt) or search_task.query
 
         # filter_prompt_template = get_filter_prompt(search_task.dataset_id, search_task.result_language or 'en')
         # if filter_prompt_template:

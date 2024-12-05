@@ -1,7 +1,7 @@
 import re
 import logging
 
-from llmonkey.llms import Mistral_Ministral8b
+from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
 from data_map_backend.models import Dataset, DataCollection
 from search.schemas import Filter, SearchTaskSettings
@@ -28,7 +28,7 @@ def _get_filter_prompt_for_language(filter_prompts: str | None, language: str):
 
 
 def extract_filters(search_task: SearchTaskSettings, filter_prompt: str):
-    filters, response = Mistral_Ministral8b().generate_structured_array_response(Filter, filter_prompt, as_dicts=True)
+    filters, response = Google_Gemini_Flash_1_5_v1().generate_structured_array_response(Filter, filter_prompt, as_dicts=True)
     for filter in filters:
         assert isinstance(filter, dict)
         filter['dataset_id'] = search_task.dataset_id
