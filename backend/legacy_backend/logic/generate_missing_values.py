@@ -25,6 +25,7 @@ def delete_field_content(dataset_id: int, field_identifier: str):
         is_array_field = dataset.schema.object_fields[field_identifier].is_array
         vector_db_client = VectorSearchEngineClient.get_instance()
         vector_db_client.delete_field(dataset.actual_database_name, field_identifier, is_array_field)
+        vector_db_client.ensure_dataset_field_exists(dataset, field_identifier)
     else:
         search_engine_client = TextSearchEngineClient.get_instance()
         search_engine_client.delete_field(dataset.actual_database_name, field_identifier)

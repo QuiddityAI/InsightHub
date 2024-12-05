@@ -540,15 +540,24 @@ class GenerationTaskAdmin(DjangoObjectActions, admin.ModelAdmin):
         return super(GenerationTaskAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
     @action(label="Start task", description="Generate missing values")
-    def generate_missing_values(self, request, obj: GenerationTask):
-        thread = Thread(target=generate_missing_values, args=(obj,))
+    def generate_missing_values_action(self, request, obj: GenerationTask):
+        def generate_missing_values_safe():
+            try:
+                generate_missing_values(obj)
+            except Exception as e:
+                obj.add_log(f"Error: {repr(e)}")
+                obj.status = "error"
+                obj.save()
+                raise e
+
+        thread = Thread(target=generate_missing_values_safe)
         thread.start()
         self.message_user(request, "Now generating missing values...")
 
-    change_actions = ('generate_missing_values',)
+    change_actions = ('generate_missing_values_action',)
 
     def action_buttons(self, obj):
-        return mark_safe(f'<button type=button class="btn-info" onclick="window.location.href=\'/org/admin/data_map_backend/generationtask/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
+        return mark_safe(f'<button type=button class="btn-info" onclick="window.location.href=\'/org/admin/data_map_backend/generationtask/{obj.id}/actions/generate_missing_values_action/\';">Generate Missing Values</button>')
     action_buttons.short_description = "Actions"
 
 
