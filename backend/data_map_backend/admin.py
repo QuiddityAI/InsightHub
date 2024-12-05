@@ -378,7 +378,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
     list_filter = ('created_in_ui',)
     ordering = ['organization', 'name']
 
-    readonly_fields = ('changed_at', 'created_at', 'get_field_overview_table_html',
+    readonly_fields = ('id', 'changed_at', 'created_at', 'get_field_overview_table_html',
                        'item_count', 'random_item', 'action_buttons')
 
     fields = [
