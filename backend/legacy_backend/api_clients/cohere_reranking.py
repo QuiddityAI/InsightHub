@@ -14,7 +14,7 @@ def get_reranking_results(query: str, texts: tuple[str, ...], top_n=10):
     # logging.warning(f"Using Cohere API to rerank {top_n} results for query: {query}")
     try:
         response = co.rerank(
-            model = 'rerank-english-v3.0',  # multi-lingual is also available
+            model = 'rerank-v3.5',  # 3.5 combines english and multilingual
             query = query,
             documents = texts,
             top_n = top_n,
