@@ -156,6 +156,9 @@ export default {
       this.add_writing_task(template.name, template.options, true)
     },
     quick_question(question) {
+      if (!question) {
+        return
+      }
       const options = {
         prompt: question,
         source_fields: ['_descriptive_text_fields', '_all_columns'],

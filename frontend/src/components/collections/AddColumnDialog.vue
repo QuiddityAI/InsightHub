@@ -257,7 +257,7 @@ export default {
         </button>
       </div>
       <div class="flex flex-row items-center" v-if="['llm', 'relevance'].includes(selected_module)"
-        v-tooltip.top="{ value: 'Auto-set title of column' }">
+        v-tooltip.top="{ value: 'Auto-set language of question + results' }">
         <Checkbox v-model="use_auto_language" :binary="true" />
         <button class="ml-2 text-xs text-gray-500"
           @click="use_auto_language = !use_auto_language">

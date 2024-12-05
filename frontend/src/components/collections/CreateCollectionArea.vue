@@ -119,7 +119,7 @@ export default {
           id: 'overview_map',
           prefix: "Create an",
           name: 'Overview Map of Documents',
-          help_text: 'Show a set of documents on a visual map',
+          help_text: 'Show a large set of documents on a visual map',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
           availability: 'preview',

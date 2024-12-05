@@ -109,7 +109,7 @@ export const useAppStateStore = defineStore("appState", {
         { identifier: 'item_field', name: 'Item Field', help_text: 'Copies the value of a field of the original item. It can then be used for sorting, maps and charts.', highlight: true },
         { identifier: 'notes', name: 'Manual Notes', help_text: 'A column for your own notes', highlight: true },
         // { identifier: 'python_expression', name: 'Python Expression', help_text: 'Allows to use Python to process an item', highlight: false },
-        { identifier: 'email', name: 'E-Mail', help_text: 'Send an e-mail with information about the item', highlight: false },
+        { identifier: 'email', name: 'E-Mail', help_text: 'Send an e-mail with information about the item (in development)', highlight: false },
       ],
 
       settings: {
