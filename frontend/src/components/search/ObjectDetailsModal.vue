@@ -8,6 +8,9 @@ import {
 import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
 import ExportSingleItem from "./ExportSingleItem.vue"
 import RelatedCollectionItem from "../collections/RelatedCollectionItem.vue"
+import ExpandableTextArea from "../widgets/ExpandableTextArea.vue"
+import RelevantPartsKeyword from "./RelevantPartsKeyword.vue"
+import RelevantPartsVector from "./RelevantPartsVector.vue"
 
 import { httpClient } from "../../api/httpClient"
 import { highlight_words_in_text } from "../../utils/utils"
@@ -37,9 +40,6 @@ export default {
       // checking_for_fulltext: false,
       // checked_for_fulltext: false,
       // fulltext_url: null,
-      body_text_collapsed: true,
-      show_more_button: false,
-      vector_chunk_index: 0,
       show_export_dialog: false,
       show_scroll_indicator: false,
     }
@@ -48,11 +48,11 @@ export default {
     ...mapStores(useAppStateStore),
     ...mapStores(useMapStateStore),
     ...mapStores(useCollectionStore),
-    relevant_chunks() {
-      return this.item?._relevant_parts?.filter((part) => part.origin === "vector_array") || []
-    },
     relevant_keyword_highlights() {
       return this.item?._relevant_parts?.filter((part) => part.origin === "keyword_search") || []
+    },
+    relevant_chunks() {
+      return this.item?._relevant_parts?.filter((part) => part.origin === "vector_array") || []
     },
     rendering() {
       return this.dataset.schema.detail_view_rendering
@@ -83,11 +83,7 @@ export default {
           }
           // height of text is only available after rendering:
           setTimeout(() => {
-            that.show_more_button = that.$refs.body_text?.scrollHeight > that.$refs.body_text?.clientHeight
-            // wait till more button is rendered:
-            setTimeout(() => {
-              that.update_show_scroll_indicator()
-            }, 100)
+            that.update_show_scroll_indicator()
           }, 100)
 
           umami.track("document_details", { title: that.rendering.title(that.item) })
@@ -115,27 +111,6 @@ export default {
           that.item._related_collection_items = response.data._related_collection_items
         })
     },
-    // findFulltext() {
-    //   const that = this
-    //   const doi = this.rendering.doi(this.item)
-    //   const email = "mail@luminosus.org"
-    //   axios
-    //     .get(`https://api.unpaywall.org/v2/${doi}?email=${email}`)
-    //     .then(function (response) {
-    //       that.fulltext_url = response.data.best_oa_location
-    //         ? response.data.best_oa_location.url
-    //         : null
-    //       that.checking_for_fulltext = false
-    //       that.checked_for_fulltext = true
-    //     })
-    //     .catch(function (error) {
-    //       console.log(error)
-    //       that.fulltext_url = null
-    //       that.checking_for_fulltext = false
-    //       that.checked_for_fulltext = true
-    //     })
-    //   this.checking_for_fulltext = true
-    // },
     update_show_scroll_indicator() {
       const scroll_area = this.$refs.scroll_area
       const scrollable = scroll_area.scrollHeight > scroll_area.clientHeight
@@ -150,17 +125,12 @@ export default {
       this.checking_for_fulltext = false
       this.checked_for_fulltext = false
       this.fulltext_url = false
-      this.vector_chunk_index = 0
       this.updateItemAndRendering()
-    },
-    body_text_collapsed() {
-      this.update_show_scroll_indicator()
     },
   },
   mounted() {
     const that = this
     this.updateItemAndRendering()
-    this.show_more_button = this.$refs.body_text?.scrollHeight > this.$refs.body_text?.clientHeight
 
     this.eventBus.on("collection_item_added", ({collection_id, class_name, is_positive, created_item}) => {
       if (created_item.dataset_id === this.item._dataset_id && created_item.item_id === this.item._id) {
@@ -173,6 +143,9 @@ export default {
         this.item._related_collection_items.splice(index, 1)
       }
     })
+    this.eventBus.on("show_table", () => {
+      this.appStateStore.close_document_details()
+    })
     const scroll_area = this.$refs.scroll_area
     scroll_area.addEventListener("scroll", this.update_show_scroll_indicator)
     scroll_area.addEventListener("resize", this.update_show_scroll_indicator)
@@ -182,7 +155,7 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col h-full">
 
     <div class="p-[1px] flex flex-col overflow-y-auto" ref="scroll_area"
       :class="{'shadow-[inset_0_-10px_20px_-20px_rgba(0,0,0,0.3)]': show_scroll_indicator}">
@@ -222,61 +195,28 @@ export default {
           </p>
 
           <!-- Body -->
-          <p ref="body_text" class="mt-2 text-sm text-gray-700 custom-cite-style" :class="{ 'line-clamp-[12]': body_text_collapsed }"
-            v-html="(rendering && rendering.body(item)) ? highlight_words_in_text(rendering.body(item), appState.selected_document_query.split(' ')) : (loading_item ? 'loading...' : '-')"></p>
-          <div v-if="show_more_button" class="mt-2 text-xs text-gray-700">
-            <button @click.prevent="body_text_collapsed = !body_text_collapsed" class="text-gray-500 hover:text-blue-500">
-              {{ body_text_collapsed ? "Show more" : "Show less" }}
-            </button>
-          </div>
+          <ExpandableTextArea max_lines="12" class="mt-2 custom-cite-style"
+            :html_content="(rendering && rendering.body(item)) ? highlight_words_in_text(rendering.body(item), appState.selected_document_query.split(' ')) : (loading_item ? 'loading...' : '-')" />
 
         </div>
 
         <!-- Right side (image) -->
         <div v-if="rendering ? rendering.image(item) : false" class="flex-none w-32 flex flex-col justify-center ml-2">
-          <Image class="w-full rounded-lg shadow-md" :src="rendering.image(item)" preview />
+          <Image class="w-full rounded-lg shadow-md" image-class="rounded-lg" :src="rendering.image(item)" preview />
         </div>
       </div>
 
       <!-- Relevant Vector Parts -->
-      <div v-if="relevant_chunks.length" v-for="relevant_chunk in [relevant_chunks[vector_chunk_index]]" class="mt-2 rounded-md bg-gray-50 py-2 px-2">
-        <div v-if="relevant_chunk.value">
-          <div class="flex flex-row items-center">
-            <div class="font-semibold text-gray-600 text-sm">Relevant Part in
-              {{ appState.datasets[item._dataset_id].schema.object_fields[relevant_chunk.field]?.name }}{{ relevant_chunk.value?.page ? `, Page ${relevant_chunk.value.page}` : "" }}
-              <span class="text-gray-400">(based on meaning)</span>
-            </div>
-            <div class="flex-1"></div>
-            <div v-if="relevant_chunks.length > 1" class="flex flex-row items-center">
-              <button class="mr-1 rounded-md px-1 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100"
-                @click="vector_chunk_index = (vector_chunk_index - 1 + relevant_chunks.length) % relevant_chunks.length">
-                &lt;</button>
-              <span class="text-gray-500 text-xs">
-                {{ vector_chunk_index + 1 }} / {{ relevant_chunks.length }}
-              </span>
-              <button class="ml-1 rounded-md px-1 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100"
-                @click="vector_chunk_index = (vector_chunk_index + 1) % relevant_chunks.length">
-                &gt;</button>
-            </div>
-          </div>
-          <div class="mt-1 text-gray-700 text-xs"
-            v-html="highlight_words_in_text(relevant_chunk.value.text, appState.selected_document_query.split(' '))">
-          </div>
-
-          <a v-if="rendering.full_text_pdf_url(item)"
-            :href="`${rendering.full_text_pdf_url(item)}#page=${relevant_chunk.value.page}`" target="_blank"
-            class="mt-1 text-gray-500 text-xs">Open PDF at this page</a>
-        </div>
-      </div>
+      <RelevantPartsVector v-if="relevant_chunks.length"
+        class="my-2"
+        :item="item" :highlights="relevant_chunks"
+        :rendering="rendering">
+      </RelevantPartsVector>
 
       <!-- Relevant Keyword Parts -->
-      <div v-for="highlight in relevant_keyword_highlights" class="mt-2 rounded-md bg-gray-50 py-2 px-2">
-        <div class="font-semibold text-gray-600 text-sm">Relevant Part in
-          {{ appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.name || appState.datasets[item._dataset_id].schema.object_fields[highlight.field]?.identifier }}
-          <span class="text-gray-400">(based on keywords)</span>
-        </div>
-        <div class="mt-1 text-gray-700 text-xs" v-html="highlight.value"></div>
-      </div>
+      <RelevantPartsKeyword :highlights="relevant_keyword_highlights"
+        class="my-2" :dataset_id="item._dataset_id">
+      </RelevantPartsKeyword>
 
       <!-- Export & Buttons -->
       <div class="mt-2 flex flex-none flex-row">
@@ -300,6 +240,9 @@ export default {
       </Dialog>
 
       <!-- Collection Memberships -->
+      <br>
+      <hr>
+      <h3 class="mt-5 text-lg font-bold">Collections</h3>
       <div v-for="collection_item in item._related_collection_items" class="mt-3">
         <RelatedCollectionItem :collection_item="collection_item"
           @refresh_item="update_column_data_only()">
@@ -308,6 +251,7 @@ export default {
 
     </div>
 
+    <!-- Action Buttons -->
     <div class="relative mt-3 flex flex-none flex-row items-center gap-4 h-7">
 
       <!-- has to be here (although displayed above) because otherwise it would scroll with the content -->
@@ -352,11 +296,6 @@ export default {
         class="h-full w-10 rounded-md px-2 text-gray-500 hover:bg-gray-100">
         <XMarkIcon></XMarkIcon>
       </button>
-    </div>
-
-    <div class="mt-2 flex flex-row items-end" v-if="!item?._related_collection_items?.length">
-      <img src="/assets/up_left_arrow.svg" class="ml-12 mr-4 pb-1 w-8" />
-      <span class="text-gray-500 italic">Add to a collection to take notes and extract information!</span>
     </div>
 
   </div>

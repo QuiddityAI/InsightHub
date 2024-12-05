@@ -135,7 +135,7 @@ def generate_missing_values(task: GenerationTask):
     task.add_log(f"Done")
 
 
-def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict], log_error: Callable) -> dict:
+def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict], log_error: Callable=logging.warning) -> dict:
     # when adapting this function, also adapt insert_many() in insert_logic.py
     changed_fields = defaultdict(set)
     for phase in pipeline_steps:

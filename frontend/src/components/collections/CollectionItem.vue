@@ -10,6 +10,8 @@ import Image from "primevue/image"
 
 import BorderlessButton from "../widgets/BorderlessButton.vue"
 import ExpandableTextArea from "../widgets/ExpandableTextArea.vue"
+import RelevantPartsKeyword from "../search/RelevantPartsKeyword.vue"
+import RelevantPartsVector from "../search/RelevantPartsVector.vue"
 
 import { CollectionItemSizeMode } from "../../utils/utils.js"
 
@@ -85,6 +87,12 @@ export default {
     original_query() {
       return this.collectionStore.collection.search_sources.find(source => source.id_hash === this.collection_item.search_source_id)?.query || ""
     },
+    relevant_keyword_highlights() {
+      return this.collection_item?.relevant_parts?.filter((part) => part.origin === "keyword_search" && part.field !== 'description') || []
+    },
+    relevant_chunks() {
+      return this.collection_item?.relevant_parts?.filter((part) => part.origin === "vector_array") || []
+    },
   },
   watch: {
     dataset_id() {
@@ -114,11 +122,15 @@ export default {
         dataset_id: this.dataset_id,
         item_id: this.item_id,
         fields: this.rendering.required_fields,
+        relevant_parts: this.collection_item.relevant_parts,
       }
       that.loading_item = true
       httpClient.post("/data_backend/document/details_by_id", payload).then(function (response) {
         that.item = { ...that.item, ...response.data }
-          that.loading_item = false
+        if (response.data._relevant_parts) {
+          that.collection_item.relevant_parts = response.data._relevant_parts
+        }
+        that.loading_item = false
       })
     },
   },
@@ -177,8 +189,19 @@ export default {
           v-html="rendering.subtitle(item)"></p>
 
         <!-- Body -->
-        <ExpandableTextArea :html_content="rendering.body(item)" max_lines="3"
+        <ExpandableTextArea class="mt-1"
+          :html_content="rendering.body(item)" max_lines="3"
           v-if="actual_size_mode >= CollectionItemSizeMode.FULL" />
+
+        <!-- Relevant Parts -->
+        <RelevantPartsKeyword :highlights="relevant_keyword_highlights"
+          class="mt-2" :dataset_id="collection_item.dataset_id">
+        </RelevantPartsKeyword>
+
+        <RelevantPartsVector :highlights="relevant_chunks"
+          class="mt-2" :item="item || initial_item"
+          :rendering="rendering">
+        </RelevantPartsVector>
 
         <!-- Spacer if image on the right is larger than body -->
         <div class="flex-1"></div>

@@ -4,7 +4,7 @@
   "entity_name_plural": "files",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-12-01T16:35:39.628Z",
+  "changed_at": "2024-12-05T12:01:25.690Z",
   "primary_key": "full_path",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -65,12 +65,13 @@
     "full_text_chunk_embeddings": "full_text_chunk_embeddings",
     "ignored_keyword_highlight_fields": [
       "title",
+      "description",
       "abstract"
     ]
   },
   "result_list_rendering": {
     "url": "item => null",
-    "body": "item => item.description || item.abstract",
+    "body": "item => `<i>AI tldr:</i> ${item.description}`",
     "icon": "item => icon_for_file_suffix(item.file_type)",
     "image": "item => get_download_url(item.thumbnail_path)",
     "title": "item => `${item.title}`",
@@ -101,7 +102,7 @@
   },
   "detail_view_rendering": {
     "url": "item => null",
-    "body": "item => `<b>AI Description:</b><br> ${item.description} <br><br> <b>AI Abstract:</b> ${marked.parse(item.abstract || '-')} <br><br>${item.language} - ${item.ai_tags ? item.ai_tags.join(', ') : ''}`",
+    "body": "item => `<b>AI Description:</b><br> ${item.description} <br><br> <b>AI Summary:</b> ${marked.parse(item.abstract || '-')} <br><br>${item.language} - ${item.ai_tags ? item.ai_tags.join(', ') : ''}`",
     "icon": "item => icon_for_file_suffix(item.file_type)",
     "image": "item => get_download_url(item.thumbnail_path)",
     "links": [

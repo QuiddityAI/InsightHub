@@ -101,7 +101,7 @@ export default {
         <div class="flex-1"></div>
         <button class="text-sm text-gray-500 hover:text-sky-500"
           @click="show_table">
-          Show Table
+          Show Collection
         </button>
         <button
           @click.stop="appState.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_item.collection, collection_item.classes[0])"

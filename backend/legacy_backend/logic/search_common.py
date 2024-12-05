@@ -239,12 +239,19 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
     # TODO: required_fields is not implemented properly, the actual item data would be in item["_source"] and needs to be copied
     ignored_keyword_highlight_fields = dataset.merged_advanced_options.ignored_keyword_highlight_fields or []
     for i, item in enumerate(search_result):
+        relevant_parts = []
+        for field_name, highlights in item.get('highlight', {}).items():
+            if field_name in ignored_keyword_highlight_fields:
+                continue
+            for highlight in highlights:
+                relevant_parts.append({'origin': 'keyword_search', 'field': field_name, 'index': None, 'value': highlight})
+
         items[item['_id']] = {
             '_id': item['_id'],
             '_dataset_id': dataset.id,
             '_origins': [{'type': 'keyword', 'field': None,
                           'query': query.positive_query_str, 'score': item['_score'], 'rank': i+1}],
-            '_relevant_parts': [{'origin': 'keyword_search', 'field': field_name, 'index': None, 'value': " [...] ".join(highlights)} for field_name, highlights in item.get('highlight', {}).items() if field_name not in ignored_keyword_highlight_fields]
+            '_relevant_parts': relevant_parts,
         }
     return items, total_matches
 
@@ -587,11 +594,11 @@ def get_document_details_by_id(dataset_id: int, item_id: str, fields: tuple[str]
         assert isinstance(relevant_parts_list, list)
         for relevant_part in relevant_parts_list:
             assert isinstance(relevant_part, dict)
-            if relevant_part.get('origin') == 'keyword_search':  # type: ignore
-                # the relevant part comes from keyword search where the text is already present
-                # so we don't need to fetch any source fields
-                continue
-            additional_fields.append(relevant_part.get('field'))
+            if relevant_part.get('origin') == 'vector_array' and not relevant_part.get('value'):
+                # this is a relevant chunk that needs to be materialized (only the index is known):
+                # logging.warning(f"Materializing chunk for field {relevant_part.get('field')} and index {relevant_part.get('index')}")
+                additional_fields.append(relevant_part.get('field'))
+
     get_new_full_text_chunks = False
     if top_n_full_text_chunks and query:
         chunk_vector_field_name = dataset.merged_advanced_options.get("full_text_chunk_embeddings")
