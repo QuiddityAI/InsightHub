@@ -57,3 +57,4 @@ class AiFileProcessingOutput(Schema):
     thumbnail_path: str | None = None
     title: str = ""
     type_description: str = ""
+    people: list[str] = []

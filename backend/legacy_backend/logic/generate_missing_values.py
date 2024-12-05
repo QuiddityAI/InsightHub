@@ -76,7 +76,13 @@ def generate_missing_values(task: GenerationTask):
     def _process(elements):
         nonlocal items_processed
         t1 = time.time()
-        changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements, task.add_log)
+        try:
+            changed_fields = generate_missing_values_for_given_elements(pipeline_steps, elements, task.add_log)
+        except Exception as e:
+            task.add_log(f"Error during generation: {e}")
+            task.add_log(f"Skipping batch")
+            logging.error(f"Error during generation: {e}", exc_info=True)
+            return
         t2 = time.time()
         generation_duration = t2 - t1
         _update_indexes_with_generated_values(dataset, elements, changed_fields)

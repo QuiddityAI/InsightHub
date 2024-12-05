@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 
 import requests
 from llmonkey.llms import Mistral_Pixtral, Nebius_Llama_3_1_70B_fast, Google_Gemini_Flash_1_5_v1
@@ -37,12 +38,16 @@ def extract_using_pdferret(
     data = {"params": json.dumps(params)}
 
     # Send the POST request
-    response = requests.post(url, headers=headers, files=files, data=data, timeout=30*len(file_paths))
+    max_sec_per_file = 45
+    response = requests.post(url, headers=headers, files=files, data=data, timeout=max_sec_per_file*len(file_paths))
 
     response_json = response.json()
 
-    docs = response_json["extracted"]
-    errors = response_json["errors"]
+    if 'extracted' not in response_json:
+        logging.error(f"Error in pdferret response: {response_json}")
+
+    docs = response_json.get("extracted", [])
+    errors = response_json.get("errors", [])
 
     docs = [DotDict(doc) for doc in docs]
     errors = [DotDict(err) for err in errors]

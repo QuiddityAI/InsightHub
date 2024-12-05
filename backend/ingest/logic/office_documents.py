@@ -27,10 +27,12 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
             parsed, failed = extract_using_pdferret([f'{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}' for input_item in batch], doc_lang=document_language)
         except ReadTimeout:
             logging.error("PDFerret timeout")
-            failed = batch
+            failed = [DotDict({"file": item.uploaded_file_path, "exc": "pdferret timeout"}) for item in batch]
             parsed = [None] * len(batch)
         if failed:
             for failed_item in failed:
+                if not failed_item:
+                    continue
                 # TODO: write the error in the description of the returned item?
                 log_error(f"Failed to extract text from {failed_item.file}: {failed_item.exc}")
         assert len(parsed) == len(batch)  # TODO: handle failed items
@@ -92,8 +94,10 @@ def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, pa
         try:
             content_date = datetime.datetime.fromisoformat(file_metainfo.mentioned_date).date().isoformat()
         except ValueError:
-            logging.warning(f"Invalid date format: {file_metainfo.mentioned_date}")
-            pass
+            if len(file_metainfo.mentioned_date) == 4 and file_metainfo.mentioned_date.isdigit():
+                content_date = f"{file_metainfo.mentioned_date}-01-01"
+            else:
+                logging.warning(f"Invalid date format: {file_metainfo.mentioned_date}")
     content_time = None
     # if file_metainfo.mentioned_time:
     #     # making sure content_time is a valid time, otherwise OpenSearch will throw an error
@@ -106,7 +110,7 @@ def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, pa
     result = AiFileProcessingOutput(
         content_date=content_date,
         content_time=content_time,
-        description="",
+        description=file_metainfo.search_description or "",
         document_language=file_metainfo.detected_language or parameters.get("document_language", "en"),
         full_text=full_text,
         full_text_chunks=chunks,
@@ -115,6 +119,7 @@ def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, pa
                                        input_item.uploaded_file_path) if file_metainfo.thumbnail else None,  # relative to UPLOADED_FILES_FOLDER
         title=file_metainfo.title or input_item.file_name,
         type_description=file_metainfo.document_type or "",
+        people=file_metainfo.authors or [],
     )
     return result
 

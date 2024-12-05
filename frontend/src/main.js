@@ -20,6 +20,7 @@ import { useCollectionStore } from "./stores/collection_store";
 
 globalThis.get_download_url = get_download_url;
 globalThis.icon_for_file_suffix = icon_for_file_suffix;
+globalThis.marked = marked;
 
 const katex_options = {
   throwOnError: false
