@@ -9,9 +9,9 @@ export default {
   ],
   darkMode: 'class',  // disable dark mode for now
   safelist: [  // these classes are used at runtime using template strings, they would not be picked up for the minified version
-    'line-clamp[3]',
-    'line-clamp[6]',
-    'line-clamp[12]',
+    'line-clamp-[3]',
+    'line-clamp-[6]',
+    'line-clamp-[12]',
   ],
   theme: {
     extend: {
