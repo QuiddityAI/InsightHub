@@ -138,6 +138,6 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
                     text += f'{end}\n\n'
 
     if max_total_characters and len(text) > max_total_characters:
-        text = text[:max_total_characters]
+        text = text[:max_total_characters - 1] + "\n"
 
     return {'context': text}

@@ -12,7 +12,7 @@ from legacy_backend.logic.search import get_search_results
 from search.schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
 from columns.logic.process_column import process_cells_blocking
 from search.prompts import search_query_prompt
-from search.logic.approve_items_and_exit_search import auto_approve_items, exit_search_mode
+from search.logic.approve_items_and_exit_search import auto_approve_items, approve_using_comparison, exit_search_mode
 from search.logic.extract_filters import get_filter_prompt, extract_filters
 
 
@@ -84,6 +84,10 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
     def after_columns_were_processed_internal(new_items):
         if search_task.auto_approve:
             auto_approve_items(collection, new_items, search_task.max_selections)
+
+        if search_task.approve_using_comparison:
+            collection.log_explanation("Use AI model to **compare search results** and **approve best items**", save=False)
+            approve_using_comparison(collection, new_items, search_task.max_selections, search_task)
 
         if search_task.exit_search_mode:
             exit_search_mode(collection, '_default')

@@ -27,6 +27,7 @@ class SearchTaskSettings(Schema):
 
     auto_approve: bool = False
     auto_disapprove: bool = False
+    approve_using_comparison: bool = False
     exit_search_mode: bool = False
 
     min_selections: int = 1
@@ -90,3 +91,8 @@ class Filter(Schema):
     field: str
     operator: str
     value: str
+
+
+class ApprovalUsingComparisonReason(Schema):
+    item_id: int
+    reason: str

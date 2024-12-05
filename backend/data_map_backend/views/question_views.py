@@ -501,7 +501,7 @@ def _execute_writing_task(task):
         source_column_identifiers = [name.replace("_column__", "") for name in task.source_fields if name.startswith("_column__")]
         source_columns = CollectionColumn.objects.filter(collection=task.collection, identifier__in=source_column_identifiers)
     contexts = []
-    items = task.collection.collectionitem_set.all() if task.use_all_items else [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
+    items = task.collection.collectionitem_set.filter(relevance__gte=1) if task.use_all_items else [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
     references = []
     for item in items:
         text = None

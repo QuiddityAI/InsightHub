@@ -144,9 +144,10 @@ def prepare_for_question(collection: DataCollection, settings: CreateCollectionS
         filters=settings.filters,
         retrieval_mode=settings.retrieval_mode,
         ranking_settings=settings.ranking_settings,
-        auto_approve=True,
+        auto_approve=False,
+        approve_using_comparison=True,
         exit_search_mode=True,
-        max_selections=3,
+        max_selections=10,
     )
 
     writing_task = WritingTask(

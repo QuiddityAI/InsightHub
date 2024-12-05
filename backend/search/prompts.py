@@ -126,3 +126,63 @@ The search query is: {{ user_input }}
 
 Return just the filters as a JSON array. Do not repeat the task.
 """
+
+approve_using_comparison_prompt_en = """
+Compare the following documents and select those that should be used to answer a question.
+It is possible that no document is relevant. It is also possible that multiple or all documents are relevant.
+If a document is relevant but another is more relevant for the same information, select only the more relevant document.
+Select only as many documents as are necessary to answer the question.
+If multiple documents are very similar or identical, select only the newest one (or the first one, if this cannot be determined).
+Only the metadata of each document will be displayed, not the full content.
+If a relevance justification is provided ("Relevance: reason"), trust this justification.
+
+The question/user input is: "{{ user_input }}"
+
+The documents are:
+
+{{ documents }}
+
+Specify the documents that should be used to answer the question.
+Provide a very brief justification for each document selected (e.g., because it is more relevant than another document).
+Respond directly in the following JSON format (without any additional characters):
+
+[
+ {
+    "item_id": item_id,
+    "reason": "reason"
+ },
+    ...
+]
+"""
+
+approve_using_comparison_prompt_de = """
+Vergleiche die folgenden Dokumente und wähle die aus, die zur Beantwortung einer Frage genutzt werden sollen.
+Es kann sein, dass kein Dokument relevant ist. Es können auch mehrere oder alle Dokumente relevant sein.
+Wenn ein Dokument relevant ist, ein anderes aber noch relevanter für die selben Informationen, wähle nur das relevantere Dokument.
+Wähle nur so viele Dokumente aus, wie nötig sind, um die Frage zu beantworten.
+Wenn mehrere Dokumente sehr ähnlich oder gleich sind, wähle nur das neuste aus (oder das erste, falls das nicht feststellbar ist).
+Für jedes Dokument werden nur die Metadaten und nicht der gesamte Inhalt angezeigt.
+Wenn eine Relevanzbegründung angegeben ist ("Relevance: reason"), vertraue dieser Begründung.
+
+Die Frage / Benutzereingabe lautet: "{{ user_input }}"
+
+Die Dokumente sind:
+
+{{ documents }}
+
+Gib die Dokumente an, die zur Beantwortung der Frage genutzt werden sollten.
+Gib jeweils eine sehr kurze Begründung an, warum das Dokument ausgewählt wurde (z.B. weil es relevanter als ein anderes Dokument ist).
+Antworte direkt in folgendem JSON-Format (ohne jegliche zusätzliche Zeichen):
+
+[
+ {
+    "item_id": item_id,
+    "reason": "reason"
+ },
+    ...
+]
+"""
+
+approve_using_comparison_prompt: defaultdict[str, str] = defaultdict(lambda: approve_using_comparison_prompt_en)
+approve_using_comparison_prompt['en'] = approve_using_comparison_prompt_en
+approve_using_comparison_prompt['de'] = approve_using_comparison_prompt_de

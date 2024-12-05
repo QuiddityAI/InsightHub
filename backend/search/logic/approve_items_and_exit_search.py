@@ -1,8 +1,17 @@
+import logging
+from typing import Iterable
+
 from django.utils import timezone
 from django.db.models import Q
 from django.db.models.manager import BaseManager
 
-from data_map_backend.models import DataCollection, CollectionColumn, CollectionItem
+from llmonkey.llms import Google_Gemini_Flash_1_5_v1
+
+from data_map_backend.models import DataCollection, CollectionColumn, CollectionItem, FieldType, COLUMN_META_SOURCE_FIELDS
+from search.prompts import approve_using_comparison_prompt
+from search.schemas import SearchTaskSettings, ApprovalUsingComparisonReason
+from legacy_backend.logic.chat_and_extraction import get_item_question_context
+from columns.schemas import Criterion
 
 
 def auto_approve_items(collection: DataCollection, new_items: list[CollectionItem] | BaseManager[CollectionItem],
@@ -59,6 +68,86 @@ def auto_approve_items(collection: DataCollection, new_items: list[CollectionIte
         collection.log_explanation(f"Evaluated top {len(new_items)} items **one-by-one using an LLM** and approved {len(changed_items)} of them", save=True)
     else:
         collection.log_explanation(f"Added {len(changed_items)} to the collection", save=True)
+
+
+def approve_using_comparison(collection: DataCollection, new_items: list[CollectionItem] | BaseManager[CollectionItem],
+                        max_selections: int | None, search_task: SearchTaskSettings):
+    prompt = approve_using_comparison_prompt[search_task.result_language or 'en']
+    prompt = prompt.replace("{{ user_input }}", search_task.user_input)
+    relevance_columns = [column for column in collection.columns.all() if column.module == 'relevance']  # type: ignore
+
+    documents = ""
+    fields = [COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,]
+    for collection_item in new_items:
+        if collection_item.field_type != FieldType.IDENTIFIER:
+            continue
+        assert collection_item.dataset_id is not None
+        assert collection_item.item_id is not None
+        input_data = get_item_question_context(collection_item.dataset_id, collection_item.item_id, fields, search_task.user_input)['context']
+        # input_data has newline at the end
+        documents += f"document_id {collection_item.id}:\n{input_data}"  # type: ignore
+        for column in relevance_columns:  # should be only one in most cases
+            assert isinstance(column, CollectionColumn)
+            column_content = collection_item.column_data.get(column.identifier)
+            if column_content is None:
+                continue
+            value = column_content.get('value')
+            if isinstance(value, dict):
+                criteria_review = value.get('criteria_review', [])
+                for criterion in criteria_review:
+                    criterion = Criterion(**criterion)
+                    documents += f"Relevance: {criterion.reason}\n"
+                    if criterion.supporting_quote:
+                        documents += f"  Quote: {criterion.supporting_quote}\n"
+        documents += "\n"
+
+    prompt = prompt.replace("{{ documents }}", documents)
+
+    results, original_response = Google_Gemini_Flash_1_5_v1().generate_structured_array_response(
+        ApprovalUsingComparisonReason,
+        system_prompt=prompt,
+        user_prompt="",
+    )  # type: ignore
+    results: Iterable[ApprovalUsingComparisonReason] = results
+
+    relevance_column = relevance_columns[0] if relevance_columns else None
+    selected_items = set()
+    for result in results:
+        collection_item = next((item for item in new_items if item.id == result.item_id), None)  # type: ignore
+        if collection_item is None:
+            continue
+        selected_items.add(collection_item)
+        collection_item.relevance = 2
+        if relevance_column:
+            criterion = Criterion(criteria="Comparison of Documents", fulfilled=True, reason=result.reason)
+            add_criterion(collection_item, criterion, relevance_column)
+        collection_item.save()
+
+    unselected_items = [item for item in new_items if item not in selected_items]
+    for collection_item in unselected_items:
+        collection_item.relevance = -1
+        if relevance_column:
+            criterion = Criterion(criteria="Comparison of Documents", fulfilled=False, reason="Not selected")
+            add_criterion(collection_item, criterion, relevance_column)
+        collection_item.save()
+
+    CollectionItem.objects.bulk_update(new_items, ['relevance'])
+
+
+def add_criterion(collection_item: CollectionItem, new_criterion: Criterion, relevance_column: CollectionColumn):
+    column_content = collection_item.column_data.get(relevance_column.identifier).get('value', {})
+    if isinstance(column_content, dict):
+        criteria = [Criterion(**c) for c in column_content.get('criteria_review', [])]
+        criteria.append(new_criterion)
+        relevance_score = len([c.fulfilled for c in criteria if c.fulfilled]) / max(len(criteria), 1)  # type: ignore
+        value = {
+            "criteria_review": [c.model_dump() for c in criteria],  # type: ignore
+            "is_relevant": relevance_score > 0.6,
+            "relevance_score": relevance_score,
+        }
+        column_content['value'] = value
+        column_content['changed_at'] = timezone.now().isoformat()
+        collection_item.column_data[relevance_column.identifier] = column_content
 
 
 def exit_search_mode(collection: DataCollection, class_name: str):
