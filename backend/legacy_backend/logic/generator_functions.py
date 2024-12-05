@@ -67,17 +67,17 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
 
     if not generator:
         logging.error(f"Generator module {module} not found")
-        return lambda x: None
+        return lambda x, log_error=default_log: None
 
     if target_field_is_array:
         generate_one_value_for_each_item = generator
 
-        def generate_value_for_each_element_in_array_field(batch):
+        def generate_value_for_each_element_in_array_field(batch, log_error=default_log):
             # e.g. if there is a batch of 50 items and each item has one source field with 10 values
             # we flatten the batch to a list of 500 values
             flattened_batch = [[element] for source_fields in batch for array_field in source_fields for element in array_field or [None]]
             # then we generate a value for each of the 500 values
-            flattened_results = generate_one_value_for_each_item(flattened_batch)
+            flattened_results = generate_one_value_for_each_item(flattened_batch, log_error)
             restructured_results = []
             # and then we restructure the results back to the original batch structure
             for item in batch:

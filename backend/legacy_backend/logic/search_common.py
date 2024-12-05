@@ -418,11 +418,14 @@ def get_relevant_parts_of_item_using_query_vector(dataset: DotDict, item_id: str
         texts = [source_texts[item.payload['array_index']] for item in vector_search_results]
         reranking = get_reranking_results(query, tuple(texts), limit)
         vector_search_results = [vector_search_results[rerank_result.index] for rerank_result in reranking.results]
+    if len(vector_search_results) == 0:
+        logging.warning(f"No relevant parts found for item {item_id} using vector search, this should not happen if the item is expected to have full text chunks")
+    score = max(*(item.score for item in vector_search_results), 0.0) if len(vector_search_results) > 0 else 0.0
     item = {
         '_id': item_id,
         '_dataset_id': dataset.id,
         '_origins': [{'type': 'vector', 'field': vector_field,
-                    'query': 'unknown', 'score': max(*(item.score for item in vector_search_results), 0.0), 'rank': 1}],
+                    'query': 'unknown', 'score': score, 'rank': 1}],
     }
     array_source_field = dataset.schema.object_fields[vector_field].source_fields[0] if dataset.schema.object_fields[vector_field].source_fields else None
     item['_relevant_parts'] = [{'origin': 'vector_array', 'field': array_source_field, 'index': item.payload['array_index'], 'score': item.score} for item in vector_search_results]

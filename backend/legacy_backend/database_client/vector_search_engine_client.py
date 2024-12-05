@@ -3,6 +3,8 @@ import os
 from typing import Iterable, List
 import uuid
 
+import numpy as np
+
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.models import Filter, FieldCondition, Range, PayloadSchemaType, NamedVector, HnswConfigDiff
@@ -450,6 +452,11 @@ class VectorSearchEngineClient(object):
     def get_best_sub_items(self, database_name: str, vector_field: str, parent_id: str,
                            query_vector: list, score_threshold: float | None = None,
                            limit: int = 5, min_results: int = 2) -> list:
+        if len(query_vector) > 0 and np.isnan(query_vector).any():
+            logging.warning("Query vector is NaN, returning empty list")
+            raise ValueError("Query vector is NaN")
+            return []
+        logging.warning(f"parameters: {database_name}, {vector_field}, {parent_id}, {query_vector}, {score_threshold}, {limit}, {min_results}")
         collection_name = self._get_collection_name(database_name, vector_field)
         hits = self.client.search(
             collection_name=f'{collection_name}_sub_items',
