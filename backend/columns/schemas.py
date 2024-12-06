@@ -47,6 +47,11 @@ class ColumnCellRange(Schema):
     collection_item_id: Optional[int] = None  # if provided, only the item with this id will be processed
 
 
+class ProcessColumnPayload(Schema):
+    cell_range: ColumnCellRange
+    remove_content: bool = False
+
+
 class CellData(Schema):
     value: str | dict | list | None = None
     collapsed_label: str | None = None

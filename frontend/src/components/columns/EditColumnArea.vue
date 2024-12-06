@@ -36,6 +36,7 @@ export default {
   data() {
     return {
       available_llm_models: [],
+      remove_existing_content: false,
     }
   },
   computed: {
@@ -179,22 +180,24 @@ export default {
         </div>
       </div>
 
-      <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-3 mt-2">
-        <button @click="collectionStore.extract_question(selected_column.id, true); $refs.column_options.hide()"
-          class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded-lg text-sm text-green-800">
-          Execute <span class="text-gray-500">(current page)</span></button>
-        <button @click="collectionStore.extract_question(selected_column.id, false); $refs.column_options.hide()"
-          class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded-lg text-sm text-green-800">
-          Execute <span class="text-gray-500">(all)</span></button>
+      <div class="flex flex-row gap-5 items-center" v-if="!['notes', 'item_field'].includes(selected_column.module)">
+        <div class="flex flex-row items-center"
+          v-tooltip.top="{ value: 'Remove existing content (also manual edits) before processing using buttons below' }">
+          <Checkbox v-model="remove_existing_content" :binary="true" />
+          <button class="ml-2 text-xs text-gray-500"
+            @click="remove_existing_content = !remove_existing_content">
+            Remove existing content before processing
+          </button>
+        </div>
       </div>
 
-      <div class="flex flex-row gap-3 mt-2">
-        <button @click="collectionStore.remove_results(selected_column.id, true)"
-          class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded-lg text-sm text-red-800">
-          Remove Content<br><span class="text-gray-500">(current page)</span></button>
-        <button @click="collectionStore.remove_results(selected_column.id, false)"
-          class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded-lg text-sm text-red-800">
-          Remove Content<br><span class="text-gray-500">(all)</span></button>
+      <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-3 mt-2">
+        <button @click="collectionStore.extract_question(selected_column.id, /*only_current_page*/ true, /*col_item*/ null, /*remove_content*/ remove_existing_content); $refs.column_options.hide()"
+          class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded-lg text-sm text-green-800">
+          Process this page <br> <span class="text-gray-500 text-xs">(empty cells)</span></button>
+        <button @click="collectionStore.extract_question(selected_column.id, /*only_current_page*/ false, /*col_item*/ null, /*remove_content*/ remove_existing_content); $refs.column_options.hide()"
+          class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded-lg text-sm text-green-800/70">
+          Process all pages <br> <span class="text-gray-500 text-xs">(empty cells)</span></button>
       </div>
     </div>
   </OverlayPanel>

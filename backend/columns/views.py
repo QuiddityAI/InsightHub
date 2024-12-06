@@ -11,7 +11,7 @@ from llmonkey.llms import BaseLLMModel, Mistral_Ministral3b
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
 from data_map_backend.utils import is_from_backend
 from data_map_backend.serializers import CollectionSerializer, CollectionColumnSerializer
-from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier, UpdateColumnConfig
+from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier, UpdateColumnConfig, ProcessColumnPayload
 from columns.logic.process_column import remove_column_data_from_collection_items, get_collection_items_from_cell_range, process_cells_blocking
 from columns.prompts import column_name_prompt, column_language_prompt
 
@@ -161,12 +161,12 @@ def set_cell_data_route(request, payload: CellDataPayload):
 
 
 @api.post("process_column")
-def process_column_route(request, payload: ColumnCellRange):
+def process_column_route(request, payload: ProcessColumnPayload):
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
 
     try:
-        column = CollectionColumn.objects.select_related("collection").get(id=payload.column_id)
+        column = CollectionColumn.objects.select_related("collection").get(id=payload.cell_range.column_id)
     except CollectionColumn.DoesNotExist:
         return HttpResponse(status=404)
     if column.collection.created_by != request.user:
@@ -175,7 +175,9 @@ def process_column_route(request, payload: ColumnCellRange):
     if not column.module or column.module == "notes":
         pass
     else:
-        collection_items = get_collection_items_from_cell_range(column, payload)
+        collection_items = get_collection_items_from_cell_range(column, payload.cell_range)
+        if payload.remove_content:
+            remove_column_data_from_collection_items(collection_items, column.identifier)
 
         def in_thread():
             process_cells_blocking(collection_items, column, column.collection, request.user.id)

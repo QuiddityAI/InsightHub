@@ -254,18 +254,21 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     // ------------------
-    extract_question(column_id, only_current_page=true, collection_item_id=null) {
+    extract_question(column_id, only_current_page=true, collection_item_id=null, remove_content=false) {
       const that = this
-      if (!only_current_page && !confirm("This will extract the question for all items in the collection. This might be long running and expensive. Are you sure?")) {
+      if (!only_current_page && !confirm("This will process items in the collection. This might be long running and expensive. Are you sure?")) {
         return
       }
       const body = {
-        column_id: column_id,
-        class_name: this.class_name,
-        offset: only_current_page ? this.first_index : 0,
-        limit: only_current_page ? this.per_page : -1,
-        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
-        collection_item_id: collection_item_id,  // only_current_page and offset etc. is ignored if this is set
+        cell_range: {
+          column_id: column_id,
+          class_name: this.class_name,
+          offset: only_current_page ? this.first_index : 0,
+          limit: only_current_page ? this.per_page : -1,
+          order_by: (this.order_descending ? "-" : "") + this.order_by_field,
+          collection_item_id: collection_item_id,  // only_current_page and offset etc. is ignored if this is set
+        },
+        remove_content: remove_content,
       }
       httpClient.post(`/api/v1/columns/process_column`, body)
       .then(function (response) {
