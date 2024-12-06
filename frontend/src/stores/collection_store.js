@@ -372,6 +372,7 @@ export const useCollectionStore = defineStore("collection", {
         search_task: {
           search_type: 'similar_to_item',
           dataset_id: dataset_and_item_id[0],
+          user_input: `Similar to: ${title}`,
           query: `Similar to: ${title}`,  // ?
           result_language: null,  // ?
           filters: null,
