@@ -54,7 +54,7 @@ def signup_from_app(request):
 
     # initialize user:
     try:
-        absclust_org = Organization.objects.get(id=1)
+        absclust_org = Organization.objects.get(name='AbsClust for Science')
         absclust_org.members.add(user)
     except Organization.DoesNotExist:
         logging.error("Organization AbsClust does not exist")

@@ -183,15 +183,15 @@ export default {
         <span class="text-gray-400">
           Views:
         </span>
-        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('summary')"
+        <BorderButton @click="show_right_side_view('summary')"
           :highlighted="side_view === 'summary'">
           Summary
         </BorderButton>
-        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('map')"
+        <BorderButton @click="show_right_side_view('map')"
           :highlighted="side_view === 'map'">
           Map
         </BorderButton>
-        <BorderButton v-if="appState.user.is_staff" @click="show_right_side_view('more')"
+        <BorderButton @click="show_right_side_view('more')"
           :highlighted="side_view === 'more'">
           More
         </BorderButton>
