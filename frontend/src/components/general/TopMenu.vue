@@ -90,7 +90,7 @@ export default {
           Explore</button> -->
          <button class="hover:text-blue-500" :class="{'font-bold': appState.selected_app_tab === 'collections'}"
           @click="appState.set_app_tab('collections'); collectionStore.close_collection()">
-          Home</button>
+          Quiddity InsightHub</button>
          <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
           v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('chats')">
@@ -107,7 +107,7 @@ export default {
       <div class="flex-1"></div>
 
       <!-- wrapping login area in div to make it roughly the same width as organization dropdown -->
-      <div class="flex-none flex flex-row place-content-end w-min-0 w-48">
+      <div class="flex-none flex flex-row place-content-end min-w-0">
         <LoginButton></LoginButton>
 
         <button v-if="appState.logged_in" class="pl-2 pr-1 py-1 text-[13px] font-medium text-gray-500 font-[Lexend] rounded-md hover:bg-gray-100"
