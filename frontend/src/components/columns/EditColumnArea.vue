@@ -136,7 +136,7 @@ export default {
         </button>
       </div>
 
-      <div class="flex flex-row" v-if="['llm', 'relevance', 'email'].includes(selected_column.module)">
+      <div class="flex flex-row my-3" v-if="['llm', 'relevance', 'email'].includes(selected_column.module)">
         <Textarea class="flex-1 ring-0 border-0" autoResize :rows="1" :pt="{ root: 'p-0 resize-none', }"
           v-model="selected_column.expression" @blur="submit_changes()" @keyup.enter="submit_changes()">
         </Textarea>

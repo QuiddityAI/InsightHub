@@ -169,6 +169,7 @@ export default {
           <button class="rounded-md bg-white shadow-sm text-sm hover:text-blue-500 py-1 px-2 w-full"
             @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
             {{ column.name }}
+            <span v-if="column.module === 'relevance'" class="ml-2 text-xs text-gray-500">Click to change criteria</span>
           </button>
         </template>
         <template #body="slotProps">
