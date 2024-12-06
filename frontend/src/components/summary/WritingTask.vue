@@ -43,6 +43,7 @@ export default {
     return {
       writing_task: null,
       show_settings_dialog: false,
+      show_used_prompt: false,
       update_writing_task_debounce: debounce((event) => {
           this.update_writing_task()
         }, 500),
@@ -84,7 +85,7 @@ export default {
     this.get_writing_task(() => {
       if (this.writing_task.name !== 'Summary+') return
       this.writing_task.name = 'Summary'
-      this.writing_task.module = 'Nebius_Llama_3_1_405B_cheap'
+      this.writing_task.module = 'Mistral_Mistral_Large'
       this.writing_task.source_fields = ['_full_text_snippets', '_descriptive_text_fields']
       this.writing_task.use_all_items = true
       this.writing_task.prompt = "Summarize the items in three short bullet points. Use markdown syntax."
@@ -184,6 +185,14 @@ export default {
         console.error(error)
       })
     },
+    convert_to_html(text) {
+      // escape html
+      text = text.replace(/&/g, "&amp;")
+      text = text.replace(/</g, "&lt;")
+      text = text.replace(/>/g, "&gt;")
+      // convert newlines to <br>
+      return text.replace(/(?:\r\n|\r|\n)/g, '<br>')
+    },
   },
 }
 </script>
@@ -196,6 +205,15 @@ export default {
         {{ writing_task.name || "New Writing Task" }}
       </h2>
       <div class="flex-1"></div>
+      <BorderlessButton v-if="appState.user.is_staff"
+        @click="show_used_prompt = true" v-tooltip.bottom="{ value: 'Show the used prompt' }"
+        :default_padding="false" class="h-6 w-6">
+        P
+        <Dialog v-model:visible="show_used_prompt" modal header="Used Prompt">
+          <div class="overflow-y-auto max-h-[400px]"
+            v-html="convert_to_html(writing_task.additional_results.used_prompt)" />
+        </Dialog>
+      </BorderlessButton>
       <BorderlessButton v-if="!writing_task.is_processing"
         @click="execute_writing_task" v-tooltip.bottom="{ value: 'Re-generate this writing task' }"
         hover_color="hover:text-green-500" :default_padding="false" class="h-6 w-6">

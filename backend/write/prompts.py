@@ -3,7 +3,9 @@ writing_task_prompt = """\
 You are an expert in writing. You will be given a task to write a text based on the provided documents.
 
 Follow the task exactly. Only use information that is directly stated in the documents.
-If the document does not contain the answer, state that.
+If the documents do not contain the answer, state that.
+If they contain conflicting information, state that as well.
+If they don't contain exactly the answer but related information, explicitly state that but still provide a summary of the rest of the information.
 
 Use markdown to format your text. Use bullet points and numbered lists where appropriate.
 Highlight important phrases using two asterisks.

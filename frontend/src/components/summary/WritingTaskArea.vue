@@ -44,7 +44,7 @@ export default {
           options: {
             prompt: 'Summarize the main points of the items in this collection.',
             source_fields: ['_descriptive_text_fields'],
-            module: 'Nebius_Llama_3_1_405B_cheap',
+            module: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -54,7 +54,7 @@ export default {
           options: {
             prompt: 'Summarize the key challenges mentioned in the items in this collection.',
             source_fields: ['_descriptive_text_fields'],
-            module: 'Nebius_Llama_3_1_405B_cheap',
+            module: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -64,7 +64,7 @@ export default {
           options: {
             prompt: 'What are some possible research questions that come up when looking at the items in this collection? Use bullet points in markdown syntax.',
             source_fields: ['_descriptive_text_fields'],
-            module: 'Nebius_Llama_3_1_405B_cheap',
+            module: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -162,7 +162,7 @@ export default {
       const options = {
         prompt: question,
         source_fields: ['_descriptive_text_fields', '_all_columns'],
-        module: 'Nebius_Llama_3_1_405B_cheap',
+        module: 'Mistral_Mistral_Large',
         use_all_items: true,
       }
       this.add_writing_task(question, options, true)

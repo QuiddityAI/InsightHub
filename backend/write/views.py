@@ -66,7 +66,7 @@ def add_writing_task_route(request):
         collection_id=collection_id,
         class_name=class_name,
         name=name,
-        module='Nebius_Llama_3_1_405B_cheap',
+        module='Mistral_Mistral_Large',
     )
     if options:
         for key, value in options.items():
