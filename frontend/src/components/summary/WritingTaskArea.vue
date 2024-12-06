@@ -162,7 +162,7 @@ export default {
       const options = {
         prompt: question,
         source_fields: ['_descriptive_text_fields', '_all_columns'],
-        module: 'openai_gpt_4_o',
+        module: 'Nebius_Llama_3_1_405B_cheap',
         use_all_items: true,
       }
       this.add_writing_task(question, options, true)

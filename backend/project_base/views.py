@@ -59,16 +59,8 @@ def signup_from_app(request):
     except Organization.DoesNotExist:
         logging.error("Organization AbsClust does not exist")
     else:
-        favorites = DataCollection(name='My Favorites', created_by=user, related_organization=absclust_org)
-        favorites.save()
-        notes_column = CollectionColumn(collection=favorites, name='Notes', identifier='notes',
-                                        module='notes')
-        notes_column.save()
-        summary_column = CollectionColumn(collection=favorites, name='Summary', identifier='summary',
-                                        expression='Summarize the item in three bullet points, each having at most 10 words. Use simple language.',
-                                        module='openai_gpt_4_o')
-        summary_column.source_fields = ['_descriptive_text_fields']  # type: ignore
-        summary_column.save()
+        # potentially set up initial collections etc.
+        pass
 
     user = authenticate(username=email, password=password)
     login(request, user)

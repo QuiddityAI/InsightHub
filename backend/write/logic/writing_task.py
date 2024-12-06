@@ -79,6 +79,11 @@ def _execute_writing_task(task: WritingTask):
             continue
         contexts.append(text)
 
+    for previous_task in WritingTask.objects.filter(collection=task.collection).order_by('created_at')[:3]:
+        if previous_task == task:
+            continue
+        contexts.append(f"Previously answered question: \"{previous_task.prompt}\":\nGenerated Response:\n{previous_task.text}")
+
     context = "\n\n".join(contexts)
 
     system_prompt = writing_task_prompt.replace("{{ context }}", context)
