@@ -28,6 +28,7 @@ from map.views import api as map_api
 from ingest.views import api as ingest_api
 from columns.views import api as columns_api
 from filter.views import api as filter_api
+from write.views import api as write_api
 
 
 def redirect_to_admin(request):
@@ -53,6 +54,7 @@ urlpatterns = [
     path('api/v1/columns/', columns_api.urls),
     path('api/v1/map/', map_api.urls),
     path('api/v1/filter/', filter_api.urls),
+    path('api/v1/write/', write_api.urls),
 
     # Login and Logout
     path('org/login/', auth_views.LoginView.as_view(), name='login'),

@@ -9,7 +9,7 @@ from llmonkey.llms import Mistral_Ministral3b
 from data_map_backend.models import DataCollection, User, COLUMN_META_SOURCE_FIELDS, WritingTask
 from search.schemas import SearchTaskSettings
 from search.logic.execute_search import run_search_task
-from data_map_backend.views.question_views import _execute_writing_task_thread
+from write.logic.writing_task import execute_writing_task_thread
 from .schemas import CreateCollectionSettings
 from .create_columns import create_relevance_column
 from workflows.prompts import query_language_prompt
@@ -165,7 +165,7 @@ def prepare_for_question(collection: DataCollection, settings: CreateCollectionS
     def after_columns_were_processed(new_items):
         logging.warning("prepare_for_question: after_columns_were_processed")
         collection.current_agent_step = "Executing writing task..."
-        _execute_writing_task_thread(writing_task)
+        execute_writing_task_thread(writing_task)
         collection.log_explanation(f"Read approved items and **wrote a summary** using an LLM", save=False)
         collection.agent_is_running = False
         collection.save()

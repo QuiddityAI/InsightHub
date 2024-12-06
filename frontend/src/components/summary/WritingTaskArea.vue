@@ -126,7 +126,7 @@ export default {
         collection_id: this.collection_id,
         class_name: this.class_name,
       }
-      httpClient.post(`/org/data_map/get_writing_tasks`, body)
+      httpClient.post(`/api/v1/write/get_writing_tasks`, body)
       .then(function (response) {
         that.writing_task_ids = response.data
       })
@@ -143,7 +143,7 @@ export default {
         options: options,
         run_now: run_now,
       }
-      httpClient.post(`/org/data_map/add_writing_task`, body)
+      httpClient.post(`/api/v1/write/add_writing_task`, body)
       .then(function (response) {
         const task = response.data
         that.writing_task_ids.push(task)
@@ -173,7 +173,7 @@ export default {
       const body = {
         task_id: writing_task_id,
       }
-      httpClient.post(`/org/data_map/delete_writing_task`, body)
+      httpClient.post(`/api/v1/write/delete_writing_task`, body)
       .then(function (response) {
         that.writing_task_ids = that.writing_task_ids.filter((task) => task.id !== writing_task_id)
       })

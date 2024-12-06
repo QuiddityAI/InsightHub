@@ -104,7 +104,7 @@ export default {
       const body = {
         task_id: this.writing_task_id,
       }
-      httpClient.post(`/org/data_map/get_writing_task_by_id`, body)
+      httpClient.post(`/api/v1/write/get_writing_task_by_id`, body)
       .then(function (response) {
         that.writing_task = response.data
         if (that.writing_task.is_processing) {
@@ -133,7 +133,7 @@ export default {
         prompt: task.prompt,
         text: task.text,
       }
-      httpClient.post(`/org/data_map/update_writing_task`, body)
+      httpClient.post(`/api/v1/write/update_writing_task`, body)
       .then(function (response) {
         if (on_success) {
           on_success()
@@ -149,7 +149,7 @@ export default {
         const body = {
           task_id: this.writing_task_id,
         }
-        httpClient.post(`/org/data_map/execute_writing_task`, body)
+        httpClient.post(`/api/v1/write/execute_writing_task`, body)
         .then(function (response) {
           that.writing_task.is_processing = true
           setTimeout(() => {
@@ -175,7 +175,7 @@ export default {
       const body = {
         task_id: this.writing_task_id,
       }
-      httpClient.post(`/org/data_map/revert_writing_task`, body)
+      httpClient.post(`/api/v1/write/revert_writing_task`, body)
       .then(function (response) {
         // pass
       })
