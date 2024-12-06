@@ -10,7 +10,10 @@ class BaseNotifier:
     def _send(self, text):
         raise NotImplementedError()
 
-    def send(self, kind, message):
+    def send(self, kind, message, user=None):
+        if user and (user.is_staff or 'remondis' in user.email):
+            # not logging staff actions for now
+            return
         prfx = kind + ": \n"
         if self.name:
             prfx += self.name + ", "
@@ -20,22 +23,13 @@ class BaseNotifier:
             logging.warn(f"Can't send notification, {repr(e)}")
 
     def info(self, message, user=None):
-        if user and user.is_staff:
-            # not logging staff actions for now
-            return
-        self.send("Info", message)
+        self.send("Info", message, user)
 
     def warning(self, message, user=None):
-        if user and user.is_staff:
-            # not logging staff actions for now
-            return
-        self.send("Warning", message)
+        self.send("Warning", message, user)
 
     def error(self, message, user=None):
-        if user and user.is_staff:
-            # not logging staff actions for now
-            return
-        self.send("Error", message)
+        self.send("Error", message, user)
 
 
 class TgNotifier(BaseNotifier):
