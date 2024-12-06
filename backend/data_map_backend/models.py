@@ -1,5 +1,4 @@
 from collections import defaultdict
-import copy
 import datetime
 import json
 import logging
@@ -1662,8 +1661,8 @@ class WritingTask(models.Model):
         verbose_name="Collection",
         to=DataCollection,
         on_delete=models.CASCADE,
-        blank=True,
-        null=True,
+        blank=False,
+        null=False,
     )
     class_name = models.CharField(
         verbose_name="Class", max_length=200, blank=False, null=False
@@ -1686,13 +1685,13 @@ class WritingTask(models.Model):
         verbose_name="Is Processing", default=False, blank=False, null=False
     )
     source_fields = models.JSONField(
-        verbose_name="Source Fields", default=list, blank=True, null=True
+        verbose_name="Source Fields", default=list, blank=True, null=False
     )
     use_all_items = models.BooleanField(
         verbose_name="Use All Items", default=True, blank=False, null=False
     )
     selected_item_ids = models.JSONField(
-        verbose_name="Selected Item IDs", default=list, blank=True, null=True
+        verbose_name="Selected Item IDs", default=list, blank=True, null=False
     )
     module = models.CharField(
         verbose_name="Code Module Name", max_length=200, blank=True, null=True
@@ -1706,7 +1705,7 @@ class WritingTask(models.Model):
         verbose_name="Additional Results", default=dict, blank=True, null=True
     )
     previous_versions = models.JSONField(
-        verbose_name="Previous Versions", default=list, blank=True, null=True
+        verbose_name="Previous Versions", default=list, blank=True, null=False
     )
 
     def __str__(self):
@@ -1831,8 +1830,8 @@ class Chat(models.Model):
                 response_text = "AI usage limit exceeded."
             # response_text = "I'm sorry, I can't answer that question yet."
 
-            obj.chat_history.append(
-                {  # type: ignore
+            obj.chat_history.append(  # type: ignore
+                {
                     "role": "system",
                     "content": response_text,
                     "date": timezone.now().isoformat(),

@@ -46,7 +46,7 @@ export default {
       return this.collectionStore.collection
     },
     available_modules() {
-      return this.appStateStore.available_ai_modules.concat(this.appStateStore.column_modules)
+      return this.appStateStore.column_modules
     },
   },
   mounted() {

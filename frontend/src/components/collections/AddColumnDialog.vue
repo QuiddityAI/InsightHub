@@ -1,12 +1,12 @@
 <script setup>
 import { useToast } from 'primevue/usetoast';
-import Dropdown from 'primevue/dropdown';
 import MultiSelect from 'primevue/multiselect';
 import Message from 'primevue/message';
 import Checkbox from 'primevue/checkbox';
 
 import LanguageSelect from "../widgets/LanguageSelect.vue"
 import BorderButton from "../widgets/BorderButton.vue"
+import LlmSelect from '../widgets/LlmSelect.vue';
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -37,7 +37,6 @@ export default {
         {'title': 'Medium AI', 'subtitle': 'balanced', 'model': 'Google_Gemini_Flash_1_5_v1'},
         {'title': 'Large AI', 'subtitle': 'expensive + slow, smart', 'model': 'Mistral_Mistral_Large'},
       ],
-      available_llm_models: [],
       selected_language: null,
       show_advanced_modules: false,
       use_auto_title: true,
@@ -103,7 +102,6 @@ export default {
     },
   },
   mounted() {
-    this.get_available_llm_models()
   },
   watch: {
     use_auto_title(value) {
@@ -198,12 +196,6 @@ export default {
         console.error(error)
       })
       this.$emit('close')
-    },
-    get_available_llm_models() {
-      httpClient.get(`/api/v1/columns/available_llm_models`)
-      .then((response) => {
-        this.available_llm_models = response.data
-      })
     },
   },
 }
@@ -368,11 +360,8 @@ export default {
 
     <div v-if="['llm', 'relevance'].includes(selected_module) && use_custom_llm"
       class="flex flex-row gap-2 items-center">
-      <div class="flex-1 min-w-0">
-        <Dropdown v-model="selected_llm" :options="available_llm_models" optionLabel="verbose_name" optionValue="model_id"
-          placeholder="Select LLM..."
-          class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-      </div>
+      <LlmSelect class="flex-1 min-w-0" v-model="selected_llm" tooltip="Select the AI model to use">
+      </LlmSelect>
     </div>
 
     <div class="flex flex-row gap-3 mt-4">

@@ -156,8 +156,7 @@ def prepare_for_question(collection: DataCollection, settings: CreateCollectionS
         name="Answer",
         source_fields=[COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS],
         use_all_items=True,
-        #module="groq_llama_3_70b",
-        module="openai_gpt_4_o",
+        module="Nebius_Llama_3_1_405B_cheap",
     )
     writing_task.prompt = settings.user_input
     writing_task.save()

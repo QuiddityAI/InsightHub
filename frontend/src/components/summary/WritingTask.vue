@@ -8,7 +8,6 @@ import {
  } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
-import Dropdown from 'primevue/dropdown';
 import ProgressSpinner from "primevue/progressspinner";
 import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
@@ -16,9 +15,11 @@ import Skeleton from "primevue/skeleton";
 
 import BorderlessButton from "../widgets/BorderlessButton.vue";
 import TipTapEditor from "../text_editor/TipTapEditor.vue";
+import LlmSelect from "../widgets/LlmSelect.vue";
+
 import { debounce } from "../../utils/utils"
 
-import { httpClient, djangoClient } from "../../api/httpClient"
+import { httpClient } from "../../api/httpClient"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -83,7 +84,7 @@ export default {
     this.get_writing_task(() => {
       if (this.writing_task.name !== 'Summary+') return
       this.writing_task.name = 'Summary'
-      this.writing_task.module = 'groq_llama_3_70b'
+      this.writing_task.module = 'Nebius_Llama_3_1_405B_cheap'
       this.writing_task.source_fields = ['_full_text_snippets', '_descriptive_text_fields']
       this.writing_task.use_all_items = true
       this.writing_task.prompt = "Summarize the items in three short bullet points. Use markdown syntax."
@@ -245,12 +246,8 @@ export default {
             class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
         </div>
         <div class="flex-1 min-w-0">
-          <Dropdown v-model="writing_task.module"
-            :options="appState.available_ai_modules"
-            optionLabel="name"
-            optionValue="identifier"
-            placeholder="Select Module.."
-            class="w-full h-full text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+          <LlmSelect v-model="writing_task.module"
+            :tooltip="'Select the AI module to use for this writing task'" />
         </div>
       </div>
 

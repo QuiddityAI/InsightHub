@@ -3,9 +3,9 @@ import json
 import logging
 import threading
 
+from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
+
 from data_map_backend.models import CollectionItem, CollectionColumn, ServiceUsage, FieldType, WritingTask
-from data_map_backend.chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
-from data_map_backend.groq_client import GROQ_MODELS, get_groq_response_using_history
 from write.prompts import writing_task_prompt
 from data_map_backend.utils import DotDict
 
@@ -37,23 +37,34 @@ def execute_writing_task_thread(task: WritingTask):
 
 
 def _execute_writing_task(task: WritingTask):
+    if not task.prompt:
+        task.is_processing = False
+        task.save()
+        return
+    assert isinstance(task.source_fields, list)
     if '_all_columns' in task.source_fields:
         source_columns = CollectionColumn.objects.filter(collection=task.collection)
     else:
         source_column_identifiers = [name.replace("_column__", "") for name in task.source_fields if name.startswith("_column__")]
         source_columns = CollectionColumn.objects.filter(collection=task.collection, identifier__in=source_column_identifiers)
     contexts = []
-    items = task.collection.collectionitem_set.filter(relevance__gte=1) if task.use_all_items else [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
+    items: list[CollectionItem] = []
+    if task.use_all_items:
+        items = task.collection.collectionitem_set.filter(relevance__gte=0)  # type: ignore
+    else:
+        assert isinstance(task.selected_item_ids, list)
+        items = [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
     references = []
     for item in items:
         text = None
         if item.field_type == FieldType.TEXT:
             # TODO: use same format as for other items
             text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
-        if item.field_type == FieldType.IDENTIFIER:
+        elif item.field_type == FieldType.IDENTIFIER:
             assert item.dataset_id is not None
             assert item.item_id is not None
-            text = f"Document ID: {len(references) + 1}\n" + get_item_question_context_native(item.dataset_id, item.item_id, task.source_fields, task.prompt)['context']
+            item_context = get_item_question_context_native(item.dataset_id, item.item_id, task.source_fields, task.prompt)['context']
+            text = f"Document ID: {len(references) + 1}\n{item_context}"
             for additional_source_column in source_columns:
                 if not item.column_data:
                     continue
@@ -70,43 +81,26 @@ def _execute_writing_task(task: WritingTask):
 
     context = "\n\n".join(contexts)
 
-    full_prompt = writing_task_prompt.replace("{{ context }}", context)
-    # logging.warning(full_prompt)
-    history = [ { "role": "system", "content": full_prompt }, { "role": "user", "content": task.prompt }]
-    cost_per_module = {
-        'openai_gpt_3_5': 1.0,
-        'openai_gpt_4_turbo': 5.0,
-        'openai_gpt_4_o': 2.5,
-        'groq_llama_3_8b': 0.2,
-        'groq_llama_3_70b': 0.5,
-        'python_expression': 0.0,
-        'website_scraping': 0.0,
-        'notes': 0.0,
-    }
-    module = task.module or "openai_gpt_3_5"
+    system_prompt = writing_task_prompt.replace("{{ context }}", context)
+    user_prompt = task.prompt
+    # logging.warning(system_prompt)
 
-    usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by, "External AI")
-    result = usage_tracker.track_usage(cost_per_module.get(module, 1.0), f"execute writing task using {module}")
-    if result["approved"]:
-        if module.startswith("openai_gpt"):
-            openai_model = {
-                "openai_gpt_3_5": OPENAI_MODELS.GPT3_5,
-                "openai_gpt_4_turbo": OPENAI_MODELS.GPT4_TURBO,
-                "openai_gpt_4_o": OPENAI_MODELS.GPT4_O,
-            }
-            response_text = get_chatgpt_response_using_history(history, openai_model[module])
-        elif module.startswith("groq_"):
-            groq_models = {
-                "groq_llama_3_8b": GROQ_MODELS.LLAMA_3_8B,
-                "groq_llama_3_70b": GROQ_MODELS.LLAMA_3_70B,
-            }
-            response_text = get_groq_response_using_history(history, groq_models[module])
-        else:
-            response_text = "AI module not found."
+    default_model = Google_Gemini_Flash_1_5_v1.__name__
+    model = BaseLLMModel.load(task.module or default_model)
+
+    # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:
+    ai_credits = model.config.euro_per_1M_output_tokens / 5.0
+    usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by.id, "External AI")  # type: ignore
+    result = usage_tracker.track_usage(ai_credits, f"write summary using {model.__class__.__name__}")
+    if result['approved'] == True:
+        response = model.generate_prompt_response(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=None,
+        )
+        response_text = response.conversation[-1].content
     else:
-        response_text = "AI usage limit exceeded."
-    #response_text = "n/a"
-    # logging.warning(response_text)
+        response_text = "AI usage limit exceeded"
 
     assert response_text is not None
     used_references = []
@@ -121,8 +115,6 @@ def _execute_writing_task(task: WritingTask):
         item = get_document_details_by_id(reference[0], reference[1], tuple(dataset.schema.result_list_rendering.required_fields))
         metadata[reference[0]][reference[1]] = item
 
-    if not task.previous_versions:
-        task.previous_versions = []  # type: ignore
     task.previous_versions.append({
         'created_at': task.changed_at.isoformat(),
         'text': task.text,
@@ -131,8 +123,8 @@ def _execute_writing_task(task: WritingTask):
     if len(task.previous_versions) > 3:
         task.previous_versions = task.previous_versions[-3:]  # type: ignore
     task.text = response_text
-    task.additional_results = {
-        'used_prompt': full_prompt,
+    task.additional_results = {  # type: ignore
+        'used_prompt': f"system_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
         'references': references,
         'reference_metadata': metadata,
     }
