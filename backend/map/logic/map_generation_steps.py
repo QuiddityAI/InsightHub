@@ -51,9 +51,12 @@ def get_vector_field_dimensions(field: DotDict):
 def do_umap(
     vectors: np.ndarray, projection_parameters: dict, reduced_dimensions_required: int
 ) -> np.ndarray:
-    from cuml.manifold.umap import UMAP
+    # import it only when needed as it slows down the startup time
+    try:
+        from cuml.manifold.umap import UMAP
+    except ImportError:
+        from umap import UMAP
 
-    # from umap import UMAP  # import it only when needed as it slows down the startup time
     reducer = UMAP(
         n_components=reduced_dimensions_required,
         random_state=99,  # type: ignore
