@@ -11,9 +11,11 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
 
@@ -31,13 +33,14 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
-    this.collection = this.appStateStore.collections.find((collection) => collection.id === this.collection_item.collection)
+    this.collection = this.collectionStore.available_collections.find((collection) => collection.id === this.collection_item.collection)
   },
   watch: {
     collection_item(val, oldVal) {
-      this.collection = this.appStateStore.collections.find((collection) => collection.id === this.collection_item.collection)
+      this.collection = this.collectionStore.available_collections.find((collection) => collection.id === this.collection_item.collection)
     },
   },
   methods: {
