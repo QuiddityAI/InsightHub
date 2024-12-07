@@ -1241,8 +1241,6 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         null=False,
     )
 
-    history = HistoricalRecords()
-
     @property
     def actual_classes(self) -> list:
         classes = defaultdict(lambda: [0, 0])

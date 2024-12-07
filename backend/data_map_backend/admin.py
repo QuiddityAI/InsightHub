@@ -790,7 +790,7 @@ class WritingTaskInline(admin.TabularInline):
 
 
 @admin.register(DataCollection)
-class DataCollectionAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+class DataCollectionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ('id', 'related_organization', 'name', 'created_by', 'is_public')
     list_display_links = ('id', 'name')
