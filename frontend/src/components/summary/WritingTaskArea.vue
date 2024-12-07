@@ -1,7 +1,4 @@
 <script setup>
-import {
-  XMarkIcon,
-} from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
 
@@ -24,7 +21,7 @@ const toast = useToast()
 export default {
   inject: ["eventBus"],
   props: ["collection_id", "class_name"],
-  emits: ["close"],
+  emits: [],
   data() {
     return {
       collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
@@ -186,156 +183,54 @@ export default {
 </script>
 
 <template>
-  <div class="pt-10 pb-10 pl-14 pr-16 flex flex-col gap-5 relative">
+  <div class="flex flex-col items-center pt-10 pb-10 pl-14 pr-16 relative">
 
-    <BorderlessButton @click="$emit('close')" class="absolute right-3 top-3"
-      v-tooltip.bottom="{value: 'Hide', showDelay: 400}">
-      <XMarkIcon class="h-6 w-6"></XMarkIcon>
-    </BorderlessButton>
+    <div class="flex-1 flex flex-col gap-5 max-w-[700px]">
 
-    <WritingTask v-for="task in writing_task_ids" :key="task.id"
-      :writing_task_id="task.id"
-      @delete="delete_writing_task(task.id)"
-    />
+      <WritingTask v-for="task in writing_task_ids" :key="task.id"
+        :writing_task_id="task.id"
+        @delete="delete_writing_task(task.id)"
+      />
 
-    <div class="flex-1"></div>
+      <div class="flex-1"></div>
 
-    <div class="flex flex-col gap-2 items-start mb-10" v-if="writing_task_ids.length === 0">
-      <span class="text-sm text-gray-500">
-        Ideas:
-      </span>
-      <button v-for="template in templates" :key="template.intent"
-        @click="create_from_template(template)"
-        class="flex-1 px-3 py-1 rounded text-sm text-gray-500 bg-gray-100 hover:text-blue-500">
-        {{ template.intent }}
-      </button>
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <span class="text-xs text-gray-400 text-center">
-        Ask questions that can be answered using the items in this collection.
-      </span>
-
-      <div class="flex flex-row gap-2">
-        <input v-model="quick_question_text" placeholder="Quick Question"
-          @keyup.enter="quick_question(quick_question_text)"
-          class="flex-1 px-2 py-1 rounded text-sm text-gray-800 border border-gray-200" />
-        <BorderButton @click="quick_question(quick_question_text)"
-          class="">
-          Ask
-        </BorderButton>
-      </div>
-
-
-      <div class="flex flex-row gap-3">
-        <BorderButton @click="add_writing_task('New Writing Task')"
-          class="flex-1 px-2 py-1">
-          Create custom writing task
-        </BorderButton>
-      </div>
-    </div>
-
-    <!-- <div class="flex flex-row gap-2 items-center justify-center" v-if="false">
-      <Dropdown
-        v-model="appState.selected_writing_task_id"
-        :options="writing_task_ids"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Select Writing Task..."
-        class="flex-1 h-full text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-      <InputGroup class="flex-1">
-        <InputText placeholder="New Writing Task" v-model="new_writing_task_name" />
-        <Button label="Add" @click="add_writing_task(new_writing_task_name)"></Button>
-      </InputGroup>
-    </div>
-
-    <div v-if="appState.selected_writing_task" class="flex-1 flex flex-col gap-2 overflow-y-auto">
-
-      <div class="flex flex-row items-center">
-        <span class="text-sm">Prompt:</span>
-        <div class="flex-1"></div>
-        <button
-          @click="delete_writing_task()"
-          v-tooltip.left="{ value: 'Delete Writing Task', showDelay: 500 }"
-          class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
-          <TrashIcon class="h-4 w-4"></TrashIcon>
+      <div class="flex flex-col gap-2 items-start mb-10" v-if="writing_task_ids.length === 0">
+        <span class="text-sm text-gray-500">
+          Ideas:
+        </span>
+        <button v-for="template in templates" :key="template.intent"
+          @click="create_from_template(template)"
+          class="flex-1 px-3 py-1 rounded text-sm text-gray-500 bg-gray-100 hover:text-blue-500">
+          {{ template.intent }}
         </button>
       </div>
 
-      <textarea v-model="appState.selected_writing_task.prompt" placeholder="prompt"
-        class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
-      <div class="flex flex-row gap-2 items-center">
-        <div class="flex-1 min-w-0">
-          <MultiSelect v-model="appState.selected_writing_task.source_fields"
-            :options="available_source_fields"
-            optionLabel="name"
-            optionValue="identifier"
-            placeholder="Select Sources..."
-            :maxSelectedLabels="0"
-            selectedItemsLabel="{0} Source(s)"
-            class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+      <div class="flex flex-col gap-2">
+        <span class="text-xs text-gray-400 text-center">
+          Ask questions that can be answered using the items in this collection.
+        </span>
+
+        <div class="flex flex-row gap-2">
+          <input v-model="quick_question_text" placeholder="Quick Question"
+            @keyup.enter="quick_question(quick_question_text)"
+            class="flex-1 px-2 py-1 rounded text-sm text-gray-800 border border-gray-200" />
+          <BorderButton @click="quick_question(quick_question_text)"
+            class="">
+            Ask
+          </BorderButton>
         </div>
-        <div class="flex-1 min-w-0">
-          <Dropdown v-model="appState.selected_writing_task.module"
-            :options="appState.available_ai_modules"
-            optionLabel="name"
-            optionValue="identifier"
-            placeholder="Select Module.."
-            class="w-full h-full text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
+
+
+        <div class="flex flex-row gap-3">
+          <BorderButton @click="add_writing_task('New Writing Task')"
+            class="flex-1 px-2 py-1">
+            Create custom writing task
+          </BorderButton>
         </div>
       </div>
 
-      <div class="flex flex-row gap-2">
-        <SelectButton v-model="appState.selected_writing_task.use_all_items"
-          :options="item_selection_options" optionLabel="label" optionValue="value"
-          class="ml-[2px]" />
-        <button @click="update_writing_task()" class="px-2 py-1 rounded text-sm bg-gray-100 hover:bg-blue-100/50">Save Changes</button>
-        <button @click="execute_writing_task()" class="px-2 py-1 rounded text-sm bg-green-100 hover:bg-blue-100/50">(Re-)generate</button>
-        <div class="flex-1"></div>
-        <button v-if="appState.selected_writing_task.previous_versions?.length > 0"
-          @click="revert_changes()"
-          v-tooltip.left="{'value': 'Go back to last version', showDelay: 500}"
-          class="h-6 w-6 rounded bg-gray-100 hover:text-blue-500">
-          <BackwardIcon class="m-1"></BackwardIcon>
-        </button>
-      </div>
-      <p v-if="appState.selected_writing_task.is_processing" class="text-sm text-gray-500">Processing...</p>
+    </div>
 
-      <Message v-if="!appState.selected_writing_task.use_all_items" severity="warn">Using selected items is not yet implemented</Message>
-
-      <div class="relative flex-1 mt-2 flex flex-col overflow-hidden">
-        <textarea v-if="edit_mode"
-          v-model="appState.selected_writing_task.text"
-          class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 text-sm shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
-        <div v-if="!edit_mode" class="w-full h-full">
-          <div v-html="marked.parse(appState.selected_writing_task.text)"
-            class="w-full h-full text-sm use-default-html-styles use-default-html-styles-large overflow-y-auto"></div>
-        </div>
-        <button @click="edit_mode = !edit_mode"
-          v-tooltip.left="{'value': 'Edit', showDelay: 500}"
-          class="absolute top-0 right-0 h-6 w-6 rounded bg-gray-100 hover:text-blue-500"
-          :class="{'text-gray-500': !edit_mode, 'text-blue-500': edit_mode}">
-          <PencilIcon class="m-1"></PencilIcon>
-        </button>
-      </div>
-
-      <div class="flex flex-row gap-2">
-        <div class="flex-1"></div>
-        <button v-if="appState.user.is_staff && appState.selected_writing_task.additional_results.used_prompt" @click="show_used_prompt = true"
-          v-tooltip.right="{'value': 'Show the used prompt', showDelay: 500}"
-          class="h-6 w-6 rounded bg-gray-100 text-gray-500 hover:text-blue-500 show-when-parent-is-hovered">
-          P
-        </button>
-        <Dialog v-model:visible="show_used_prompt" modal header="Used Prompt">
-          <div class="overflow-y-auto max-h-[400px]"
-            v-html="convert_to_html(appState.selected_writing_task.additional_results.used_prompt)" />
-        </Dialog>
-      </div>
-
-      <textarea v-model="references" readonly
-        class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"/>
-
-    </div> -->
   </div>
 
 </template>

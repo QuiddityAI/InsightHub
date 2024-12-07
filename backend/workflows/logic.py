@@ -7,6 +7,7 @@ from django.utils import timezone
 from llmonkey.llms import Mistral_Ministral3b
 
 from data_map_backend.models import DataCollection, User, COLUMN_META_SOURCE_FIELDS, WritingTask
+from data_map_backend.schemas import CollectionUiSettings
 from search.schemas import SearchTaskSettings
 from search.logic.execute_search import run_search_task
 from write.logic.writing_task import execute_writing_task_thread
@@ -98,6 +99,7 @@ def prepare_for_classic_search(collection: DataCollection, settings: CreateColle
 
 def prepare_for_overview_map(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     assert settings.user_input is not None
+    collection.ui_settings = CollectionUiSettings(secondary_view="map").model_dump()
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
         user_input=settings.user_input or "",
@@ -134,6 +136,7 @@ def prepare_for_assisted_search(collection: DataCollection, settings: CreateColl
 def prepare_for_question(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     logging.warning("prepare_for_question: start")
     assert settings.user_input is not None
+    collection.ui_settings = CollectionUiSettings(secondary_view="summary").model_dump()
     create_relevance_column(collection, settings.user_input, settings.result_language)
 
     search_task = SearchTaskSettings(

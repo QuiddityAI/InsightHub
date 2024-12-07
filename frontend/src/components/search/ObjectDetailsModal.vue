@@ -310,7 +310,7 @@ export default {
   display: block;
   margin-top: 0.5rem;
   margin-bottom: 0.6rem;
-  color: gray;
+  color: rgb(73, 73, 73);
 }
 
 </style>

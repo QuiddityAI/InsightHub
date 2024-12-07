@@ -8,6 +8,9 @@ import {
   ArchiveBoxArrowDownIcon,
   DocumentIcon,
   TableCellsIcon,
+  XMarkIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
 } from "@heroicons/vue/24/outline"
 
 import Dialog from 'primevue/dialog';
@@ -23,6 +26,7 @@ import SearchTaskDialog from "./SearchTaskDialog.vue";
 import AddColumnDialog from "./AddColumnDialog.vue";
 import WritingTaskArea from "../summary/WritingTaskArea.vue";
 import BorderButton from "../widgets/BorderButton.vue";
+import BorderlessButton from "../widgets/BorderlessButton.vue";
 import SearchModeBar from "../search/SearchModeBar.vue";
 import AgentModeBar from "./AgentModeBar.vue";
 import MapWithLabelsAndButtons from "../map/MapWithLabelsAndButtons.vue";
@@ -56,14 +60,10 @@ export default {
       show_retrain_success_label: false,
       table_visible: false,
       show_export_dialog: false,
-      use_grid_view: false,
-      item_size_mode: CollectionItemSizeMode.FULL,
 
       show_search_task_dialog: false,
       show_add_column_dialog: false,
       show_add_item_dialog: false,
-
-      side_view: null,  // one of 'more', 'map', 'summary'
     }
   },
   watch: {
@@ -71,11 +71,6 @@ export default {
       this.collectionStore.load_collection_items()
       // scroll table to top:
       this.$refs.content_area.scrollTop = 0
-    },
-    'collectionStore.collection.writing_task_count'() {
-      if (this.collection?.writing_task_count > 0) {
-        this.side_view = 'summary'
-      }
     },
   },
   computed: {
@@ -97,9 +92,6 @@ export default {
   },
   mounted() {
     this.collectionStore.check_for_agent_status()
-    if (this.collection.writing_task_count > 0) {
-      this.side_view = 'summary'
-    }
   },
   methods: {
     delete_collection() {
@@ -113,12 +105,9 @@ export default {
       this.appStateStore.settings.search.all_field_query = this.collection.search_intent
       this.appStateStore.request_search_results()
     },
-    show_right_side_view(view) {
-      if (this.side_view === view) {
-        this.side_view = null
-        return
-      }
-      this.side_view = view
+    show_secondary_view(view) {
+      let new_secondary_view = this.collection.ui_settings.secondary_view === view ? null : view
+      this.collectionStore.update_ui_settings({secondary_view: new_secondary_view})
     },
   },
 }
@@ -152,25 +141,25 @@ export default {
         <div class="flex-1"></div>
 
         <div class="flex flex-row">
-          <BorderButton @click="item_size_mode = CollectionItemSizeMode.SINGLE_LINE" class="h-6"
-            :highlighted="item_size_mode === CollectionItemSizeMode.SINGLE_LINE"
+          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SINGLE_LINE})" class="h-6"
+            :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.SINGLE_LINE"
             v-tooltip.bottom="{ value: 'Single Line Items' }">
             S
           </BorderButton>
-          <BorderButton @click="item_size_mode = CollectionItemSizeMode.SMALL" class="h-6"
-            :highlighted="item_size_mode === CollectionItemSizeMode.SMALL"
+          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SMALL})" class="h-6"
+            :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.SMALL"
             v-tooltip.bottom="{ value: 'Small Items' }">
             M
           </BorderButton>
-          <BorderButton @click="item_size_mode = CollectionItemSizeMode.FULL" class="h-6"
-            :highlighted="item_size_mode === CollectionItemSizeMode.FULL"
+          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})" class="h-6"
+            :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.FULL"
             v-tooltip.bottom="{ value: 'Full Items' }">
             L
           </BorderButton>
         </div>
 
-        <BorderButton @click="use_grid_view = !use_grid_view" class="h-6"
-          v-tooltip.bottom="{ value: 'Use grid view' }" :highlighted="use_grid_view">
+        <BorderButton @click="collectionStore.update_ui_settings({use_grid_view: !collection.ui_settings.use_grid_view})" class="h-6"
+          v-tooltip.bottom="{ value: 'Use grid view' }" :highlighted="collection.ui_settings.use_grid_view">
           <TableCellsIcon class="h-4 w-4"></TableCellsIcon>
         </BorderButton>
 
@@ -183,16 +172,16 @@ export default {
         <span class="text-gray-400">
           Views:
         </span>
-        <BorderButton @click="show_right_side_view('summary')"
-          :highlighted="side_view === 'summary'">
+        <BorderButton @click="show_secondary_view('summary')"
+          :highlighted="collection.ui_settings.secondary_view === 'summary'" :badge="collection.writing_task_count">
           Summary
         </BorderButton>
-        <BorderButton @click="show_right_side_view('map')"
-          :highlighted="side_view === 'map'">
+        <BorderButton @click="show_secondary_view('map')"
+          :highlighted="collection.ui_settings.secondary_view === 'map'">
           Map
         </BorderButton>
-        <BorderButton @click="show_right_side_view('more')"
-          :highlighted="side_view === 'more'">
+        <BorderButton @click="show_secondary_view('more')"
+          :highlighted="collection.ui_settings.secondary_view === 'more'">
           More
         </BorderButton>
       </div>
@@ -202,17 +191,33 @@ export default {
     <div class="flex-1 flex flex-row overflow-hidden z-30 relative">
 
       <!-- Left Side: Summary -->
-      <div v-if="side_view === 'summary'"
-        class="flex-none w-[620px] bg-white shadow-md z-40 relative">
-        <WritingTaskArea v-if="side_view === 'summary'"
+      <div v-if="collection.ui_settings.secondary_view === 'summary'"
+        class="flex-none w-[620px] bg-white shadow-md z-40 relative transition-[width]"
+        :class="{'w-[620px]': collection.ui_settings.secondary_view_is_full_screen,
+          'w-full': collection.ui_settings.secondary_view_is_full_screen,
+        }">
+
+        <BorderlessButton @click="collectionStore.update_ui_settings({secondary_view_is_full_screen: !collection.ui_settings.secondary_view_is_full_screen})"
+          class="absolute right-12 top-3 z-50"
+          v-tooltip.bottom="{value: 'Full Screen', showDelay: 400}">
+          <ArrowsPointingOutIcon class="h-6 w-6" v-if="!collection.ui_settings.secondary_view_is_full_screen"></ArrowsPointingOutIcon>
+          <ArrowsPointingInIcon class="h-6 w-6" v-else></ArrowsPointingInIcon>
+        </BorderlessButton>
+
+        <BorderlessButton @click="collectionStore.update_ui_settings({secondary_view: null})"
+          class="absolute right-3 top-3 z-50"
+          v-tooltip.bottom="{value: 'Hide', showDelay: 400}">
+          <XMarkIcon class="h-6 w-6"></XMarkIcon>
+        </BorderlessButton>
+
+        <WritingTaskArea v-if="collection.ui_settings.secondary_view === 'summary'"
           class="overflow-y-auto h-full"
-          @close="side_view = null"
           :collection_id="collectionStore.collection_id" :class_name="class_name">
         </WritingTaskArea>
       </div>
 
       <!-- Middle: Content Area-->
-      <div ref="content_area"
+      <div ref="content_area" v-if="!(collection.ui_settings.secondary_view && collection.ui_settings.secondary_view_is_full_screen)"
         class="flex-1 flex flex-col gap-3 xl:gap-5 overflow-y-auto pt-4 xl:pt-6 z-30 relative shadow-lg bg-gray-200">
 
         <!-- Search / Agent Bar -->
@@ -235,17 +240,17 @@ export default {
           </div>
         </div>
 
-        <CollectionTableView v-if="!use_grid_view"
+        <CollectionTableView v-if="!collection.ui_settings.use_grid_view"
           class="z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
           :class_name="class_name" :is_positive="true"
-          :item_size_mode="item_size_mode"
+          :item_size_mode="collection.ui_settings.item_size_mode"
           @add_column="show_add_column_dialog = true">
         </CollectionTableView>
 
-        <CollectionItemGrid v-if="use_grid_view"
+        <CollectionItemGrid v-if="collection.ui_settings.use_grid_view"
           class="z-20" ref="collection_grid_view" :collection_id="collectionStore.collection_id"
           :class_name="class_name" :is_positive="true"
-          :item_size_mode="item_size_mode">
+          :item_size_mode="collection.ui_settings.item_size_mode">
         </CollectionItemGrid>
 
         <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
@@ -318,17 +323,35 @@ export default {
       </div>
 
       <!-- Right Side: More / Map -->
-      <div v-if="side_view && side_view !== 'summary'"
-        class="flex-none w-[600px] bg-white relative"
-        :class="{'z-0': side_view === 'map', 'z-40': side_view === 'more'}">
+      <div v-if="collection.ui_settings.secondary_view && collection.ui_settings.secondary_view !== 'summary'"
+        class="flex-none bg-white relative"
+        :class="{
+          'z-0': collection.ui_settings.secondary_view === 'map',
+          'z-40': collection.ui_settings.secondary_view === 'more',
+          'w-[600px]': !collection.ui_settings.secondary_view_is_full_screen,
+          'w-full': collection.ui_settings.secondary_view_is_full_screen,
+          }">
 
-        <div v-if="side_view === 'more'"
+        <BorderlessButton @click="collectionStore.update_ui_settings({secondary_view_is_full_screen: !collection.ui_settings.secondary_view_is_full_screen})"
+          class="absolute left-12 top-3 z-50"
+          v-tooltip.bottom="{value: 'Full Screen', showDelay: 400}">
+          <ArrowsPointingOutIcon class="h-6 w-6" v-if="!collection.ui_settings.secondary_view_is_full_screen"></ArrowsPointingOutIcon>
+          <ArrowsPointingInIcon class="h-6 w-6" v-else></ArrowsPointingInIcon>
+        </BorderlessButton>
+
+        <BorderlessButton @click="collectionStore.update_ui_settings({secondary_view: null})"
+          class="absolute left-3 top-3 z-50"
+          v-tooltip.bottom="{value: 'Hide', showDelay: 400}">
+          <XMarkIcon class="h-6 w-6"></XMarkIcon>
+        </BorderlessButton>
+
+        <div v-if="collection.ui_settings.secondary_view === 'more'"
           class="overflow-hidden h-full shadow-md">
           <ExplanationLog class="h-full overflow-y-auto">
           </ExplanationLog>
         </div>
 
-        <div v-if="side_view === 'map'"
+        <div v-if="collection.ui_settings.secondary_view === 'map'"
           class="w-full h-full relative">
           <MapWithLabelsAndButtons class="w-full h-full">
           </MapWithLabelsAndButtons>

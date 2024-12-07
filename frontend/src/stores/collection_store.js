@@ -156,6 +156,17 @@ export const useCollectionStore = defineStore("collection", {
           }
         })
     },
+    update_ui_settings(updated_settings) {
+      this.collection.ui_settings = {...this.collection.ui_settings, ...updated_settings}
+      const body = {
+        collection_id: this.collection.id,
+        ui_settings: this.collection.ui_settings,
+      }
+      httpClient
+        .post("/api/v1/collections/set_ui_settings", body)
+        .then(function (response) {
+        })
+    },
     // ------------------
     load_collection_items(only_update_specific_columns=null) {
       const that = this

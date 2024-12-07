@@ -1233,6 +1233,13 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
+    ui_settings = models.JSONField(
+        verbose_name="UI Settings",
+        help_text="Settings for the frontend",
+        default=dict,
+        blank=True,
+        null=False,
+    )
 
     history = HistoricalRecords()
 

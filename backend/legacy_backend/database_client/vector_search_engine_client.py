@@ -456,7 +456,6 @@ class VectorSearchEngineClient(object):
             logging.warning("Query vector is NaN, returning empty list")
             raise ValueError("Query vector is NaN")
             return []
-        logging.warning(f"parameters: {database_name}, {vector_field}, {parent_id}, {query_vector}, {score_threshold}, {limit}, {min_results}")
         collection_name = self._get_collection_name(database_name, vector_field)
         hits = self.client.search(
             collection_name=f'{collection_name}_sub_items',

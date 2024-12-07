@@ -15,12 +15,16 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  badge: {
+    type: Number,
+    default: 0,
+  },
 })
 </script>
 
 <template>
   <button
-    class="flex items-center justify-center gap-1 text-sm font-bold border border-gray-200 rounded-md hover:border-gray-300"
+    class="relative flex items-center justify-center gap-1 text-sm font-bold border border-gray-200 rounded-md hover:border-gray-300"
     :class="{
       'text-gray-500': !highlighted,
       [highlight_color]: highlighted,
@@ -28,5 +32,11 @@ const props = defineProps({
       'px-2': default_padding,
       }">
     <slot></slot>
+    <span
+      v-if="badge"
+      class="absolute -top-2 -right-2 flex items-center justify-center w-4 h-4 text-[11px] font-bold text-white bg-blue-500 rounded-full"
+    >
+      {{ badge <= 9 ? badge : '+' }}
+    </span>
   </button>
 </template>
