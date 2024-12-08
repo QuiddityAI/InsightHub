@@ -183,9 +183,9 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col items-center pt-10 pb-10 pl-14 pr-16 relative">
+  <div class="pl-14 pr-16">
 
-    <div class="flex-1 flex flex-col gap-5 max-w-[700px]">
+    <div class="h-full flex flex-col gap-5 max-w-[600px] min-w-0 mx-auto pt-10">
 
       <WritingTask v-for="task in writing_task_ids" :key="task.id"
         :writing_task_id="task.id"
@@ -228,6 +228,8 @@ export default {
           </BorderButton>
         </div>
       </div>
+
+      <div class="flex-none h-5 w-full"></div>
 
     </div>
 

@@ -192,10 +192,9 @@ export default {
 
       <!-- Left Side: Summary -->
       <div v-if="collection.ui_settings.secondary_view === 'summary'"
-        class="flex-none w-[620px] bg-white shadow-md z-40 relative transition-[width]"
-        :class="{'w-[620px]': collection.ui_settings.secondary_view_is_full_screen,
-          'w-full': collection.ui_settings.secondary_view_is_full_screen,
-        }">
+        class="flex-none bg-white shadow-md z-40 relative transition-[width]"
+        :class="{'w-[620px]': !collection.ui_settings.secondary_view_is_full_screen,
+          'w-full': collection.ui_settings.secondary_view_is_full_screen, }">
 
         <BorderlessButton @click="collectionStore.update_ui_settings({secondary_view_is_full_screen: !collection.ui_settings.secondary_view_is_full_screen})"
           class="absolute right-12 top-3 z-50"
