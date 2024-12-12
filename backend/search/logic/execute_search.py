@@ -99,6 +99,10 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
 
 
 def add_items_from_active_sources(collection: DataCollection, user_id: int, is_new_collection: bool = False, after_columns_were_processed: Callable | None=None) -> int:
+    # removing visibility filters because otherwise new items might not be visible
+    collection.filters = []
+    collection.save()
+
     new_items = []
     for source in collection.search_sources:
         source = SearchSource(**source)
