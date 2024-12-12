@@ -12,6 +12,8 @@ import markedKatex from "marked-katex-extension";
 import ProgressSpinner from 'primevue/progressspinner';
 import Dialog from "primevue/dialog";
 
+import { CollectionItemSizeMode } from "../../utils/utils.js"
+
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
@@ -32,7 +34,7 @@ const _window = window
 
 export default {
   inject: ["eventBus"],
-  props: ["item", "column", "columns_with_running_processes", "show_overlay_buttons"],
+  props: ["item", "column", "columns_with_running_processes", "show_overlay_buttons", "item_size_mode"],
   emits: ["run_cell"],
   data() {
     return {
@@ -110,6 +112,10 @@ export default {
     this.$nextTick(() => {
       this.update_show_more_indicator()
     })
+    const resizeObserver = new ResizeObserver(() => {
+      this.update_show_more_indicator()
+    })
+    resizeObserver.observe(this.$refs.scroll_area)
   },
   watch: {
     value_as_html() {
@@ -198,10 +204,26 @@ export default {
              'min-w-[270px]': value_as_html.length > 10 && value_as_html.length <= 100,
              'min-w-[350px]': value_as_html.length > 100}">
 
-    <div ref="scroll_area" class="min-h-[70px] max-h-[210px] overflow-y-scroll">
-      <div v-if="!edit_mode" v-html="value_as_html" class="text-sm use-default-html-styles py-2 pl-1 text-gray-700 w-full"></div>
+    <div v-if="!edit_mode"
+      ref="scroll_area" class="relative min-h-[70px] overflow-y-scroll"
+      :class="{
+        'max-h-[70px]': item_size_mode <= CollectionItemSizeMode.SINGLE_LINE,
+        'max-h-[150px]': item_size_mode === CollectionItemSizeMode.SMALL,
+        'max-h-[300px]': item_size_mode >= CollectionItemSizeMode.FULL,
+      }">
+      <div v-if="!edit_mode" v-html="value_as_html"
+        class="text-sm use-default-html-styles py-2 pl-1 text-gray-700 w-full"></div>
+    </div>
+
+    <div v-if="edit_mode"
+      ref="scroll_area" class="relative min-h-[70px] overflow-y-scroll"
+      :class="{
+        'h-[70px]': item_size_mode <= CollectionItemSizeMode.SINGLE_LINE,
+        'h-[150px]': item_size_mode === CollectionItemSizeMode.SMALL,
+        'h-[300px]': item_size_mode >= CollectionItemSizeMode.FULL,
+      }">
       <textarea v-if="edit_mode"
-        class="w-full h-[150px] p-1 border border-gray-300 rounded text-sm py-2 pl-1"
+        class="w-full h-full p-1 border border-gray-300 rounded text-sm py-2 pl-1"
         :value="value_for_editing"
         ref="edit_text_area">
       </textarea>

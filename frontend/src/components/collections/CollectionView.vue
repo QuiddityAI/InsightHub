@@ -92,6 +92,9 @@ export default {
   },
   mounted() {
     this.collectionStore.check_for_agent_status()
+    if (!this.collection.ui_settings.item_size_mode) {
+      this.collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})
+    }
   },
   methods: {
     delete_collection() {
