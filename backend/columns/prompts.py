@@ -1,19 +1,21 @@
 from collections import defaultdict
 
 column_name_prompt_en = """
-Return a very short title for the result of following question / expression.
-The title should be at most three words long.
-Answer only with the requested title, without anything else.
+The user has asked the following question / task:
+"{{ expression }}"
 
-The question / task is: {{ expression }}
+What title best describes the results of this question / task?
+The title should be one to three words long.
+Answer only with the requested title, without anything else.
 """
 
 column_name_prompt_de = """
-Gib einen sehr kurzen Titel für das Ergebnis der folgenden Frage / des folgenden Ausdrucks an.
-Der Titel sollte maximal drei Wörter lang sein.
-Antworte nur mit dem angeforderten Titel, ohne etwas anderes.
+Der Nutzer hat folgende Frage / Aufgabe gestellt:
+"{{ expression }}"
 
-Die Frage / die Aufgabe ist: {{ expression }}
+Welche Überschrift beschreibt die Ergebnisse dieser Frage / Aufgabe am besten?
+Der Titel sollte ein bis drei Wörter lang sein.
+Antworte nur mit dem angeforderten Titel, ohne etwas anderes.
 """
 
 column_name_prompt = defaultdict(lambda: column_name_prompt_en)
