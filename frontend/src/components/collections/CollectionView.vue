@@ -141,17 +141,17 @@ export default {
         <div class="flex-1"></div>
 
         <div class="flex flex-row">
-          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SINGLE_LINE})" class="h-6"
+          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SINGLE_LINE})" class="h-6 rounded-r-none border-r-0"
             :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.SINGLE_LINE"
             v-tooltip.bottom="{ value: 'Single Line Items' }">
             S
           </BorderButton>
-          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SMALL})" class="h-6"
+          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SMALL})" class="h-6 rounded-none"
             :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.SMALL"
             v-tooltip.bottom="{ value: 'Small Items' }">
             M
           </BorderButton>
-          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})" class="h-6"
+          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})" class="h-6 rounded-l-none border-l-0"
             :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.FULL"
             v-tooltip.bottom="{ value: 'Full Items' }">
             L
