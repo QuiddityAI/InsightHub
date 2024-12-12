@@ -14,7 +14,12 @@ def rerank(query: str, sorted_ids: list[tuple[int, str]], items_by_dataset: dict
     cache_key = f"rerank_{query}_{json.dumps(sorted_ids[:top_n])}_{top_n}"
     if cache_key in cache:
         # logging.warning(f"Using reranking cache for query: {query}")
-        response = cache.get(cache_key)
+        try:
+            response = cache.get(cache_key)
+        except KeyError as e:
+            logging.error(f"Error while getting reranking cache: {e}", exc_info=True)
+            cache.delete(cache_key)
+            return rerank(query, sorted_ids, items_by_dataset, top_n)
         assert isinstance(response, cohere.RerankResponse)
     else:
         contexts = get_context_for_each_item_in_search_results(sorted_ids[:top_n], items_by_dataset)
