@@ -11,18 +11,21 @@ from columns.schemas import CellData, Criterion
 
 
 def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: int, is_relevance_column: bool = False) -> CellData:
+    default_model = Google_Gemini_Flash_1_5_v1.__name__
+    model_name = column.parameters.get("model") or default_model
+
     cell_data = CellData(
         changed_at=timezone.now().isoformat(),
         is_ai_generated=True,
         is_computed=True,
         is_manually_edited=False,
+        used_llm_model=model_name,
     )
     # if not column.parameters.get("model"):
     #     logging.error("No model specified for LLM column.")
     #     cell_data["value"] = "No model specified"
     #     return cell_data
-    default_model = Google_Gemini_Flash_1_5_v1.__name__
-    model = BaseLLMModel.load(column.parameters.get("model") or default_model)
+    model = BaseLLMModel.load(model_name)
 
     # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:
     ai_credits = model.config.euro_per_1M_output_tokens / 5.0

@@ -240,8 +240,12 @@ export default {
       P
     </button>
     <Dialog v-model:visible="show_used_prompt" modal header="Used Prompt">
-      <div class="overflow-y-auto max-h-[400px]"
-        v-html="convert_to_html(item.column_data[column.identifier]?.used_prompt)" />
+      <div class="overflow-y-auto max-h-[400px]">
+        <div>Used Model: {{ item.column_data[column.identifier]?.used_llm_model || 'unknown' }}</div>
+        <div
+          v-html="convert_to_html(item.column_data[column.identifier]?.used_prompt)">
+        </div>
+      </div>
     </Dialog>
     <button v-if="!edit_mode" @click="_window.isSecureContext ? _navigator.clipboard.writeText(value_as_plain_text) : _window.prompt('Copy to clipboard: Ctrl+C, Enter', value_as_plain_text)"
       v-tooltip.right="{'value': 'Copy plain text to clipboard', showDelay: 500}"

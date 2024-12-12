@@ -56,6 +56,8 @@ class CellData(Schema):
     value: str | dict | list | None = None
     collapsed_label: str | None = None
     used_prompt: str | None = None
+    used_llm_model: str | None = None
+    used_module: str | None = None
     changed_at: str
     is_ai_generated: bool = False
     is_computed: bool = False
