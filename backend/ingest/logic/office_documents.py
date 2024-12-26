@@ -10,8 +10,9 @@ from requests import ReadTimeout
 
 from data_map_backend.utils import DotDict
 from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult, AiFileProcessingInput, AiFileProcessingOutput
-from ingest.logic.common import UPLOADED_FILES_FOLDER
+from ingest.logic.common import UPLOADED_FILES_FOLDER, store_thumbnail
 from ingest.logic.pdferret_client import extract_using_pdferret
+# from ingest.logic.video import process_video
 
 
 def ai_file_processing_generator(input_items: list[dict], log_error: Callable, parameters: DotDict) -> list[dict]:
@@ -121,6 +122,8 @@ def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, pa
         type_description=file_metainfo.document_type or "",
         people=file_metainfo.authors or [],
     )
+    # if input_item.file_name.endswith(".mp4"):
+    #     process_video(result, input_item)
     return result
 
 
@@ -255,9 +258,3 @@ Antworte nur mit dem JSON-Objekt. Antworte mit einem vollständigen JSON-Objekt,
         return None
     result = AiMetadataResult(**info)
     return result
-
-
-def store_thumbnail(png_data: bytes, sub_path):
-    with open(f'{UPLOADED_FILES_FOLDER}/{sub_path}.thumbnail.png', 'wb') as f:
-        f.write(png_data)
-    return f'{sub_path}.thumbnail.png'

@@ -58,3 +58,5 @@ class AiFileProcessingOutput(Schema):
     title: str = ""
     type_description: str = ""
     people: list[str] = []
+    video_frame_embeddings: list | None = None
+    video_frame_chunks: list[dict] = []
