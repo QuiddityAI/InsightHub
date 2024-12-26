@@ -75,13 +75,13 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
         def generate_value_for_each_element_in_array_field(batch, log_error=default_log):
             # e.g. if there is a batch of 50 items and each item has one source field with 10 values
             # we flatten the batch to a list of 500 values
-            flattened_batch = [[element] for source_fields in batch for array_field in source_fields for element in array_field or [None]]
+            flattened_batch = [[element] for source_fields in batch for array_field in source_fields for element in array_field or []]
             # then we generate a value for each of the 500 values
             flattened_results = generate_one_value_for_each_item(flattened_batch, log_error)
             restructured_results = []
             # and then we restructure the results back to the original batch structure
             for item in batch:
-                original_element_count = len([element for array_field in item for element in array_field or [None]])
+                original_element_count = len([element for array_field in item for element in array_field or []])
                 restructured_results.append(flattened_results[:original_element_count])
                 flattened_results = flattened_results[original_element_count:]
             return restructured_results

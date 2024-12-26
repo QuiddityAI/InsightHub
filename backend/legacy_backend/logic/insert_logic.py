@@ -119,6 +119,9 @@ def insert_many(dataset_id: int, elements: list[dict]) -> list[tuple]:
         for element in elements:
             if vector_field not in element or element[vector_field] is None:
                 continue
+            if len(element[vector_field]) == 0:
+                # this is a multi-vector field but without any vectors
+                continue
             ids.append(element['_id'])
             vectors.append(element[vector_field])
 
