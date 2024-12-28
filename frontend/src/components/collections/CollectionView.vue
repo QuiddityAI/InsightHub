@@ -241,11 +241,12 @@ export default {
 
           </div>
 
-          <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row"
-            v-if="collection.filters?.length || collection.ui_settings.show_visibility_filters">
-            <FilterBar
-              @edit_search_task="show_search_task_dialog = true" />
-          </div>
+        </div>
+
+        <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row"
+          v-if="collection.filters?.length || collection.ui_settings.show_visibility_filters">
+          <FilterBar
+            @edit_search_task="show_search_task_dialog = true" />
         </div>
 
         <CollectionTableView v-if="!collection.ui_settings.use_grid_view"

@@ -74,7 +74,7 @@ def get_value_range_route(request, payload: ValueRangeInput):
     collection_items: BaseManager[CollectionItem] = collection.items.all()  # type: ignore
     values = collection_items.values_list(f'metadata__{payload.field_name}')
     values = [v for v, in values if v is not None]
-    min_value = min(values)
-    max_value = max(values)
+    min_value = min(values) if values else 0
+    max_value = max(values) if values else 1
     result = ValueRangeOutput(min=min_value, max=max_value)
     return result

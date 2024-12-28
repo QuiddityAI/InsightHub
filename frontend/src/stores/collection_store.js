@@ -195,6 +195,7 @@ export const useCollectionStore = defineStore("collection", {
           that.items_last_updated = response.data['items_last_changed']
           that.search_mode = response.data['search_mode']
           that.filtered_count = response.data['filtered_count']
+          that.eventBus.emit("collection_items_loaded")
         }
       })
     },

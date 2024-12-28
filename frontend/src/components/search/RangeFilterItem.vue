@@ -38,6 +38,7 @@ export default {
   },
   mounted() {
     this.update_boundaries()
+    this.eventBus.on("collection_items_loaded", this.update_boundaries)
   },
   watch: {
     min_value(new_val, old_val) {
