@@ -1458,6 +1458,7 @@ class CollectionItem(models.Model):
         blank=False,
         null=False,
         db_index=True,
+        related_name="items",
     )
     date_added = models.DateTimeField(
         verbose_name="Date added",

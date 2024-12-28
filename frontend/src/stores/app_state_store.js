@@ -1264,7 +1264,6 @@ export const useAppStateStore = defineStore("appState", {
       const filter = {
         uid: null,
         display_name: cluster_item.title,
-        exclusive_for: null,
         removable: true,
         filter_type: "collection_item_ids",
         value: collection_item_ids,

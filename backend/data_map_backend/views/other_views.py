@@ -931,6 +931,10 @@ def get_filtered_collection_items(
         filter = CollectionFilter(**filter_data)
         if filter.filter_type == 'collection_item_ids':
             return_items = return_items.filter(id__in=filter.value)
+        elif filter.filter_type == 'metadata_value_gte':
+            return_items = return_items.filter(**{f'metadata__{filter.field}__gte': filter.value})
+        elif filter.filter_type == 'metadata_value_lte':
+            return_items = return_items.filter(**{f'metadata__{filter.field}__lte': filter.value})
         # TODO: implement other filters
 
     return return_items, search_mode, reference_ds_and_item_id

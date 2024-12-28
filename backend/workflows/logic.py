@@ -99,7 +99,7 @@ def prepare_for_classic_search(collection: DataCollection, settings: CreateColle
 
 def prepare_for_overview_map(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     assert settings.user_input is not None
-    collection.ui_settings = CollectionUiSettings(secondary_view="map").model_dump()
+    collection.ui_settings = CollectionUiSettings(secondary_view="map", show_visibility_filters=True).model_dump()
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
         user_input=settings.user_input or "",

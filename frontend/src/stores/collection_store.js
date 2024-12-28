@@ -493,11 +493,14 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/filter/add_filter", body)
         .then((response) => {
-          const filter = response.data
-          this.collection.filters.push(filter)
+          if (filter.uid) {
+            this.collection.filters = this.collection.filters.filter((existing_filter) => existing_filter.uid !== filter.uid)
+          }
+          const new_filter = response.data
+          this.collection.filters.push(new_filter)
           this.load_collection_items()
           if (on_success) {
-            on_success(filter)
+            on_success(new_filter)
           }
         })
     },
@@ -513,6 +516,19 @@ export const useCollectionStore = defineStore("collection", {
           this.load_collection_items()
           if (on_success) {
             on_success()
+          }
+        })
+    },
+    get_value_range(field_name, on_success=null) {
+      const body = {
+        collection_id: this.collection_id,
+        field_name: field_name,
+      }
+      httpClient
+        .post("/api/v1/filter/get_value_range", body)
+        .then((response) => {
+          if (on_success) {
+            on_success(response.data)
           }
         })
     },

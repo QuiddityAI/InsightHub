@@ -4,6 +4,7 @@ import { PaperAirplaneIcon } from "@heroicons/vue/24/outline"
 
 import { marked } from "marked";
 
+import Message from 'primevue/message';
 import { useToast } from 'primevue/usetoast';
 
 import { httpClient, djangoClient } from "../../api/httpClient"

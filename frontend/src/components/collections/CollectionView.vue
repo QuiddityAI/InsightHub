@@ -11,6 +11,7 @@ import {
   XMarkIcon,
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
+  FunnelIcon,
 } from "@heroicons/vue/24/outline"
 
 import Dialog from 'primevue/dialog';
@@ -166,6 +167,11 @@ export default {
           <TableCellsIcon class="h-4 w-4"></TableCellsIcon>
         </BorderButton>
 
+        <BorderButton @click="collectionStore.update_ui_settings({show_visibility_filters: !collection.ui_settings.show_visibility_filters})" class="h-6"
+          v-tooltip.bottom="{ value: 'Filter items' }" :highlighted="collection.ui_settings.show_visibility_filters">
+          <FunnelIcon class="h-4 w-4"></FunnelIcon>
+        </BorderButton>
+
         <BorderButton @click="delete_collection" class="h-6"
           v-tooltip.bottom="{ value: 'Delete collection' }"
           hover_color="hover:text-red-500">
@@ -236,7 +242,7 @@ export default {
           </div>
 
           <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row"
-            v-if="collection.filters?.length">
+            v-if="collection.filters?.length || collection.ui_settings.show_visibility_filters">
             <FilterBar
               @edit_search_task="show_search_task_dialog = true" />
           </div>

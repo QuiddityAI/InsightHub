@@ -19,6 +19,7 @@ class CollectionUiSettings(Schema):
     secondary_view_is_full_screen: bool = False
     use_grid_view: bool = False
     item_size_mode: int = CollectionItemSizeMode.FULL
+    show_visibility_filters: bool = False
 
 
 class SetUiSettingsPayload(Schema):

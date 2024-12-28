@@ -4,10 +4,12 @@ import RangeFilterItem from './RangeFilterItem.vue';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from '../../stores/collection_store';
 import { httpClient } from "../../api/httpClient"
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 </script>
 
 <script>
@@ -18,14 +20,22 @@ export default {
   emits: [],
   data() {
     return {
+      dataset_ids: new Set(),
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
     range_filters() {
       const filters = {}
-      for (const dataset_id of this.mapStateStore.map_parameters?.search.dataset_ids || []) {
+      const dataset_ids = new Set()
+      // FIXME: this does not work if the items were added manually (without a search source)
+      for (const search_source of this.collectionStore.collection.search_sources) {
+        dataset_ids.add(search_source.dataset_id)
+      }
+      this.dataset_ids = Array.from(dataset_ids)
+      for (const dataset_id of dataset_ids) {
         for (const range_filter of this.appStateStore.datasets[dataset_id]?.merged_advanced_options?.range_filters || []) {
           filters[range_filter.field] = range_filter
         }
@@ -43,9 +53,9 @@ export default {
 </script>
 
 <template>
-  <div v-if="appState.search_result_ids.length && range_filters.length > 0" class="mt-2 flex flex-col gap-2">
+  <div v-if="range_filters.length > 0" class="mt-2 flex flex-col gap-2">
     <RangeFilterItem v-for="range_filter in range_filters"
-      :range_filter="range_filter" />
+      :range_filter="range_filter" :dataset_ids="dataset_ids" />
   </div>
 
 </template>
