@@ -185,6 +185,10 @@ export default {
 <template>
   <div class="flex flex-col gap-3">
 
+    <Message severity="info">
+      To search for something new / unrelated to this collection, please create a new collection instead.
+    </Message>
+
     <div class="flex flex-row gap-2 items-center">
       <div class="flex-none min-w-0">
         <Dropdown v-model="new_settings.dataset_id" :options="grouped_available_datasets" optionLabel="name"
