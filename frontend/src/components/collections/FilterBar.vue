@@ -66,7 +66,7 @@ export default {
 
     <RangeFilterList></RangeFilterList>
 
-    <div class="mt-2 flex flex-row flex-wrap gap-2 text-xs">
+    <div v-if="collectionStore.collection.filters.length > 0" class="mt-2 flex flex-row flex-wrap gap-2 text-xs">
       <div v-for="filter in collectionStore.collection.filters" :key="filter.uid" class="flex items-center gap-1 bg-red-100 px-2 py-[2px] rounded-full">
         <span class="text-gray-500">{{ filter.display_name }}</span>
         <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for future filter list -->
