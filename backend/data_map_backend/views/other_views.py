@@ -2,6 +2,8 @@ from functools import lru_cache
 import json
 import logging
 import os
+from functools import reduce
+import operator
 
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -935,9 +937,27 @@ def get_filtered_collection_items(
             return_items = return_items.filter(**{f'metadata__{filter.field}__gte': filter.value})
         elif filter.filter_type == 'metadata_value_lte':
             return_items = return_items.filter(**{f'metadata__{filter.field}__lte': filter.value})
-        # TODO: implement other filters
+        elif filter.filter_type == 'text_query':
+            return_items = apply_text_filter(return_items, filter)
 
     return return_items, search_mode, reference_ds_and_item_id
+
+
+def apply_text_filter(items: BaseManager, filter: CollectionFilter) -> BaseManager:
+    field = filter.field
+    query = filter.value
+    if field == '_descriptive_text_fields':
+        example_dataset_id = next(e.dataset_id for e in items if e.dataset_id is not None)
+        # FIXME: this uses only the first dataset id and won't work for multiple datasets
+        dataset = Dataset.objects.get(id=example_dataset_id)
+        fields = dataset.schema.descriptive_text_fields or []
+        if fields and query:
+            or_queries = [Q(**{f"metadata__{field}__icontains": query}) for field in fields]
+            items = items.filter(reduce(operator.or_, or_queries))
+    else:
+        if field and query:
+            items = items.filter(**{f"metadata__{field}__icontains": query})
+    return items
 
 
 @csrf_exempt

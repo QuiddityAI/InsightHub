@@ -23,11 +23,14 @@ export default {
     return {
       min_value: 0,
       max_value: 10,
-      value: [0, 10],
+      value: [null, null],
       step_size: 1,
       use_integers: false,
       update_filter_debounced: debounce(() => {
         this.update_filter()
+      }, 500),
+      update_boundaries_debounced: debounce((on_success=null) => {
+        this.update_boundaries(on_success)
       }, 500),
     }
   },
@@ -37,8 +40,21 @@ export default {
     ...mapStores(useCollectionStore),
   },
   mounted() {
-    this.update_boundaries()
-    this.eventBus.on("collection_items_loaded", this.update_boundaries)
+    this.update_boundaries(() => {
+      for (const filter of this.collectionStore.collection.filters) {
+        if (filter.field === this.range_filter.field) {
+          if (filter.filter_type === "metadata_value_gte") {
+            this.value[0] = filter.value
+          } else if (filter.filter_type === "metadata_value_lte") {
+            this.value[1] = filter.value
+          }
+        }
+      }
+    })
+    this.eventBus.on("collection_items_loaded", this.update_boundaries_debounced)
+  },
+  unmounted() {
+    this.eventBus.off("collection_items_loaded", this.update_boundaries_debounced)
   },
   watch: {
     min_value(new_val, old_val) {
@@ -52,25 +68,24 @@ export default {
     },
   },
   methods: {
-    update_boundaries() {
+    update_boundaries(on_success=null) {
       this.collectionStore.get_value_range(this.range_filter.field, (value_range) => {
         this.min_value = value_range.min
         this.max_value = value_range.max
-        this.value = [value_range.min, value_range.max]
-        for (const filter of this.collectionStore.collection.filters) {
-          if (filter.field === this.range_filter.field) {
-            if (filter.filter_type === "metadata_value_gte") {
-              this.value[0] = filter.value
-            } else if (filter.filter_type === "metadata_value_lte") {
-              this.value[1] = filter.value
-            }
-          }
+        if (this.value[0] === null || this.value[0] < value_range.min || this.value[0] > value_range.max) {
+          this.value[0] = value_range.min
+        }
+        if (this.value[1] === null || this.value[1] < value_range.min || this.value[1] > value_range.max) {
+          this.value[1] = value_range.max
         }
         const any_ds_field_is_integer = this.dataset_ids.some(
           (ds_id) => this.appStateStore.datasets[ds_id]?.schema.object_fields[this.range_filter.field]?.field_type === FieldType.INTEGER
         )
         this.use_integers = any_ds_field_is_integer || (max_value - min_value) > 5
         this.step_size = this.use_integers ? 1 : (max_value - min_value) / 100
+        if (on_success) {
+          on_success()
+        }
       })
 
       // if (this.appStateStore.search_result_ids.length === 0) {
@@ -123,11 +138,11 @@ export default {
 <template>
   <div class="mx-2 flex flex-row gap-2 items-center">
     <span class="flex-none text-xs text-gray-400">{{ range_filter.display_name }}:</span>
-    <span class="flex-none text-xs text-gray-500">{{ value[0].toFixed(use_integers ? 0 : 2) }}</span>
+    <span class="flex-none text-xs text-gray-500">{{ value[0] !== null ? value[0].toFixed(use_integers ? 0 : 2) : '-' }}</span>
     <div class="flex-1 px-4 opacity-50">
       <Slider v-model="value" :min="min_value" :max="max_value" :step="step_size" range class="" />
     </div>
-    <span class="flex-none text-xs text-gray-500">{{ value[1].toFixed(use_integers ? 0 : 2) }}</span>
+    <span class="flex-none text-xs text-gray-500">{{ value[1] !== null ? value[1].toFixed(use_integers ? 0 : 2) : '-' }}</span>
   </div>
 
 </template>
