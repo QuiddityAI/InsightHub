@@ -46,15 +46,12 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
-    this.eventBus.on("show_login_dialog", ({message}) => {
-      this.dialog_visible = true
-      this.message = message
-    })
-    this.eventBus.on("show_register_dialog", ({message}) => {
-      this.dialog_visible = true
-      this.message = message
-      this.accordion_index = 1
-    })
+    this.eventBus.on("show_login_dialog", this.on_show_login_dialog)
+    this.eventBus.on("show_register_dialog", this.on_show_register_dialog)
+  },
+  unmounted() {
+    this.eventBus.off("show_login_dialog", this.on_show_login_dialog)
+    this.eventBus.off("show_register_dialog", this.on_show_register_dialog)
   },
   watch: {
     dialog_visible(new_value) {
@@ -64,6 +61,15 @@ export default {
     }
   },
   methods: {
+    on_show_login_dialog({message}) {
+      this.dialog_visible = true
+      this.message = message
+    },
+    on_show_register_dialog({message}) {
+      this.dialog_visible = true
+      this.message = message
+      this.accordion_index = 1
+    },
     login() {
       if (this.email === "" || this.password === "") {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please enter email and password' })

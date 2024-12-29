@@ -93,11 +93,15 @@ export default {
         this.execute_writing_task()
       })
     })
-    this.eventBus.on("agent_stopped", () => {
-      this.get_writing_task()
-    })
+    this.eventBus.on("agent_stopped", this.on_agent_stopped)
+  },
+  unmounted() {
+    this.eventBus.off("agent_stopped", this.on_agent_stopped)
   },
   methods: {
+    on_agent_stopped() {
+      this.get_writing_task()
+    },
     get_writing_task(on_success=null) {
       if (!this.writing_task_id) {
         return

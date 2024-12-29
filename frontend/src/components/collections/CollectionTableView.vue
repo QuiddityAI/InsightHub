@@ -72,19 +72,12 @@ export default {
   mounted() {
     const that = this
     this.collectionStore.load_collection_items()
-    this.eventBus.on("collection_item_added", ({collection_id, class_name, is_positive, created_item}) => {
-      if (collection_id === this.collectionStore.collection_id && class_name === this.collectionStore.class_name && is_positive === this.collectionStore.is_positive) {
-        that.collectionStore.load_collection_items()
-      }
-    })
-    this.eventBus.on("collection_item_removed", ({collection_id, class_name, collection_item_id}) => {
-      if (collection_id === this.collectionStore.collection_id && class_name === this.collectionStore.class_name) {
-        const item_index = that.collectionStore.collection_items.findIndex((item) => item.id === collection_item_id)
-        if (item_index >= 0) {
-          that.collectionStore.collection_items.splice(item_index, 1)
-        }
-      }
-    })
+    this.eventBus.on("collection_item_added", this.on_item_added)
+    this.eventBus.on("collection_item_removed", this.on_item_removed)
+  },
+  unmounted() {
+    this.eventBus.off("collection_item_added", this.on_item_added)
+    this.eventBus.off("collection_item_removed", this.on_item_removed)
   },
   watch: {
     'collectionStore.order_by_field'() {
@@ -100,6 +93,19 @@ export default {
     },
   },
   methods: {
+    on_item_added({collection_id, class_name, is_positive, created_item}) {
+      if (collection_id === this.collectionStore.collection_id && class_name === this.collectionStore.class_name && is_positive === this.collectionStore.is_positive) {
+        that.collectionStore.load_collection_items()
+      }
+    },
+    on_item_removed({collection_id, class_name, collection_item_id}) {
+      if (collection_id === this.collectionStore.collection_id && class_name === this.collectionStore.class_name) {
+        const item_index = that.collectionStore.collection_items.findIndex((item) => item.id === collection_item_id)
+        if (item_index >= 0) {
+          that.collectionStore.collection_items.splice(item_index, 1)
+        }
+      }
+    },
   },
 }
 </script>

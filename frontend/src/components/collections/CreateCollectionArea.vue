@@ -215,9 +215,7 @@ export default {
 
     this.new_settings.ranking_settings = this.appStateStore.settings.search.ranking_settings
     this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
-    this.eventBus.on("datasets_are_loaded", () => {
-      this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
-    })
+    this.eventBus.on("datasets_are_loaded", this.on_datasets_loaded)
     // watch this.$refs.container?.scrollHeight and set container_height:
     const container = this.$refs.container
     if (container) {
@@ -228,6 +226,9 @@ export default {
       })
       observer.observe(container)
     }
+  },
+  unmounted() {
+    this.eventBus.off("datasets_are_loaded", this.on_datasets_loaded)
   },
   watch: {
     'appStateStore.settings.search.ranking_settings'(new_val, old_val) {
@@ -245,6 +246,9 @@ export default {
     },
   },
   methods: {
+    on_datasets_loaded() {
+      this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
+    },
     select_workflow(workflow) {
       if (workflow.availability === 'in_development') {
         this.$toast.add({ severity: 'warn', summary: 'Coming Soon', detail: 'This feature is not yet available', life: 3000 })

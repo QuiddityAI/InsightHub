@@ -58,7 +58,48 @@ export default {
       return this.dataset.schema.detail_view_rendering
     },
   },
+  watch: {
+    initial_item() {
+      this.item = {...this.initial_item, ...this.appStateStore.selected_document_initial_item}
+      this.item._relevant_parts = this.appStateStore.selected_document_relevant_parts
+      this.checking_for_fulltext = false
+      this.checked_for_fulltext = false
+      this.fulltext_url = false
+      this.updateItemAndRendering()
+    },
+  },
+  mounted() {
+    const that = this
+    this.updateItemAndRendering()
+
+    this.eventBus.on("collection_item_added", this.on_item_added)
+    this.eventBus.on("collection_item_removed", this.on_item_removed)
+    this.eventBus.on("show_table", this.on_show_table)
+    const scroll_area = this.$refs.scroll_area
+    scroll_area.addEventListener("scroll", this.update_show_scroll_indicator)
+    scroll_area.addEventListener("resize", this.update_show_scroll_indicator)
+    this.update_show_scroll_indicator()
+  },
+  unmounted() {
+    this.eventBus.off("collection_item_added", this.on_item_added)
+    this.eventBus.off("collection_item_removed", this.on_item_removed)
+    this.eventBus.off("show_table", this.on_show_table)
+  },
   methods: {
+    on_item_added({collection_id, class_name, is_positive, created_item}) {
+      if (created_item.dataset_id === this.item._dataset_id && created_item.item_id === this.item._id) {
+        this.item._related_collection_items.push(created_item)
+      }
+    },
+    on_item_removed({collection_id, class_name, collection_item_id}) {
+      const index = this.item._related_collection_items.findIndex((item) => item.id === collection_item_id)
+      if (index !== -1) {
+        this.item._related_collection_items.splice(index, 1)
+      }
+    },
+    on_show_table() {
+      this.appStateStore.close_document_details()
+    },
     updateItemAndRendering() {
       if (!this.item || !this.item._id) return
       const that = this
@@ -117,39 +158,6 @@ export default {
       const is_at_end = scroll_area.scrollTop + scroll_area.clientHeight >= scroll_area.scrollHeight
       this.show_scroll_indicator = scrollable && !is_at_end
     },
-  },
-  watch: {
-    initial_item() {
-      this.item = {...this.initial_item, ...this.appStateStore.selected_document_initial_item}
-      this.item._relevant_parts = this.appStateStore.selected_document_relevant_parts
-      this.checking_for_fulltext = false
-      this.checked_for_fulltext = false
-      this.fulltext_url = false
-      this.updateItemAndRendering()
-    },
-  },
-  mounted() {
-    const that = this
-    this.updateItemAndRendering()
-
-    this.eventBus.on("collection_item_added", ({collection_id, class_name, is_positive, created_item}) => {
-      if (created_item.dataset_id === this.item._dataset_id && created_item.item_id === this.item._id) {
-        this.item._related_collection_items.push(created_item)
-      }
-    })
-    this.eventBus.on("collection_item_removed", ({collection_id, class_name, collection_item_id}) => {
-      const index = this.item._related_collection_items.findIndex((item) => item.id === collection_item_id)
-      if (index !== -1) {
-        this.item._related_collection_items.splice(index, 1)
-      }
-    })
-    this.eventBus.on("show_table", () => {
-      this.appStateStore.close_document_details()
-    })
-    const scroll_area = this.$refs.scroll_area
-    scroll_area.addEventListener("scroll", this.update_show_scroll_indicator)
-    scroll_area.addEventListener("resize", this.update_show_scroll_indicator)
-    this.update_show_scroll_indicator()
   },
 }
 </script>

@@ -128,11 +128,10 @@ export default {
     if (this.new_settings.dataset_id === null) {
       this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
     }
-    this.eventBus.on("datasets_are_loaded", () => {
-      if (this.new_settings.dataset_id === null) {
-        this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
-      }
-    })
+    this.eventBus.on("datasets_are_loaded", this.on_dataset_loaded)
+  },
+  unmounted() {
+    this.eventBus.off("datasets_are_loaded", this.on_dataset_loaded)
   },
   watch: {
     'appStateStore.settings.search.ranking_settings'(new_val, old_val) {
@@ -150,6 +149,11 @@ export default {
     },
   },
   methods: {
+    on_dataset_loaded() {
+      if (this.new_settings.dataset_id === null) {
+        this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
+      }
+    },
     run_search_task() {
       const that = this
       if (!this.new_settings.dataset_id) {

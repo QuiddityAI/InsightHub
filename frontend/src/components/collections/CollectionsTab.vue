@@ -36,9 +36,10 @@ export default {
     ...mapStores(useCollectionStore),
   },
   mounted() {
-    this.eventBus.on("show_table", ({collection_id, class_name}) => {
-      this.collectionStore.open_collection(collection_id, class_name)
-    })
+    this.eventBus.on("show_table", this.on_show_table)
+  },
+  unmounted() {
+    this.eventBus.off("show_table", this.on_show_table)
   },
   watch: {
     'appStateStore.organization'(newVal, oldVal) {
@@ -48,6 +49,9 @@ export default {
     },
   },
   methods: {
+    on_show_table({collection_id, class_name}) {
+      this.collectionStore.open_collection(collection_id, class_name)
+    },
   },
 }
 </script>
