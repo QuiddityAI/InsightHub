@@ -2,6 +2,8 @@ from typing import Any, Iterable
 from copy import deepcopy
 import os
 
+import numpy as np
+
 from .models import DatasetField
 
 
@@ -22,6 +24,8 @@ class DotDict(dict):
             return DotDict(val)
         elif isinstance(val, str) or isinstance(val, bytes):
             return val
+        elif isinstance(val, np.ndarray):
+            return val
         elif isinstance(val, Iterable):
             klass = type(val)
             return klass(DotDict(e) if type(e) is dict else e for e in val)  # type: ignore
@@ -33,6 +37,8 @@ class DotDict(dict):
         if type(val) is dict:
             return DotDict(val)
         elif isinstance(val, str) or isinstance(val, bytes):
+            return val
+        elif isinstance(val, np.ndarray):
             return val
         elif isinstance(val, Iterable):
             klass = type(val)
