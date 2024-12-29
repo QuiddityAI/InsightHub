@@ -39,7 +39,6 @@ def scrape_website_module(item, source_fields) -> CellData:
 
 
 def scrape_website_module_plain(item, source_fields):
-    import requests
     url = item.get(source_fields[0], "")
     if not url:
         return {
@@ -49,8 +48,36 @@ def scrape_website_module_plain(item, source_fields):
             "is_computed": True,
             "is_manually_edited": False,
         }
-    headers = {'headers':'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:51.0) Gecko/20100101 Firefox/51.0'}
-    result = requests.get(url, headers=headers)
+    text = scrape_website_plain(url)
+    return {
+        "collapsed_label": f"<i>Website Content<br>({len(text.split())} words)</i>",
+        "value": text,
+        "changed_at": timezone.now().isoformat(),
+        "is_ai_generated": False,
+        "is_computed": True,
+        "is_manually_edited": False,
+    }
+
+
+def scrape_website_plain(url):
+    import requests
+    headers = {
+        'Accept-Encoding': 'gzip, deflate, sdch',
+        'Accept-Language': 'en-US,en;q=0.8',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Cache-Control': 'max-age=0',
+        'Connection': 'keep-alive',
+    }
+    s = requests.Session()
+    s.max_redirects = 3
+    try:
+        result = s.get(url, headers=headers)
+    except requests.exceptions.RequestException as e:
+        import logging
+        logging.error(f"Error scraping website {url}: {e}")
+        return ""
     html = result.text
     # rudimentary extraction of text from HTML
     text = ""
@@ -62,11 +89,4 @@ def scrape_website_module_plain(item, source_fields):
             text += c
         if c == ">":
             in_tag = False
-    return {
-        "collapsed_label": f"<i>Website Content<br>({len(text.split())} words)</i>",
-        "value": text,
-        "changed_at": timezone.now().isoformat(),
-        "is_ai_generated": False,
-        "is_computed": True,
-        "is_manually_edited": False,
-    }
+    return text.strip()

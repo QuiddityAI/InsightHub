@@ -14,6 +14,7 @@ from ..logic.chunking import chunk_text_generator
 from ..api_clients import deepinfra_client
 
 from ingest.logic.office_documents import ai_file_processing_generator
+from ingest.logic.tenders import tender_enrichment_generator
 
 
 GPU_IS_AVAILABLE = os.getenv('GPU_IS_AVAILABLE', "False") == "True"
@@ -64,6 +65,8 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
         generator = lambda batch, log_error=default_log: chunk_text_generator(batch, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
     elif module == 'ai_file_processing':
         generator = lambda batch, log_error=default_log: ai_file_processing_generator(batch, log_error, parameters)
+    elif module == 'tender_enrichment':
+        generator = lambda batch, log_error=default_log: tender_enrichment_generator(batch, log_error, parameters)
 
     if not generator:
         logging.error(f"Generator module {module} not found")
