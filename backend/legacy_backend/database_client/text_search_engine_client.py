@@ -288,7 +288,7 @@ class TextSearchEngineClient(object):
                 "match_all": {},
             },
             "script" : {
-                "source": f"ctx._source.remove('{field}')",
+                "source": f"ctx._source['{field}'] = null",  # setting it to null is supposedly more efficient than deleting it
             }
         }
 
