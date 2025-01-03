@@ -1,10 +1,10 @@
 {
   "name": "Filesystem File (German)",
-  "entity_name": "file",
-  "entity_name_plural": "files",
+  "entity_name": "document",
+  "entity_name_plural": "documents",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2024-12-05T12:23:02.753Z",
+  "changed_at": "2025-01-02T16:59:50.714Z",
   "primary_key": "full_path",
   "thumbnail_image": null,
   "descriptive_text_fields": [
@@ -19,7 +19,8 @@
     "full_path",
     "full_text",
     "full_text_chunk_embeddings",
-    "embedding_e5"
+    "embedding_e5",
+    "video_frame_embeddings"
   ],
   "advanced_options": {
     "range_filters": [],
@@ -671,7 +672,7 @@
       "identifier": "is_processed",
       "name": null,
       "created_at": "2024-11-28T10:11:54.590Z",
-      "changed_at": "2024-11-29T19:08:43.739Z",
+      "changed_at": "2024-12-12T21:34:11.785Z",
       "schema": "filesystem_file_german",
       "description": null,
       "field_type": "BOOL",
@@ -699,7 +700,9 @@
           "thumbnail_path": "thumbnail_path",
           "full_text_chunks": "full_text_chunks",
           "type_description": "type_description",
-          "document_language": "language"
+          "document_language": "language",
+          "video_frame_chunks": "video_frame_chunks",
+          "video_frame_embeddings": "video_frame_embeddings"
         }
       },
       "generating_condition": "",
@@ -808,6 +811,56 @@
       "source_fields": [],
       "should_be_generated": false,
       "_order": 25
+    },
+    {
+      "identifier": "video_frame_chunks",
+      "name": null,
+      "created_at": "2024-12-12T21:19:27.203Z",
+      "changed_at": "2024-12-12T21:19:27.246Z",
+      "schema": "filesystem_file_german",
+      "description": null,
+      "field_type": "CHUNK",
+      "is_array": true,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 26
+    },
+    {
+      "identifier": "video_frame_embeddings",
+      "name": null,
+      "created_at": "2024-12-12T21:19:27.203Z",
+      "changed_at": "2024-12-12T21:20:05.897Z",
+      "schema": "filesystem_file_german",
+      "description": null,
+      "field_type": "VECTOR",
+      "is_array": true,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": "openclip_image_embeddding_multi",
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [
+        "video_frame_chunks"
+      ],
+      "should_be_generated": false,
+      "_order": 27
     }
   ]
 }
