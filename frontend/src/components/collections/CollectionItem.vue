@@ -88,7 +88,7 @@ export default {
       return this.collectionStore.collection.search_sources.find(source => source.id_hash === this.collection_item.search_source_id)?.query || ""
     },
     relevant_keyword_highlights() {
-      return this.collection_item?.relevant_parts?.filter((part) => part.origin === "keyword_search" && part.field !== 'description') || []
+      return this.collection_item?.relevant_parts?.filter((part) => part.origin === "keyword_search") || []
     },
     relevant_chunks() {
       return this.collection_item?.relevant_parts?.filter((part) => part.origin === "vector_array") || []

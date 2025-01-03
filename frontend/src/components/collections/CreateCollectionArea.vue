@@ -31,6 +31,10 @@ const toast = useToast()
 
 <script>
 
+const capitalizeFirstLetter = (val) => {
+    return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+
 export default {
   inject: ["eventBus"],
   props: [],
@@ -64,7 +68,7 @@ export default {
         {
           id: 'classic_search',
           prefix: "Find a single",
-          name: 'Known Document',
+          name: 'Known <entity_name_singular>',
           help_text: 'Fast + accurate search',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
@@ -73,7 +77,7 @@ export default {
         {
           id: 'assisted_search',
           prefix: "Find a set of",
-          name: 'Matching Documents',
+          name: 'Matching <entity_name_plural>',
           help_text: 'Search + evaluate every single result, good to collect a set of documents',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
@@ -82,7 +86,7 @@ export default {
         {
           id: 'fact_from_single_document',
           prefix: "Find a ",
-          name: 'Fact in a Document',
+          name: 'Fact in a <entity_name_singular>',
           help_text: 'Ask a question that is answered based on one document',
           query_field_hint: (entity_name) => `Your question`,
           supports_filters: true,
@@ -91,7 +95,7 @@ export default {
         {
           id: 'facts_from_multiple_document',
           prefix: "Collect Facts",
-          name: 'From Multiple Documents',
+          name: 'From Multiple <entity_name_plural>',
           help_text: 'Collect information found in multiple documents',
           query_field_hint: (entity_name) => `Your question`,
           supports_filters: true,
@@ -110,7 +114,7 @@ export default {
           id: 'timeline',
           prefix: "Create a",
           name: 'Timeline of Events',
-          help_text: 'Find specific events in documents and show a timeline',
+          help_text: 'Find specific events in <entity_name_plural> and show a timeline',
           query_field_hint: (entity_name) => `Your question`,
           supports_filters: true,
           availability: 'in_development',
@@ -118,8 +122,8 @@ export default {
         {
           id: 'overview_map',
           prefix: "Create an",
-          name: 'Overview Map of Documents',
-          help_text: 'Show a large set of documents on a visual map',
+          name: 'Overview Map of <entity_name_plural>',
+          help_text: 'Show a large set of <entity_name_plural> on a visual map',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
           availability: 'preview',
@@ -203,6 +207,14 @@ export default {
     },
     selected_workflow() {
       return this.workflows.find(workflow => workflow.id === this.new_settings.workflow_id)
+    },
+    entity_name_singular() {
+      const n = this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema.entity_name || '' : 'item'
+      return capitalizeFirstLetter(n)
+    },
+    entity_name_plural() {
+      const n = this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema.entity_name_plural || '' : 'items'
+      return capitalizeFirstLetter(n)
     },
   },
   mounted() {
@@ -345,7 +357,7 @@ export default {
                 'text-gray-600': workflow.availability !== 'in_development',
                 'group-hover:text-gray-600': workflow.availability === 'in_development',
                 'text-gray-500': workflow.availability === 'in_development', }"
-              v-html="workflow.name + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
+              v-html="workflow.name.replace('<entity_name_singular>', entity_name_singular).replace('<entity_name_plural>', entity_name_plural) + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
           </button>
         </div>
 
@@ -356,7 +368,7 @@ export default {
         <div class="text-xl font-bold text-gray-800">
           {{ selected_workflow.prefix }}
           <span class="bg-gradient-to-r from-fuchsia-900 via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
-            {{ selected_workflow.name }}
+            {{ selected_workflow.name.replace('<entity_name_singular>', entity_name_singular).replace('<entity_name_plural>', entity_name_plural) }}
           </span>:
         </div>
 
@@ -368,7 +380,7 @@ export default {
         <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
           <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
             autocomplete="off"
-            :placeholder="selected_workflow?.query_field_hint(new_settings.dataset_id ? appState.datasets[new_settings.dataset_id]?.schema.entity_name || '' : 'item')"
+            :placeholder="selected_workflow?.query_field_hint(entity_name_singular)"
             class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
           <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
             <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"

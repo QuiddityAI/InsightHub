@@ -75,9 +75,9 @@ export default {
       </button>
     </div>
 
-    <div v-if="selected_converter?.preview_as_text && exported_data" class="flex-none h-48 flex flex-col gap-2">
+    <div v-if="selected_converter?.preview_as_text && exported_data" class="flex-none min-h-[300px] flex flex-col gap-2">
       <textarea
-        v-model="exported_data.value" class="w-full h-full" readonly></textarea>
+        v-model="exported_data.value" class="w-full min-h-[300px]" readonly></textarea>
     </div>
 
     <div v-if="exported_data?.value" class="flex flex-row gap-2">
