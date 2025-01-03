@@ -235,10 +235,12 @@ export default {
           {{ dataset.merged_advanced_options.export_button_name || "Export" }}
         </button>
         <div v-for="link in rendering ? rendering.links : []">
-          <button v-if="link.url(item)"
-            class="h-full mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
-            <a :href="link.url(item)" target="_blank">{{ link.label }}</a>
-          </button>
+          <a :href="link.url(item)" target="_blank">
+            <button v-if="link.url(item)"
+              class="h-full mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+              {{ link.label }}
+            </button>
+          </a>
         </div>
       </div>
 
@@ -293,10 +295,12 @@ export default {
         <MagnifyingGlassIcon class="h-3 w-3"></MagnifyingGlassIcon> Similar Items
       </button>
 
-      <button v-if="rendering ? rendering.url(item) : false"
-        class="h-full rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
-        <a :href="rendering.url(item)" target="_blank">Link</a>
-      </button>
+      <a :href="rendering.url(item)" target="_blank" class="h-full">
+        <button v-if="rendering ? rendering.url(item) : false"
+          class="h-full rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
+          Link
+        </button>
+      </a>
 
       <div class="flex-1"></div>
       <button v-if="show_close_button"
