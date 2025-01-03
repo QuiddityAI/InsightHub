@@ -82,6 +82,7 @@ export default {
         </div>
         <CollectionTableCell :item="collection_item" :column="column" class="bg-white border rounded-md"
           :columns_with_running_processes="collection.columns_with_running_processes"
+          :hide_execute_button="true"
           :show_overlay_buttons="true">
         </CollectionTableCell>
       </div>

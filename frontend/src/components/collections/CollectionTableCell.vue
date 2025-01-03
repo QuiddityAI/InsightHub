@@ -34,7 +34,7 @@ const _window = window
 
 export default {
   inject: ["eventBus"],
-  props: ["item", "column", "columns_with_running_processes", "show_overlay_buttons", "item_size_mode"],
+  props: ["item", "column", "columns_with_running_processes", "show_overlay_buttons", "item_size_mode", "hide_execute_button"],
   emits: [],
   data() {
     return {
@@ -240,8 +240,8 @@ export default {
         @click="edit_mode = true" class="hover:text-sky-500">
         Edit
       </button>
-      <span v-if="column.module !== 'notes'"> | </span>
-      <button v-if="column.module !== 'notes'"
+      <span v-if="column.module !== 'notes' && !hide_execute_button"> | </span>
+      <button v-if="column.module !== 'notes' && !hide_execute_button"
         @click="collectionStore.extract_question(column.id, true, item.id)" class="hover:text-sky-500">
         Execute
       </button>
