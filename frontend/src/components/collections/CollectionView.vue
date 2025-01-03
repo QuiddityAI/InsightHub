@@ -80,9 +80,11 @@ export default {
       this.collectionStore.load_collection_items()
     },
     'collectionStore.collection.items_last_changed'(new_value, old_value) {
-      if (new_value > this.collectionStore.items_last_updated) {
-        this.collectionStore.load_collection_items()
-      }
+      // nice idea, but conflicts with current approach
+      // should rather check this in update_collection()
+      // if (new_value > this.collectionStore.items_last_updated) {
+      //   this.collectionStore.load_collection_items()
+      // }
     },
   },
   computed: {
@@ -103,13 +105,15 @@ export default {
     },
   },
   mounted() {
-    this.collectionStore.check_for_agent_status()
     if (!this.collection.ui_settings.item_size_mode) {
       this.collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})
     }
     this.eventBus.on("collection_item_added", this.on_item_added)
     this.eventBus.on("collection_item_removed", this.on_item_removed)
     this.collectionStore.load_collection_items()
+    if (this.collectionStore.collection_id.agent_is_running) {
+      this.collectionStore.schedule_update_collection()
+    }
   },
   unmounted() {
     this.eventBus.off("collection_item_added", this.on_item_added)
@@ -153,7 +157,7 @@ export default {
 
     <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
       <SearchTaskDialog :collection="collection" :collection_class="class_name"
-        @close="show_search_task_dialog = false; collectionStore.check_for_agent_status()"></SearchTaskDialog>
+        @close="show_search_task_dialog = false"></SearchTaskDialog>
     </Dialog>
 
     <!-- Top Area -->

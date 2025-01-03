@@ -25,6 +25,7 @@ export const useCollectionStore = defineStore("collection", {
       search_mode: false,
       filtered_count: null,
       items_last_updated: new Date(2020, 1, 1),
+      update_collection_is_scheduled: false,
 
       // Pagination
       first_index: 0,
@@ -97,49 +98,67 @@ export const useCollectionStore = defineStore("collection", {
         history.pushState(null, null, "?" + queryParams.toString())
       }
     },
-    update_collection(on_success = null) {
+    update_collection({update_items = false, update_columns = []} = {}, on_success = null) {
       if (!this.collection_id) {
         return
       }
-      const that = this
       const body = {
         collection_id: this.collection_id,
       }
-      httpClient.post("/org/data_map/get_collection", body).then(function (response) {
+      httpClient.post("/org/data_map/get_collection", body).then((response) => {
+        const agent_was_running = this.collection.agent_is_running
+        const previously_running_columns = Array.from(this.collection.columns_with_running_processes)  // copy to remove reference
         let new_collection = response.data
-        const old_collection = that.collection
+        const old_collection = this.collection
         if (old_collection) {
           // using update_object to update it in-place to keep references to old objects
           // to minimize flicker in the UI due to unneeded updates
           update_object(old_collection, new_collection)
         } else {
-          that.collection = new_collection
+          this.collection = new_collection
         }
+
+        // it could be that columns_with_running_processes is already empty but a column was updated before,
+        // that is why update_columns needs to be respected
+        const columns_to_update = update_columns.concat(this.collection.columns_with_running_processes).concat(previously_running_columns)
+
+        if (update_items) {
+          // all items on current page and its columns
+          this.load_collection_items()
+        } else if (columns_to_update.length > 0) {
+          this.load_collection_items(columns_to_update)
+        }
+
+        if (this.collection.agent_is_running) {
+          this.schedule_update_collection(500)
+        }
+        if (agent_was_running) {
+          this.load_collection_items()
+        }
+        if (agent_was_running && !this.collection.agent_is_running) {
+          this.eventBus.emit("agent_stopped")  // triggers writing task to reload
+        }
+
+        if (this.collection.columns_with_running_processes.length > 0) {
+          // there are still changes going on, update again in a few seconds:
+          // (and those changes might change column titles, thats why the collection and not just the items are updated)
+          this.schedule_update_collection(1000)
+        }
+
         if (on_success) {
           on_success(new_collection)
         }
       })
     },
-    check_for_agent_status() {
-      const that = this
-      if (this.collection.agent_is_running) {
-        setTimeout(() => {
-          that.update_collection((collection) => {
-            that.load_collection_items()
-            if (collection.agent_is_running) {
-              that.check_for_agent_status()
-            } else {
-              // agent has stopped
-              that.eventBus.emit("agent_stopped")  // triggers writing task to reload
-              for (let column_identifier of collection.columns_with_running_processes) {
-                 // TODO: this could be more elegant
-                const column_id = that.collection.columns.find((column) => column.identifier === column_identifier).id
-                that.get_extraction_results(column_id)
-              }
-            }
-          })
-        }, 500)
+    schedule_update_collection(timeout_ms=1000) {
+      if (this.update_collection_is_scheduled) {
+        return
       }
+      this.update_collection_is_scheduled = true
+      setTimeout(() => {
+        this.update_collection_is_scheduled = false
+        this.update_collection()
+      }, timeout_ms)
     },
     delete_collection(collection_id) {
       const that = this
@@ -267,7 +286,6 @@ export const useCollectionStore = defineStore("collection", {
     },
     // ------------------
     extract_question(column_id, only_current_page=true, collection_item_id=null, remove_content=false) {
-      const that = this
       if (!only_current_page && !confirm("This will process items in the collection. This might be long running and expensive. Are you sure?")) {
         return
       }
@@ -283,32 +301,16 @@ export const useCollectionStore = defineStore("collection", {
         remove_content: remove_content,
       }
       httpClient.post(`/api/v1/columns/process_column`, body)
-      .then(function (response) {
-        that.collection.columns_with_running_processes = response.data.columns_with_running_processes
-        that.get_extraction_results(column_id)
+      .then((response) => {
+        this.collection.columns_with_running_processes = response.data.columns_with_running_processes
+        const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
+        this.update_collection({update_columns: [column_identifier]})
       })
       .catch(function (error) {
         console.error(error)
       })
     },
-    get_extraction_results(column_id) {
-      const that = this
-      const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
-      this.load_collection_items([column_identifier])
-      this.update_collection(() => {
-        // if (JSON.stringify(response.data.columns) !== JSON.stringify(that.collection.columns)) {
-        //   that.collection.columns = response.data.columns
-        // }
-        // that.collection.columns_with_running_processes = response.data.columns_with_running_processes
-        if (this.collection.columns_with_running_processes.includes(column_identifier)) {
-          setTimeout(() => {
-            this.get_extraction_results(column_id)
-          }, 1000)
-        }
-      })
-    },
     remove_results(column_id, only_current_page=true, force=false, on_success=null) {
-      const that = this
       if (!only_current_page && !force && !confirm("This will remove the column content for all items in the collection. Are you sure?")) {
         return
       }
@@ -320,11 +322,12 @@ export const useCollectionStore = defineStore("collection", {
         order_by: (this.order_descending ? "-" : "") + this.order_by_field,
       }
       httpClient.post(`/api/v1/columns/remove_column_data`, body)
-      .then(function (response) {
+      .then((response) => {
         if (on_success) {
           on_success()
         }
-        that.get_extraction_results(column_id)
+        const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
+        this.update_collection({update_columns: [column_identifier]})
       })
       .catch(function (error) {
         console.error(error)
@@ -352,9 +355,7 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/search/approve_relevant_search_results", body)
         .then((response) => {
-          that.update_collection(() => {
-            that.load_collection_items()
-          })
+          that.update_collection({update_items: true})
         })
     },
     // ------------------
@@ -373,9 +374,9 @@ export const useCollectionStore = defineStore("collection", {
             if (go_to_next_page) {
               that.first_index += that.per_page
             }
-            that.update_collection(() => {
-              that.load_collection_items()
-            })
+            that.update_collection({update_items: true})
+            // there might be columns that start processing in a few ms, so update again in a few seconds:
+            that.schedule_update_collection(500)
           }
         })
     },
@@ -400,10 +401,7 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/search/run_search_task", body)
         .then((response) => {
-          that.update_collection(() => {
-            that.check_for_agent_status()
-            that.load_collection_items()
-          })
+          that.update_collection({update_items: true})
         })
     },
     exit_search_mode() {
@@ -428,7 +426,7 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/workflows/cancel_agent", body)
         .then((response) => {
-          that.update_collection()
+          that.update_collection({update_items: false})
         })
     },
     // ------------------

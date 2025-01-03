@@ -173,7 +173,7 @@ export default {
       httpClient
         .post("/api/v1/search/run_search_task", body)
         .then(function (response) {
-          that.collectionStore.update_collection(() => {
+          that.collectionStore.update_collection({update_items: true}, () => {
             that.$emit("close")
           })
         })
