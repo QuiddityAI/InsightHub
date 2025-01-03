@@ -2,6 +2,7 @@ import re
 import os
 
 from django.utils import timezone
+from bs4 import BeautifulSoup
 
 from columns.schemas import CellData
 
@@ -48,7 +49,7 @@ def scrape_website_module_plain(item, source_fields):
             "is_computed": True,
             "is_manually_edited": False,
         }
-    text = scrape_website_plain(url)
+    text, _ = scrape_website_plain(url)
     return {
         "collapsed_label": f"<i>Website Content<br>({len(text.split())} words)</i>",
         "value": text,
@@ -59,7 +60,7 @@ def scrape_website_module_plain(item, source_fields):
     }
 
 
-def scrape_website_plain(url):
+def scrape_website_plain(url) -> tuple[str, str]:
     import requests
     headers = {
         'Accept-Encoding': 'gzip, deflate, sdch',
@@ -77,16 +78,14 @@ def scrape_website_plain(url):
     except requests.exceptions.RequestException as e:
         import logging
         logging.error(f"Error scraping website {url}: {e}")
-        return ""
+        return "", ""
     html = result.text
-    # rudimentary extraction of text from HTML
-    text = ""
-    in_tag = False
-    for c in html:
-        if c == "<":
-            in_tag = True
-        if not in_tag:
-            text += c
-        if c == ">":
-            in_tag = False
-    return text.strip()
+    soup = BeautifulSoup(html, features="html.parser")
+
+    try:
+        text = soup.body.get_text(separator='\n', strip=True)  # type: ignore
+    except AttributeError:
+        text = ""
+    if not text:
+        text = soup.get_text(separator='\n', strip=True)
+    return text, html
