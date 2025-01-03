@@ -47,47 +47,6 @@ export default {
     show_table() {
       this.eventBus.emit("show_table", {collection_id: this.collection_item.collection, class_name: this.collection_item.classes[0]})
     },
-    run_cell(column) {
-      const that = this
-      const body = {
-        column_id: column.id,
-        class_name: this.collection_item.classes[0],
-        collection_item_id: this.collection_item.id,
-      }
-      httpClient.post(`/api/v1/columns/process_column`, body)
-      .then(function (response) {
-        that.collection.columns_with_running_processes = response.data.columns_with_running_processes
-        that.get_extraction_results(column)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    get_extraction_results(column) {
-      const that = this
-      if (!that.collection.columns_with_running_processes.includes(column.identifier)) {
-        this.$emit('refresh_item')
-      } else {
-        setTimeout(() => {
-          this.update_collection_extraction_processes(() => {
-            this.get_extraction_results(column)
-          })
-        }, 1000)
-      }
-    },
-    update_collection_extraction_processes(on_success) {
-      const that = this
-      const body = {
-        collection_id: this.collection.id,
-      }
-      httpClient.post("/org/data_map/get_collection", body).then(function (response) {
-        that.collection.columns_with_running_processes = response.data.columns_with_running_processes
-
-        if (on_success) {
-          on_success()
-        }
-      })
-    },
   },
 }
 </script>
@@ -123,8 +82,7 @@ export default {
         </div>
         <CollectionTableCell :item="collection_item" :column="column" class="bg-white border rounded-md"
           :columns_with_running_processes="collection.columns_with_running_processes"
-          :show_overlay_buttons="true"
-          @run_cell="run_cell(column)">
+          :show_overlay_buttons="true">
         </CollectionTableCell>
       </div>
     </div>

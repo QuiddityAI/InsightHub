@@ -35,7 +35,7 @@ const _window = window
 export default {
   inject: ["eventBus"],
   props: ["item", "column", "columns_with_running_processes", "show_overlay_buttons", "item_size_mode"],
-  emits: ["run_cell"],
+  emits: [],
   data() {
     return {
       show_more_indicator: false,

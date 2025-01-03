@@ -73,6 +73,17 @@ export default {
       // scroll table to top:
       this.$refs.content_area.scrollTop = 0
     },
+    'collectionStore.order_by_field'() {
+      this.collectionStore.load_collection_items()
+    },
+    'collectionStore.order_descending'() {
+      this.collectionStore.load_collection_items()
+    },
+    'collectionStore.collection.items_last_changed'(new_value, old_value) {
+      if (new_value > this.collectionStore.items_last_updated) {
+        this.collectionStore.load_collection_items()
+      }
+    },
   },
   computed: {
     ...mapStores(useAppStateStore),
@@ -96,6 +107,13 @@ export default {
     if (!this.collection.ui_settings.item_size_mode) {
       this.collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})
     }
+    this.eventBus.on("collection_item_added", this.on_item_added)
+    this.eventBus.on("collection_item_removed", this.on_item_removed)
+    this.collectionStore.load_collection_items()
+  },
+  unmounted() {
+    this.eventBus.off("collection_item_added", this.on_item_added)
+    this.eventBus.off("collection_item_removed", this.on_item_removed)
   },
   methods: {
     delete_collection() {
@@ -112,6 +130,19 @@ export default {
     show_secondary_view(view) {
       let new_secondary_view = this.collection.ui_settings.secondary_view === view ? null : view
       this.collectionStore.update_ui_settings({secondary_view: new_secondary_view})
+    },
+    on_item_added({collection_id, class_name, is_positive, created_item}) {
+      if (collection_id === this.collectionStore.collection_id && class_name === this.collectionStore.class_name && is_positive === this.collectionStore.is_positive) {
+        that.collectionStore.load_collection_items()
+      }
+    },
+    on_item_removed({collection_id, class_name, collection_item_id}) {
+      if (collection_id === this.collectionStore.collection_id && class_name === this.collectionStore.class_name) {
+        const item_index = that.collectionStore.collection_items.findIndex((item) => item.id === collection_item_id)
+        if (item_index >= 0) {
+          that.collectionStore.collection_items.splice(item_index, 1)
+        }
+      }
     },
   },
 }
@@ -282,7 +313,7 @@ export default {
           </BorderButton>
           <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items Manually">
             <AddItemsToCollectionArea :collection="collection" :collection_class="class_name"
-              @items_added="$refs.collection_table_view.load_collection_items"></AddItemsToCollectionArea>
+              @items_added="collectionStore.load_collection_items"></AddItemsToCollectionArea>
           </Dialog>
         </div>
 
