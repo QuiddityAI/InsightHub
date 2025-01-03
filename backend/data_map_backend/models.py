@@ -958,16 +958,31 @@ class GenerationTask(models.Model):
         blank=False,
         null=False,
     )
+    clear_all_output_fields = models.BooleanField(
+        verbose_name="Clear all output fields",
+        help_text="Clear all output fields (for multi-output generators) before re-generating all items",
+        default=False,
+        blank=False,
+        null=False,
+    )
+    batch_size = models.IntegerField(
+        verbose_name="Batch Size", default=512, blank=False, null=False
+    )
+    stop_flag = models.BooleanField(
+        verbose_name="Stop Flag", default=False, blank=False, null=False
+    )
+
+    class TaskStatus(models.TextChoices):
+        NOT_RUNNING = "not_running", "Not Running"
+        PENDING = "pending", "Pending"
+        RUNNING = "running", "Running"
+        FINISHED = "finished", "Finished"
+        FAILED = "failed", "Failed"
+
     status = models.CharField(
         verbose_name="Status",
         max_length=50,
-        choices=[
-            ("not_running", "Not Running"),
-            ("pending", "Pending"),
-            ("running", "Running"),
-            ("finished", "Finished"),
-            ("failed", "Failed"),
-        ],
+        choices=TaskStatus.choices,
         default="not_running",
         blank=False,
         null=False,
@@ -982,7 +997,9 @@ class GenerationTask(models.Model):
             self.log = ""
         timestamp = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
         self.log = self.log + f"{timestamp}: {message}\n"
-        self.save()
+        if len(self.log) > 10000:
+            self.log = self.log[:4000] + "\n\n... (truncated) ...\n\n" + self.log[-5000:]
+        self.save(update_fields=["log"])
 
     def __str__(self):
         return f"{self.dataset} - {self.field}"
