@@ -48,11 +48,17 @@ def scrape_service_bund_portal(max_results: int = 200):
         soup = BeautifulSoup(html_text, "html.parser")
         new_results = extract_results_from_page(soup)
         for result in tqdm(new_results):
-            add_details(result)
+            try:
+                add_details(result)
+            except Exception as e:
+                print(f"Error adding details to {result}: {e}")
+                # print stack trace
+                import traceback
+                traceback.print_exc()
             total += 1
             if total >= max_results:
                 break
-            time.sleep(random.uniform(0.1, 0.3))
+            time.sleep(random.uniform(0.1, 0.2))
 
         insert_many(DATASET_ID, [json.loads(result.model_dump_json(by_alias=True)) for result in new_results])
 
@@ -123,56 +129,71 @@ def add_details(tender: Tender) -> Tender:
     response = requests.get(base_url + detail_page)
     response.raise_for_status()
     html_text = response.text
-    soup = BeautifulSoup(html_text, "html.parser")
-    article = soup.find("article")
-    # <p class="arbeitgeber">Vergabestelle: Landkreis Rotenburg (Wümme) </p>
-    tender.publisher = article.find("p", class_="arbeitgeber").get_text(strip=True).replace("Vergabestelle: ", "")
+    try:
+        soup = BeautifulSoup(html_text, "html.parser")
+        article = soup.find("article")
+        # <p class="arbeitgeber">Vergabestelle: Landkreis Rotenburg (Wümme) </p>
+        if article.find("p", class_="arbeitgeber"):
+            tender.publisher = article.find("p", class_="arbeitgeber").get_text(strip=True).replace("Vergabestelle: ", "")
 
-    # "Kurzinfos"
-    shortlist_section = soup.find("section", class_="shortlist")
-    shortlist_info = {}
-    for dt, dd in zip(shortlist_section.find_all("dt"), shortlist_section.find_all("dd")):
-        key = dt.get_text(strip=True)
-        value = dd.get_text(strip=True)
-        shortlist_info[key] = value
-    if shortlist_info.get("CPV-Codes", None):
-        tender.cpv_codes = map(str.strip, shortlist_info.get("CPV-Codes", None).split(","))
-    if shortlist_info.get("Erfüllungsort"):
-        tender.location = shortlist_info.get("Erfüllungsort").replace("Karte anschauen", "").strip()
-    if shortlist_info.get("Vergabeart"):
-        tender.award_type = shortlist_info.get("Vergabeart")
-    if shortlist_info.get("Vergabeverfahren"):
-        tender.award_procedure = shortlist_info.get("Vergabeverfahren")
-    if shortlist_info.get("Leistungen und Erzeugnisse"):
-        # Leistungsgegenstandt, Subject of Performance
-        tender.requested_service_or_product = shortlist_info.get("Leistungen und Erzeugnisse")
-    if shortlist_info.get("Ausschreibungsweite"):
-        tender.scope = shortlist_info.get("Ausschreibungsweite")
-    # <div class="text"><div><p>other text</p><p>...</p></div><p>Description</p><p>Description2</p></div>
-    # use only direct <p> children, not nested ones
-    description_parts = article.find("div", class_="text").find_all("p", recursive=False)
-    if description_parts:
-        tender.description = "\n".join(p.get_text(strip=True) for p in description_parts)
+        # "Kurzinfos"
+        shortlist_section = soup.find("section", class_="shortlist")
+        shortlist_info = {}
+        for dt, dd in zip(shortlist_section.find_all("dt"), shortlist_section.find_all("dd")):
+            key = dt.get_text(strip=True)
+            value = dd.get_text(strip=True)
+            shortlist_info[key] = value
+        if shortlist_info.get("CPV-Codes", None):
+            tender.cpv_codes = map(str.strip, shortlist_info.get("CPV-Codes", None).split(","))
+        if shortlist_info.get("CPV-Code", None):
+            tender.cpv_codes = [shortlist_info.get("CPV-Code", None).strip()]
+        if shortlist_info.get("Erfüllungsort"):
+            tender.location = shortlist_info.get("Erfüllungsort").replace("Karte anschauen", "").strip()
+            if "CPV-Code" in tender.location:
+                tender.location = tender.location.split("CPV-Code")[0].strip()
+        if shortlist_info.get("Vergabeart"):
+            tender.award_type = shortlist_info.get("Vergabeart")
+        if shortlist_info.get("Vergabeverfahren"):
+            tender.award_procedure = shortlist_info.get("Vergabeverfahren")
+        if shortlist_info.get("Leistungen und Erzeugnisse"):
+            # Leistungsgegenstandt, Subject of Performance
+            tender.requested_service_or_product = shortlist_info.get("Leistungen und Erzeugnisse")
+        if shortlist_info.get("Ausschreibungsweite"):
+            tender.scope = shortlist_info.get("Ausschreibungsweite")
+        # <div class="text"><div><p>other text</p><p>...</p></div><p>Description</p><p>Description2</p></div>
+        # use only direct <p> children, not nested ones
+        description_parts = article.find("div", class_="text").find_all("p", recursive=False)
+        if description_parts:
+            tender.description = "\n".join(p.get_text(strip=True) for p in description_parts)
+        description_as_pre = article.find("div", class_="text").find("pre")
+        if description_as_pre:
+            tender.description = description_as_pre.get_text(strip=True)
 
-    linklist_div = soup.find("div", class_="linklist")
-    linklist_info = {}
-    for li in linklist_div.find_all("li"):
-        a_tag = li.find("a")
-        link_title = a_tag.get_text(strip=True)
-        linklist_info[link_title] = {
-            "href": a_tag["href"],
-            "description": a_tag["title"]
-        }
-    tender.links = linklist_info
-    tender.external_detail_page = linklist_info.get("Bekanntmachung (HTML-Seite)", {}).get("href", None)
-    if tender.external_detail_page:
-        try:
-            tender.external_detail_page_domain = tender.external_detail_page.split("/")[2]
-        except IndexError:
-            pass
-    tender.external_pdf = linklist_info.get("Bekanntmachung (PDF-Dokument)", {}).get("href", None)
+        linklist_div = soup.find("div", class_="linklist")
+        linklist_info = {}
+        for li in linklist_div.find_all("li"):
+            a_tag = li.find("a")
+            link_title = a_tag.get_text(strip=True)
+            linklist_info[link_title] = {
+                "href": a_tag["href"],
+                "description": a_tag["title"]
+            }
+        tender.links = linklist_info
+        tender.external_detail_page = linklist_info.get("Bekanntmachung (HTML-Seite)", {}).get("href", None)
+        if tender.external_detail_page:
+            try:
+                tender.external_detail_page_domain = tender.external_detail_page.split("/")[2]
+            except IndexError:
+                pass
+        tender.external_pdf = linklist_info.get("Bekanntmachung (PDF-Dokument)", {}).get("href", None)
+    except Exception as e:
+        print(f"Error parsing details for {tender}: {e}")
+        print(html_text)
+        # print stack trace
+        import traceback
+        traceback.print_exc()
     return tender
 
 
 if __name__ == "__main__":
-    scrape_service_bund_portal(100)
+    scrape_service_bund_portal(15000)
