@@ -33,7 +33,9 @@ def delete_field_content(dataset_id: int, field_identifier: str):
 
 def generate_missing_values(task: GenerationTask):
     task.log = ""
-    task.save()
+    task.status = GenerationTask.TaskStatus.RUNNING
+    task.stop_flag = False
+    task.save(update_fields=["status", "log", "stop_flag"])
     logging.warning(f"Generating missing values for dataset {task.dataset}, field {task.field}...")
     task.add_log(f"Generating missing values for dataset {task.dataset}, field {task.field}...")
     dataset_id: int = task.dataset.id  # type: ignore
@@ -44,14 +46,22 @@ def generate_missing_values(task: GenerationTask):
     # update_database_layout(dataset_id)
     # TODO: store time of last layout update in dataset and compare with date of last change
 
+    pipeline_steps, required_fields, potentially_changed_fields = get_pipeline_steps(dataset, only_fields=[field_identifier])
+    potentially_changed_text_fields, potentially_changed_vector_fields = separate_text_and_vector_fields(dataset, potentially_changed_fields)
+    task.add_log(f"The following fields will potentially be changed: text fields {potentially_changed_text_fields}, vector fields {potentially_changed_vector_fields}")
+
     if task.regenerate_all:
         task.add_log(f"Deleting content of field {field_identifier} because all items should be regenerated")
         delete_field_content(dataset_id, field_identifier)
         task.add_log(f"Deleted content of field {field_identifier}")
+        if task.clear_all_output_fields:
+            additional_fields_to_clear = potentially_changed_fields - {field_identifier}
+            for additional_field in additional_fields_to_clear:
+                task.add_log(f"Deleting content of field {additional_field} because all output fields should be cleared, too")
+                time.sleep(2)  # waiting for the deletion of the previous field to be finished
+                delete_field_content(dataset_id, additional_field)
+                task.add_log(f"Deleted content of field {additional_field}")
 
-    pipeline_steps, required_fields, potentially_changed_fields = get_pipeline_steps(dataset, only_fields=[field_identifier])
-    potentially_changed_text_fields, potentially_changed_vector_fields = separate_text_and_vector_fields(dataset, potentially_changed_fields)
-    task.add_log(f"The following fields will potentially be changed: text fields {potentially_changed_text_fields}, vector fields {potentially_changed_vector_fields}")
     index_settings = get_index_settings(dataset)
     if potentially_changed_vector_fields or (potentially_changed_fields & index_settings.filtering_fields):
         # if vector fields change, all filtering fields are required during the update:
@@ -90,11 +100,14 @@ def generate_missing_values(task: GenerationTask):
         index_update_duration = time.time() - t2
         duration = generation_duration + index_update_duration
         items_processed += len(elements)
-        task.add_log(f"Processed {items_processed} of {total_items_estimated} ({(items_processed / float(total_items_estimated)) * 100:.1f} %)")
-        task.add_log(f"Time per item: generation {generation_duration / len(elements) * 1000:.2f} ms, index update {index_update_duration / len(elements) * 1000:.2f} ms, total {duration / len(elements) * 1000:.2f} ms")
-        task.add_log(f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min")
+        progress = items_processed / float(total_items_estimated)
+        task.progress = progress
+        task.save(update_fields=["progress"])
+        task.add_log(f"Processed {items_processed} of {total_items_estimated} ({progress * 100:.1f} %)\n" + \
+            f"Time per item: generation {generation_duration / len(elements) * 1000:.2f} ms, index update {index_update_duration / len(elements) * 1000:.2f} ms, total {duration / len(elements) * 1000:.2f} ms\n" + \
+            f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min")
 
-    batch_size = 512
+    batch_size = task.batch_size
 
     generator = search_engine_client.get_all_items_with_missing_field(dataset.actual_database_name, field_identifier, required_text_fields, internal_batch_size=batch_size)
     elements = []
@@ -103,6 +116,12 @@ def generate_missing_values(task: GenerationTask):
     for element in generator:
         elements.append(element)
         if len(elements) % batch_size == 0:
+            task.refresh_from_db(fields=["stop_flag"])
+            if task.stop_flag:
+                task.add_log(f"Stopped by user")
+                task.status = GenerationTask.TaskStatus.FINISHED
+                task.save(update_fields=["status"])
+                return
             if is_vector_field:
                 items_where_vector_already_exists = vector_db_client.get_items_by_ids(
                     dataset, [x["_id"] for x in elements], field_identifier, is_array_field, return_payloads=False, return_vectors=False)
@@ -126,6 +145,12 @@ def generate_missing_values(task: GenerationTask):
             elements = []
             last_batch_time = time.time()
     if elements:
+        task.refresh_from_db(fields=["stop_flag"])
+        if task.stop_flag:
+            task.add_log(f"Stopped by user")
+            task.status = GenerationTask.TaskStatus.FINISHED
+            task.save(update_fields=["status"])
+            return
         # process remaining elements
         if required_vector_fields:
             fill_in_vector_data_list(dataset, elements, required_vector_fields)
@@ -134,6 +159,8 @@ def generate_missing_values(task: GenerationTask):
         _process(elements)
     logging.warning(f"Done")
     task.add_log(f"Done")
+    task.status = GenerationTask.TaskStatus.FINISHED
+    task.save(update_fields=["status"])
 
 
 def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict], log_error: Callable=logging.warning) -> dict:
