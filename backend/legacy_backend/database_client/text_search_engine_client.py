@@ -134,6 +134,12 @@ class TextSearchEngineClient(object):
                     }
                 }
 
+        if dataset.schema.direct_parent:
+            properties["_parent"] = {"type": "keyword"}
+        if dataset.schema.all_parents:
+            # all_parents is a list of all parent IDs, including the direct parent
+            properties["_all_parents"] = {"type": "keyword"}
+
         mappings = {
             'properties': properties,
         }

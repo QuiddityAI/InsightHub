@@ -522,6 +522,27 @@ class DatasetSchema(models.Model):
         blank=True,
         null=True,
     )
+    direct_parent = models.CharField(
+        verbose_name="Direct Parent",
+        help_text="Field that contains the PK of the direct parent",
+        max_length=200,
+        blank=True,
+        null=True,
+    )
+    all_parents = models.CharField(
+        verbose_name="All Parents",
+        help_text="Field that contains the PKs of all parents as an array",
+        max_length=200,
+        blank=True,
+        null=True,
+    )
+    is_group_field = models.CharField(
+        verbose_name="Is Group Field",
+        help_text="Bool field that indicates if the item can have children",
+        max_length=200,
+        blank=True,
+        null=True,
+    )
     thumbnail_image = models.CharField(
         verbose_name="Thumbnail Image",
         help_text="Should point to a field with an image URL",

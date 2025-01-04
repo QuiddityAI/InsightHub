@@ -36,6 +36,20 @@ def insert_many(dataset_id: int, elements: list[dict]) -> list[tuple]:
         elif isinstance("_id", int):
             element["_id"] = str(element["_id"])
 
+    direct_parent_field: str = dataset.schema.direct_parent
+    if direct_parent_field:
+        for element in elements:
+            direct_parent = element.get(direct_parent_field)
+            if direct_parent:
+                element["_parent"] = str(uuid5(uuid.NAMESPACE_URL, direct_parent))
+
+    all_parents_field = dataset.schema.all_parents
+    if all_parents_field:
+        for element in elements:
+            all_parents = element.get(all_parents_field)
+            if all_parents:
+                element["_all_parents"] = [str(uuid5(uuid.NAMESPACE_URL, parent)) for parent in all_parents]
+
     # for upsert / update case: get changed fields:
     # changed_fields_total = get_changed_fields(primary_key_field, elements, dataset)
 

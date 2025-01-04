@@ -74,6 +74,7 @@ export function get_download_url(local_path) {
 }
 
 export function icon_for_file_suffix(suffix) {
+  // from https://www.svgrepo.com/collection/file-types/
   if (!suffix) return "https://www.svgrepo.com/show/81310/file.svg"
   const lowerSuffix = suffix.toLowerCase()
   if (lowerSuffix === "pdf") return "https://www.svgrepo.com/show/56192/pdf.svg"
@@ -86,6 +87,7 @@ export function icon_for_file_suffix(suffix) {
   if (lowerSuffix === "mp3" || lowerSuffix === "wav" || lowerSuffix === "flac") return "https://www.svgrepo.com/show/22847/mp3.svg"
   if (lowerSuffix === "mp4" || lowerSuffix === "avi" || lowerSuffix === "mov" || lowerSuffix === "mkv") return "https://www.svgrepo.com/show/41018/mp4.svg"
   if (lowerSuffix === "txt" || lowerSuffix === "log" || lowerSuffix === "csv") return "https://www.svgrepo.com/show/22837/txt.svg"
+  if (lowerSuffix === "folder") return "https://www.svgrepo.com/show/474852/folder.svg"
   return "https://www.svgrepo.com/show/81310/file.svg"
 }
 

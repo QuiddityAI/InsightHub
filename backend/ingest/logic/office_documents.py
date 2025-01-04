@@ -46,6 +46,8 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
 
     for item in input_items:
         item = AiFileProcessingInput(**item)
+        if item.is_folder:
+            continue
         batch.append(item)
         if len(batch) >= batch_size:
             process_batch(batch)
@@ -127,6 +129,19 @@ def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, pa
     return result
 
 
+def get_parent_folders(folder) -> list:
+    if not folder:
+        return []
+    if folder == "/":
+        return []
+    if folder.endswith("/"):
+        folder = folder[:-1]
+    folders = folder.split("/")
+    folders = ["/".join(folders[:i]) for i in range(len(folders), 0, -1)]
+    folders = [f for f in folders if f]
+    return folders
+
+
 def import_office_document(files: list[UploadedOrExtractedFile], parameters: DotDict, on_progress=None) -> tuple[list[dict], list[dict]]:
     if not files:
         return [], []
@@ -155,6 +170,8 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters: Dot
             "folder": folder,
             "full_path": os.path.join(folder or "", uploaded_file.original_filename),
             "uploaded_file_path": uploaded_file.local_path,  # relative to UPLOADED_FILES_FOLDER
+            "parent_folders": get_parent_folders(folder),
+            "is_folder": False,
         }
         items.append(item)
     failed_items = []

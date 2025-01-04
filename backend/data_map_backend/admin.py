@@ -293,7 +293,7 @@ class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAd
 
     fields = [
         "identifier", "name", "entity_name", "entity_name_plural", "short_description",
-        "primary_key", "thumbnail_image",
+        "primary_key", "direct_parent", "all_parents", "is_group_field", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields", "advanced_options",
         "applicable_import_converters", "applicable_export_converters",
         "get_field_overview_table_html",

@@ -41,9 +41,10 @@ class AiMetadataResult(Schema):
 class AiFileProcessingInput(Schema):
     file_name: str = ""
     folder: str | None = None
-    uploaded_file_path: str = ""
+    uploaded_file_path: str | None = ""
     file_created_at: Optional[str] = None  # isoformat
     file_updated_at: Optional[str] = None  # isoformat
+    is_folder: bool = False
 
 
 class AiFileProcessingOutput(Schema):
