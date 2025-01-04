@@ -1,7 +1,8 @@
 import time
 import os
+import datetime
 
-from data_backend_client import upload_files, files_in_folder
+from data_backend_client import upload_files, files_in_folder, insert_many
 import csv
 
 csv_log = []
@@ -13,10 +14,48 @@ def import_files(path, dataset_id, max_items=1000000):
 
     batch = []
     batch_size = 10
+    folder_batch_size = 100
     total_items = 0
     extensions = (".doc", ".docx", ".pdf", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", )
     skip_first = 0
+    csv_log.append(["index", "total_items", "path", "status"])
+
+    csv_log.append(["first line exception header: dataset_id", "max_items", "path", "skip_first"])
     csv_log.append([dataset_id, max_items, path, skip_first])
+
+    folder_batch = []
+    folder_i = 0
+    for root, dirs, files in os.walk(path):
+        for name in dirs:
+            full_path = os.path.join(root, name)
+            root_without_path = root.replace(path, "")
+            full_path_without_path = full_path.replace(path, "")
+
+            item = dict(
+                title=name,
+                file_created_at=datetime.datetime.fromtimestamp(os.path.getctime(full_path)).isoformat(),
+                file_updated_at=datetime.datetime.fromtimestamp(os.path.getmtime(full_path)).isoformat(),
+                file_type="folder",
+                language="de",
+                file_name=name,
+                folder=root_without_path,
+                full_path=full_path_without_path,
+                type_description="Ordner",
+                size_in_bytes=4096,
+                parent_folders=get_parent_folders(root_without_path),
+                is_folder=True,
+            )
+            folder_batch.append(item)
+            folder_i += 1
+            csv_log.append([folder_i, total_items, full_path, "folder"])
+
+            if len(folder_batch) >= folder_batch_size:
+                insert_many(dataset_id, folder_batch)
+                folder_batch = []
+
+    if folder_batch:
+        insert_many(dataset_id, folder_batch)
+        folder_batch = []
 
     for i, file_path in enumerate(files_in_folder(path, extensions=extensions)):
         if i < skip_first:
@@ -104,9 +143,23 @@ def import_files(path, dataset_id, max_items=1000000):
     print(f"Total items: {total_items}")
 
 
+def get_parent_folders(folder) -> list:
+    if not folder:
+        return []
+    if folder == "/":
+        return []
+    if folder.endswith("/"):
+        folder = folder[:-1]
+    folders = folder.split("/")
+    folders = ["/".join(folders[:i]) for i in range(len(folders), 0, -1)]
+    folders = [f for f in folders if f]
+    return folders
+
+
 if __name__ == "__main__":
     try:
-        import_files("/data/remondis/", 98, 500)
+        #import_files("/data/remondis/", 98, 500)
+        import_files("/home/tim/test_folder/", 111, 10)
     finally:
         with open(f"import_log_{time.strftime('%Y%m%d_%H%M%S')}.csv", "w") as f:
             writer = csv.writer(f)
