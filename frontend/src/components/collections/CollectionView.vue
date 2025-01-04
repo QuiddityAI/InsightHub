@@ -111,7 +111,7 @@ export default {
     this.eventBus.on("collection_item_added", this.on_item_added)
     this.eventBus.on("collection_item_removed", this.on_item_removed)
     this.collectionStore.load_collection_items()
-    if (this.collectionStore.collection_id.agent_is_running) {
+    if (this.collectionStore.collection.agent_is_running) {
       this.collectionStore.schedule_update_collection()
     }
   },
