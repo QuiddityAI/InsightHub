@@ -24,7 +24,9 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
 
     collection.current_agent_step = "Running search task..."
     collection.last_search_task = search_task.dict()
+    collection.search_tasks.append(search_task.dict())
     collection.save()
+    # FIXME: stack_index doesn't look right, not sure what the goal was
     stack_index = max([s.get('stack_index', 0) for s in collection.search_sources if s['is_active']] or [-1]) + 1
 
     search_task.query = search_task.user_input

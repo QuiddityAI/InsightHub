@@ -2,6 +2,7 @@
 import {
   PencilIcon,
   NoSymbolIcon,
+  ChevronUpIcon,
 } from "@heroicons/vue/24/outline"
 
 
@@ -50,6 +51,14 @@ export default {
 <template>
   <div class="w-full px-5 py-1 flex flex-col gap-1">
     <div class="flex flex-row items-center gap-4">
+
+      <BorderlessButton v-if="collectionStore.collection.search_tasks.length >= 2 && !collectionStore.collection.search_tasks.at(-2).exit_search_mode"
+        @click="collectionStore.run_previous_search_task"
+        v-tooltip.bottom="{value: 'Go to the previous search result', showDelay: 400}"
+        class="h-full -mr-3 -ml-3">
+        <ChevronUpIcon class="h-5 w-5" />
+      </BorderlessButton>
+
       <span class="flex-none text-blue-500">Search Mode:</span>
 
       <div class="flex flex-col gap-2">

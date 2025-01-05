@@ -1236,9 +1236,16 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
+    search_tasks = models.JSONField(
+        verbose_name="Search Tasks",
+        help_text="List of executed search tasks",
+        default=list,
+        blank=True,
+        null=False,
+    )
     last_search_task = models.JSONField(
         verbose_name="Last Search Task",
-        help_text="",
+        help_text="if search mode is still active, this is the current search task",
         default=dict,
         blank=True,
         null=False,

@@ -380,6 +380,18 @@ export const useCollectionStore = defineStore("collection", {
           }
         })
     },
+    run_previous_search_task() {
+      const that = this
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+      }
+      httpClient
+        .post("/api/v1/search/run_previous_search_task", body)
+        .then((response) => {
+          that.update_collection({update_items: true})
+        })
+    },
     run_search_task_similar_to_item(dataset_and_item_id, title) {
       const that = this
       const body = {
@@ -533,7 +545,6 @@ export const useCollectionStore = defineStore("collection", {
     },
     // ----------------------------- Groups / Parent - Child relations -----------------------------
     show_group(dataset_id, parent_id, label) {
-      console.log("show_group", parent_id)
       const new_settings = {
         dataset_id: dataset_id,
         auto_set_filters: false,
