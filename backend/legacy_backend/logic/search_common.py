@@ -244,6 +244,13 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
                     "order": "asc"
                 }
             }]
+            if dataset.schema.is_group_field:
+                sort_settings = [{
+                    dataset.schema.is_group_field: {
+                        "missing": "_last",
+                        "order": "desc"
+                    }
+                }, *sort_settings]
 
     text_db_client = TextSearchEngineClient.get_instance()
     search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, sort_settings=sort_settings, boost_function=boost_function)
