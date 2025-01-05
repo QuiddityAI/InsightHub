@@ -238,12 +238,12 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
         # if no query and just filters are used, sort results alphabetical on the title (first descr. text field):
         sort_field = dataset.schema.advanced_options.get("default_sort_field")
         if sort_field:
-            sort_settings = {
+            sort_settings = [{
                 sort_field: {
                     "missing": "_last",
                     "order": "asc"
                 }
-            }
+            }]
 
     text_db_client = TextSearchEngineClient.get_instance()
     search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, sort_settings=sort_settings, boost_function=boost_function)
