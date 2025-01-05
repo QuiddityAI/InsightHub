@@ -4,7 +4,7 @@
   "entity_name_plural": "documents",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2025-01-05T14:20:26.344Z",
+  "changed_at": "2025-01-05T15:09:18.015Z",
   "primary_key": "full_path",
   "direct_parent": "folder",
   "all_parents": "parent_folders",
@@ -77,7 +77,7 @@
   },
   "result_list_rendering": {
     "url": "item => null",
-    "body": "item => `<i>AI tldr:</i> ${item.description}`",
+    "body": "item => `<i>AI tldr:</i> ${item.description || '-'}`",
     "icon": "item => icon_for_file_suffix(item.file_type)",
     "image": "item => get_download_url(item.thumbnail_path)",
     "title": "item => `${item.title}`",
@@ -108,7 +108,7 @@
   },
   "detail_view_rendering": {
     "url": "item => null",
-    "body": "item => `<b>AI Description:</b><br> ${item.description} <br><br> <b>AI Summary:</b> ${marked.parse(item.abstract || '-')}`",
+    "body": "item => `<b>AI Description:</b><br> ${item.description || '-'} <br><br> <b>AI Summary:</b> ${marked.parse(item.abstract || '-')}`",
     "icon": "item => icon_for_file_suffix(item.file_type)",
     "image": "item => get_download_url(item.thumbnail_path)",
     "links": [

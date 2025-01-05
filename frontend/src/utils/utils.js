@@ -171,5 +171,11 @@ export function update_object(old_obj, new_obj) {
       old_obj[key] = new_obj[key]
     }
   }
+  // Remove extra keys
+  for (const key in old_obj) {
+    if (!(key in new_obj)) {
+      delete old_obj[key]
+    }
+  }
 }
 
