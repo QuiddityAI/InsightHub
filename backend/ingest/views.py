@@ -25,6 +25,7 @@ def upload_files_route(
     collection_class: Form[str | None] = None,
     dataset_auth_token: Form[str | None] = None,
     blocking: Form[bool] = False,
+    skip_generators: Form[bool] = False,
     *args,
     **kwargs,
 ):
@@ -49,7 +50,7 @@ def upload_files_route(
             # logging.warning(f"Metadata for file {key}: {metadata}")
             custom_file.metadata = UploadedFileMetadata(**json.loads(metadata))
         custom_uploaded_files.append(custom_file)
-    task_id = upload_files_or_forms(dataset_id, import_converter, custom_uploaded_files, None, collection_id, collection_class, user_id, blocking)
+    task_id = upload_files_or_forms(dataset_id, import_converter, custom_uploaded_files, None, collection_id, collection_class, user_id, blocking, skip_generators)
     # usually, all in-memory files of the request would be closed and deleted after the request is done
     # in this case, we want to keep them open and close them manually in the background thread
     # so we need to remove the files from the request object:

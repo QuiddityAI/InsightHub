@@ -23,7 +23,7 @@ upload_tasks = {}
 def upload_files_or_forms(dataset_id: int, import_converter: str, raw_files: Optional[Iterable[CustomUploadedFile]],
                  forms: Optional[list[dict]],
                  collection_id: int | None, collection_class: str | None,
-                 user_id: int, blocking: bool=False) -> str:
+                 user_id: int, blocking: bool=False, skip_generators: bool=False) -> str:
     """ Import files: extracting text -> converting to items -> inserting into database """
     global upload_tasks
     task_id = _create_upload_task(dataset_id)
@@ -32,12 +32,12 @@ def upload_files_or_forms(dataset_id: int, import_converter: str, raw_files: Opt
         try:
             if raw_files:
                 inserted_ids, failed_files = _store_files_and_import_them(dataset_id, import_converter, raw_files,
-                    collection_id, collection_class, task_id, user_id)
+                    collection_id, collection_class, task_id, user_id, skip_generators)
             else:
                 assert forms
                 # import JSON objects from a form -> no file upload etc, but still converting first
                 inserted_ids, failed_files = _import_items(dataset_id, import_converter, forms,
-                    collection_id, collection_class, task_id, user_id)
+                    collection_id, collection_class, task_id, user_id, skip_generators=skip_generators)
             upload_tasks[dataset_id][task_id]["is_running"] = False
             upload_tasks[dataset_id][task_id]["status"] = "finished"
             upload_tasks[dataset_id][task_id]["finished_at"] = datetime.datetime.now().isoformat()
@@ -101,7 +101,7 @@ def _set_task_status(dataset_id: int, task_id: str, status: str, progress: float
 
 def _store_files_and_import_them(dataset_id: int, import_converter_identifier: str, raw_files: Iterable[CustomUploadedFile],
                  collection_id: int | None, collection_class: str | None, task_id: str,
-                 user_id: int) -> tuple[list[tuple], list[str]]:
+                 user_id: int, skip_generators: bool = False) -> tuple[list[tuple], list[str]]:
     logging.warning(f"uploading files to dataset {dataset_id}, import_converter: {import_converter_identifier}")
     if not os.path.exists(UPLOADED_FILES_FOLDER):
         os.makedirs(UPLOADED_FILES_FOLDER)
@@ -152,12 +152,12 @@ def _store_files_and_import_them(dataset_id: int, import_converter_identifier: s
         return [], failed_files
 
     return _import_items(dataset_id, import_converter_identifier, uploaded_files,
-                         collection_id, collection_class, task_id, user_id, failed_files)
+                         collection_id, collection_class, task_id, user_id, failed_files, skip_generators)
 
 
 def _import_items(dataset_id: int, import_converter_identifier: str, files_or_dicts: list,
                  collection_id: int | None, collection_class: str | None, task_id: str,
-                 user_id: int, failed_files: list = []) -> tuple[list[tuple], list[str]]:
+                 user_id: int, failed_files: list = [], skip_generators: bool = False) -> tuple[list[tuple], list[str]]:
     response = track_service_usage(user_id, "upload_items", len(files_or_dicts), "uploading items")
     if not response["approved"]:
         raise ValueError("service usage not approved")
@@ -179,7 +179,7 @@ def _import_items(dataset_id: int, import_converter_identifier: str, files_or_di
     inserted_ids = []
     for i in range(0, len(items), batch_size):
         _set_task_status(dataset_id, task_id, "inserting into DB", 0.1 + i / len(items) * 0.9)
-        inserted_ids += insert_many(dataset_id, items[i:i + batch_size])
+        inserted_ids += insert_many(dataset_id, items[i:i + batch_size], skip_generators=skip_generators)
     logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
     clear_local_map_cache()
 

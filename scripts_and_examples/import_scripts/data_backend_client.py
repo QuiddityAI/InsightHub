@@ -22,11 +22,12 @@ def update_database_layout(dataset_id: int):
         logging.info(f"Updated database layout of database {dataset_id}")
 
 
-def insert_many(dataset_id: int, elements: list[dict]):
+def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=False):
     url = data_backend_url + '/data_backend/insert_many_sync'
     data = {
         'dataset_id': dataset_id,
         'elements': elements,
+        'skip_generators': skip_generators,
     }
     response = requests.post(url, json=data)
     if response.status_code != 204:
@@ -60,6 +61,7 @@ def upload_files(
     collection_class: str | None = None,
     file_paths: list[str] = [],
     exclude_prefix: str | None = None,
+    skip_generators: bool = False,
 ):
     url = data_backend_url + "/api/v1/ingest/upload_files"
     data = {
@@ -72,6 +74,7 @@ def upload_files(
         'collection_class': collection_class,
         'dataset_auth_token': 'fixme',  # TODO: use proper auth token
         'blocking': True,
+        'skip_generators': skip_generators,
     }
     files = {}
     for i, file_path in enumerate(file_paths):

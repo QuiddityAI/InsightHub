@@ -183,7 +183,7 @@ def insert_many_sync_route(request, ):
     # TODO: check auth
     params = DotDict(request.json) # type: ignore
     try:
-        insert_many(params.dataset_id, params.elements)
+        insert_many(params.dataset_id, params.elements, params.skip_generators)
     except Exception as e:
         logging.warning("Error inserting many items", exc_info=True)
         return repr(e), 500

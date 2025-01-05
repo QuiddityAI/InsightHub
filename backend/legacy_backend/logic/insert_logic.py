@@ -23,7 +23,7 @@ def update_database_layout(dataset_id: int):
     search_engine_client.ensure_dataset_exists(dataset)
 
 
-def insert_many(dataset_id: int, elements: list[dict]) -> list[tuple]:
+def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=False) -> list[tuple]:
     dataset = get_dataset(dataset_id)
 
     for element in elements:
@@ -53,7 +53,10 @@ def insert_many(dataset_id: int, elements: list[dict]) -> list[tuple]:
     # for upsert / update case: get changed fields:
     # changed_fields_total = get_changed_fields(primary_key_field, elements, dataset)
 
-    pipeline_steps, _, _ = get_pipeline_steps(dataset)
+    if skip_generators:
+        pipeline_steps = []
+    else:
+        pipeline_steps, _, _ = get_pipeline_steps(dataset)
 
     for phase in pipeline_steps:
         for pipeline_step in phase:  # TODO: this could be done in parallel
