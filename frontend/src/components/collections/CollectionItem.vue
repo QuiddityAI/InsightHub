@@ -173,7 +173,7 @@ export default {
 
         <!-- Heading -->
         <div class="flex flex-row items-start">
-          <img v-if="rendering.icon(item) && !rendering.tagline(item)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
+          <img v-if="rendering.icon(item) && (!rendering.tagline(item) || actual_size_mode < CollectionItemSizeMode.SMALL)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
           <button class="min-w-0 text-left text-[16px] font-['Lexend'] font-medium leading-tight break-words text-sky-700 hover:underline"
             v-html="rendering.title(item)"
             @click="appState.show_document_details([dataset_id, item_id], collection_item.metadata, collection_item.relevant_parts, original_query)">
