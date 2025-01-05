@@ -4,8 +4,11 @@
   "entity_name_plural": "Tenders",
   "short_description": null,
   "created_at": "2024-11-19T18:55:07.379Z",
-  "changed_at": "2025-01-02T14:29:02.382Z",
+  "changed_at": "2025-01-05T16:49:54.828Z",
   "primary_key": "detail_page",
+  "direct_parent": null,
+  "all_parents": null,
+  "is_group_field": null,
   "thumbnail_image": null,
   "descriptive_text_fields": [
     "title",
@@ -38,6 +41,7 @@
       }
     ],
     "map_vector_field": "embedding_e5",
+    "default_sort_field": "published",
     "ignored_keyword_highlight_fields": [
       "title",
       "summary"
@@ -168,7 +172,7 @@
       "identifier": "embedding_e5",
       "name": null,
       "created_at": "2024-11-19T18:58:45.312Z",
-      "changed_at": "2024-11-19T19:30:49.359Z",
+      "changed_at": "2025-01-02T16:18:40.077Z",
       "schema": "tender_service_bund",
       "description": null,
       "field_type": "VECTOR",
@@ -181,11 +185,12 @@
       "image_similarity_threshold": null,
       "is_available_for_filtering": false,
       "index_parameters": {},
-      "generator": "e5_base_text_embedding",
+      "generator": "e5_multilingual_base_text_embedding",
       "generator_parameters": null,
       "generating_condition": "",
       "source_fields": [
         "title",
+        "summary",
         "description"
       ],
       "should_be_generated": true,
@@ -494,7 +499,7 @@
       "identifier": "summary",
       "name": "AI Summary",
       "created_at": "2025-01-01T17:41:44.468Z",
-      "changed_at": "2025-01-01T17:41:44.491Z",
+      "changed_at": "2025-01-02T14:33:23.553Z",
       "schema": "tender_service_bund",
       "description": null,
       "field_type": "TEXT",
@@ -505,7 +510,7 @@
       "is_available_for_search": true,
       "text_similarity_threshold": null,
       "image_similarity_threshold": null,
-      "is_available_for_filtering": false,
+      "is_available_for_filtering": true,
       "index_parameters": {},
       "generator": null,
       "generator_parameters": null,
