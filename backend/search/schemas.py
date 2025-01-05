@@ -89,8 +89,10 @@ class SearchSource(Schema):
 
 class Filter(Schema):
     field: str
+    dataset_id: int | None = None
     operator: str
     value: str
+    label: str | None = None
 
 
 class ApprovalUsingComparisonReason(Schema):

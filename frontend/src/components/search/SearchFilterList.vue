@@ -33,6 +33,9 @@ export default {
       this.eventBus.emit("search_filters_changed")
     },
     get_filter_label(filter) {
+      if (filter.label) {
+        return filter.label
+      }
       let field_name = ""
       if (filter.field === '_descriptive_text_fields') {
         field_name = 'Descriptive Text'

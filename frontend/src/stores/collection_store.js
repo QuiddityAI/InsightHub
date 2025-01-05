@@ -532,7 +532,7 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     // ----------------------------- Groups / Parent - Child relations -----------------------------
-    show_group(dataset_id, parent_id) {
+    show_group(dataset_id, parent_id, label) {
       console.log("show_group", parent_id)
       const new_settings = {
         dataset_id: dataset_id,
@@ -548,6 +548,7 @@ export const useCollectionStore = defineStore("collection", {
             dataset_id: dataset_id,
             operator: 'is',
             value: parent_id,
+            label: label,
           }
         ],
       }

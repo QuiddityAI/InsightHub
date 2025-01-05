@@ -185,7 +185,7 @@ export default {
             {{ badge.label }}
           </span>
           <button v-if="schema?.is_group_field && item[schema.is_group_field]"
-            @click="collectionStore.show_group(item._dataset_id, item._id)"
+            @click="collectionStore.show_group(item._dataset_id, item._id, `${schema?.advanced_options?.group_name || 'Group'} '${rendering.title(item)}'`)"
             class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500 hover:bg-gray-300">
             Show {{ schema?.advanced_options?.group_name || 'Group' }}
           </button>
