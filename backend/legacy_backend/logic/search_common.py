@@ -234,6 +234,18 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
     boost_function = ranking_settings.get('boost_function') if ranking_settings else None
     sort_settings = ranking_settings.get('sort') if ranking_settings else None
 
+    if not query.positive_query_str and not sort_settings:
+        # if no query and just filters are used, sort results alphabetical on the title (first descr. text field):
+        sort_field = dataset.schema.advanced_options.get("default_sort_field")
+        if sort_field:
+            sort_field += ".keyword"  # sort doesn't work on text fields, but our "Exact String" fields have a separate .keyword field
+            sort_settings = {
+                sort_field: {
+                    "missing": "_last",
+                    "order": "asc"
+                }
+            }
+
     text_db_client = TextSearchEngineClient.get_instance()
     search_result, total_matches = text_db_client.get_search_results(dataset, text_fields, filters, query.positive_query_str, "", page, limit, required_fields, highlights=return_highlights, use_bolding_in_highlights=use_bolding_in_highlights, sort_settings=sort_settings, boost_function=boost_function)
     if auto_relax_query and total_matches == 0:
