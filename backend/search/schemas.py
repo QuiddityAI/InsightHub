@@ -45,6 +45,13 @@ class RunSearchTaskPayload(Schema):
     collection_id: int
     class_name: str
     search_task: SearchTaskSettings
+    wait_for_ms: int = 0
+
+
+class RunPreviousSearchTaskPayload(Schema):
+    collection_id: int
+    class_name: str
+    wait_for_ms: int = 0
 
 
 class RetrievalMode(StrEnum):

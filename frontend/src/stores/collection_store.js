@@ -100,6 +100,7 @@ export const useCollectionStore = defineStore("collection", {
     },
     update_collection({update_items = false, update_columns = []} = {}, on_success = null) {
       if (!this.collection_id) {
+        console.error("No collection_id set to update collection for")
         return
       }
       const body = {
@@ -150,14 +151,20 @@ export const useCollectionStore = defineStore("collection", {
         }
       })
     },
-    schedule_update_collection(timeout_ms=1000) {
+    schedule_update_collection(timeout_ms=1000, args, on_success = null) {
       if (this.update_collection_is_scheduled) {
+        if (on_success) {
+          // if on_success is set, it needs to be called and we should rather call update_collection twice
+          setTimeout(() => {
+            this.update_collection(args, on_success)
+          }, timeout_ms)
+        }
         return
       }
       this.update_collection_is_scheduled = true
       setTimeout(() => {
         this.update_collection_is_scheduled = false
-        this.update_collection()
+        this.update_collection(args, on_success)
       }, timeout_ms)
     },
     delete_collection(collection_id) {
@@ -385,6 +392,7 @@ export const useCollectionStore = defineStore("collection", {
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
+        wait_for_ms: 200,  // wait in case search task is quick and in that case reduce flickering
       }
       httpClient
         .post("/api/v1/search/run_previous_search_task", body)
@@ -409,6 +417,7 @@ export const useCollectionStore = defineStore("collection", {
           reference_item_id: dataset_and_item_id[1],
           origin_name: title,
         },
+        wait_for_ms: 200,  // wait in case search task is quick and in that case reduce flickering
       }
       httpClient
         .post("/api/v1/search/run_search_task", body)
@@ -566,7 +575,8 @@ export const useCollectionStore = defineStore("collection", {
       const body = {
         search_task: new_settings,
         collection_id: this.collection_id,
-        class_name: this.class_name
+        class_name: this.class_name,
+        wait_for_ms: 200,  // wait in case search task is quick and in that case reduce flickering
       }
       httpClient
         .post("/api/v1/search/run_search_task", body)

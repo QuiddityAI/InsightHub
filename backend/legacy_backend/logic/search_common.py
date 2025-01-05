@@ -238,7 +238,6 @@ def get_fulltext_search_results(dataset: DotDict, text_fields: list[str], query:
         # if no query and just filters are used, sort results alphabetical on the title (first descr. text field):
         sort_field = dataset.schema.advanced_options.get("default_sort_field")
         if sort_field:
-            sort_field += ".keyword"  # sort doesn't work on text fields, but our "Exact String" fields have a separate .keyword field
             sort_settings = {
                 sort_field: {
                     "missing": "_last",

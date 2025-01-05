@@ -6,9 +6,9 @@ import logging
 from django.utils import timezone
 from llmonkey.llms import Mistral_Ministral3b
 
-from data_map_backend.models import DataCollection, User, COLUMN_META_SOURCE_FIELDS, WritingTask
+from data_map_backend.models import DataCollection, User, COLUMN_META_SOURCE_FIELDS, WritingTask, Dataset
 from data_map_backend.schemas import CollectionUiSettings
-from search.schemas import SearchTaskSettings
+from search.schemas import SearchTaskSettings, Filter
 from search.logic.execute_search import run_search_task
 from write.logic.writing_task import execute_writing_task_thread
 from .schemas import CreateCollectionSettings
@@ -24,6 +24,7 @@ class CollectionCreationModes(StrEnum):
     META_REPORT = 'meta_report'
     TIMELINE = 'timeline'
     OVERVIEW_MAP = 'overview_map'
+    SHOW_ALL = 'show_all'
     EMPTY_COLLECTION = 'empty_collection'
 
 
@@ -33,6 +34,8 @@ def create_collection_using_mode(
     collection = DataCollection()
     collection.created_by = user
     collection.name = settings.user_input or f"Collection {timezone.now().isoformat()}"
+    if settings.workflow_id == CollectionCreationModes.SHOW_ALL:
+        collection.name = "All items"
     collection.related_organization_id = settings.related_organization_id  # type: ignore
     collection.agent_is_running = settings.workflow_id != CollectionCreationModes.EMPTY_COLLECTION
     collection.current_agent_step = "Preparing..."
@@ -51,7 +54,16 @@ def create_collection_using_mode(
             raise e
 
     if settings.workflow_id != CollectionCreationModes.EMPTY_COLLECTION:
-        threading.Thread(target=thread_function).start()
+        thread = threading.Thread(target=thread_function)
+        thread.start()
+        # wait a bit in case the task is quick, in that case we can reduce flickering in the UI
+        try:
+            thread.join(timeout=0.5)
+        except TimeoutError:
+            # if the task is still running, we return the collection without waiting
+            pass
+        else:
+            collection.refresh_from_db()
 
     return collection
 
@@ -73,11 +85,16 @@ def prepare_collection(
         prepare_for_question(collection, settings, user)
     elif settings.workflow_id == CollectionCreationModes.OVERVIEW_MAP:
         prepare_for_overview_map(collection, settings, user)
+    elif settings.workflow_id == CollectionCreationModes.SHOW_ALL:
+        prepare_for_show_all_map(collection, settings, user)
     elif settings.workflow_id == CollectionCreationModes.EMPTY_COLLECTION:
         # nothing to do
-        pass
+        collection.agent_is_running = False
+        collection.save()
     else:
         logging.warning(f"Requested unsupported workflow: {settings.workflow_id}")
+        collection.agent_is_running = False
+        collection.save()
     return collection
 
 
@@ -95,6 +112,33 @@ def prepare_for_classic_search(collection: DataCollection, settings: CreateColle
     run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
     collection.agent_is_running = False
     collection.save()  # 7 ms
+
+
+def prepare_for_show_all_map(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
+    if settings.filters is None:
+        settings.filters = []
+    dataset = Dataset.objects.select_related("schema").get(id=settings.dataset_id)
+    if dataset.schema.all_parents:
+        settings.filters.append(Filter(
+            field='_all_parents',
+            dataset_id=settings.dataset_id,
+            value="",
+            operator='is_empty',
+            label="Only top-level items",
+        ).model_dump())
+    search_task = SearchTaskSettings(
+        dataset_id=settings.dataset_id,
+        user_input=settings.user_input or "",
+        result_language=settings.result_language,
+        auto_set_filters=False,
+        filters=settings.filters,
+        retrieval_mode='keyword',
+        ranking_settings=settings.ranking_settings,
+        candidates_per_step=10,
+    )
+    run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+    collection.agent_is_running = False
+    collection.save()
 
 
 def prepare_for_overview_map(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:

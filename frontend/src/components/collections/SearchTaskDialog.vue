@@ -168,7 +168,8 @@ export default {
       const body = {
         search_task: this.new_settings,
         collection_id: this.collectionStore.collection_id,
-        class_name: this.collectionStore.class_name
+        class_name: this.collectionStore.class_name,
+        wait_for_ms: 200,  // wait in case search task is quick and in that case reduce flickering
       }
       httpClient
         .post("/api/v1/search/run_search_task", body)

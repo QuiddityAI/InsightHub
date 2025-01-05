@@ -8,7 +8,7 @@ from ninja import NinjaAPI, Schema
 from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
 
-from search.schemas import RunSearchTaskPayload, SearchTaskSettings
+from search.schemas import RunSearchTaskPayload, SearchTaskSettings, RunPreviousSearchTaskPayload
 from search.logic.execute_search import run_search_task, add_items_from_active_sources
 from search.logic.approve_items_and_exit_search import approve_relevant_search_results, exit_search_mode
 
@@ -39,13 +39,20 @@ def run_search_task_route(request, payload: RunSearchTaskPayload):
             collection.current_agent_step = None
             collection.save()
 
-    threading.Thread(target=thread_function).start()
+    thread = threading.Thread(target=thread_function)
+    thread.start()
+    if payload.wait_for_ms > 0:
+        try:
+            thread.join(timeout=payload.wait_for_ms / 1000)
+        except TimeoutError:
+            # if the thread is still running after the timeout, we just let it run
+            pass
 
     return HttpResponse(None, status=204, content_type="application/json")
 
 
 @api.post("run_previous_search_task")
-def run_previous_search_task_route(request, payload: CollectionIdentifier):
+def run_previous_search_task_route(request, payload: RunPreviousSearchTaskPayload):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -76,7 +83,14 @@ def run_previous_search_task_route(request, payload: CollectionIdentifier):
             collection.current_agent_step = None
             collection.save()
 
-    threading.Thread(target=thread_function).start()
+    thread = threading.Thread(target=thread_function)
+    thread.start()
+    if payload.wait_for_ms > 0:
+        try:
+            thread.join(timeout=payload.wait_for_ms / 1000)
+        except TimeoutError:
+            # if the thread is still running after the timeout, we just let it run
+            pass
 
     return HttpResponse(None, status=204, content_type="application/json")
 

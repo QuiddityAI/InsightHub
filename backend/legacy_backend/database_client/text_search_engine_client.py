@@ -338,7 +338,7 @@ class TextSearchEngineClient(object):
                         'default_operator': default_operator,
                     }
                 }
-        else:
+        elif query_positive:
             query = {
                 'from': page * limit,
                 'size': limit,
@@ -348,6 +348,15 @@ class TextSearchEngineClient(object):
                         'fields': search_fields,
                         'default_operator': default_operator,
                     }
+                },
+                '_source': return_fields,
+            }
+        else:
+            query = {
+                'from': page * limit,
+                'size': limit,
+                'query': {
+                    'match_all': {},
                 },
                 '_source': return_fields,
             }

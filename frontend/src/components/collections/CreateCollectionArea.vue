@@ -129,6 +129,15 @@ export default {
           availability: 'preview',
         },
         {
+          id: 'show_all',
+          prefix: "Show",
+          name: 'All <entity_name_plural>',
+          help_text: 'Show all top-level items',
+          query_field_hint: (entity_name) => null,
+          supports_filters: true,
+          availability: 'general_availability',
+        },
+        {
           id: 'empty_collection',
           prefix: "Empty Collection",
           name: 'For Notes and Documents',
@@ -278,7 +287,8 @@ export default {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please select a source dataset', life: 2000 })
         return
       }
-      if (!this.new_settings.user_input && !this.new_settings.filters.length) {
+      const needs_query = this.selected_workflow.query_field_hint(this.entity_name_singular) !== null
+      if (!this.new_settings.user_input && !this.new_settings.filters.length && needs_query) {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please enter a query', life: 2000 })
         return
       }
@@ -379,7 +389,7 @@ export default {
 
         <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
           <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
-            autocomplete="off"
+            autocomplete="off" v-if="selected_workflow?.query_field_hint(entity_name_singular)"
             :placeholder="selected_workflow?.query_field_hint(entity_name_singular)"
             class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
           <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">

@@ -4,7 +4,7 @@
   "entity_name_plural": "documents",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2025-01-05T15:09:18.015Z",
+  "changed_at": "2025-01-05T16:51:16.805Z",
   "primary_key": "full_path",
   "direct_parent": "folder",
   "all_parents": "parent_folders",
@@ -64,7 +64,7 @@
       }
     ],
     "map_vector_field": "embedding_e5",
-    "default_sort_field": "file_name",
+    "default_sort_field": "file_name.keyword",
     "export_button_name": "Export",
     "language_filtering": null,
     "default_result_language": "de",
