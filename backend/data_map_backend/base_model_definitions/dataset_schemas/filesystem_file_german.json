@@ -4,7 +4,7 @@
   "entity_name_plural": "documents",
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2025-01-04T19:08:49.060Z",
+  "changed_at": "2025-01-05T11:13:06.285Z",
   "primary_key": "full_path",
   "direct_parent": "folder",
   "all_parents": "parent_folders",
@@ -26,6 +26,7 @@
     "video_frame_embeddings"
   ],
   "advanced_options": {
+    "group_name": "Folder",
     "range_filters": [],
     "retrieval_mode": "hybrid",
     "ranking_options": [

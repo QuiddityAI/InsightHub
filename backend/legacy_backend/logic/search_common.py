@@ -209,6 +209,9 @@ def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
         required_fields += dataset.schema.descriptive_text_fields
         required_fields += dataset.schema.get("statistics", {}).get("required_fields", [])
 
+    if dataset.schema.is_group_field:
+        required_fields.append(dataset.schema.is_group_field)
+
     required_fields = list(set(required_fields))
     return required_fields
 
@@ -443,6 +446,10 @@ def _field_is_available_for_filtering(field: DotDict, retrieval_mode: str):
 def check_filters(dataset: DotDict, filters: list[dict], retrieval_mode: str):
     for filter_ in filters:
         if filter_['field'] == '_descriptive_text_fields':
+            continue
+        if filter_['field'] == '_parent':
+            continue
+        if filter_['field'] == '_all_parents':
             continue
         if filter_['field'] not in dataset.schema.object_fields:
             raise ValueError(f"Filter field '{filter_['field']}' not found")

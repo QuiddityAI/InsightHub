@@ -36,6 +36,10 @@ export default {
       let field_name = ""
       if (filter.field === '_descriptive_text_fields') {
         field_name = 'Descriptive Text'
+      } else if (filter.field === '_parent') {
+        field_name = 'Parent'
+      } else if (filter.field === '_all_parents') {
+        field_name = 'Any Parent'
       } else {
         const field_details = this.appStateStore.datasets[filter.dataset_id].schema.object_fields[filter.field]
         field_name = field_details.name || field_details.identifier

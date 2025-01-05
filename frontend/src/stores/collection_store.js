@@ -531,6 +531,37 @@ export const useCollectionStore = defineStore("collection", {
           }
         })
     },
+    // ----------------------------- Groups / Parent - Child relations -----------------------------
+    show_group(dataset_id, parent_id) {
+      console.log("show_group", parent_id)
+      const new_settings = {
+        dataset_id: dataset_id,
+        auto_set_filters: false,
+        user_input: '',
+        result_language: null,
+        retrieval_mode: 'keyword',
+        ranking_settings: null,
+        related_organization_id: null,
+        filters: [
+          {
+            field: '_parent',
+            dataset_id: dataset_id,
+            operator: 'is',
+            value: parent_id,
+          }
+        ],
+      }
+      const body = {
+        search_task: new_settings,
+        collection_id: this.collection_id,
+        class_name: this.class_name
+      }
+      httpClient
+        .post("/api/v1/search/run_search_task", body)
+        .then((response) => {
+          this.update_collection({update_items: true})
+        })
+    },
   },
   getters: {
     item_count() {

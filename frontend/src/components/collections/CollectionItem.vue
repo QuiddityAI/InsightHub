@@ -43,6 +43,9 @@ export default {
     rendering() {
       return this.appStateStore.datasets[this.dataset_id]?.schema.result_list_rendering
     },
+    schema() {
+      return this.appStateStore.datasets[this.dataset_id]?.schema
+    },
     main_relevance_influence() {
       const origins = this.item._origins
       if (!origins) return null
@@ -181,6 +184,11 @@ export default {
             class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500">
             {{ badge.label }}
           </span>
+          <button v-if="schema?.is_group_field && item[schema.is_group_field]"
+            @click="collectionStore.show_group(item._dataset_id, item._id)"
+            class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500 hover:bg-gray-300">
+            Show {{ schema?.advanced_options?.group_name || 'Group' }}
+          </button>
         </div>
 
         <!-- Subtitle -->
