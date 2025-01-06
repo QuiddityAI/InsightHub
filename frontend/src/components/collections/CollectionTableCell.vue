@@ -205,7 +205,7 @@ export default {
              'min-w-[350px]': value_as_html.length > 100}">
 
     <div v-if="!edit_mode"
-      ref="scroll_area" class="relative min-h-[70px] overflow-y-scroll"
+      ref="scroll_area" class="relative min-h-[70px] overflow-y-auto"
       :class="{
         'max-h-[70px]': item_size_mode <= CollectionItemSizeMode.SINGLE_LINE,
         'max-h-[150px]': item_size_mode === CollectionItemSizeMode.SMALL,

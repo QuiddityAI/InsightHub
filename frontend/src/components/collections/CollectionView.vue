@@ -277,9 +277,11 @@ export default {
           </div>
 
         </div>
-        <div class="flex-none flex flex-col gap-3 w-full px-5">
-          <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row"
-            v-if="collection.filters?.length || collection.ui_settings.show_visibility_filters">
+
+        <!-- Collection Filters -->
+        <div class="flex-none flex flex-col gap-3 w-full px-5"
+          v-if="collection.filters?.length || collection.ui_settings.show_visibility_filters">
+          <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row">
             <FilterBar
               @edit_search_task="show_search_task_dialog = true" />
           </div>
