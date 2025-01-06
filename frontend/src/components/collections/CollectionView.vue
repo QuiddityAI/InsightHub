@@ -186,7 +186,9 @@ export default {
           @click="collectionStore.close_collection()">
         </ChevronLeftIcon>
 
-        <p class="text-xl font-serif font-bold text-black min-w-[300px] max-w-[calc(100%-520px)]">
+        <p class="text-xl font-serif font-bold text-black min-w-[300px] max-w-[calc(100%-520px)]"
+          contenteditable @blur="collectionStore.set_collection_attributes({name: $event.target.innerText})"
+          spellcheck="false">
           {{ collection.name }}
         </p>
         <!-- <span class="text-medium text-gray-500">

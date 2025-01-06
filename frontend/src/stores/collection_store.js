@@ -168,6 +168,17 @@ export const useCollectionStore = defineStore("collection", {
         this.update_collection(args, on_success)
       }, timeout_ms)
     },
+    set_collection_attributes(updates) {
+      const body = {
+        collection_id: this.collection_id,
+        updates: updates,
+      }
+      httpClient.post("/org/data_map/set_collection_attributes", body).then((response) => {
+        for (const key in updates) {
+          this.collection[key] = updates[key]
+        }
+      })
+    },
     delete_collection(collection_id) {
       const that = this
       const delete_collection_body = {

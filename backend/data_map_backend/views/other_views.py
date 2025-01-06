@@ -756,6 +756,43 @@ def get_collection(request):
 
 
 @csrf_exempt
+def set_collection_attributes(request):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated and not is_from_backend(request):
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        collection_id: int = data["collection_id"]
+        updates: dict = data["updates"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    allowed_fields = ["name",]
+
+    for key in updates.keys():
+        if key not in allowed_fields:
+            return HttpResponse(status=400)
+
+    for key, value in updates.items():
+        setattr(collection, key, value)
+    collection.save()
+
+    collection_dict = CollectionSerializer(instance=collection).data
+    result = json.dumps(collection_dict)
+
+    return HttpResponse(result, status=200, content_type="application/json")
+
+
+@csrf_exempt
 def get_trained_classifier(request):
     if request.method != "POST":
         return HttpResponse(status=405)

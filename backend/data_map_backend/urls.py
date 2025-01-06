@@ -17,6 +17,7 @@ urlpatterns=[
     path("delete_collection_class", other_views.delete_collection_class),
     path("get_collections", other_views.get_collections),
     path("get_collection", other_views.get_collection),
+    path("set_collection_attributes", other_views.set_collection_attributes),
     path("get_trained_classifier", other_views.get_trained_classifier),
     path("set_trained_classifier", other_views.set_trained_classifier),
     path("get_collection_items", other_views.get_collection_items),
