@@ -102,7 +102,8 @@ export default {
               class="text-sm text-center"
               v-tooltip.bottom="{value: 'Only search results are shown. &nbsp Exit search to remove results and show saved items.'}">
               Search Results
-              <InformationCircleIcon class="h-4 w-4 inline text-blue-500">
+              <span class="text-xs text-gray-500">({{ `${retrieved_results} of ${available_results}${any_source_is_estimated ? '+': ''}` }})</span>
+              <InformationCircleIcon class="ml-1 h-4 w-4 inline text-blue-500">
               </InformationCircleIcon>
             </span>
             <BorderlessButton @click="collectionStore.approve_relevant_search_results"
