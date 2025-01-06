@@ -963,7 +963,7 @@ def get_filtered_collection_items(
         return_items = search_results
         return_items = return_items.order_by('-search_score')
     else:
-        return_items = all_items.filter(relevance__gte=2) if is_positive else all_items.filter(relevance__lte=2)
+        return_items = all_items.filter(relevance__gte=2) if is_positive else all_items.filter(relevance__lte=-2)
         return_items = return_items.order_by(order_by, '-search_score')
 
     for filter_data in collection.filters:
