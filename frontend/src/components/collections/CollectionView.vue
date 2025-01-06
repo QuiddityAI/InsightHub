@@ -12,6 +12,7 @@ import {
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
   FunnelIcon,
+  HandThumbDownIcon,
 } from "@heroicons/vue/24/outline"
 
 import Dialog from 'primevue/dialog';
@@ -78,6 +79,14 @@ export default {
     },
     'collectionStore.order_descending'() {
       this.collectionStore.load_collection_items()
+    },
+    'collectionStore.show_irrelevant'() {
+      this.collectionStore.load_collection_items()
+    },
+    'collectionStore.search_mode'() {
+      if (this.collectionStore.search_mode) {
+        this.collectionStore.show_irrelevant = false
+      }
     },
     'collectionStore.collection.items_last_changed'(new_value, old_value) {
       // nice idea, but conflicts with current approach
@@ -148,6 +157,13 @@ export default {
         }
       }
     },
+    toggle_show_irrelevant() {
+      if (this.collectionStore.search_mode) {
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Not available in search mode', life: 2000 })
+        return
+      }
+      this.collectionStore.show_irrelevant = !this.collectionStore.show_irrelevant
+    }
   },
 }
 </script>
@@ -205,6 +221,12 @@ export default {
         <BorderButton @click="collectionStore.update_ui_settings({show_visibility_filters: !collection.ui_settings.show_visibility_filters})" class="h-6"
           v-tooltip.bottom="{ value: 'Filter items' }" :highlighted="collection.ui_settings.show_visibility_filters">
           <FunnelIcon class="h-4 w-4"></FunnelIcon>
+        </BorderButton>
+
+        <BorderButton @click="toggle_show_irrelevant" class="h-6"
+          v-tooltip.bottom="{ value: 'Show items marked as irrelevant' }" :highlighted="collectionStore.show_irrelevant"
+          highlight_color="text-red-500">
+          <HandThumbDownIcon class="h-4 w-4"></HandThumbDownIcon>
         </BorderButton>
 
         <BorderButton @click="delete_collection" class="h-6"

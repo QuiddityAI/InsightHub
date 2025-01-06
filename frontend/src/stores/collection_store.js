@@ -32,6 +32,7 @@ export const useCollectionStore = defineStore("collection", {
       per_page: 10,
       order_by_field: 'date_added',
       order_descending: true,
+      show_irrelevant: false,
     }
   },
   actions: {
@@ -200,7 +201,7 @@ export const useCollectionStore = defineStore("collection", {
         collection_id: this.collection_id,
         class_name: this.class_name,
         type: FieldType.IDENTIFIER,
-        is_positive: true,
+        is_positive: !this.show_irrelevant,
         offset: this.first_index,
         limit: this.per_page,
         order_by: (this.order_descending ? "-" : "") + this.order_by_field,

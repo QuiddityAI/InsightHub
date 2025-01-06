@@ -900,11 +900,11 @@ def get_collection_items(request):
 def get_filtered_collection_items(
     collection, class_name, field_type=None,
     is_positive=None, order_by="-date_added") -> tuple[BaseManager[CollectionItem], bool, tuple[int, str] | None]:
-    if field_type or is_positive:
+    if field_type:
         all_items = CollectionItem.objects.filter(
             collection_id=collection.id,
             field_type=field_type,
-            is_positive=is_positive,
+            # is_positive=is_positive,  # FIXME: is_positive will be replaced by relevance
             classes__contains=[class_name],
         )
     else:
@@ -926,7 +926,7 @@ def get_filtered_collection_items(
         return_items = search_results
         return_items = return_items.order_by('-search_score')
     else:
-        return_items = all_items.filter(relevance__gte=2)
+        return_items = all_items.filter(relevance__gte=2) if is_positive else all_items.filter(relevance__lte=2)
         return_items = return_items.order_by(order_by, '-search_score')
 
     for filter_data in collection.filters:
