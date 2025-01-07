@@ -318,11 +318,7 @@ export default {
 
       <!-- Middle: Content Area-->
       <div ref="content_area" v-if="!(collection.ui_settings.secondary_view && collection.ui_settings.secondary_view_is_full_screen)"
-        class="flex-1 flex flex-col overflow-y-auto pt-4 xl:pt-6 z-30 relative shadow-lg transition-[background-color]"
-        :class="{
-          'bg-white': collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET,
-          'bg-gray-200': collection.ui_settings.item_layout != CollectionItemLayout.SPREADSHEET,
-        }">
+        class="flex-1 flex flex-col overflow-y-auto pt-4 xl:pt-6 z-30 relative shadow-lg bg-gray-200">
 
         <!-- Search / Agent Bar -->
         <div v-if="collectionStore.search_mode || collection.agent_is_running"
@@ -348,25 +344,31 @@ export default {
           </div>
         </div>
 
-        <CollectionSpreadsheetView v-if="collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET"
-          class="flex-none z-20" ref="collection_spreadsheet_view" :collection_id="collectionStore.collection_id"
-          :class_name="class_name" :is_positive="true"
-          :item_size_mode="collection.ui_settings.item_size_mode"
-          @add_column="show_add_column_dialog = true">
-        </CollectionSpreadsheetView>
+        <div class="flex-none transition-[background-color]"
+          :class="{
+            'bg-white': collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET,
+            'bg-gray-200': collection.ui_settings.item_layout != CollectionItemLayout.SPREADSHEET,
+          }">
+          <CollectionSpreadsheetView v-if="collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET"
+            class="flex-none z-20" ref="collection_spreadsheet_view" :collection_id="collectionStore.collection_id"
+            :class_name="class_name" :is_positive="true"
+            :item_size_mode="collection.ui_settings.item_size_mode"
+            @add_column="show_add_column_dialog = true">
+          </CollectionSpreadsheetView>
 
-        <CollectionTableView v-if="collection.ui_settings.item_layout === CollectionItemLayout.COLUMNS"
-          class="z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
-          :class_name="class_name" :is_positive="true"
-          :item_size_mode="collection.ui_settings.item_size_mode"
-          @add_column="show_add_column_dialog = true">
-        </CollectionTableView>
+          <CollectionTableView v-if="collection.ui_settings.item_layout === CollectionItemLayout.COLUMNS"
+            class="z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
+            :class_name="class_name" :is_positive="true"
+            :item_size_mode="collection.ui_settings.item_size_mode"
+            @add_column="show_add_column_dialog = true">
+          </CollectionTableView>
 
-        <CollectionItemGrid v-if="collection.ui_settings.item_layout === CollectionItemLayout.GRID"
-          class="z-20" ref="collection_grid_view" :collection_id="collectionStore.collection_id"
-          :class_name="class_name" :is_positive="true"
-          :item_size_mode="collection.ui_settings.item_size_mode">
-        </CollectionItemGrid>
+          <CollectionItemGrid v-if="collection.ui_settings.item_layout === CollectionItemLayout.GRID"
+            class="z-20" ref="collection_grid_view" :collection_id="collectionStore.collection_id"
+            :class_name="class_name" :is_positive="true"
+            :item_size_mode="collection.ui_settings.item_size_mode">
+          </CollectionItemGrid>
+        </div>
 
         <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
           <AddColumnDialog :collection="collection" :collection_class="class_name"
