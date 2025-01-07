@@ -180,7 +180,7 @@ export default {
 <template>
   <div class="flex flex-col overflow-hidden">
 
-    <Dialog v-model:visible="show_search_task_dialog" modal header="Search Task">
+    <Dialog v-model:visible="show_search_task_dialog" modal header="Modify Search Task">
       <SearchTaskDialog :collection="collection" :collection_class="class_name"
         @close="show_search_task_dialog = false"></SearchTaskDialog>
     </Dialog>

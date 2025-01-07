@@ -63,6 +63,6 @@ export default {
         </BorderlessButton>
       </div>
     </div>
-    <div class="mt-1 text-gray-700 text-xs" v-html="highlight.value"></div>
+    <div class="mt-1 text-gray-700 text-xs break-words" v-html="highlight.value"></div>
   </div>
 </template>

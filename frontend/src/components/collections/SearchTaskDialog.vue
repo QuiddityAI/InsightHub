@@ -186,9 +186,9 @@ export default {
 <template>
   <div class="flex flex-col gap-3">
 
-    <Message severity="info">
+    <!-- <Message severity="info">
       To search for something new / unrelated to this collection, please create a new collection instead.
-    </Message>
+    </Message> -->
 
     <div class="flex flex-row gap-2 items-center">
       <div class="flex-none min-w-0">
