@@ -83,8 +83,8 @@ export default {
       :size_mode="item_size_mode"
       @remove="collectionStore.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_id, class_name)"
       :class="{
-        'w-[320px]': item_size_mode <= CollectionItemSizeMode.SINGLE_LINE,
-        'w-[520px]': item_size_mode >= CollectionItemSizeMode.SMALL,
+        'w-[320px]': item_size_mode <= CollectionItemSizeMode.SMALL,
+        'w-[520px]': item_size_mode >= CollectionItemSizeMode.MEDIUM,
       }">
 
     </CollectionItem>

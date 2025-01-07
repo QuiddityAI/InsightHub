@@ -33,9 +33,15 @@ export class FieldType {
 }
 
 export class CollectionItemSizeMode {
-  static SINGLE_LINE = 1
-  static SMALL = 2
+  static SMALL = 1
+  static MEDIUM = 2
   static FULL = 3
+}
+
+export class CollectionItemLayout {
+  static COLUMNS = 'columns'
+  static GRID = 'grid'
+  static SPREADSHEET = 'spreadsheet'
 }
 
 export function ellipse(text, length) {

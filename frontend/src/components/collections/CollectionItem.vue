@@ -14,6 +14,7 @@ import RelevantPartsKeyword from "../search/RelevantPartsKeyword.vue"
 import RelevantPartsVector from "../search/RelevantPartsVector.vue"
 
 import { CollectionItemSizeMode } from "../../utils/utils.js"
+import { httpClient } from "../../api/httpClient"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -25,8 +26,6 @@ const collectionStore = useCollectionStore()
 </script>
 
 <script>
-import { httpClient } from "../../api/httpClient"
-import { useCollectionStore } from "../../stores/collection_store";
 
 export default {
   props: ["dataset_id", "item_id", "initial_item", "is_positive", "show_remove_button", "collection_item", "size_mode"],
@@ -82,8 +81,8 @@ export default {
       return this.collection_item.relevance >= -1 && this.collection_item.relevance <= 1
     },
     actual_size_mode() {
-      if (this.is_irrelevant_according_to_ai && this.size_mode > CollectionItemSizeMode.SMALL) {
-        return CollectionItemSizeMode.SMALL
+      if (this.is_irrelevant_according_to_ai && this.size_mode > CollectionItemSizeMode.MEDIUM) {
+        return CollectionItemSizeMode.MEDIUM
       }
       return this.size_mode || CollectionItemSizeMode.FULL
     },
@@ -144,7 +143,7 @@ export default {
   <div v-if="rendering && item && collection_item"
     class="flex flex-col gap-3 pl-4 pr-4 mb-2 rounded-md bg-white shadow-md"
     :class="[
-      actual_size_mode <= CollectionItemSizeMode.SINGLE_LINE ? ['pt-2', 'pb-2'] : ['pt-4', 'pb-3'],
+      actual_size_mode <= CollectionItemSizeMode.SMALL ? ['pt-2', 'pb-2'] : ['pt-4', 'pb-3'],
       {'opacity-60': is_irrelevant_according_to_ai, },
     ]">
 
@@ -154,7 +153,7 @@ export default {
       <div class="flex-1 min-w-0 flex flex-col gap-1">
 
         <!-- Tagline -->
-        <div class="flex flex-row items-start mb-3 -mt-1" v-if="rendering.tagline(item) && actual_size_mode >= CollectionItemSizeMode.SMALL">
+        <div class="flex flex-row items-start mb-3 -mt-1" v-if="rendering.tagline(item) && actual_size_mode >= CollectionItemSizeMode.MEDIUM">
 
           <div class="flex-none h-full flex flex-row items-center">
             <img v-if="rendering.icon(item)" :src="rendering.icon(item)" class="h-6 w-6 mr-3" />
@@ -173,7 +172,7 @@ export default {
 
         <!-- Heading -->
         <div class="flex flex-row items-start">
-          <img v-if="rendering.icon(item) && (!rendering.tagline(item) || actual_size_mode < CollectionItemSizeMode.SMALL)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
+          <img v-if="rendering.icon(item) && (!rendering.tagline(item) || actual_size_mode < CollectionItemSizeMode.MEDIUM)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
           <button class="min-w-0 text-left text-[16px] font-['Lexend'] font-medium leading-tight break-words text-sky-700 hover:underline"
             v-html="rendering.title(item)"
             @click="appState.show_document_details([dataset_id, item_id], collection_item.metadata, collection_item.relevant_parts, original_query)">
@@ -186,13 +185,13 @@ export default {
           </span>
           <button v-if="schema?.is_group_field && item[schema.is_group_field]"
             @click="collectionStore.show_group(item._dataset_id, item._id, `Directly in ${schema?.advanced_options?.group_name || 'Group'} '${rendering.title(item)}'`)"
-            class="ml-2 px-2 py-[1px] rounded-xl bg-gray-200 text-xs text-gray-500 hover:bg-gray-300">
+            class="ml-2 px-2 py-[1px] rounded-xl bg-gray-100 text-xs text-gray-500 hover:bg-gray-200">
             Show {{ schema?.advanced_options?.group_name || 'Group' }}
           </button>
         </div>
 
         <!-- Subtitle -->
-        <p v-if="actual_size_mode >= CollectionItemSizeMode.SMALL"
+        <p v-if="actual_size_mode >= CollectionItemSizeMode.MEDIUM"
           class="mt-0 text-[13px] break-words leading-normal text-gray-500"
           v-html="rendering.subtitle(item)"></p>
 
@@ -218,7 +217,7 @@ export default {
       </div>
 
       <!-- Right side (image) -->
-      <div v-if="rendering.image(item) && actual_size_mode >= CollectionItemSizeMode.SMALL" class="flex-none w-24 flex flex-col justify-center">
+      <div v-if="rendering.image(item) && actual_size_mode >= CollectionItemSizeMode.MEDIUM" class="flex-none w-24 flex flex-col justify-center">
         <Image class="w-full rounded-lg shadow-md" image-class="rounded-lg" :src="rendering.image(item)" preview />
       </div>
     </div>

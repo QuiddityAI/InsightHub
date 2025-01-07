@@ -34,7 +34,7 @@ const _window = window
 
 export default {
   inject: ["eventBus"],
-  props: ["item", "column", "columns_with_running_processes", "show_overlay_buttons", "item_size_mode", "hide_execute_button"],
+  props: ["item", "column", "columns_with_running_processes", "item_size_mode", "hide_execute_button"],
   emits: [],
   data() {
     return {
@@ -207,8 +207,8 @@ export default {
     <div v-if="!edit_mode"
       ref="scroll_area" class="relative min-h-[70px] overflow-y-auto"
       :class="{
-        'max-h-[70px]': item_size_mode <= CollectionItemSizeMode.SINGLE_LINE,
-        'max-h-[150px]': item_size_mode === CollectionItemSizeMode.SMALL,
+        'max-h-[70px]': item_size_mode <= CollectionItemSizeMode.SMALL,
+        'max-h-[150px]': item_size_mode === CollectionItemSizeMode.MEDIUM,
         'max-h-[300px]': item_size_mode >= CollectionItemSizeMode.FULL,
       }">
       <div v-if="!edit_mode" v-html="value_as_html"
@@ -218,8 +218,8 @@ export default {
     <div v-if="edit_mode"
       ref="scroll_area" class="relative min-h-[70px] overflow-y-scroll"
       :class="{
-        'h-[70px]': item_size_mode <= CollectionItemSizeMode.SINGLE_LINE,
-        'h-[150px]': item_size_mode === CollectionItemSizeMode.SMALL,
+        'h-[70px]': item_size_mode <= CollectionItemSizeMode.SMALL,
+        'h-[150px]': item_size_mode === CollectionItemSizeMode.MEDIUM,
         'h-[300px]': item_size_mode >= CollectionItemSizeMode.FULL,
       }">
       <textarea v-if="edit_mode"

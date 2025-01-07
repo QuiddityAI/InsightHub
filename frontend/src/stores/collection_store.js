@@ -2,7 +2,7 @@ import { defineStore } from "pinia"
 import { inject } from "vue"
 import { useToast } from "primevue/usetoast"
 
-import { update_object } from "../utils/utils"
+import { update_object, CollectionItemLayout } from "../utils/utils"
 
 import { httpClient, djangoClient } from "../api/httpClient"
 import { FieldType } from "../utils/utils"
@@ -29,7 +29,7 @@ export const useCollectionStore = defineStore("collection", {
 
       // Pagination
       first_index: 0,
-      per_page: 10,
+      // per_page: 10,  // is now a getter
       order_by_field: 'date_added',
       order_descending: true,
       show_irrelevant: false,
@@ -601,6 +601,9 @@ export const useCollectionStore = defineStore("collection", {
     item_count() {
       const class_details = this.collection.actual_classes.find((actual_class) => actual_class.name === this.class_name)
       return class_details["positive_count"]
+    },
+    per_page: (state) => {
+      return state.collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET ? 30 : 10
     },
     available_order_by_fields(state) {
       const available_fields = {}

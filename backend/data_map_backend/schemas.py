@@ -17,7 +17,7 @@ class CollectionIdentifier(Schema):
 class CollectionUiSettings(Schema):
     secondary_view: Optional[str] = None  # one of 'more', 'map', 'summary'
     secondary_view_is_full_screen: bool = False
-    use_grid_view: bool = False
+    item_layout: str = 'columns'  # one of 'columns', 'grid', 'spreadsheet'
     item_size_mode: int = CollectionItemSizeMode.FULL
     show_visibility_filters: bool = False
 

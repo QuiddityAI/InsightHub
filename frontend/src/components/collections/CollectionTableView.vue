@@ -150,8 +150,7 @@ export default {
         <template #body="slotProps">
           <CollectionTableCell :item="slotProps.data" :column="column"
             :columns_with_running_processes="collection.columns_with_running_processes"
-            :item_size_mode="item_size_mode"
-            :show_overlay_buttons="false">
+            :item_size_mode="item_size_mode">
           </CollectionTableCell>
         </template>
       </Column>

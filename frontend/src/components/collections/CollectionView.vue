@@ -13,6 +13,8 @@ import {
   ArrowsPointingInIcon,
   FunnelIcon,
   HandThumbDownIcon,
+  ViewColumnsIcon,
+  Squares2X2Icon,
 } from "@heroicons/vue/24/outline"
 
 import Dialog from 'primevue/dialog';
@@ -33,9 +35,10 @@ import SearchModeBar from "../search/SearchModeBar.vue";
 import AgentModeBar from "./AgentModeBar.vue";
 import MapWithLabelsAndButtons from "../map/MapWithLabelsAndButtons.vue";
 import CollectionItemGrid from "./CollectionItemGrid.vue";
+import CollectionSpreadsheetView from "./CollectionSpreadsheetView.vue";
 import FilterBar from "./FilterBar.vue";
 
-import { CollectionItemSizeMode } from "../../utils/utils.js"
+import { CollectionItemSizeMode, CollectionItemLayout } from "../../utils/utils.js"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -83,6 +86,9 @@ export default {
     'collectionStore.show_irrelevant'() {
       this.collectionStore.load_collection_items()
     },
+    'collectionStore.per_page'() {
+      this.collectionStore.load_collection_items()
+    },
     'collectionStore.search_mode'() {
       if (this.collectionStore.search_mode) {
         this.collectionStore.show_irrelevant = false
@@ -116,6 +122,9 @@ export default {
   mounted() {
     if (!this.collection.ui_settings.item_size_mode) {
       this.collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})
+    }
+    if (!this.collection.ui_settings.item_layout) {
+      this.collectionStore.update_ui_settings({item_layout: CollectionItemLayout.COLUMNS})
     }
     this.eventBus.on("collection_item_added", this.on_item_added)
     this.eventBus.on("collection_item_removed", this.on_item_removed)
@@ -188,6 +197,7 @@ export default {
 
         <p class="text-xl font-serif font-bold text-black min-w-[300px] max-w-[calc(100%-520px)]"
           contenteditable @blur="collectionStore.set_collection_attributes({name: $event.target.innerText})"
+          @keydown.enter="$event.target.blur()" @keydown.esc="$event.target.innerText = collection.name; $event.target.blur()"
           spellcheck="false">
           {{ collection.name }}
         </p>
@@ -197,28 +207,51 @@ export default {
 
         <div class="flex-1"></div>
 
-        <div class="flex flex-row">
-          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SINGLE_LINE})" class="h-6 rounded-r-none border-r-0"
-            :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.SINGLE_LINE"
-            v-tooltip.bottom="{ value: 'Single Line Items' }">
-            S
-          </BorderButton>
-          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SMALL})" class="h-6 rounded-none"
-            :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.SMALL"
-            v-tooltip.bottom="{ value: 'Small Items' }">
-            M
-          </BorderButton>
-          <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})" class="h-6 rounded-l-none border-l-0"
-            :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.FULL"
-            v-tooltip.bottom="{ value: 'Full Items' }">
-            L
-          </BorderButton>
-        </div>
-
-        <BorderButton @click="collectionStore.update_ui_settings({use_grid_view: !collection.ui_settings.use_grid_view})" class="h-6"
-          v-tooltip.bottom="{ value: 'Use grid view' }" :highlighted="collection.ui_settings.use_grid_view">
+        <BorderButton @click="(event) => { $refs.layout_dialog.toggle(event) }"
+          class="h-6" v-tooltip.bottom="{ value: 'Change layout', showDelay: 400 }">
           <TableCellsIcon class="h-4 w-4"></TableCellsIcon>
         </BorderButton>
+
+        <OverlayPanel ref="layout_dialog">
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-row">
+              <BorderButton @click="collectionStore.update_ui_settings({item_layout: CollectionItemLayout.COLUMNS})" class="h-6 rounded-r-none border-r-0"
+                :highlighted="collection.ui_settings.item_layout === CollectionItemLayout.COLUMNS"
+                v-tooltip.bottom="{ value: 'Column Layout' }">
+                <ViewColumnsIcon class="h-4 w-4"></ViewColumnsIcon>
+              </BorderButton>
+              <BorderButton @click="collectionStore.update_ui_settings({item_layout: CollectionItemLayout.GRID})" class="h-6 rounded-none"
+                :highlighted="collection.ui_settings.item_layout === CollectionItemLayout.GRID"
+                v-tooltip.bottom="{ value: 'Grid Layout' }">
+                <Squares2X2Icon class="h-4 w-4"></Squares2X2Icon>
+              </BorderButton>
+              <BorderButton @click="collectionStore.update_ui_settings({item_layout: CollectionItemLayout.SPREADSHEET})" class="h-6 rounded-l-none border-l-0"
+                :highlighted="collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET"
+                v-tooltip.bottom="{ value: 'Spreadsheet Layout' }">
+                <TableCellsIcon class="h-4 w-4"></TableCellsIcon>
+              </BorderButton>
+            </div>
+
+            <div class="flex flex-row" v-if="collection.ui_settings.item_layout !== CollectionItemLayout.SPREADSHEET">
+              <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SMALL})" class="h-6 rounded-r-none border-r-0"
+                :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.SMALL"
+                v-tooltip.bottom="{ value: 'Minimal Items' }">
+                S
+              </BorderButton>
+              <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.MEDIUM})" class="h-6 rounded-none"
+                :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.MEDIUM"
+                v-tooltip.bottom="{ value: 'Medium Items' }">
+                M
+              </BorderButton>
+              <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})" class="h-6 rounded-l-none border-l-0"
+                :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.FULL"
+                v-tooltip.bottom="{ value: 'Full Items' }">
+                L
+              </BorderButton>
+            </div>
+          </div>
+
+        </OverlayPanel>
 
         <BorderButton @click="collectionStore.update_ui_settings({show_visibility_filters: !collection.ui_settings.show_visibility_filters})" class="h-6"
           v-tooltip.bottom="{ value: 'Filter items' }" :highlighted="collection.ui_settings.show_visibility_filters">
@@ -285,11 +318,15 @@ export default {
 
       <!-- Middle: Content Area-->
       <div ref="content_area" v-if="!(collection.ui_settings.secondary_view && collection.ui_settings.secondary_view_is_full_screen)"
-        class="flex-1 flex flex-col gap-3 xl:gap-5 overflow-y-auto pt-4 xl:pt-6 z-30 relative shadow-lg bg-gray-200">
+        class="flex-1 flex flex-col overflow-y-auto pt-4 xl:pt-6 z-30 relative shadow-lg transition-[background-color]"
+        :class="{
+          'bg-white': collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET,
+          'bg-gray-200': collection.ui_settings.item_layout != CollectionItemLayout.SPREADSHEET,
+        }">
 
         <!-- Search / Agent Bar -->
         <div v-if="collectionStore.search_mode || collection.agent_is_running"
-          class="flex-none flex flex-col gap-3 w-full px-5">
+          class="flex-none flex flex-col gap-3 w-full px-5 mb-3 xl:mb-5">
 
           <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row">
 
@@ -303,7 +340,7 @@ export default {
         </div>
 
         <!-- Collection Filters -->
-        <div class="flex-none flex flex-col gap-3 w-full px-5"
+        <div class="flex-none flex flex-col gap-3 w-full px-5 mb-3 xl:mb-5"
           v-if="collection.filters?.length || collection.ui_settings.show_visibility_filters">
           <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg shadow-md flex flex-row">
             <FilterBar
@@ -311,14 +348,21 @@ export default {
           </div>
         </div>
 
-        <CollectionTableView v-if="!collection.ui_settings.use_grid_view"
+        <CollectionSpreadsheetView v-if="collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET"
+          class="flex-none z-20" ref="collection_spreadsheet_view" :collection_id="collectionStore.collection_id"
+          :class_name="class_name" :is_positive="true"
+          :item_size_mode="collection.ui_settings.item_size_mode"
+          @add_column="show_add_column_dialog = true">
+        </CollectionSpreadsheetView>
+
+        <CollectionTableView v-if="collection.ui_settings.item_layout === CollectionItemLayout.COLUMNS"
           class="z-20" ref="collection_table_view" :collection_id="collectionStore.collection_id"
           :class_name="class_name" :is_positive="true"
           :item_size_mode="collection.ui_settings.item_size_mode"
           @add_column="show_add_column_dialog = true">
         </CollectionTableView>
 
-        <CollectionItemGrid v-if="collection.ui_settings.use_grid_view"
+        <CollectionItemGrid v-if="collection.ui_settings.item_layout === CollectionItemLayout.GRID"
           class="z-20" ref="collection_grid_view" :collection_id="collectionStore.collection_id"
           :class_name="class_name" :is_positive="true"
           :item_size_mode="collection.ui_settings.item_size_mode">
@@ -330,7 +374,7 @@ export default {
           </AddColumnDialog>
         </Dialog>
 
-        <div class="flex flex-row gap-5 justify-center"
+        <div class="flex flex-row gap-5 justify-center mt-3 xl:mt-5 mb-3 xl:mb-5"
             v-if="!collectionStore.search_mode && !collection.agent_is_running">
           <BorderButton @click="show_search_task_dialog = true"
             class="py-1 bg-white rounded-xl shadow-md">
