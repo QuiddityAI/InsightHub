@@ -4,10 +4,13 @@ from multiprocessing.pool import ThreadPool
 
 from ninja import Schema
 
-from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
+from llmonkey.llms import BaseLLMModel, Nebius_Llama_3_1_8B_cheap
 
 from data_map_backend.utils import DotDict
 from columns.logic.website_scraping_column import scrape_website_plain
+
+
+LlmModel = Nebius_Llama_3_1_8B_cheap
 
 
 class TenderInput(Schema):
@@ -63,7 +66,7 @@ def enrich_tender(item: TenderInput) -> TenderEnrichmentOutput:
             return _summarize_description(item)
     if not website_text:
         return _summarize_description(item)
-    model = Google_Gemini_Flash_1_5_v1()
+    model = LlmModel()
     system_prompt = f"""Du bekommst vom Nutzer den HTML-Text der Webseite einer Ausschreibung.
     Fasse den Gegenstand der Ausschreibung und die zu erbringenden Leistungen in etwa 3-5 Sätzen zusammen.
     Wenn die Informationen nicht ausreichen, antworte nur mit "n/a"."""
@@ -77,7 +80,7 @@ def enrich_tender(item: TenderInput) -> TenderEnrichmentOutput:
 def _summarize_description(item: TenderInput) -> TenderEnrichmentOutput:
     if not item.description:
         return TenderEnrichmentOutput(summary="", website_text="")
-    model = Google_Gemini_Flash_1_5_v1()
+    model = LlmModel()
     system_prompt = f"""Du bekommst vom Nutzer eine Beschreibung der Ausschreibung.
     Fasse den Gegenstand der Ausschreibung und die zu erbringenden Leistungen in etwa 3-5 Sätzen zusammen.
     Wenn die Informationen nicht ausreichen, antworte mit "n/a"."""

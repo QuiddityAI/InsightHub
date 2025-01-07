@@ -9,11 +9,12 @@ from bs4 import BeautifulSoup
 import pydantic
 from tqdm import tqdm
 
-from data_backend_client import insert_many
+from data_backend_client import insert_many, check_pk_existence
 
 base_url = "https://www.service.bund.de/"
 
 DATASET_ID = 103
+ACCESS_TOKEN = "2932aa73-a957-452f-975b-d62fdda2abf5"
 
 
 class Tender(pydantic.BaseModel):
@@ -46,8 +47,15 @@ def scrape_service_bund_portal(max_results: int = 200):
     while total < max_results and url:
         html_text = requests.get(url).text
         soup = BeautifulSoup(html_text, "html.parser")
-        new_results = extract_results_from_page(soup)
-        for result in tqdm(new_results):
+        results_on_this_page = extract_results_from_page(soup)
+        pks = [result.detail_page for result in results_on_this_page]
+        pk_exists = check_pk_existence(DATASET_ID, pks, ACCESS_TOKEN)['pk_exists']
+        new_results = []
+        for result in tqdm(results_on_this_page):
+            total += 1
+            if pk_exists.get(result.detail_page):
+                # print(f"Skipping {result} because it already exists")
+                continue
             try:
                 add_details(result)
             except Exception as e:
@@ -55,15 +63,17 @@ def scrape_service_bund_portal(max_results: int = 200):
                 # print stack trace
                 import traceback
                 traceback.print_exc()
-            total += 1
+            new_results.append(result)
             if total >= max_results:
                 break
             time.sleep(random.uniform(0.1, 0.2))
 
-        insert_many(DATASET_ID, [json.loads(result.model_dump_json(by_alias=True)) for result in new_results])
+        if new_results:
+            insert_many(DATASET_ID, [json.loads(result.model_dump_json(by_alias=True)) for result in new_results])
 
         print(f"Scraped {len(new_results)} new results")
         if not new_results:
+            print("No new results found, stopping")
             break
 
         next_button = soup.find("li", class_="next").find("a")
