@@ -5,9 +5,12 @@ from django.http import HttpResponse
 from django.utils.datastructures import MultiValueDict
 from ninja import NinjaAPI, Form, File, UploadedFile
 
+from legacy_backend.database_client.text_search_engine_client import TextSearchEngineClient
 from data_map_backend.views.other_views import get_or_create_default_dataset
+from data_map_backend.models import Dataset
+from data_map_backend.utils import pk_to_uuid_id
 
-from ingest.schemas import CustomUploadedFile, UploadedFileMetadata
+from ingest.schemas import CustomUploadedFile, UploadedFileMetadata, CheckPkExistencePayload, CheckPkExistenceResponse
 from ingest.logic.upload_files import upload_files_or_forms, get_upload_task_status_by_id
 
 api = NinjaAPI(urls_namespace="ingest")
@@ -60,3 +63,25 @@ def upload_files_route(
     if blocking:
         result["status"] = get_upload_task_status_by_id(dataset_id, task_id)
     return result
+
+
+@api.post("check_pk_existence")
+def check_pk_existence_route(request, payload: CheckPkExistencePayload):
+    try:
+        dataset = Dataset.objects.get(id=payload.dataset_id)
+    except Dataset.DoesNotExist:
+        return HttpResponse(status=404)
+    if payload.access_token not in (dataset.advanced_options or {}).get("access_tokens", {}):
+        return HttpResponse(status=401)
+
+    if payload.is_uuid:
+        ids = payload.pks
+    else:
+        pk_to_id = {pk: pk_to_uuid_id(pk) for pk in payload.pks}
+        ids = [pk_to_id[pk] for pk in payload.pks]
+
+    text_db_client = TextSearchEngineClient.get_instance()
+    id_exists = text_db_client.check_item_existence(dataset, ids)
+    pk_exists = {pk: id_exists[pk_to_id[pk]] for pk in payload.pks}
+
+    return CheckPkExistenceResponse(dataset_id=payload.dataset_id, pk_exists=pk_exists)

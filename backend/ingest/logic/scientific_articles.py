@@ -5,6 +5,7 @@ from dataclasses import asdict
 
 import pypdfium2 as pdfium
 
+from data_map_backend.utils import pk_to_uuid_id
 from ingest.schemas import UploadedOrExtractedFile
 from ingest.logic.common import UPLOADED_FILES_FOLDER
 
@@ -50,7 +51,7 @@ def scientific_article_pdf(paths: list[UploadedOrExtractedFile], parameters, on_
             thumbnail_path = None
 
         items.append({
-            "id": pdf_metainfo.doi or str(uuid.uuid5(uuid.NAMESPACE_URL, uploaded_file.local_path)),
+            "id": pdf_metainfo.doi or pk_to_uuid_id(uploaded_file.local_path),
             "doi": pdf_metainfo.doi,
             "title": pdf_metainfo.title.strip() or uploaded_file.original_filename,
             "abstract": pdf_metainfo.abstract,
@@ -85,7 +86,7 @@ def scientific_article_csv(paths: list[UploadedOrExtractedFile], parameters, on_
             row = {k.strip().lower(): v.strip() for k, v in row.items()}
             try:
                 items.append({
-                    "id": row.get("doi") or str(uuid.uuid5(uuid.NAMESPACE_URL, uploaded_file.local_path + str(i))),
+                    "id": row.get("doi") or pk_to_uuid_id(uploaded_file.local_path + str(i)),
                     "doi": row.get("doi"),
                     "title": row.get("title"),
                     "abstract": row.get("abstract"),

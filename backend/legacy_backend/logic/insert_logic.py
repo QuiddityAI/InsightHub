@@ -1,5 +1,4 @@
-import uuid
-from uuid import uuid4, uuid5
+from uuid import uuid4
 import logging
 
 from ..database_client.django_client import get_dataset
@@ -7,7 +6,7 @@ from ..database_client.vector_search_engine_client import VectorSearchEngineClie
 from ..database_client.text_search_engine_client import TextSearchEngineClient
 from ..logic.extract_pipeline import get_pipeline_steps
 
-from data_map_backend.utils import DotDict
+from data_map_backend.utils import DotDict, pk_to_uuid_id
 from ..utils.field_types import FieldType
 
 
@@ -30,7 +29,7 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=Fal
         # make sure primary key exists, if not, generate it
         if not "_id" in element:
             if dataset.schema.primary_key in element and element[dataset.schema.primary_key] != "":
-                element["_id"] = str(uuid5(uuid.NAMESPACE_URL, element[dataset.schema.primary_key]))
+                element["_id"] = pk_to_uuid_id(element[dataset.schema.primary_key])
             else:
                 element["_id"] = str(uuid4())
         elif isinstance("_id", int):
@@ -41,14 +40,14 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=Fal
         for element in elements:
             direct_parent = element.get(direct_parent_field)
             if direct_parent:
-                element["_parent"] = str(uuid5(uuid.NAMESPACE_URL, direct_parent))
+                element["_parent"] = pk_to_uuid_id(direct_parent)
 
     all_parents_field = dataset.schema.all_parents
     if all_parents_field:
         for element in elements:
             all_parents = element.get(all_parents_field)
             if all_parents:
-                element["_all_parents"] = [str(uuid5(uuid.NAMESPACE_URL, parent)) for parent in all_parents]
+                element["_all_parents"] = [pk_to_uuid_id(parent) for parent in all_parents]
 
     # for upsert / update case: get changed fields:
     # changed_fields_total = get_changed_fields(primary_key_field, elements, dataset)
@@ -165,7 +164,7 @@ def insert_vectors(dataset_id: int, vector_field: str, item_pks: list[str], vect
     The caller needs to take care of the best batch size itself."""
     dataset = get_dataset(dataset_id)
     # this assumes that the item_pks are not the item._id ids and still need to be converted:
-    item_ids = [str(uuid5(uuid.NAMESPACE_URL, item_pk)) for item_pk in item_pks]
+    item_ids = [pk_to_uuid_id(item_pk) for item_pk in item_pks]
 
     index_settings = get_index_settings(dataset)
 

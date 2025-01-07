@@ -61,3 +61,15 @@ class AiFileProcessingOutput(Schema):
     people: list[str] = []
     video_frame_embeddings: list | None = None
     video_frame_chunks: list[dict] = []
+
+
+class CheckPkExistencePayload(Schema):
+    dataset_id: int
+    access_token: str
+    pks: list[str]
+    is_uuid: bool = False
+
+
+class CheckPkExistenceResponse(Schema):
+    dataset_id: int
+    pk_exists: dict[str, bool]

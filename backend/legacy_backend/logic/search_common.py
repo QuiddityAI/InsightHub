@@ -10,7 +10,7 @@ import cachetools.func
 
 from ..utils.field_types import FieldType
 from ..utils.collect_timings import Timings
-from data_map_backend.utils import DotDict
+from data_map_backend.utils import DotDict, pk_to_uuid_id
 from ..utils.source_plugin_types import SourcePlugin
 
 from ..api_clients.cohere_reranking import get_reranking_results
@@ -542,7 +542,7 @@ def workaround_to_filter_by_institution_using_openalex(dataset, filters, limit):
                 # OpenAlex ids are urls like "https://openalex.org/works/W123124", only the last part was used during ingest:
                 openalex_ids = [oid.split("/")[-1] for oid in openalex_ids]
                 # mimicking the way the ids were generated during ingest:
-                ids = [str(uuid.uuid5(uuid.NAMESPACE_URL, oid)) for oid in openalex_ids]
+                ids = [pk_to_uuid_id(oid) for oid in openalex_ids]
                 filters.append({'field': '_id', 'value': ids, 'operator': 'in'})
             else:
                 # OpenSearch allows a max of 65k elements by default, no limit on OpenAlex API side for now

@@ -1,18 +1,17 @@
-import logging
-from typing import Any, Iterable
+from typing import Any
 import requests
-import os
 import json
-import base64
 
 from data_map_backend.utils import DotDict
+from data_map_backend.models import Dataset
 from ..utils.custom_json_encoder import CustomJSONEncoder
 
 
-def use_remote_db(dataset: DotDict, db_type: str, function_name: str, arguments: dict) -> Any:
-    host = dataset.source_plugin_parameters.host
-    remote_dataset_id = dataset.source_plugin_parameters.dataset_id
-    access_token = dataset.source_plugin_parameters.access_token
+def use_remote_db(dataset: DotDict | Dataset, db_type: str, function_name: str, arguments: dict) -> Any:
+    params = dataset.source_plugin_parameters or {}
+    host = params.get("host", "")
+    remote_dataset_id = params.get("dataset_id")
+    access_token = params.get("access_token")
     url = host + '/data_backend/remote_db_access'
     data = {
         'dataset_id': remote_dataset_id,

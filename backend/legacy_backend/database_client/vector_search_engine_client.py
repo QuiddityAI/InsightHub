@@ -12,7 +12,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 
 from ..database_client.remote_instance_client import use_remote_db
 
-from data_map_backend.utils import DotDict
+from data_map_backend.utils import DotDict, pk_to_uuid_id
 from ..utils.field_types import FieldType
 from ..utils.helpers import get_vector_field_dimensions
 from ..utils.source_plugin_types import SourcePlugin
@@ -243,7 +243,7 @@ class VectorSearchEngineClient(object):
                     sub_item_payload['array_index'] = i
                     sub_item_payloads.append(sub_item_payload)
                     sub_item_id = f"{item_id}_{i}"
-                    sub_item_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, sub_item_id))
+                    sub_item_uuid = pk_to_uuid_id(sub_item_id)
                     sub_item_ids.append(sub_item_uuid)
                     sub_item_vectors.append(vector)
 

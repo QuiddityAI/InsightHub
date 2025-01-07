@@ -95,6 +95,20 @@ def upload_files(
     return response.json()
 
 
+def check_pk_existence(dataset_id: int, pks: list[str], access_token: str):
+    url = data_backend_url + "/api/v1/ingest/check_pk_existence"
+    data = {
+        'dataset_id': dataset_id,
+        'pks': pks,
+        'access_token': access_token,
+    }
+    response = requests.post(url, json=data)
+    if response.status_code != 200:
+        logging.error(f"Error during check_pk_existence: {repr(response)}, {response.text}")
+        raise Exception(response)
+    return response.json()
+
+
 def files_in_folder(path, extensions:Tuple[str, ...]=(".gz",)):
     return sorted([os.path.join(path, name) for path, subdirs, files in os.walk(path)
             for name in files if name.lower().endswith(extensions)])

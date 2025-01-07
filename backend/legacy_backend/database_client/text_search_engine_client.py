@@ -10,6 +10,7 @@ import opensearchpy.helpers
 
 from ..database_client.remote_instance_client import use_remote_db
 
+from data_map_backend.models import Dataset
 from data_map_backend.utils import DotDict
 from ..utils.field_types import FieldType
 from ..utils.custom_json_encoder import CustomJSONEncoder
@@ -244,6 +245,26 @@ class TextSearchEngineClient(object):
             item["_dataset_id"] = dataset.id
             items.append(item)
         return items
+
+
+    def check_item_existence(self, dataset: DotDict | Dataset, ids: Iterable[str]) -> dict:
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return use_remote_db(
+                dataset=dataset,
+                db_type="text_search_engine",
+                function_name="check_item_existence",
+                arguments={"ids": ids}
+            )
+        body = {
+            "ids": ids,
+        }
+        index_name = dataset.actual_database_name
+        # TODO: one source said search is better than mget, but not why (https://discuss.elastic.co/t/document-exist-check/45789/2)
+        response = self.client.mget(body=body, index=index_name, params={"_source": False})
+        id_exists = {}
+        for doc in response['docs']:
+            id_exists[doc["_id"]] = doc.get("found")
+        return id_exists
 
 
     def get_all_items_with_missing_field_count(self, index_name: str, missing_field: str) -> int:

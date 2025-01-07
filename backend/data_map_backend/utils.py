@@ -1,6 +1,8 @@
 from typing import Any, Iterable
 from copy import deepcopy
 import os
+import uuid
+from uuid import uuid5
 
 import numpy as np
 
@@ -110,3 +112,7 @@ BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_
 
 def is_from_backend(request):
     return request.headers.get("Authorization") == BACKEND_AUTHENTICATION_SECRET
+
+
+def pk_to_uuid_id(pk: str) -> str:
+    return str(uuid5(uuid.NAMESPACE_URL, pk))
