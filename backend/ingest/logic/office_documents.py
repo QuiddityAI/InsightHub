@@ -154,15 +154,15 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters: Dot
         folder = uploaded_file.metadata.folder if uploaded_file.metadata else None
         item = {
             "title": uploaded_file.original_filename,
-            "type_description": None,
-            "abstract": None,
-            "ai_tags": [],
-            "content_date": None,
-            "content_time": None,
+            #"type_description": None,  # don't overwrite potentially already existing fields
+            #"abstract": None,
+            #"ai_tags": [],
+            #"content_date": None,
+            #"content_time": None,
             "language": parameters.get("document_language", "en"),
-            "thumbnail_path": None,  # relative to UPLOADED_FILES_FOLDER
-            "full_text": None,
-            "full_text_chunks": [],
+            #"thumbnail_path": None,  # relative to UPLOADED_FILES_FOLDER
+            #"full_text": None,
+            #"full_text_chunks": [],
             "file_created_at": uploaded_file.metadata.created_at if uploaded_file.metadata else None,
             "file_updated_at": uploaded_file.metadata.updated_at if uploaded_file.metadata else None,
             "file_name": uploaded_file.original_filename,
