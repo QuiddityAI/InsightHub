@@ -40,7 +40,7 @@ export default {
 
 
 <template>
-  <div class="relative text-[13px] text-gray-700">
+  <div class="relative text-[13px] text-gray-700 use-default-html-styles">
     <p ref="body_text"
       :class="{ [`line-clamp-[${max_lines}]`]: body_text_collapsed }"
       v-html="html_content">
