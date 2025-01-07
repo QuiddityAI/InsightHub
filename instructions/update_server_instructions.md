@@ -5,7 +5,7 @@
 - docker compose down
 - on v2: source start_ssh_agent.sh
 - git stash
-- checkout git
+- git pull
 - git stash pop (& fix merging problems)
 - update .env file
 - update npm env in frontend/? (not needed if npm install is in RUN command of container, July 2024)
