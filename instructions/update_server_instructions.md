@@ -23,6 +23,7 @@
   - ../.venv/bin/python manage.py migrate
   - ../.venv/bin/python manage.py update_base_models
 - docker compose restart backend
+- docker compose restart webserver-prod-showcase
 - docker compose up -d
 - wait, especially till webserver-prod has run npm install and compiled the website
 - make sure generators have embedding space set (migration after changing id from int to str doesn't work here)
