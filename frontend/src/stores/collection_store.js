@@ -88,7 +88,6 @@ export const useCollectionStore = defineStore("collection", {
       this.filtered_count = null
       this.items_last_updated = new Date(2020, 1, 1)
       this.first_index = 0
-      this.per_page = 10
       this.order_by_field = 'date_added'
       this.order_descending = true
       this.eventBus.emit("collection_changed", {collection_id: null, class_name: null})
@@ -603,7 +602,7 @@ export const useCollectionStore = defineStore("collection", {
       return class_details["positive_count"]
     },
     per_page: (state) => {
-      return state.collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET ? 30 : 10
+      return state.collection?.ui_settings?.item_layout === CollectionItemLayout.SPREADSHEET ? 30 : 10
     },
     available_order_by_fields(state) {
       const available_fields = {}
