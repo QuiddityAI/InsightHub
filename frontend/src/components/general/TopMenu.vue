@@ -59,14 +59,14 @@ export default {
 
 <template>
 
-  <div class="flex flex-col px-2 py-[0px] bg-white shadow-sm">
+  <div class="flex flex-col px-2 bg-white shadow-sm">
 
     <div class="flex-none flex flex-row items-center justify-center mx-3">
 
       <a
         v-tooltip.right="{ value: 'Reset search', showDelay: 400 }"
         :href="`?organization_id=${appState.organization_id}`"
-        class="w-8 rounded p-2 text-gray-400 hover:bg-gray-100">
+        class="w-5 h-5 rounded p-[2px] text-gray-400 hover:bg-gray-100">
         <HomeIcon></HomeIcon>
       </a>
 
@@ -75,7 +75,7 @@ export default {
         <select
           v-model="internal_organization_id"
           @change="organization_id_changed_by_user"
-          class="w-full rounded-md border-none pb-1 pl-2 pr-8 pt-1 text-[13px] font-medium text-gray-500 font-[Lexend]">
+          class="w-full rounded-md border-none pb-0 pl-2 pr-8 pt-0 text-[13px] font-thin text-gray-500 font-[Lexend]">
           <option v-for="item in appState.available_organizations" :value="item.id" selected>
             {{ item.name }}
           </option>
@@ -84,11 +84,11 @@ export default {
 
       <div class="flex-1"></div>
 
-      <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-500 text-sm">
+      <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-500 text-sm font-[Lexend] font-thin">
         <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'explore'}"
           @click="appState.set_app_tab('explore')">
           Explore</button> -->
-         <button class="hover:text-blue-500" :class="{'font-bold': appState.selected_app_tab === 'collections'}"
+         <button class="hover:text-blue-500" :class="{'font-medium': appState.selected_app_tab === 'collections'}"
           @click="appState.set_app_tab('collections'); collectionStore.close_collection()">
           Quiddity InsightHub</button>
          <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
@@ -110,7 +110,7 @@ export default {
       <div class="flex-none flex flex-row place-content-end min-w-0">
         <LoginButton></LoginButton>
 
-        <button v-if="appState.logged_in" class="pl-2 pr-1 py-1 text-[13px] font-medium text-gray-500 font-[Lexend] rounded-md hover:bg-gray-100"
+        <button v-if="appState.logged_in" class="pl-2 pr-1 py-1 text-[13px] font-thin text-gray-500 font-[Lexend] rounded-md hover:bg-gray-100"
           v-tooltip.bottom="{ value: 'User Menu (logout etc.)', showDelay: 400 }"
           @click="(event) => $refs.user_menu.toggle(event)">
           {{ appState.user.username.substring(0, 22) + (appState.user.username.length > 22 ? '...' : '') }}
@@ -124,8 +124,8 @@ export default {
 
     </div>
 
-    <div class="flex flex-row items-center justify-center">
-      <select class="md:hidden rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
+    <div class="flex flex-row items-center justify-center md:hidden">
+      <select class="rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
         <!-- <option>Explore</option> -->
         <option>Home</option>
         <!-- <option>Chat</option>
