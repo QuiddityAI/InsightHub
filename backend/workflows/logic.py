@@ -180,7 +180,6 @@ def prepare_for_assisted_search(collection: DataCollection, settings: CreateColl
 def prepare_for_question(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     logging.warning("prepare_for_question: start")
     assert settings.user_input is not None
-    collection.ui_settings = CollectionUiSettings(secondary_view="summary").model_dump()
     create_relevance_column(collection, settings.user_input, settings.result_language)
 
     search_task = SearchTaskSettings(
@@ -207,6 +206,8 @@ def prepare_for_question(collection: DataCollection, settings: CreateCollectionS
     )
     writing_task.prompt = settings.user_input
     writing_task.save()
+    collection.ui_settings = CollectionUiSettings(secondary_view="summary").model_dump()
+    collection.save(update_fields=["ui_settings"])
 
     def after_columns_were_processed(new_items):
         logging.warning("prepare_for_question: after_columns_were_processed")
@@ -218,3 +219,4 @@ def prepare_for_question(collection: DataCollection, settings: CreateCollectionS
 
     run_search_task(collection, search_task, user.id, after_columns_were_processed, is_new_collection=True)  # type: ignore
     collection.current_agent_step = "Waiting for search results and columns..."
+    collection.save(update_fields=["current_agent_step"])
