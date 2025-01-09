@@ -323,6 +323,16 @@ class TextSearchEngineClient(object):
         logging.warning(f"Deleted field {field} from text search engine: {response}")
 
 
+    def get_plain_results(self, dataset: Dataset, query_body: dict) -> dict:
+        # not used internally, mostly for external scripts
+        index_name = dataset.actual_database_name
+        response = self.client.search(
+            body = query_body,
+            index = index_name
+        )
+        return response
+
+
     def get_search_results(self, dataset: DotDict, search_fields, filters: list[dict],
                            query_positive, query_negative, page, limit, return_fields,
                            highlights=False, use_bolding_in_highlights:bool=True,

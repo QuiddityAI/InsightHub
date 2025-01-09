@@ -105,3 +105,9 @@ class Filter(Schema):
 class ApprovalUsingComparisonReason(Schema):
     item_id: int
     reason: str
+
+
+class GetPlainResultsPaylaod(Schema):
+    dataset_id: int
+    access_token: str
+    query_body: dict

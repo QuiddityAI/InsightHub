@@ -5,10 +5,11 @@ from django.http import HttpResponse
 
 from ninja import NinjaAPI, Schema
 
-from data_map_backend.models import DataCollection
+from data_map_backend.models import DataCollection, Dataset
 from data_map_backend.schemas import CollectionIdentifier
+from legacy_backend.database_client.text_search_engine_client import TextSearchEngineClient
 
-from search.schemas import RunSearchTaskPayload, SearchTaskSettings, RunPreviousSearchTaskPayload
+from search.schemas import RunSearchTaskPayload, SearchTaskSettings, RunPreviousSearchTaskPayload, GetPlainResultsPaylaod
 from search.logic.execute_search import run_search_task, add_items_from_active_sources
 from search.logic.approve_items_and_exit_search import approve_relevant_search_results, exit_search_mode
 
@@ -145,3 +146,18 @@ def approve_relevant_search_results_route(request, payload: CollectionIdentifier
     approve_relevant_search_results(collection, payload.class_name)
 
     return HttpResponse(None, status=204, content_type="application/json")
+
+
+@api.post("get_plain_results")
+def get_plain_results_route(request, payload: GetPlainResultsPaylaod):
+    try:
+        dataset = Dataset.objects.get(id=payload.dataset_id)
+    except Dataset.DoesNotExist:
+        return HttpResponse(status=404)
+    if payload.access_token not in (dataset.advanced_options or {}).get("access_tokens", {}):
+        return HttpResponse(status=401)
+
+    text_db_client = TextSearchEngineClient.get_instance()
+    results = text_db_client.get_plain_results(dataset, payload.query_body)
+
+    return HttpResponse(json.dumps(results), status=200, content_type="application/json")
