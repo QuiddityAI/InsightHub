@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root { font-family: 'Inter', system-ui; }
-@supports (font-variation-settings: normal) {
+/* @supports (font-variation-settings: normal) {
   :root { font-family: 'InterVariable', system-ui; }
-}
+} */
 
 /* Custom Tailwind CSS for PrimeVue components */
 
