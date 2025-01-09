@@ -50,7 +50,7 @@ def _execute_writing_task(task: WritingTask):
     contexts = []
     items: list[CollectionItem] = []
     if task.use_all_items:
-        items = task.collection.collectionitem_set.filter(relevance__gte=0)  # type: ignore
+        items = task.collection.items.filter(relevance__gte=0)  # type: ignore
     else:
         assert isinstance(task.selected_item_ids, list)
         items = [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
