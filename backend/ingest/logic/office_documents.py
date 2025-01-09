@@ -4,26 +4,29 @@ import json
 import base64
 import datetime
 from typing import Callable
+from multiprocessing.pool import ThreadPool
 
-from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
+from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1, Nebius_Llama_3_1_8B_cheap
 from requests import ReadTimeout
 
 from data_map_backend.utils import DotDict
 from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult, AiFileProcessingInput, AiFileProcessingOutput
 from ingest.logic.common import UPLOADED_FILES_FOLDER, store_thumbnail
 from ingest.logic.pdferret_client import extract_using_pdferret
+from ingest.prompts import folder_summary_prompt
 # from ingest.logic.video import process_video
 
 
 def ai_file_processing_generator(input_items: list[dict], log_error: Callable, parameters: DotDict) -> list[dict]:
-    results = []
+    results = {}
     target_field_value = True  # just storing that this item was processed
-    batch = []
+    file_batch = []
+    folder_batch = []
     batch_size = 10
     document_language = parameters.get("document_language", "en")
     metadata_language = parameters.get("metadata_language", "en")
 
-    def process_batch(batch):
+    def process_file_batch(batch):
         try:
             parsed, failed = extract_using_pdferret([f'{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}' for input_item in batch], doc_lang=document_language)
         except ReadTimeout:
@@ -39,22 +42,34 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
         assert len(parsed) == len(batch)  # TODO: handle failed items
         for parsed_item, input_item in zip(parsed, batch):
             if not parsed_item:
-                results.append([target_field_value, None])
+                results[input_item.folder + "/" + input_item.file_name] = [target_field_value, None]
                 continue
             result = ai_file_processing_single(input_item, parsed_item, parameters)
-            results.append([target_field_value, result.model_dump()])
+            results[input_item.folder + "/" + input_item.file_name] = [target_field_value, result.model_dump()]
+
+    def process_folder_batch(batch):
+        with ThreadPool(10) as pool:
+            outputs = pool.map(lambda input_item: ai_file_processing_single_folder(input_item, parameters), batch)
+        for input_item, output in zip(batch, outputs):
+            results[input_item.folder + "/" + input_item.file_name] = [target_field_value, output.model_dump()]
 
     for item in input_items:
         item = AiFileProcessingInput(**item)
         if item.is_folder:
-            continue
-        batch.append(item)
-        if len(batch) >= batch_size:
-            process_batch(batch)
-            batch = []
-    if batch:
-        process_batch(batch)
-    return results
+            folder_batch.append(item)
+        else:
+            file_batch.append(item)
+        if len(file_batch) >= batch_size:
+            process_file_batch(file_batch)
+            file_batch = []
+        if len(folder_batch) >= batch_size:
+            process_folder_batch(folder_batch)
+            folder_batch = []
+    if file_batch:
+        process_file_batch(file_batch)
+    if folder_batch:
+        process_folder_batch(folder_batch)
+    return [results[input_item["folder"] + "/" + input_item["file_name"]] for input_item in input_items]
 
 
 def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, parameters: DotDict) -> AiFileProcessingOutput:
@@ -127,6 +142,26 @@ def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, pa
     # if input_item.file_name.endswith(".mp4"):
     #     process_video(result, input_item)
     return result
+
+
+def ai_file_processing_single_folder(input_item: AiFileProcessingInput, parameters: DotDict) -> AiFileProcessingOutput:
+    prompt = folder_summary_prompt[parameters.get("metadata_language", "en")]
+    prompt = prompt.replace("{{ context }}", input_item.full_text or "")
+    description = Nebius_Llama_3_1_8B_cheap().generate_short_text(prompt, max_tokens=2000)
+
+    return AiFileProcessingOutput(
+        content_date=None,
+        content_time=None,
+        description=description or "",
+        document_language=parameters.get("document_language", "en"),
+        full_text=input_item.full_text or "",
+        full_text_chunks=[],
+        summary="",
+        thumbnail_path=None,
+        title=input_item.file_name,
+        type_description="Ordner" if parameters.get("metadata_language", "en") == "en" else "Folder",
+        people=[],
+    )
 
 
 def get_parent_folders(folder) -> list:

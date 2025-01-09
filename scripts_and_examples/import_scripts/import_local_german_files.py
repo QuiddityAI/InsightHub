@@ -24,11 +24,13 @@ def import_files(path, dataset_id, max_items=1000000):
     csv_log.append(["first line exception header: dataset_id", "max_items", "path", "skip_first"])
     csv_log.append([dataset_id, max_items, path, skip_first])
 
+    # fix encoding of folder names:
     for root, dirs, files in os.walk(path, topdown=False):
         for name in dirs:
             full_path = os.path.join(root, name)
             full_path = fix_encoding(full_path)
 
+    # import folders first:
     folder_batch = []
     folder_i = 0
     for root, dirs, files in os.walk(path):
@@ -36,6 +38,17 @@ def import_files(path, dataset_id, max_items=1000000):
             full_path = os.path.join(root, name)
             root_without_path = root.replace(path, "")
             full_path_without_path = full_path.replace(path, "")
+
+            files = list(os.scandir(full_path))
+            context = (f"Folder: {full_path_without_path}\n"
+                f"Number of contained files and folders: {len(files)}\n"
+                f"Preview of up to 20 file and foldernames: \n")
+            for file in sorted(files, key=lambda x: x.name)[:20]:
+                iso_file_path = file.name.encode("utf-8", "surrogateescape")
+                fixed_file_name = iso_file_path.decode("ISO-8859-1")
+                context += f"- {fixed_file_name}{'/' if file.is_dir() else ''}\n"
+            if len(files) > 20:
+                context += f"...\n"
 
             item = dict(
                 title=name,
@@ -50,6 +63,8 @@ def import_files(path, dataset_id, max_items=1000000):
                 size_in_bytes=4096,
                 parent_folders=get_parent_folders(root_without_path),
                 is_folder=True,
+                full_text=context,
+                pages=len(files),
             )
             folder_batch.append(item)
             folder_i += 1
@@ -128,7 +143,7 @@ def import_files(path, dataset_id, max_items=1000000):
     print(f"Total items: {total_items}")
 
 
-def fix_encoding(file_path):
+def fix_encoding(file_path: str):
     # fix problems with surrogateescape encoding:
     try:
         file_path.encode("utf-8")

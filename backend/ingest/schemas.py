@@ -45,6 +45,7 @@ class AiFileProcessingInput(Schema):
     file_created_at: Optional[str] = None  # isoformat
     file_updated_at: Optional[str] = None  # isoformat
     is_folder: bool = False
+    full_text: str | None = None
 
 
 class AiFileProcessingOutput(Schema):
