@@ -129,6 +129,8 @@ export default {
     update_writing_task(on_success=null) {
       const that = this
       const task = this.writing_task
+      // remove trailing newlines from task.name:
+      task.name = task.name.replace(/\n+$/, '')
       const body = {
         task_id: this.writing_task_id,
         name: task.name,
@@ -204,11 +206,16 @@ export default {
 <template>
   <div class="flex flex-col gap-3" v-if="writing_task">
 
-    <div class="flex flex-row gap-3">
-      <h2 class="text-lg font-bold font-serif">
-        {{ writing_task.name || "New Writing Task" }}
+    <div class="relative flex flex-row gap-3">
+      <h2 class="flex-1 peer text-lg font-bold font-['Lexend']"
+        contenteditable @blur="writing_task.name = $event.target.innerText; update_writing_task_debounce()"
+        @keydown.enter="$event.target.blur()" @keydown.esc="$event.target.innerText = writing_task.name; $event.target.blur()"
+        spellcheck="false">
+        {{ writing_task.name }}
       </h2>
-      <div class="flex-1"></div>
+      <h2 class="absolute top-0 text-lg font-bold font-['Lexend'] text-gray-500 peer-focus:hidden pointer-events-none">
+        <span v-if="!writing_task.name">Writing Task Name</span>
+      </h2>
       <BorderlessButton v-if="appState.user.is_staff"
         @click="show_used_prompt = true" v-tooltip.bottom="{ value: 'Show the used prompt' }"
         :default_padding="false" class="h-6 w-6">
@@ -249,9 +256,6 @@ export default {
     <Dialog v-model:visible="show_settings_dialog" modal header="Writing Task">
 
       <div class="flex flex-col gap-5">
-
-        <input v-model="writing_task.name" placeholder="Name"
-          class="" />
 
         <textarea v-model="writing_task.prompt" placeholder="prompt"
           class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />

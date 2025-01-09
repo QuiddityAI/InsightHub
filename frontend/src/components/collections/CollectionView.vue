@@ -272,9 +272,8 @@ export default {
           <TrashIcon class="h-4 w-4"></TrashIcon>
         </BorderButton>
 
-        <span class="text-gray-400">
-          Views:
-        </span>
+        <div class="h-full border-r pl-2 mr-2">
+        </div>
         <BorderButton @click="show_secondary_view('summary')"
           :highlighted="collection.ui_settings.secondary_view === 'summary'" :badge="collection.writing_task_count">
           Summary
