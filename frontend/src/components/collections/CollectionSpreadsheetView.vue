@@ -95,7 +95,7 @@ export default {
         <!-- index column items -->
         <div class="h-[32px] flex-none w-full flex flex-row justify-center items-center border-b-[1px] border-[rgba(0,0,0,0.07)]"
           :class="{
-            'bg-gray-100/50': hovered_row === index,
+            'bg-gray-100': hovered_row === index,
           }"
           @mouseover="hovered_row = index"
           @mouseleave="hovered_row = null"
@@ -110,11 +110,11 @@ export default {
       <div class="flex flex-col justify-start items-center border-r-[1px] border-[rgba(0,0,0,0.07)]">
 
         <!-- item column header -->
-        <div class="h-[32px] flex-none w-full flex flex-row justify-start items-center px-2 py-1 hover:bg-gray-100/50 border-b-[1px] border-t-[1px] border-[rgba(0,0,0,0.07)]">
+        <div class="h-[32px] flex-none w-full flex flex-row justify-start items-center px-2 py-1 hover:bg-gray-100 border-b-[1px] border-t-[1px] border-[rgba(0,0,0,0.07)]">
 
           <DocumentIcon class="h-[13px] w-[13px] text-gray-500 mr-2"></DocumentIcon>
 
-          <div v-if="collectionStore.search_mode" class="text-xs font-normal text-gray-600 flex flex-row justify-start">
+          <div v-if="collectionStore.search_mode" class="text-xs font-medium text-gray-500 flex flex-row justify-start">
             <span
               class="flex flex-row justify-start items-center gap-1"
               v-tooltip.bottom="{value: 'Only search results are shown. \n Exit search to remove results and show saved items.'}">
@@ -131,10 +131,9 @@ export default {
           </div>
 
           <div v-else
-            class="text-xs font-normal text-gray-600">
-            Items
+            class="text-xs font-medium text-gray-500">
+            {{ collectionStore.entity_name_plural || 'Items' }}
           </div>
-
 
         </div>
 
@@ -170,11 +169,11 @@ export default {
         class="flex flex-col justify-start items-center border-r-[1px] border-[rgba(0,0,0,0.07)]">
 
         <!-- custom column header -->
-        <button class="h-[32px] flex-none w-full flex flex-row justify-start items-center px-2 py-1 hover:bg-gray-100/50 border-b-[1px] border-t-[1px] border-[rgba(0,0,0,0.07)]"
+        <button class="h-[32px] flex-none w-full flex flex-row justify-start items-center px-2 py-1 hover:bg-gray-100 border-b-[1px] border-t-[1px] border-[rgba(0,0,0,0.07)]"
           @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
 
           <Bars3BottomLeftIcon class="h-[15px] w-[15px] text-gray-500 mr-2"></Bars3BottomLeftIcon>
-          <span class="text-xs font-normal text-gray-600">
+          <span class="text-xs font-medium text-gray-500">
             {{ column.name }}
             <span v-if="column.module === 'relevance'" class="ml-2 text-xs text-gray-400">Click to change criteria</span>
           </span>
@@ -204,7 +203,7 @@ export default {
 
         <!-- last column header -->
         <div class="h-[32px] flex-none w-full flex flex-row justify-start items-center border-b-[1px] border-t-[1px] border-[rgba(0,0,0,0.07)]">
-          <button class="h-full w-[32px] flex flex-row justify-center items-center hover:bg-gray-100/50 border-r-[1px] border-[rgba(0,0,0,0.07)]"
+          <button class="h-full w-[32px] flex flex-row justify-center items-center hover:bg-gray-100 border-r-[1px] border-[rgba(0,0,0,0.07)]"
             @click="$emit('add_column')" v-tooltip.bottom="{ value: 'Add Column', showDelay: 400 }">
             <PlusIcon class="h-3 w-3 text-gray-600"></PlusIcon>
           </button>

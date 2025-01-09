@@ -113,7 +113,7 @@ export default {
           </div>
           <span v-else
             class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center">
-            Items
+            {{ collectionStore.entity_name_plural || 'Items' }}
           </span>
         </template>
         <template #body="slotProps">

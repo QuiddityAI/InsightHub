@@ -2,6 +2,7 @@
 import {
   UserIcon,
  } from "@heroicons/vue/24/outline"
+
  import { marked } from "marked";
 
 import ProgressSpinner from 'primevue/progressspinner';
@@ -10,7 +11,6 @@ import OverlayPanel from "primevue/overlaypanel";
 import CollectionTableCell from "../CollectionTableCell.vue";
 
 import { useToast } from 'primevue/usetoast';
-import { httpClient, djangoClient } from "../../../api/httpClient"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../../stores/app_state_store"

@@ -7,6 +7,10 @@ import { update_object, CollectionItemLayout } from "../utils/utils"
 import { httpClient, djangoClient } from "../api/httpClient"
 import { FieldType } from "../utils/utils"
 
+const capitalizeFirstLetter = (val) => {
+    return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+
 export const useCollectionStore = defineStore("collection", {
   state: () => {
     return {
@@ -667,6 +671,18 @@ export const useCollectionStore = defineStore("collection", {
         name: 'Full text excerpts',
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
+    },
+    entity_name_singular(state) {
+      const first_dataset_id = state.collection_items.length ? state.collection_items[0].dataset_id : null
+      if (!first_dataset_id) return null
+      const n = window.appState.datasets[first_dataset_id]?.schema.entity_name
+      return capitalizeFirstLetter(n)
+    },
+    entity_name_plural(state) {
+      const first_dataset_id = state.collection_items.length ? state.collection_items[0].dataset_id : null
+      if (!first_dataset_id) return null
+      const n = window.appState.datasets[first_dataset_id]?.schema.entity_name_plural
+      return capitalizeFirstLetter(n)
     },
   },
 })

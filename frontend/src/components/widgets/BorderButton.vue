@@ -24,7 +24,7 @@ const props = defineProps({
 
 <template>
   <button
-    class="relative flex items-center justify-center gap-1 text-sm font-bold border border-gray-200 rounded-md hover:border-gray-300"
+    class="relative flex items-center justify-center gap-1 text-sm font-medium border border-gray-200 rounded-md hover:border-gray-300"
     :class="{
       'text-gray-500': !highlighted,
       [highlight_color]: highlighted,

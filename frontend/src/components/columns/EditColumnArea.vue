@@ -9,8 +9,6 @@ import OverlayPanel from 'primevue/overlaypanel';
 import Textarea from 'primevue/textarea';
 import Checkbox from 'primevue/checkbox';
 
-import BorderButton from "../widgets/BorderButton.vue";
-
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
 
@@ -124,10 +122,12 @@ export default {
         <Textarea class="flex-1 ring-0 border-0 min-h-0 text-sm font-bold text-gray-500" autoResize :rows="1" :pt="{ root: 'p-0 resize-none min-h-0', }"
           v-model="selected_column.name" @blur="submit_changes()" @keyup.enter="submit_changes()">
         </Textarea>
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-gray-500"
+          v-tooltip.top="{ value: 'Module used for this column', showDelay: 400 }">
           {{ human_readable_module_name(selected_column.module) }}
         </p>
-        <p class="text-xs text-gray-500" v-if="selected_column.parameters?.language">
+        <p class="text-xs text-gray-500" v-if="selected_column.parameters?.language"
+          v-tooltip.top="{ value: 'Language of the text to be generated', showDelay: 400 }">
           {{ selected_column.parameters?.language }}
         </p>
         <button
@@ -149,7 +149,9 @@ export default {
         </Textarea>
       </div>
 
-      <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
+      <p class="text-xs text-gray-500"  v-if="!['notes'].includes(selected_column.module)">
+        {{ human_readable_source_fields(selected_column.source_fields) }}
+      </p>
 
       <div v-if="['llm', 'relevance'].includes(selected_column.module)"
         class="flex flex-row gap-2 items-center">

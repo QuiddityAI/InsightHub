@@ -4,7 +4,6 @@ import {
 } from "@heroicons/vue/24/outline"
 
 import { CollectionItemSizeMode } from "../../../utils/utils.js"
-import { httpClient } from "../../../api/httpClient"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../../stores/app_state_store"
