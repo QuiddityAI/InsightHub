@@ -9,6 +9,14 @@ class CollectionItemSizeMode:
     FULL = 3
 
 
+class ItemRelevance:
+    RELEVANT_ACCORDING_TO_USER = 2
+    RELEVANT_ACCORDING_TO_AI = 1
+    CANDIDATE = 0  # e.g. a search result, will be removed when exiting search mode
+    NOT_RELEVANT_ACCORDING_TO_AI = -1
+    NOT_RELEVANT_ACCORDING_TO_USER = -2
+
+
 class CollectionIdentifier(Schema):
     collection_id: int
     class_name: str
