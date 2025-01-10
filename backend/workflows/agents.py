@@ -3,12 +3,13 @@ import time
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
 from data_map_backend.models import DataCollection, User, COLUMN_META_SOURCE_FIELDS, WritingTask, CollectionColumn, FieldType
-from data_map_backend.schemas import CollectionUiSettings
+from data_map_backend.schemas import CollectionUiSettings, ItemRelevance
 from search.schemas import SearchTaskSettings
 from search.logic.execute_search import run_search_task
 from write.logic.writing_task import execute_writing_task_safe
 from .schemas import CreateCollectionSettings
 from columns.logic.process_column import process_cells_blocking
+from columns.schemas import CellData
 
 
 def run_research_agent_in_collection(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
@@ -60,6 +61,17 @@ def run_research_agent_in_collection(collection: DataCollection, settings: Creat
     process_cells_blocking(new_items[:max_evaluated_candidates], column, collection, user.id)  # type: ignore
 
     time.sleep(2)  # just for the demo to understand the process
+
+    # get the results of the column:
+    for item in new_items[:max_evaluated_candidates]:
+        data = CellData(**item.column_data[column.identifier])
+        print(data.value)  # this is the text value of the cell
+        assert isinstance(data.value, str)  # could by dict or list for other column types
+
+        # set the relevance of an item:
+        if 'yes' in data.value.lower():
+            item.relevance = ItemRelevance.RELEVANT_ACCORDING_TO_AI
+            item.save(update_fields=["relevance"])
 
     # create the final result:
     writing_task = WritingTask(
