@@ -129,6 +129,15 @@ export default {
           availability: 'preview',
         },
         {
+          id: 'research_agent',
+          prefix: "Let an",
+          name: 'Agent do Research',
+          help_text: 'An agent that looks for documents and summarizes them autonomously',
+          query_field_hint: (entity_name) => `Your question`,
+          supports_filters: false,
+          availability: 'preview',
+        },
+        {
           id: 'show_all',
           prefix: "Show",
           name: 'All <entity_name_plural>',

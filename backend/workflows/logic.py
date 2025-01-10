@@ -14,6 +14,7 @@ from write.logic.writing_task import execute_writing_task_thread
 from .schemas import CreateCollectionSettings
 from .create_columns import create_relevance_column
 from workflows.prompts import query_language_prompt
+from workflows.agents import run_research_agent_in_collection
 
 
 class CollectionCreationModes(StrEnum):
@@ -24,6 +25,7 @@ class CollectionCreationModes(StrEnum):
     META_REPORT = 'meta_report'
     TIMELINE = 'timeline'
     OVERVIEW_MAP = 'overview_map'
+    RESEARCH_AGENT = 'research_agent'
     SHOW_ALL = 'show_all'
     EMPTY_COLLECTION = 'empty_collection'
 
@@ -85,6 +87,8 @@ def prepare_collection(
         prepare_for_question(collection, settings, user)
     elif settings.workflow_id == CollectionCreationModes.OVERVIEW_MAP:
         prepare_for_overview_map(collection, settings, user)
+    elif settings.workflow_id == CollectionCreationModes.RESEARCH_AGENT:
+        run_research_agent_in_collection(collection, settings, user)
     elif settings.workflow_id == CollectionCreationModes.SHOW_ALL:
         prepare_for_show_all_map(collection, settings, user)
     elif settings.workflow_id == CollectionCreationModes.EMPTY_COLLECTION:
