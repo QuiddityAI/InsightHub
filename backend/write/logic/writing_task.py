@@ -17,21 +17,22 @@ def execute_writing_task_thread(task: WritingTask):
     task.is_processing = True
     task.save()
 
-    def execute_writing_task_safe():
-        try:
-            _execute_writing_task(task)
-        except Exception as e:
-            logging.error(e)
-            import traceback
-            logging.error(traceback.format_exc())
-            task.is_processing = False
-            task.save()
-
     try:
-        thread = threading.Thread(target=execute_writing_task_safe)
+        thread = threading.Thread(target=execute_writing_task_safe, args=(task,))
         thread.start()
     except Exception as e:
         logging.error(e)
+        task.is_processing = False
+        task.save()
+
+
+def execute_writing_task_safe(task: WritingTask):
+    try:
+        _execute_writing_task(task)
+    except Exception as e:
+        logging.error(e)
+        import traceback
+        logging.error(traceback.format_exc())
         task.is_processing = False
         task.save()
 

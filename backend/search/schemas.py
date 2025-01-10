@@ -15,7 +15,7 @@ class SearchTaskSettings(Schema):
     search_type: SearchType = SearchType.EXTERNAL_INPUT
     dataset_id: int
     user_input: str  # the raw (potentially natural language) user input
-    query: str = ""  # the processed query
+    query: str | None = None  # the processed query
     result_language: Optional[str] = None
     candidates_per_step: int = 10
     queries_per_step: int = 1

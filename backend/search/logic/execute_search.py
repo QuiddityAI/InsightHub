@@ -18,7 +18,7 @@ from search.logic.extract_filters import get_filter_prompt, extract_filters
 
 def run_search_task(collection: DataCollection, search_task: SearchTaskSettings, user_id: int,
                     after_columns_were_processed: Callable | None=None,
-                    is_new_collection: bool = False):
+                    is_new_collection: bool = False) -> list[CollectionItem]:
     if not is_new_collection:
         exit_search_mode(collection, '_default')
 
@@ -29,7 +29,8 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
     # FIXME: stack_index doesn't look right, not sure what the goal was
     stack_index = max([s.get('stack_index', 0) for s in collection.search_sources if s['is_active']] or [-1]) + 1
 
-    search_task.query = search_task.user_input
+    if not search_task.query:
+        search_task.query = search_task.user_input
 
     if search_task.auto_set_filters:
         collection.log_explanation("Use AI model to generate **suitable query**", save=False)
@@ -97,10 +98,11 @@ def run_search_task(collection: DataCollection, search_task: SearchTaskSettings,
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 
-    add_items_from_active_sources(collection, user_id, is_new_collection, after_columns_were_processed_internal)
+    new_items = add_items_from_active_sources(collection, user_id, is_new_collection, after_columns_were_processed_internal)
+    return new_items
 
 
-def add_items_from_active_sources(collection: DataCollection, user_id: int, is_new_collection: bool = False, after_columns_were_processed: Callable | None=None) -> int:
+def add_items_from_active_sources(collection: DataCollection, user_id: int, is_new_collection: bool = False, after_columns_were_processed: Callable | None=None) -> list[CollectionItem]:
     # removing visibility filters because otherwise new items might not be visible
     collection.filters = []
     collection.save()
@@ -123,7 +125,7 @@ def add_items_from_active_sources(collection: DataCollection, user_id: int, is_n
 
     threading.Thread(target=in_thread).start()
 
-    return len(new_items)
+    return new_items
 
 
 def add_items_from_source(collection: DataCollection, source: SearchSource, is_new_collection: bool = False) -> Iterable[CollectionItem]:

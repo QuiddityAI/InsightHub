@@ -108,8 +108,8 @@ def add_items_from_active_sources_route(request, payload: CollectionIdentifier):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    new_item_count = add_items_from_active_sources(collection, request.user.id, is_new_collection=False)
-    result = {"new_item_count": new_item_count}
+    new_items = add_items_from_active_sources(collection, request.user.id, is_new_collection=False)
+    result = {"new_item_count": len(new_items)}
 
     return HttpResponse(json.dumps(result), status=200, content_type="application/json")
 
