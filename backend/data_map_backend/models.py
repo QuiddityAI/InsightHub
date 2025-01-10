@@ -1716,7 +1716,7 @@ class WritingTask(models.Model):
         null=False,
     )
     class_name = models.CharField(
-        verbose_name="Class", max_length=200, blank=False, null=False
+        verbose_name="Class", max_length=200, blank=False, null=False, default="_default"
     )
     created_at = models.DateTimeField(
         verbose_name="Created at",
