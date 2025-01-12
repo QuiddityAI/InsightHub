@@ -45,6 +45,7 @@ dependencies = [
     "groq",
     "hdbscan",
     "kolo",
+    "llmonkey @ git+https://trel725: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@github.com/Trel725/LLMonkey.git",
     "lingua-language-detector",
     "markdown",
     "nltk",
