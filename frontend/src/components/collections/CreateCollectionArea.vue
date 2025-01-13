@@ -123,7 +123,7 @@ export default {
           id: 'overview_map',
           prefix: "Create an",
           name: 'Overview Map of <entity_name_plural>',
-          help_text: 'Show a large set of <entity_name_plural> on a visual map',
+          help_text: 'Show a large set of items on a visual map',
           query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
           supports_filters: true,
           availability: 'preview',

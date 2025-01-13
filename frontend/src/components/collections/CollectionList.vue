@@ -54,7 +54,7 @@ export default {
 
       <div v-for="collection in collectionStore.available_collections" :key="collection.id"
         class="">
-        <button class="w-full text-left text-[15px] text-md font-medium text-gray-700 pl-1 pr-2 py-1 flex flex-row gap-[6px] items-center rounded-md hover:text-blue-500 hover:bg-gray-100"
+        <button class="w-full text-left text-[15px] text-md font-normal text-gray-700 pl-1 pr-2 py-1 flex flex-row gap-[6px] items-center rounded-md hover:text-blue-500 hover:bg-gray-100"
           @click="collectionStore.open_collection(collection.id, collection.actual_classes[0].name)">
           <span> <ChevronRightIcon class="w-3 h-3 text-gray-500"></ChevronRightIcon> </span>
           <h3 class="flex-initial min-w-0 break-words">

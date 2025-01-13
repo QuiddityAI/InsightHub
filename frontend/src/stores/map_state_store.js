@@ -242,6 +242,7 @@ export const useMapStateStore = defineStore("mapState", {
 
       this.eventBus.emit("map_center_and_fit_data_to_active_area_smooth")
       this.eventBus.emit("map_update_geometry")
+      this.eventBus.emit("map_reset_pan_and_zoom")
     },
     set_cluster_info(cluster_info) {
       this.clusterData = cluster_info

@@ -28,7 +28,7 @@ export const useCollectionStore = defineStore("collection", {
       collection_items: null,
       search_mode: false,
       filtered_count: null,
-      items_last_updated: new Date(2020, 1, 1),
+      items_last_retrieved: new Date(2020, 1, 1),
       update_collection_is_scheduled: false,
 
       // Pagination
@@ -90,7 +90,7 @@ export const useCollectionStore = defineStore("collection", {
       this.collection_items = []
       this.search_mode = false
       this.filtered_count = null
-      this.items_last_updated = new Date(2020, 1, 1)
+      this.items_last_retrieved = new Date(2020, 1, 1)
       this.first_index = 0
       this.order_by_field = 'date_added'
       this.order_descending = true
@@ -115,7 +115,9 @@ export const useCollectionStore = defineStore("collection", {
         const previously_running_columns = Array.from(this.collection.columns_with_running_processes)  // copy to remove reference
         let new_collection = response.data
         const old_collection = this.collection
+        let items_changed_on_server = false
         if (old_collection) {
+          items_changed_on_server = new Date(new_collection.items_last_changed) > new Date(old_collection.items_last_changed)
           // using update_object to update it in-place to keep references to old objects
           // to minimize flicker in the UI due to unneeded updates
           update_object(old_collection, new_collection)
@@ -148,6 +150,10 @@ export const useCollectionStore = defineStore("collection", {
           // there are still changes going on, update again in a few seconds:
           // (and those changes might change column titles, thats why the collection and not just the items are updated)
           this.schedule_update_collection(1000)
+        }
+
+        if (items_changed_on_server) {
+          this.eventBus.emit("collection_items_changed_on_server")
         }
 
         if (on_success) {
@@ -210,7 +216,6 @@ export const useCollectionStore = defineStore("collection", {
     },
     // ------------------
     load_collection_items(only_update_specific_columns=null) {
-      const that = this
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
@@ -221,22 +226,28 @@ export const useCollectionStore = defineStore("collection", {
         order_by: (this.order_descending ? "-" : "") + this.order_by_field,
         include_column_data: true,
       }
-      httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
+      httpClient.post("/org/data_map/get_collection_items", body).then((response) => {
         const items = response.data['items']
         if (only_update_specific_columns) {
           for (const item of items) {
-            const existing_item = that.collection_items.find((i) => i.id === item.id)
+            const existing_item = this.collection_items.find((i) => i.id === item.id)
             if (!existing_item) continue
             for (const column_identifier of only_update_specific_columns) {
               existing_item.column_data[column_identifier] = item.column_data[column_identifier]
             }
           }
         } else {
-          that.collection_items = items
-          that.items_last_updated = response.data['items_last_changed']
-          that.search_mode = response.data['search_mode']
-          that.filtered_count = response.data['filtered_count']
-          that.eventBus.emit("collection_items_loaded")
+          this.collection_items = items
+          // note the semantic difference between "items changed on server" and "items were last retrieved"
+          const items_changed_on_server = new Date(response.data['items_last_changed']) > new Date(this.collection.items_last_changed)
+          this.collection.items_last_changed = response.data['items_last_changed']
+          this.items_last_retrieved = response.data['items_last_changed']
+          this.search_mode = response.data['search_mode']
+          this.filtered_count = response.data['filtered_count']
+          this.eventBus.emit("collection_items_loaded")
+          if (items_changed_on_server) {
+            this.eventBus.emit("collection_items_changed_on_server")
+          }
         }
       })
     },
@@ -476,7 +487,7 @@ export const useCollectionStore = defineStore("collection", {
         .post("/api/v1/map/get_existing_projections", body)
         .then((response) => {
           if (!response.data) {
-            this.generate_map()
+            // no map yet
             return
           }
           const {projections, metadata} = response.data
@@ -487,6 +498,9 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     generate_map() {
+      if (!this.collection.map_metadata.length) {
+        this.collection.map_metadata = {}
+      }
       this.collection.map_metadata.projections_are_ready = false
       const body = {
         collection: {

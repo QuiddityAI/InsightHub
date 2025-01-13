@@ -16,6 +16,7 @@ import MapWithLabels from "./MapWithLabels.vue"
 import AddToCollectionButtons from "../../components/collections/AddToCollectionButtons.vue"
 
 import { useToast } from 'primevue/usetoast';
+import { debounce } from "../../utils/utils";
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -35,6 +36,9 @@ export default {
   emits: [],
   data() {
     return {
+      generate_map_debounce: debounce(() => {
+        this.collectionStore.generate_map()
+      }, 200),
     }
   },
   computed: {
@@ -43,9 +47,26 @@ export default {
     ...mapStores(useCollectionStore),
   },
   mounted() {
-    this.collectionStore.get_existing_projections()
+    const no_map_but_items = !this.collectionStore.collection?.map_metadata.created_at && this.collection_items?.length > 0
+    const update_times_are_known = this.collectionStore.collection?.map_metadata.created_at && this.collectionStore.collection?.items_last_changed
+    let map_outdated = false
+    if (update_times_are_known) {
+      map_outdated = new Date(this.collectionStore.collection?.map_metadata.created_at) < new Date(this.collectionStore.collection?.items_last_changed)
+    }
+    if (no_map_but_items || map_outdated) {
+      this.generate_map_debounce()
+    } else {
+      this.collectionStore.get_existing_projections()
+    }
+    this.eventBus.on("collection_items_changed_on_server", () => {
+      this.generate_map_debounce()
+    })
+    // could listen to filter changes, too, but that would trigger also with every single search query change etc.
+    // instead, only when "cluster filters" are created, the map is regenerated
+    // (generate_map() is called in appStateStore.narrow_down_on_cluster())
   },
   unmounted() {
+    this.eventBus.off("collection_items_changed_on_server")
     this.eventBus.emit("reset_map")
   },
   watch: {
@@ -179,7 +200,7 @@ export default {
       <ArrowPathIcon class="h-4 w-4"></ArrowPathIcon>
     </button>
 
-    <div v-if="collectionStore.collection?.map_metadata && collectionStore.collection.map_metadata.projections_are_ready === false"
+    <div v-if="collectionStore.collection?.map_metadata?.length && collectionStore.collection.map_metadata.projections_are_ready === false"
       class="absolute top-0 w-full h-full flex items-center justify-center backdrop-blur-sm">
       <div
         class="text-2xl text-gray-400 bg-white p-5 rounded-lg shadow-xl">

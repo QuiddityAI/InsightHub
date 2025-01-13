@@ -30,7 +30,7 @@ export default {
 </script>
 
 <template>
-  <div class="pointer-events-none">
+  <div class="pointer-events-none" id="close-up-point-items">
 
     <div
       class="pointer-events-none absolute transition-opacity duration-300 w-full h-full"

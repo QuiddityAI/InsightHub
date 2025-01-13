@@ -95,7 +95,7 @@ export default {
     'collectionStore.collection.items_last_changed'(new_value, old_value) {
       // nice idea, but conflicts with current approach
       // should rather check this in update_collection()
-      // if (new_value > this.collectionStore.items_last_updated) {
+      // if (new_value > this.collectionStore.items_last_retrieved) {
       //   this.collectionStore.load_collection_items()
       // }
     },
