@@ -4,7 +4,7 @@
   "entity_name_plural": "Tenders",
   "short_description": null,
   "created_at": "2024-11-19T18:55:07.379Z",
-  "changed_at": "2025-01-07T18:16:44.548Z",
+  "changed_at": "2025-01-13T12:52:19.839Z",
   "primary_key": "detail_page",
   "direct_parent": null,
   "all_parents": null,
@@ -19,6 +19,8 @@
     "title",
     "summary",
     "description",
+    "services",
+    "requirements",
     "embedding_e5"
   ],
   "advanced_options": {
@@ -66,9 +68,11 @@
   },
   "hover_label_rendering": {
     "image": "(item) => { return null }",
-    "title": "(item) => { return null }",
+    "title": "item => item.title",
     "subtitle": "(item) => { return null }",
-    "required_fields": []
+    "required_fields": [
+      "title"
+    ]
   },
   "detail_view_rendering": {
     "url": "item => 'https://www.service.bund.de/' + item.detail_page",
