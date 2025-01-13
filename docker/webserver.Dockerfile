@@ -13,5 +13,5 @@ HEALTHCHECK --interval=30s --timeout=3s \
 EXPOSE 55140
 WORKDIR /source_code/frontend
 USER node
-ENTRYPOINT ["npx", "vite"]
+ENTRYPOINT ["npx", "vite", "--force"]
 CMD []
