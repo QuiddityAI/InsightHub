@@ -91,6 +91,7 @@ MIDDLEWARE = [
     'social_django.middleware.SocialAuthExceptionMiddleware',
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'django_prometheus.middleware.PrometheusAfterMiddleware',
+    'project_base.middleware.Remove204ResponseContentMiddleware',
 ]
 
 ROOT_URLCONF = 'project_base.urls'
