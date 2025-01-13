@@ -47,7 +47,7 @@ class ClusterDescription(Schema):
     min_score: float
     max_score: float
     avg_score: float
-    important_words: list[tuple[str, float]]
+    important_words: list[tuple[str, float]] = []
 
 
 class ThumbnailData(Schema):

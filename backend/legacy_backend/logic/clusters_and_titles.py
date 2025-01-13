@@ -119,7 +119,8 @@ def get_cluster_titles(cluster_id_per_point, positions, sorted_ids: list[tuple[i
             max_score = max(scores_per_cluster[cluster_id])
             avg_score = np.mean(scores_per_cluster[cluster_id])
             cluster_data.append({"id": cluster_id, "title": title, "title_html": title, "center": cluster_center,
-                             "min_score": min_score, "max_score": max_score, "avg_score": avg_score})
+                             "min_score": min_score, "max_score": max_score, "avg_score": avg_score,
+                             "important_words": []})
         return cluster_data
     words = vectorizer.get_feature_names_out()
 
