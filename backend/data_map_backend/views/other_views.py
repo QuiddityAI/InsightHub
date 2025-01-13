@@ -512,7 +512,7 @@ def add_search_history_item(request):
     item.parameters = parameters  # type: ignore
     item.save()
     try:
-        user = User.objects.get(id=item.user_id) if item.user_id else None
+        user = User.objects.get(id=item.user_id) if item.user_id else None  # type: ignore
         username = user.username if user else "-"
         default_notifier.info(
             f"User {username} searched for question {parameters['search']['all_field_query']}",
@@ -1145,8 +1145,8 @@ def remove_collection_item(request):
     if collection_item.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    for class_name in collection_item.classes:  # type: ignore
-        collection_item.collection.items_last_changed = timezone.now().isoformat()  # type: ignore
+    # for class_name in collection_item.classes:  # type: ignore
+    collection_item.collection.items_last_changed = timezone.now().isoformat()  # type: ignore
     collection_item.collection.save()
 
     collection_item.delete()

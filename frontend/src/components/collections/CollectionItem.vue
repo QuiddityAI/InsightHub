@@ -29,7 +29,7 @@ const collectionStore = useCollectionStore()
 
 export default {
   props: ["dataset_id", "item_id", "initial_item", "is_positive", "show_remove_button", "collection_item", "size_mode"],
-  emits: ["remove"],
+  emits: [],
   data() {
     return {
       item: {},
@@ -272,7 +272,7 @@ export default {
           </BorderlessButton>
           <BorderlessButton v-if="show_remove_button"
             hover_color="hover:text-red-500" :default_padding="false" class="p-1"
-            @click.stop="$emit('remove')"
+            @click.stop="collectionStore.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_item.collection, collection_item.classes.length ? collection_item.classes[0] : '_default')"
             v-tooltip.bottom="{ value: 'Remove from this collection', showDelay: 400 }">
             <TrashIcon class="h-4 w-4"></TrashIcon>
           </BorderlessButton>
@@ -284,7 +284,7 @@ export default {
   <!-- Alternative if rendering doesn't work to still be able to remove the item (e.g. if its deleted in the dataset) -->
   <div v-else>
     <button v-if="show_remove_button"
-        @click.stop="$emit('remove')"
+        @click.stop="collectionStore.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_item.collection, collection_item.classes.length ? collection_item.classes[0] : '_default')"
         v-tooltip.right="{ value: 'Remove from this collection', showDelay: 400 }"
         class="text-sm text-gray-400 hover:text-red-600">
         <TrashIcon class="h-4 w-4"></TrashIcon>
