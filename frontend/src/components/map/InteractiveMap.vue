@@ -397,8 +397,8 @@ export default {
       if (this.mapStateStore.per_point.x.length === 0) return
       const newBaseOffsetTarget = [-math.min(this.mapStateStore.per_point.x), -math.min(this.mapStateStore.per_point.y)]
       const newBaseScaleTarget = [
-        1.0 / (math.max(this.mapStateStore.per_point.x) + newBaseOffsetTarget[0]),
-        1.0 / (math.max(this.mapStateStore.per_point.y) + newBaseOffsetTarget[1])
+        1.0 / (math.max(this.mapStateStore.per_point.x) + newBaseOffsetTarget[0] || 1.0),
+        1.0 / (math.max(this.mapStateStore.per_point.y) + newBaseOffsetTarget[1] || 1.0)
       ]
       const offsetChange = math.max(
         math.max(newBaseOffsetTarget[0], this.mapStateStore.baseOffsetTarget[0]) /
@@ -480,7 +480,6 @@ export default {
         this.currentVelocityX = Array(pointCount).fill(0.0)
         this.currentVelocityY = Array(pointCount).fill(0.0)
       }
-
 
       this.actual_opacity = ensureLength(this.actual_opacity, pointCount, 1.0)
       this.pointVisibility = ensureLength(this.pointVisibility, pointCount, 0)
