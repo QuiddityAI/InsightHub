@@ -1145,11 +1145,11 @@ def remove_collection_item(request):
     if collection_item.collection.created_by != request.user:
         return HttpResponse(status=401)
 
+    collection_item.delete()
+
     # for class_name in collection_item.classes:  # type: ignore
     collection_item.collection.items_last_changed = timezone.now().isoformat()  # type: ignore
-    collection_item.collection.save()
-
-    collection_item.delete()
+    collection_item.collection.save(update_fields=["items_last_changed"])
 
     return HttpResponse(None, status=204)
 
@@ -1171,6 +1171,13 @@ def remove_collection_item_by_value(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
+    try:
+        collection = DataCollection.objects.get(id=collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
     collection_items = CollectionItem.objects.filter(
         collection_id=collection_id,
         value=value,
@@ -1188,6 +1195,9 @@ def remove_collection_item_by_value(request):
         item_dict = CollectionItemSerializer(instance=item).data
         removed_items.append(item_dict)
         item.delete()
+
+    collection.items_last_changed = timezone.now().isoformat()  # type: ignore
+    collection.save(update_fields=["items_last_changed"])
 
     serialized_data = json.dumps(removed_items)
 
