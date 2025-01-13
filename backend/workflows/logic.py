@@ -148,6 +148,7 @@ def prepare_for_show_all_map(collection: DataCollection, settings: CreateCollect
 def prepare_for_overview_map(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
     assert settings.user_input is not None
     collection.ui_settings = CollectionUiSettings(secondary_view="map", show_visibility_filters=True).model_dump()
+    collection.save(update_fields=["ui_settings"])
     search_task = SearchTaskSettings(
         dataset_id=settings.dataset_id,
         user_input=settings.user_input or "",
@@ -160,7 +161,7 @@ def prepare_for_overview_map(collection: DataCollection, settings: CreateCollect
     )
     run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
     collection.agent_is_running = False
-    collection.save()  # 7 ms
+    collection.save(update_fields=["agent_is_running"])
 
 
 def prepare_for_assisted_search(collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:

@@ -1,4 +1,5 @@
 import logging
+import math
 import threading
 
 import numpy as np
@@ -29,7 +30,8 @@ def generate_new_map(
     top_dataset_id, collection_items, reference_ds_and_item_id = get_collection_items(
         collection
     )
-    if not collection_items.count():
+    item_count = collection_items.count()
+    if not item_count:
         return "No items found"
     timings.log("get_collection_items")
     dataset: Dataset = get_dataset_cached(top_dataset_id)
@@ -49,37 +51,47 @@ def generate_new_map(
     data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)  # type: ignore
     timings.log("get_items_by_ids")
 
-    # get vectors:
-    if map_vector_field == "w2v_vector":
-        # add_w2v_vectors(ds_items, query, similar_map, origin_map,
-        #   dataset.schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
-        return "W2V vectors are not supported in the new map"
+    if item_count >= 5:
+        # get vectors:
+        if map_vector_field == "w2v_vector":
+            # add_w2v_vectors(ds_items, query, similar_map, origin_map,
+            #   dataset.schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
+            return "W2V vectors are not supported in the new map"
+        else:
+            all_map_vectors_present = all(
+                [item.get(map_vector_field) is not None for item in data_items]
+            )
+            if not all_map_vectors_present:
+                logging.warning("Not all items have map vectors")
+                # TODO: handle this case
+        vector_size = (
+            256
+            if map_vector_field == "w2v_vector"
+            else get_vector_field_dimensions(
+                dataset_serialized.schema.object_fields[map_vector_field]
+            )
+        )
+        # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
+        dummy_vector = np.zeros(vector_size)
+        vectors = [item.get(map_vector_field, dummy_vector) for item in data_items]
+
+        # get projections:
+        raw_projections = do_umap(np.array(vectors), {}, 2)
+        timings.log("do umap")
+        final_positions = raw_projections  # TODO: re-add polar coordinates
+
+        # clusterize:
+        cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, DotDict())
+        timings.log("clusterize_results")
     else:
-        all_map_vectors_present = all(
-            [item.get(map_vector_field) is not None for item in data_items]
+        # arrange items in a grid if there are not enough for umap:
+        columns = math.ceil(math.sqrt(item_count))
+        raw_projections = np.array(
+            [[1 + (i % columns), 1 + (i // columns)] for i in range(item_count)]
         )
-        if not all_map_vectors_present:
-            logging.warning("Not all items have map vectors")
-            # TODO: handle this case
-    vector_size = (
-        256
-        if map_vector_field == "w2v_vector"
-        else get_vector_field_dimensions(
-            dataset_serialized.schema.object_fields[map_vector_field]
-        )
-    )
-    # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
-    dummy_vector = np.zeros(vector_size)
-    vectors = [item.get(map_vector_field, dummy_vector) for item in data_items]
+        final_positions = raw_projections
+        cluster_id_per_point = np.full(item_count, -1)
 
-    # get projections:
-    raw_projections = do_umap(np.array(vectors), {}, 2)
-    timings.log("do umap")
-    final_positions = raw_projections  # TODO: re-add polar coordinates
-
-    # clusterize:
-    cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, DotDict())
-    timings.log("clusterize_results")
 
     # save projections to collection:
     projection_data = save_projections(

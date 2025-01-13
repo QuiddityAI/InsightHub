@@ -67,6 +67,7 @@ def do_umap(
     )
     try:
         raw_projections = reducer.fit_transform(vectors)
+        assert isinstance(raw_projections, np.ndarray)
     except (TypeError, ValueError) as e:
         # might happend when there are too few points
         logging.warning(f"UMAP failed: {e}")
@@ -127,7 +128,7 @@ def save_projections(
     )
     collection.map_data = map_data.dict()
     timings.log("set data")
-    collection.save()
+    collection.save(update_fields=["map_metadata", "map_data"])
     timings.log("save data")
 
     return projection_data
