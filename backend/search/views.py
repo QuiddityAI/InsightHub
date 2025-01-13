@@ -49,7 +49,7 @@ def run_search_task_route(request, payload: RunSearchTaskPayload):
             # if the thread is still running after the timeout, we just let it run
             pass
 
-    return HttpResponse(None, status=204, content_type="application/json")
+    return HttpResponse(status=204)
 
 
 @api.post("run_previous_search_task")

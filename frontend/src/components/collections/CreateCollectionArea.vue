@@ -304,13 +304,14 @@ export default {
       this.new_settings.related_organization_id = this.appStateStore.organization_id
       httpClient
         .post("/api/v1/workflows/create_collection", this.new_settings)
-        .then(function (response) {
+        .then((response) => {
           // put the new collection at the beginning of the list
           const collection = response.data
           that.collectionStore.available_collections.unshift(collection)
           that.appStateStore.last_used_collection_id = collection.id
           that.appStateStore.last_used_collection_class = collection.actual_classes[0].name
           that.collectionStore.open_collection(collection.id, collection.actual_classes[0].name)
+          this.eventBus.emit("collection_items_changed_on_server")
         })
     },
     run_example_query(example) {

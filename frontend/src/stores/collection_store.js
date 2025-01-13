@@ -115,7 +115,7 @@ export const useCollectionStore = defineStore("collection", {
         const previously_running_columns = Array.from(this.collection.columns_with_running_processes)  // copy to remove reference
         let new_collection = response.data
         const old_collection = this.collection
-        let items_changed_on_server = false
+        let items_changed_on_server = true
         if (old_collection) {
           items_changed_on_server = new Date(new_collection.items_last_changed) > new Date(old_collection.items_last_changed)
           // using update_object to update it in-place to keep references to old objects

@@ -38,7 +38,7 @@ export default {
     return {
       generate_map_debounce: debounce(() => {
         this.collectionStore.generate_map()
-      }, 200),
+      }, 100),
     }
   },
   computed: {
@@ -47,7 +47,7 @@ export default {
     ...mapStores(useCollectionStore),
   },
   mounted() {
-    const no_map_but_items = !this.collectionStore.collection?.map_metadata.created_at && this.collection_items?.length > 0
+    const no_map_but_items = !this.collectionStore.collection?.map_metadata.created_at && this.collectionStore.collection?.actual_classes[0].positive_count
     const update_times_are_known = this.collectionStore.collection?.map_metadata.created_at && this.collectionStore.collection?.items_last_changed
     let map_outdated = false
     if (update_times_are_known) {
@@ -210,11 +210,16 @@ export default {
 
     <div v-else-if="mapState.per_point.x.length === 0"
       class="absolute top-0 w-full h-full flex items-center justify-center">
-      <button class=" bg-white rounded-md p-3 shadow-lg text-gray-600 hover:text-blue-500"
+      <button v-if="!collectionStore.collection.agent_is_running"
+        class=" bg-white rounded-md p-3 shadow-lg text-gray-600 hover:text-blue-500"
         v-tooltip.bottom="{ value: 'Generate a map from the current selection', showDelay: 400 }"
         @click="collectionStore.generate_map()">
         Generate Map
       </button>
+      <div v-else
+        class="text-2xl text-gray-400 bg-white p-5 rounded-lg shadow-xl">
+        Loading...
+      </div>
     </div>
 
   </div>
