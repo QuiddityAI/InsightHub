@@ -4,7 +4,7 @@
   "entity_name_plural": "Tenders",
   "short_description": null,
   "created_at": "2024-11-19T18:55:07.379Z",
-  "changed_at": "2025-01-13T12:52:19.839Z",
+  "changed_at": "2025-01-14T15:14:38.974Z",
   "primary_key": "detail_page",
   "direct_parent": null,
   "all_parents": null,
@@ -44,6 +44,10 @@
     ],
     "map_vector_field": "embedding_e5",
     "default_sort_field": "published",
+    "excluded_workflows": [
+      "fact_from_single_document",
+      "facts_from_multiple_documents"
+    ],
     "ignored_keyword_highlight_fields": [
       "title",
       "summary"
