@@ -1,9 +1,9 @@
 import logging
 import json
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 from django.utils.datastructures import MultiValueDict
-from ninja import NinjaAPI, Form, File, UploadedFile
+from ninja import NinjaAPI, Form
 
 from legacy_backend.database_client.text_search_engine_client import TextSearchEngineClient
 from data_map_backend.views.other_views import get_or_create_default_dataset
@@ -66,9 +66,9 @@ def upload_files_route(
 
 
 @api.post("check_pk_existence")
-def check_pk_existence_route(request, payload: CheckPkExistencePayload):
+def check_pk_existence_route(request: HttpRequest, payload: CheckPkExistencePayload):
     try:
-        dataset = Dataset.objects.get(id=payload.dataset_id)
+        dataset = Dataset.objects.only("advanced_options", "actual_database_name").get(id=payload.dataset_id)
     except Dataset.DoesNotExist:
         return HttpResponse(status=404)
     if payload.access_token not in (dataset.advanced_options or {}).get("access_tokens", {}):

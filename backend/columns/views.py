@@ -1,15 +1,13 @@
-from dataclasses import asdict
 import logging
 import json
 import threading
 import time
 
 from ninja import NinjaAPI
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 from llmonkey.llms import BaseLLMModel, Mistral_Ministral3b
 
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
-from data_map_backend.utils import is_from_backend
 from data_map_backend.serializers import CollectionSerializer, CollectionColumnSerializer
 from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier, UpdateColumnConfig, ProcessColumnPayload
 from columns.logic.process_column import remove_column_data_from_collection_items, get_collection_items_from_cell_range, process_cells_blocking
@@ -19,8 +17,8 @@ api = NinjaAPI(urls_namespace="columns")
 
 
 @api.post("add_column")
-def add_column_route(request, payload: ColumnConfig):
-    if not request.user.is_authenticated and not is_from_backend(request):
+def add_column_route(request: HttpRequest, payload: ColumnConfig):
+    if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     payload.name = payload.name.strip() if payload.name else None
@@ -67,7 +65,7 @@ def add_column_route(request, payload: ColumnConfig):
                 return HttpResponse(status=400)
 
     try:
-        collection = DataCollection.objects.get(id=payload.collection_id)
+        collection = DataCollection.objects.only("created_by").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if collection.created_by != request.user:
@@ -92,8 +90,8 @@ def add_column_route(request, payload: ColumnConfig):
 
 
 @api.post("update_column")
-def update_column_route(request, payload: UpdateColumnConfig):
-    if not request.user.is_authenticated and not is_from_backend(request):
+def update_column_route(request: HttpRequest, payload: UpdateColumnConfig):
+    if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
@@ -121,8 +119,8 @@ def update_column_route(request, payload: UpdateColumnConfig):
 
 
 @api.post("delete_column")
-def delete_column_route(request, payload: ColumnIdentifier):
-    if not request.user.is_authenticated and not is_from_backend(request):
+def delete_column_route(request: HttpRequest, payload: ColumnIdentifier):
+    if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
@@ -136,12 +134,12 @@ def delete_column_route(request, payload: ColumnIdentifier):
 
     column.delete()
 
-    return HttpResponse(None, status=204)
+    return HttpResponse(status=204)
 
 
 @api.post("set_cell_data")
-def set_cell_data_route(request, payload: CellDataPayload):
-    if not request.user.is_authenticated and not is_from_backend(request):
+def set_cell_data_route(request: HttpRequest, payload: CellDataPayload):
+    if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
@@ -155,14 +153,14 @@ def set_cell_data_route(request, payload: CellDataPayload):
         item.column_data = {}  # type: ignore
 
     item.column_data[payload.column_identifier] = payload.cell_data
-    item.save()
+    item.save(update_fields=["column_data"])
 
-    return HttpResponse(None, status=204)
+    return HttpResponse(status=204)
 
 
 @api.post("process_column")
-def process_column_route(request, payload: ProcessColumnPayload):
-    if not request.user.is_authenticated and not is_from_backend(request):
+def process_column_route(request: HttpRequest, payload: ProcessColumnPayload):
+    if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
@@ -180,7 +178,7 @@ def process_column_route(request, payload: ProcessColumnPayload):
             remove_column_data_from_collection_items(collection_items, column.identifier)
 
         def in_thread():
-            process_cells_blocking(collection_items, column, column.collection, request.user.id)
+            process_cells_blocking(collection_items, column, column.collection, request.user.id)  # type: ignore
 
         thread = threading.Thread(target=in_thread)
         thread.start()
@@ -192,8 +190,8 @@ def process_column_route(request, payload: ProcessColumnPayload):
 
 
 @api.post("remove_column_data")
-def remove_column_data_route(request, payload: ColumnCellRange):
-    if not request.user.is_authenticated and not is_from_backend(request):
+def remove_column_data_route(request: HttpRequest, payload: ColumnCellRange):
+    if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
@@ -206,7 +204,7 @@ def remove_column_data_route(request, payload: ColumnCellRange):
     collection_items = get_collection_items_from_cell_range(column, payload)
     remove_column_data_from_collection_items(collection_items, column.identifier)
 
-    return HttpResponse(None, status=204)
+    return HttpResponse(status=204)
 
 
 @api.get("available_llm_models")

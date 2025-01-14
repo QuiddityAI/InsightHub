@@ -1,9 +1,9 @@
 import json
 import threading
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 
-from ninja import NinjaAPI, Schema
+from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection, Dataset
 from data_map_backend.schemas import CollectionIdentifier
@@ -17,7 +17,7 @@ api = NinjaAPI(urls_namespace="search")
 
 
 @api.post("run_search_task")
-def run_search_task_route(request, payload: RunSearchTaskPayload):
+def run_search_task_route(request: HttpRequest, payload: RunSearchTaskPayload):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -30,15 +30,15 @@ def run_search_task_route(request, payload: RunSearchTaskPayload):
 
     collection.agent_is_running = True
     collection.current_agent_step = "Running search task..."
-    collection.save()
+    collection.save(update_fields=["agent_is_running", "current_agent_step"])
 
     def thread_function():
         try:
-            run_search_task(collection, payload.search_task, request.user.id)
+            run_search_task(collection, payload.search_task, request.user.id)  # type: ignore
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
-            collection.save()
+            collection.save(update_fields=["agent_is_running", "current_agent_step"])
 
     thread = threading.Thread(target=thread_function)
     thread.start()
@@ -53,7 +53,7 @@ def run_search_task_route(request, payload: RunSearchTaskPayload):
 
 
 @api.post("run_previous_search_task")
-def run_previous_search_task_route(request, payload: RunPreviousSearchTaskPayload):
+def run_previous_search_task_route(request: HttpRequest, payload: RunPreviousSearchTaskPayload):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -74,15 +74,15 @@ def run_previous_search_task_route(request, payload: RunPreviousSearchTaskPayloa
     collection.agent_is_running = True
     collection.current_agent_step = "Running search task..."
     collection.search_tasks = collection.search_tasks[:-2]
-    collection.save()
+    collection.save(update_fields=["agent_is_running", "current_agent_step", "search_tasks"])
 
     def thread_function():
         try:
-            run_search_task(collection, previous_task, request.user.id)
+            run_search_task(collection, previous_task, request.user.id)  # type: ignore
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
-            collection.save()
+            collection.save(update_fields=["agent_is_running", "current_agent_step"])
 
     thread = threading.Thread(target=thread_function)
     thread.start()
@@ -93,11 +93,11 @@ def run_previous_search_task_route(request, payload: RunPreviousSearchTaskPayloa
             # if the thread is still running after the timeout, we just let it run
             pass
 
-    return HttpResponse(None, status=204, content_type="application/json")
+    return HttpResponse(status=204, content_type="application/json")
 
 
 @api.post("add_items_from_active_sources")
-def add_items_from_active_sources_route(request, payload: CollectionIdentifier):
+def add_items_from_active_sources_route(request: HttpRequest, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -108,19 +108,23 @@ def add_items_from_active_sources_route(request, payload: CollectionIdentifier):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    new_items = add_items_from_active_sources(collection, request.user.id, is_new_collection=False)
+    new_items = add_items_from_active_sources(collection, request.user.id, is_new_collection=False)  # type: ignore
     result = {"new_item_count": len(new_items)}
 
     return HttpResponse(json.dumps(result), status=200, content_type="application/json")
 
 
 @api.post("exit_search_mode")
-def exit_search_mode_route(request, payload: CollectionIdentifier):
+def exit_search_mode_route(request: HttpRequest, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.get(id=payload.collection_id)
+        collection = (
+            DataCollection.objects
+            .only("created_by", "items_last_changed", "search_sources", "explanation_log")
+            .get(id=payload.collection_id)
+        )
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if collection.created_by != request.user:
@@ -128,11 +132,11 @@ def exit_search_mode_route(request, payload: CollectionIdentifier):
 
     exit_search_mode(collection, payload.class_name)
 
-    return HttpResponse(None, status=204, content_type="application/json")
+    return HttpResponse(status=204, content_type="application/json")
 
 
 @api.post("approve_relevant_search_results")
-def approve_relevant_search_results_route(request, payload: CollectionIdentifier):
+def approve_relevant_search_results_route(request: HttpRequest, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -145,11 +149,11 @@ def approve_relevant_search_results_route(request, payload: CollectionIdentifier
 
     approve_relevant_search_results(collection, payload.class_name)
 
-    return HttpResponse(None, status=204, content_type="application/json")
+    return HttpResponse(status=204, content_type="application/json")
 
 
 @api.post("get_plain_results")
-def get_plain_results_route(request, payload: GetPlainResultsPaylaod):
+def get_plain_results_route(request: HttpRequest, payload: GetPlainResultsPaylaod):
     try:
         dataset = Dataset.objects.get(id=payload.dataset_id)
     except Dataset.DoesNotExist:

@@ -9,7 +9,7 @@ from django.db.models.manager import BaseManager
 from data_map_backend.models import CollectionItem, CollectionColumn, FieldType, DataCollection
 
 from legacy_backend.logic.chat_and_extraction import get_item_question_context as get_item_question_context_native
-from legacy_backend.logic.search_common import get_document_details_by_id, get_serialized_dataset_cached
+from legacy_backend.logic.search_common import get_document_details_by_id
 
 from columns.logic.website_scraping_column import scrape_website_module
 from columns.logic.web_search_column import google_search
@@ -40,7 +40,7 @@ def get_collection_items_from_cell_range(column: CollectionColumn, cell_range: C
 def process_cells_blocking(collection_items: BaseManager[CollectionItem] | list[CollectionItem], column: CollectionColumn, collection: DataCollection, user_id: int):
     assert isinstance(collection.columns_with_running_processes, list)
     collection.columns_with_running_processes.append(column.identifier)
-    collection.save()
+    collection.save(update_fields=["columns_with_running_processes"])
 
     batch_size = 10
     try:
@@ -54,7 +54,7 @@ def process_cells_blocking(collection_items: BaseManager[CollectionItem] | list[
         logging.error(traceback.format_exc())
     finally:
         collection.columns_with_running_processes.remove(column.identifier)
-        collection.save()
+        collection.save(update_fields=["columns_with_running_processes"])
 
 
 def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[CollectionItem], column: CollectionColumn, collection: DataCollection, user_id: int):
@@ -147,7 +147,7 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
         if collection_item.column_data is None:
             collection_item.column_data = {}  # type: ignore
         collection_item.column_data[column.identifier] = cell_data.dict()
-        collection_item.save()
+        collection_item.save(update_fields=["column_data"])
 
     def process_cell_safe(collection_item: CollectionItem):
         try:
@@ -162,7 +162,7 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
                     changed_at=timezone.now().isoformat(),
                 )
                 collection_item.column_data[column.identifier] = cell_data.dict()
-                collection_item.save()
+                collection_item.save(update_fields=["column_data"])
             except Exception as e:
                 logging.error(f"Error saving error message for cell {collection_item.id}: {e}")  # type: ignore
                 import traceback

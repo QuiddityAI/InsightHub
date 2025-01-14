@@ -1,14 +1,12 @@
-from typing import Iterable
 import uuid
 from threading import Lock
 
 from ninja import NinjaAPI
-from django.http import HttpResponse
-from django.db.models import Min, Max
+from django.http import HttpResponse, HttpRequest
 from django.db.models.manager import BaseManager
 
 from data_map_backend.models import CollectionItem, DataCollection
-from filter.schemas import AddFilterPayload, FilterIdentifierPayload, ValueRangeInput, ValueRangeOutput, ReplaceRangeFilterPayload
+from filter.schemas import AddFilterPayload, FilterIdentifierPayload, ValueRangeInput, ValueRangeOutput
 
 api = NinjaAPI(urls_namespace="filter")
 
@@ -17,13 +15,13 @@ changing_filters_lock = Lock()
 
 
 @api.post("add_filter")
-def add_filter_route(request, payload: AddFilterPayload):
+def add_filter_route(request: HttpRequest, payload: AddFilterPayload):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     with changing_filters_lock:
         try:
-            collection = DataCollection.objects.get(id=payload.collection_id)
+            collection = DataCollection.objects.only("created_by", "filters").get(id=payload.collection_id)
         except DataCollection.DoesNotExist:
             return HttpResponse(status=404)
         if collection.created_by != request.user:
@@ -41,31 +39,31 @@ def add_filter_route(request, payload: AddFilterPayload):
 
 
 @api.post("remove_filter")
-def remove_filter_route(request, payload: FilterIdentifierPayload):
+def remove_filter_route(request: HttpRequest, payload: FilterIdentifierPayload):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     with changing_filters_lock:
         try:
-            collection = DataCollection.objects.get(id=payload.collection_id)
+            collection = DataCollection.objects.only("created_by", "filters").get(id=payload.collection_id)
         except DataCollection.DoesNotExist:
             return HttpResponse(status=404)
         if collection.created_by != request.user:
             return HttpResponse(status=401)
 
         collection.filters = [f for f in collection.filters if f["uid"] != payload.filter_uid]
-        collection.save()
+        collection.save(update_fields=["filters"])
 
     return HttpResponse(None, status=204)
 
 
 @api.post("get_value_range")
-def get_value_range_route(request, payload: ValueRangeInput):
+def get_value_range_route(request: HttpRequest, payload: ValueRangeInput):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.get(id=payload.collection_id)
+        collection = DataCollection.objects.only("created_by").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if collection.created_by != request.user:

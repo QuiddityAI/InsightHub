@@ -162,7 +162,7 @@ def exit_search_mode(collection: DataCollection, class_name: str):
 
     if num_candidates:
         collection.log_explanation(f"Removed {num_candidates} **not approved** items", save=False)
-    collection.save()
+    collection.save(update_fields=["items_last_changed", "search_sources", "explanation_log"])
 
 
 def approve_relevant_search_results(collection: DataCollection, class_name: str):

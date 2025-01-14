@@ -1329,7 +1329,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
             {"time": timezone.now().isoformat(), "explanation": explanation}
         )
         if save:
-            self.save()
+            self.save(update_fields=["explanation_log"])
 
     def __str__(self):
         return f"{self.name}"

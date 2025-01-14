@@ -1,7 +1,7 @@
 import time
 import logging
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection
@@ -14,7 +14,7 @@ api = NinjaAPI(urls_namespace="map")
 
 
 @api.post("get_new_map")
-def get_new_map_route(request, payload: NewMapPayload):
+def get_new_map_route(request: HttpRequest, payload: NewMapPayload):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -36,14 +36,16 @@ def get_new_map_route(request, payload: NewMapPayload):
 
 
 @api.post("get_existing_projections")
-def get_existing_projections_route(request, payload: CollectionIdentifier):
+def get_existing_projections_route(request: HttpRequest, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.only("map_data", "map_metadata").get(id=payload.collection_id)
+        collection = DataCollection.objects.only("created_by", "map_data", "map_metadata").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
 
     if not collection.map_data:
         return None
@@ -53,14 +55,16 @@ def get_existing_projections_route(request, payload: CollectionIdentifier):
 
 
 @api.post("get_cluster_info")
-def get_cluster_info_route(request, payload: CollectionIdentifier):
+def get_cluster_info_route(request: HttpRequest, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.only("map_metadata").get(id=payload.collection_id)
+        collection = DataCollection.objects.only("created_by", "map_metadata").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
 
     timeout = 60
     start = time.time()
@@ -78,14 +82,16 @@ def get_cluster_info_route(request, payload: CollectionIdentifier):
 
 
 @api.post("get_thumbnail_data")
-def get_thumbnail_data_route(request, payload: CollectionIdentifier):
+def get_thumbnail_data_route(request: HttpRequest, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.only("map_metadata").get(id=payload.collection_id)
+        collection = DataCollection.objects.only("created_by", "map_metadata").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
 
     timeout = 60
     start = time.time()
