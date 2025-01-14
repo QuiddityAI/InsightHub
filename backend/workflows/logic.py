@@ -68,8 +68,7 @@ def create_collection_using_workflow(
     except TimeoutError:
         # if the task is still running, we return the collection without waiting
         pass
-    else:
-        # the thread finished, we just need to update the collection with the results from the thread:
-        collection.refresh_from_db()
+    # collecting the current / final results from the thread:
+    collection.refresh_from_db()
 
     return collection

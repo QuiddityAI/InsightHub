@@ -215,7 +215,7 @@ export default {
       <ArrowPathIcon class="h-4 w-4"></ArrowPathIcon>
     </button>
 
-    <div v-if="collectionStore.collection?.map_metadata?.length && collectionStore.collection.map_metadata.projections_are_ready === false"
+    <div v-if="typeof collectionStore.collection?.map_metadata === 'object' && collectionStore.collection.map_metadata.projections_are_ready === false"
       class="absolute top-0 w-full h-full flex items-center justify-center backdrop-blur-sm">
       <div
         class="text-2xl text-gray-400 bg-white p-5 rounded-lg shadow-xl">
