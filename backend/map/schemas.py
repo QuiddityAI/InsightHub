@@ -73,3 +73,13 @@ class MapMetadata(Schema):
 class ProjectionsEndpointResponse(Schema):
     projections: ProjectionData
     metadata: dict
+
+
+class RemoveCollectionItemsPayload(Schema):
+    collection_id: int
+    item_ids: list[int]
+
+
+class RemoveCollectionItemsResponse(Schema):
+    removed_item_ids: list[int]
+    updated_count_per_class: list[dict]

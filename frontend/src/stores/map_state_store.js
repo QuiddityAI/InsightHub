@@ -246,6 +246,7 @@ export const useMapStateStore = defineStore("mapState", {
       if (!projection_data) {
         return this.reset_data()
       }
+      this.reset_selection()
       this.per_point.item_id = projection_data.per_point.ds_and_item_id
       this.per_point.x = projection_data.per_point.x
       this.per_point.y = projection_data.per_point.y

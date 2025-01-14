@@ -7,7 +7,7 @@ from ninja import NinjaAPI
 from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
 
-from .schemas import NewMapPayload, MapData, MapMetadata, ProjectionsEndpointResponse
+from .schemas import NewMapPayload, MapData, MapMetadata, ProjectionsEndpointResponse, RemoveCollectionItemsPayload, RemoveCollectionItemsResponse
 from .logic.map_generation_pipeline import generate_new_map
 
 api = NinjaAPI(urls_namespace="map")
@@ -106,3 +106,28 @@ def get_thumbnail_data_route(request: HttpRequest, payload: CollectionIdentifier
     collection.refresh_from_db(fields=["map_data"])
     map_data = MapData(**collection.map_data)
     return map_data.thumbnail_data
+
+# TODO: this should be moved to a separate collection_items Django app
+
+@api.post("remove_collection_items")
+def remove_collection_items_route(request: HttpRequest, payload: RemoveCollectionItemsPayload):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        collection = DataCollection.objects.only("created_by").get(id=payload.collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    collection_items = collection.items.filter(id__in=payload.item_ids)  # type: ignore
+    removed_item_ids = list(collection_items.values_list("id", flat=True))
+    collection_items.delete()
+
+    result = RemoveCollectionItemsResponse(
+        removed_item_ids=removed_item_ids,
+        updated_count_per_class=collection.actual_classes
+    )
+
+    return result

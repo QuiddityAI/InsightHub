@@ -300,9 +300,9 @@ export const useCollectionStore = defineStore("collection", {
           for (const item of response.data) {
             const collection_item_id = item.id
             that.eventBus.emit("collection_item_removed", {
-              collection_id,
-              class_name,
-              collection_item_id,
+              collection_id: collection_id,
+              class_name: class_name,
+              collection_item_id: collection_item_id,
             })
             const collection = that.available_collections.find(
               (collection) => collection.id === collection_id
@@ -315,6 +315,29 @@ export const useCollectionStore = defineStore("collection", {
           if (show_toast) {
             that.toast.add({severity: 'success', summary: 'Item removed from collection', detail: 'Item removed from the collection', life: 3000})
           }
+          this.eventBus.emit("collection_items_changed_on_server")
+        })
+    },
+    remove_items_from_collection(item_ids, show_toast=true) {
+      const body = {
+        collection_id: this.collection_id,
+        item_ids: item_ids,
+      }
+      httpClient
+        .post("/api/v1/map/remove_collection_items", body)
+        .then((response) => {
+          this.collection.actual_classes = response.data.updated_count_per_class
+          for (const item_id of response.data.removed_item_ids) {
+            this.eventBus.emit("collection_item_removed", {
+              collection_id: this.collection_id,
+              class_name: "_default",
+              collection_item_id: item_id,
+            })
+          }
+          if (show_toast) {
+            this.toast.add({severity: 'success', summary: 'Items removed from collection', detail: 'Items removed from the collection', life: 3000})
+          }
+          this.eventBus.emit("collection_items_changed_on_server")
         })
     },
     // ------------------

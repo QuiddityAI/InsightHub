@@ -27,6 +27,7 @@ import { useCollectionStore } from "../../stores/collection_store";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
 
@@ -189,7 +190,7 @@ export default {
       </button>
       <BorderlessButton
         hover_color="hover:text-red-500" :default_padding="false" class="p-1"
-        @click.stop="collectionStore.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_item.collection, collection_item.classes.length ? collection_item.classes[0] : '_default')"
+        @click.stop="collectionStore.remove_items_from_collection(mapState.selected_collection_item_ids)"
         v-tooltip.top="{ value: 'Remove items from this collection', showDelay: 400 }">
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </BorderlessButton>
