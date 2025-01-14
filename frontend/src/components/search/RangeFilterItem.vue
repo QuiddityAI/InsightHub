@@ -97,10 +97,6 @@ export default {
       //   return
       // }
     },
-    remove_filter(index) {
-      this.mapStateStore.visibility_filters.splice(index, 1)
-      this.eventBus.emit("visibility_filters_changed")
-    },
     update_filter() {
       const min_filter_uid = `metadata_value_gte__${this.range_filter.field}`
       if (this.value[0] === this.min_value) {

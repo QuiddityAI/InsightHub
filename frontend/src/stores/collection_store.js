@@ -578,11 +578,12 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     remove_filter(filter_uid, on_success=null) {
+      const filter = this.collection.filters.find((filter) => filter.uid === filter_uid)
+      if (!filter) return;
       const body = {
         collection_id: this.collection_id,
         filter_uid: filter_uid,
       }
-      const filter = this.collection.filters.find((filter) => filter.uid === filter_uid)
       httpClient
         .post("/api/v1/filter/remove_filter", body)
         .then((response) => {

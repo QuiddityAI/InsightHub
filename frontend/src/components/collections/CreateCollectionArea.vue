@@ -64,98 +64,7 @@ export default {
         ranking_settings: null,
         related_organization_id: null,
       },
-      workflows: [
-        {
-          id: 'classic_search',
-          prefix: "Find a single",
-          name: 'Known <entity_name_singular>',
-          help_text: 'Fast + accurate search',
-          query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
-          supports_filters: true,
-          availability: 'general_availability',
-        },
-        {
-          id: 'assisted_search',
-          prefix: "Find a set of",
-          name: 'Matching <entity_name_plural>',
-          help_text: 'Search + evaluate every single result, good to collect a set of documents',
-          query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
-          supports_filters: true,
-          availability: 'general_availability',
-        },
-        {
-          id: 'fact_from_single_document',
-          prefix: "Find a ",
-          name: 'Fact in a <entity_name_singular>',
-          help_text: 'Ask a question that is answered based on one document',
-          query_field_hint: (entity_name) => `Your question`,
-          supports_filters: true,
-          availability: 'general_availability',
-        },
-        {
-          id: 'facts_from_multiple_document',
-          prefix: "Collect Facts",
-          name: 'From Multiple <entity_name_plural>',
-          help_text: 'Collect information found in multiple documents',
-          query_field_hint: (entity_name) => `Your question`,
-          supports_filters: true,
-          availability: 'preview',
-        },
-        {
-          id: 'meta_report',
-          prefix: "Write a report",
-          name: 'Beyond individual Facts',
-          help_text: 'E.g. analyze the status and history of a project',
-          query_field_hint: (entity_name) => `Your question`,
-          supports_filters: true,
-          availability: 'in_development',
-        },
-        {
-          id: 'timeline',
-          prefix: "Create a",
-          name: 'Timeline of Events',
-          help_text: 'Find specific events in <entity_name_plural> and show a timeline',
-          query_field_hint: (entity_name) => `Your question`,
-          supports_filters: true,
-          availability: 'in_development',
-        },
-        {
-          id: 'overview_map',
-          prefix: "Create an",
-          name: 'Overview Map of <entity_name_plural>',
-          help_text: 'Show a large set of items on a visual map',
-          query_field_hint: (entity_name) => `Describe what ${entity_name} you want to find`,
-          supports_filters: true,
-          availability: 'preview',
-        },
-        // {
-        //   id: 'research_agent',
-        //   prefix: "Let an",
-        //   name: 'Agent do Research',
-        //   help_text: 'An agent that looks for documents and summarizes them autonomously',
-        //   query_field_hint: (entity_name) => `Your question`,
-        //   supports_filters: false,
-        //   availability: 'preview',
-        // },
-        {
-          id: 'show_all',
-          prefix: "Show",
-          name: 'All <entity_name_plural>',
-          help_text: 'Show all top-level items',
-          query_field_hint: (entity_name) => null,
-          supports_filters: true,
-          availability: 'general_availability',
-        },
-        {
-          id: 'empty_collection',
-          prefix: "Empty Collection",
-          name: 'For Notes and Documents',
-          help_text: 'Create an empty collection to collect notes or documents',
-          query_field_hint: (entity_name) => `Name of the collection`,
-          supports_filters: false,
-          availability: 'general_availability',
-        },
-      ],
+      workflows: [],
 
       example_query_index: 0,
     }
@@ -224,15 +133,13 @@ export default {
       return !this.appStateStore.logged_in || this.appStateStore.user.used_ai_credits < this.appStateStore.user.total_ai_credits
     },
     selected_workflow() {
-      return this.workflows.find(workflow => workflow.id === this.new_settings.workflow_id)
+      return this.workflows.find(workflow => workflow.workflow_id === this.new_settings.workflow_id)
     },
     entity_name_singular() {
-      const n = this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema.entity_name || '' : 'item'
-      return capitalizeFirstLetter(n)
+      return this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema.entity_name || '' : 'item'
     },
     entity_name_plural() {
-      const n = this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema.entity_name_plural || '' : 'items'
-      return capitalizeFirstLetter(n)
+      return this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema.entity_name_plural || '' : 'items'
     },
   },
   mounted() {
@@ -273,18 +180,30 @@ export default {
       if (new_val === null && new_val === undefined) return
       this.appStateStore.settings.search.dataset_ids = [new_val]
       this.appStateStore.on_selected_datasets_changed()
+      this.get_available_workflows()
     },
   },
   methods: {
     on_datasets_loaded() {
       this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
+      this.get_available_workflows()
+    },
+    get_available_workflows() {
+      const body = {
+        dataset_id: this.new_settings.dataset_id,
+      }
+      httpClient
+        .post("/api/v1/workflows/get_available_workflows", body)
+        .then((response) => {
+          this.workflows = response.data
+        })
     },
     select_workflow(workflow) {
       if (workflow.availability === 'in_development') {
         this.$toast.add({ severity: 'warn', summary: 'Coming Soon', detail: 'This feature is not yet available', life: 3000 })
         return
       }
-      this.new_settings.workflow_id = workflow.id
+      this.new_settings.workflow_id = workflow.workflow_id
     },
     create_collection() {
       const that = this
@@ -296,7 +215,7 @@ export default {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please select a source dataset', life: 2000 })
         return
       }
-      const needs_query = this.selected_workflow.query_field_hint(this.entity_name_singular) !== null
+      const needs_query = this.selected_workflow.needs_user_input
       if (!this.new_settings.user_input && !this.new_settings.filters.length && needs_query) {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please enter a query', life: 2000 })
         return
@@ -319,6 +238,12 @@ export default {
       this.new_settings.filters = example.filters || []
       this.new_settings.retrieval_mode = example.search_type
       this.auto_set_filters = example.use_smart_search || true
+    },
+    fill_placeholders(str, uppercase=false) {
+      if (!str) return ''
+      const singular = uppercase ? capitalizeFirstLetter(this.entity_name_singular) : this.entity_name_singular
+      const plural = uppercase ? capitalizeFirstLetter(this.entity_name_plural) : this.entity_name_plural
+      return str.replace('<entity_name_singular>', singular).replace('<entity_name_plural>', plural)
     },
   },
 }
@@ -368,16 +293,16 @@ export default {
           <button v-for="workflow in workflows" @click="select_workflow(workflow)"
             class="min-w-[170px] w-[170px] h-[93px] px-3 py-3 bg-gray-100 shadow-md rounded-xl flex flex-col gap-0 items-start justify-start group"
             :class="{
-              'border': new_settings.workflow_id == workflow.id,
-              'bg-green-100': new_settings.workflow_id == workflow.id,
-            }" v-tooltip.bottom="{ value: workflow.help_text + (workflow.availability === 'in_development' ? ' (coming soon)' : ''), showDelay: 600 }">
-            <div class="text-left text-sm font-bold text-gray-500" v-html="workflow.prefix"></div>
+              'border': new_settings.workflow_id == workflow.workflow_id,
+              'bg-green-100': new_settings.workflow_id == workflow.workflow_id,
+            }" v-tooltip.bottom="{ value: fill_placeholders(workflow.help_text) + (workflow.availability === 'in_development' ? ' (coming soon)' : ''), showDelay: 600 }">
+            <div class="text-left text-sm font-bold text-gray-500" v-html="workflow.name1"></div>
             <div class="text-left font-bold transition-colors"
               :class="{ 'group-hover:text-gray-800': workflow.availability !== 'in_development',
                 'text-gray-600': workflow.availability !== 'in_development',
                 'group-hover:text-gray-600': workflow.availability === 'in_development',
                 'text-gray-500': workflow.availability === 'in_development', }"
-              v-html="workflow.name.replace('<entity_name_singular>', entity_name_singular).replace('<entity_name_plural>', entity_name_plural) + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
+              v-html="fill_placeholders(workflow.name2, true) + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
           </button>
         </div>
 
@@ -386,21 +311,21 @@ export default {
       <div v-if="selected_workflow != null" class="flex flex-col gap-4 px-7">
 
         <div class="text-xl font-bold text-gray-800">
-          {{ selected_workflow.prefix }}
+          {{ selected_workflow.name1 }}
           <span class="bg-gradient-to-r from-fuchsia-900 via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
-            {{ selected_workflow.name.replace('<entity_name_singular>', entity_name_singular).replace('<entity_name_plural>', entity_name_plural) }}
+            {{ fill_placeholders(selected_workflow.name2, true) }}
           </span>:
         </div>
 
         <div class="text-xs font-normal text-gray-500 -mt-3 mb-2 flex flex-row items-center gap-1">
           <InformationCircleIcon class="h-4 w-4 inline"></InformationCircleIcon>
-          {{ selected_workflow.help_text }}
+          {{ fill_placeholders(selected_workflow.help_text) }}
         </div>
 
         <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
           <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
-            autocomplete="off" v-if="selected_workflow?.query_field_hint(entity_name_singular)"
-            :placeholder="selected_workflow?.query_field_hint(entity_name_singular)"
+            autocomplete="off" v-if="selected_workflow?.supports_user_input"
+            :placeholder="fill_placeholders(selected_workflow?.query_field_hint)"
             class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
           <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
             <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
