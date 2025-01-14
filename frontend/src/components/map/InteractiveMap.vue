@@ -842,10 +842,11 @@ export default {
       if (mouseMovementDistance > 5) return
       if (event.shiftKey) {
         const ds_and_item_id = this.mapStateStore.per_point.item_id[this.mapStateStore.hovered_point_idx]
+        const collection_item_id = this.mapStateStore.per_point.collection_item_id[this.mapStateStore.hovered_point_idx]
         if (this.mapStateStore.get_lasso_selection().includes(ds_and_item_id)) {
-          this.mapStateStore.modify_lasso_selection([ds_and_item_id], "remove")
+          this.mapStateStore.modify_lasso_selection([ds_and_item_id], [collection_item_id], "remove")
         } else {
-          this.mapStateStore.modify_lasso_selection([ds_and_item_id], "add")
+          this.mapStateStore.modify_lasso_selection([ds_and_item_id], [collection_item_id], "add")
         }
       } else {
         const dataset_and_item_id = this.mapStateStore.per_point.item_id[this.mapStateStore.hovered_point_idx]
@@ -904,15 +905,18 @@ export default {
     executeLassoSelection(mode = "replace") {
       const polygonPoints = this.mapStateStore.lasso_points
       const pointPositions = this.mapStateStore.per_point.x.map((x, i) => [x, this.mapStateStore.per_point.y[i]])
-      const selectedPointIds = []
+      const selectedPointDataIds = []
+      const collection_item_ids = []
       for (const i of Array(pointPositions.length).keys()) {
         const point = pointPositions[i]
         if (pointInPolygon(point, polygonPoints)) {
           const ds_and_item_id = this.mapStateStore.per_point.item_id[i]
-          selectedPointIds.push(ds_and_item_id)
+          selectedPointDataIds.push(ds_and_item_id)
+          const collection_item_id = this.mapStateStore.per_point.collection_item_id[i]
+          collection_item_ids.push(collection_item_id)
         }
       }
-      this.mapStateStore.modify_lasso_selection(selectedPointIds, mode)
+      this.mapStateStore.modify_lasso_selection(selectedPointDataIds, collection_item_ids, mode)
       this.mapStateStore.lasso_points = []
       this.updateGeometry()
     },

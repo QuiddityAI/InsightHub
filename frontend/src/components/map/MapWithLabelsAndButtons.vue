@@ -8,12 +8,14 @@ import {
   ViewfinderCircleIcon,
   XMarkIcon,
   ArrowPathIcon,
+  TrashIcon,
 } from "@heroicons/vue/24/outline"
 
-import OverlayPanel from "primevue/overlaypanel"
+// import OverlayPanel from "primevue/overlaypanel"
 
+import BorderlessButton from "../widgets/BorderlessButton.vue"
 import MapWithLabels from "./MapWithLabels.vue"
-import AddToCollectionButtons from "../../components/collections/AddToCollectionButtons.vue"
+// import AddToCollectionButtons from "../../components/collections/AddToCollectionButtons.vue"
 
 import { useToast } from 'primevue/usetoast';
 import { debounce } from "../../utils/utils";
@@ -60,6 +62,11 @@ export default {
     }
     this.eventBus.on("collection_items_changed_on_server", () => {
       this.generate_map_debounce()
+    })
+    this.eventBus.on("collection_filters_changed", ({filter_type}) => {
+      if (filter_type === "collection_item_ids") {  // aka a selection or cluster
+        this.collectionStore.generate_map()
+      }
     })
     // could listen to filter changes, too, but that would trigger also with every single search query change etc.
     // instead, only when "cluster filters" are created, the map is regenerated
@@ -167,32 +174,39 @@ export default {
     </div>
 
     <div
-      v-if="mapState.visibility_filters.length"
+      v-if="mapState.selected_collection_item_ids.length"
       class="absolute bottom-6 right-48 flex flex-row items-center justify-center gap-2 rounded-md bg-white p-2 shadow-sm">
       <span class="mr-2 text-md text-gray-400">Selection:</span>
-      <button
+      <!-- <button
         @click="(event) => { $refs.add_selection_to_collection_overlay.toggle(event) }"
         class="px-2 rounded bg-gray-100 text-gray-400 hover:bg-blue-100/50">
         Add to Collection
-      </button>
+      </button> -->
       <button
-        @click="appState.narrow_down_on_selection(appState.visible_result_ids)"
+        @click="appState.narrow_down_on_selection()"
         class="px-2 rounded bg-gray-100 text-gray-400 hover:bg-blue-100/50">
-        Recluster
+        Show just selection
       </button>
+      <BorderlessButton
+        hover_color="hover:text-red-500" :default_padding="false" class="p-1"
+        @click.stop="collectionStore.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_item.collection, collection_item.classes.length ? collection_item.classes[0] : '_default')"
+        v-tooltip.top="{ value: 'Remove items from this collection', showDelay: 400 }">
+        <TrashIcon class="h-4 w-4"></TrashIcon>
+      </BorderlessButton>
       <button
-        @click="mapState.reset_visibility_filters()"
+        @click="mapState.reset_selection()"
+        v-tooltip.top="{ value: 'Reset selection', showDelay: 400 }"
         class="h-6 w-6 rounded text-gray-400 hover:bg-red-100">
         <XMarkIcon></XMarkIcon>
       </button>
     </div>
-    <OverlayPanel ref="add_selection_to_collection_overlay">
+    <!-- <OverlayPanel ref="add_selection_to_collection_overlay">
       <AddToCollectionButtons
         :multiple_items="true"
         @addToCollection="appState.add_selected_points_to_collection"
         @removeFromCollection="appState.remove_selected_points_from_collection">
       </AddToCollectionButtons>
-    </OverlayPanel>
+    </OverlayPanel> -->
 
     <button class="absolute top-4 right-4 bg-white rounded-md p-1 shadow-md text-gray-600 hover:text-blue-500"
       v-tooltip.left="{ value: 'Re-generate the map from the current selection', showDelay: 400 }"

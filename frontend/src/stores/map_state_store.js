@@ -49,6 +49,7 @@ export const useMapStateStore = defineStore("mapState", {
       hovered_point_idx: -1,
       visiblePointIndexes: [],
       show_html_points: false,
+      selected_collection_item_ids: [],
 
       visibility_filters: [], // each filter is an object with keys 'display_name', 'filter_fn' function (item) => bool
 
@@ -193,7 +194,9 @@ export const useMapStateStore = defineStore("mapState", {
       )
       return existing_filter ? existing_filter.selected_point_ids : []
     },
-    modify_lasso_selection(ds_and_item_ids, mode="replace") {
+    modify_lasso_selection(ds_and_item_ids, collection_item_ids, mode="replace") {
+      // note: as of January 2025, ds_and_item_ids is deprecated and collection_item_ids is used
+      // TODO: clean up as soon as its clear that ds_and_item_ids is not used anymore
       const existing_selection = this.get_lasso_selection()
       // remove existing lasso selection filter:
       this.visibility_filters = this.visibility_filters.filter(
@@ -205,10 +208,17 @@ export const useMapStateStore = defineStore("mapState", {
         ds_and_item_ids = [
           ...new Set([...existing_selection, ...ds_and_item_ids]),
         ]
+        collection_item_ids = [
+          ...new Set([...this.selected_collection_item_ids, ...collection_item_ids]),
+        ]
       } else if (mode == "remove") {
         ds_and_item_ids =
           existing_selection.filter(
             (x) => !ds_and_item_ids.some(selected_id => selected_id[0] == x[0] && selected_id[1] == x[1])
+          )
+        collection_item_ids =
+          this.selected_collection_item_ids.filter(
+            (x) => !collection_item_ids.includes(x)
           )
       }
       if (ds_and_item_ids.length == 0) {
@@ -221,6 +231,14 @@ export const useMapStateStore = defineStore("mapState", {
         selected_point_ids: ds_and_item_ids,
         filter_fn: (item) => ds_and_item_ids.some(selected_id => selected_id[0] == item._dataset_id && selected_id[1] == item._id),
       })
+      this.selected_collection_item_ids = collection_item_ids
+      this.eventBus.emit("visibility_filters_changed")
+    },
+    reset_selection() {
+      this.visibility_filters = this.visibility_filters.filter(
+        (filter_item) => !filter_item.is_lasso_selection
+      )
+      this.selected_collection_item_ids = []
       this.eventBus.emit("visibility_filters_changed")
     },
     // ------------------------------------------------------

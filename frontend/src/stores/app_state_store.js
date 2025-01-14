@@ -1271,21 +1271,23 @@ export const useAppStateStore = defineStore("appState", {
       }
       this.collectionStore.add_filter(filter, () => {
         this.set_two_dimensional_projection()  // correct?
-        this.collectionStore.generate_map()
+        this.mapState.reset_selection()
       })
     },
-    narrow_down_on_selection(selected_items) {
-      this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])
-      this.settings.search.search_type = "map_subset"
-      this.settings.search.cluster_origin_map_id = this.map_id
-      this.settings.search.selected_items = selected_items
-      this.settings.search.all_field_query = ""
-      this.settings.search.all_field_query_negative = ""
-      this.settings.search.origin_display_name = "Custom Selection"
-      this.set_two_dimensional_projection()
-      this.mapState.visibility_filters = []
-      this.eventBus.emit("visibility_filters_updated")
-      this.request_search_results()
+    narrow_down_on_selection() {
+      if (!this.mapState.selected_collection_item_ids.length) return
+      const filter = {
+        uid: null,
+        display_name: "Custom Selection",
+        removable: true,
+        filter_type: "collection_item_ids",
+        value: this.mapState.selected_collection_item_ids,
+        field: null,
+      }
+      this.collectionStore.add_filter(filter, () => {
+        this.set_two_dimensional_projection()  // correct?
+        this.mapState.reset_selection()
+      })
     },
     show_collection_as_map(collection, class_name) {
       this.settings.search.search_type = "collection"

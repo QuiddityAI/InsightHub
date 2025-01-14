@@ -548,6 +548,7 @@ export const useCollectionStore = defineStore("collection", {
           const new_filter = response.data
           this.collection.filters.push(new_filter)
           this.load_collection_items()
+          this.eventBus.emit("collection_filters_changed", {filter_type: new_filter.filter_type})
           if (on_success) {
             on_success(new_filter)
           }
@@ -558,11 +559,13 @@ export const useCollectionStore = defineStore("collection", {
         collection_id: this.collection_id,
         filter_uid: filter_uid,
       }
+      const filter = this.collection.filters.find((filter) => filter.uid === filter_uid)
       httpClient
         .post("/api/v1/filter/remove_filter", body)
         .then((response) => {
           this.collection.filters = this.collection.filters.filter((filter) => filter.uid !== filter_uid)
           this.load_collection_items()
+          this.eventBus.emit("collection_filters_changed", {filter_type: filter.filter_type})
           if (on_success) {
             on_success()
           }
