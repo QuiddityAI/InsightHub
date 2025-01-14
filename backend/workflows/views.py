@@ -8,7 +8,7 @@ from data_map_backend.models import DataCollection, User
 from data_map_backend.serializers import CollectionSerializer
 from data_map_backend.schemas import CollectionIdentifier
 from .schemas import CreateCollectionSettings
-from .logic import create_collection_using_mode
+from .logic import create_collection_using_workflow
 
 api = NinjaAPI(urls_namespace="workflows")
 
@@ -19,9 +19,9 @@ def create_collection(request: HttpRequest, payload: CreateCollectionSettings):
         return HttpResponse(status=401)
 
     assert isinstance(request.user, User)
-    item = create_collection_using_mode(request.user, payload)
+    collection = create_collection_using_workflow(request.user, payload)
 
-    dataset_dict = CollectionSerializer(instance=item).data
+    dataset_dict = CollectionSerializer(instance=collection).data
     result = json.dumps(dataset_dict)
 
     return HttpResponse(result, status=200, content_type="application/json")
@@ -33,11 +33,13 @@ def cancel_agent_route(request: HttpRequest, payload: CollectionIdentifier):
         return HttpResponse(status=401)
 
     try:
-        item = DataCollection.objects.get(id=payload.collection_id)
+        collection = DataCollection.objects.only("created_by", "cancel_agent_flag").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
 
-    item.cancel_agent_flag = True
-    item.save(update_fields=["cancel_agent_flag"])
+    collection.cancel_agent_flag = True
+    collection.save(update_fields=["cancel_agent_flag"])
 
-    return HttpResponse(None, status=204)
+    return HttpResponse(status=204)

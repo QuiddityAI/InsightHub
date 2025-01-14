@@ -17,7 +17,7 @@ from workflows.prompts import query_language_prompt
 from workflows.agents import run_research_agent_in_collection
 
 
-class CollectionCreationModes(StrEnum):
+class Workflows(StrEnum):
     CLASSIC_SEARCH = 'classic_search'
     ASSISTED_SEARCH = 'assisted_search'
     FACT_FROM_SINGLE_DOCUMENT = 'fact_from_single_document'
@@ -30,16 +30,16 @@ class CollectionCreationModes(StrEnum):
     EMPTY_COLLECTION = 'empty_collection'
 
 
-def create_collection_using_mode(
+def create_collection_using_workflow(
     user: User, settings: CreateCollectionSettings
 ) -> DataCollection:
     collection = DataCollection()
     collection.created_by = user
     collection.name = settings.user_input or f"Collection {timezone.now().isoformat()}"
-    if settings.workflow_id == CollectionCreationModes.SHOW_ALL:
+    if settings.workflow_id == Workflows.SHOW_ALL:
         collection.name = "All items"
     collection.related_organization_id = settings.related_organization_id  # type: ignore
-    collection.agent_is_running = settings.workflow_id != CollectionCreationModes.EMPTY_COLLECTION
+    collection.agent_is_running = settings.workflow_id != Workflows.EMPTY_COLLECTION
     collection.current_agent_step = "Preparing..."
     collection.cancel_agent_flag = False
     collection.save()
@@ -55,7 +55,7 @@ def create_collection_using_mode(
             collection.save()
             raise e
 
-    if settings.workflow_id != CollectionCreationModes.EMPTY_COLLECTION:
+    if settings.workflow_id != Workflows.EMPTY_COLLECTION:
         thread = threading.Thread(target=thread_function)
         thread.start()
         # wait a bit in case the task is quick, in that case we can reduce flickering in the UI
@@ -76,22 +76,22 @@ def prepare_collection(
     if settings.auto_set_filters:
         prompt = query_language_prompt.replace("{{ query }}", settings.user_input or "")
         settings.result_language = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
-    if settings.workflow_id == CollectionCreationModes.CLASSIC_SEARCH:
+    if settings.workflow_id == Workflows.CLASSIC_SEARCH:
         prepare_for_classic_search(collection, settings, user)
-    elif settings.workflow_id == CollectionCreationModes.ASSISTED_SEARCH:
+    elif settings.workflow_id == Workflows.ASSISTED_SEARCH:
         prepare_for_assisted_search(collection, settings, user)
-    elif settings.workflow_id == CollectionCreationModes.FACT_FROM_SINGLE_DOCUMENT:
+    elif settings.workflow_id == Workflows.FACT_FROM_SINGLE_DOCUMENT:
         prepare_for_question(collection, settings, user)
-    elif settings.workflow_id == CollectionCreationModes.FACT_FROM_SINGLE_DOCUMENT:
+    elif settings.workflow_id == Workflows.FACT_FROM_SINGLE_DOCUMENT:
         # TODO: different implementation
         prepare_for_question(collection, settings, user)
-    elif settings.workflow_id == CollectionCreationModes.OVERVIEW_MAP:
+    elif settings.workflow_id == Workflows.OVERVIEW_MAP:
         prepare_for_overview_map(collection, settings, user)
-    elif settings.workflow_id == CollectionCreationModes.RESEARCH_AGENT:
+    elif settings.workflow_id == Workflows.RESEARCH_AGENT:
         run_research_agent_in_collection(collection, settings, user)
-    elif settings.workflow_id == CollectionCreationModes.SHOW_ALL:
+    elif settings.workflow_id == Workflows.SHOW_ALL:
         prepare_for_show_all_map(collection, settings, user)
-    elif settings.workflow_id == CollectionCreationModes.EMPTY_COLLECTION:
+    elif settings.workflow_id == Workflows.EMPTY_COLLECTION:
         # nothing to do
         collection.agent_is_running = False
         collection.save()
