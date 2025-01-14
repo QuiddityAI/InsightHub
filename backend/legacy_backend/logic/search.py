@@ -99,7 +99,7 @@ def get_search_results(params_str: str, purpose: str, timings: Timings | None = 
         elif params.search.search_type == "similar_to_item":
             assert isinstance(similar_item_info, tuple)
             sorted_ids, full_items, score_info = get_search_results_similar_to_item(dataset, params.search, params.vectorize, purpose, timings, similar_item_info)
-        elif params.search.search_type == "global_map":
+        elif params.search.search_type == "random_sample":
             sorted_ids, full_items, score_info, total_matches = get_search_results_for_global_map(dataset, params.search, params.vectorize, purpose, timings)
         else:
             logging.error("Unsupported search type: " + params.search.search_type)

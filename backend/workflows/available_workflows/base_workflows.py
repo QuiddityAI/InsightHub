@@ -35,7 +35,7 @@ class ShowAllWorkflow(WorkflowBase):
         order=WorkflowOrder.base + 1,
         name1="Show",
         name2="All <entity_name_plural>",
-        help_text="Show all top-level items (e.g. to navigate through the folder hierarchy)",
+        help_text="Show all top-level items (e.g. to navigate through a folder hierarchy or show most recent items)",
         query_field_hint="Name of the collection",
         supports_filters=True,
         supports_user_input=False,
