@@ -8,7 +8,7 @@
     "retrieval-mode-hybrid": "Combines keyword and meaning search.\\n\\nNote: this might return almost all documents, but sorted\\nso that the most relevant ones are at the top.\\nOnly supports quoted phrases, not the AND / OR / NOT operators.",
     "add-filters-and-change-search-options": "Add filters and change search options",
     "vector-search-not-available-for-this-dataset": "Meaning / hybrid search is not yet available for this dataset.",
-    "query-operators-not-supported-for-vector-search": "The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br> Please use filters and quoted phrases here or switch to 'keyword' search.",
+    "query-operators-not-supported-for-vector-search": "The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.\nPlease use filters and quoted phrases here or switch to 'keyword' search.",
     "use-double-quotes-instead-of-single-quotes-to-search-for-phrases": "Note: use double quotes instead of single quotes to search for phrases.",
     "auto-set-filters": "Auto-detect language, required filters and search strategy",
     "preview-feature": "This feature is in preview and might not work as expected.",
@@ -16,7 +16,7 @@
   },
   "CollectionList": {
     "log-in-to-use-collections": "Log in to use collections",
-    "recent-collections": "Recent Collections",
+    "recent-collections": "Recent Collections / Searches",
     "no-collections-yet": "No collections yet"
   },
   "TopMenu": {
@@ -32,5 +32,28 @@
     "old-password": "Old Password",
     "new-password": "New Password",
     "repeat-new-password": "Repeat New Password"
-  }
+  },
+  "LoginButton": {
+    "login-register": "Login / Register",
+    "e-mail": "E-Mail",
+    "password": "Password",
+    "login-with-an-existing-account": "Login with an existing account",
+    "register-create-a-new-account": "Register / Create a new account",
+    "passwords-dont-match": "Passwords don't match",
+    "repeat-password": "Repeat Password",
+    "i-agree-to-the": "I agree to the",
+    "and": "and",
+    "terms-of-service": "Terms of Service",
+    "privacy-policy": "Privacy Policy",
+    "you-need-to-accept-the-tos": "You need to accept the terms of services and privacy policy to register.",
+    "register": "Register",
+    "warning-about-limited-features": "Only a limited set of features is available without logging in.\nWe recommend creating an account above, its free and just one step.",
+    "continue-without-login": "Continue without login",
+    "try-without-logging-in": "Try without logging in",
+    "login": "Login",
+    "please-accept-the-tos": "Please accept the terms of service and privacy policy",
+    "please-enter-a-valid-email": "Please enter a valid email",
+    "please-enter-email-and-password": "Please enter email and password"
+  },
+  "error": "Error"
 }

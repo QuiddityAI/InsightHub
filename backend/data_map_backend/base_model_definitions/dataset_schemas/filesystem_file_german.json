@@ -2,9 +2,17 @@
   "name": "Filesystem File (German)",
   "entity_name": "document",
   "entity_name_plural": "documents",
+  "translated_entity_name": {
+    "plural": {
+      "de": "Dokumente"
+    },
+    "singular": {
+      "de": "Dokument"
+    }
+  },
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2025-01-05T16:51:16.805Z",
+  "changed_at": "2025-01-15T16:38:50.663Z",
   "primary_key": "full_path",
   "direct_parent": "folder",
   "all_parents": "parent_folders",
@@ -677,7 +685,7 @@
       "identifier": "is_processed",
       "name": null,
       "created_at": "2024-11-28T10:11:54.590Z",
-      "changed_at": "2025-01-04T19:08:49.061Z",
+      "changed_at": "2025-01-09T14:57:14.972Z",
       "schema": "filesystem_file_german",
       "description": null,
       "field_type": "BOOL",
@@ -712,6 +720,7 @@
       "source_fields": {
         "folder": "folder",
         "file_name": "file_name",
+        "full_text": "full_text",
         "is_folder": "is_folder",
         "file_created_at": "file_created_at",
         "file_updated_at": "file_updated_at",

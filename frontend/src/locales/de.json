@@ -6,7 +6,7 @@
     "create-collection-using-this-workflow": "Erstelle eine Sammlung mit diesem Workflow",
     "language-of-the-query-and-search-results": "Sprache der Abfrage und Suchergebnisse",
     "preview-feature": "Diese Funktion befindet sich in der Vorschau und funktioniert möglicherweise nicht wie erwartet.",
-    "query-operators-not-supported-for-vector-search": "Die Operatoren AND / OR werden für die Suche nach „Bedeutung“ und „Hybrid“ nicht unterstützt.<br> Bitte verwende hier Filter und Anführungszeichen oder wechsel zur Suche nach „Schlüsselwort“.",
+    "query-operators-not-supported-for-vector-search": "Die Operatoren AND / OR werden für die Suche nach „Bedeutung“ und „Hybrid“ nicht unterstützt.\nBitte verwende hier Filter und Anführungszeichen oder wechsel zur Suche nach „Schlüsselwort“.",
     "retrieval-mode-hybrid": "Kombiniert Schlüsselwort- und Bedeutungssuche.\\n\\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\\nso, dass die relevantesten oben stehen.\\nUnterstützt nur Phrasen in Anführungszeichen, nicht die Operatoren AND/OR/NOT.",
     "retrieval-mode-keyword": "Verwende dies, um spezifische Wörter zu finden.\\nUnterstützt Operatoren wie AND / OR / NOT.",
     "retrieval-mode-vector": "Verwende diese Option, um nach umfassenderen Themen oder Informationen zu suchen,\\ndie auf viele verschiedene Arten beschrieben werden können.\\n\\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\\nso dass die relevantesten oben stehen.\\nUnterstützt nur zitierte Phrasen \n, nicht die Operatoren AND / OR / NOT.",
@@ -17,7 +17,7 @@
   "CollectionList": {
     "log-in-to-use-collections": "Melde dich an, um Sammlungen anzulegen",
     "no-collections-yet": "Noch keine Sammlungen",
-    "recent-collections": "Letzte Sammlungen"
+    "recent-collections": "Letzte Sammlungen / Suchen"
   },
   "TopMenu": {
     "select-the-organization": "Organisation auswählen",
@@ -32,5 +32,28 @@
     "new-password": "Neues Passwort",
     "old-password": "Altes Passwort",
     "repeat-new-password": "Neues Passwort wiederholen"
-  }
+  },
+  "LoginButton": {
+    "login-register": "Login / Registrieren",
+    "and": "und",
+    "continue-without-login": "Ohne Anmeldung fortfahren",
+    "e-mail": "E-Mail",
+    "i-agree-to-the": "Ich stimme zu:",
+    "login": "Login",
+    "login-with-an-existing-account": "Melde dich mit einem bestehenden Konto an",
+    "password": "Passwort",
+    "passwords-dont-match": "Passwörter stimmen nicht überein",
+    "please-accept-the-tos": "Bitte akzeptiere die Nutzungsbedingungen und Datenschutzbestimmungen",
+    "please-enter-a-valid-email": "Bitte gebe eine gültige E-Mail-Adresse ein",
+    "please-enter-email-and-password": "Bitte gebe E-Mail und Passwort ein",
+    "privacy-policy": "Datenschutzrichtlinie",
+    "register": "Registrieren",
+    "register-create-a-new-account": "Registrieren / Neues Konto erstellen",
+    "repeat-password": "Passwort wiederholen",
+    "terms-of-service": "Nutzungsbedingungen",
+    "try-without-logging-in": "Ohne Anmeldung testen",
+    "warning-about-limited-features": "Ohne Anmeldung ist nur eine begrenzte Anzahl an Funktionen verfügbar.\nWir empfehlen oben die Erstellung eines Kontos. Es ist kostenlos und in nur einem Schritt möglich.",
+    "you-need-to-accept-the-tos": "Um sich zu registrieren, müsst du die Nutzungsbedingungen und Datenschutzrichtlinien akzeptieren."
+  },
+  "error": "Fehler"
 }

@@ -8,6 +8,7 @@ import { httpClient, djangoClient } from "../api/httpClient"
 import { FieldType } from "../utils/utils"
 
 const capitalizeFirstLetter = (val) => {
+  if (!val) return val
     return String(val).charAt(0).toUpperCase() + String(val).slice(1);
 }
 
@@ -713,16 +714,21 @@ export const useCollectionStore = defineStore("collection", {
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
+    language(state) {
+      return navigator.language.split('-')[0]
+    },
     entity_name_singular(state) {
       const first_dataset_id = state.collection_items.length ? state.collection_items[0].dataset_id : null
       if (!first_dataset_id) return null
-      const n = window.appState.datasets[first_dataset_id]?.schema.entity_name
+      const schema = window.appState.datasets[first_dataset_id]?.schema
+      const n = schema ? schema.translated_entity_name.singular[this.language] || schema.entity_name : null
       return capitalizeFirstLetter(n)
     },
     entity_name_plural(state) {
       const first_dataset_id = state.collection_items.length ? state.collection_items[0].dataset_id : null
       if (!first_dataset_id) return null
-      const n = window.appState.datasets[first_dataset_id]?.schema.entity_name_plural
+      const schema = window.appState.datasets[first_dataset_id]?.schema
+      const n = schema ? schema.translated_entity_name.plural[this.language] || schema.entity_name_plural : null
       return capitalizeFirstLetter(n)
     },
   },

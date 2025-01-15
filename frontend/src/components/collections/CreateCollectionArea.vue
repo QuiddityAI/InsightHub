@@ -402,7 +402,7 @@ export default {
             Meaning / hybrid search only works for English queries.
           </Message> -->
 
-          <div v-if="!new_settings.auto_set_filters && query_uses_operators_and_meaning" class="text-xs text-gray-400">
+          <div v-if="!new_settings.auto_set_filters && query_uses_operators_and_meaning" class="text-xs text-gray-400 whitespace-pre-wrap">
             {{ $t('CreateCollectionArea.query-operators-not-supported-for-vector-search') }}
           </div>
 
