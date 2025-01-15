@@ -201,12 +201,12 @@ export default {
           v-if="actual_size_mode >= CollectionItemSizeMode.FULL" />
 
         <!-- Relevant Parts -->
-        <RelevantPartsKeyword v-if="actual_size_mode >= CollectionItemSizeMode.FULL"
+        <RelevantPartsKeyword v-if="actual_size_mode >= CollectionItemSizeMode.FULL && !(schema?.is_group_field && item[schema.is_group_field])"
           :highlights="relevant_keyword_highlights"
           class="mt-2" :dataset_id="collection_item.dataset_id">
         </RelevantPartsKeyword>
 
-        <RelevantPartsVector v-if="actual_size_mode >= CollectionItemSizeMode.FULL"
+        <RelevantPartsVector v-if="actual_size_mode >= CollectionItemSizeMode.FULL && !(schema?.is_group_field && item[schema.is_group_field])"
           :highlights="relevant_chunks"
           class="mt-2" :item="item || initial_item"
           :rendering="rendering">
