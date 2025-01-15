@@ -11,7 +11,8 @@
     "query-operators-not-supported-for-vector-search": "The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br> Please use filters and quoted phrases here or switch to 'keyword' search.",
     "use-double-quotes-instead-of-single-quotes-to-search-for-phrases": "Note: use double quotes instead of single quotes to search for phrases.",
     "auto-set-filters": "Auto-detect language, required filters and search strategy",
-    "preview-feature": "This feature is in preview and might not work as expected."
+    "preview-feature": "This feature is in preview and might not work as expected.",
+    "go": "Go"
   },
   "CollectionList": {
     "log-in-to-use-collections": "Log in to use collections",

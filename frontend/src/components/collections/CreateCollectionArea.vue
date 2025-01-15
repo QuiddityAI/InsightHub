@@ -137,10 +137,15 @@ export default {
       return this.workflows.find(workflow => workflow.workflow_id === this.new_settings.workflow_id)
     },
     entity_name_singular() {
-      return this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema.entity_name || '' : 'item'
+      const schema = this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema : null
+      return schema ? schema.translated_entity_name.singular[this.language] || schema.entity_name : 'item'
     },
     entity_name_plural() {
-      return this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema.entity_name_plural || '' : 'items'
+      const schema = this.new_settings.dataset_id ? this.appStateStore.datasets[this.new_settings.dataset_id]?.schema : null
+      return schema ? schema.translated_entity_name.plural[this.language] || schema.entity_name_plural : 'items'
+    },
+    language() {
+      return navigator.language.split('-')[0]
     },
   },
   mounted() {
@@ -297,14 +302,14 @@ export default {
               :class="{
                 'border': new_settings.workflow_id == workflow.workflow_id,
                 'bg-green-100': new_settings.workflow_id == workflow.workflow_id,
-              }" v-tooltip.bottom="{ value: fill_placeholders(workflow.help_text) + (workflow.availability === 'in_development' ? ' (coming soon)' : ''), showDelay: 600 }">
-              <div class="text-left text-sm font-bold text-gray-500" v-html="workflow.name1"></div>
+              }" v-tooltip.bottom="{ value: fill_placeholders(workflow.help_text[language] || workflow.help_text.en) + (workflow.availability === 'in_development' ? ' (coming soon)' : ''), showDelay: 600 }">
+              <div class="text-left text-sm font-bold text-gray-500" v-html="workflow.name1[language] || workflow.name1.en"></div>
               <div class="text-left font-bold transition-colors"
                 :class="{ 'group-hover:text-gray-800': workflow.availability !== 'in_development',
                   'text-gray-600': workflow.availability !== 'in_development',
                   'group-hover:text-gray-600': workflow.availability === 'in_development',
                   'text-gray-500': workflow.availability === 'in_development', }"
-                v-html="fill_placeholders(workflow.name2, true) + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
+                v-html="fill_placeholders(workflow.name2[language] || workflow.name2.en, true) + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
             </button>
           </div>
 
@@ -313,21 +318,21 @@ export default {
         <div v-if="selected_workflow != null" class="flex flex-col gap-4 px-7">
 
           <div class="text-xl font-bold text-gray-800">
-            {{ selected_workflow.name1 }}
+            {{ selected_workflow.name1[language] || selected_workflow.name1.en }}
             <span class="bg-gradient-to-r from-fuchsia-900 via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
-              {{ fill_placeholders(selected_workflow.name2, true) }}
+              {{ fill_placeholders(selected_workflow.name2[language] || selected_workflow.name2.en, true) }}
             </span>:
           </div>
 
           <div class="text-xs font-normal text-gray-500 -mt-3 mb-2 flex flex-row items-center gap-1">
             <InformationCircleIcon class="h-4 w-4 inline"></InformationCircleIcon>
-            {{ fill_placeholders(selected_workflow.help_text) }}
+            {{ fill_placeholders(selected_workflow.help_text[language] || selected_workflow.help_text.en) }}
           </div>
 
           <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
             <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
               autocomplete="off" v-if="selected_workflow?.supports_user_input"
-              :placeholder="fill_placeholders(selected_workflow?.query_field_hint)"
+              :placeholder="fill_placeholders(selected_workflow?.query_field_hint[language] || selected_workflow.query_field_hint.en)"
               class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
             <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
               <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
@@ -338,7 +343,7 @@ export default {
             <button v-tooltip.bottom="{ value: $t('CreateCollectionArea.create-collection-using-this-workflow'), showDelay: 400 }"
               class="px-2 h-10 w-32 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
               @click="create_collection">
-              Go <PaperAirplaneIcon class="inline h-5 w-5"></PaperAirplaneIcon>
+              {{ $t('CreateCollectionArea.go') }} <PaperAirplaneIcon class="inline h-5 w-5"></PaperAirplaneIcon>
             </button>
           </div>
 

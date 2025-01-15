@@ -494,6 +494,10 @@ def get_default_detail_view_rendering():
     )
 
 
+def get_default_translated_entity_name():
+    return {"singular": {}, "plural": {}}
+
+
 class DatasetSchema(models.Model):
     identifier = models.CharField(
         verbose_name="Identifier",
@@ -516,6 +520,13 @@ class DatasetSchema(models.Model):
     )
     entity_name_plural = models.CharField(
         verbose_name="Entity Name (Plural)", max_length=40, blank=True, null=True
+    )
+    translated_entity_name = models.JSONField(
+        verbose_name="Translated Entity Name",
+        help_text="Translations of the entity name, e.g. {'singular': {'de': 'Produkt', 'fr': 'Produit'}, 'plural': {'de': 'Produkte', 'fr': 'Produits'}}",
+        default=get_default_translated_entity_name,
+        blank=True,
+        null=False,
     )
     short_description = models.CharField(
         verbose_name="Short Description", max_length=200, blank=True, null=True

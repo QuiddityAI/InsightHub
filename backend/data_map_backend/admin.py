@@ -302,7 +302,7 @@ class DatasetSchemaAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAd
     readonly_fields = ('changed_at', 'created_at', 'get_field_overview_table_html')
 
     fields = [
-        "identifier", "name", "entity_name", "entity_name_plural", "short_description",
+        "identifier", "name", "entity_name", "entity_name_plural", "translated_entity_name", "short_description",
         "primary_key", "direct_parent", "all_parents", "is_group_field", "thumbnail_image",
         "descriptive_text_fields", "default_search_fields", "advanced_options",
         "applicable_import_converters", "applicable_export_converters",

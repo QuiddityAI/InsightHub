@@ -11,7 +11,8 @@
     "retrieval-mode-keyword": "Verwende dies, um spezifische Wörter zu finden.\\nUnterstützt Operatoren wie AND / OR / NOT.",
     "retrieval-mode-vector": "Verwende diese Option, um nach umfassenderen Themen oder Informationen zu suchen,\\ndie auf viele verschiedene Arten beschrieben werden können.\\n\\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\\nso dass die relevantesten oben stehen.\\nUnterstützt nur zitierte Phrasen \n, nicht die Operatoren AND / OR / NOT.",
     "use-double-quotes-instead-of-single-quotes-to-search-for-phrases": "Hinweis: Verwende für die Suche nach Phrasen doppelte Anführungszeichen anstelle einfacher Anführungszeichen.",
-    "vector-search-not-available-for-this-dataset": "Für diesen Datensatz ist die Bedeutungs-/Hybridsuche noch nicht verfügbar."
+    "vector-search-not-available-for-this-dataset": "Für diesen Datensatz ist die Bedeutungs-/Hybridsuche noch nicht verfügbar.",
+    "go": "Los"
   },
   "CollectionList": {
     "log-in-to-use-collections": "Melde dich an, um Sammlungen anzulegen",
