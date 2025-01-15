@@ -215,6 +215,8 @@ export default {
     "appStateStore.organization_id"() {
       this.appStateStore.reset_search_results_and_map()
       this.appStateStore.retrieve_stored_maps_history_and_collections()
+      // set title of page to organization.tool_title:
+      document.title = this.appStateStore.organization.tool_title || "Quiddity InsightHub"
     },
   },
 }
