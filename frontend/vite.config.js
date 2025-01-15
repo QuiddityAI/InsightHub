@@ -9,18 +9,18 @@ export default defineConfig({
     proxy: {
       "/data_backend": {  // data-backend is now a part of the backend
         target: (process.env.backend_host || "http://127.0.0.1:55125"),
-        changeOrigin: true,
+        changeOrigin: false,
         secure: false,
       },
       "/org": {  // allows the browser to access endpoints of the backend directly
         target: (process.env.backend_host || "http://127.0.0.1:55125"),
-        changeOrigin: true,
+        changeOrigin: false,
         secure: false,
         //rewrite: (path) => path.replace(/^\/org/, '/'),
       },
       "/api": {  // allows the browser to access endpoints of the backend directly
         target: (process.env.backend_host || "http://127.0.0.1:55125"),
-        changeOrigin: true,
+        changeOrigin: false,
         secure: false,
         //rewrite: (path) => path.replace(/^\/org/, '/'),
       },

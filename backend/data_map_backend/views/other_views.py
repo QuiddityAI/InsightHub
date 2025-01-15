@@ -92,20 +92,28 @@ def get_available_organizations(request):
     if request.method != "POST":
         return HttpResponse(status=405)
 
-    is_authenticated = request.user.is_authenticated
-    if is_authenticated:
+    if request.user.is_authenticated:
         organizations = Organization.objects.filter(
             Q(is_public=True) | Q(members=request.user)
         )
     else:
         organizations = Organization.objects.filter(is_public=True)
     organizations = organizations.distinct().order_by("name")
+
+    # restrict some domains to certain organizations:
+    hostname = request.META.get("HTTP_HOST")
+    hostnames_that_show_all_orgs = ["localhost:55140", "home-server:55140", "feldberg.absclust.com"]
+    hostnames_that_show_all_orgs += os.environ.get("HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS", "").split(",")
+
+    if hostname not in hostnames_that_show_all_orgs:
+        organizations = organizations.filter(domains__contains=[hostname])
+
     serialized_data = OrganizationSerializer(organizations, many=True).data
 
     # replace list of all datasets of each organization with list of available datasets:
     for organization, serialized in zip(organizations, serialized_data):
         is_member = (
-            is_authenticated
+            request.user.is_authenticated
             and organization.members.filter(id=request.user.id).exists()
         )
         serialized["is_member"] = is_member
