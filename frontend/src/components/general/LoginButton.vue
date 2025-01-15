@@ -110,7 +110,9 @@ export default {
         document.cookie = `anonymous_user_email=${this.email}; max-age=${365*24*60*60}; path=/`
         document.cookie = `anonymous_user_password=${this.password}; max-age=${365*24*60*60}; path=/`
       }
-      this.$refs.register_form.submit()
+      setTimeout(() => {
+        this.$refs.register_form.submit()
+      }, 0);
     }
   },
 }
