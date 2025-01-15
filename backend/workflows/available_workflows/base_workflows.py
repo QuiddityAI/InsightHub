@@ -35,7 +35,7 @@ class ShowAllWorkflow(WorkflowBase):
         order=WorkflowOrder.base + 1,
         name1={'en': "Show", 'de': "Zeige"},
         name2={'en': "All <entity_name_plural>", 'de': "Alle <entity_name_plural>"},
-        help_text={'en': "Show all top-level items (e.g. to navigate through a folder hierarchy or show most recent items)", 'de': "Zeigen Sie alle obersten Elemente an (z.B. um durch eine Ordnerhierarchie zu navigieren oder die neuesten Elemente anzuzeigen)"},
+        help_text={'en': "Show all top-level items (e.g. to navigate through a folder hierarchy or show most recent items)", 'de': "Zeige alle obersten Elemente an (z.B. um durch eine Ordnerhierarchie zu navigieren oder die neuesten Elemente anzuzeigen)"},
         query_field_hint={'en': "Name of the collection", 'de': "Name der Sammlung"},
         supports_filters=True,
         supports_user_input=False,

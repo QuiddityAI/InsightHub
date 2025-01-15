@@ -47,7 +47,7 @@ class AssistedSearchWorkflow(WorkflowBase):
         order=WorkflowOrder.search + 2,
         name1={'en': "Find a set of", 'de': "Finde mehrere"},
         name2={'en': "Matching <entity_name_plural>", 'de': "Passende <entity_name_plural>"},
-        help_text={'en': "Search + evaluate every single result, good to collect a set of <entity_name_plural>", 'de': "Suche + bewerte jedes einzelne Ergebnis, gut um ein Set von <entity_name_plural> zu sammeln"},
+        help_text={'en': "Evaluates every result separately, good to collect a set of <entity_name_plural>", 'de': "Evaluiert jedes Ergebnis einzeln. Sinnvoll um mehrere <entity_name_plural> zu sammeln."},
         query_field_hint={'en': "Describe what <entity_name_plural> you want to find", 'de': "Beschreibe, welche <entity_name_plural> du finden möchtest"},
         supports_filters=True,
         needs_user_input=True,

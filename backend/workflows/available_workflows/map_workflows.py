@@ -14,7 +14,7 @@ class OverviewMapWorkflow(WorkflowBase):
         workflow_id="overview_map",
         order=WorkflowOrder.map + 1,
         name1={'en': "Show a visual", 'de': "Zeige eine visuelle"},
-        name2={'en': "Overview Map of <entity_name_plural>", 'de': "Karte von <entity_name_plural>"},
+        name2={'en': "Overview Map of <entity_name_plural>", 'de': "Karte von Ergebnissen"},
         help_text={'en': "Show a large set of items on a visual map", 'de': "Zeige eine große Anzahl von Elementen auf einer visuellen Karte"},
         query_field_hint={'en': "Describe what <entity_name_plural> you want to find", 'de': "Beschreibe, welche <entity_name_plural> du finden möchtest"},
         supports_filters=True,
