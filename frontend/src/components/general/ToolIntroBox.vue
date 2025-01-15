@@ -36,7 +36,7 @@ export default {
 
 <template>
 
-  <div class="bg-white rounded-lg shadow-md px-7 py-7 flex flex-col gap-5 text-gray-800">
+  <div class="bg-white opacity-70 hover:opacity-100 transition-opacity rounded-lg shadow-md px-7 py-7 flex flex-col gap-5 text-gray-800">
 
     <div class="flex flex-row items-center gap-5">
       <img class="h-6" :src="appState.organization.tool_logo_url" />
