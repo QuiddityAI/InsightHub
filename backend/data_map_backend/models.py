@@ -291,6 +291,13 @@ class Organization(models.Model):
         blank=False,
         null=False,
     )
+    domains = models.JSONField(
+        verbose_name="Domains",
+        help_text="List of domains where this organization is visible",
+        default=list,
+        blank=True,
+        null=False,
+    )
     default_dataset_selection = models.ManyToManyField(
         verbose_name="Default Dataset Selection",
         help_text="",
@@ -305,23 +312,31 @@ class Organization(models.Model):
         related_name="+",
         blank=True,
     )
-    workspace_tool_title = models.CharField(
-        verbose_name="Workspace Tool Title",
-        help_text="Title of the workspace tool in the frontend",
-        max_length=40,
+    # --- Whitelabeling: ---
+    tool_title = models.CharField(
+        verbose_name="Tool Title",
+        help_text="Title of the tool in the frontend",
+        max_length=80,
         blank=True,
         null=True,
     )
-    workspace_tool_logo_url = models.CharField(
-        verbose_name="Workspace Tool Logo URL",
-        help_text="URL of the workspace tool logo in the frontend",
+    tool_logo_url = models.CharField(
+        verbose_name="Tool Logo URL",
+        help_text="URL of the tool logo in the frontend",
         max_length=200,
         blank=True,
         null=True,
     )
-    workspace_tool_intro_text = models.TextField(
-        verbose_name="Workspace Tool Intro Text",
-        help_text="Intro text of the workspace tool, HTML is allowed",
+    tool_intro_text = models.TextField(
+        verbose_name="Tool Intro Text",
+        help_text="Intro text of the tool, HTML is allowed",
+        blank=True,
+        null=True,
+    )
+    tool_accent_color = models.CharField(
+        verbose_name="Tool Accent Color (Hex)",
+        help_text="Accent color of the tool in the frontend, e.g. #ff0000",
+        max_length=7,
         blank=True,
         null=True,
     )

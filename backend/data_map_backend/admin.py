@@ -177,6 +177,11 @@ class OrganizationAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
                 kwargs["queryset"] = Dataset.objects.filter(organization = organization_id)
         return super(OrganizationAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
 
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': json_widget },
+    }
+
 
 @admin.register(ImportConverter)
 class ImportConverterAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
@@ -259,6 +264,11 @@ class DatasetFieldAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.ModelAdm
     ordering = ['schema', 'identifier']
 
     readonly_fields = ('changed_at', 'created_at')
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows': 2})},
+        models.JSONField: {'widget': json_widget },
+    }
 
 
 class DatasetFieldInline(admin.StackedInline):
