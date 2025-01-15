@@ -234,7 +234,9 @@ CSRF_TRUSTED_ORIGINS = ['http://localhost:55140', 'http://home-server:55140',
                         'https://bondiq.quiddityai.com',
                         'https://v2.quiddityai.com', 'https://feldberg.quiddityai.com',
                         'https://bondiq.quiddity-ai.com',
-                        'https://v2.quiddity-ai.com', 'https://feldberg.quiddity-ai.com',]
+                        'https://v2.quiddity-ai.com', 'https://feldberg.quiddity-ai.com',
+                        'https://tenders.absclust.com', 'https://tenders.quiddityai.com',
+                        'https://tenders.enda.eu',]
 
 
 JAZZMIN_SETTINGS = {
