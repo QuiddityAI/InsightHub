@@ -1,6 +1,5 @@
 <script setup>
 import {
-  DocumentIcon,
   ChevronRightIcon,
 } from "@heroicons/vue/24/outline"
 
@@ -48,7 +47,7 @@ export default {
 
       <div class="flex flex-row items-center text-left px-2">
         <h3 class="font-bold text-[12px] text-gray-500">
-          Recent Collections
+          {{ $t('CollectionList.recent-collections') }}
         </h3>
       </div>
 
@@ -65,13 +64,13 @@ export default {
 
       <div v-if="appState.logged_in && collectionStore.available_collections.length === 0">
         <h3 class="font-normal text-[15px] text-center text-gray-500">
-          No collections yet
+          {{ $t('CollectionList.no-collections-yet') }}
         </h3>
       </div>
 
       <div v-if="!appState.logged_in">
         <h3 class="font-normal text-[15px] text-center text-gray-500">
-          Log in to use collections
+          {{ $t('CollectionList.log-in-to-use-collections') }}
         </h3>
       </div>
 

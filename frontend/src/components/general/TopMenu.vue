@@ -71,7 +71,7 @@ export default {
       </a>
 
       <div class="ml-1 flex-initial"
-        v-tooltip.bottom="{ value: 'Select the organization', showDelay: 400 }">
+        v-tooltip.bottom="{ value: $t('TopMenu.select-the-organization'), showDelay: 400 }">
         <select
           v-model="internal_organization_id"
           @change="organization_id_changed_by_user"
@@ -102,7 +102,7 @@ export default {
           Write</button> -->
          <button class="hover:text-blue-500" :class="{'font-bold': appState.selected_app_tab === 'datasets'}"
           @click="appState.set_app_tab('datasets')">
-          Upload Files</button>
+          {{ $t('TopMenu.upload-files') }}</button>
       </div>
 
       <div class="flex-1"></div>
@@ -112,7 +112,7 @@ export default {
         <LoginButton></LoginButton>
 
         <button v-if="appState.logged_in" class="pl-2 pr-1 py-1 text-[13px] font-thin text-gray-500 font-[Lexend] rounded-md hover:bg-gray-100"
-          v-tooltip.bottom="{ value: 'User Menu (logout etc.)', showDelay: 400 }"
+          v-tooltip.bottom="{ value: $t('TopMenu.user-menu-logout-etc'), showDelay: 400 }"
           @click="(event) => $refs.user_menu.toggle(event)">
           {{ appState.user.username.substring(0, 22) + (appState.user.username.length > 22 ? '...' : '') }}
           <UserCircleIcon class="inline-block w-5 h-5 pb-1 ml-2"></UserCircleIcon>
@@ -128,10 +128,10 @@ export default {
     <div class="flex flex-row items-center justify-center md:hidden">
       <select class="rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
         <!-- <option>Explore</option> -->
-        <option>Home</option>
+        <option>Quiddity InsightHub</option>
         <!-- <option>Chat</option>
         <option v-if="appState.user?.is_staff">Write</option> -->
-        <option>Upload Files</option>
+        <option>{{ $t('TopMenu.upload-files') }}</option>
       </select>
     </div>
 

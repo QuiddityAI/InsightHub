@@ -1,5 +1,35 @@
 {
-  "create-collection": {
-    "what-do-you-want-to-do": "Was möchtest du tun?"
+  "CreateCollectionArea": {
+    "what-do-you-want-to-do": "Was möchtest du tun?",
+    "add-filters-and-change-search-options": "Füge Filter hinzu und ändere Sie Suchoptionen",
+    "auto-set-filters": "Automatische Erkennung von Sprache, erforderlichen Filtern und der Suchstrategie",
+    "create-collection-using-this-workflow": "Erstelle eine Sammlung mit diesem Workflow",
+    "language-of-the-query-and-search-results": "Sprache der Abfrage und Suchergebnisse",
+    "preview-feature": "Diese Funktion befindet sich in der Vorschau und funktioniert möglicherweise nicht wie erwartet.",
+    "query-operators-not-supported-for-vector-search": "Die Operatoren AND / OR werden für die Suche nach „Bedeutung“ und „Hybrid“ nicht unterstützt.<br> Bitte verwende hier Filter und Anführungszeichen oder wechsel zur Suche nach „Schlüsselwort“.",
+    "retrieval-mode-hybrid": "Kombiniert Schlüsselwort- und Bedeutungssuche.\\n\\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\\nso, dass die relevantesten oben stehen.\\nUnterstützt nur Phrasen in Anführungszeichen, nicht die Operatoren AND/OR/NOT.",
+    "retrieval-mode-keyword": "Verwende dies, um spezifische Wörter zu finden.\\nUnterstützt Operatoren wie AND / OR / NOT.",
+    "retrieval-mode-vector": "Verwende diese Option, um nach umfassenderen Themen oder Informationen zu suchen,\\ndie auf viele verschiedene Arten beschrieben werden können.\\n\\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\\nso dass die relevantesten oben stehen.\\nUnterstützt nur zitierte Phrasen \n, nicht die Operatoren AND / OR / NOT.",
+    "use-double-quotes-instead-of-single-quotes-to-search-for-phrases": "Hinweis: Verwende für die Suche nach Phrasen doppelte Anführungszeichen anstelle einfacher Anführungszeichen.",
+    "vector-search-not-available-for-this-dataset": "Für diesen Datensatz ist die Bedeutungs-/Hybridsuche noch nicht verfügbar."
+  },
+  "CollectionList": {
+    "log-in-to-use-collections": "Melde dich an, um Sammlungen anzulegen",
+    "no-collections-yet": "Noch keine Sammlungen",
+    "recent-collections": "Letzte Sammlungen"
+  },
+  "TopMenu": {
+    "select-the-organization": "Organisation auswählen",
+    "upload-files": "Dateien hochladen",
+    "user-menu-logout-etc": "Benutzer*innenmenü (Abmelden usw.)"
+  },
+  "UserMenu": {
+    "ai-credits-used": "Genuzte AI-Credits",
+    "change-password": "Passwort ändern",
+    "logout": "Ausloggen",
+    "need-more-credits-contact-us": "Keine AI-Credits? Kontaktiere uns",
+    "new-password": "Neues Passwort",
+    "old-password": "Altes Passwort",
+    "repeat-new-password": "Neues Passwort wiederholen"
   }
 }

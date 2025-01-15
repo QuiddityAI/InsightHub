@@ -288,7 +288,7 @@ export default {
         <div v-if="selected_workflow == null" class="flex flex-col gap-5 items-start">
 
           <h1 class="pl-11 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
-            {{ $t('create-collection.what-do-you-want-to-do') }}
+            {{ $t('CreateCollectionArea.what-do-you-want-to-do') }}
           </h1>
 
           <div class="flex flex-row w-full items-center gap-5 pl-10 pr-7 py-4 overflow-x-auto">
@@ -331,11 +331,11 @@ export default {
               class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
             <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
               <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
-                v-tooltip.bottom="{ value: 'Language of the query and search results', showDelay: 400 }">
+                v-tooltip.bottom="{ value: $t('CreateCollectionArea.language-of-the-query-and-search-results'), showDelay: 400 }">
                 <option v-for="language in available_languages" :value="language.code">{{ language.flag }}</option>
               </select>
             </div>
-            <button v-tooltip.bottom="{ value: 'Submit', showDelay: 400 }"
+            <button v-tooltip.bottom="{ value: $t('CreateCollectionArea.create-collection-using-this-workflow'), showDelay: 400 }"
               class="px-2 h-10 w-32 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
               @click="create_collection">
               Go <PaperAirplaneIcon class="inline h-5 w-5"></PaperAirplaneIcon>
@@ -346,21 +346,21 @@ export default {
             <div class="flex flex-row items-center gap-0 h-6">
               <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
                 @click="new_settings.retrieval_mode = 'keyword'"
-                v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
+                v-tooltip="{ value: $t('CreateCollectionArea.retrieval-mode-keyword'), showDelay: 400 }"
                 :class="{ 'text-blue-500': new_settings.retrieval_mode === 'keyword', 'text-gray-400': new_settings.retrieval_mode != 'keyword' }">
                 Keywords
               </button>
               <button
                 class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
                 @click="new_settings.retrieval_mode = 'vector'"
-                v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
+                v-tooltip="{ value: $t('CreateCollectionArea.retrieval-mode-vector'), showDelay: 400 }"
                 :class="{ 'text-blue-500': new_settings.retrieval_mode === 'vector', 'text-gray-400': new_settings.retrieval_mode != 'vector' }">
                 Meaning
               </button>
               <button
                 class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
                 @click="new_settings.retrieval_mode = 'hybrid'"
-                v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
+                v-tooltip="{ value: $t('CreateCollectionArea.retrieval-mode-hybrid'), showDelay: 400 }"
                 :class="{ 'text-blue-500': new_settings.retrieval_mode === 'hybrid', 'text-gray-400': new_settings.retrieval_mode != 'hybrid' }">
                 Both
               </button>
@@ -378,7 +378,7 @@ export default {
             <div class="flex flex-row items-center gap-0 h-6">
               <button
                 class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
-                v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
+                v-tooltip.bottom="{ value: $t('CreateCollectionArea.add-filters-and-change-search-options'), showDelay: 400 }"
                 @click="(event) => { $refs.add_filter_menu.toggle(event) }">
                 + Filter
               </button>
@@ -390,7 +390,7 @@ export default {
           </div>
 
           <Message v-if="show_warning_about_missing_meaning_search" class="" :closable="false">
-            Meaning / hybrid search is not yet available for this dataset.
+            {{ $t('CreateCollectionArea.vector-search-not-available-for-this-dataset') }}
           </Message>
 
           <!-- <Message v-if="!new_settings.auto_set_filters && using_meaning_for_non_english_search" class="" :closable="false">
@@ -398,12 +398,11 @@ export default {
           </Message> -->
 
           <div v-if="!new_settings.auto_set_filters && query_uses_operators_and_meaning" class="text-xs text-gray-400">
-            The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br>
-            Please use filters and quoted phrases here or switch to 'keyword' search.
+            {{ $t('CreateCollectionArea.query-operators-not-supported-for-vector-search') }}
           </div>
 
           <div v-if="!new_settings.auto_set_filters && query_includes_other_quotes" class="text-xs text-gray-400">
-            Note: use double quotes instead of single quotes to search for phrases.
+            {{ $t('CreateCollectionArea.use-double-quotes-instead-of-single-quotes-to-search-for-phrases') }}
           </div>
 
           <SearchFilterList v-if="!new_settings.auto_set_filters"
@@ -420,12 +419,12 @@ export default {
             <InputSwitch v-model="new_settings.auto_set_filters" :binary="true" :disabled="!ai_is_available" class="scale-75" />
             <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
               @click="new_settings.auto_set_filters = !new_settings.auto_set_filters">
-              Auto-detect language, required filters and search strategy
+              {{ $t('CreateCollectionArea.auto-set-filters') }}
             </button>
           </div>
 
           <Message v-if="selected_workflow.availability === 'preview'" class="" :closable="false">
-            This feature is in preview and might not work as expected.
+            {{ $t('CreateCollectionArea.preview-feature') }}
           </Message>
 
         </div>

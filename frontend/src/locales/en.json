@@ -1,5 +1,35 @@
 {
-  "create-collection": {
-    "what-do-you-want-to-do": "What do you want to do?"
+  "CreateCollectionArea": {
+    "what-do-you-want-to-do": "What do you want to do?",
+    "language-of-the-query-and-search-results": "Language of the query and search results",
+    "create-collection-using-this-workflow": "Create collection using this workflow",
+    "retrieval-mode-keyword": "Use this to find specific words.\\nSupports operators like AND / OR / NOT.",
+    "retrieval-mode-vector": "Use this to search for broader topics or information\\nthat can be described in many different ways.\\n\\nNote: this might return almost all documents, but sorted\\nso that the most relevant ones are at the top.\\nOnly supports quoted phrases, not the AND / OR / NOT operators.",
+    "retrieval-mode-hybrid": "Combines keyword and meaning search.\\n\\nNote: this might return almost all documents, but sorted\\nso that the most relevant ones are at the top.\\nOnly supports quoted phrases, not the AND / OR / NOT operators.",
+    "add-filters-and-change-search-options": "Add filters and change search options",
+    "vector-search-not-available-for-this-dataset": "Meaning / hybrid search is not yet available for this dataset.",
+    "query-operators-not-supported-for-vector-search": "The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br> Please use filters and quoted phrases here or switch to 'keyword' search.",
+    "use-double-quotes-instead-of-single-quotes-to-search-for-phrases": "Note: use double quotes instead of single quotes to search for phrases.",
+    "auto-set-filters": "Auto-detect language, required filters and search strategy",
+    "preview-feature": "This feature is in preview and might not work as expected."
+  },
+  "CollectionList": {
+    "log-in-to-use-collections": "Log in to use collections",
+    "recent-collections": "Recent Collections",
+    "no-collections-yet": "No collections yet"
+  },
+  "TopMenu": {
+    "select-the-organization": "Select the organization",
+    "upload-files": "Upload Files",
+    "user-menu-logout-etc": "User Menu (logout etc.)"
+  },
+  "UserMenu": {
+    "ai-credits-used": "AI Credits used:",
+    "need-more-credits-contact-us": "Need more credits? Contact us!",
+    "logout": "Logout",
+    "change-password": "Change Password",
+    "old-password": "Old Password",
+    "new-password": "New Password",
+    "repeat-new-password": "Repeat New Password"
   }
 }
