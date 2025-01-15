@@ -90,7 +90,8 @@ export default {
           Explore</button> -->
          <button class="hover:text-blue-500" :class="{'font-medium': appState.selected_app_tab === 'collections'}"
           @click="appState.set_app_tab('collections'); collectionStore.close_collection()">
-          Quiddity InsightHub</button>
+          {{ appState.organization?.tool_title || 'Quiddity InsightHub' }}
+         </button>
          <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
           v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('chats')">

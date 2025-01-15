@@ -237,20 +237,5 @@ export default {
 
 </template>
 
-<style>
-
-.use-default-html-styles-large p {
-  margin: 0 0 1em 0;
-}
-
-.use-default-html-styles-large ul {
-  margin: 0 0 1em 0;
-}
-
-.use-default-html-styles-large ol {
-  margin: 0 0 1em 0;
-}
-</style>
-
 <style scoped>
 </style>

@@ -14,6 +14,7 @@ import InputSwitch from 'primevue/inputswitch';
 
 import SearchFilterList from "../search/SearchFilterList.vue"
 import AddFilterMenu from "../search/AddFilterMenu.vue"
+import ToolIntroBox from "../general/ToolIntroBox.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { languages } from "../../utils/utils"
@@ -251,186 +252,188 @@ export default {
 
 <template>
 
-  <div class="mt-[200px] w-[650px]">
+  <div class="mt-[200px] w-[650px] flex flex-col gap-5 pb-10">
 
+    <!-- create collection box -->
     <div class="bg-white rounded-lg shadow-md transition-[height] duration-200 ease-out overflow-hidden min-h-0 max-h-none"
     :style="{ height: container_height }">
-    <div class="flex flex-col gap-8 pt-1 pb-10" ref="container">
+      <div class="flex flex-col gap-8 pt-1 pb-10" ref="container">
 
-      <div class="flex flex-row gap-2 items-center justify-between px-3">
-        <div class="flex-none w-10">
-          <button v-if="selected_workflow != null" @click="new_settings.workflow_id = null"
-            class="flex-none w-10 rounded-md hover:bg-blue-100/50 text-gray-400">
-            <ChevronLeftIcon class="inline h-5 w-5"></ChevronLeftIcon>
-          </button>
-        </div>
+        <div class="flex flex-row gap-2 items-center justify-between px-3">
+          <div class="flex-none w-10">
+            <button v-if="selected_workflow != null" @click="new_settings.workflow_id = null"
+              class="flex-none w-10 rounded-md hover:bg-blue-100/50 text-gray-400">
+              <ChevronLeftIcon class="inline h-5 w-5"></ChevronLeftIcon>
+            </button>
+          </div>
 
-        <div class="flex-none min-w-0">
-          <Dropdown v-model="new_settings.dataset_id" :options="grouped_available_datasets" optionLabel="name"
-            optionGroupLabel="label" optionGroupChildren="items" optionValue="id" placeholder="Select Source..."
-            @change="new_settings.workflow_id = null"
-            class="h-full border-none text-sm font-medium" id="datasetdropdown"> <!-- see CSS below for text color -->
-            <template #option="slotProps">
-              <div class="flex flex-col">
-                <div class="text-sm">{{ slotProps.option.name }}</div>
-                <!-- inline style instead of tailwind necessary here -->
-                <div class="pl-1 text-xs text-gray-500" style="text-wrap: wrap;">{{ slotProps.option.short_description }}
+          <div class="flex-none min-w-0">
+            <Dropdown v-model="new_settings.dataset_id" :options="grouped_available_datasets" optionLabel="name"
+              optionGroupLabel="label" optionGroupChildren="items" optionValue="id" placeholder="Select Source..."
+              @change="new_settings.workflow_id = null"
+              class="h-full border-none text-sm font-medium" id="datasetdropdown"> <!-- see CSS below for text color -->
+              <template #option="slotProps">
+                <div class="flex flex-col">
+                  <div class="text-sm">{{ slotProps.option.name }}</div>
+                  <!-- inline style instead of tailwind necessary here -->
+                  <div class="pl-1 text-xs text-gray-500" style="text-wrap: wrap;">{{ slotProps.option.short_description }}
+                  </div>
                 </div>
-              </div>
-            </template>
-          </Dropdown>
-        </div>
-        <div class="flex-none w-10"></div>
-      </div>
-
-      <div v-if="selected_workflow == null" class="flex flex-col gap-5 items-start">
-
-        <h1 class="pl-11 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
-          What do you want to do?
-        </h1>
-
-        <div class="flex flex-row w-full items-center gap-5 pl-10 pr-7 py-4 overflow-x-auto">
-          <button v-for="workflow in workflows" @click="select_workflow(workflow)"
-            class="min-w-[170px] w-[170px] h-[93px] px-3 py-3 bg-gray-100 shadow-md rounded-xl flex flex-col gap-0 items-start justify-start group"
-            :class="{
-              'border': new_settings.workflow_id == workflow.workflow_id,
-              'bg-green-100': new_settings.workflow_id == workflow.workflow_id,
-            }" v-tooltip.bottom="{ value: fill_placeholders(workflow.help_text) + (workflow.availability === 'in_development' ? ' (coming soon)' : ''), showDelay: 600 }">
-            <div class="text-left text-sm font-bold text-gray-500" v-html="workflow.name1"></div>
-            <div class="text-left font-bold transition-colors"
-              :class="{ 'group-hover:text-gray-800': workflow.availability !== 'in_development',
-                'text-gray-600': workflow.availability !== 'in_development',
-                'group-hover:text-gray-600': workflow.availability === 'in_development',
-                'text-gray-500': workflow.availability === 'in_development', }"
-              v-html="fill_placeholders(workflow.name2, true) + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
-          </button>
+              </template>
+            </Dropdown>
+          </div>
+          <div class="flex-none w-10"></div>
         </div>
 
-      </div>
+        <div v-if="selected_workflow == null" class="flex flex-col gap-5 items-start">
 
-      <div v-if="selected_workflow != null" class="flex flex-col gap-4 px-7">
+          <h1 class="pl-11 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
+            What do you want to do?
+          </h1>
 
-        <div class="text-xl font-bold text-gray-800">
-          {{ selected_workflow.name1 }}
-          <span class="bg-gradient-to-r from-fuchsia-900 via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
-            {{ fill_placeholders(selected_workflow.name2, true) }}
-          </span>:
+          <div class="flex flex-row w-full items-center gap-5 pl-10 pr-7 py-4 overflow-x-auto">
+            <button v-for="workflow in workflows" @click="select_workflow(workflow)"
+              class="min-w-[170px] w-[170px] h-[93px] px-3 py-3 bg-gray-100 shadow-md rounded-xl flex flex-col gap-0 items-start justify-start group"
+              :class="{
+                'border': new_settings.workflow_id == workflow.workflow_id,
+                'bg-green-100': new_settings.workflow_id == workflow.workflow_id,
+              }" v-tooltip.bottom="{ value: fill_placeholders(workflow.help_text) + (workflow.availability === 'in_development' ? ' (coming soon)' : ''), showDelay: 600 }">
+              <div class="text-left text-sm font-bold text-gray-500" v-html="workflow.name1"></div>
+              <div class="text-left font-bold transition-colors"
+                :class="{ 'group-hover:text-gray-800': workflow.availability !== 'in_development',
+                  'text-gray-600': workflow.availability !== 'in_development',
+                  'group-hover:text-gray-600': workflow.availability === 'in_development',
+                  'text-gray-500': workflow.availability === 'in_development', }"
+                v-html="fill_placeholders(workflow.name2, true) + (workflow.availability === 'in_development' ? ' (in dev.)' : '')"></div>
+            </button>
+          </div>
+
         </div>
 
-        <div class="text-xs font-normal text-gray-500 -mt-3 mb-2 flex flex-row items-center gap-1">
-          <InformationCircleIcon class="h-4 w-4 inline"></InformationCircleIcon>
-          {{ fill_placeholders(selected_workflow.help_text) }}
-        </div>
+        <div v-if="selected_workflow != null" class="flex flex-col gap-4 px-7">
 
-        <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
-          <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
-            autocomplete="off" v-if="selected_workflow?.supports_user_input"
-            :placeholder="fill_placeholders(selected_workflow?.query_field_hint)"
-            class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
-          <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
-            <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
-              v-tooltip.bottom="{ value: 'Language of the query and search results', showDelay: 400 }">
-              <option v-for="language in available_languages" :value="language.code">{{ language.flag }}</option>
+          <div class="text-xl font-bold text-gray-800">
+            {{ selected_workflow.name1 }}
+            <span class="bg-gradient-to-r from-fuchsia-900 via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
+              {{ fill_placeholders(selected_workflow.name2, true) }}
+            </span>:
+          </div>
+
+          <div class="text-xs font-normal text-gray-500 -mt-3 mb-2 flex flex-row items-center gap-1">
+            <InformationCircleIcon class="h-4 w-4 inline"></InformationCircleIcon>
+            {{ fill_placeholders(selected_workflow.help_text) }}
+          </div>
+
+          <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
+            <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
+              autocomplete="off" v-if="selected_workflow?.supports_user_input"
+              :placeholder="fill_placeholders(selected_workflow?.query_field_hint)"
+              class="w-full h-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
+            <div class="" v-if="available_languages.length && !new_settings.auto_set_filters">
+              <select v-model="new_settings.result_language" class="w-18 appearance-none ring-0 border-0 bg-transparent"
+                v-tooltip.bottom="{ value: 'Language of the query and search results', showDelay: 400 }">
+                <option v-for="language in available_languages" :value="language.code">{{ language.flag }}</option>
+              </select>
+            </div>
+            <button v-tooltip.bottom="{ value: 'Submit', showDelay: 400 }"
+              class="px-2 h-10 w-32 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
+              @click="create_collection">
+              Go <PaperAirplaneIcon class="inline h-5 w-5"></PaperAirplaneIcon>
+            </button>
+          </div>
+
+          <div v-if="!new_settings.auto_set_filters && selected_workflow.supports_filters" class="flex flex-row gap-1 items-center">
+            <div class="flex flex-row items-center gap-0 h-6">
+              <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
+                @click="new_settings.retrieval_mode = 'keyword'"
+                v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
+                :class="{ 'text-blue-500': new_settings.retrieval_mode === 'keyword', 'text-gray-400': new_settings.retrieval_mode != 'keyword' }">
+                Keywords
+              </button>
+              <button
+                class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
+                @click="new_settings.retrieval_mode = 'vector'"
+                v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
+                :class="{ 'text-blue-500': new_settings.retrieval_mode === 'vector', 'text-gray-400': new_settings.retrieval_mode != 'vector' }">
+                Meaning
+              </button>
+              <button
+                class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
+                @click="new_settings.retrieval_mode = 'hybrid'"
+                v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
+                :class="{ 'text-blue-500': new_settings.retrieval_mode === 'hybrid', 'text-gray-400': new_settings.retrieval_mode != 'hybrid' }">
+                Both
+              </button>
+            </div>
+            <div class="flex-1"></div>
+            <select v-model="new_settings.ranking_settings"
+              v-if="appState.available_ranking_options.length > 1 && new_settings.retrieval_mode === 'keyword'"
+              class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
+              v-tooltip.bottom="{ value: new_settings.ranking_settings?.tooltip, showDelay: 400 }">
+              <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">
+                {{ ranking_settings.title }}
+              </option>
             </select>
+            <div class="flex-1"></div>
+            <div class="flex flex-row items-center gap-0 h-6">
+              <button
+                class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
+                v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
+                @click="(event) => { $refs.add_filter_menu.toggle(event) }">
+                + Filter
+              </button>
+              <OverlayPanel ref="add_filter_menu">
+                <AddFilterMenu @close="$refs.add_filter_menu.hide()" :filters="new_settings.filters">
+                </AddFilterMenu>
+              </OverlayPanel>
+            </div>
           </div>
-          <button v-tooltip.bottom="{ value: 'Submit', showDelay: 400 }"
-            class="px-2 h-10 w-32 rounded-md shadow-sm border-gray-300 border bg-gray-100 hover:bg-blue-100/50 text-sm text-gray-500"
-            @click="create_collection">
-            Go <PaperAirplaneIcon class="inline h-5 w-5"></PaperAirplaneIcon>
-          </button>
-        </div>
 
-        <div v-if="!new_settings.auto_set_filters && selected_workflow.supports_filters" class="flex flex-row gap-1 items-center">
-          <div class="flex flex-row items-center gap-0 h-6">
-            <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="new_settings.retrieval_mode = 'keyword'"
-              v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
-              :class="{ 'text-blue-500': new_settings.retrieval_mode === 'keyword', 'text-gray-400': new_settings.retrieval_mode != 'keyword' }">
-              Keywords
-            </button>
-            <button
-              class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="new_settings.retrieval_mode = 'vector'"
-              v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-              :class="{ 'text-blue-500': new_settings.retrieval_mode === 'vector', 'text-gray-400': new_settings.retrieval_mode != 'vector' }">
-              Meaning
-            </button>
-            <button
-              class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-              @click="new_settings.retrieval_mode = 'hybrid'"
-              v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-              :class="{ 'text-blue-500': new_settings.retrieval_mode === 'hybrid', 'text-gray-400': new_settings.retrieval_mode != 'hybrid' }">
-              Both
+          <Message v-if="show_warning_about_missing_meaning_search" class="" :closable="false">
+            Meaning / hybrid search is not yet available for this dataset.
+          </Message>
+
+          <!-- <Message v-if="!new_settings.auto_set_filters && using_meaning_for_non_english_search" class="" :closable="false">
+            Meaning / hybrid search only works for English queries.
+          </Message> -->
+
+          <div v-if="!new_settings.auto_set_filters && query_uses_operators_and_meaning" class="text-xs text-gray-400">
+            The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br>
+            Please use filters and quoted phrases here or switch to 'keyword' search.
+          </div>
+
+          <div v-if="!new_settings.auto_set_filters && query_includes_other_quotes" class="text-xs text-gray-400">
+            Note: use double quotes instead of single quotes to search for phrases.
+          </div>
+
+          <SearchFilterList v-if="!new_settings.auto_set_filters"
+            :removable="true"
+            :filters="new_settings.filters"></SearchFilterList>
+
+          <div v-if="!new_settings.auto_set_filters" class="text-xs text-gray-400">
+            Coming soon: select folder to search in
+          </div>
+
+          <div v-if="selected_workflow?.supports_filters"
+            class="ml-1 flex flex-row items-center"
+            v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
+            <InputSwitch v-model="new_settings.auto_set_filters" :binary="true" :disabled="!ai_is_available" class="scale-75" />
+            <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
+              @click="new_settings.auto_set_filters = !new_settings.auto_set_filters">
+              Auto-detect language, required filters and search strategy
             </button>
           </div>
-          <div class="flex-1"></div>
-          <select v-model="new_settings.ranking_settings"
-            v-if="appState.available_ranking_options.length > 1 && new_settings.retrieval_mode === 'keyword'"
-            class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
-            v-tooltip.bottom="{ value: new_settings.ranking_settings?.tooltip, showDelay: 400 }">
-            <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">
-              {{ ranking_settings.title }}
-            </option>
-          </select>
-          <div class="flex-1"></div>
-          <div class="flex flex-row items-center gap-0 h-6">
-            <button
-              class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
-              v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
-              @click="(event) => { $refs.add_filter_menu.toggle(event) }">
-              + Filter
-            </button>
-            <OverlayPanel ref="add_filter_menu">
-              <AddFilterMenu @close="$refs.add_filter_menu.hide()" :filters="new_settings.filters">
-              </AddFilterMenu>
-            </OverlayPanel>
-          </div>
+
+          <Message v-if="selected_workflow.availability === 'preview'" class="" :closable="false">
+            This feature is in preview and might not work as expected.
+          </Message>
+
         </div>
-
-        <Message v-if="show_warning_about_missing_meaning_search" class="" :closable="false">
-          Meaning / hybrid search is not yet available for this dataset.
-        </Message>
-
-        <!-- <Message v-if="!new_settings.auto_set_filters && using_meaning_for_non_english_search" class="" :closable="false">
-          Meaning / hybrid search only works for English queries.
-        </Message> -->
-
-        <div v-if="!new_settings.auto_set_filters && query_uses_operators_and_meaning" class="text-xs text-gray-400">
-          The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.<br>
-          Please use filters and quoted phrases here or switch to 'keyword' search.
-        </div>
-
-        <div v-if="!new_settings.auto_set_filters && query_includes_other_quotes" class="text-xs text-gray-400">
-          Note: use double quotes instead of single quotes to search for phrases.
-        </div>
-
-        <SearchFilterList v-if="!new_settings.auto_set_filters"
-          :removable="true"
-          :filters="new_settings.filters"></SearchFilterList>
-
-        <div v-if="!new_settings.auto_set_filters" class="text-xs text-gray-400">
-          Coming soon: select folder to search in
-        </div>
-
-        <div v-if="selected_workflow?.supports_filters"
-          class="ml-1 flex flex-row items-center"
-          v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
-          <InputSwitch v-model="new_settings.auto_set_filters" :binary="true" :disabled="!ai_is_available" class="scale-75" />
-          <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
-            @click="new_settings.auto_set_filters = !new_settings.auto_set_filters">
-            Auto-detect language, required filters and search strategy
-          </button>
-        </div>
-
-        <Message v-if="selected_workflow.availability === 'preview'" class="" :closable="false">
-          This feature is in preview and might not work as expected.
-        </Message>
 
       </div>
-
-    </div>
     </div>
 
+    <!-- example query box -->
     <div class="relative">
       <div v-if="example_queries.length" class="absolute top-4 text-sm text-gray-400">
         Try: <button class="underline hover:text-blue-500"
@@ -439,6 +442,9 @@ export default {
         </button>
       </div>
     </div>
+
+    <!-- tool intro box -->
+    <ToolIntroBox v-if="appState.organization?.tool_intro_text"></ToolIntroBox>
 
   </div>
 

@@ -121,28 +121,5 @@ export default {
   </button>
 </template>
 
-<style>
-.use-default-html-styles h1 {
-  font-size: 1.2em;
-  margin: 0.67em 0;
-}
-
-.use-default-html-styles h2 {
-  font-size: 1.17em;
-  margin: 0.83em 0;
-}
-
-.use-default-html-styles ul {
-  list-style-type: disc;
-  padding: 0 0 0 1.4em;
-}
-
-.use-default-html-styles ol {
-  list-style-type: decimal;
-  padding: 0 0 0 1.4em;
-}
-
-</style>
-
 <style scoped>
 </style>
