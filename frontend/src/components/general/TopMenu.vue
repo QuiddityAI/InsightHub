@@ -100,7 +100,9 @@ export default {
           v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('write')">
           Write</button> -->
-         <button class="hover:text-blue-500" :class="{'font-bold': appState.selected_app_tab === 'datasets'}"
+         <button v-if="appState.organization?.schemas_for_user_created_datasets?.length > 0"
+           class="hover:text-blue-500"
+           :class="{'font-bold': appState.selected_app_tab === 'datasets'}"
           @click="appState.set_app_tab('datasets')">
           {{ $t('TopMenu.upload-files') }}</button>
       </div>
