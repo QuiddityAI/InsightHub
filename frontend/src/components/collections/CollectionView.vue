@@ -276,15 +276,15 @@ export default {
         </div>
         <BorderButton @click="show_secondary_view('summary')"
           :highlighted="collection.ui_settings.secondary_view === 'summary'" :badge="collection.writing_task_count">
-          Summary
+          {{ $t('CollectionView.summary-secondary-view') }}
         </BorderButton>
         <BorderButton @click="show_secondary_view('map')"
           :highlighted="collection.ui_settings.secondary_view === 'map'">
-          Map
+          {{ $t('CollectionView.map-secondary-view') }}
         </BorderButton>
         <BorderButton @click="show_secondary_view('more')"
           :highlighted="collection.ui_settings.secondary_view === 'more'">
-          More
+          {{ $t('CollectionView.more-secondary-view') }}
         </BorderButton>
       </div>
     </div>

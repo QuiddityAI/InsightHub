@@ -25,7 +25,7 @@
     "user-menu-logout-etc": "Benutzer*innenmenü (Abmelden usw.)"
   },
   "UserMenu": {
-    "ai-credits-used": "Genuzte AI-Credits",
+    "ai-credits-used": "Genutzte AI-Credits",
     "change-password": "Passwort ändern",
     "logout": "Ausloggen",
     "need-more-credits-contact-us": "Keine AI-Credits? Kontaktiere uns",
@@ -55,5 +55,10 @@
     "warning-about-limited-features": "Ohne Anmeldung ist nur eine begrenzte Anzahl an Funktionen verfügbar.\nWir empfehlen oben die Erstellung eines Kontos. Es ist kostenlos und in nur einem Schritt möglich.",
     "you-need-to-accept-the-tos": "Um sich zu registrieren, müsst du die Nutzungsbedingungen und Datenschutzrichtlinien akzeptieren."
   },
-  "error": "Fehler"
+  "error": "Fehler",
+  "CollectionView": {
+    "map-secondary-view": "Karte",
+    "more-secondary-view": "Anderes",
+    "summary-secondary-view": "Zusammenfassung"
+  }
 }

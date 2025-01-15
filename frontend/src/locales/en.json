@@ -55,5 +55,10 @@
     "please-enter-a-valid-email": "Please enter a valid email",
     "please-enter-email-and-password": "Please enter email and password"
   },
-  "error": "Error"
+  "error": "Error",
+  "CollectionView": {
+    "summary-secondary-view": "Summary",
+    "map-secondary-view": "Map",
+    "more-secondary-view": "More"
+  }
 }
