@@ -288,7 +288,7 @@ export default {
         <div v-if="selected_workflow == null" class="flex flex-col gap-5 items-start">
 
           <h1 class="pl-11 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
-            What do you want to do?
+            {{ $t('create-collection.what-do-you-want-to-do') }}
           </h1>
 
           <div class="flex flex-row w-full items-center gap-5 pl-10 pr-7 py-4 overflow-x-auto">

@@ -17,6 +17,8 @@ import MainApp from "./apps/MainApp.vue"
 import { get_download_url, icon_for_file_suffix } from "./utils/utils";  // used in item rendering definitions
 import { useAppStateStore } from "./stores/app_state_store";
 import { useCollectionStore } from "./stores/collection_store";
+import { setupI18n, setI18nLanguage, loadLocaleMessages, SUPPORT_LOCALES  } from "./i18n.js";
+import message_en from "./locales/en.json";
 
 globalThis.get_download_url = get_download_url;
 globalThis.icon_for_file_suffix = icon_for_file_suffix;
@@ -30,6 +32,24 @@ marked.use(markedKatex(katex_options))
 
 const pinia = createPinia()
 const app = createApp(MainApp)
+
+const i18n = setupI18n({
+  locale: 'en',
+  fallbackLocale: 'en',
+  silentTranslationWarn: true,
+  silentFallbackWarn: true,
+  messages: {
+    en: message_en  // always load en in the beginning to avoid warnings
+  }
+})
+
+const preferred_language = navigator.languages[0].split('-')[0]
+if (SUPPORT_LOCALES.includes(preferred_language)) {
+  loadLocaleMessages(i18n, preferred_language).then(() => {
+    setI18nLanguage(i18n, preferred_language)
+  })
+}
+app.use(i18n)
 
 const eventBus = mitt();
 window.eventBus = eventBus;

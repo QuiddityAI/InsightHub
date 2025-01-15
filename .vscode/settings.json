@@ -11,5 +11,9 @@
       "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "webgl-glsl-editor.format.favorFloatingSuffix": false,
-    "webgl-glsl-editor.format.placeSpaceAfterKeywords": true
+    "webgl-glsl-editor.format.placeSpaceAfterKeywords": true,
+    "i18n-ally.localesPaths": [
+      "frontend/src/locales"
+    ],
+    "i18n-ally.keystyle": "nested"
 }
