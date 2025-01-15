@@ -45,6 +45,15 @@ def signup_from_app(request):
     if "?" not in next_url:
         next_url += "?"
     if User.objects.filter(username=email).exists():
+        if email.startswith('anonymous_user_'):
+            # it is important to not log the user back in, because this might leak data
+            # as the password is stored in the browser without the user knowing
+            return redirect(next_url + '&error=You can only create a test account once')
+        user = authenticate(username=email, password=password)
+        if user is not None:
+            login(request, user)
+            default_notifier.info(f"User {email} just logged in", user=user)
+            return redirect(next_url)
         return redirect(next_url + '&error=Email already exists')
     user = User()
     user.username = email
