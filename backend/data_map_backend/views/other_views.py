@@ -106,7 +106,7 @@ def get_available_organizations(request):
     hostnames_that_show_all_orgs += os.environ.get("HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS", "").split(",")
 
     if hostname not in hostnames_that_show_all_orgs \
-        and not hostname.startswith(["localhost", "127.0.0.1"]):
+        and not hostname.startswith(("localhost", "127.0.0.1")):
         organizations = organizations.filter(domains__contains=[hostname])
 
     serialized_data = OrganizationSerializer(organizations, many=True).data
