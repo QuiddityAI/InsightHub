@@ -290,6 +290,12 @@ export const useAppStateStore = defineStore("appState", {
         }
       })
     },
+    commit_user_preferences() {
+      const body = {
+        preferences: this.user.preferences,
+      }
+      httpClient.post("/org/data_map/set_user_preferences", body)
+    },
     retrieve_stored_maps_history_and_collections() {
       const that = this
       if (this.organization_id == null) {

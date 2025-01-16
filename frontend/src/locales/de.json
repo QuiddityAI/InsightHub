@@ -31,7 +31,10 @@
     "need-more-credits-contact-us": "Keine AI-Credits? Kontaktiere uns",
     "new-password": "Neues Passwort",
     "old-password": "Altes Passwort",
-    "repeat-new-password": "Neues Passwort wiederholen"
+    "repeat-new-password": "Neues Passwort wiederholen",
+    "llm-for-complex-tasks-summaries-etc": "LLM für komplexe Aufgaben (Zusammenfassungen etc.):",
+    "llm-for-simple-tasks": "LLM für einfache Aufgaben:",
+    "llm-select-placeholder": "Standard"
   },
   "LoginButton": {
     "login-register": "Login / Registrieren",

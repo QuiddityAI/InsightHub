@@ -31,7 +31,10 @@
     "change-password": "Change Password",
     "old-password": "Old Password",
     "new-password": "New Password",
-    "repeat-new-password": "Repeat New Password"
+    "repeat-new-password": "Repeat New Password",
+    "llm-for-simple-tasks": "LLM for simple tasks:",
+    "llm-for-complex-tasks-summaries-etc": "LLM for complex tasks (summaries etc.):",
+    "llm-select-placeholder": "Default"
   },
   "LoginButton": {
     "login-register": "Login / Register",

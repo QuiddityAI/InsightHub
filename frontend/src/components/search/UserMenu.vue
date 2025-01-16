@@ -6,6 +6,8 @@ import {
 
 import { useToast } from 'primevue/usetoast';
 
+import LlmSelect from "../widgets/LlmSelect.vue"
+
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
@@ -66,7 +68,7 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 w-[260px]">
     <span class="text-sm text-gray-600">
       {{ $t('UserMenu.ai-credits-used') }}
       {{ appState.user.used_ai_credits.toFixed(1) }} / {{ appState.user.total_ai_credits }}
@@ -75,6 +77,28 @@ export default {
     <span class="text-xs text-gray-500">
       {{ $t('UserMenu.need-more-credits-contact-us') }}
     </span>
+
+    <hr>
+
+    <span class="text-xs text-gray-500 whitespace-pre-wrap">
+      {{ $t('UserMenu.llm-for-simple-tasks') }}
+    </span>
+    <LlmSelect :placeholder="$t('UserMenu.llm-select-placeholder')"
+      v-model="appState.user.preferences.default_small_llm"
+      :show_default_option="true"
+      @update:modelValue="appState.commit_user_preferences()">
+    </LlmSelect>
+
+    <span class="text-xs text-gray-500 whitespace-pre-wrap">
+      {{ $t('UserMenu.llm-for-complex-tasks-summaries-etc') }}
+    </span>
+    <LlmSelect :placeholder="$t('UserMenu.llm-select-placeholder')"
+      v-model="appState.user.preferences.default_large_llm"
+      :show_default_option="true"
+      @update:modelValue="appState.commit_user_preferences()">
+    </LlmSelect>
+
+    <hr>
 
     <button
       v-if="appState.logged_in"
