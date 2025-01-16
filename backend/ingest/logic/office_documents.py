@@ -42,16 +42,16 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
         assert len(parsed) == len(batch)  # TODO: handle failed items
         for parsed_item, input_item in zip(parsed, batch):
             if not parsed_item:
-                results[input_item.folder + "/" + input_item.file_name] = [target_field_value, None]
+                results[(input_item.folder or "") + "/" + input_item.file_name] = [target_field_value, None]
                 continue
             result = ai_file_processing_single(input_item, parsed_item, parameters)
-            results[input_item.folder + "/" + input_item.file_name] = [target_field_value, result.model_dump()]
+            results[(input_item.folder or "") + "/" + input_item.file_name] = [target_field_value, result.model_dump()]
 
     def process_folder_batch(batch):
         with ThreadPool(10) as pool:
             outputs = pool.map(lambda input_item: ai_file_processing_single_folder(input_item, parameters), batch)
         for input_item, output in zip(batch, outputs):
-            results[input_item.folder + "/" + input_item.file_name] = [target_field_value, output.model_dump()]
+            results[(input_item.folder or "") + "/" + input_item.file_name] = [target_field_value, output.model_dump()]
 
     for item in input_items:
         item = AiFileProcessingInput(**item)
@@ -69,7 +69,7 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
         process_file_batch(file_batch)
     if folder_batch:
         process_folder_batch(folder_batch)
-    return [results[input_item["folder"] + "/" + input_item["file_name"]] for input_item in input_items]
+    return [results[(input_item["folder"] or "") + "/" + input_item["file_name"]] for input_item in input_items]
 
 
 def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, parameters: DotDict) -> AiFileProcessingOutput:
