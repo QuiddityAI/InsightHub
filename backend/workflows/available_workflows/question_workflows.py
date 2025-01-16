@@ -1,8 +1,6 @@
 import logging
 
-from django.contrib.auth.models import User
-
-from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask
+from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask, User
 from data_map_backend.schemas import CollectionUiSettings
 from search.schemas import SearchTaskSettings
 from search.logic.execute_search import run_search_task
@@ -30,7 +28,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
 
     def run(self, collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
         assert settings.user_input is not None
-        create_relevance_column(collection, settings.user_input, settings.result_language)
+        create_relevance_column(collection, settings.user_input, settings.result_language, user)
 
         search_task = SearchTaskSettings(
             dataset_id=settings.dataset_id,
@@ -52,7 +50,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
             name="Answer",
             source_fields=[COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS],
             use_all_items=True,
-            module="Mistral_Mistral_Large",
+            module=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
         )
         writing_task.prompt = settings.user_input
         writing_task.save()

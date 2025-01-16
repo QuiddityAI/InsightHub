@@ -1,10 +1,8 @@
 import time
 
-from django.contrib.auth.models import User
-
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
-from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask, CollectionColumn, FieldType
+from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask, CollectionColumn, FieldType, User
 from data_map_backend.schemas import CollectionUiSettings, ItemRelevance
 from search.schemas import SearchTaskSettings
 from search.logic.execute_search import run_search_task
@@ -98,7 +96,7 @@ class ResearchAgentWorkflow(WorkflowBase):
             name="Final Answer",
             source_fields=[COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS],
             use_all_items=True,
-            module="Mistral_Mistral_Large",
+            module=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
             prompt=f"Summarize the results of the search in regard to this question '{settings.user_input}'."
             # its always using a default prompt plus this prompt, I just realized it doesn't have the option to override the default prompt yet
         )

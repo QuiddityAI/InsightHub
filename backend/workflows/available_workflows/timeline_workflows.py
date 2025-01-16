@@ -13,7 +13,6 @@ from search.schemas import SearchTaskSettings, Filter
 from search.logic.execute_search import run_search_task
 from write.logic.writing_task import execute_writing_task_thread
 from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowAvailability, WorkflowOrder
-from workflows.create_columns import create_relevance_column
 from workflows.logic import WorkflowBase, workflow
 
 
