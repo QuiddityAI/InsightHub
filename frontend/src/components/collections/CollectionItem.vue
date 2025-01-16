@@ -119,7 +119,7 @@ export default {
     },
     get_full_item() {
       const that = this
-      if (!this.dataset_id || !this.item_id) return
+      if (!this.dataset_id || !this.item_id || !this.rendering) return
       const payload = {
         dataset_id: this.dataset_id,
         item_id: this.item_id,
