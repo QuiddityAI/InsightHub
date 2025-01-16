@@ -93,6 +93,14 @@ class User(AbstractUser):
         null=False,
     )
 
+    preferences = models.JSONField(
+        verbose_name="Preferences",
+        help_text="User preferences",
+        default=dict,
+        blank=True,
+        null=False,
+    )
+
     # if we'll want to include dj-stripe
     # subscription = models.ForeignKey(
     #     "djstripe.Subscription",
