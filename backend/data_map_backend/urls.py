@@ -6,6 +6,7 @@ from .views import smart_search_views
 urlpatterns=[
     path("health", other_views.get_health),
     path("get_current_user", other_views.get_current_user),
+    path("set_user_preferences", other_views.set_user_preferences_route),
     path("available_organizations", other_views.get_available_organizations),
     path("dataset", other_views.get_dataset),
     path("available_datasets", other_views.get_available_datasets),

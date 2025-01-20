@@ -364,7 +364,7 @@ export default {
 
     <div class="text-xs text-gray-400">
       Disclaimer: Do not upload personal, sensitive or confidential data.
-      Uploading files is only meant for processing them within out tool, not for long-term storage.
+      Uploading files is only meant for processing them within our tool, not for long-term storage.
       Always keep a local copy of the files, we don't guarantee their availability.
     </div>
 

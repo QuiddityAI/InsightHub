@@ -1,6 +1,4 @@
-from django.contrib.auth.models import User
-
-from data_map_backend.models import DataCollection
+from data_map_backend.models import DataCollection, User
 from search.schemas import SearchTaskSettings
 from search.logic.execute_search import run_search_task
 from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowOrder, WorkflowAvailability
@@ -58,7 +56,7 @@ class AssistedSearchWorkflow(WorkflowBase):
 
     def run(self, collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
         assert settings.user_input is not None
-        create_relevance_column(collection, settings.user_input, settings.result_language)
+        create_relevance_column(collection, settings.user_input, settings.result_language, user)
 
         search_task = SearchTaskSettings(
             dataset_id=settings.dataset_id,

@@ -70,6 +70,7 @@ def get_current_user(request):
                 "is_staff": False,
                 "used_ai_credits": 0,
                 "total_ai_credits": 0,
+                "preferences": {},
             }
         )
         return HttpResponse(response_json, status=200, content_type="application/json")
@@ -82,9 +83,30 @@ def get_current_user(request):
             "is_staff": user.is_staff,
             "used_ai_credits": ai_service_usage.get_current_period().usage,
             "total_ai_credits": ai_service_usage.limit_per_period,
+            "preferences": user.preferences,
         }
     )
     return HttpResponse(response_json, status=200, content_type="application/json")
+
+
+@csrf_exempt
+def set_user_preferences_route(request):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        preferences = data["preferences"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    user = request.user
+    user.preferences = preferences
+    user.save()
+
+    return HttpResponse(status=204)
 
 
 @csrf_exempt
