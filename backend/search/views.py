@@ -2,7 +2,7 @@ import json
 import threading
 
 from django.http import HttpResponse, HttpRequest
-
+from django.forms.models import model_to_dict
 from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection, Dataset
@@ -55,6 +55,37 @@ def run_search_task_route(request: HttpRequest, payload: RunSearchTaskPayload):
             pass
 
     return HttpResponse(status=204)
+
+
+@api.post("perform_search")
+def perform_search_route(request: HttpRequest, payload: RunSearchTaskPayload):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        collection = DataCollection.objects.get(id=payload.collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    collection.agent_is_running = True
+    collection.current_agent_step = "Running search task..."
+    collection.save(update_fields=["agent_is_running", "current_agent_step"])
+
+    try:
+        results = run_search_task(collection, payload.search_task, request.user.id)  # type: ignore
+    finally:
+        collection.agent_is_running = False
+        collection.current_agent_step = None
+        collection.save(update_fields=["agent_is_running", "current_agent_step"])
+    results = [model_to_dict(r) for r in results]
+    return HttpResponse(json.dumps(results), status=200, content_type="application/json")
+
+
+@api.post("say_hello")
+def say_hello(request):
+    return HttpResponse("Hello, World!")
 
 
 @api.post("run_previous_search_task")
