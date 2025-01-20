@@ -7,7 +7,12 @@ from typing import Callable, Iterable
 from django.utils import timezone
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
-from data_map_backend.models import DataCollection, CollectionColumn, FieldType, CollectionItem
+from data_map_backend.models import (
+    DataCollection,
+    CollectionColumn,
+    FieldType,
+    CollectionItem,
+)
 from legacy_backend.logic.search import get_search_results
 from search.schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
 from columns.logic.process_column import process_cells_blocking
@@ -24,6 +29,19 @@ def run_search_task(
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
 ) -> list[CollectionItem]:
+    """
+    Executes a search task on a given data collection.
+
+    Args:
+        collection (DataCollection): The data collection to perform the search on.
+        search_task (SearchTaskSettings): The settings for the search task.
+        user_id (int): The ID of the user initiating the search.
+        after_columns_were_processed (Callable, optional): A callback function to be called after columns are processed. Defaults to None.
+        is_new_collection (bool, optional): Flag indicating if the collection is new. Defaults to False.
+
+    Returns:
+        list[CollectionItem]: A list of collection items resulting from the search task.
+    """
     if not is_new_collection:
         exit_search_mode(collection, "_default")
 
@@ -208,7 +226,10 @@ def add_items_from_source(
     collection.search_sources.append(source.dict())
     collection.items_last_changed = timezone.now()
     if source.retrieval_mode == RetrievalMode.KEYWORD:
-        collection.log_explanation(f"Added {len(new_items)} search results found by **included keywords**", save=False)
+        collection.log_explanation(
+            f"Added {len(new_items)} search results found by **included keywords**",
+            save=False,
+        )
     elif source.retrieval_mode == RetrievalMode.VECTOR:
         collection.log_explanation(
             f"Added {len(new_items)} search results found by **AI-based semantic similarity** (vector search)",
