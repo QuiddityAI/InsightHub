@@ -81,3 +81,15 @@ def delete_dataset_content(dataset_id: int):
     }
     response = requests.post(url, json=data, headers=headers)
     response.raise_for_status()
+
+def remove_items(dataset_id: int, item_ids: list[str]):
+    url = DATA_BACKEND_HOST + f'/data_backend/remove_items'
+    data = {
+        'dataset_id': dataset_id,
+        'item_ids': item_ids,
+    }
+    headers = {
+        'Authorization': f'{BACKEND_AUTHENTICATION_SECRET}',
+    }
+    response = requests.post(url, json=data, headers=headers)
+    response.raise_for_status()

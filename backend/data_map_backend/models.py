@@ -22,6 +22,7 @@ from .data_backend_client import (
     delete_dataset_content,
     get_global_question_context,
 )
+from .data_backend_client import remove_items as remove_items_from_data_backend
 from .chatgpt_client import get_chatgpt_response_using_history
 
 
@@ -958,6 +959,14 @@ class Dataset(models.Model):
         delete_dataset_content(self.id)  # type: ignore
         collection_items = CollectionItem.objects.filter(dataset_id=self.id)  # type: ignore
         collection_items.delete()
+
+    def remove_items(self, item_ids: list):
+        remove_items_from_data_backend(self.id, item_ids)
+        for item_id in item_ids:
+            collection_items = CollectionItem.objects.filter(item_id=item_id)  # type: ignore
+            collection_items.delete()
+            logging.warning(f"Removed item {item_id} from dataset {self.id}")
+        
 
     def delete_with_content(self):
         self.delete_content()

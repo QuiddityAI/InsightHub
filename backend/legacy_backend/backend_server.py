@@ -11,7 +11,7 @@ from .utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncod
 from data_map_backend.utils import DotDict
 
 from .logic.mapping_task import get_map_selection_statistics, get_or_create_map, get_map_results
-from .logic.insert_logic import insert_many, insert_vectors, update_database_layout, delete_dataset_content
+from .logic.insert_logic import insert_many, insert_vectors, update_database_layout, delete_dataset_content, remove_items
 from .logic.search import get_search_results, get_search_results_for_stored_map, get_item_count, get_random_items, get_items_having_value_count
 from .logic.search_common import get_document_details_by_id
 from .logic.generate_missing_values import delete_field_content, generate_missing_values
@@ -280,6 +280,22 @@ def delete_dataset_content_endpoint(request, ):
     except Exception as e:
         raise e
         return str(e), 500
+    return "", 204
+
+@convert_flask_to_django_route('/data_backend/remove_items', methods=['POST'])
+def remove_items_endpoint(request, ):
+    try:
+        dataset_id: int = request.json["dataset_id"]  # type: ignore
+    except KeyError:
+        return "dataset_id missing", 400
+    try:
+        item_ids: list[int] = request.json["item_ids"]  # type: ignore
+    except KeyError:
+        return "item_ids missing", 400
+    try:
+        remove_items(dataset_id, item_ids)
+    except Exception as e:
+        raise e
     return "", 204
 
 

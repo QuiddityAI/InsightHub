@@ -28,7 +28,7 @@ from ..models import (
     TrainedClassifier,
     ServiceUsage,
     generate_unique_database_name,
-    User
+    User,
 )
 from ..serializers import (
     CollectionItemSerializer,
@@ -93,49 +93,43 @@ def get_available_organizations(request):
         return HttpResponse(status=405)
 
     if request.user.is_authenticated:
-        organizations = Organization.objects.filter(
-            Q(is_public=True) | Q(members=request.user)
-        )
+        organizations = Organization.objects.filter(Q(is_public=True) | Q(members=request.user))
     else:
         organizations = Organization.objects.filter(is_public=True)
     organizations = organizations.distinct().order_by("name")
 
     # restrict some domains to certain organizations:
     hostname = request.META.get("HTTP_HOST")
-    hostnames_that_show_all_orgs = ["localhost:55140", "home-server:55140", "feldberg.absclust.com"]
+    hostnames_that_show_all_orgs = [
+        "localhost:55140",
+        "home-server:55140",
+        "feldberg.absclust.com",
+        "backend-staging-at:55125",
+    ]
     hostnames_that_show_all_orgs += os.environ.get("HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS", "").split(",")
 
-    if hostname not in hostnames_that_show_all_orgs \
-        and not hostname.startswith(("localhost", "127.0.0.1")):
+    if hostname not in hostnames_that_show_all_orgs and not hostname.startswith(("localhost", "127.0.0.1")):
         organizations = organizations.filter(domains__contains=[hostname])
 
     serialized_data = OrganizationSerializer(organizations, many=True).data
 
     # replace list of all datasets of each organization with list of available datasets:
     for organization, serialized in zip(organizations, serialized_data):
-        is_member = (
-            request.user.is_authenticated
-            and organization.members.filter(id=request.user.id).exists()
-        )
+        is_member = request.user.is_authenticated and organization.members.filter(id=request.user.id).exists()
         serialized["is_member"] = is_member
         if is_member:
             serialized["datasets"] = [
                 dataset.id  # type: ignore
                 for dataset in Dataset.objects.filter(
                     Q(organization_id=organization.id)  # type: ignore
-                    & (
-                        Q(is_public=True)
-                        | Q(is_organization_wide=True)
-                        | Q(admins=request.user)
-                    )
+                    & (Q(is_public=True) | Q(is_organization_wide=True) | Q(admins=request.user))
                 )
             ]
         else:
             serialized["datasets"] = [
                 dataset.id  # type: ignore
                 for dataset in Dataset.objects.filter(
-                    Q(organization_id=organization.id)  # type: ignore
-                    & Q(is_public=True)
+                    Q(organization_id=organization.id) & Q(is_public=True)  # type: ignore
                 )
             ]
 
@@ -158,14 +152,8 @@ def get_dataset(request):
     dataset: Dataset = get_dataset_cached(dataset_id)
 
     if not is_from_backend(request) and not dataset.is_public:
-        is_member = (
-            request.user.is_authenticated
-            and dataset.organization.members.filter(id=request.user.id).exists()
-        )
-        is_admin = (
-            request.user.is_authenticated
-            and dataset.admins.filter(id=request.user.id).exists()
-        )
+        is_member = request.user.is_authenticated and dataset.organization.members.filter(id=request.user.id).exists()
+        is_admin = request.user.is_authenticated and dataset.admins.filter(id=request.user.id).exists()
         if not ((dataset.is_organization_wide and is_member) or is_admin):
             return HttpResponse(status=401)
 
@@ -177,20 +165,24 @@ def get_dataset(request):
 
 @lru_cache(maxsize=128)
 def get_dataset_cached(dataset_id: int) -> Dataset:
-    return Dataset.objects.select_related(
-        "schema",
-    ).prefetch_related(
-        "schema__object_fields",
-        "schema__applicable_import_converters",
-        "schema__applicable_export_converters",
-        "schema__object_fields__generator",
-        "schema__object_fields__generator__embedding_space",
-        "schema__object_fields__embedding_space",
-    ).get(id=dataset_id)
+    return (
+        Dataset.objects.select_related(
+            "schema",
+        )
+        .prefetch_related(
+            "schema__object_fields",
+            "schema__applicable_import_converters",
+            "schema__applicable_export_converters",
+            "schema__object_fields__generator",
+            "schema__object_fields__generator__embedding_space",
+            "schema__object_fields__embedding_space",
+        )
+        .get(id=dataset_id)
+    )
 
 
 @lru_cache(maxsize=128)
-def get_serialized_dataset_cached(dataset_id: int, additional_fields: tuple=tuple()) -> DotDict:
+def get_serialized_dataset_cached(dataset_id: int, additional_fields: tuple = tuple()) -> DotDict:
     dataset: Dataset = get_dataset_cached(dataset_id)
 
     dataset_dict = DatasetSerializer(instance=dataset).data
@@ -201,9 +193,7 @@ def get_serialized_dataset_cached(dataset_id: int, additional_fields: tuple=tupl
     if "applicable_export_converters" not in dataset_dict["schema"]:
         dataset_dict["schema"]["applicable_export_converters"] = []
     universal_exporters = ExportConverter.objects.filter(universally_applicable=True)
-    serialized_exporters = ExportConverterSerializer(
-        universal_exporters, many=True
-    ).data
+    serialized_exporters = ExportConverterSerializer(universal_exporters, many=True).data
     dataset_dict["schema"]["applicable_export_converters"].extend(serialized_exporters)
     if "item_count" in additional_fields:
         dataset_dict["item_count"] = dataset.item_count
@@ -293,9 +283,7 @@ def create_dataset_from_schema(request):
         return HttpResponse(status=404)
     if not organization.members.filter(id=request.user.id).exists():
         return HttpResponse(status=401)
-    if not organization.schemas_for_user_created_datasets.filter(
-        identifier=schema_identifier
-    ).exists():
+    if not organization.schemas_for_user_created_datasets.filter(identifier=schema_identifier).exists():
         return HttpResponse(status=404)
 
     try:
@@ -312,9 +300,7 @@ def create_dataset_from_schema(request):
     dataset.organization = organization
     dataset.created_in_ui = from_ui
     dataset.is_public = False
-    dataset.database_name = generate_unique_database_name(
-        f"{request.user.id}_{schema.identifier}_{safe_name}"
-    )
+    dataset.database_name = generate_unique_database_name(f"{request.user.id}_{schema.identifier}_{safe_name}")
     dataset.save()
     dataset.admins.add(request.user)
     dataset.save()
@@ -351,7 +337,9 @@ def get_or_create_default_dataset_route(request):
     return HttpResponse(result, status=200, content_type="application/json")
 
 
-def get_or_create_default_dataset(user_id: int, schema_identifier: str, organization_id: int) -> Dataset | HttpResponse:
+def get_or_create_default_dataset(
+    user_id: int, schema_identifier: str, organization_id: int
+) -> Dataset | HttpResponse:
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
@@ -363,9 +351,7 @@ def get_or_create_default_dataset(user_id: int, schema_identifier: str, organiza
         return HttpResponse(status=404)
     if not organization.members.filter(id=user.id).exists():  # type: ignore
         return HttpResponse(status=401)
-    if not organization.schemas_for_user_created_datasets.filter(
-        identifier=schema_identifier
-    ).exists():
+    if not organization.schemas_for_user_created_datasets.filter(identifier=schema_identifier).exists():
         return HttpResponse(status=404)
 
     try:
@@ -374,12 +360,8 @@ def get_or_create_default_dataset(user_id: int, schema_identifier: str, organiza
         return HttpResponse(status=404)
 
     default_dataset_name = f"My {schema.name}"
-    if Dataset.objects.filter(
-        name=default_dataset_name, organization=organization, admins=user
-    ).exists():
-        dataset = Dataset.objects.filter(
-            name=default_dataset_name, organization=organization, admins=user
-        ).first()
+    if Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=user).exists():
+        dataset = Dataset.objects.filter(name=default_dataset_name, organization=organization, admins=user).first()
     else:
         dataset = Dataset()
         dataset.schema = schema
@@ -387,9 +369,7 @@ def get_or_create_default_dataset(user_id: int, schema_identifier: str, organiza
         dataset.organization = organization
         dataset.created_in_ui = True
         dataset.is_public = False
-        dataset.database_name = generate_unique_database_name(
-            f"{user_id}_my_{schema.identifier}"
-        )
+        dataset.database_name = generate_unique_database_name(f"{user_id}_my_{schema.identifier}")
         dataset.save()
         dataset.admins.add(user)
         dataset.save()
@@ -584,9 +564,9 @@ def get_search_history(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    items = SearchHistoryItem.objects.filter(
-        user_id=request.user.id, organization_id=organization_id
-    ).order_by("-created_at")[offset:offset + limit:-1]
+    items = SearchHistoryItem.objects.filter(user_id=request.user.id, organization_id=organization_id).order_by(
+        "-created_at"
+    )[offset : offset + limit : -1]
     serialized_data = SearchHistoryItemSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
@@ -687,15 +667,11 @@ def delete_collection_class(request):
     except (KeyError, ValueError):
         return HttpResponse(status=400)
 
-    all_items = CollectionItem.objects.filter(
-        collection_id=collection_id, classes__contains=[class_name]
-    )
+    all_items = CollectionItem.objects.filter(collection_id=collection_id, classes__contains=[class_name])
     for item in all_items:
         item.delete()
 
-    classifiers = TrainedClassifier.objects.filter(
-        collection_id=collection_id, class_name=class_name
-    )
+    classifiers = TrainedClassifier.objects.filter(collection_id=collection_id, class_name=class_name)
     classifiers.delete()
 
     try:
@@ -726,8 +702,7 @@ def get_collections(request):
         return HttpResponse(status=400)
 
     items = DataCollection.objects.filter(
-        Q(related_organization_id=related_organization_id)
-        & (Q(created_by=request.user.id) | Q(is_public=True))
+        Q(related_organization_id=related_organization_id) & (Q(created_by=request.user.id) | Q(is_public=True))
     ).order_by("-created_at")
     serialized_data = CollectionSerializer(items, many=True).data
     result = json.dumps(serialized_data)
@@ -752,11 +727,7 @@ def get_collection(request):
         collection = DataCollection.objects.get(id=collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
-    if (
-        collection.created_by != request.user
-        and not collection.is_public
-        and not is_from_backend(request)
-    ):
+    if collection.created_by != request.user and not collection.is_public and not is_from_backend(request):
         return HttpResponse(status=401)
     serialized_data = CollectionSerializer(collection).data
     result = json.dumps(serialized_data)
@@ -785,7 +756,9 @@ def set_collection_attributes(request):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    allowed_fields = ["name",]
+    allowed_fields = [
+        "name",
+    ]
 
     for key in updates.keys():
         if key not in allowed_fields:
@@ -835,9 +808,7 @@ def get_trained_classifier(request):
     serialized_data = TrainedClassifierSerializer(classifier).data
     assert isinstance(serialized_data, dict)
     if not include_vector and "decision_vector" in serialized_data:
-        serialized_data["decision_vector_exists"] = (
-            len(serialized_data["decision_vector"]) > 0
-        )
+        serialized_data["decision_vector_exists"] = len(serialized_data["decision_vector"]) > 0
         del serialized_data["decision_vector"]
     result = json.dumps(serialized_data)
 
@@ -875,9 +846,7 @@ def set_trained_classifier(request):
             class_name=class_name,
             embedding_space=embedding_space_identifier,
         )
-    if classifier.collection.created_by != request.user and not is_from_backend(
-        request
-    ):
+    if classifier.collection.created_by != request.user and not is_from_backend(request):
         return HttpResponse(status=401)
 
     if decision_vector is not None:
@@ -944,8 +913,8 @@ def get_collection_items(request):
 
 
 def get_filtered_collection_items(
-    collection, class_name, field_type=None,
-    is_positive=None, order_by="-date_added") -> tuple[BaseManager[CollectionItem], bool, tuple[int, str] | None]:
+    collection, class_name, field_type=None, is_positive=None, order_by="-date_added"
+) -> tuple[BaseManager[CollectionItem], bool, tuple[int, str] | None]:
     if field_type:
         all_items = CollectionItem.objects.filter(
             collection_id=collection.id,
@@ -955,35 +924,33 @@ def get_filtered_collection_items(
         )
     else:
         # return all items
-        all_items = CollectionItem.objects.filter(
-            collection_id=collection.id, classes__contains=[class_name]
-        )
+        all_items = CollectionItem.objects.filter(collection_id=collection.id, classes__contains=[class_name])
 
-    active_sources = [s for s in collection.search_sources if s['is_active']]
+    active_sources = [s for s in collection.search_sources if s["is_active"]]
     reference_ds_and_item_id = None
     if len(active_sources) == 1:
         source = active_sources[0]
-        if source.get('reference_dataset_id') and source.get('reference_item_id'):
-            reference_ds_and_item_id = (source['reference_dataset_id'], source['reference_item_id'])
+        if source.get("reference_dataset_id") and source.get("reference_item_id"):
+            reference_ds_and_item_id = (source["reference_dataset_id"], source["reference_item_id"])
     search_mode = len(active_sources) > 0
-    search_results = all_items.filter(search_source_id__in=[s['id_hash'] for s in active_sources])
+    search_results = all_items.filter(search_source_id__in=[s["id_hash"] for s in active_sources])
 
     if search_mode:
         return_items = search_results
-        return_items = return_items.order_by('-search_score')
+        return_items = return_items.order_by("-search_score")
     else:
         return_items = all_items.filter(relevance__gte=2) if is_positive else all_items.filter(relevance__lte=-2)
-        return_items = return_items.order_by(order_by, '-search_score')
+        return_items = return_items.order_by(order_by, "-search_score")
 
     for filter_data in collection.filters:
         filter = CollectionFilter(**filter_data)
-        if filter.filter_type == 'collection_item_ids':
+        if filter.filter_type == "collection_item_ids":
             return_items = return_items.filter(id__in=filter.value)
-        elif filter.filter_type == 'metadata_value_gte':
-            return_items = return_items.filter(**{f'metadata__{filter.field}__gte': filter.value})
-        elif filter.filter_type == 'metadata_value_lte':
-            return_items = return_items.filter(**{f'metadata__{filter.field}__lte': filter.value})
-        elif filter.filter_type == 'text_query':
+        elif filter.filter_type == "metadata_value_gte":
+            return_items = return_items.filter(**{f"metadata__{filter.field}__gte": filter.value})
+        elif filter.filter_type == "metadata_value_lte":
+            return_items = return_items.filter(**{f"metadata__{filter.field}__lte": filter.value})
+        elif filter.filter_type == "text_query":
             return_items = apply_text_filter(return_items, filter)
 
     return return_items, search_mode, reference_ds_and_item_id
@@ -992,7 +959,7 @@ def get_filtered_collection_items(
 def apply_text_filter(items: BaseManager, filter: CollectionFilter) -> BaseManager:
     field = filter.field
     query = filter.value
-    if field == '_descriptive_text_fields':
+    if field == "_descriptive_text_fields":
         example_dataset_id = next(e.dataset_id for e in items if e.dataset_id is not None)
         # FIXME: this uses only the first dataset id and won't work for multiple datasets
         dataset = Dataset.objects.get(id=example_dataset_id)
@@ -1054,9 +1021,7 @@ def add_item_to_collection(request):
 
     if value is None and dataset_id is None:
         return HttpResponse(status=400)
-    if field_type == FieldType.IDENTIFIER and not (
-        dataset_id is not None and item_id is not None
-    ):
+    if field_type == FieldType.IDENTIFIER and not (dataset_id is not None and item_id is not None):
         return HttpResponse(status=400)
 
     try:
@@ -1259,9 +1224,9 @@ def get_stored_maps(request):
         return HttpResponse(status=400)
 
     # TODO: also show public ones
-    items = StoredMap.objects.filter(
-        user_id=request.user.id, organization_id=organization_id
-    ).order_by("created_at")[:25]
+    items = StoredMap.objects.filter(user_id=request.user.id, organization_id=organization_id).order_by("created_at")[
+        :25
+    ]
     serialized_data = StoredMapSerializer(items, many=True).data
     result = json.dumps(serialized_data)
 
@@ -1322,6 +1287,32 @@ def get_generators(request):
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type="application/json")
+
+
+@csrf_exempt
+def remove_items(request):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        dataset_id = data["dataset_id"]
+        item_ids = data["item_ids"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        dataset: Dataset = Dataset.objects.get(id=dataset_id)
+        dataset.remove_items(item_ids)
+    except Dataset.DoesNotExist:
+        return HttpResponse(status=404)
+    except Exception as e:
+        logging.error(e)
+        return HttpResponse(status=500)
+
+    return HttpResponse(status=204)
 
 
 """
