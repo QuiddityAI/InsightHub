@@ -46,7 +46,8 @@ services:
     volumes:
       - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_EXPOSED_IP:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_EXPOSED_IP_V6:-[::]}:55140:55140"
     environment:
       - backend_host=http://backend:55125
   webserver-prod:
@@ -59,7 +60,8 @@ services:
     volumes:
       - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_EXPOSED_IP:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_EXPOSED_IP_V6:-[::]}:55140:55140"
     environment:
       - backend_host=http://backend:55125
   qdrant:

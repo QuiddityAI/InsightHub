@@ -28,8 +28,10 @@ DATA_PATH=./data
 optionally, set IP where the containers should be available (e.g. 127.0.0.1 or 0.0.0.0) and
   port that is exposed outside the docker network:
 
-WEBSERVER_EXPOSED_IP=0.0.0.0
-WEBSERVER_STAGING_EXPOSED_IP=127.0.0.1
+WEBSERVER_EXPOSED_IP_V4=0.0.0.0
+WEBSERVER_EXPOSED_IP_V6=[::]
+WEBSERVER_STAGING_EXPOSED_IP_V4=127.0.0.1
+WEBSERVER_STAGING_EXPOSED_IP_V6=[::]
 
 QDRANT_EXPOSED_IP=127.0.0.1
 QDRANT_EXPOSED_PORT=6333
