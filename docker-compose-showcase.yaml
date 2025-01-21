@@ -32,7 +32,8 @@ services:
     volumes:
       - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_STAGING_EXPOSED_IP:-127.0.0.1}:55441:55140"
+      - "${WEBSERVER_STAGING_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_STAGING_EXPOSED_IP_V6:-[::1]}:55140:55140"
     environment:
       - backend_host=http://backend-showcase:55125
   postgres-showcase:
