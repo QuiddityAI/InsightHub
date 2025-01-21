@@ -15,6 +15,9 @@ requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [tool.black]
+line-length = 119
+target-version = ['py311']
+
 
 [project]
 authors = [
