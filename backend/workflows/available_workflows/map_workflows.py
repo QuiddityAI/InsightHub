@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionUiSettings
 from search.schemas import SearchTaskSettings, SearchType
-from search.logic.execute_search import run_search_task
+from search.logic.execute_search import create_and_run_search_task
 from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowOrder, WorkflowAvailability
 from workflows.logic import WorkflowBase, workflow
 
@@ -58,6 +58,6 @@ class OverviewMapWorkflow(WorkflowBase):
                 ranking_settings=settings.ranking_settings,
                 candidates_per_step=2000,
             )
-        run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
         collection.agent_is_running = False
         collection.save(update_fields=["agent_is_running"])

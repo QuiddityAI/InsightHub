@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import random
+import uuid
 import string
 import threading
 from collections import defaultdict
@@ -1151,24 +1152,26 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=True,
     )
-    search_sources = models.JSONField(
-        verbose_name="Search Sources",
-        help_text="A list of active and past search sources",
-        default=list,
-        blank=True,
+    search_mode = models.BooleanField(
+        verbose_name="Search Mode",
+        help_text="Whether this collection is currently in search mode (see most recent search task)",
+        default=False,
+        blank=False,
         null=False,
     )
-    search_tasks = models.JSONField(
-        verbose_name="Search Tasks",
-        help_text="List of executed search tasks",
-        default=list,
+    most_recent_search_task = models.ForeignKey(
+        verbose_name="Most Recent Search Task",
+        help_text="(is the active one if in search mode, otherwise the last one)",
+        to="SearchTask",
+        on_delete=models.SET_NULL,
+        related_name="+",
         blank=True,
-        null=False,
+        null=True,
     )
-    last_search_task = models.JSONField(
-        verbose_name="Last Search Task",
-        help_text="if search mode is still active, this is the current search task",
-        default=dict,
+    search_task_navigation_history = models.JSONField(
+        verbose_name="Search Task Navigation History",
+        help_text="List of ids of search tasks, used for back and forth navigation (for full history, see collection.search_tasks)",
+        default=list,
         blank=True,
         null=False,
     )
@@ -1318,6 +1321,95 @@ class DatasetSpecificSettingsOfCollection(models.Model):
         verbose_name = "Dataset Specific Settings"
         verbose_name_plural = "Dataset Specific Settings"
         unique_together = [["collection", "dataset"]]
+
+
+class SearchTask(models.Model):
+    id = models.UUIDField(
+        verbose_name="ID",
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    collection = models.ForeignKey(
+        verbose_name="Collection",
+        to=DataCollection,
+        on_delete=models.CASCADE,
+        related_name="search_tasks",
+        blank=False,
+        null=False,
+    )
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
+        on_delete=models.CASCADE,
+        related_name="+",
+        blank=False,
+        null=False,
+    )
+    settings = models.JSONField(
+        verbose_name="Settings",
+        help_text="Settings for the search task",
+        default=dict,
+        blank=True,
+        null=False,
+    )
+    retrieval_parameters = models.JSONField(
+        verbose_name="Retrieval Parameters",
+        help_text="Parameters for retrieval (partly generated from user input)",
+        default=dict,
+        blank=True,
+        null=False,
+    )
+    last_retrieval_status = models.JSONField(
+        verbose_name="Last Retrieval Status",
+        help_text="Status of the last retrieval (available results, retrieved results, relaxation etc.)",
+        default=dict,
+        blank=True,
+        null=False,
+    )
+    is_saved = models.BooleanField(
+        verbose_name="Is saved",
+        help_text="Whether the search task is saved",
+        default=False,
+        blank=False,
+        null=False,
+    )
+    run_on_new_items = models.BooleanField(
+        verbose_name="Run on new items",
+        help_text="Whether the search task should be run on new items",
+        default=False,
+        blank=False,
+        null=False,
+    )
+    run_periodically = models.BooleanField(
+        verbose_name="Run periodically",
+        help_text="Whether the search task should be run periodically",
+        default=False,
+        blank=False,
+        null=False,
+    )
+    period_start = models.DateTimeField(
+        verbose_name="Period start",
+        help_text="Start of the period for periodic runs",
+        blank=True,
+        null=True,
+    )
+    period_interval = models.DurationField(
+        verbose_name="Period interval",
+        help_text="Interval for periodic runs",
+        blank=True,
+        null=True,
+    )
+    last_run = models.DateTimeField(
+        verbose_name="Last run",
+        help_text="Last time the search task was run",
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        verbose_name = "Search Task"
+        verbose_name_plural = "Search Tasks"
 
 
 def get_random_string():

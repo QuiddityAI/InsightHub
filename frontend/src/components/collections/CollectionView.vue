@@ -113,9 +113,6 @@ export default {
     class_details() {
       return this.collection.actual_classes.find((collection_class) => collection_class.name === this.class_name)
     },
-    search_mode() {
-      return this.$refs.collection_table_view?.search_mode
-    },
   },
   mounted() {
     if (!this.collection.ui_settings.item_size_mode) {
@@ -356,8 +353,7 @@ export default {
             'shadow-md': collection.ui_settings.item_layout !== CollectionItemLayout.SPREADSHEET,
             'shadow-[0_2px_6px_1px_rgba(0,0,0,0.12)]': collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET,
             }">
-            <FilterBar
-              @edit_search_task="show_search_task_dialog = true" />
+            <FilterBar/>
           </div>
         </div>
 

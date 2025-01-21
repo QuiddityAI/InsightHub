@@ -42,17 +42,17 @@ export default {
     collection() {
       return this.collectionStore.collection
     },
-    active_search_sources() {
-      return this.collectionStore.collection.search_sources.filter((source) => source.is_active)
+    last_retrieval_status() {
+      return this.collectionStore.collection.most_recent_search_task?.last_retrieval_status
     },
     retrieved_results() {
-      return Math.max(this.active_search_sources.map((source) => source.retrieved))
+      return this.last_retrieval_status.retrieved
     },
     available_results() {
-      return Math.max(this.active_search_sources.map((source) => source.available))
+      return this.last_retrieval_status.available
     },
     any_source_is_estimated() {
-      return this.active_search_sources.some((source) => !source.available_is_exact)
+      return !this.last_retrieval_status.available_is_exact
     },
     more_results_are_available() {
       return this.retrieved_results < this.available_results || this.any_source_is_estimated
@@ -91,7 +91,7 @@ export default {
     <div v-if="collectionStore.search_mode && more_results_are_available && is_last_page"
       class="my-5 w-full flex flex-row justify-center">
 
-      <BorderButton @click="collectionStore.add_items_from_active_sources"
+      <BorderButton @click="collectionStore.add_more_items_from_active_task"
         class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
         v-tooltip.top="{ value: `${retrieved_results} of ${available_results}${any_source_is_estimated ? '+': ''} results retrieved`}">
         Show More Results <PlusIcon class="h-4 w-4 inline"></PlusIcon>

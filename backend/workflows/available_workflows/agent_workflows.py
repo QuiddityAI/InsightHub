@@ -12,7 +12,7 @@ from data_map_backend.models import (
 )
 from data_map_backend.schemas import CollectionUiSettings, ItemRelevance
 from search.schemas import SearchTaskSettings
-from search.logic.execute_search import run_search_task
+from search.logic.execute_search import create_and_run_search_task
 from write.logic.writing_task import execute_writing_task_safe
 from workflows.schemas import CreateCollectionSettings
 from columns.logic.process_column import process_cells_blocking
@@ -62,7 +62,7 @@ class ResearchAgentWorkflow(WorkflowBase):
             exit_search_mode=False,
             candidates_per_step=10,  # this is the number of search results
         )
-        new_items = run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        new_items = create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
         # now the results are already there (search is run synchronously, but if there would already be columns, they are run asynchronously)
 
         time.sleep(2)  # just for the demo to understand the process

@@ -13,6 +13,8 @@ from django.db.models import Q
 from django.utils import timezone
 from django.db.models.manager import BaseManager
 
+from search.schemas import SearchTaskSettings
+
 from ..models import (
     DataCollection,
     CollectionItem,
@@ -26,6 +28,7 @@ from ..models import (
     StoredMap,
     Generator,
     TrainedClassifier,
+    SearchTask,
     ServiceUsage,
     generate_unique_database_name,
     User,
@@ -905,11 +908,11 @@ def get_collection_items(request):
         return HttpResponse(status=400)
 
     try:
-        collection = DataCollection.objects.get(id=collection_id)
+        collection = DataCollection.objects.select_related("most_recent_search_task").get(id=collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
 
-    return_items, search_mode, reference_ds_and_item_id = get_filtered_collection_items(
+    return_items, reference_ds_and_item_id = get_filtered_collection_items(
         collection, class_name, field_type, is_positive, order_by
     )
 
@@ -925,7 +928,7 @@ def get_collection_items(request):
     result = {
         "items": serialized_data,
         "items_last_changed": collection.items_last_changed.isoformat(),
-        "search_mode": search_mode,
+        "search_mode": collection.search_mode,
         "filtered_count": filtered_count,
     }
     result = json.dumps(result)
@@ -934,29 +937,30 @@ def get_collection_items(request):
 
 
 def get_filtered_collection_items(
-    collection, class_name, field_type=None, is_positive=None, order_by="-date_added"
-) -> tuple[BaseManager[CollectionItem], bool, tuple[int, str] | None]:
+    collection: DataCollection, class_name, field_type=None, is_positive=None, order_by="-date_added"
+) -> tuple[BaseManager[CollectionItem], tuple[int, str] | None]:
     if field_type:
         all_items = CollectionItem.objects.filter(
-            collection_id=collection.id,
+            collection_id=collection.id,  # type: ignore
             field_type=field_type,
             # is_positive=is_positive,  # FIXME: is_positive will be replaced by relevance
             classes__contains=[class_name],
         )
     else:
         # return all items
-        all_items = CollectionItem.objects.filter(collection_id=collection.id, classes__contains=[class_name])
+        all_items = CollectionItem.objects.filter(collection_id=collection.id, classes__contains=[class_name])  # type: ignore
 
-    active_sources = [s for s in collection.search_sources if s["is_active"]]
+
     reference_ds_and_item_id = None
-    if len(active_sources) == 1:
-        source = active_sources[0]
-        if source.get("reference_dataset_id") and source.get("reference_item_id"):
-            reference_ds_and_item_id = (source["reference_dataset_id"], source["reference_item_id"])
-    search_mode = len(active_sources) > 0
-    search_results = all_items.filter(search_source_id__in=[s["id_hash"] for s in active_sources])
+    task: SearchTask | None = collection.most_recent_search_task
+    if collection.search_mode:
+        assert task is not None
+        settings = SearchTaskSettings(**task.settings)
+        if settings.reference_dataset_id and settings.reference_item_id:
+            reference_ds_and_item_id = (settings.reference_dataset_id, settings.reference_item_id)
 
-    if search_mode:
+    if collection.search_mode:
+        search_results = all_items.filter(search_source_id=task.id)  # type: ignore
         return_items = search_results
         return_items = return_items.order_by("-search_score")
     else:
@@ -974,7 +978,7 @@ def get_filtered_collection_items(
         elif filter.filter_type == "text_query":
             return_items = apply_text_filter(return_items, filter)
 
-    return return_items, search_mode, reference_ds_and_item_id
+    return return_items, reference_ds_and_item_id
 
 
 def apply_text_filter(items: BaseManager, filter: CollectionFilter) -> BaseManager:

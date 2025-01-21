@@ -5,17 +5,16 @@ from django.http import HttpResponse, HttpRequest
 from django.forms.models import model_to_dict
 from ninja import NinjaAPI
 
-from data_map_backend.models import DataCollection, Dataset
+from data_map_backend.models import DataCollection, Dataset, SearchTask
 from data_map_backend.schemas import CollectionIdentifier
 from legacy_backend.database_client.text_search_engine_client import TextSearchEngineClient
 
 from search.schemas import (
     RunSearchTaskPayload,
-    SearchTaskSettings,
     RunPreviousSearchTaskPayload,
     GetPlainResultsPaylaod,
 )
-from search.logic.execute_search import run_search_task, add_items_from_active_sources
+from search.logic.execute_search import create_and_run_search_task, run_search_task, add_items_from_task_and_run_columns
 from search.logic.approve_items_and_exit_search import approve_relevant_search_results, exit_search_mode
 
 api = NinjaAPI(urls_namespace="search")
@@ -39,7 +38,7 @@ def run_search_task_route(request: HttpRequest, payload: RunSearchTaskPayload):
 
     def thread_function():
         try:
-            run_search_task(collection, payload.search_task, request.user.id)  # type: ignore
+            create_and_run_search_task(collection, payload.search_task, request.user.id)  # type: ignore
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
@@ -100,17 +99,15 @@ def run_previous_search_task_route(request: HttpRequest, payload: RunPreviousSea
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    if len(collection.search_tasks) < 2:
+    if len(collection.search_task_navigation_history) < 2:
         return HttpResponse(status=400)
 
-    previous_task = SearchTaskSettings(**collection.search_tasks[-2])
-    if previous_task.exit_search_mode:
-        return HttpResponse(status=400)
+    previous_task = SearchTask.objects.get(id=collection.search_task_navigation_history[-2])
 
     collection.agent_is_running = True
     collection.current_agent_step = "Running search task..."
-    collection.search_tasks = collection.search_tasks[:-2]
-    collection.save(update_fields=["agent_is_running", "current_agent_step", "search_tasks"])
+    collection.search_task_navigation_history = collection.search_task_navigation_history[:-2]
+    collection.save(update_fields=["agent_is_running", "current_agent_step", "search_task_navigation_history"])
 
     def thread_function():
         try:
@@ -132,19 +129,19 @@ def run_previous_search_task_route(request: HttpRequest, payload: RunPreviousSea
     return HttpResponse(status=204, content_type="application/json")
 
 
-@api.post("add_items_from_active_sources")
-def add_items_from_active_sources_route(request: HttpRequest, payload: CollectionIdentifier):
+@api.post("add_more_items_from_active_task")
+def add_more_items_from_active_task_route(request: HttpRequest, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.get(id=payload.collection_id)
+        collection = DataCollection.objects.select_related("most_recent_search_task").get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    new_items = add_items_from_active_sources(collection, request.user.id, is_new_collection=False)  # type: ignore
+    new_items = add_items_from_task_and_run_columns(collection, collection.most_recent_search_task, request.user.id, ignore_last_retrieval=False, is_new_collection=False)  # type: ignore
     result = {"new_item_count": len(new_items)}
 
     return HttpResponse(json.dumps(result), status=200, content_type="application/json")
@@ -157,7 +154,7 @@ def exit_search_mode_route(request: HttpRequest, payload: CollectionIdentifier):
 
     try:
         collection = DataCollection.objects.only(
-            "created_by", "items_last_changed", "search_sources", "explanation_log"
+            "created_by",
         ).get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)

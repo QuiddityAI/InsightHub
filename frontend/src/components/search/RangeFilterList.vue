@@ -30,8 +30,8 @@ export default {
     range_filters() {
       const filters = {}
       const dataset_ids = new Set()
-      // FIXME: this does not work if the items were added manually (without a search source)
-      for (const search_source of this.collectionStore.collection.search_sources) {
+      // FIXME: this only uses the last search
+      if (this.collectionStore.collection.most_recent_search_task.dataset_id !== null) {
         dataset_ids.add(search_source.dataset_id)
       }
       this.dataset_ids = Array.from(dataset_ids)

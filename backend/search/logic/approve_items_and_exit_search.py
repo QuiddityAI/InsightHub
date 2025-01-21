@@ -177,15 +177,14 @@ def exit_search_mode(collection: DataCollection, class_name: str):
     all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
     candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
     num_candidates = candidates.count()
+    # TODO: delete only those without column data
     candidates.delete()
     collection.items_last_changed = timezone.now()
-
-    for source in collection.search_sources:
-        source["is_active"] = False
+    collection.search_mode = False
 
     if num_candidates:
         collection.log_explanation(f"Removed {num_candidates} **not approved** items", save=False)
-    collection.save(update_fields=["items_last_changed", "search_sources", "explanation_log"])
+    collection.save(update_fields=["items_last_changed", "search_mode", "explanation_log"])
 
 
 def approve_relevant_search_results(collection: DataCollection, class_name: str):

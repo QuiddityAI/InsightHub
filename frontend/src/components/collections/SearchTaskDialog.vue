@@ -113,10 +113,10 @@ export default {
     },
   },
   mounted() {
-    if (this.collectionStore.collection.last_search_task
-      && Object.keys(this.collectionStore.collection.last_search_task).length > 0
-      && this.collectionStore.collection.last_search_task.search_type == 'external_input') {
-      this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.last_search_task))
+    if (this.collectionStore.collection.most_recent_search_task?.settings
+      && Object.keys(this.collectionStore.collection.most_recent_search_task?.settings).length > 0
+      && this.collectionStore.collection.most_recent_search_task?.settings.search_type == 'external_input') {
+      this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.most_recent_search_task?.settings))
       this.new_settings.auto_approve = false
       this.new_settings.exit_search_mode = false
     } else {

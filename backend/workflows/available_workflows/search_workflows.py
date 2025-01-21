@@ -1,6 +1,6 @@
 from data_map_backend.models import DataCollection, User
 from search.schemas import SearchTaskSettings
-from search.logic.execute_search import run_search_task
+from search.logic.execute_search import create_and_run_search_task
 from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowOrder, WorkflowAvailability
 from workflows.create_columns import create_relevance_column
 from workflows.logic import WorkflowBase, workflow
@@ -39,7 +39,7 @@ class ClassicSearchWorkflow(WorkflowBase):
             retrieval_mode=settings.retrieval_mode,
             ranking_settings=settings.ranking_settings,
         )
-        run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
         collection.agent_is_running = False
         collection.save()  # 7 ms
 
@@ -79,6 +79,6 @@ class AssistedSearchWorkflow(WorkflowBase):
             retrieval_mode=settings.retrieval_mode,
             ranking_settings=settings.ranking_settings,
         )
-        run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
         collection.agent_is_running = False
         collection.save()

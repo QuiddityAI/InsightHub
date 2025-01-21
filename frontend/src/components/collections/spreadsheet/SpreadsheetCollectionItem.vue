@@ -59,7 +59,8 @@ export default {
       return this.size_mode || CollectionItemSizeMode.FULL
     },
     original_query() {
-      return this.collectionStore.collection.search_sources.find(source => source.id_hash === this.collection_item.search_source_id)?.query || ""
+      // FIXME: this should use the actually used search task, not the last one
+      return this.collectionStore.collection.most_recent_search_task?.settings.user_input || ""
     },
     relevant_keyword_highlights() {
       return this.collection_item?.relevant_parts?.filter((part) => part.origin === "keyword_search") || []

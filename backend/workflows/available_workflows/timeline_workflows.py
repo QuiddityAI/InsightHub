@@ -10,7 +10,7 @@ from llmonkey.llms import Mistral_Ministral3b
 from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask, Dataset
 from data_map_backend.schemas import CollectionUiSettings
 from search.schemas import SearchTaskSettings, Filter
-from search.logic.execute_search import run_search_task
+from search.logic.execute_search import create_and_run_search_task
 from write.logic.writing_task import execute_writing_task_thread
 from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowAvailability, WorkflowOrder
 from workflows.logic import WorkflowBase, workflow

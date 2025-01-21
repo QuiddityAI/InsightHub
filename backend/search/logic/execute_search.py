@@ -1,8 +1,7 @@
 import json
 import logging
 import threading
-import uuid
-from typing import Callable, Iterable
+from typing import Callable
 
 from django.utils import timezone
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
@@ -13,6 +12,7 @@ from data_map_backend.models import (
     CollectionItem,
     DataCollection,
     FieldType,
+    SearchTask,
 )
 from legacy_backend.logic.search import get_search_results
 from search.logic.approve_items_and_exit_search import (
@@ -21,12 +21,12 @@ from search.logic.approve_items_and_exit_search import (
     exit_search_mode,
 )
 from search.prompts import search_query_prompt
-from search.schemas import RetrievalMode, SearchSource, SearchTaskSettings, SearchType
+from search.schemas import RetrievalMode, RetrievalParameters, SearchTaskSettings, SearchType, RetrievalStatus
 
 # from search.logic.extract_filters import get_filter_prompt, extract_filters
 
 
-def run_search_task(
+def create_and_run_search_task(
     collection: DataCollection,
     search_task: SearchTaskSettings,
     user_id: int,
@@ -46,13 +46,9 @@ def run_search_task(
     Returns:
         list[CollectionItem]: A list of collection items resulting from the search task.
     """
-    if not is_new_collection:
-        exit_search_mode(collection, "_default")  # removes candidates and disables sources
 
     collection.current_agent_step = "Running search task..."
-    collection.last_search_task = search_task.dict()
-    collection.search_tasks.append(search_task.dict())
-    collection.save(update_fields=["current_agent_step", "last_search_task", "search_tasks"])
+    collection.save(update_fields=["current_agent_step"])
 
     if not search_task.query:
         search_task.query = search_task.user_input
@@ -74,13 +70,8 @@ def run_search_task(
 
         # TODO: also get best ranking mode?
 
-    source = SearchSource(
-        id_hash=uuid.uuid4().hex,
+    parameters = RetrievalParameters(
         created_at=timezone.now().isoformat(),
-        retrieved=0,
-        available=None,
-        available_is_exact=True,
-        is_active=True,
         search_type=search_task.search_type,
         dataset_id=search_task.dataset_id,
         result_language=search_task.result_language or "en",
@@ -101,9 +92,44 @@ def run_search_task(
         reference_collection_id=search_task.reference_collection_id,
         # random_sample: no parameters, always same seed
     )
+    status = RetrievalStatus(retrieved=0, available=None, available_is_exact=True)
 
-    collection.search_sources.append(source.dict())
-    collection.save(update_fields=["search_sources", "explanation_log"])
+    task = SearchTask.objects.create(
+        collection=collection,
+        dataset_id=search_task.dataset_id,
+        settings=search_task.dict(),
+        retrieval_parameters=parameters.dict(),
+        last_retrieval_status=status.dict(),
+    )
+    return run_search_task(
+        collection,
+        task,
+        user_id,
+        after_columns_were_processed=after_columns_were_processed,
+        is_new_collection=is_new_collection,
+        set_agent_step=False,
+    )
+
+
+def run_search_task(
+    collection: DataCollection,
+    task: SearchTask,
+    user_id: int,
+    after_columns_were_processed: Callable | None = None,
+    is_new_collection: bool = False,
+    set_agent_step: bool = True,
+) -> list[CollectionItem]:
+    if set_agent_step:
+        collection.current_agent_step = "Running search task..."
+        collection.save(update_fields=["current_agent_step"])
+
+    if not is_new_collection:
+        exit_search_mode(collection, "_default")  # removes candidates and disables sources
+    search_task = SearchTaskSettings(**task.settings)
+    collection.most_recent_search_task = task  # type: ignore
+    if not search_task.exit_search_mode:
+        collection.search_task_navigation_history.append(str(task.id))
+    collection.save(update_fields=["most_recent_search_task", "search_task_navigation_history"])
 
     def after_columns_were_processed_internal(new_items):
         if search_task.auto_approve:
@@ -121,15 +147,17 @@ def run_search_task(
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 
-    new_items = add_items_from_active_sources(
-        collection, user_id, is_new_collection, after_columns_were_processed_internal
+    new_items = add_items_from_task_and_run_columns(
+        collection, task, user_id, True, is_new_collection, after_columns_were_processed_internal
     )
     return new_items
 
 
-def add_items_from_active_sources(
+def add_items_from_task_and_run_columns(
     collection: DataCollection,
+    task: SearchTask,
     user_id: int,
+    ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     after_columns_were_processed: Callable | None = None,
 ) -> list[CollectionItem]:
@@ -137,12 +165,7 @@ def add_items_from_active_sources(
     collection.filters = []
     collection.save(update_fields=["filters"])
 
-    new_items = []
-    for source in collection.search_sources:
-        source = SearchSource(**source)
-        if not source.is_active:
-            continue
-        new_items.extend(add_items_from_source(collection, source, is_new_collection))
+    new_items = add_items_from_task(collection, task, ignore_last_retrieval, is_new_collection)
 
     def in_thread():
         max_evaluated_candidates = 10
@@ -158,43 +181,22 @@ def add_items_from_active_sources(
     return new_items
 
 
-def add_items_from_source(
-    collection: DataCollection, source: SearchSource, is_new_collection: bool = False
-) -> Iterable[CollectionItem]:
-    params = {
-        "search": {
-            "dataset_ids": [source.dataset_id],
-            "task_type": "quick_search",
-            "search_type": source.search_type,
-            "retrieval_mode": source.retrieval_mode or "hybrid",
-            "use_separate_queries": False,
-            "all_field_query": source.query,
-            "internal_input_weight": 0.7,
-            "use_similarity_thresholds": True,
-            "auto_relax_query": source.auto_relax_query,
-            "use_reranking": source.use_reranking if source.search_type == SearchType.EXTERNAL_INPUT else False,
-            "filters": source.filters or [],
-            "result_language": source.result_language or "en",
-            "ranking_settings": source.ranking_settings or {},
-            "similar_to_item_id": (
-                [source.reference_dataset_id, source.reference_item_id] if source.reference_item_id else None
-            ),
-            "result_list_items_per_page": source.page_size,
-            "result_list_current_page": source.retrieved // source.page_size if source.retrieved else 0,
-            "max_sub_items_per_item": 1,
-            "return_highlights": True,
-            "use_bolding_in_highlights": True,
-            # TODO: add support for vector search, similar to collection
-        }
-    }
-    results = get_search_results(json.dumps(params), "list")
+def add_items_from_task(
+    collection: DataCollection, task: SearchTask,
+    ignore_last_retrieval: bool = True, is_new_collection: bool = False
+) -> list[CollectionItem]:
+    parameters = RetrievalParameters(**task.retrieval_parameters)
+    status = RetrievalStatus(**task.last_retrieval_status)
+
+    legacy_params = _convert_retrieval_settings_to_old_format(parameters, status, ignore_last_retrieval)
+    results = get_search_results(json.dumps(legacy_params), "list")
     items_by_dataset = results["items_by_dataset"]
     new_items = []
     existing_item_ids = []
     if not is_new_collection:
         existing_item_ids = CollectionItem.objects.filter(
             collection=collection,
-            dataset_id=source.dataset_id,
+            dataset_id=parameters.dataset_id,
             item_id__in=[ds_and_item_id[1] for ds_and_item_id in results["sorted_ids"]],
         ).values_list("item_id", flat=True)
     for i, ds_and_item_id in enumerate(results["sorted_ids"]):
@@ -202,8 +204,8 @@ def add_items_from_source(
             continue
         value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
         item = CollectionItem(
-            date_added=source.created_at,
-            search_source_id=source.id_hash,
+            date_added=parameters.created_at,
+            search_source_id=task.id,
             collection=collection,
             relevance=0,
             classes=["_default"],
@@ -211,37 +213,75 @@ def add_items_from_source(
             dataset_id=ds_and_item_id[0],
             item_id=ds_and_item_id[1],
             metadata=value,
-            search_score=1 / (source.retrieved + i + 1),
+            search_score=1 / (status.retrieved + i + 1),
             relevant_parts=value.get("_relevant_parts", []),
         )
         new_items.append(item)
     CollectionItem.objects.bulk_create(new_items)
 
-    source.retrieved += len(results["sorted_ids"])
-    source.available = max(results["total_matches"], source.retrieved)
-    source.available_is_exact = (
-        source.retrieval_mode == RetrievalMode.KEYWORD or len(results["sorted_ids"]) < source.page_size
+    if ignore_last_retrieval:
+        status.retrieved = len(results["sorted_ids"])
+    else:
+        status.retrieved += len(results["sorted_ids"])
+    status.available = max(results["total_matches"], status.retrieved)
+    status.available_is_exact = (
+        parameters.retrieval_mode == RetrievalMode.KEYWORD or len(results["sorted_ids"]) < parameters.page_size
     )
+    task.last_retrieval_status = status.dict()
+    task.save(update_fields=["last_retrieval_status"])
 
-    collection.search_sources = [s for s in collection.search_sources if s["id_hash"] != source.id_hash]
-    collection.search_sources.append(source.dict())
     collection.items_last_changed = timezone.now()
-    if source.retrieval_mode == RetrievalMode.KEYWORD:
+    if parameters.retrieval_mode == RetrievalMode.KEYWORD:
         collection.log_explanation(
             f"Added {len(new_items)} search results found by **included keywords**",
             save=False,
         )
-    elif source.retrieval_mode == RetrievalMode.VECTOR:
+    elif parameters.retrieval_mode == RetrievalMode.VECTOR:
         collection.log_explanation(
             f"Added {len(new_items)} search results found by **AI-based semantic similarity** (vector search)",
             save=False,
         )
-    elif source.retrieval_mode == RetrievalMode.HYBRID:
+    elif parameters.retrieval_mode == RetrievalMode.HYBRID:
         collection.log_explanation(
             f"Added {len(new_items)} search results found by a combination of **included keywords** and **AI-based semantic similarity** (vector search)",
             save=False,
         )
-    if source.use_reranking:
+    if parameters.use_reranking:
         collection.log_explanation("Re-ordered top results using an **AI-based re-ranking model**", save=False)
-    collection.save(update_fields=["search_sources", "items_last_changed", "explanation_log"])
+    collection.search_mode = True
+    collection.save(update_fields=["search_mode", "items_last_changed", "explanation_log"])
     return new_items
+
+
+def _convert_retrieval_settings_to_old_format(
+    retrieval_settings: RetrievalParameters,
+    status: RetrievalStatus,
+    ignore_last_retrieval: bool = True,
+    ) -> dict:
+    params = {
+        "search": {
+            "dataset_ids": [retrieval_settings.dataset_id],
+            "task_type": "quick_search",
+            "search_type": retrieval_settings.search_type,
+            "retrieval_mode": retrieval_settings.retrieval_mode or "hybrid",
+            "use_separate_queries": False,
+            "all_field_query": retrieval_settings.query,
+            "internal_input_weight": 0.7,
+            "use_similarity_thresholds": True,
+            "auto_relax_query": retrieval_settings.auto_relax_query,
+            "use_reranking": retrieval_settings.use_reranking if retrieval_settings.search_type == SearchType.EXTERNAL_INPUT else False,
+            "filters": retrieval_settings.filters or [],
+            "result_language": retrieval_settings.result_language or "en",
+            "ranking_settings": retrieval_settings.ranking_settings or {},
+            "similar_to_item_id": (
+                [retrieval_settings.reference_dataset_id, retrieval_settings.reference_item_id] if retrieval_settings.reference_item_id else None
+            ),
+            "result_list_items_per_page": retrieval_settings.page_size,
+            "result_list_current_page": status.retrieved // retrieval_settings.page_size if status.retrieved and not ignore_last_retrieval else 0,
+            "max_sub_items_per_item": 1,
+            "return_highlights": True,
+            "use_bolding_in_highlights": True,
+            # TODO: add support for vector search, similar to collection
+        }
+    }
+    return params

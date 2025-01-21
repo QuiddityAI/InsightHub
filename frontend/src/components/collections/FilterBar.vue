@@ -27,7 +27,7 @@ const collectionStore = useCollectionStore()
 export default {
   inject: ["eventBus"],
   props: [],
-  emits: ["edit_search_task"],
+  emits: [],
   data() {
     return {
     }
@@ -36,9 +36,6 @@ export default {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
     ...mapStores(useCollectionStore),
-    active_search_sources() {
-      return this.collectionStore.collection.search_sources.filter((source) => source.is_active)
-    },
   },
   mounted() {
   },

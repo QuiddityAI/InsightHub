@@ -60,8 +60,7 @@ class RetrievalMode(StrEnum):
     VECTOR = "vector"
 
 
-class SearchSource(Schema):
-    id_hash: str
+class RetrievalParameters(Schema):
     created_at: str  # datetime
     search_type: SearchType = SearchType.EXTERNAL_INPUT
     dataset_id: int
@@ -87,10 +86,12 @@ class SearchSource(Schema):
 
     result_language: Optional[str] = None
     page_size: int = 10
+
+
+class RetrievalStatus(Schema):
     retrieved: int = 0
     available: Optional[int] = None
     available_is_exact: bool = True
-    is_active: bool = True
 
 
 class Filter(Schema):

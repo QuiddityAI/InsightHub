@@ -416,7 +416,7 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     // ------------------
-    add_items_from_active_sources() {
+    add_more_items_from_active_task() {
       const that = this
       const body = {
         collection_id: this.collection_id,
@@ -424,7 +424,7 @@ export const useCollectionStore = defineStore("collection", {
       }
       const go_to_next_page = this.first_index + this.per_page == this.item_count
       httpClient
-        .post("/api/v1/search/add_items_from_active_sources", body)
+        .post("/api/v1/search/add_more_items_from_active_task", body)
         .then((response) => {
           const new_item_count = response.data.new_item_count
           if (new_item_count > 0) {
