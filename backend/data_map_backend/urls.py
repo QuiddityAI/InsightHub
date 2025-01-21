@@ -3,7 +3,7 @@ from .views import other_views
 from .views import question_views
 from .views import smart_search_views
 
-urlpatterns=[
+urlpatterns = [
     path("health", other_views.get_health),
     path("get_current_user", other_views.get_current_user),
     path("set_user_preferences", other_views.set_user_preferences_route),

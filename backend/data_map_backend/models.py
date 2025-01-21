@@ -30,7 +30,7 @@ BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_
 
 # create requests session with BACKEND_AUTHENTICATION_SECRET as header:
 backend_client = requests.Session()
-backend_client.headers.update({'Authorization': BACKEND_AUTHENTICATION_SECRET})
+backend_client.headers.update({"Authorization": BACKEND_AUTHENTICATION_SECRET})
 
 
 class FieldType(models.TextChoices):
@@ -82,9 +82,7 @@ class SourcePlugin(models.TextChoices):
 
 class User(AbstractUser):
     # assume user didn't accept cookies by default
-    accepted_cookies = models.BooleanField(
-        verbose_name="Cookies accepted", default=False, blank=False, null=False
-    )
+    accepted_cookies = models.BooleanField(verbose_name="Cookies accepted", default=False, blank=False, null=False)
 
     # # assume user didn't accept sending emails by default
     accepted_emails = models.BooleanField(
@@ -132,12 +130,8 @@ class EmbeddingSpace(models.Model):
         blank=False,
         null=False,
     )
-    name = models.CharField(
-        verbose_name="Display Name", max_length=200, blank=False, null=False
-    )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    name = models.CharField(verbose_name="Display Name", max_length=200, blank=False, null=False)
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -172,13 +166,9 @@ class Generator(models.Model):
         blank=False,
         null=False,
     )
-    name = models.CharField(
-        verbose_name="Display Name", max_length=200, blank=False, null=False
-    )
+    name = models.CharField(verbose_name="Display Name", max_length=200, blank=False, null=False)
     description = models.TextField(verbose_name="Description", blank=True, null=True)
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -187,20 +177,27 @@ class Generator(models.Model):
         null=False,
     )
     requires_context = models.BooleanField(
-        verbose_name="Requires context", default=False, blank=False, null=False,
-        help_text="Requires a set of other documents, generates a non-universal result"
+        verbose_name="Requires context",
+        default=False,
+        blank=False,
+        null=False,
+        help_text="Requires a set of other documents, generates a non-universal result",
     )
     requires_multiple_input_fields = models.BooleanField(
-        verbose_name="Requires multiple input fields", default=False, blank=False, null=False,
-        help_text="Requires multiple different input fields to generate a result"
+        verbose_name="Requires multiple input fields",
+        default=False,
+        blank=False,
+        null=False,
+        help_text="Requires multiple different input fields to generate a result",
     )
     returns_multiple_fields = models.BooleanField(
-        verbose_name="Returns multiple fields", default=False, blank=False, null=False,
-        help_text="Returns multiple different fields as result"
+        verbose_name="Returns multiple fields",
+        default=False,
+        blank=False,
+        null=False,
+        help_text="Returns multiple different fields as result",
     )
-    module = models.CharField(
-        verbose_name="Module", max_length=200, blank=False, null=False
-    )
+    module = models.CharField(verbose_name="Module", max_length=200, blank=False, null=False)
     embedding_space = models.ForeignKey(
         verbose_name="Embedding Space",
         to=EmbeddingSpace,
@@ -215,12 +212,8 @@ class Generator(models.Model):
         blank=False,
         null=False,
     )
-    default_parameters = models.JSONField(
-        verbose_name="Default Parameters", blank=True, null=True
-    )
-    parameter_description = models.TextField(
-        verbose_name="Parameter Description", blank=True, null=True
-    )
+    default_parameters = models.JSONField(verbose_name="Default Parameters", blank=True, null=True)
+    parameter_description = models.TextField(verbose_name="Parameter Description", blank=True, null=True)
     input_type = models.CharField(
         verbose_name="Input Type",
         max_length=50,
@@ -235,9 +228,7 @@ class Generator(models.Model):
         blank=False,
         null=False,
     )
-    input_description = models.TextField(
-        verbose_name="Input Description", blank=True, null=True
-    )
+    input_description = models.TextField(verbose_name="Input Description", blank=True, null=True)
     output_type = models.CharField(
         verbose_name="Output Type",
         max_length=50,
@@ -252,9 +243,7 @@ class Generator(models.Model):
         blank=False,
         null=False,
     )
-    output_description = models.TextField(
-        verbose_name="Output Description", blank=True, null=True
-    )
+    output_description = models.TextField(verbose_name="Output Description", blank=True, null=True)
     text_similarity_threshold = models.FloatField(
         verbose_name="Text Similarity Threshold",
         help_text="The minimum score / similarity a text query must have compared to this field to be considered relevant / similar",
@@ -279,12 +268,8 @@ class Generator(models.Model):
 
 
 class Organization(models.Model):
-    name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -361,9 +346,7 @@ class Organization(models.Model):
 
 
 class ImportConverter(models.Model):
-    display_name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
+    display_name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     identifier = models.CharField(
         verbose_name="Identifier",
         help_text="Do not change this after being used elsewhere",
@@ -373,9 +356,7 @@ class ImportConverter(models.Model):
         blank=False,
         null=False,
     )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -384,15 +365,9 @@ class ImportConverter(models.Model):
         null=False,
     )
     description = models.TextField(verbose_name="Description", blank=True, null=True)
-    module = models.CharField(
-        verbose_name="Code Module Name", max_length=200, blank=False, null=False
-    )
-    parameters = models.JSONField(
-        verbose_name="Parameters", default=dict, blank=True, null=True
-    )
-    example_file_url = models.CharField(
-        verbose_name="Example File URL", max_length=200, blank=True, null=True
-    )
+    module = models.CharField(verbose_name="Code Module Name", max_length=200, blank=False, null=False)
+    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=True)
+    example_file_url = models.CharField(verbose_name="Example File URL", max_length=200, blank=True, null=True)
     manual_insert_form = models.JSONField(
         verbose_name="Manual Insert Form",
         help_text='A list of fields like [{"identifier": "field_name", "label": "Field Label", "type": "text", "required": true}]',
@@ -412,9 +387,7 @@ class ImportConverter(models.Model):
 
 
 class ExportConverter(models.Model):
-    display_name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
+    display_name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     identifier = models.CharField(
         verbose_name="Identifier",
         help_text="Do not change this after being used elsewhere",
@@ -431,9 +404,7 @@ class ExportConverter(models.Model):
         blank=False,
         null=False,
     )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -442,12 +413,8 @@ class ExportConverter(models.Model):
         null=False,
     )
     description = models.TextField(verbose_name="Description", blank=True, null=True)
-    module = models.CharField(
-        verbose_name="Code Module Name", max_length=200, blank=False, null=False
-    )
-    parameters = models.JSONField(
-        verbose_name="Parameters", default=dict, blank=True, null=True
-    )
+    module = models.CharField(verbose_name="Code Module Name", max_length=200, blank=False, null=False)
+    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=True)
     preview_as_text = models.BooleanField(
         verbose_name="Preview as text",
         help_text="If the result should be shown in the UI as text in addition to a download link",
@@ -475,22 +442,16 @@ def get_rendering_json_field_default(fields: list):
 
 
 def get_default_result_list_rendering():
-    return get_rendering_json_field_default(
-        ["title", "subtitle", "body", "image", "url"]
-    )
+    return get_rendering_json_field_default(["title", "subtitle", "body", "image", "url"])
 
 
 # deprecated, but needed for old migrations
 def get_default_collection_list_rendering():
-    return get_rendering_json_field_default(
-        ["title", "subtitle", "body", "image", "url"]
-    )
+    return get_rendering_json_field_default(["title", "subtitle", "body", "image", "url"])
 
 
 def get_default_collection_item_rendering():
-    return get_rendering_json_field_default(
-        ["title", "subtitle", "body", "image", "url"]
-    )
+    return get_rendering_json_field_default(["title", "subtitle", "body", "image", "url"])
 
 
 def get_default_hover_label_rendering():
@@ -498,9 +459,7 @@ def get_default_hover_label_rendering():
 
 
 def get_default_detail_view_rendering():
-    return get_rendering_json_field_default(
-        ["title", "subtitle", "body", "image", "url"]
-    )
+    return get_rendering_json_field_default(["title", "subtitle", "body", "image", "url"])
 
 
 def get_default_translated_entity_name():
@@ -517,9 +476,7 @@ class DatasetSchema(models.Model):
         blank=False,
         null=False,
     )
-    name = models.CharField(
-        verbose_name="Display Name", max_length=200, blank=False, null=False
-    )
+    name = models.CharField(verbose_name="Display Name", max_length=200, blank=False, null=False)
     entity_name = models.CharField(
         verbose_name="Entity Name",
         help_text="The type of the entity, e.g. 'Product' or 'Article'",
@@ -527,9 +484,7 @@ class DatasetSchema(models.Model):
         blank=True,
         null=True,
     )
-    entity_name_plural = models.CharField(
-        verbose_name="Entity Name (Plural)", max_length=40, blank=True, null=True
-    )
+    entity_name_plural = models.CharField(verbose_name="Entity Name (Plural)", max_length=40, blank=True, null=True)
     translated_entity_name = models.JSONField(
         verbose_name="Translated Entity Name",
         help_text="Translations of the entity name, e.g. {'singular': {'de': 'Produkt', 'fr': 'Produit'}, 'plural': {'de': 'Produkte', 'fr': 'Produits'}}",
@@ -537,12 +492,8 @@ class DatasetSchema(models.Model):
         blank=True,
         null=False,
     )
-    short_description = models.CharField(
-        verbose_name="Short Description", max_length=200, blank=True, null=True
-    )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    short_description = models.CharField(verbose_name="Short Description", max_length=200, blank=True, null=True)
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -659,15 +610,9 @@ class DatasetSchema(models.Model):
 
 
 class DatasetField(models.Model):
-    identifier = models.CharField(
-        verbose_name="Identifier", max_length=200, blank=False, null=False
-    )
-    name = models.CharField(
-        verbose_name="Display Name", max_length=200, blank=True, null=True
-    )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    identifier = models.CharField(verbose_name="Identifier", max_length=200, blank=False, null=False)
+    name = models.CharField(verbose_name="Display Name", max_length=200, blank=True, null=True)
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -683,9 +628,7 @@ class DatasetField(models.Model):
         blank=False,
         null=False,
     )
-    description = models.CharField(
-        verbose_name="Description", max_length=200, blank=True, null=True
-    )
+    description = models.CharField(verbose_name="Description", max_length=200, blank=True, null=True)
     field_type = models.CharField(
         verbose_name="Type",
         max_length=50,
@@ -694,9 +637,7 @@ class DatasetField(models.Model):
         blank=False,
         null=False,
     )
-    is_array = models.BooleanField(
-        verbose_name="Is array", default=False, blank=False, null=False
-    )
+    is_array = models.BooleanField(verbose_name="Is array", default=False, blank=False, null=False)
     language_analysis = models.CharField(
         verbose_name="Language Processing",
         help_text="Only applicable for 'Text' and 'Exact String' fields",
@@ -741,9 +682,7 @@ class DatasetField(models.Model):
     is_available_for_filtering = models.BooleanField(
         verbose_name="Available for filtering", default=False, blank=False, null=False
     )
-    index_parameters = models.JSONField(
-        verbose_name="Index Parameters", default=dict, blank=True, null=False
-    )
+    index_parameters = models.JSONField(verbose_name="Index Parameters", default=dict, blank=True, null=False)
     generator = models.ForeignKey(
         verbose_name="Generator",
         to=Generator,
@@ -751,12 +690,8 @@ class DatasetField(models.Model):
         blank=True,
         null=True,
     )
-    generator_parameters = models.JSONField(
-        verbose_name="Generator Parameters", blank=True, null=True
-    )
-    generating_condition = models.TextField(
-        verbose_name="Generating Condition", blank=True, null=True
-    )
+    generator_parameters = models.JSONField(verbose_name="Generator Parameters", blank=True, null=True)
+    generating_condition = models.TextField(verbose_name="Generating Condition", blank=True, null=True)
     source_fields = models.JSONField(
         verbose_name="Source Fields",
         help_text="List of source field identifiers, or dict generator input -> source field",
@@ -793,11 +728,7 @@ class DatasetField(models.Model):
 
     @property
     def actual_embedding_space(self):
-        return (
-            self.embedding_space or self.generator.embedding_space
-            if self.generator
-            else None
-        )
+        return self.embedding_space or self.generator.embedding_space if self.generator else None
 
     actual_embedding_space.fget.short_description = "Actual Embedding Space"  # type: ignore
 
@@ -819,9 +750,7 @@ def generate_unique_database_name(name: str | None = None):
 
 
 class Dataset(models.Model):
-    name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
+    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     schema = models.ForeignKey(
         verbose_name="Schema",
         to=DatasetSchema,
@@ -830,9 +759,7 @@ class Dataset(models.Model):
         blank=False,
         null=False,
     )
-    short_description = models.CharField(
-        verbose_name="Short Description", max_length=200, blank=True, null=True
-    )
+    short_description = models.CharField(verbose_name="Short Description", max_length=200, blank=True, null=True)
     created_in_ui = models.BooleanField(
         verbose_name="Created in UI",
         help_text="Whether this dataset was created using the 'Create new dataset' button in the frontend",
@@ -840,9 +767,7 @@ class Dataset(models.Model):
         blank=False,
         null=False,
     )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -944,9 +869,7 @@ class Dataset(models.Model):
             for key in item.get("_source", {}).keys():
                 item["_source"][key] = replace_long_arrays(item["_source"][key])
             return mark_safe(
-                json.dumps(item, indent=2, ensure_ascii=False)
-                .replace(" ", "&nbsp")
-                .replace("\n", "<br>")
+                json.dumps(item, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>")
             )
         except Exception as e:
             return repr(e)
@@ -989,9 +912,7 @@ class Dataset(models.Model):
 
 
 class GenerationTask(models.Model):
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=False, null=False
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -1029,12 +950,8 @@ class GenerationTask(models.Model):
         blank=False,
         null=False,
     )
-    batch_size = models.IntegerField(
-        verbose_name="Batch Size", default=512, blank=False, null=False
-    )
-    stop_flag = models.BooleanField(
-        verbose_name="Stop Flag", default=False, blank=False, null=False
-    )
+    batch_size = models.IntegerField(verbose_name="Batch Size", default=512, blank=False, null=False)
+    stop_flag = models.BooleanField(verbose_name="Stop Flag", default=False, blank=False, null=False)
 
     class TaskStatus(models.TextChoices):
         NOT_RUNNING = "not_running", "Not Running"
@@ -1051,9 +968,7 @@ class GenerationTask(models.Model):
         blank=False,
         null=False,
     )
-    progress = models.FloatField(
-        verbose_name="Progress", default=0, blank=False, null=False
-    )
+    progress = models.FloatField(verbose_name="Progress", default=0, blank=False, null=False)
     log = models.TextField(verbose_name="Log", blank=True, null=True)
 
     def add_log(self, message: str):
@@ -1074,9 +989,7 @@ class GenerationTask(models.Model):
 
 
 class SearchHistoryItem(models.Model):
-    name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
+    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     display_name = models.CharField(
         verbose_name="Display Name",
         help_text="Name to be displayed in the frontend, including HTML markup",
@@ -1084,9 +997,7 @@ class SearchHistoryItem(models.Model):
         blank=True,
         null=True,
     )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=False, null=False
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -1094,9 +1005,7 @@ class SearchHistoryItem(models.Model):
         blank=False,
         null=False,
     )
-    user = models.ForeignKey(
-        verbose_name="User", to=User, on_delete=models.CASCADE, blank=True, null=True
-    )
+    user = models.ForeignKey(verbose_name="User", to=User, on_delete=models.CASCADE, blank=True, null=True)
     organization = models.ForeignKey(
         verbose_name="Organization",
         to=Organization,
@@ -1106,21 +1015,15 @@ class SearchHistoryItem(models.Model):
         null=False,
     )
     parameters = models.JSONField(verbose_name="Parameters", blank=True, null=True)
-    total_matches = models.IntegerField(
-        verbose_name="Total Matches", blank=True, null=True
-    )
+    total_matches = models.IntegerField(verbose_name="Total Matches", blank=True, null=True)
     auto_relaxed = models.BooleanField(
         verbose_name="Auto Relaxed",
         help_text="Whether the search was automatically relaxed to find results",
         blank=True,
         null=True,
     )
-    cluster_count = models.IntegerField(
-        verbose_name="Cluster Count", blank=True, null=True
-    )
-    result_information = models.JSONField(
-        verbose_name="Other Result Information", blank=True, null=True
-    )
+    cluster_count = models.IntegerField(verbose_name="Cluster Count", blank=True, null=True)
+    result_information = models.JSONField(verbose_name="Other Result Information", blank=True, null=True)
 
     def __str__(self):
         return f"{self.name}"
@@ -1139,9 +1042,7 @@ class StoredMap(models.Model):
         blank=False,
         null=False,
     )
-    name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
+    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     display_name = models.CharField(
         verbose_name="Display Name",
         help_text="Name to be displayed in the frontend, including HTML markup",
@@ -1149,9 +1050,7 @@ class StoredMap(models.Model):
         blank=True,
         null=True,
     )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=False, null=False
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -1159,9 +1058,7 @@ class StoredMap(models.Model):
         blank=False,
         null=False,
     )
-    user = models.ForeignKey(
-        verbose_name="User", to=User, on_delete=models.CASCADE, blank=False, null=False
-    )
+    user = models.ForeignKey(verbose_name="User", to=User, on_delete=models.CASCADE, blank=False, null=False)
     organization = models.ForeignKey(
         verbose_name="Organization",
         to=Organization,
@@ -1185,12 +1082,8 @@ def class_field_default():
 
 
 class DataCollection(models.Model):  # aka DataCollection / DataClassification
-    name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -1205,9 +1098,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=False,
         null=False,
     )
-    is_public = models.BooleanField(
-        verbose_name="Is public", default=False, blank=False, null=False
-    )
+    is_public = models.BooleanField(verbose_name="Is public", default=False, blank=False, null=False)
     related_organization = models.ForeignKey(
         verbose_name="Related Organization",
         help_text="Collections can be used across organizations, but they usually belong to one",
@@ -1223,9 +1114,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
     is_binary = models.BooleanField(  # needed? or deduct from class count? but storing is different
         verbose_name="Is binary", default=False, blank=False, null=False
     )
-    allow_multi_class = models.BooleanField(
-        verbose_name="Allow multi class", default=False, blank=False, null=False
-    )
+    allow_multi_class = models.BooleanField(verbose_name="Allow multi class", default=False, blank=False, null=False)
     class_names = models.JSONField(
         verbose_name="Class Names",
         help_text="Minimal list of classes shown in the UI, even if no items are present. More classes are deducted from items.",
@@ -1233,9 +1122,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=True,
     )
-    default_threshold = models.FloatField(
-        verbose_name="Default Threshold", default=0.5, blank=False, null=False
-    )
+    default_threshold = models.FloatField(verbose_name="Default Threshold", default=0.5, blank=False, null=False)
     per_class_thresholds = models.JSONField(
         verbose_name="Per Class Thresholds",
         help_text="block classes e.g. from parents, using weight of -1",
@@ -1249,9 +1136,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=False,
         null=False,
     )
-    table_columns = models.JSONField(
-        verbose_name="Table Columns", help_text="", default=list, blank=True, null=True
-    )
+    table_columns = models.JSONField(verbose_name="Table Columns", help_text="", default=list, blank=True, null=True)
     columns_with_running_processes = models.JSONField(
         verbose_name="Current Extraction Processes",
         help_text="",
@@ -1259,12 +1144,8 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
-    agent_is_running = models.BooleanField(
-        verbose_name="Agent is running", default=False, blank=False, null=False
-    )
-    cancel_agent_flag = models.BooleanField(
-        verbose_name="Cancel Agent Flag", default=False, blank=False, null=False
-    )
+    agent_is_running = models.BooleanField(verbose_name="Agent is running", default=False, blank=False, null=False)
+    cancel_agent_flag = models.BooleanField(verbose_name="Cancel Agent Flag", default=False, blank=False, null=False)
     current_agent_step = models.CharField(
         verbose_name="Current Agent Step",
         help_text="",
@@ -1339,16 +1220,12 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
                 classes[c][0 if example.is_positive else 1] += 1
         classes_list_of_dicts = []
         for c, v in classes.items():
-            classes_list_of_dicts.append(
-                {"name": c, "positive_count": v[0], "negative_count": v[1]}
-            )
+            classes_list_of_dicts.append({"name": c, "positive_count": v[0], "negative_count": v[1]})
         return sorted(classes_list_of_dicts, key=lambda x: x["name"])
 
     def actual_classes_formatted(self):
         return mark_safe(
-            json.dumps(self.actual_classes, indent=2, ensure_ascii=False)
-            .replace(" ", "&nbsp")
-            .replace("\n", "<br>")
+            json.dumps(self.actual_classes, indent=2, ensure_ascii=False).replace(" ", "&nbsp").replace("\n", "<br>")
         )
 
     actual_classes_formatted.short_description = "Actual Classes"
@@ -1356,6 +1233,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
     @property
     def writing_task_count(self):
         return WritingTask.objects.filter(collection=self).count()
+
     writing_task_count.fget.short_description = "Writing Task Count"  # type: ignore
 
     # def simplified_trained_classifiers(self):
@@ -1368,9 +1246,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
     # simplified_trained_classifiers.short_description = "Trained Classifiers"
 
     def log_explanation(self, explanation: str, save=True):
-        self.explanation_log.append(
-            {"time": timezone.now().isoformat(), "explanation": explanation}
-        )
+        self.explanation_log.append({"time": timezone.now().isoformat(), "explanation": explanation})
         if save:
             self.save(update_fields=["explanation_log"])
 
@@ -1385,9 +1261,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
 
 
 class DatasetSpecificSettingsOfCollection(models.Model):
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -1458,9 +1332,7 @@ class COLUMN_META_SOURCE_FIELDS:
 
 
 class CollectionColumn(models.Model):
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=True, null=True
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -1476,9 +1348,7 @@ class CollectionColumn(models.Model):
         blank=False,
         null=False,
     )
-    name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
+    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     identifier = models.CharField(
         verbose_name="Identifier",
         help_text="Do not change this after being used elsewhere",
@@ -1503,8 +1373,8 @@ class CollectionColumn(models.Model):
     )
     prompt_template = models.TextField(
         verbose_name="Prompt Template",
-        help_text="Template for the prompt if this column uses an LLM. If empty, a default template is used. " + \
-            "There are some special variables like {{ document }} and {{ expression }} that can be used.",
+        help_text="Template for the prompt if this column uses an LLM. If empty, a default template is used. "
+        + "There are some special variables like {{ document }} and {{ expression }} that can be used.",
         blank=True,
         null=True,
     )
@@ -1515,12 +1385,8 @@ class CollectionColumn(models.Model):
         blank=True,
         null=False,
     )
-    module = models.CharField(
-        verbose_name="Code Module Name", max_length=200, blank=True, null=True
-    )
-    parameters = models.JSONField(
-        verbose_name="Parameters", default=dict, blank=True, null=False
-    )
+    module = models.CharField(verbose_name="Code Module Name", max_length=200, blank=True, null=True)
+    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=False)
     auto_run_for_approved_items = models.BooleanField(
         verbose_name="Auto Run for Approved Items", default=False, blank=False, null=False
     )
@@ -1583,11 +1449,12 @@ class CollectionItem(models.Model):
         blank=True,
         null=True,
     )
-    is_positive = models.BooleanField(
-        verbose_name="Is positive", default=True, blank=False, null=False
-    )
+    is_positive = models.BooleanField(verbose_name="Is positive", default=True, blank=False, null=False)
     classes = models.JSONField(
-        verbose_name="Classes", default=class_field_default, blank=False, null=False,
+        verbose_name="Classes",
+        default=class_field_default,
+        blank=False,
+        null=False,
         db_index=True,
     )
     field_type = models.CharField(
@@ -1684,9 +1551,7 @@ class TrainedClassifier(models.Model):
         blank=False,
         null=False,
     )
-    last_retrained_at = models.DateTimeField(
-        verbose_name="Last Retrained at", blank=True, null=True
-    )
+    last_retrained_at = models.DateTimeField(verbose_name="Last Retrained at", blank=True, null=True)
     collection = models.ForeignKey(
         verbose_name="Collection",
         to=DataCollection,
@@ -1695,9 +1560,7 @@ class TrainedClassifier(models.Model):
         blank=False,
         null=False,
     )
-    class_name = models.CharField(
-        verbose_name="Class", max_length=200, blank=False, null=False
-    )
+    class_name = models.CharField(verbose_name="Class", max_length=200, blank=False, null=False)
     embedding_space = models.ForeignKey(
         verbose_name="Embedding Space",
         to=EmbeddingSpace,
@@ -1706,18 +1569,10 @@ class TrainedClassifier(models.Model):
         blank=False,
         null=False,
     )
-    decision_vector = models.JSONField(
-        verbose_name="decision_vector", blank=True, null=True
-    )
-    highest_score = models.FloatField(
-        verbose_name="Highest Score", blank=True, null=True
-    )
-    threshold = models.FloatField(
-        verbose_name="Threshold", default=0.5, blank=False, null=False
-    )
-    metrics = models.JSONField(
-        verbose_name="Metrics", default=dict, blank=True, null=True
-    )
+    decision_vector = models.JSONField(verbose_name="decision_vector", blank=True, null=True)
+    highest_score = models.FloatField(verbose_name="Highest Score", blank=True, null=True)
+    threshold = models.FloatField(verbose_name="Threshold", default=0.5, blank=False, null=False)
+    metrics = models.JSONField(verbose_name="Metrics", default=dict, blank=True, null=True)
 
     def decision_vector_stats(self):
         if self.decision_vector is None:
@@ -1737,9 +1592,7 @@ class TrainedClassifier(models.Model):
         return self.last_retrained_at >= items_last_changed  # type: ignore
 
     def __str__(self):
-        return (
-            f"{self.collection.name}: {self.class_name} ({self.embedding_space.name})"
-        )
+        return f"{self.collection.name}: {self.class_name} ({self.embedding_space.name})"
 
     class Meta:
         verbose_name = "Trained Classifier"
@@ -1748,9 +1601,7 @@ class TrainedClassifier(models.Model):
 
 
 class WritingTask(models.Model):
-    name = models.CharField(
-        verbose_name="Name", max_length=200, blank=False, null=False
-    )
+    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     collection = models.ForeignKey(
         verbose_name="Collection",
         to=DataCollection,
@@ -1758,9 +1609,7 @@ class WritingTask(models.Model):
         blank=False,
         null=False,
     )
-    class_name = models.CharField(
-        verbose_name="Class", max_length=200, blank=False, null=False, default="_default"
-    )
+    class_name = models.CharField(verbose_name="Class", max_length=200, blank=False, null=False, default="_default")
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
@@ -1775,32 +1624,16 @@ class WritingTask(models.Model):
         blank=False,
         null=False,
     )
-    is_processing = models.BooleanField(
-        verbose_name="Is Processing", default=False, blank=False, null=False
-    )
-    source_fields = models.JSONField(
-        verbose_name="Source Fields", default=list, blank=True, null=False
-    )
-    use_all_items = models.BooleanField(
-        verbose_name="Use All Items", default=True, blank=False, null=False
-    )
-    selected_item_ids = models.JSONField(
-        verbose_name="Selected Item IDs", default=list, blank=True, null=False
-    )
-    module = models.CharField(
-        verbose_name="Code Module Name", max_length=200, blank=True, null=True
-    )
-    parameters = models.JSONField(
-        verbose_name="Parameters", default=dict, blank=True, null=True
-    )
+    is_processing = models.BooleanField(verbose_name="Is Processing", default=False, blank=False, null=False)
+    source_fields = models.JSONField(verbose_name="Source Fields", default=list, blank=True, null=False)
+    use_all_items = models.BooleanField(verbose_name="Use All Items", default=True, blank=False, null=False)
+    selected_item_ids = models.JSONField(verbose_name="Selected Item IDs", default=list, blank=True, null=False)
+    module = models.CharField(verbose_name="Code Module Name", max_length=200, blank=True, null=True)
+    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=True)
     prompt = models.TextField(verbose_name="Prompt", blank=True, null=True)
     text = models.TextField(verbose_name="Text", blank=True, null=True)
-    additional_results = models.JSONField(
-        verbose_name="Additional Results", default=dict, blank=True, null=True
-    )
-    previous_versions = models.JSONField(
-        verbose_name="Previous Versions", default=list, blank=True, null=False
-    )
+    additional_results = models.JSONField(verbose_name="Additional Results", default=dict, blank=True, null=True)
+    previous_versions = models.JSONField(verbose_name="Previous Versions", default=list, blank=True, null=False)
 
     def __str__(self):
         return f"{self.name}"
@@ -1820,9 +1653,7 @@ class Chat(models.Model):
         blank=False,
         null=False,
     )
-    search_settings = models.JSONField(
-        verbose_name="Search Settings", default=dict, blank=True, null=True
-    )
+    search_settings = models.JSONField(verbose_name="Search Settings", default=dict, blank=True, null=True)
     collection = models.ForeignKey(
         verbose_name="Collection",
         to=DataCollection,
@@ -1830,9 +1661,7 @@ class Chat(models.Model):
         blank=True,
         null=True,
     )
-    class_name = models.CharField(
-        verbose_name="Class", max_length=200, blank=True, null=True
-    )
+    class_name = models.CharField(verbose_name="Class", max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
@@ -1847,12 +1676,8 @@ class Chat(models.Model):
         blank=False,
         null=False,
     )
-    chat_history = models.JSONField(
-        verbose_name="Chat History", default=list, blank=True, null=True
-    )
-    is_processing = models.BooleanField(
-        verbose_name="Is Processing", default=False, blank=False, null=False
-    )
+    chat_history = models.JSONField(verbose_name="Chat History", default=list, blank=True, null=True)
+    is_processing = models.BooleanField(verbose_name="Is Processing", default=False, blank=False, null=False)
 
     def add_question(self, question: str, user_id: int):
         assert isinstance(self.chat_history, list)
@@ -1869,7 +1694,6 @@ class Chat(models.Model):
         obj = self
 
         def answer_question():
-
             system_prompt = (
                 "You are a helpful assistant. You can answer questions based on the following items. "
                 + "Answer in one or two concise sentences. "
@@ -1891,9 +1715,7 @@ class Chat(models.Model):
                         assert item.item_id is not None
                         fields = list(Dataset.objects.get(id=item.dataset_id).schema.descriptive_text_fields.all().values_list("identifier", flat=True))  # type: ignore
                         fields.append("_id")
-                        full_item = get_item_by_id(
-                            item.dataset_id, item.item_id, fields
-                        )
+                        full_item = get_item_by_id(item.dataset_id, item.item_id, fields)
                         text = json.dumps(full_item, indent=2)
                     if not text:
                         continue
@@ -1965,9 +1787,7 @@ class PeriodType(models.TextChoices):
 
 
 class ServiceUsagePeriod(models.Model):
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=False, null=False
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -1983,13 +1803,9 @@ class ServiceUsagePeriod(models.Model):
         blank=False,
         null=False,
     )
-    period = models.CharField(
-        verbose_name="Period", max_length=50, blank=False, null=False
-    )
+    period = models.CharField(verbose_name="Period", max_length=50, blank=False, null=False)
     usage = models.FloatField(verbose_name="Usage", default=0, blank=False, null=False)
-    usage_by_cause = models.JSONField(
-        verbose_name="Usage by Cause", default=dict, blank=True, null=False
-    )
+    usage_by_cause = models.JSONField(verbose_name="Usage by Cause", default=dict, blank=True, null=False)
 
     class Meta:
         verbose_name = "Service Usage Period"
@@ -1998,9 +1814,7 @@ class ServiceUsagePeriod(models.Model):
 
 
 class ServiceUsage(models.Model):
-    created_at = models.DateTimeField(
-        verbose_name="Created at", default=timezone.now, blank=False, null=False
-    )
+    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
         auto_now=True,
@@ -2016,12 +1830,8 @@ class ServiceUsage(models.Model):
         blank=False,
         null=False,
     )
-    service = models.CharField(
-        verbose_name="Service", max_length=200, blank=False, null=False
-    )
-    limit_per_period = models.FloatField(
-        verbose_name="Limit per Period", default=50.0, blank=False, null=False
-    )
+    service = models.CharField(verbose_name="Service", max_length=200, blank=False, null=False)
+    limit_per_period = models.FloatField(verbose_name="Limit per Period", default=50.0, blank=False, null=False)
     period_type = models.CharField(
         verbose_name="Period Type",
         max_length=50,
@@ -2030,9 +1840,7 @@ class ServiceUsage(models.Model):
         blank=False,
         null=False,
     )
-    warning_ratio = models.FloatField(
-        verbose_name="Warning Ratio", default=0.8, blank=False, null=False
-    )
+    warning_ratio = models.FloatField(verbose_name="Warning Ratio", default=0.8, blank=False, null=False)
 
     def get_current_period(self) -> ServiceUsagePeriod:
         if self.period_type == PeriodType.DAY:
@@ -2047,13 +1855,9 @@ class ServiceUsage(models.Model):
             logging.warning(f"Unknown period type {self.period_type}")
             # default to year, which is the most conservative
             period = timezone.now().strftime("%Y")
-        usage_period = ServiceUsagePeriod.objects.filter(
-            service_usage=self, period=period
-        ).first()
+        usage_period = ServiceUsagePeriod.objects.filter(service_usage=self, period=period).first()
         if usage_period is None:
-            usage_period = ServiceUsagePeriod.objects.create(
-                service_usage=self, period=period, usage=0
-            )
+            usage_period = ServiceUsagePeriod.objects.create(service_usage=self, period=period, usage=0)
             usage_period.save()
         return usage_period
 

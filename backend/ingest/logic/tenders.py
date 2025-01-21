@@ -33,7 +33,6 @@ def tender_enrichment_generator(input_items: list[dict], log_error: Callable, pa
     document_language = parameters.get("document_language", "en")
     metadata_language = parameters.get("metadata_language", "en")
 
-
     def process_batch(batch):
         with ThreadPool(5) as pool:
             new_results = pool.map(enrich_tender, batch)
@@ -70,7 +69,7 @@ def enrich_tender(item: TenderInput) -> TenderEnrichmentOutput:
     return _summarize_tender_information(item, website_text)
 
 
-def _summarize_tender_information(item: TenderInput, website_text: str | None=None) -> TenderEnrichmentOutput:
+def _summarize_tender_information(item: TenderInput, website_text: str | None = None) -> TenderEnrichmentOutput:
     if not item.description and not website_text:
         return TenderEnrichmentOutput(summary="", website_text="")
     model = LlmModel()
@@ -97,7 +96,9 @@ def _summarize_tender_information(item: TenderInput, website_text: str | None=No
     if requirements == "n/a":
         requirements = ""
 
-    return TenderEnrichmentOutput(summary=summary, website_text=website_text or "", services=services, requirements=requirements)
+    return TenderEnrichmentOutput(
+        summary=summary, website_text=website_text or "", services=services, requirements=requirements
+    )
 
 
 # evergabe.de: paywall, aber infos sind in <pre> auf service.bund.de
@@ -111,7 +112,7 @@ domains_working_with_plain_scraping = [
 domains_not_working_with_plain_scraping = [
     "https://www.vergabe.metropoleruhr.de",
     "https://www.deutsche-evergabe.de",
-    "https://www.staatsanzeiger-eservices.de"
+    "https://www.staatsanzeiger-eservices.de",
 ]
 
 domains_serving_pdfs = [

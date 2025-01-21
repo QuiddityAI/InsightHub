@@ -1,5 +1,3 @@
-
-
 from ninja import Schema
 
 

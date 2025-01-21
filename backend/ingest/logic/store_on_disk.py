@@ -22,15 +22,17 @@ MAX_SINGLE_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 def store_uploaded_file(file: File, dataset_id: int) -> tuple[str, str]:
     temp_path = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}"
 
-    with open(temp_path, 'wb') as f:
+    with open(temp_path, "wb") as f:
         f.write(file.read())
     # check if file size is within limits, otherwise delete it to prevent filling up the disk
     # (file size can't be determined earlier as it might be a stream)
     file_size = os.path.getsize(temp_path)
     if file_size > MAX_SINGLE_FILE_SIZE:
         os.remove(temp_path)
-        raise ValueError(f"File size of {file_size / 1024 / 1024:.2f} MB exceeds the limit of {MAX_SINGLE_FILE_SIZE / 1024 / 1024:.2f} MB")
-    sub_path, md5 = _move_to_path_containing_md5(temp_path, file.name or '', dataset_id)
+        raise ValueError(
+            f"File size of {file_size / 1024 / 1024:.2f} MB exceeds the limit of {MAX_SINGLE_FILE_SIZE / 1024 / 1024:.2f} MB"
+        )
+    sub_path, md5 = _move_to_path_containing_md5(temp_path, file.name or "", dataset_id)
     return sub_path, md5
 
 
@@ -41,7 +43,7 @@ def unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[Uplo
     logging.warning(f"extracting archive file: {file.name}")
     is_tar = file.name.endswith(".tar.gz")
     tempfile = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}" + (".tar.gz" if is_tar else f".zip")
-    with open(tempfile, 'wb') as f:
+    with open(tempfile, "wb") as f:
         f.write(file.read())
 
     usage_tracker = ServiceUsage.get_usage_tracker(user_id, "upload_items")
@@ -49,7 +51,7 @@ def unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[Uplo
 
     try:
         if is_tar:
-            archive = tarfile.open(tempfile, 'r:gz')
+            archive = tarfile.open(tempfile, "r:gz")
             members = archive.getmembers()
         else:
             archive = zipfile.ZipFile(tempfile)
@@ -65,7 +67,9 @@ def unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[Uplo
             file_size = member.size if isinstance(member, tarfile.TarInfo) else member.file_size
             # check if file size is within limits before extracting
             if file_size > MAX_SINGLE_FILE_SIZE:
-                raise ValueError(f"File size of {file_size / 1024 / 1024:.2f} MB exceeds the limit of {MAX_SINGLE_FILE_SIZE / 1024 / 1024:.2f} MB")
+                raise ValueError(
+                    f"File size of {file_size / 1024 / 1024:.2f} MB exceeds the limit of {MAX_SINGLE_FILE_SIZE / 1024 / 1024:.2f} MB"
+                )
             full_path = member.name if isinstance(member, tarfile.TarInfo) else member.filename
             file_name = os.path.basename(full_path)
             folder = os.path.dirname(full_path)
@@ -89,15 +93,16 @@ def unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[Uplo
                 UploadedOrExtractedFile(
                     local_path=sub_path,
                     original_filename=file_name,
-                    metadata=UploadedFileMetadata(updated_at=updated_at_iso,
-                                                  size_in_bytes=file_size,
-                                                  folder=folder,
-                                                  md5_hex=md5)
-                ))
+                    metadata=UploadedFileMetadata(
+                        updated_at=updated_at_iso, size_in_bytes=file_size, folder=folder, md5_hex=md5
+                    ),
+                )
+            )
     except Exception as e:
         logging.warning(f"failed to extract archive file: {e}")
         # print stacktrace
         import traceback
+
         traceback.print_exc()
         failed_files.append({"filename": file.name, "reason": str(e)})
     finally:
@@ -105,7 +110,9 @@ def unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[Uplo
     return extracted_files, failed_files
 
 
-def _store_compressed_file(archive: tarfile.TarFile | zipfile.ZipFile, member: tarfile.TarInfo | zipfile.ZipInfo, dataset_id: int) -> tuple[str, str] | tuple[None, None]:
+def _store_compressed_file(
+    archive: tarfile.TarFile | zipfile.ZipFile, member: tarfile.TarInfo | zipfile.ZipInfo, dataset_id: int
+) -> tuple[str, str] | tuple[None, None]:
     if isinstance(member, tarfile.TarInfo) and not member.isfile():
         return None, None
     if isinstance(member, zipfile.ZipInfo) and member.is_dir():
@@ -123,17 +130,17 @@ def _store_compressed_file(archive: tarfile.TarFile | zipfile.ZipFile, member: t
         raise ValueError("failed to extract file")
     temp_path = f"{UPLOADED_FILES_FOLDER}/temp_{uuid.uuid4()}"
     with file:
-        with open(temp_path, 'wb') as f:
+        with open(temp_path, "wb") as f:
             f.write(file.read())
     sub_path, md5 = _move_to_path_containing_md5(temp_path, filename, dataset_id)
     return sub_path, md5
 
 
 def _move_to_path_containing_md5(temp_path: str, filename: str, dataset_id: int):
-    md5 = hashlib.md5(open(temp_path,'rb').read()).hexdigest()
+    md5 = hashlib.md5(open(temp_path, "rb").read()).hexdigest()
     secure_name = secure_filename(filename)
-    suffix = secure_name.split('.')[-1]
-    filename = secure_name[:-(len(suffix) + 1)] + f"_{md5}.{suffix}"
+    suffix = secure_name.split(".")[-1]
+    filename = secure_name[: -(len(suffix) + 1)] + f"_{md5}.{suffix}"
     sub_folder = f"{dataset_id}/{md5[:2]}"
     if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
         os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")

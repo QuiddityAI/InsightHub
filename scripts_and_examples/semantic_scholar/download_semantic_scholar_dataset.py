@@ -7,6 +7,7 @@ import os
 import orjson
 from tqdm import tqdm
 
+
 def load_env_file():
     with open("../../.env", "r") as f:
         for line in f:
@@ -17,27 +18,29 @@ def load_env_file():
             key, value = line.strip().split("=")
             os.environ[key] = value
 
+
 load_env_file()
 
-API_KEY = os.getenv('SEMANTIC_SCHOLAR_API_KEY')
+API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
 
-class DatasetNames():
-    PAPERS = 'papers'
-    AUTHORS = 'authors'
-    ABSTRACTS = 'abstracts'
-    S2ORC = 's2orc'
-    TLDRS = 'tldrs'
-    SPECTER_V2 = 'embeddings-specter_v2'
+
+class DatasetNames:
+    PAPERS = "papers"
+    AUTHORS = "authors"
+    ABSTRACTS = "abstracts"
+    S2ORC = "s2orc"
+    TLDRS = "tldrs"
+    SPECTER_V2 = "embeddings-specter_v2"
 
 
 def print_releases():
-    releases = requests.get('https://api.semanticscholar.org/datasets/v1/release').json()
+    releases = requests.get("https://api.semanticscholar.org/datasets/v1/release").json()
     print(releases[-3:])
     # ['2023-08-29', '2023-09-05', '2023-09-12']
 
 
 def print_release_info(release):
-    r2 = requests.get(f'https://api.semanticscholar.org/datasets/v1/release/{release}').json()
+    r2 = requests.get(f"https://api.semanticscholar.org/datasets/v1/release/{release}").json()
     print(json.dumps(r2, indent=2))
 
 
@@ -45,7 +48,7 @@ def get_dataset_file_urls(release, dataset_name):
     headers = {
         "x-api-key": API_KEY,
     }
-    result = requests.get(f'https://api.semanticscholar.org/datasets/v1/release/{release}/dataset/{dataset_name}', headers=headers).json()  # type: ignore
+    result = requests.get(f"https://api.semanticscholar.org/datasets/v1/release/{release}/dataset/{dataset_name}", headers=headers).json()  # type: ignore
     # print(json.dumps(result, indent=2))
     # # {
     # #   "name": "abstracts",
@@ -55,7 +58,7 @@ def get_dataset_file_urls(release, dataset_name):
     # #     "https://ai2-s2ag.s3.amazonaws.com/dev/staging/2023-03-28/abstracts/20230331_0..."
     # #   ]
     # # }
-    files = result['files']
+    files = result["files"]
     return files
 
 
@@ -86,9 +89,10 @@ def streaming_download(link):
         "x-api-key": API_KEY,
     }
     import logging
+
     with requests.get(link, headers=headers, stream=True) as response:  # type: ignore
         response.raise_for_status()
-        with gzip.open(response.raw, 'rt', encoding='utf-8') as gz:
+        with gzip.open(response.raw, "rt", encoding="utf-8") as gz:
             for line in gz:
                 try:
                     data = orjson.loads(line)
@@ -100,13 +104,13 @@ def streaming_download(link):
 
 
 def s3_url_to_filename(s3_url):
-    return s3_url.split('/')[-1].split('?')[0]
+    return s3_url.split("/")[-1].split("?")[0]
 
 
 def inspect_paper_file(file_path):
     max_items = 1
     item_count = 0
-    with gzip.open(file_path, 'rt', encoding='utf-8') as gz:
+    with gzip.open(file_path, "rt", encoding="utf-8") as gz:
         for line in gz:
             try:
                 data = orjson.loads(line)
@@ -114,7 +118,7 @@ def inspect_paper_file(file_path):
                 print(e)
                 print(line)
                 continue
-            if not data['publicationdate']:
+            if not data["publicationdate"]:
                 continue
             print(json.dumps(data, indent=2))
             item_count += 1
@@ -125,7 +129,7 @@ def inspect_paper_file(file_path):
 def inspect_s2orc_file(file_path):
     max_items = 1
     item_count = 0
-    with gzip.open(file_path, 'rt', encoding='utf-8') as gz:
+    with gzip.open(file_path, "rt", encoding="utf-8") as gz:
         for line in gz:
             try:
                 data = orjson.loads(line)
@@ -140,8 +144,8 @@ def inspect_s2orc_file(file_path):
 
 
 def test_papers():
-    release = '2024-06-18'
-    base_download_folder = f'/data/semantic_scholar'
+    release = "2024-06-18"
+    base_download_folder = f"/data/semantic_scholar"
     dataset_name = DatasetNames.PAPERS
     dataset_folder = Path(base_download_folder) / dataset_name
 
@@ -152,18 +156,18 @@ def test_papers():
         file_name = s3_url_to_filename(file_url)
         os.makedirs(dataset_folder, exist_ok=True)
         file_path = dataset_folder / file_name
-        print(f'Downloading {file_name}...')
-        #download_file_using_curl(file_url, file_path)
+        print(f"Downloading {file_name}...")
+        # download_file_using_curl(file_url, file_path)
 
     for file_name in os.listdir(dataset_folder):
-        print(f'Inspecting {file_name}...')
+        print(f"Inspecting {file_name}...")
         file_path = dataset_folder / file_name
         inspect_paper_file(file_path)
 
 
 def download_files(dataset_name, uncompress=False):
-    release = '2024-06-18'
-    base_download_folder = f'/data/semantic_scholar'
+    release = "2024-06-18"
+    base_download_folder = f"/data/semantic_scholar"
     dataset_folder = Path(base_download_folder) / dataset_name
 
     file_urls = get_dataset_file_urls(release, dataset_name)
@@ -172,20 +176,20 @@ def download_files(dataset_name, uncompress=False):
     for i, file_url in enumerate(file_urls[:max_files]):
         file_name = s3_url_to_filename(file_url)
         if uncompress:
-            file_name = file_name.replace('.gz', '')
+            file_name = file_name.replace(".gz", "")
         os.makedirs(dataset_folder, exist_ok=True)
         file_path = dataset_folder / file_name
         if os.path.exists(file_path):
             continue
-        print(f'Downloading {i + 1} of {len(file_urls[:max_files])}: {file_name}...')
+        print(f"Downloading {i + 1} of {len(file_urls[:max_files])}: {file_name}...")
         download_gz_file_using_curl(file_url, file_path, uncompress=uncompress)
 
     print("Done")
 
 
 def test_s2orc():
-    release = '2024-06-18'
-    base_download_folder = f'/data/semantic_scholar'
+    release = "2024-06-18"
+    base_download_folder = f"/data/semantic_scholar"
     dataset_name = DatasetNames.S2ORC
     dataset_folder = Path(base_download_folder) / dataset_name
 
@@ -196,21 +200,19 @@ def test_s2orc():
         file_name = s3_url_to_filename(file_url)
         os.makedirs(dataset_folder, exist_ok=True)
         file_path = dataset_folder / file_name
-        print(f'Downloading {file_name}...')
+        print(f"Downloading {file_name}...")
         download_gz_file_using_curl(file_url, file_path)
 
     for file_name in os.listdir(dataset_folder):
-        print(f'Inspecting {file_name}...')
+        print(f"Inspecting {file_name}...")
         file_path = dataset_folder / file_name
         inspect_s2orc_file(file_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # test_papers()
     # test_s2orc()
     download_files(DatasetNames.TLDRS, uncompress=True)
     download_files(DatasetNames.ABSTRACTS, uncompress=True)
-    #download_files(DatasetNames.S2ORC)
+    # download_files(DatasetNames.S2ORC)
     download_files(DatasetNames.PAPERS)
-
-

@@ -1,8 +1,7 @@
-
 # Note: also update backend/data_map_backend/models.py -> SourcePlugin
 
 
-class SourcePlugin():
+class SourcePlugin:
     INTERNAL_OPENSEARCH_QDRANT = "INTERNAL_OPENSEARCH_QDRANT"
     REMOTE_DATASET = "REMOTE_DATASET"
     BRAVE_WEB_API = "BRAVE_WEB_API"

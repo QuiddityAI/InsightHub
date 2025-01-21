@@ -37,9 +37,10 @@ english_ignore_words = ["with", "is", "were", "in", "the", "a", "an", "of", "thi
 ignore_words = set(academic_ignore_words + english_ignore_words)
 html_tag_regex = re.compile(r"<.{1,8}?>(.{1,100}?)</.{1,8}?>", re.IGNORECASE)
 latex_math_env_regex = re.compile(r"\$.{1,100}?\$", re.IGNORECASE)
-word_split_regex = re.compile(r'[\s/]')
+word_split_regex = re.compile(r"[\s/]")
 is_number_like_regex = re.compile(r"^[0-9.,-]+$")
 is_plural_abbreviation_regex = re.compile(r"([A-Z]+?)(s\b)")
+
 
 # from AbsClust:
 def correct_plural_abbreviation(word):
@@ -49,6 +50,7 @@ def correct_plural_abbreviation(word):
         return word[:-1]
     return word
 
+
 def correct_first_letter(word):
     """corrects first letter, e.g. Word -> word
     use this instead of .lower to maintain abbreviations
@@ -56,6 +58,7 @@ def correct_first_letter(word):
     if word[0].isupper() and word[1:].islower():
         return word.lower()
     return word
+
 
 def tokenize(text, context_specific_ignore_words=set(), use_lower_case=True):
     # this method is called very often and a performance bottleneck
@@ -102,6 +105,7 @@ if __name__ == "__main__":
     print(" | ".join(tokenize(examples_of_scientific_texts)))
 
     from utils.spacy_tokenizer import SpacyTokenizer
+
     tf_idf_helper = SpacyTokenizer()
     for line in examples_of_scientific_texts.splitlines():
         print(" | ".join(tf_idf_helper.tokenize(line)))

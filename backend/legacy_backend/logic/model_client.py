@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 
 embedding_model = "BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
-#embedding_model = "openai"
+# embedding_model = "openai"
 embedding_strategy = "sep_token"
 embedding_cache_path = "embedding_cache.pkl"
 
@@ -35,11 +35,11 @@ def get_embedding(text: str, text_id: str = None) -> np.ndarray:
 
 
 def get_pubmedbert_embeddings(texts: list[str]):
-    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/bert'
+    url = os.getenv("model_server_host", "http://localhost:55180") + "/api/embedding/bert"
     data = {
-        'texts': texts,
-        'model_name': embedding_model,
-        'embedding_strategy': embedding_strategy,
+        "texts": texts,
+        "model_name": embedding_model,
+        "embedding_strategy": embedding_strategy,
     }
     result = requests.post(url, json=data)
     embeddings = np.asarray(result.json()["embeddings"])
@@ -47,11 +47,11 @@ def get_pubmedbert_embeddings(texts: list[str]):
 
 
 def get_sentence_transformer_embeddings(texts: list[str], model_name: str, prefix: str):
-    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/sentence_transformer'
+    url = os.getenv("model_server_host", "http://localhost:55180") + "/api/embedding/sentence_transformer"
     data = {
-        'texts': texts,
-        'model_name': model_name,
-        'prefix': prefix,
+        "texts": texts,
+        "model_name": model_name,
+        "prefix": prefix,
     }
     result = requests.post(url, json=data)
     embeddings = np.asarray(result.json()["embeddings"])
@@ -59,10 +59,10 @@ def get_sentence_transformer_embeddings(texts: list[str], model_name: str, prefi
 
 
 def get_clip_text_embeddings(texts: list[str], model_name: str):
-    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/clip/text'
+    url = os.getenv("model_server_host", "http://localhost:55180") + "/api/embedding/clip/text"
     data = {
-        'texts': texts,
-        'model_name': model_name,
+        "texts": texts,
+        "model_name": model_name,
     }
     result = requests.post(url, json=data)
     embeddings = np.asarray(result.json()["embeddings"])
@@ -70,10 +70,10 @@ def get_clip_text_embeddings(texts: list[str], model_name: str):
 
 
 def get_clip_image_embeddings(image_paths: list[str], model_name: str):
-    url =  os.getenv('model_server_host', 'http://localhost:55180') + '/api/embedding/clip/image'
+    url = os.getenv("model_server_host", "http://localhost:55180") + "/api/embedding/clip/image"
     data = {
-        'image_paths': image_paths,
-        'model_name': model_name,
+        "image_paths": image_paths,
+        "model_name": model_name,
     }
     result = requests.post(url, json=data)
     embeddings = np.asarray(result.json()["embeddings"])
@@ -122,21 +122,22 @@ def get_openai_embedding_batch(texts: dict):
             missing_embeddings_ids.append(text_id)
 
     if missing_embeddings_texts:
-
         chunk_size = 35  # 2000 / 60 requests per minute (limit for first 48h)
         for i in tqdm(range(0, len(missing_embeddings_texts), chunk_size)):
             result = openai.Embedding.create(
                 model=openai_model,
-                input=missing_embeddings_texts[i:i+chunk_size],
+                input=missing_embeddings_texts[i : i + chunk_size],
             )
-            print(f"tokens: {result['usage']}, {len(missing_embeddings_texts[i:i+chunk_size])}, {len(''.join(missing_embeddings_texts[i:i+chunk_size])) / chunk_size}")
+            print(
+                f"tokens: {result['usage']}, {len(missing_embeddings_texts[i:i+chunk_size])}, {len(''.join(missing_embeddings_texts[i:i+chunk_size])) / chunk_size}"
+            )
             # roughly 1500 characters per abstract and 260 tokens per abstract
             # -> 0.1ct per 10k tokens -> 0.1ct per 30 abstracts
             # -> 5.2 ct per 2k abstracts (one search)
             # -> 60M abstracts would be 1560€
             for j, result_item in enumerate(result["data"]):
                 embedding = result_item["embedding"]
-                text_id = missing_embeddings_ids[i+j]
+                text_id = missing_embeddings_ids[i + j]
                 embedding_cache[config_name][text_id] = embedding
 
                 results[text_id] = embedding
@@ -155,16 +156,13 @@ def get_infinity_embeddings(texts: list[str], model_name: str):
     batch_size = 256
     embeddings = []
     for i in range(0, len(texts), batch_size):
-        embeddings.extend(_get_infinity_embeddings(texts[i:i+batch_size], model_name))
+        embeddings.extend(_get_infinity_embeddings(texts[i : i + batch_size], model_name))
     return embeddings
 
 
 def _get_infinity_embeddings(texts: list[str], model_name: str):
-    url = os.getenv('infinity_server_host', 'http://infinity-model-server:55181') + '/embeddings'
-    data = {
-        "input": texts,
-        "model": model_name
-    }
+    url = os.getenv("infinity_server_host", "http://infinity-model-server:55181") + "/embeddings"
+    data = {"input": texts, "model": model_name}
     result = requests.post(url, json=data)
     try:
         embeddings = np.asarray([x["embedding"] for x in result.json()["data"]])

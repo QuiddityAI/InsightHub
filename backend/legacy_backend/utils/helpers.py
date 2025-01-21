@@ -8,7 +8,7 @@ from data_map_backend.utils import DotDict
 
 
 def polar_to_cartesian(r, theta):
-    '''
+    """
     From: https://stackoverflow.com/a/67939921
     Parameters:
     - r: float, vector amplitude
@@ -16,7 +16,7 @@ def polar_to_cartesian(r, theta):
     Returns:
     - x: float, x coord. of vector end
     - y: float, y coord. of vector end
-    '''
+    """
 
     z = r * np.exp(1j * theta)
     x, y = z.real, z.imag
@@ -38,7 +38,7 @@ def run_in_batches(items: list, batch_size: int, function: Callable) -> list:
     return results
 
 
-def do_in_parallel(action:Callable, data:Iterable, max_workers:int=20) -> Iterable:
+def do_in_parallel(action: Callable, data: Iterable, max_workers: int = 20) -> Iterable:
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         results = list(executor.map(action, data))
     return results
@@ -50,8 +50,11 @@ def run_in_batches_without_result(items: list, batch_size: int, function: Callab
 
 
 def get_vector_field_dimensions(field: DotDict):
-    return field.generator.embedding_space.dimensions if field.generator else \
-        (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)
+    return (
+        field.generator.embedding_space.dimensions
+        if field.generator
+        else (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)
+    )
 
 
 def join_text_source_fields(item: dict, descriptive_text_fields: list[str], field_boundary: str = " ") -> str:
@@ -82,7 +85,12 @@ def join_extracted_text_sources(source_texts: list[str | list]) -> str:
     return " ".join(texts)
 
 
-def get_field_from_all_items(items_by_dataset: dict[int, dict[str, dict]], sorted_ids: list[tuple[int, str]], field_name: str, default_value: Any):
+def get_field_from_all_items(
+    items_by_dataset: dict[int, dict[str, dict]],
+    sorted_ids: list[tuple[int, str]],
+    field_name: str,
+    default_value: Any,
+):
     return [items_by_dataset[ds_id][item_id].get(field_name, default_value) for (ds_id, item_id) in sorted_ids]
 
 
@@ -110,8 +118,8 @@ def profile(func):
         ret = func(*args, **kwargs)
         pr.disable()
         s = io.StringIO()
-        ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
-        ps.sort_stats('cumulative')
+        ps = pstats.Stats(pr, stream=s).sort_stats("cumulative")
+        ps.sort_stats("cumulative")
         ps.print_stats(10)
         logging.warning(s.getvalue())
         return ret
@@ -119,19 +127,22 @@ def profile(func):
     return wrapper
 
 
-def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, store_each_call:bool=False, **d_kwargs):
+def profile_with_viztracer(*d_args, max_stack_depth: int | None = 7, store_each_call: bool = False, **d_kwargs):
     from viztracer import VizTracer
     import time
+
     if max_stack_depth:
-        d_kwargs['max_stack_depth'] = max_stack_depth
+        d_kwargs["max_stack_depth"] = max_stack_depth
 
     def decorator(func):
         def wrapper(*args, **kwargs):
             with VizTracer(
                 *d_args,
-                output_file=f"trace_{func.__name__}_{time.time()}.json" if store_each_call else f"trace_{func.__name__}.json",
+                output_file=f"trace_{func.__name__}_{time.time()}.json"
+                if store_each_call
+                else f"trace_{func.__name__}.json",
                 **d_kwargs,
-                ) as tracer:
+            ) as tracer:
                 ret = func(*args, **kwargs)
             return ret
 
@@ -139,4 +150,5 @@ def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, store_each_ca
         # open in https://ui.perfetto.dev
 
         return wrapper
+
     return decorator

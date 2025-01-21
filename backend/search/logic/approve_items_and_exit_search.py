@@ -7,18 +7,27 @@ from django.db.models.manager import BaseManager
 
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
-from data_map_backend.models import DataCollection, CollectionColumn, CollectionItem, FieldType, COLUMN_META_SOURCE_FIELDS
+from data_map_backend.models import (
+    DataCollection,
+    CollectionColumn,
+    CollectionItem,
+    FieldType,
+    COLUMN_META_SOURCE_FIELDS,
+)
 from search.prompts import approve_using_comparison_prompt
 from search.schemas import SearchTaskSettings, ApprovalUsingComparisonReason
 from legacy_backend.logic.chat_and_extraction import get_item_question_context
 from columns.schemas import Criterion
 
 
-def auto_approve_items(collection: DataCollection, new_items: list[CollectionItem] | BaseManager[CollectionItem],
-                        max_selections: int | None):
+def auto_approve_items(
+    collection: DataCollection,
+    new_items: list[CollectionItem] | BaseManager[CollectionItem],
+    max_selections: int | None,
+):
     fallback_items = []
     relevant_items = []
-    relevance_columns = [column for column in collection.columns.all() if column.module == 'relevance']  # type: ignore
+    relevance_columns = [column for column in collection.columns.all() if column.module == "relevance"]  # type: ignore
     if relevance_columns:
         for item in new_items:
             for column in relevance_columns:  # should be only one in most cases
@@ -26,13 +35,13 @@ def auto_approve_items(collection: DataCollection, new_items: list[CollectionIte
                 column_content = item.column_data.get(column.identifier)
                 if column_content is None:
                     continue
-                value = column_content.get('value')
+                value = column_content.get("value")
                 if isinstance(value, dict):
-                    is_relevant = value.get('is_relevant')
+                    is_relevant = value.get("is_relevant")
                     if is_relevant:
-                        relevant_items.append([item, value.get('relevance_score', 0.5)])
-                    elif value.get('relevance_score', 0.0) > 0.0:
-                        fallback_items.append([item, value.get('relevance_score', 0.5)])
+                        relevant_items.append([item, value.get("relevance_score", 0.5)])
+                    elif value.get("relevance_score", 0.0) > 0.0:
+                        fallback_items.append([item, value.get("relevance_score", 0.5)])
     else:
         # no relevance column, we just consider all items:
         relevant_items = [[item, 0.5] for item in new_items]
@@ -47,7 +56,10 @@ def auto_approve_items(collection: DataCollection, new_items: list[CollectionIte
         else:
             # no relevant and no fallback items:
             if relevance_columns:
-                collection.log_explanation(f"Evaluated top {len(new_items)} items **one-by-one using an LLM**, but couldn't find a relevant one", save=True)
+                collection.log_explanation(
+                    f"Evaluated top {len(new_items)} items **one-by-one using an LLM**, but couldn't find a relevant one",
+                    save=True,
+                )
             return
 
     if min([x[1] for x in relevant_items]) != max([x[1] for x in relevant_items]):
@@ -63,27 +75,38 @@ def auto_approve_items(collection: DataCollection, new_items: list[CollectionIte
     for item, relevance_score in sorted_items:
         item.relevance = 2
         changed_items.append(item)
-    CollectionItem.objects.bulk_update(changed_items, ['relevance'])
+    CollectionItem.objects.bulk_update(changed_items, ["relevance"])
     if relevance_columns:
-        collection.log_explanation(f"Evaluated top {len(new_items)} items **one-by-one using an LLM** and approved {len(changed_items)} of them", save=True)
+        collection.log_explanation(
+            f"Evaluated top {len(new_items)} items **one-by-one using an LLM** and approved {len(changed_items)} of them",
+            save=True,
+        )
     else:
         collection.log_explanation(f"Added {len(changed_items)} to the collection", save=True)
 
 
-def approve_using_comparison(collection: DataCollection, new_items: list[CollectionItem] | BaseManager[CollectionItem],
-                        max_selections: int | None, search_task: SearchTaskSettings):
-    prompt = approve_using_comparison_prompt[search_task.result_language or 'en']
+def approve_using_comparison(
+    collection: DataCollection,
+    new_items: list[CollectionItem] | BaseManager[CollectionItem],
+    max_selections: int | None,
+    search_task: SearchTaskSettings,
+):
+    prompt = approve_using_comparison_prompt[search_task.result_language or "en"]
     prompt = prompt.replace("{{ user_input }}", search_task.user_input)
-    relevance_columns = [column for column in collection.columns.all() if column.module == 'relevance']  # type: ignore
+    relevance_columns = [column for column in collection.columns.all() if column.module == "relevance"]  # type: ignore
 
     documents = ""
-    fields = [COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,]
+    fields = [
+        COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,
+    ]
     for collection_item in new_items:
         if collection_item.field_type != FieldType.IDENTIFIER:
             continue
         assert collection_item.dataset_id is not None
         assert collection_item.item_id is not None
-        input_data = get_item_question_context(collection_item.dataset_id, collection_item.item_id, fields, search_task.user_input)['context']
+        input_data = get_item_question_context(
+            collection_item.dataset_id, collection_item.item_id, fields, search_task.user_input
+        )["context"]
         # input_data has newline at the end
         documents += f"document_id {collection_item.id}:\n{input_data}"  # type: ignore
         for column in relevance_columns:  # should be only one in most cases
@@ -91,9 +114,9 @@ def approve_using_comparison(collection: DataCollection, new_items: list[Collect
             column_content = collection_item.column_data.get(column.identifier)
             if column_content is None:
                 continue
-            value = column_content.get('value')
+            value = column_content.get("value")
             if isinstance(value, dict):
-                criteria_review = value.get('criteria_review', [])
+                criteria_review = value.get("criteria_review", [])
                 for criterion in criteria_review:
                     criterion = Criterion(**criterion)
                     documents += f"Relevance: {criterion.reason}\n"
@@ -131,13 +154,13 @@ def approve_using_comparison(collection: DataCollection, new_items: list[Collect
             add_criterion(collection_item, criterion, relevance_column)
         collection_item.save()
 
-    CollectionItem.objects.bulk_update(new_items, ['relevance'])
+    CollectionItem.objects.bulk_update(new_items, ["relevance"])
 
 
 def add_criterion(collection_item: CollectionItem, new_criterion: Criterion, relevance_column: CollectionColumn):
-    column_content = collection_item.column_data.get(relevance_column.identifier).get('value', {})
+    column_content = collection_item.column_data.get(relevance_column.identifier).get("value", {})
     if isinstance(column_content, dict):
-        criteria = [Criterion(**c) for c in column_content.get('criteria_review', [])]
+        criteria = [Criterion(**c) for c in column_content.get("criteria_review", [])]
         criteria.append(new_criterion)
         relevance_score = len([c.fulfilled for c in criteria if c.fulfilled]) / max(len(criteria), 1)  # type: ignore
         value = {
@@ -145,8 +168,8 @@ def add_criterion(collection_item: CollectionItem, new_criterion: Criterion, rel
             "is_relevant": relevance_score > 0.6,
             "relevance_score": relevance_score,
         }
-        column_content['value'] = value
-        column_content['changed_at'] = timezone.now().isoformat()
+        column_content["value"] = value
+        column_content["changed_at"] = timezone.now().isoformat()
         collection_item.column_data[relevance_column.identifier] = column_content
 
 
@@ -158,7 +181,7 @@ def exit_search_mode(collection: DataCollection, class_name: str):
     collection.items_last_changed = timezone.now()
 
     for source in collection.search_sources:
-        source['is_active'] = False
+        source["is_active"] = False
 
     if num_candidates:
         collection.log_explanation(f"Removed {num_candidates} **not approved** items", save=False)

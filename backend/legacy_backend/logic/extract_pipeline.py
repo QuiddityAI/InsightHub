@@ -7,7 +7,9 @@ from ..logic.generator_functions import get_generator_function_from_field
 
 
 # TODO: add changed_at as parameter and cache function (using changed_at as measure for dropping the cache)
-def get_pipeline_steps(dataset_: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = [], only_fields: list[str] = []) -> tuple[list[list[dict]], set[str], set[str]]:
+def get_pipeline_steps(
+    dataset_: dict, ignored_fields: list[str] = [], enabled_fields: list[str] = [], only_fields: list[str] = []
+) -> tuple[list[list[dict]], set[str], set[str]]:
     dataset: DotDict = DotDict(dataset_)
     if has_circular_dependency(dataset):
         logging.error(f"The pipeline steps have a circular dependency, object dataset: {dataset.name}")
@@ -24,12 +26,15 @@ def get_pipeline_steps(dataset_: dict, ignored_fields: list[str] = [], enabled_f
         steps_added_this_phase: list[str] = []
         any_field_skipped = False
         for field in dataset.schema.object_fields.values():
-            if field.identifier in steps_added: continue
+            if field.identifier in steps_added:
+                continue
             this_field_skipped: bool = False
 
-            if ((not only_fields and field.should_be_generated and not field.identifier in ignored_fields)
-                    or field.identifier in only_fields
-                    or field.identifier in enabled_fields):
+            if (
+                (not only_fields and field.should_be_generated and not field.identifier in ignored_fields)
+                or field.identifier in only_fields
+                or field.identifier in enabled_fields
+            ):
                 dependencies: list[str] = field.source_fields
                 if field.generator and field.generator.requires_multiple_input_fields:
                     assert isinstance(field.source_fields, dict)
@@ -44,7 +49,9 @@ def get_pipeline_steps(dataset_: dict, ignored_fields: list[str] = [], enabled_f
                     continue
 
                 generator_function: Callable = get_generator_function_from_field(field)
-                condition_function: Optional[Callable] = eval(field.generating_condition) if field.generating_condition else None
+                condition_function: Optional[Callable] = (
+                    eval(field.generating_condition) if field.generating_condition else None
+                )
 
                 if field.generator and field.generator.requires_multiple_input_fields:
                     assert isinstance(field.source_fields, dict)
@@ -55,15 +62,19 @@ def get_pipeline_steps(dataset_: dict, ignored_fields: list[str] = [], enabled_f
                 potentially_changed_fields.add(field.identifier)
                 if field.generator and field.generator.returns_multiple_fields:
                     potentially_changed_fields |= set(field.generator_parameters.output_to_item_mapping.values())
-                phase_steps.append({
-                    'source_fields': field.source_fields,
-                    'generator_function': generator_function,
-                    'condition_function': condition_function,
-                    'target_field': field.identifier,
-                    'requires_multiple_input_fields': field.generator.requires_multiple_input_fields,
-                    'returns_multiple_fields': field.generator.returns_multiple_fields,
-                    'output_to_item_mapping': field.generator_parameters.output_to_item_mapping if field.generator.returns_multiple_fields else None,
-                })
+                phase_steps.append(
+                    {
+                        "source_fields": field.source_fields,
+                        "generator_function": generator_function,
+                        "condition_function": condition_function,
+                        "target_field": field.identifier,
+                        "requires_multiple_input_fields": field.generator.requires_multiple_input_fields,
+                        "returns_multiple_fields": field.generator.returns_multiple_fields,
+                        "output_to_item_mapping": field.generator_parameters.output_to_item_mapping
+                        if field.generator.returns_multiple_fields
+                        else None,
+                    }
+                )
                 steps_added_this_phase.append(field.identifier)
             # TODO: add elif for fields that should not be generated on insert but
             # have a generator and which source fields changed
@@ -86,7 +97,8 @@ def has_circular_dependency(dataset: dict) -> bool:
         any_field_skipped = False
         any_field_added = False
         for field in dataset.schema.object_fields.values():
-            if field.identifier in steps_added: continue
+            if field.identifier in steps_added:
+                continue
             this_field_skipped = False
             dependencies = field.source_fields
             if field.generator and field.generator.requires_multiple_input_fields:
@@ -110,4 +122,3 @@ def has_circular_dependency(dataset: dict) -> bool:
             # -> circular dependency
             return True
     return False
-

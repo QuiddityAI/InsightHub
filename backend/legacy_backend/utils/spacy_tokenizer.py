@@ -5,18 +5,17 @@ import spacy
 
 
 class SpacyTokenizer:
-
     def __init__(self) -> None:
-        self.preproc = 'spacy'
+        self.preproc = "spacy"
 
-        if self.preproc == 'spacy':
+        if self.preproc == "spacy":
             print("Using SpaCy for preprocessing...")
-            self.nlp = spacy.load("en_core_web_sm", disable=['parser', 'ner'])
-            self.nlp.add_pipe('sentencizer')
+            self.nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+            self.nlp.add_pipe("sentencizer")
         else:
             raise ValueError("Preproc must be 'spacy' or 'nltk'")
 
-        self.translation = str.maketrans('', '', string.punctuation)
+        self.translation = str.maketrans("", "", string.punctuation)
 
     @staticmethod
     def correctPluralABB(s):
@@ -43,10 +42,6 @@ class SpacyTokenizer:
         words = []
         tokens = self.nlp(text)
         for item in tokens:
-            if not any([item.is_stop,
-                        item.is_punct,
-                        item.is_digit,
-                        item.is_space,
-                        item.__len__() <= 2]):
+            if not any([item.is_stop, item.is_punct, item.is_digit, item.is_space, item.__len__() <= 2]):
                 words.append(self.normalizeWord(item.lemma_))
         return words

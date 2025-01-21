@@ -17,11 +17,7 @@ from legacy_backend.logic.search import get_search_results
 from search.schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
 from columns.logic.process_column import process_cells_blocking
 from search.prompts import search_query_prompt
-from search.logic.approve_items_and_exit_search import (
-    auto_approve_items,
-    approve_using_comparison,
-    exit_search_mode,
-)
+from search.logic.approve_items_and_exit_search import auto_approve_items, approve_using_comparison, exit_search_mode
 
 # from search.logic.extract_filters import get_filter_prompt, extract_filters
 
@@ -33,19 +29,6 @@ def run_search_task(
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
 ) -> list[CollectionItem]:
-    """
-    Executes a search task on a given data collection.
-
-    Args:
-        collection (DataCollection): The data collection to perform the search on.
-        search_task (SearchTaskSettings): The settings for the search task.
-        user_id (int): The ID of the user initiating the search.
-        after_columns_were_processed (Callable, optional): A callback function to be called after columns are processed. Defaults to None.
-        is_new_collection (bool, optional): Flag indicating if the collection is new. Defaults to False.
-
-    Returns:
-        list[CollectionItem]: A list of collection items resulting from the search task.
-    """
     if not is_new_collection:
         exit_search_mode(collection, "_default")
 
@@ -114,8 +97,7 @@ def run_search_task(
 
         if search_task.approve_using_comparison:
             collection.log_explanation(
-                "Use AI model to **compare search results** and **approve best items**",
-                save=False,
+                "Use AI model to **compare search results** and **approve best items**", save=False
             )
             approve_using_comparison(collection, new_items, search_task.max_selections, search_task)
 
@@ -176,15 +158,15 @@ def add_items_from_source(
             "internal_input_weight": 0.7,
             "use_similarity_thresholds": True,
             "auto_relax_query": source.auto_relax_query,
-            "use_reranking": (source.use_reranking if source.search_type == SearchType.EXTERNAL_INPUT else False),
+            "use_reranking": source.use_reranking if source.search_type == SearchType.EXTERNAL_INPUT else False,
             "filters": source.filters or [],
             "result_language": source.result_language or "en",
             "ranking_settings": source.ranking_settings or {},
-            "similar_to_item_id": (
-                [source.reference_dataset_id, source.reference_item_id] if source.reference_item_id else None
-            ),
+            "similar_to_item_id": [source.reference_dataset_id, source.reference_item_id]
+            if source.reference_item_id
+            else None,
             "result_list_items_per_page": source.page_size,
-            "result_list_current_page": (source.retrieved // source.page_size if source.retrieved else 0),
+            "result_list_current_page": source.retrieved // source.page_size if source.retrieved else 0,
             "max_sub_items_per_item": 1,
             "return_highlights": True,
             "use_bolding_in_highlights": True,

@@ -19,7 +19,7 @@ model = None
 tokenizer = None
 processor = None
 
-compute_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+compute_device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def get_clip_text_embeddings(texts, model_name):
@@ -35,7 +35,7 @@ def get_clip_text_embeddings(texts, model_name):
 
     inputs = tokenizer(texts, padding=True, return_tensors="pt")
     inputs.to(compute_device)
-    text_features = model.get_text_features(**inputs).to('cpu').detach()
+    text_features = model.get_text_features(**inputs).to("cpu").detach()
     return text_features
 
 
@@ -57,18 +57,20 @@ def get_clip_image_embeddings(image_paths, model_name):
         if os.path.exists(image_path):
             try:
                 img = Image.open(image_path)
-                img.draft('RGB', (224, 224))
+                img.draft("RGB", (224, 224))
             except (UnidentifiedImageError, OSError) as e:
                 logging.warning(f"Error with image {image_path}: {e}")
         if not img:
             missing_images += 1
-            logging.warning(f"Couldn't load image: {image_path} ({missing_images} missing of {len(image_paths)} in total)")
-            img = Image.new('RGB', (224, 224))
+            logging.warning(
+                f"Couldn't load image: {image_path} ({missing_images} missing of {len(image_paths)} in total)"
+            )
+            img = Image.new("RGB", (224, 224))
         images.append(img)
 
     inputs = processor(images=images, return_tensors="pt")
     inputs.to(compute_device)
-    image_features = model.get_image_features(**inputs).to('cpu').detach()
+    image_features = model.get_image_features(**inputs).to("cpu").detach()
     return image_features
 
 
@@ -76,7 +78,7 @@ def test_embedding():
     import numpy as np
 
     model_name = "laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
-    #model_name = "patrickjohncyh/fashion-clip"
+    # model_name = "patrickjohncyh/fashion-clip"
     print(model_name)
     texts = ["a very intersting text", "just three words"]
     embeddings = get_clip_text_embeddings(texts, model_name)
@@ -86,7 +88,10 @@ def test_embedding():
     embeddings_batch = get_clip_text_embeddings(texts, model_name)
     print(f"Single and batch are the same: {all(np.abs(embeddings_single_item[0] - embeddings_batch[0])) < 0.001}")
 
-    image_paths = ["/home/tim/visual-data-map/frontend/favicon/android-chrome-512x512.png", "/home/tim/visual-data-map/frontend/favicon/android-chrome-192x192.png"]
+    image_paths = [
+        "/home/tim/visual-data-map/frontend/favicon/android-chrome-512x512.png",
+        "/home/tim/visual-data-map/frontend/favicon/android-chrome-192x192.png",
+    ]
     embeddings = get_clip_image_embeddings(image_paths, model_name)
     print(embeddings.shape)
 

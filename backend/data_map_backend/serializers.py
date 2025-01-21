@@ -1,12 +1,30 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import Chat, CollectionColumn, DataCollection, DatasetField, DatasetSchema, DatasetSpecificSettingsOfCollection, CollectionItem, Dataset, ExportConverter, ImportConverter, Generator, EmbeddingSpace, Organization, SearchHistoryItem, StoredMap, TrainedClassifier, WritingTask
+from .models import (
+    Chat,
+    CollectionColumn,
+    DataCollection,
+    DatasetField,
+    DatasetSchema,
+    DatasetSpecificSettingsOfCollection,
+    CollectionItem,
+    Dataset,
+    ExportConverter,
+    ImportConverter,
+    Generator,
+    EmbeddingSpace,
+    Organization,
+    SearchHistoryItem,
+    StoredMap,
+    TrainedClassifier,
+    WritingTask,
+)
 
 
 class EmbeddingSpaceSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = EmbeddingSpace
-        exclude = ['created_at', 'changed_at']
+        exclude = ["created_at", "changed_at"]
 
 
 class GeneratorSerializer(drf_serializers.ModelSerializer):
@@ -14,7 +32,7 @@ class GeneratorSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = Generator
-        exclude = ['created_at', 'changed_at', 'parameter_description']
+        exclude = ["created_at", "changed_at", "parameter_description"]
 
 
 class DatasetFieldSerializer(drf_serializers.ModelSerializer):
@@ -24,7 +42,7 @@ class DatasetFieldSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = DatasetField
-        exclude = ['created_at', 'changed_at', '_order']
+        exclude = ["created_at", "changed_at", "_order"]
 
 
 class OrganizationSerializer(drf_serializers.ModelSerializer):
@@ -33,19 +51,19 @@ class OrganizationSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        exclude = ['created_at', 'changed_at', 'members']
+        exclude = ["created_at", "changed_at", "members"]
 
 
 class ImportConverterSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = ImportConverter
-        exclude = ['created_at', 'changed_at']
+        exclude = ["created_at", "changed_at"]
 
 
 class ExportConverterSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = ExportConverter
-        exclude = ['created_at', 'changed_at']
+        exclude = ["created_at", "changed_at"]
 
 
 class DatasetSchemaSerializer(drf_serializers.ModelSerializer):
@@ -55,7 +73,7 @@ class DatasetSchemaSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = DatasetSchema
-        exclude = ['created_at', 'changed_at']
+        exclude = ["created_at", "changed_at"]
 
 
 class DatasetSerializer(drf_serializers.ModelSerializer):
@@ -66,7 +84,7 @@ class DatasetSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = Dataset
-        exclude = ['created_at', 'changed_at']
+        exclude = ["created_at", "changed_at"]
 
 
 class SearchHistoryItemSerializer(drf_serializers.ModelSerializer):
@@ -75,7 +93,7 @@ class SearchHistoryItemSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = SearchHistoryItem
-        exclude = ['changed_at']
+        exclude = ["changed_at"]
 
 
 class DatasetSpecificSettingsOfCollectionSerializer(drf_serializers.ModelSerializer):
@@ -86,13 +104,13 @@ class DatasetSpecificSettingsOfCollectionSerializer(drf_serializers.ModelSeriali
 
     class Meta:
         model = DatasetSpecificSettingsOfCollection
-        exclude = ['created_at', 'changed_at']
+        exclude = ["created_at", "changed_at"]
 
 
 class CollectionColumnSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = CollectionColumn
-        exclude = ['created_at', 'changed_at']
+        exclude = ["created_at", "changed_at"]
 
 
 class CollectionSerializer(drf_serializers.ModelSerializer):
@@ -106,7 +124,7 @@ class CollectionSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = DataCollection
-        exclude = ['map_data']
+        exclude = ["map_data"]
 
 
 class CollectionItemSerializer(drf_serializers.ModelSerializer):
@@ -129,6 +147,7 @@ class TrainedClassifierSerializer(drf_serializers.ModelSerializer):
 
 class WritingTaskSerializer(drf_serializers.ModelSerializer):
     collection = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
+
     class Meta:
         model = WritingTask
         exclude = []
@@ -140,10 +159,10 @@ class StoredMapSerializer(drf_serializers.ModelSerializer):
 
     class Meta:
         model = StoredMap
-        exclude = ['map_data']
+        exclude = ["map_data"]
 
 
 class ChatSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = Chat
-        exclude = ['created_at', 'changed_at']
+        exclude = ["created_at", "changed_at"]

@@ -26,6 +26,7 @@ client = Groq(
 
 temp = float(os.getenv("LLM_TEMPERATURE", 0.0))
 
+
 class GROQ_MODELS:
     LLAMA_3_8B = "llama3-8b-8192"
     LLAMA_3_70B = "llama3-70b-8192"
@@ -52,28 +53,24 @@ def get_groq_response_using_history(history, model: str = GROQ_MODELS.LLAMA_3_70
     if num_tokens > max_tokens_per_minute_per_model[model]:
         remaining_time = max(timestamps_and_num_tokens_per_model[model].keys()) + 60 - time.time()
         logging.warning(f"Token rate limit reached for Groq model {model}. Remaining time: {remaining_time}")
-        raise RateLimitException('too many calls', remaining_time)
+        raise RateLimitException("too many calls", remaining_time)
 
     try:
-        response = client.chat.completions.create(
-            model=model,
-            temperature=temp,
-            messages=history
-        )
+        response = client.chat.completions.create(model=model, temperature=temp, messages=history)
     except RateLimitError as e:
         logging.warning(f"Token rate limit reached for Groq model {model}.")
-        raise RateLimitException('too many calls', 30)
+        raise RateLimitException("too many calls", 30)
 
     # logging.warning(f"Groq response: {response}")
     # -> ChatCompletion(id='chatcmpl-f9b2d897-d792-4b8b-aa2f-518df47d4e5e',
     # choices=[
-        # Choice(finish_reason='stop', index=0, logprobs=None,
-        # message=ChatCompletionMessage(content='...', role='assistant',
-        # function_call=None, tool_calls=None))],
+    # Choice(finish_reason='stop', index=0, logprobs=None,
+    # message=ChatCompletionMessage(content='...', role='assistant',
+    # function_call=None, tool_calls=None))],
     # created=1719654414, model='llama3-70b-8192', object='chat.completion',
     # system_fingerprint='fp_2f30b0b571',
     # usage=CompletionUsage(completion_tokens=23, prompt_tokens=208, total_tokens=231,
-        # completion_time=0.065714286, prompt_time=0.132865694, queue_time=None, total_time=0.19857998),
+    # completion_time=0.065714286, prompt_time=0.132865694, queue_time=None, total_time=0.19857998),
     # x_groq={'id': 'req_01j1hp7wm6f6t82pbnqkmsyqtc'})
 
     if response.usage:

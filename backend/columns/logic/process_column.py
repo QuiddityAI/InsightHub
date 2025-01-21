@@ -33,11 +33,20 @@ def get_collection_items_from_cell_range(column: CollectionColumn, cell_range: C
     else:
         collection_items = CollectionItem.objects.filter(collection=column.collection)
         collection_items = collection_items.order_by(cell_range.order_by)
-        collection_items = collection_items[cell_range.offset:cell_range.offset+cell_range.limit] if cell_range.limit > 0 else collection_items[cell_range.offset:]
+        collection_items = (
+            collection_items[cell_range.offset : cell_range.offset + cell_range.limit]
+            if cell_range.limit > 0
+            else collection_items[cell_range.offset :]
+        )
     return collection_items
 
 
-def process_cells_blocking(collection_items: BaseManager[CollectionItem] | list[CollectionItem], column: CollectionColumn, collection: DataCollection, user_id: int):
+def process_cells_blocking(
+    collection_items: BaseManager[CollectionItem] | list[CollectionItem],
+    column: CollectionColumn,
+    collection: DataCollection,
+    user_id: int,
+):
     assert isinstance(collection.columns_with_running_processes, list)
     collection.columns_with_running_processes.append(column.identifier)
     collection.save(update_fields=["columns_with_running_processes"])
@@ -45,36 +54,44 @@ def process_cells_blocking(collection_items: BaseManager[CollectionItem] | list[
     batch_size = 10
     try:
         for i in range(0, len(collection_items), batch_size):
-            batch = collection_items[i:i+batch_size]
+            batch = collection_items[i : i + batch_size]
             _process_cell_batch(batch, column, collection, user_id)
         logging.warning("Done extracting question from collection class items.")
     except Exception as e:
         logging.error(e)
         import traceback
+
         logging.error(traceback.format_exc())
     finally:
         collection.columns_with_running_processes.remove(column.identifier)
         collection.save(update_fields=["columns_with_running_processes"])
 
 
-def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[CollectionItem], column: CollectionColumn, collection: DataCollection, user_id: int):
+def _process_cell_batch(
+    collection_items: BaseManager[CollectionItem] | list[CollectionItem],
+    column: CollectionColumn,
+    collection: DataCollection,
+    user_id: int,
+):
     if not column.module:
         logging.warning(f"No module specified for column {column.identifier}.")
         return
 
     data_item_source_fields = [name for name in column.source_fields if not name.startswith("_")]
-    source_column_identifiers = [name.replace("_column__", "") for name in column.source_fields if name.startswith("_column__")]
+    source_column_identifiers = [
+        name.replace("_column__", "") for name in column.source_fields if name.startswith("_column__")
+    ]
     source_columns = CollectionColumn.objects.filter(collection=collection, identifier__in=source_column_identifiers)
 
     module_definitions = {
-        'llm': {"input_type": "natural_language"},
-        'relevance': {"input_type": "natural_language"},
-        'python_expression': {"input_type": "json"},
-        'web_search': {"input_type": "json"},
-        'item_field': {"input_type": "json"},
-        'notes': {"input_type": None},
-        'website_scraping': {"input_type": "json"},
-        'email': {"input_type": "json"},
+        "llm": {"input_type": "natural_language"},
+        "relevance": {"input_type": "natural_language"},
+        "python_expression": {"input_type": "json"},
+        "web_search": {"input_type": "json"},
+        "item_field": {"input_type": "json"},
+        "notes": {"input_type": None},
+        "website_scraping": {"input_type": "json"},
+        "email": {"input_type": "json"},
     }
     if column.module not in module_definitions:
         logging.warning(f"Column Processing: Module {column.module} not found.")
@@ -82,7 +99,7 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
     input_type = module_definitions[column.module]["input_type"]
 
     def process_cell(collection_item: CollectionItem):
-        if (collection_item.column_data or {}).get(column.identifier, {}).get('value'):
+        if (collection_item.column_data or {}).get(column.identifier, {}).get("value"):
             # already extracted (only empty fields are extracted again)
             return
 
@@ -94,22 +111,26 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
             assert collection_item.dataset_id is not None
             assert collection_item.item_id is not None
             if input_type == "natural_language":
-                input_data = get_item_question_context_native(collection_item.dataset_id, collection_item.item_id, column.source_fields, column.expression or "")['context']
+                input_data = get_item_question_context_native(
+                    collection_item.dataset_id, collection_item.item_id, column.source_fields, column.expression or ""
+                )["context"]
                 for additional_source_column in source_columns:
                     if not collection_item.column_data:
                         continue
                     column_data = collection_item.column_data.get(additional_source_column.identifier)
-                    if column_data and column_data.get('value'):
+                    if column_data and column_data.get("value"):
                         input_data += f"\n{additional_source_column.name}: {column_data['value']}"
             elif input_type == "json":
-                input_data = get_document_details_by_id(collection_item.dataset_id, collection_item.item_id, tuple(data_item_source_fields))
+                input_data = get_document_details_by_id(
+                    collection_item.dataset_id, collection_item.item_id, tuple(data_item_source_fields)
+                )
                 assert input_data is not None
                 for additional_source_column in source_columns:
                     if not collection_item.column_data:
                         continue
                     column_data = collection_item.column_data.get(additional_source_column.identifier)
-                    if column_data and column_data.get('value'):
-                        input_data["_column__" + additional_source_column.identifier] = column_data['value']
+                    if column_data and column_data.get("value"):
+                        input_data["_column__" + additional_source_column.identifier] = column_data["value"]
         else:
             logging.warning(f"Column Processing: Unknown field type {collection_item.field_type} for item {collection_item.id}.")  # type: ignore
 
@@ -155,6 +176,7 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
         except Exception as e:
             logging.error(f"Error processing cell {collection_item.id}: {e}")  # type: ignore
             import traceback
+
             logging.error(traceback.format_exc())
             try:
                 cell_data = CellData(
@@ -166,6 +188,7 @@ def _process_cell_batch(collection_items: BaseManager[CollectionItem] | list[Col
             except Exception as e:
                 logging.error(f"Error saving error message for cell {collection_item.id}: {e}")  # type: ignore
                 import traceback
+
                 logging.error(traceback.format_exc())
 
     with ThreadPoolExecutor(max_workers=10) as executor:

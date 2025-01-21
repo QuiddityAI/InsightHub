@@ -19,15 +19,19 @@ THUMBNAIL_ATLAS_DIR = "/data/quiddity_data/thumbnail_atlas/"
 THUMBNAIL_SIZE = 256
 
 
-def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | None],
-                           sprite_size: int, on_success: Callable = lambda: None,
-                           atlas_total_width: int = 4096,) -> list[float]:
+def generate_thumbnail_atlas(
+    atlas_filename: str,
+    thumbnail_uris: list[str | None],
+    sprite_size: int,
+    on_success: Callable = lambda: None,
+    atlas_total_width: int = 4096,
+) -> list[float]:
     if not os.path.exists(THUMBNAIL_CACHE_DIR):
         os.makedirs(THUMBNAIL_CACHE_DIR, exist_ok=True)
     if not os.path.exists(THUMBNAIL_ATLAS_DIR):
         os.makedirs(THUMBNAIL_ATLAS_DIR, exist_ok=True)
     max_images = pow(atlas_total_width // sprite_size, 2)
-    imagesPerLine = (atlas_total_width / sprite_size)
+    imagesPerLine = atlas_total_width / sprite_size
     atlas = Image.new("RGBA", (atlas_total_width, atlas_total_width), color=(0, 0, 0, 0))
 
     def _load_image(thumbnail_uri):
@@ -42,24 +46,26 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | Non
                     time.sleep(random.random() * 0.1)
                     # using headers to prevent 403 forbidden because of scraper protection:
                     headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                        'Accept-Language': 'en-US,en;q=0.5',
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0",
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                        "Accept-Language": "en-US,en;q=0.5",
                         # 'Accept-Encoding': 'gzip, deflate, br',
-                        'DNT': '1',
-                        'Connection': 'keep-alive',
-                        'Upgrade-Insecure-Requests': '1',
-                        'Sec-Fetch-Dest': 'document',
-                        'Sec-Fetch-Mode': 'navigate',
-                        'Sec-Fetch-Site': 'none',
-                        'Sec-Fetch-User': '?1',
+                        "DNT": "1",
+                        "Connection": "keep-alive",
+                        "Upgrade-Insecure-Requests": "1",
+                        "Sec-Fetch-Dest": "document",
+                        "Sec-Fetch-Mode": "navigate",
+                        "Sec-Fetch-Site": "none",
+                        "Sec-Fetch-User": "?1",
                     }
-                    formats = ['ICO'] if thumbnail_uri.endswith('.ico') else None
-                    image = Image.open(requests.get(thumbnail_uri, headers=headers, stream=True, timeout=2).raw, formats=formats)
+                    formats = ["ICO"] if thumbnail_uri.endswith(".ico") else None
+                    image = Image.open(
+                        requests.get(thumbnail_uri, headers=headers, stream=True, timeout=2).raw, formats=formats
+                    )
                     # reduce size already here to only save small version to disk (but might be larger than current sprite size)
                     image.thumbnail((THUMBNAIL_SIZE, THUMBNAIL_SIZE))
-                    if image.mode != 'RGB':
-                        image = image.convert('RGB')
+                    if image.mode != "RGB":
+                        image = image.convert("RGB")
                 except (PIL.UnidentifiedImageError, OSError) as e:
                     logging.debug(f"Image can't be loaded (UnidentifiedImageError): {thumbnail_uri}, {e}")
                     return None
@@ -99,8 +105,13 @@ def generate_thumbnail_atlas(atlas_filename: str, thumbnail_uris: list[str | Non
             continue
         posRow: int = int(i / imagesPerLine)
         posCol: int = int(i % imagesPerLine)
-        atlas.paste(image, (posCol * sprite_size + ((sprite_size - image.width) // 2),
-                            posRow * sprite_size + ((sprite_size - image.height) // 2)))
+        atlas.paste(
+            image,
+            (
+                posCol * sprite_size + ((sprite_size - image.width) // 2),
+                posRow * sprite_size + ((sprite_size - image.height) // 2),
+            ),
+        )
         image.close()
     atlas.save(atlas_filename, quality=80)
     logging.warning(f"Thumbnail atlas sucessfully created: {atlas_filename}")

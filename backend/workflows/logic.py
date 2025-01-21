@@ -26,9 +26,7 @@ def workflow(cls: type[WorkflowBase]):
     return cls
 
 
-def create_collection_using_workflow(
-    user: User, settings: CreateCollectionSettings
-) -> DataCollection:
+def create_collection_using_workflow(user: User, settings: CreateCollectionSettings) -> DataCollection:
     collection = DataCollection()
     collection.created_by = user
     collection.name = settings.user_input or f"Collection {timezone.now().isoformat()}"
@@ -46,12 +44,14 @@ def create_collection_using_workflow(
             workflow_cls: type[WorkflowBase] | None = workflows_by_id.get(settings.workflow_id)
             if not workflow_cls:
                 logging.warning(f"Requested unsupported workflow: {settings.workflow_id}")
-                workflow_cls = workflows_by_id['empty_collection']
+                workflow_cls = workflows_by_id["empty_collection"]
             assert workflow_cls
 
             if settings.auto_set_filters and workflow_cls.metadata.needs_result_language:
                 prompt = query_language_prompt.replace("{{ query }}", settings.user_input or "")
-                settings.result_language = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
+                settings.result_language = (
+                    Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
+                )
 
             workflow_cls().run(collection, settings, user)
         except Exception as e:

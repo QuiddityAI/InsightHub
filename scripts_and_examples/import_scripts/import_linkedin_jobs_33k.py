@@ -10,7 +10,7 @@ import orjson
 
 from data_backend_client import update_database_layout, insert_many, files_in_folder
 
-sys.path.append('../../data_backend/')
+sys.path.append("../../data_backend/")
 from utils.dotdict import DotDict
 
 
@@ -55,15 +55,21 @@ def preprocess_item(raw_item: list, companies: dict) -> dict:
         item["salary"]["med"] = item["salary"]["med"] * 12 if isinstance(item["salary"]["med"], (int, float)) else None
         item["salary"]["min"] = item["salary"]["min"] * 12 if isinstance(item["salary"]["min"], (int, float)) else None
     elif raw_item[7] == "HOURLY":
-        item["salary"]["max"] = item["salary"]["max"] * 40 * 52 if isinstance(item["salary"]["max"], (int, float)) else None
-        item["salary"]["med"] = item["salary"]["med"] * 40 * 52 if isinstance(item["salary"]["med"], (int, float)) else None
-        item["salary"]["min"] = item["salary"]["min"] * 40 * 52 if isinstance(item["salary"]["min"], (int, float)) else None
+        item["salary"]["max"] = (
+            item["salary"]["max"] * 40 * 52 if isinstance(item["salary"]["max"], (int, float)) else None
+        )
+        item["salary"]["med"] = (
+            item["salary"]["med"] * 40 * 52 if isinstance(item["salary"]["med"], (int, float)) else None
+        )
+        item["salary"]["min"] = (
+            item["salary"]["min"] * 40 * 52 if isinstance(item["salary"]["min"], (int, float)) else None
+        )
     return item
 
 
 employee_counts = {}
 filename = "/data/linkedin_jobs_2023_33k/employee_counts.csv"
-with open(filename, 'r') as f:
+with open(filename, "r") as f:
     f.__next__()  # skip header
     for line in csv.reader(f):
         employee_counts[line[0]] = {
@@ -73,7 +79,7 @@ with open(filename, 'r') as f:
 
 companies = {}
 filename = "/data/linkedin_jobs_2023_33k/companies.csv"
-with open(filename, 'r') as f:
+with open(filename, "r") as f:
     f.__next__()  # skip header
     for line in csv.reader(f):
         companies[line[0]] = {
@@ -123,7 +129,7 @@ def import_dataset():
     total_items = 0
 
     filename = "/data/linkedin_jobs_2023_33k/job_postings.csv"
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         f.__next__()  # skip header
         for line in csv.reader(f):
             if len(line) < 21:

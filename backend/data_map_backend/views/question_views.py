@@ -20,7 +20,7 @@ from .other_views import is_from_backend
 
 @csrf_exempt
 def create_chat_from_search_settings(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -34,10 +34,10 @@ def create_chat_from_search_settings(request):
     chat = Chat.objects.create(
         created_by=request.user,
         search_settings=search_settings,
-        name=search_settings['all_field_query'],
+        name=search_settings["all_field_query"],
     )
 
-    chat.add_question(search_settings['all_field_query'], request.user.id)
+    chat.add_question(search_settings["all_field_query"], request.user.id)
 
     data = ChatSerializer(chat).data
     return HttpResponse(json.dumps(data), content_type="application/json", status=201)
@@ -45,7 +45,7 @@ def create_chat_from_search_settings(request):
 
 @csrf_exempt
 def add_collection_class_chat(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -78,7 +78,7 @@ def add_collection_class_chat(request):
 
 @csrf_exempt
 def add_chat_question(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
@@ -108,7 +108,7 @@ def add_chat_question(request):
 
 @csrf_exempt
 def get_chats(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -119,15 +119,15 @@ def get_chats(request):
         return HttpResponse(status=400)
 
     chats = Chat.objects.filter(created_by=request.user.id, collection__isnull=True)
-    chats = chats.order_by('-created_at')
-    chat_ids = [{'id': chat.id, 'name': chat.name} for chat in chats]  # type: ignore
+    chats = chats.order_by("-created_at")
+    chat_ids = [{"id": chat.id, "name": chat.name} for chat in chats]  # type: ignore
 
     return HttpResponse(json.dumps(chat_ids), content_type="application/json", status=200)
 
 
 @csrf_exempt
 def get_collection_class_chats(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -140,15 +140,15 @@ def get_collection_class_chats(request):
         return HttpResponse(status=400)
 
     chats = Chat.objects.filter(created_by=request.user.id, collection_id=collection_id, class_name=class_name)
-    chats = chats.order_by('-created_at')
-    chat_ids = [{'id': chat.id, 'name': chat.name} for chat in chats]  # type: ignore
+    chats = chats.order_by("-created_at")
+    chat_ids = [{"id": chat.id, "name": chat.name} for chat in chats]  # type: ignore
 
     return HttpResponse(json.dumps(chat_ids), content_type="application/json", status=200)
 
 
 @csrf_exempt
 def get_chat_by_id(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -172,7 +172,7 @@ def get_chat_by_id(request):
 
 @csrf_exempt
 def delete_chat(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -195,7 +195,7 @@ def delete_chat(request):
 
 @csrf_exempt
 def track_service_usage(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -217,7 +217,7 @@ def track_service_usage(request):
 
 @csrf_exempt
 def get_service_usage(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -230,9 +230,9 @@ def get_service_usage(request):
 
     usage_tracker = ServiceUsage.get_usage_tracker(user_id, service_name)
     result = {
-        'usage_current_period': usage_tracker.get_current_period().usage,
-        'limit_per_period': usage_tracker.limit_per_period,
-        'period_type': usage_tracker.period_type,
+        "usage_current_period": usage_tracker.get_current_period().usage,
+        "limit_per_period": usage_tracker.limit_per_period,
+        "period_type": usage_tracker.period_type,
     }
 
     return HttpResponse(json.dumps(result), content_type="application/json", status=200)
@@ -240,7 +240,7 @@ def get_service_usage(request):
 
 @csrf_exempt
 def answer_question_using_items(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -256,23 +256,27 @@ def answer_question_using_items(request):
 
     texts = []
     for ds_id, item_id in ds_and_item_ids:
-        text = f"Document ID: [{ds_id}, {item_id}]\n" + get_item_question_context(ds_id, item_id, source_fields, question)
+        text = f"Document ID: [{ds_id}, {item_id}]\n" + get_item_question_context(
+            ds_id, item_id, source_fields, question
+        )
         texts.append(text)
 
     context = "\n\n".join(texts)
 
     prompt = search_question_prompt.replace("{{ context }}", context).replace("{{ question }}", question)
 
-    history = [ { "role": "system", "content": prompt } ]
+    history = [{"role": "system", "content": prompt}]
 
     response_text = get_chatgpt_response_using_history(history, OPENAI_MODELS.GPT4_O)
 
-    return HttpResponse(json.dumps({"answer": response_text, "prompt": prompt}), content_type="application/json", status=200)
+    return HttpResponse(
+        json.dumps({"answer": response_text, "prompt": prompt}), content_type="application/json", status=200
+    )
 
 
 @csrf_exempt
 def judge_item_relevancy_using_llm(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
         return HttpResponse(status=401)
@@ -295,8 +299,9 @@ def judge_item_relevancy_using_llm(request):
 item_relevancy_cache = None
 
 
-def _judge_item_relevancy_using_llm(user_id: int, question: str, dataset_id: int, item_id: str,
-                                    delay: int = 0) -> dict:
+def _judge_item_relevancy_using_llm(
+    user_id: int, question: str, dataset_id: int, item_id: str, delay: int = 0
+) -> dict:
     global item_relevancy_cache
     if not item_relevancy_cache:
         # create it here and note above, as otherwise it would also be created when management commands are run
@@ -307,8 +312,9 @@ def _judge_item_relevancy_using_llm(user_id: int, question: str, dataset_id: int
         return item_relevancy_cache.get(cache_key)  # type: ignore
 
     source_fields = ["_descriptive_text_fields", "_full_text_snippets"]
-    item_context = get_item_question_context(dataset_id, item_id, source_fields, question,
-                                             max_characters_per_field=3000, max_total_characters=5000)
+    item_context = get_item_question_context(
+        dataset_id, item_id, source_fields, question, max_characters_per_field=3000, max_total_characters=5000
+    )
 
     dataset = Dataset.objects.get(id=dataset_id)
 
@@ -320,7 +326,7 @@ def _judge_item_relevancy_using_llm(user_id: int, question: str, dataset_id: int
 
     # logging.warning(prompt)
 
-    history = [ { "role": "system", "content": prompt } ]
+    history = [{"role": "system", "content": prompt}]
 
     usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
     result = usage_tracker.track_usage(0.1, f"judge item relevancy")
@@ -332,9 +338,9 @@ def _judge_item_relevancy_using_llm(user_id: int, question: str, dataset_id: int
         try:
             relevancy = json.loads(response_text)
         except (KeyError, ValueError):
-            relevancy = {'error': 'Could not parse AI response'}
+            relevancy = {"error": "Could not parse AI response"}
     else:
-        relevancy = {'error': 'No AI check, usage limit exceeded'}
-    if relevancy.get("explanation") and 'decision' in relevancy:
-        item_relevancy_cache.set(cache_key, relevancy, expire=60*60*24*7)  # cache for 1 week
+        relevancy = {"error": "No AI check, usage limit exceeded"}
+    if relevancy.get("explanation") and "decision" in relevancy:
+        item_relevancy_cache.set(cache_key, relevancy, expire=60 * 60 * 24 * 7)  # cache for 1 week
     return relevancy

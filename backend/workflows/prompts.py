@@ -80,5 +80,5 @@ Gib nur die Kriterien als Liste von Aufzählungspunkten zurück. Wiederhole die 
 """
 
 criteria_prompt: defaultdict[str, str] = defaultdict(lambda: criteria_prompt_en)
-criteria_prompt['en'] = criteria_prompt_en
-criteria_prompt['de'] = criteria_prompt_de
+criteria_prompt["en"] = criteria_prompt_en
+criteria_prompt["de"] = criteria_prompt_de

@@ -1,7 +1,11 @@
 from typing import Iterable
 
 
-def chunk_text_generator(source_fields_list_batch: Iterable[Iterable[str | Iterable[str]]], chunk_size_in_characters: int, overlap_in_characters: int) -> list[str]:
+def chunk_text_generator(
+    source_fields_list_batch: Iterable[Iterable[str | Iterable[str]]],
+    chunk_size_in_characters: int,
+    overlap_in_characters: int,
+) -> list[str]:
     batch_result = []
     for source_fields_list in source_fields_list_batch:
         item_result = []
@@ -20,15 +24,17 @@ def chunk_text_generator(source_fields_list_batch: Iterable[Iterable[str | Itera
 def chunk_text(text: str, chunk_size_in_characters: int, overlap_in_characters: int):
     chunks = []
     for i in range(0, len(text), chunk_size_in_characters - overlap_in_characters):
-        text = text[i:i + chunk_size_in_characters]
-        chunks.append({
-            'prefix': '',
-            'text': text,
-            'suffix': '',
-            'start': i,
-            'end': i + len(text) - 1,
-            'page': None,
-            'coordinates': None,
-            'section': None,
-            })
+        text = text[i : i + chunk_size_in_characters]
+        chunks.append(
+            {
+                "prefix": "",
+                "text": text,
+                "suffix": "",
+                "start": i,
+                "end": i + len(text) - 1,
+                "page": None,
+                "coordinates": None,
+                "section": None,
+            }
+        )
     return chunks

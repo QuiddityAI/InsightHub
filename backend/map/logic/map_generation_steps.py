@@ -29,9 +29,7 @@ def get_collection_items(
     item_count_per_ds_id = defaultdict(int)
     for item in items:
         item_count_per_ds_id[item.dataset_id] += 1
-    top_dataset_id = sorted(
-        item_count_per_ds_id, key=lambda x: item_count_per_ds_id[x], reverse=True
-    )[0]
+    top_dataset_id = sorted(item_count_per_ds_id, key=lambda x: item_count_per_ds_id[x], reverse=True)[0]
     items = items.filter(dataset_id=top_dataset_id)
     return top_dataset_id, items, reference_ds_and_item_id
 
@@ -40,17 +38,11 @@ def get_vector_field_dimensions(field: DotDict):
     return (
         field.generator.embedding_space.dimensions
         if field.generator
-        else (
-            field.embedding_space.dimensions
-            if field.embedding_space
-            else field.index_parameters.vector_size
-        )
+        else (field.embedding_space.dimensions if field.embedding_space else field.index_parameters.vector_size)
     )
 
 
-def do_umap(
-    vectors: np.ndarray, projection_parameters: dict, reduced_dimensions_required: int
-) -> np.ndarray:
+def do_umap(vectors: np.ndarray, projection_parameters: dict, reduced_dimensions_required: int) -> np.ndarray:
     # import it only when needed as it slows down the startup time
     try:
         from cuml.manifold.umap import UMAP
@@ -146,7 +138,9 @@ def get_cluster_titles_new(collection: DataCollection, dataset: DotDict, project
         for item in ds_items.values():
             item_count_per_language[item.get("language", "en")] += 1
     result_language = max(item_count_per_language, key=lambda x: item_count_per_language[x])
-    cluster_data = get_cluster_titles(cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, timings)
+    cluster_data = get_cluster_titles(
+        cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, timings
+    )
     metadata = MapMetadata(**collection.map_metadata)
     metadata.clusters_are_ready = True
     collection.map_metadata = metadata.dict()

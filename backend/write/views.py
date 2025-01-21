@@ -28,9 +28,9 @@ def get_writing_tasks_route(request: HttpRequest, payload: CollectionIdentifier)
         return HttpResponse(status=401)
 
     tasks = WritingTask.objects.filter(collection_id=payload.collection_id, class_name=payload.class_name)
-    tasks = tasks.order_by('created_at')
+    tasks = tasks.order_by("created_at")
 
-    task_ids = [{'id': task.id, 'name': task.name} for task in tasks]  # type: ignore
+    task_ids = [{"id": task.id, "name": task.name} for task in tasks]  # type: ignore
 
     return HttpResponse(json.dumps(task_ids), content_type="application/json", status=200)
 
@@ -51,7 +51,7 @@ def add_writing_task_route(request: HttpRequest, paylaod: AddWritingTaskPayload)
         collection_id=paylaod.collection_id,
         class_name=paylaod.class_name,
         name=paylaod.name,
-        module='Mistral_Mistral_Large',
+        module="Mistral_Mistral_Large",
     )
     if paylaod.options:
         for key, value in paylaod.options.items():
@@ -120,11 +120,13 @@ def update_writing_task_route(request: HttpRequest, payload: UpdateWritingTaskPa
     if payload.text is not None and payload.text != task.text:
         if not task.previous_versions:
             task.previous_versions = []  # type: ignore
-        task.previous_versions.append({
-            'created_at': task.changed_at.isoformat(),
-            'text': task.text,
-            'additional_results': task.additional_results,
-        })
+        task.previous_versions.append(
+            {
+                "created_at": task.changed_at.isoformat(),
+                "text": task.text,
+                "additional_results": task.additional_results,
+            }
+        )
         if len(task.previous_versions) > 3:
             task.previous_versions = task.previous_versions[-3:]  # type: ignore
         task.text = payload.text
@@ -149,8 +151,8 @@ def revert_writing_task_route(request: HttpRequest, payload: WritingTaskIdentifi
         return HttpResponse(status=400)
 
     last_version = task.previous_versions.pop()
-    task.text = last_version['text']
-    task.additional_results = last_version['additional_results']
+    task.text = last_version["text"]
+    task.additional_results = last_version["additional_results"]
     task.save()
 
     return HttpResponse(None, status=204)
@@ -171,4 +173,3 @@ def execute_writing_task_route(request: HttpRequest, payload: WritingTaskIdentif
     execute_writing_task_thread(task)
 
     return HttpResponse(None, status=204)
-

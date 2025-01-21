@@ -27,7 +27,6 @@ open_search_auth = (credentials["open_search_user"], credentials["open_search_pa
 
 
 class TextSearchEngineClient(object):
-
     # using a singleton here to have only one DB connection, but lazy-load it only when used to speed up startup time
     _instance: "TextSearchEngineClient" = None  # type: ignore
 
@@ -181,7 +180,6 @@ class TextSearchEngineClient(object):
         return response.get("hits", {}).get("hits", [])
 
     def upsert_items(self, index_name: str, ids: Iterable[str], payloads: Iterable[dict]):
-
         def upsert_batch(ids_and_payloads):
             bulk_operations = ""
             for _id, item in ids_and_payloads:
@@ -212,18 +210,8 @@ class TextSearchEngineClient(object):
 
         run_in_batches_without_result(list(zip(ids, payloads)), 512, upsert_batch)
 
-    def remove_items(self, dataset: DotDict | Dataset, item_ids: list[str]):
-        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
-            return use_remote_db(
-                dataset=dataset,
-                db_type="text_search_engine",
-                function_name="remove_items",
-                arguments={"item_ids": item_ids},
-            )
-        body = {"query": {"terms": {"_id": item_ids}}}
-        index_name = dataset.actual_database_name
-        response = self.client.delete_by_query(index=index_name, body=body)
-        logging.warning(f"Deleted items from text search engine: {response}")
+    def remove_items(self, dataset_id: str, primary_key_field: str, item_pks: list[str]):
+        pass
 
     def get_items_by_ids(self, dataset: DotDict, ids: Iterable[str], fields: Iterable[str]) -> list:
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
@@ -444,6 +432,7 @@ class TextSearchEngineClient(object):
                 else:
                     query_filter["bool"]["must"].append({"match_phrase": {filter_.field: filter_.value}})
             elif filter_.operator == "does_not_contain":
+                query_filter["bool"]["must_not"].append({"match_phrase": {filter_.field: filter_.value}})
                 query_filter["bool"]["must_not"].append({"match_phrase": {filter_.field: filter_.value}})
             elif filter_.operator in ("is", "is_not"):
                 # Note: also works to check if a given element is in an array of the document
