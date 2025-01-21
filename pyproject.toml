@@ -17,8 +17,9 @@ build-backend = "pdm.backend"
 [tool.black]
 line-length = 119
 target-version = ['py311']
-
-
+extend-exclude = '''
+    .*/migrations/0[0-9]{3}_.+\.py
+'''
 [project]
 authors = [
     {name = "Tim Henning", email = "tim@luminosuslight.de"},
