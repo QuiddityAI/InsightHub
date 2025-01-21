@@ -1,23 +1,27 @@
-import threading
 import json
 import logging
+import threading
 import uuid
 from typing import Callable, Iterable
 
 from django.utils import timezone
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
+from columns.logic.process_column import process_cells_blocking
 from data_map_backend.models import (
-    DataCollection,
     CollectionColumn,
-    FieldType,
     CollectionItem,
+    DataCollection,
+    FieldType,
 )
 from legacy_backend.logic.search import get_search_results
-from search.schemas import SearchTaskSettings, SearchType, SearchSource, RetrievalMode
-from columns.logic.process_column import process_cells_blocking
+from search.logic.approve_items_and_exit_search import (
+    approve_using_comparison,
+    auto_approve_items,
+    exit_search_mode,
+)
 from search.prompts import search_query_prompt
-from search.logic.approve_items_and_exit_search import auto_approve_items, approve_using_comparison, exit_search_mode
+from search.schemas import RetrievalMode, SearchSource, SearchTaskSettings, SearchType
 
 # from search.logic.extract_filters import get_filter_prompt, extract_filters
 
@@ -43,14 +47,12 @@ def run_search_task(
         list[CollectionItem]: A list of collection items resulting from the search task.
     """
     if not is_new_collection:
-        exit_search_mode(collection, "_default")
+        exit_search_mode(collection, "_default")  # removes candidates and disables sources
 
     collection.current_agent_step = "Running search task..."
     collection.last_search_task = search_task.dict()
     collection.search_tasks.append(search_task.dict())
     collection.save(update_fields=["current_agent_step", "last_search_task", "search_tasks"])
-    # FIXME: stack_index doesn't look right, not sure what the goal was
-    stack_index = max([s.get("stack_index", 0) for s in collection.search_sources if s["is_active"]] or [-1]) + 1
 
     if not search_task.query:
         search_task.query = search_task.user_input
@@ -75,7 +77,6 @@ def run_search_task(
     source = SearchSource(
         id_hash=uuid.uuid4().hex,
         created_at=timezone.now().isoformat(),
-        stack_index=stack_index,
         retrieved=0,
         available=None,
         available_is_exact=True,
@@ -175,9 +176,9 @@ def add_items_from_source(
             "filters": source.filters or [],
             "result_language": source.result_language or "en",
             "ranking_settings": source.ranking_settings or {},
-            "similar_to_item_id": [source.reference_dataset_id, source.reference_item_id]
-            if source.reference_item_id
-            else None,
+            "similar_to_item_id": (
+                [source.reference_dataset_id, source.reference_item_id] if source.reference_item_id else None
+            ),
             "result_list_items_per_page": source.page_size,
             "result_list_current_page": source.retrieved // source.page_size if source.retrieved else 0,
             "max_sub_items_per_item": 1,

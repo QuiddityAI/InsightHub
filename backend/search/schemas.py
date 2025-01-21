@@ -1,5 +1,5 @@
-from typing import Optional
 from enum import StrEnum
+from typing import Optional
 
 from ninja import Schema
 
@@ -65,7 +65,6 @@ class SearchSource(Schema):
     created_at: str  # datetime
     search_type: SearchType = SearchType.EXTERNAL_INPUT
     dataset_id: int
-    stack_index: int
 
     # external_input
     query: Optional[str] = None
