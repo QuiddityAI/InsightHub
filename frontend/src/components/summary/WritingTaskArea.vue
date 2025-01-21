@@ -140,8 +140,8 @@ export default {
         options: options,
         run_now: run_now,
       }
-      if (UserActivation.preferences.default_large_llm) {
-        body.options.module = UserActivation.preferences.default_large_llm
+      if (this.appStateStore.user.preferences.default_large_llm) {
+        body.options.module = this.appStateStore.user.preferences.default_large_llm
       }
       httpClient.post(`/api/v1/write/add_writing_task`, body)
       .then(function (response) {
