@@ -1,13 +1,23 @@
 import logging
 
-from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask, User
+from data_map_backend.models import (
+    COLUMN_META_SOURCE_FIELDS,
+    DataCollection,
+    User,
+    WritingTask,
+)
 from data_map_backend.schemas import CollectionUiSettings
-from search.schemas import SearchTaskSettings
 from search.logic.execute_search import create_and_run_search_task
-from write.logic.writing_task import execute_writing_task_thread
-from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowOrder, WorkflowAvailability
+from search.schemas import SearchTaskSettings
 from workflows.create_columns import create_relevance_column
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
+from write.logic.writing_task import execute_writing_task_thread
 
 
 @workflow

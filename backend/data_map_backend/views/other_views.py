@@ -1,55 +1,54 @@
-from functools import lru_cache
 import json
 import logging
-import os
-from functools import reduce
 import operator
+import os
+from functools import lru_cache, reduce
 
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.utils import timezone
 from django.db.models.manager import BaseManager
+from django.http import HttpResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import TemplateView
 
+from data_map_backend.utils import DotDict
+from filter.schemas import CollectionFilter
 from search.schemas import SearchTaskSettings
 
 from ..models import (
-    DataCollection,
     CollectionItem,
+    DataCollection,
     Dataset,
     DatasetSchema,
     ExportConverter,
     FieldType,
+    Generator,
     ImportConverter,
     Organization,
     SearchHistoryItem,
-    StoredMap,
-    Generator,
-    TrainedClassifier,
     SearchTask,
     ServiceUsage,
-    generate_unique_database_name,
+    StoredMap,
+    TrainedClassifier,
     User,
+    generate_unique_database_name,
 )
+from ..notifier import default_notifier
 from ..serializers import (
     CollectionItemSerializer,
     CollectionSerializer,
     DatasetSchemaSerializer,
     DatasetSerializer,
     ExportConverterSerializer,
+    GeneratorSerializer,
     ImportConverterSerializer,
     OrganizationSerializer,
     SearchHistoryItemSerializer,
     StoredMapSerializer,
-    GeneratorSerializer,
     TrainedClassifierSerializer,
 )
-from ..notifier import default_notifier
 from ..utils import is_from_backend
-from data_map_backend.utils import DotDict
-from filter.schemas import CollectionFilter
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -949,7 +948,6 @@ def get_filtered_collection_items(
     else:
         # return all items
         all_items = CollectionItem.objects.filter(collection_id=collection.id, classes__contains=[class_name])  # type: ignore
-
 
     reference_ds_and_item_id = None
     task: SearchTask | None = collection.most_recent_search_task

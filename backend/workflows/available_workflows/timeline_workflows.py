@@ -1,19 +1,29 @@
-from enum import StrEnum
+import logging
 import threading
 import time
-import logging
+from enum import StrEnum
 
-from django.utils import timezone
 from django.contrib.auth.models import User
+from django.utils import timezone
 from llmonkey.llms import Mistral_Ministral3b
 
-from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask, Dataset
+from data_map_backend.models import (
+    COLUMN_META_SOURCE_FIELDS,
+    DataCollection,
+    Dataset,
+    WritingTask,
+)
 from data_map_backend.schemas import CollectionUiSettings
-from search.schemas import SearchTaskSettings, Filter
 from search.logic.execute_search import create_and_run_search_task
-from write.logic.writing_task import execute_writing_task_thread
-from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowAvailability, WorkflowOrder
+from search.schemas import Filter, SearchTaskSettings
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
+from write.logic.writing_task import execute_writing_task_thread
 
 
 @workflow

@@ -1,23 +1,22 @@
 import logging
 from typing import Iterable
 
-from django.utils import timezone
 from django.db.models import Q
 from django.db.models.manager import BaseManager
-
+from django.utils import timezone
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
+from columns.schemas import Criterion
 from data_map_backend.models import (
-    DataCollection,
+    COLUMN_META_SOURCE_FIELDS,
     CollectionColumn,
     CollectionItem,
+    DataCollection,
     FieldType,
-    COLUMN_META_SOURCE_FIELDS,
 )
-from search.prompts import approve_using_comparison_prompt
-from search.schemas import SearchTaskSettings, ApprovalUsingComparisonReason
 from legacy_backend.logic.chat_and_extraction import get_item_question_context
-from columns.schemas import Criterion
+from search.prompts import approve_using_comparison_prompt
+from search.schemas import ApprovalUsingComparisonReason, SearchTaskSettings
 
 
 def auto_approve_items(

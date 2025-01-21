@@ -1,9 +1,14 @@
 from data_map_backend.models import DataCollection, User
-from search.schemas import SearchTaskSettings
 from search.logic.execute_search import create_and_run_search_task
-from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowOrder, WorkflowAvailability
+from search.schemas import SearchTaskSettings
 from workflows.create_columns import create_relevance_column
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
 
 
 @workflow

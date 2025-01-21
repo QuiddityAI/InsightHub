@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0053_remove_datacollection_last_search_task_and_more'),
+        ("data_map_backend", "0053_remove_datacollection_last_search_task_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='datacollection',
-            name='search_task_navigation_history',
-            field=models.JSONField(blank=True, default=list, help_text='List of ids of search tasks, used for back and forth navigation (for full history, see collection.search_tasks)', verbose_name='Search Task Navigation History'),
+            model_name="datacollection",
+            name="search_task_navigation_history",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="List of ids of search tasks, used for back and forth navigation (for full history, see collection.search_tasks)",
+                verbose_name="Search Task Navigation History",
+            ),
         ),
     ]

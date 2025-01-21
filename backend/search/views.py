@@ -7,15 +7,23 @@ from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection, Dataset, SearchTask
 from data_map_backend.schemas import CollectionIdentifier
-from legacy_backend.database_client.text_search_engine_client import TextSearchEngineClient
-
-from search.schemas import (
-    RunSearchTaskPayload,
-    RunPreviousSearchTaskPayload,
-    GetPlainResultsPaylaod,
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
 )
-from search.logic.execute_search import create_and_run_search_task, run_search_task, add_items_from_task_and_run_columns
-from search.logic.approve_items_and_exit_search import approve_relevant_search_results, exit_search_mode
+from search.logic.approve_items_and_exit_search import (
+    approve_relevant_search_results,
+    exit_search_mode,
+)
+from search.logic.execute_search import (
+    add_items_from_task_and_run_columns,
+    create_and_run_search_task,
+    run_search_task,
+)
+from search.schemas import (
+    GetPlainResultsPaylaod,
+    RunPreviousSearchTaskPayload,
+    RunSearchTaskPayload,
+)
 
 api = NinjaAPI(urls_namespace="search")
 

@@ -3,9 +3,9 @@ import json
 import logging
 import os
 import random
-import uuid
 import string
 import threading
+import uuid
 from collections import defaultdict
 
 import numpy as np

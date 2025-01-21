@@ -1,10 +1,15 @@
 from django.contrib.auth.models import User
 
 from data_map_backend.models import DataCollection, Dataset
-from search.schemas import SearchTaskSettings, Filter
 from search.logic.execute_search import create_and_run_search_task
-from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowAvailability, WorkflowOrder
+from search.schemas import Filter, SearchTaskSettings
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
 
 
 @workflow

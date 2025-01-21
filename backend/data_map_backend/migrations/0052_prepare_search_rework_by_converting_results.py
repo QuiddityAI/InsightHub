@@ -15,7 +15,7 @@ def prepare_search_rework_by_converting_results(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0051_user_preferences'),
+        ("data_map_backend", "0051_user_preferences"),
     ]
 
     operations = [

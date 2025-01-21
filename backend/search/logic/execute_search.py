@@ -21,7 +21,13 @@ from search.logic.approve_items_and_exit_search import (
     exit_search_mode,
 )
 from search.prompts import search_query_prompt
-from search.schemas import RetrievalMode, RetrievalParameters, SearchTaskSettings, SearchType, RetrievalStatus
+from search.schemas import (
+    RetrievalMode,
+    RetrievalParameters,
+    RetrievalStatus,
+    SearchTaskSettings,
+    SearchType,
+)
 
 # from search.logic.extract_filters import get_filter_prompt, extract_filters
 
@@ -182,8 +188,7 @@ def add_items_from_task_and_run_columns(
 
 
 def add_items_from_task(
-    collection: DataCollection, task: SearchTask,
-    ignore_last_retrieval: bool = True, is_new_collection: bool = False
+    collection: DataCollection, task: SearchTask, ignore_last_retrieval: bool = True, is_new_collection: bool = False
 ) -> list[CollectionItem]:
     parameters = RetrievalParameters(**task.retrieval_parameters)
     status = RetrievalStatus(**task.last_retrieval_status)
@@ -257,7 +262,7 @@ def _convert_retrieval_settings_to_old_format(
     retrieval_settings: RetrievalParameters,
     status: RetrievalStatus,
     ignore_last_retrieval: bool = True,
-    ) -> dict:
+) -> dict:
     params = {
         "search": {
             "dataset_ids": [retrieval_settings.dataset_id],
@@ -269,15 +274,25 @@ def _convert_retrieval_settings_to_old_format(
             "internal_input_weight": 0.7,
             "use_similarity_thresholds": True,
             "auto_relax_query": retrieval_settings.auto_relax_query,
-            "use_reranking": retrieval_settings.use_reranking if retrieval_settings.search_type == SearchType.EXTERNAL_INPUT else False,
+            "use_reranking": (
+                retrieval_settings.use_reranking
+                if retrieval_settings.search_type == SearchType.EXTERNAL_INPUT
+                else False
+            ),
             "filters": retrieval_settings.filters or [],
             "result_language": retrieval_settings.result_language or "en",
             "ranking_settings": retrieval_settings.ranking_settings or {},
             "similar_to_item_id": (
-                [retrieval_settings.reference_dataset_id, retrieval_settings.reference_item_id] if retrieval_settings.reference_item_id else None
+                [retrieval_settings.reference_dataset_id, retrieval_settings.reference_item_id]
+                if retrieval_settings.reference_item_id
+                else None
             ),
             "result_list_items_per_page": retrieval_settings.page_size,
-            "result_list_current_page": status.retrieved // retrieval_settings.page_size if status.retrieved and not ignore_last_retrieval else 0,
+            "result_list_current_page": (
+                status.retrieved // retrieval_settings.page_size
+                if status.retrieved and not ignore_last_retrieval
+                else 0
+            ),
             "max_sub_items_per_item": 1,
             "return_highlights": True,
             "use_bolding_in_highlights": True,

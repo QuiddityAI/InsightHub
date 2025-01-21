@@ -2,23 +2,27 @@ import time
 
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
-from data_map_backend.models import (
-    DataCollection,
-    COLUMN_META_SOURCE_FIELDS,
-    WritingTask,
-    CollectionColumn,
-    FieldType,
-    User,
-)
-from data_map_backend.schemas import CollectionUiSettings, ItemRelevance
-from search.schemas import SearchTaskSettings
-from search.logic.execute_search import create_and_run_search_task
-from write.logic.writing_task import execute_writing_task_safe
-from workflows.schemas import CreateCollectionSettings
 from columns.logic.process_column import process_cells_blocking
 from columns.schemas import CellData
-from workflows.schemas import WorkflowMetadata, WorkflowAvailability, WorkflowOrder
+from data_map_backend.models import (
+    COLUMN_META_SOURCE_FIELDS,
+    CollectionColumn,
+    DataCollection,
+    FieldType,
+    User,
+    WritingTask,
+)
+from data_map_backend.schemas import CollectionUiSettings, ItemRelevance
+from search.logic.execute_search import create_and_run_search_task
+from search.schemas import SearchTaskSettings
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
+from write.logic.writing_task import execute_writing_task_safe
 
 
 @workflow
@@ -114,7 +118,7 @@ class ResearchAgentWorkflow(WorkflowBase):
             ],
             use_all_items=True,
             module=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
-            prompt=f"Summarize the results of the search in regard to this question '{settings.user_input}'."
+            prompt=f"Summarize the results of the search in regard to this question '{settings.user_input}'.",
             # its always using a default prompt plus this prompt, I just realized it doesn't have the option to override the default prompt yet
         )
         writing_task.save()
