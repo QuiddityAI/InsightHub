@@ -13,14 +13,14 @@ from ..utils.helpers import load_env_file
 
 load_env_file()
 
-SEMANTIC_SCHOLAR_API_KEY = os.environ.get('SEMANTIC_SCHOLAR_API_KEY', '')
+SEMANTIC_SCHOLAR_API_KEY = os.environ.get("SEMANTIC_SCHOLAR_API_KEY", "")
 S2_API_URL = "https://api.semanticscholar.org/graph/v1"
 
 
 cache = Cache("/data/quiddity_data/semantic_scholar_search_cache/")
 
 
-#@cache.memoize(expire=3600*24*7*4)  # 4 weeks
+# @cache.memoize(expire=3600*24*7*4)  # 4 weeks
 def semantic_scholar_search_formatted(dataset_id: int, query: str, fields: Iterable[str] | None, limit: int = 2000):
     if not fields:
         fields = PAPER_SEARCH_FIELDS
@@ -33,8 +33,9 @@ def semantic_scholar_search_formatted(dataset_id: int, query: str, fields: Itera
     for i, item in enumerate(data):
         score = 1.0 / (i + 1)
         item["_dataset_id"] = dataset_id
-        item["_origins"] = [{'type': 'semantic_scholar', 'field': 'unknown',
-                          'query': query, 'score': score, 'rank': i+1}]
+        item["_origins"] = [
+            {"type": "semantic_scholar", "field": "unknown", "query": query, "score": score, "rank": i + 1}
+        ]
         item["_score"] = score
         item["_reciprocal_rank_score"] = score
     sorted_ids = [e["_id"] for e in data]
@@ -42,9 +43,14 @@ def semantic_scholar_search_formatted(dataset_id: int, query: str, fields: Itera
     return sorted_ids, full_items
 
 
-def paper_bulk_search(query: str, limit: int, offset: int,
-                        fields: Iterable[str] | None, publication_types: Iterable[str] | None,
-                        open_access_pdf: bool | None) -> tuple[list[dict[str, Any]], int]:
+def paper_bulk_search(
+    query: str,
+    limit: int,
+    offset: int,
+    fields: Iterable[str] | None,
+    publication_types: Iterable[str] | None,
+    open_access_pdf: bool | None,
+) -> tuple[list[dict[str, Any]], int]:
     all_items = []
     paging_token = None
     available_results = 0
@@ -72,12 +78,16 @@ def paper_bulk_search(query: str, limit: int, offset: int,
     return all_items[:limit], available_results
 
 
-def _paper_bulk_search_page(query: str, paging_token: str | None,
-                       fields: Iterable[str] | None, publication_types: Iterable[str] | None,
-                       open_access_pdf: bool | None) -> dict:
+def _paper_bulk_search_page(
+    query: str,
+    paging_token: str | None,
+    fields: Iterable[str] | None,
+    publication_types: Iterable[str] | None,
+    open_access_pdf: bool | None,
+) -> dict:
     params: dict = {
         "query": query,
-        }
+    }
     if paging_token:
         params["token"] = paging_token
     if fields:
@@ -86,9 +96,7 @@ def _paper_bulk_search_page(query: str, paging_token: str | None,
         params["publicationTypes"] = ",".join(publication_types)
     if open_access_pdf:
         params["openAccessPdf"] = open_access_pdf
-    headers = {
-        "x-api-key": SEMANTIC_SCHOLAR_API_KEY
-    }
+    headers = {"x-api-key": SEMANTIC_SCHOLAR_API_KEY}
     response = requests.get(
         f"{S2_API_URL}/paper/search/bulk",
         params=params,
@@ -108,7 +116,7 @@ def paper_batch_retrieval(paper_ids: list[str], fields: list[str]) -> list[dict[
     pages = math.ceil(len(paper_ids) / float(per_page))
     all_results = []
     for page in range(pages):
-        results = _paper_batch_retrieval_page(paper_ids[page*per_page:(page+1)*per_page], fields)
+        results = _paper_batch_retrieval_page(paper_ids[page * per_page : (page + 1) * per_page], fields)
         all_results.extend(results)
     return all_results
 
@@ -119,12 +127,8 @@ def _paper_batch_retrieval_page(paper_ids: list[str], fields: list[str]) -> list
     params = {
         "fields": ",".join(fields),
     }
-    body = {
-        "ids": paper_ids
-    }
-    headers = {
-        "x-api-key": SEMANTIC_SCHOLAR_API_KEY
-    }
+    body = {"ids": paper_ids}
+    headers = {"x-api-key": SEMANTIC_SCHOLAR_API_KEY}
     response = requests.post(
         f"{S2_API_URL}/paper/batch",
         params=params,
@@ -141,25 +145,25 @@ def _paper_batch_retrieval_page(paper_ids: list[str], fields: list[str]) -> list
 
 
 PAPER_SEARCH_FIELDS = [
-    'abstract',
-    'authors',
-    'citationCount',
-    'citationStyles',
-    'corpusId',
-    'externalIds',
-    'fieldsOfStudy',
-    'influentialCitationCount',
-    'isOpenAccess',
-    'journal',
-    'openAccessPdf',
-    'paperId',
-    'publicationDate',
-    'publicationTypes',
-    'publicationVenue',
-    'referenceCount',
-    's2FieldsOfStudy',
-    'title',
-    'url',
-    'venue',
-    'year'
+    "abstract",
+    "authors",
+    "citationCount",
+    "citationStyles",
+    "corpusId",
+    "externalIds",
+    "fieldsOfStudy",
+    "influentialCitationCount",
+    "isOpenAccess",
+    "journal",
+    "openAccessPdf",
+    "paperId",
+    "publicationDate",
+    "publicationTypes",
+    "publicationVenue",
+    "referenceCount",
+    "s2FieldsOfStudy",
+    "title",
+    "url",
+    "venue",
+    "year",
 ]

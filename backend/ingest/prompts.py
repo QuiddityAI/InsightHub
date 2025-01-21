@@ -16,4 +16,3 @@ Dies ist über den Ordner bekannt:
 """
 folder_summary_prompt = defaultdict(lambda: folder_summary_prompt_en)
 folder_summary_prompt["de"] = folder_summary_prompt_de
-

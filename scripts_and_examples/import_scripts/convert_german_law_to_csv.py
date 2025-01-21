@@ -16,7 +16,7 @@ csv_writer = csv.writer(open("scripts_and_examples/sgb_as_csv.csv", "w"))
 csv_writer.writerow(["title", "subtitle", "text", "link"])
 
 for split in splits:
-    if not split.metadata.get('Paragraph'):
+    if not split.metadata.get("Paragraph"):
         continue
     title = f"{split.metadata.get('Paragraph')}"
     subtitle = f"{split.metadata.get('Titel')}"

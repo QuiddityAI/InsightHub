@@ -23,9 +23,7 @@ def extract_using_pdferret(
     headers = {"accept": "application/json"}
     files = []
     for fpath in file_paths:
-        files.append(
-            ("pdfs", (os.path.basename(fpath), open(fpath, "rb"), "application/pdf"))
-        )
+        files.append(("pdfs", (os.path.basename(fpath), open(fpath, "rb"), "application/pdf")))
     params = {
         "vision_model": vision_model,
         "text_model": text_model,
@@ -39,11 +37,11 @@ def extract_using_pdferret(
 
     # Send the POST request
     max_sec_per_file = 45
-    response = requests.post(url, headers=headers, files=files, data=data, timeout=max_sec_per_file*len(file_paths))
+    response = requests.post(url, headers=headers, files=files, data=data, timeout=max_sec_per_file * len(file_paths))
 
     response_json = response.json()
 
-    if 'extracted' not in response_json:
+    if "extracted" not in response_json:
         logging.error(f"Error in pdferret response: {response_json}")
 
     docs = response_json.get("extracted", [])

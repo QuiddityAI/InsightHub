@@ -1,5 +1,3 @@
-
-
 table_cell_prompt = """\
 You are a helpful assistant to extract information from a document.
 The document (also called item) starts with <document> and ends with </document>.

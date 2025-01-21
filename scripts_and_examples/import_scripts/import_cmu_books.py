@@ -10,7 +10,7 @@ import orjson
 
 from data_backend_client import update_database_layout, insert_many, files_in_folder
 
-sys.path.append('../../data_backend/')
+sys.path.append("../../data_backend/")
 from utils.dotdict import DotDict
 
 
@@ -41,8 +41,8 @@ def import_dataset():
     total_items = 0
 
     filename = "/data/cmu_books_16k/booksummaries.txt"
-    with open(filename, 'r') as f:
-        for line in csv.reader(f, dialect='excel-tab'):
+    with open(filename, "r") as f:
+        for line in csv.reader(f, dialect="excel-tab"):
             item = preprocess_item(line)
 
             items.append(item)

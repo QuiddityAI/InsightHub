@@ -30,8 +30,9 @@ class BasePDFParser:
             if r.exception():
                 logging.warning(f"{r._id} failed: {repr(r.exception())}")
                 import traceback
+
                 ex = r.exception()
-                logging.warning(''.join(traceback.format_exception(type(ex), value=ex, tb=ex.__traceback__)))
+                logging.warning("".join(traceback.format_exception(type(ex), value=ex, tb=ex.__traceback__)))
                 failed_ids.append({"filename": r._id, "reason": str(r.exception())})
                 continue
             parsed = r.result()

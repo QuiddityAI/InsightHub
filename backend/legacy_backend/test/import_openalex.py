@@ -16,9 +16,13 @@ from logic.insert_logic import insert_many, update_database_layout
 # logging.root.setLevel(logging.INFO)
 
 
-def files_in_folder(path, extensions:Tuple[str]=(".gz",)):
-    return [os.path.join(path, name) for path, subdirs, files in os.walk(path)
-            for name in files if name.lower().endswith(extensions)]
+def files_in_folder(path, extensions: Tuple[str] = (".gz",)):
+    return [
+        os.path.join(path, name)
+        for path, subdirs, files in os.walk(path)
+        for name in files
+        if name.lower().endswith(extensions)
+    ]
 
 
 completed_files_file = "openalex_completed_files.txt"
@@ -81,10 +85,12 @@ def import_gz_file(filename, dataset_id):
     max_elements = 1000000000
     elements = []
 
-    with gzip.open(filename,'r') as f:
+    with gzip.open(filename, "r") as f:
         for line in tqdm.tqdm(f, total=get_item_count(filename)):
             try:
-                work = orjson.loads(line)  # orjson is about 0.03ms faster (30%) than json, meaning about 15% of total time per item
+                work = orjson.loads(
+                    line
+                )  # orjson is about 0.03ms faster (30%) than json, meaning about 15% of total time per item
                 if work.get("is_paratext"):
                     continue
                 # if work.get("language") and work.get("language") != "en":
@@ -93,20 +99,26 @@ def import_gz_file(filename, dataset_id):
                     continue
                 if "article" not in work.get("type", "") and "posted-content" not in work.get("type", ""):
                     continue
-                primary_location_source = work.get("primary_location", {}).get("source", {}) if work.get("primary_location", {}) else None
+                primary_location_source = (
+                    work.get("primary_location", {}).get("source", {}) if work.get("primary_location", {}) else None
+                )
                 item = {
                     "openalex_id": work["id"].split("/")[-1],
                     "doi": work["doi"],
                     "type": work["type"],
                     "title": work["title"],
                     "authors": [x.get("author", {}).get("display_name", "unknown") for x in work["authorships"]],
-                    "primary_location_name": primary_location_source.get("display_name", "unknown") if primary_location_source else "unknown",
+                    "primary_location_name": primary_location_source.get("display_name", "unknown")
+                    if primary_location_source
+                    else "unknown",
                     "abstract": reconstruct_abstract(work.get("abstract_inverted_index")),
                     "publication_year": work.get("publication_year"),
                     "publication_date": work.get("publication_date"),
                     "cited_by_count": work.get("cited_by_count", 0),
                     "open_access_url": work.get("open_access", {}).get("oa_url", None),
-                    "concepts": {concept["display_name"]: concept.get("score", 0.0) for concept in work.get("concepts", [])},
+                    "concepts": {
+                        concept["display_name"]: concept.get("score", 0.0) for concept in work.get("concepts", [])
+                    },
                     "language": work.get("language"),
                 }
                 elements.append(item)
@@ -123,7 +135,9 @@ def import_gz_file(filename, dataset_id):
                     logging.warning(f"Currently processed file: {filename}, items added from this file: {counter}")
                     sys.exit()
                 duration = time.time() - t1
-                print(f"Duration: {duration:.3f}s, time per item: {(duration / len(elements))*1000:.2f} ms, added from this file: {counter}")
+                print(
+                    f"Duration: {duration:.3f}s, time per item: {(duration / len(elements))*1000:.2f} ms, added from this file: {counter}"
+                )
                 elements = []
 
             if counter >= max_elements:
@@ -139,7 +153,9 @@ def import_gz_file(filename, dataset_id):
                 logging.warning(f"Currently processed file: {filename}, items added from this file: {counter}")
                 sys.exit()
             duration = time.time() - t1
-            print(f"Duration: {duration:.3f}s, time per item: {(duration / len(elements))*1000:.2f} ms, added from this file: {counter}")
+            print(
+                f"Duration: {duration:.3f}s, time per item: {(duration / len(elements))*1000:.2f} ms, added from this file: {counter}"
+            )
             elements = []
     return counter
 
@@ -161,9 +177,10 @@ After 1M:
 
 """
 
+
 def print_few_lines_of_gz_file(filename):
     counter = 0
-    with gzip.open(filename,'r') as f:
+    with gzip.open(filename, "r") as f:
         t1 = time.time()
         for line in f:
             work = orjson.loads(line)
@@ -178,13 +195,15 @@ def print_few_lines_of_gz_file(filename):
             counter += 1
             if counter % 10000 == 0:
                 duration = time.time() - t1
-                print(f"Duration: {duration:.3f}s, time per item: {(duration / counter)*1000:.2f} ms, added from this file: {counter}")
+                print(
+                    f"Duration: {duration:.3f}s, time per item: {(duration / counter)*1000:.2f} ms, added from this file: {counter}"
+                )
                 print(work["id"], work["publication_date"], filename)
 
 
 if __name__ == "__main__":
     import_openalex()
-    #gz_files = sorted(files_in_folder("/data/openalex/openalex-snapshot/data/works"), reverse=False)
-    #for f in gz_files[:410]:
+    # gz_files = sorted(files_in_folder("/data/openalex/openalex-snapshot/data/works"), reverse=False)
+    # for f in gz_files[:410]:
     #    add_filename_to_completed_file(f)
-    #print_few_lines_of_gz_file(gz_files[411])
+    # print_few_lines_of_gz_file(gz_files[411])

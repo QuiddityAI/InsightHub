@@ -28,9 +28,7 @@ class TfidfEmbeddingVectorizer(object):
         max_idf = math.log(len(X) / 1)
 
         # TODO: this is slow, about 3s for 2k abstracts corpus (-> 20k unique words?)
-        self.word2weight = defaultdict(
-            lambda: max_idf, [(w, tfidf.idf_[i]) for w, i in tfidf.vocabulary_.items()]
-        )
+        self.word2weight = defaultdict(lambda: max_idf, [(w, tfidf.idf_[i]) for w, i in tfidf.vocabulary_.items()])
         print(f"tf idf vectorizer word2weight dict: {time.time() - t2:.2}s")
         print(f"vocab size: {len(tfidf.vocabulary_)}")
         # with new tokenizer:
@@ -47,18 +45,12 @@ class TfidfEmbeddingVectorizer(object):
     def transform(self, text):
         words = tokenize(text)
         return np.mean(
-                    [
-                        self.word2vec[w] * self.word2weight[w]
-                        for w in words
-                        if w in self.word2vec
-                    ]
-                    or [np.zeros(self.dim)],
-                    axis=0,
-                )
+            [self.word2vec[w] * self.word2weight[w] for w in words if w in self.word2vec] or [np.zeros(self.dim)],
+            axis=0,
+        )
 
 
-class GensimW2VVectorizer():
-
+class GensimW2VVectorizer:
     def __init__(self) -> None:
         self.gensim_w2v_model = None
 
@@ -87,7 +79,9 @@ class GensimW2VVectorizer():
         n_epochs = self._w2v_iter_heuristic(len(corpus))
         n_workers = 8
         t9 = time.time()
-        print(f"gensim model preparation: {t9 - t8:.2f}s, abstract count {len(corpus)}, sentence count {len(sentences)}, n_epochs {n_epochs}, n_workers {n_workers}")
+        print(
+            f"gensim model preparation: {t9 - t8:.2f}s, abstract count {len(corpus)}, sentence count {len(sentences)}, n_epochs {n_epochs}, n_workers {n_workers}"
+        )
 
         self.gensim_w2v_model = gensim.models.Word2Vec(
             sentences,
@@ -105,9 +99,7 @@ class GensimW2VVectorizer():
         self.w2v_dict = dict(zip(self.gensim_w2v_model.wv.index_to_key, self.gensim_w2v_model.wv.vectors))
 
         sublinear_tf = False
-        self.tev = TfidfEmbeddingVectorizer(
-            self.w2v_dict, dim=emb_dim, sublinear_tf=sublinear_tf
-        )
+        self.tev = TfidfEmbeddingVectorizer(self.w2v_dict, dim=emb_dim, sublinear_tf=sublinear_tf)
         # to calculate tf-idfs we want list (abstracts) of lists words
         # i.e. we flatten over the sentence axis
         t105 = time.time()
@@ -118,7 +110,6 @@ class GensimW2VVectorizer():
         t12 = time.time()
 
         print(f"TfidfEmbeddingVectorizer training total: {t12 - t11:.2f}s")
-
 
     def get_embedding(self, text):
         vector = self.tev.transform(text)

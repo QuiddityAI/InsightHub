@@ -9,8 +9,19 @@ from llmonkey.llms import BaseLLMModel, Mistral_Ministral3b
 
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
 from data_map_backend.serializers import CollectionSerializer, CollectionColumnSerializer
-from columns.schemas import ColumnCellRange, ColumnConfig, CellDataPayload, ColumnIdentifier, UpdateColumnConfig, ProcessColumnPayload
-from columns.logic.process_column import remove_column_data_from_collection_items, get_collection_items_from_cell_range, process_cells_blocking
+from columns.schemas import (
+    ColumnCellRange,
+    ColumnConfig,
+    CellDataPayload,
+    ColumnIdentifier,
+    UpdateColumnConfig,
+    ProcessColumnPayload,
+)
+from columns.logic.process_column import (
+    remove_column_data_from_collection_items,
+    get_collection_items_from_cell_range,
+    process_cells_blocking,
+)
 from columns.prompts import column_name_prompt, column_language_prompt
 
 api = NinjaAPI(urls_namespace="columns")
@@ -27,13 +38,19 @@ def add_column_route(request: HttpRequest, payload: ColumnConfig):
         return HttpResponse(status=400)
 
     if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
-        prompt = column_language_prompt.replace("{{ expression }}", payload.expression or "").replace("{{ title }}", payload.name or "")
-        payload.parameters["language"] = Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
+        prompt = column_language_prompt.replace("{{ expression }}", payload.expression or "").replace(
+            "{{ title }}", payload.name or ""
+        )
+        payload.parameters["language"] = (
+            Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
+        )
 
     if not payload.name:
         if payload.module == "llm":
             assert payload.expression
-            prompt = column_name_prompt[payload.parameters.get("language") or 'en'].replace("{{ expression }}", payload.expression)
+            prompt = column_name_prompt[payload.parameters.get("language") or "en"].replace(
+                "{{ expression }}", payload.expression
+            )
             payload.name = Mistral_Ministral3b().generate_short_text(prompt) or "Column"
             if not payload.name:
                 logging.error("Could not generate name for column.")
@@ -130,7 +147,9 @@ def delete_column_route(request: HttpRequest, payload: ColumnIdentifier):
     if column.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    remove_column_data_from_collection_items(CollectionItem.objects.filter(collection=column.collection), column.identifier)
+    remove_column_data_from_collection_items(
+        CollectionItem.objects.filter(collection=column.collection), column.identifier
+    )
 
     column.delete()
 
@@ -210,7 +229,7 @@ def remove_column_data_route(request: HttpRequest, payload: ColumnCellRange):
 @api.get("available_llm_models")
 def get_available_llm_models_route(request):
     config_dict = BaseLLMModel.available_model_configs()
-    required_capability = 'chat'
+    required_capability = "chat"
     configs = []
     for model_id, config in config_dict.items():  # type: ignore
         config["model_id"] = model_id
@@ -219,4 +238,3 @@ def get_available_llm_models_route(request):
         if required_capability in config["capabilities"]:
             configs.append(config)
     return configs
-

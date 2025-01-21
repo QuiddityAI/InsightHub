@@ -39,10 +39,10 @@ class ColumnIdentifier(Schema):
 class ColumnCellRange(Schema):
     column_id: int
 
-    class_name: str = '_default'
+    class_name: str = "_default"
     offset: int = 0
     limit: int = -1
-    order_by: str = '-date_added'
+    order_by: str = "-date_added"
 
     collection_item_id: Optional[int] = None  # if provided, only the item with this id will be processed
 

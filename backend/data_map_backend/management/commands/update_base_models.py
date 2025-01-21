@@ -55,7 +55,7 @@ class Command(BaseCommand):
 
     def load_dataset_schemas(self):
         logging.warning(f"--- Loading dataset schemas")
-        path = self.base_path + 'dataset_schemas'
+        path = self.base_path + "dataset_schemas"
         definitions = []
         for file in os.listdir(path):
             if file.endswith(".json"):
@@ -73,7 +73,7 @@ class Command(BaseCommand):
                     needs_update = True
                 elif len(obj.object_fields.all()) != len(definition.object_fields):  # type: ignore
                     needs_update = True
-                elif any([field['changed_at'] is not None and obj.object_fields.get(schema=obj, identifier=field['identifier']).changed_at < parse_datetime(field['changed_at']) for field in definition.object_fields]):  # type: ignore
+                elif any([field["changed_at"] is not None and obj.object_fields.get(schema=obj, identifier=field["identifier"]).changed_at < parse_datetime(field["changed_at"]) for field in definition.object_fields]):  # type: ignore
                     needs_update = True
                 if needs_update:
                     logging.warning(f"[Updated] Object '{obj}' is being updated")
@@ -85,15 +85,23 @@ class Command(BaseCommand):
                 logging.warning(f"[Created] Object '{definition.identifier}' does not exist yet and is being created")
                 needs_update = True
             if needs_update:
-                fields = {item[0]: item[1] for item in definition.items() if item[0] not in ['applicable_import_converters', 'applicable_export_converters', 'object_fields']}
-                obj = DatasetSchema(
-                    **fields  # type: ignore
-                )
+                fields = {
+                    item[0]: item[1]
+                    for item in definition.items()
+                    if item[0] not in ["applicable_import_converters", "applicable_export_converters", "object_fields"]
+                }
+                obj = DatasetSchema(**fields)  # type: ignore
                 obj.save()
                 obj.applicable_import_converters.set(definition.applicable_import_converters)
                 obj.applicable_export_converters.set(definition.applicable_export_converters)
                 for field in definition.object_fields:
-                    field['generator'] = Generator.objects.get(pk=field['generator']) if field['generator'] is not None else None
-                    field['embedding_space'] = EmbeddingSpace.objects.get(pk=field['embedding_space']) if field['embedding_space'] is not None else None
+                    field["generator"] = (
+                        Generator.objects.get(pk=field["generator"]) if field["generator"] is not None else None
+                    )
+                    field["embedding_space"] = (
+                        EmbeddingSpace.objects.get(pk=field["embedding_space"])
+                        if field["embedding_space"] is not None
+                        else None
+                    )
                     obj.object_fields.create(**field)  # type: ignore
                 obj.save()

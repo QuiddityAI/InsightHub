@@ -4,6 +4,7 @@ from copy import deepcopy
 
 class DotDict(dict):
     """dot.notation access to dictionary attributes"""
+
     # from https://stackoverflow.com/a/23689767
 
     def __getattr__(self, name: str) -> Any:
@@ -77,7 +78,7 @@ class DotDictSlow(dict):
                         for e in v:
                             map_e = DotDictSlow(e) if isinstance(e, dict) else e
                             map_value.append(map_e)
-                        self[k] = klass(map_value) # type: ignore
+                        self[k] = klass(map_value)  # type: ignore
 
     def __getattr__(self, attr):
         return self.get(attr)

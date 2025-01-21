@@ -17,7 +17,7 @@ def get_filter_prompt(dataset_id: int, language: str):
 def _get_filter_prompt_for_language(filter_prompts: str | None, language: str):
     if not filter_prompts:
         return None
-    prompts = filter_prompts.split('# language: ')
+    prompts = filter_prompts.split("# language: ")
     for prompt in prompts:
         if not prompt.strip():
             continue
@@ -28,10 +28,12 @@ def _get_filter_prompt_for_language(filter_prompts: str | None, language: str):
 
 
 def extract_filters(search_task: SearchTaskSettings, filter_prompt: str):
-    filters, response = Google_Gemini_Flash_1_5_v1().generate_structured_array_response(Filter, filter_prompt, as_dicts=True)
+    filters, response = Google_Gemini_Flash_1_5_v1().generate_structured_array_response(
+        Filter, filter_prompt, as_dicts=True
+    )
     for filter in filters:
         assert isinstance(filter, dict)
-        filter['dataset_id'] = search_task.dataset_id
+        filter["dataset_id"] = search_task.dataset_id
     if filters is None:
         logging.warning(f"Failed to generate filters: {response}")
     return filters

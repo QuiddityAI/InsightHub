@@ -21,10 +21,13 @@ class TimelineWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="timeline",
         order=WorkflowOrder.other + 1,
-        name1={'en': "Create a", 'de': "Erstelle eine"},
-        name2={'en': "Timeline of Events", 'de': "Zeitleiste der Ereignisse"},
-        help_text={'en': "Find specific events in <entity_name_plural> and show a timeline", 'de': "Finde spezifische Ereignisse in <entity_name_plural> und zeige eine Zeitleiste"},
-        query_field_hint={'en': "Your question", 'de': "Deine Frage"},
+        name1={"en": "Create a", "de": "Erstelle eine"},
+        name2={"en": "Timeline of Events", "de": "Zeitleiste der Ereignisse"},
+        help_text={
+            "en": "Find specific events in <entity_name_plural> and show a timeline",
+            "de": "Finde spezifische Ereignisse in <entity_name_plural> und zeige eine Zeitleiste",
+        },
+        query_field_hint={"en": "Your question", "de": "Deine Frage"},
         supports_filters=True,
         needs_user_input=True,
         needs_result_language=True,

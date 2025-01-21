@@ -34,5 +34,5 @@ class GROBIDParser(BasePDFParser):
             as_list=self.as_list,
             return_coordinates=self.return_coordinates,
             grobid_url=self.grobid_address,
-            #parse_figures=self.parse_figures,
+            # parse_figures=self.parse_figures,
         )

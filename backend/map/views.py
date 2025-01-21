@@ -7,7 +7,14 @@ from ninja import NinjaAPI
 from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
 
-from .schemas import NewMapPayload, MapData, MapMetadata, ProjectionsEndpointResponse, RemoveCollectionItemsPayload, RemoveCollectionItemsResponse
+from .schemas import (
+    NewMapPayload,
+    MapData,
+    MapMetadata,
+    ProjectionsEndpointResponse,
+    RemoveCollectionItemsPayload,
+    RemoveCollectionItemsResponse,
+)
 from .logic.map_generation_pipeline import generate_new_map
 
 api = NinjaAPI(urls_namespace="map")
@@ -31,7 +38,7 @@ def get_new_map_route(request: HttpRequest, payload: NewMapPayload):
         collection.map_data = {}
         collection.save()
         return HttpResponse(status=204)
-    result  = ProjectionsEndpointResponse(projections=projections, metadata=collection.map_metadata)
+    result = ProjectionsEndpointResponse(projections=projections, metadata=collection.map_metadata)
     return result.dict()
 
 
@@ -41,7 +48,9 @@ def get_existing_projections_route(request: HttpRequest, payload: CollectionIden
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.only("created_by", "map_data", "map_metadata").get(id=payload.collection_id)
+        collection = DataCollection.objects.only("created_by", "map_data", "map_metadata").get(
+            id=payload.collection_id
+        )
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if collection.created_by != request.user:
@@ -50,7 +59,7 @@ def get_existing_projections_route(request: HttpRequest, payload: CollectionIden
     if not collection.map_data:
         return None
     map_data = MapData(**collection.map_data)
-    result  = ProjectionsEndpointResponse(projections=map_data.projections, metadata=collection.map_metadata)
+    result = ProjectionsEndpointResponse(projections=map_data.projections, metadata=collection.map_metadata)
     return result.dict()
 
 
@@ -107,7 +116,9 @@ def get_thumbnail_data_route(request: HttpRequest, payload: CollectionIdentifier
     map_data = MapData(**collection.map_data)
     return map_data.thumbnail_data
 
+
 # TODO: this should be moved to a separate collection_items Django app
+
 
 @api.post("remove_collection_items")
 def remove_collection_items_route(request: HttpRequest, payload: RemoveCollectionItemsPayload):
@@ -126,8 +137,7 @@ def remove_collection_items_route(request: HttpRequest, payload: RemoveCollectio
     collection_items.delete()
 
     result = RemoveCollectionItemsResponse(
-        removed_item_ids=removed_item_ids,
-        updated_count_per_class=collection.actual_classes
+        removed_item_ids=removed_item_ids, updated_count_per_class=collection.actual_classes
     )
 
     return result

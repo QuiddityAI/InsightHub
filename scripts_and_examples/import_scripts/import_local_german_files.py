@@ -17,7 +17,16 @@ def import_files(path, dataset_id, max_items=1000000):
     batch_size = 10
     folder_batch_size = 100
     total_items = 0
-    extensions = (".doc", ".docx", ".pdf", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", )
+    extensions = (
+        ".doc",
+        ".docx",
+        ".pdf",
+        ".ppt",
+        ".pptx",
+        ".xls",
+        ".xlsx",
+        ".txt",
+    )
     skip_first = 0
     csv_log.append(["index", "total_items", "path", "status"])
 
@@ -40,9 +49,11 @@ def import_files(path, dataset_id, max_items=1000000):
             full_path_without_path = full_path.replace(path, "")
 
             files = list(os.scandir(full_path))
-            context = (f"Folder: {full_path_without_path}\n"
+            context = (
+                f"Folder: {full_path_without_path}\n"
                 f"Number of contained files and folders: {len(files)}\n"
-                f"Preview of up to 20 file and foldernames: \n")
+                f"Preview of up to 20 file and foldernames: \n"
+            )
             for file in sorted(files, key=lambda x: x.name)[:20]:
                 iso_file_path = file.name.encode("utf-8", "surrogateescape")
                 fixed_file_name = iso_file_path.decode("ISO-8859-1")
@@ -108,15 +119,24 @@ def import_files(path, dataset_id, max_items=1000000):
         if len(batch) >= batch_size:
             print(f"Uploading batch of {len(batch)} items, index {i}")
             t1 = time.time()
-            result = upload_files(dataset_id, "filesystem_file_german", 1, 10, "office_document", file_paths=batch, exclude_prefix=path, skip_generators=skip_generators)
+            result = upload_files(
+                dataset_id,
+                "filesystem_file_german",
+                1,
+                10,
+                "office_document",
+                file_paths=batch,
+                exclude_prefix=path,
+                skip_generators=skip_generators,
+            )
             t2 = time.time()
             duration = t2 - t1
             per_item = duration / len(batch)
             print(f"--- Duration: {duration:.3f}s, time per item: {per_item:.2f} s")
             csv_log.append([i, total_items, duration, per_item])
-            for failed_file in result['status']['failed_files']:
-                csv_log.append([i, total_items, failed_file['filename'], 'failed: ' + failed_file['reason']])
-            failed_filenames = [failed_file['filename'] for failed_file in result['status']['failed_files']]
+            for failed_file in result["status"]["failed_files"]:
+                csv_log.append([i, total_items, failed_file["filename"], "failed: " + failed_file["reason"]])
+            failed_filenames = [failed_file["filename"] for failed_file in result["status"]["failed_files"]]
             for file in batch:
                 if file.split("/")[-1] not in failed_filenames:
                     csv_log.append([i, total_items, file, "success"])
@@ -127,15 +147,24 @@ def import_files(path, dataset_id, max_items=1000000):
 
     if batch:
         t1 = time.time()
-        result = upload_files(dataset_id, "filesystem_file_german", 1, 10, "office_document_de", file_paths=batch, exclude_prefix=path, skip_generators=skip_generators)
+        result = upload_files(
+            dataset_id,
+            "filesystem_file_german",
+            1,
+            10,
+            "office_document_de",
+            file_paths=batch,
+            exclude_prefix=path,
+            skip_generators=skip_generators,
+        )
         t2 = time.time()
         duration = t2 - t1
         per_item = duration / len(batch)
         print(f"--- Duration: {duration:.3f}s, time per item: {per_item:.2f} s")
         csv_log.append([i, total_items, duration, per_item])
-        for failed_file in result['status']['failed_files']:
-            csv_log.append([i, total_items, failed_file['filename'], 'failed: ' + failed_file['reason']])
-        failed_filenames = [failed_file['filename'] for failed_file in result['status']['failed_files']]
+        for failed_file in result["status"]["failed_files"]:
+            csv_log.append([i, total_items, failed_file["filename"], "failed: " + failed_file["reason"]])
+        failed_filenames = [failed_file["filename"] for failed_file in result["status"]["failed_files"]]
         for file in batch:
             if file.split("/")[-1] not in failed_filenames:
                 csv_log.append([i, total_items, file, "success"])
@@ -154,7 +183,7 @@ def fix_encoding(file_path: str):
         utf8_file_path = file_path.encode("utf-8")
         print(f"Fixing encoding of file path: {iso_file_path} -> {utf8_file_path} ({file_path})")
         for part in range(len(file_path.split("/"))):
-            part_path = "/".join(file_path.split("/")[:part+1])
+            part_path = "/".join(file_path.split("/")[: part + 1])
             if not part_path:
                 continue
             if not os.path.exists(part_path):
@@ -184,11 +213,10 @@ def get_parent_folders(folder) -> list:
 
 if __name__ == "__main__":
     try:
-        #import_files("/data/remondis/", 98, 500)
-        #import_files("/home/tim/test_folder/", 111, 10)
+        # import_files("/data/remondis/", 98, 500)
+        # import_files("/home/tim/test_folder/", 111, 10)
         import_files("/data/remondis/", 111, 500)
     finally:
         with open(f"import_log_{time.strftime('%Y%m%d_%H%M%S')}.csv", "w") as f:
             writer = csv.writer(f)
             writer.writerows(csv_log)
-

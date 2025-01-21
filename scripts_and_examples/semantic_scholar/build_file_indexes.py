@@ -27,13 +27,13 @@ def append_index(file_path: Path):
     file_id = len(file_id_to_path)
     file_id_to_path[file_id] = file_path
 
-    #with gzip.open(file_path, 'rt', encoding='utf-8') as f:
-    with open(file_path, 'rb') as f:
+    # with gzip.open(file_path, 'rt', encoding='utf-8') as f:
+    with open(file_path, "rb") as f:
         for line in f:
             assert isinstance(line, bytes)
             corpusid = int(corpusid_regex.search(line).group(1))  # type: ignore
             corpusid_to_file_pos_and_length[corpusid] = (file_id, current_pos, len(line))
-            current_pos += len(line) # including newline
+            current_pos += len(line)  # including newline
 
     t2 = time.time()
     print(f"done in {t2 - t1:.2f} seconds")
@@ -46,7 +46,7 @@ def test(index_file_path):
 
     with open(index_file_path, "rb") as f:
         file_id_to_path, corpusid_to_file_pos_and_length = pickle.load(f)
-        #file_id_to_path, corpusid_to_file_pos_and_length = cbor2.load(f)
+        # file_id_to_path, corpusid_to_file_pos_and_length = cbor2.load(f)
 
     corpusid = random.choice(list(corpusid_to_file_pos_and_length.keys()))
 
@@ -56,8 +56,8 @@ def test(index_file_path):
 
     file_path = file_id_to_path[file_id]
 
-    #with gzip.open(file_path, 'rt', encoding='utf-8') as f:
-    with open(file_path, 'rb') as f:
+    # with gzip.open(file_path, 'rt', encoding='utf-8') as f:
+    with open(file_path, "rb") as f:
         f.seek(pos1)
         line = f.readline()
         print(line)
@@ -76,13 +76,13 @@ def save(index_file_path):
 
     with open(index_file_path, "wb") as f:
         pickle.dump(data, f)
-        #cbor2.dump(data, f)  # not much smaller, but slighly slower
+        # cbor2.dump(data, f)  # not much smaller, but slighly slower
 
 
 def build_index_for_dataset(dataset_name: str):
-    base_download_folder = f'/data/semantic_scholar'
+    base_download_folder = f"/data/semantic_scholar"
     dataset_folder = Path(base_download_folder) / dataset_name
-    files = list(dataset_folder.glob('*'))
+    files = list(dataset_folder.glob("*"))
     for file in files:
         index_file_path = file.with_suffix(".index.pkl")
         append_index(file)
@@ -94,20 +94,21 @@ def build_index_for_dataset(dataset_name: str):
 
 def convert_to_flat_index():
     import numpy as np
-    base_download_folder = f'/data/semantic_scholar'
-    abstract_file_paths, abstract_index = pickle.load(open(Path(base_download_folder) / f"abstracts.index.pkl", 'rb'))
+
+    base_download_folder = f"/data/semantic_scholar"
+    abstract_file_paths, abstract_index = pickle.load(open(Path(base_download_folder) / f"abstracts.index.pkl", "rb"))
     print(f"Loaded")
     corpus_ids = np.array(list(abstract_index.keys()))
     corpus_ids.sort()
     file_ids = np.array([abstract_index[corpus_id][0] for corpus_id in corpus_ids])
     file_positions = np.array([abstract_index[corpus_id][1] for corpus_id in corpus_ids])
     print(f"Converted")
-    with open(Path(base_download_folder) / f"abstracts.flat_index.pkl", 'wb') as f:
+    with open(Path(base_download_folder) / f"abstracts.flat_index.pkl", "wb") as f:
         pickle.dump((abstract_file_paths, corpus_ids, file_ids, file_positions), f)
     print(f"Saved")
 
 
 if __name__ == "__main__":
-    #build_index_for_dataset(DatasetNames.TLDRS)
-    #build_index_for_dataset(DatasetNames.ABSTRACTS)
+    # build_index_for_dataset(DatasetNames.TLDRS)
+    # build_index_for_dataset(DatasetNames.ABSTRACTS)
     convert_to_flat_index()

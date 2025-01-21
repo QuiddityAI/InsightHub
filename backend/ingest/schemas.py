@@ -13,7 +13,8 @@ class UploadedFileMetadata(Schema):
 
 
 class CustomUploadedFile(Schema):
-    """ File (could be an archive) coming from form or API, with some extra metadata """
+    """File (could be an archive) coming from form or API, with some extra metadata"""
+
     uploaded_file: DjangoUploadedFile
     metadata: Optional[UploadedFileMetadata] = None
 
@@ -22,7 +23,8 @@ class CustomUploadedFile(Schema):
 
 
 class UploadedOrExtractedFile(Schema):
-    """ Either an uploaded file, or a file extracted from an uploaded archive, already stored on disk """
+    """Either an uploaded file, or a file extracted from an uploaded archive, already stored on disk"""
+
     local_path: str  # relative to UPLOADED_FILES_FOLDER
     original_filename: str
     metadata: Optional[UploadedFileMetadata] = None

@@ -25,4 +25,3 @@ class HumanReadableJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, Callable):
             return "<function>"
         return json.JSONEncoder.default(self, obj)
-

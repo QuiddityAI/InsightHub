@@ -44,8 +44,8 @@ Gib nur die Suchanfrage zurück. Wiederhole nicht die Aufgabe.
 """
 
 search_query_prompt: defaultdict[str, str] = defaultdict(lambda: search_query_prompt_en)
-search_query_prompt['en'] = search_query_prompt_en
-search_query_prompt['de'] = search_query_prompt_de
+search_query_prompt["en"] = search_query_prompt_en
+search_query_prompt["de"] = search_query_prompt_de
 
 # Note: this prompt is just a template for the Dataset settings and is not direclty used
 filter_detection_prompt_en = """
@@ -184,5 +184,5 @@ Antworte direkt in folgendem JSON-Format (ohne jegliche zusätzliche Zeichen):
 """
 
 approve_using_comparison_prompt: defaultdict[str, str] = defaultdict(lambda: approve_using_comparison_prompt_en)
-approve_using_comparison_prompt['en'] = approve_using_comparison_prompt_en
-approve_using_comparison_prompt['de'] = approve_using_comparison_prompt_de
+approve_using_comparison_prompt["en"] = approve_using_comparison_prompt_en
+approve_using_comparison_prompt["de"] = approve_using_comparison_prompt_de

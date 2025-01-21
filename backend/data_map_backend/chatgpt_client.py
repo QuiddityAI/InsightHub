@@ -36,9 +36,9 @@ def get_chatgpt_response(question: str, language: str, model: str = OPENAI_MODEL
         model=model,
         temperature=temp,
         messages=[
-            {"role": "system", "content": system_prompt_de if language == 'de' else system_prompt},
+            {"role": "system", "content": system_prompt_de if language == "de" else system_prompt},
             {"role": "user", "content": question},
-        ]
+        ],
     )
 
     response_text = response.choices[0].message.content
@@ -48,11 +48,7 @@ def get_chatgpt_response(question: str, language: str, model: str = OPENAI_MODEL
 
 def get_chatgpt_response_using_history(history, model: str = OPENAI_MODELS.GPT4_O) -> str:
     logging.info(f"Sending prompt history to ChatGPT: {history[-1]}")
-    response = client.chat.completions.create(
-        model=model,
-        temperature=temp,
-        messages=history
-    )
+    response = client.chat.completions.create(model=model, temperature=temp, messages=history)
 
     response_text = response.choices[0].message.content
     assert response_text, "ChatGPT response is empty"

@@ -3,7 +3,6 @@ import logging
 
 
 class Timings(object):
-
     def __init__(self) -> None:
         self.timings = []
         self.start = time.time()

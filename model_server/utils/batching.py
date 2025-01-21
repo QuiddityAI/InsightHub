@@ -10,7 +10,6 @@ def run_in_batches(items: list, batch_size: int, function: Callable) -> list:
     return results
 
 
-
 def test():
     def fun(items):
         print(items)

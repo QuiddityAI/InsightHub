@@ -17,12 +17,14 @@ def update_database_layout(dataset_id: int):
     for field in index_settings.all_vector_fields:
         if not dataset.schema.object_fields[field].is_available_for_search:
             continue
-        vector_db_client.ensure_dataset_field_exists(dataset, field, update_params=True, delete_if_params_changed=False)
+        vector_db_client.ensure_dataset_field_exists(
+            dataset, field, update_params=True, delete_if_params_changed=False
+        )
     search_engine_client = TextSearchEngineClient.get_instance()
     search_engine_client.ensure_dataset_exists(dataset)
 
 
-def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=False) -> list[tuple]:
+def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = False) -> list[tuple]:
     dataset = get_dataset(dataset_id)
 
     for element in elements:
@@ -72,8 +74,7 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=Fal
                 # if not set(changed_fields_total[i]) & set(pipeline_step["source_fields"]):
                 #     continue
 
-                if (pipeline_step.condition_function is not None
-                    and not pipeline_step.condition_function(element)):
+                if pipeline_step.condition_function is not None and not pipeline_step.condition_function(element):
                     continue
 
                 source_data: list | dict = []
@@ -110,13 +111,13 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=Fal
 
     for field in dataset.schema.object_fields.values():
         if field.field_type == FieldType.CLASS_PROBABILITY and not field.is_array:
-            for element  in elements:
+            for element in elements:
                 if field.identifier not in element:
                     continue
                 # values less or equal zero are not supported by OpenSearch
                 element[field.identifier] = max(element[field.identifier], 0.00001)
         elif field.field_type == FieldType.CLASS_PROBABILITY and field.is_array:
-            for element  in elements:
+            for element in elements:
                 if field.identifier not in element or not isinstance(element[field.identifier], dict):
                     continue
                 # values less or equal zero are not supported by OpenSearch
@@ -138,7 +139,7 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=Fal
             if len(element[vector_field]) == 0:
                 # this is a multi-vector field but without any vectors
                 continue
-            ids.append(element['_id'])
+            ids.append(element["_id"])
             vectors.append(element[vector_field])
 
             filtering_attributes = {}
@@ -159,8 +160,14 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool=Fal
     return [(dataset.id, item["_id"]) for item in elements]
 
 
-def insert_vectors(dataset_id: int, vector_field: str, item_pks: list[str], vectors: list[list[float]], excluded_filter_fields: list[str] = []):
-    """ Allows to insert vectors for items that are already in the database.
+def insert_vectors(
+    dataset_id: int,
+    vector_field: str,
+    item_pks: list[str],
+    vectors: list[list[float]],
+    excluded_filter_fields: list[str] = [],
+):
+    """Allows to insert vectors for items that are already in the database.
     The caller needs to take care of the best batch size itself."""
     dataset = get_dataset(dataset_id)
     # this assumes that the item_pks are not the item._id ids and still need to be converted:
@@ -192,14 +199,14 @@ def get_index_settings(dataset: DotDict):
 
         if field.is_available_for_filtering:
             filtering_fields.append(field.identifier)
-            if not (field.index_parameters or {}).get('exclude_from_vector_database'):
+            if not (field.index_parameters or {}).get("exclude_from_vector_database"):
                 vector_filtering_fields.append(field.identifier)
 
     result = {
-        'all_vector_fields': set(all_vector_fields),
-        'filtering_fields': set(filtering_fields),
-        'vector_filtering_fields': set(vector_filtering_fields),
-        }
+        "all_vector_fields": set(all_vector_fields),
+        "filtering_fields": set(filtering_fields),
+        "vector_filtering_fields": set(vector_filtering_fields),
+    }
 
     return DotDict(result)
 
@@ -207,7 +214,9 @@ def get_index_settings(dataset: DotDict):
 def delete_dataset_content(dataset_id: int):
     dataset = get_dataset(dataset_id)
 
-    logging.warning(f"Deleting all data from dataset {dataset.name}, ID {dataset.id}, database name {dataset.actual_database_name}.")
+    logging.warning(
+        f"Deleting all data from dataset {dataset.name}, ID {dataset.id}, database name {dataset.actual_database_name}."
+    )
 
     vector_db_client = VectorSearchEngineClient.get_instance()
     index_settings = get_index_settings(dataset)

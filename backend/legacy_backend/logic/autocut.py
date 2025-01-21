@@ -11,7 +11,9 @@ class AutocutStrategy(object):
     STATIC_THRESHOLD = "static_threshold"
 
 
-def get_number_of_useful_items(scores: list[float], min_items: int, strategy: str, min_score: float = 0.5, max_relative_decline: float = 1.0) -> dict:
+def get_number_of_useful_items(
+    scores: list[float], min_items: int, strategy: str, min_score: float = 0.5, max_relative_decline: float = 1.0
+) -> dict:
     scores_np = np.array(scores)
     if len(scores) == 0 or len(scores) <= min_items:
         return {"count": len(scores), "reason": "l"}
@@ -55,7 +57,9 @@ def _get_number_of_useful_items_using_knee_point(scores: np.ndarray, min_items: 
         return {"count": count, "reason": f"ellbow point of convex curve {index}"}
 
 
-def _get_number_of_useful_items_using_distance_difference(scores: np.ndarray, min_items: int, max_relative_decline: float) -> dict:
+def _get_number_of_useful_items_using_distance_difference(
+    scores: np.ndarray, min_items: int, max_relative_decline: float
+) -> dict:
     # max_relative_decline is the maximum allowed decrease in the score from one element to the next
     # with 1.0 meaning that for the normalized scores (!) the "angle" to the next element should
     # not be greater than 45° (a gradient of -1)

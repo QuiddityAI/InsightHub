@@ -11,10 +11,16 @@ class ClassicSearchWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="classic_search",
         order=WorkflowOrder.search + 1,
-        name1={'en': "Find a single", 'de': "Finde einzelne"},
-        name2={'en': "Known <entity_name_singular>", 'de': "Bekannte <entity_name_plural>"},  # using plural in German to not care about word gender
-        help_text={'en': "Fast + accurate search", 'de': "Schnelle + genaue Suche"},
-        query_field_hint={'en': "Describe what <entity_name_singular> you want to find", 'de': "Beschreibe, welche <entity_name_plural> du finden möchtest"},
+        name1={"en": "Find a single", "de": "Finde einzelne"},
+        name2={
+            "en": "Known <entity_name_singular>",
+            "de": "Bekannte <entity_name_plural>",
+        },  # using plural in German to not care about word gender
+        help_text={"en": "Fast + accurate search", "de": "Schnelle + genaue Suche"},
+        query_field_hint={
+            "en": "Describe what <entity_name_singular> you want to find",
+            "de": "Beschreibe, welche <entity_name_plural> du finden möchtest",
+        },
         supports_filters=True,
         needs_user_input=True,
         needs_result_language=True,
@@ -43,10 +49,16 @@ class AssistedSearchWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="assisted_search",
         order=WorkflowOrder.search + 2,
-        name1={'en': "Find a set of", 'de': "Finde mehrere"},
-        name2={'en': "Matching <entity_name_plural>", 'de': "Passende <entity_name_plural>"},
-        help_text={'en': "Evaluates every result separately, good to collect a set of <entity_name_plural>", 'de': "Evaluiert jedes Ergebnis einzeln. Sinnvoll um mehrere <entity_name_plural> zu sammeln."},
-        query_field_hint={'en': "Describe what <entity_name_plural> you want to find", 'de': "Beschreibe, welche <entity_name_plural> du finden möchtest"},
+        name1={"en": "Find a set of", "de": "Finde mehrere"},
+        name2={"en": "Matching <entity_name_plural>", "de": "Passende <entity_name_plural>"},
+        help_text={
+            "en": "Evaluates every result separately, good to collect a set of <entity_name_plural>",
+            "de": "Evaluiert jedes Ergebnis einzeln. Sinnvoll um mehrere <entity_name_plural> zu sammeln.",
+        },
+        query_field_hint={
+            "en": "Describe what <entity_name_plural> you want to find",
+            "de": "Beschreibe, welche <entity_name_plural> du finden möchtest",
+        },
         supports_filters=True,
         needs_user_input=True,
         needs_result_language=True,
