@@ -2,7 +2,14 @@ import time
 
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
-from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask, CollectionColumn, FieldType, User
+from data_map_backend.models import (
+    DataCollection,
+    COLUMN_META_SOURCE_FIELDS,
+    WritingTask,
+    CollectionColumn,
+    FieldType,
+    User,
+)
 from data_map_backend.schemas import CollectionUiSettings, ItemRelevance
 from search.schemas import SearchTaskSettings
 from search.logic.execute_search import run_search_task
@@ -19,10 +26,13 @@ class ResearchAgentWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="research_agent",
         order=WorkflowOrder.agent + 1,
-        name1={'en': "Let an", 'de': "Lass einen"},
-        name2={'en': "Agent do Research", 'de': "Agent Forschung betreiben"},
-        help_text={'en': "An agent that looks for documents and summarizes them autonomously", 'de': "Ein Agent, der nach Dokumenten sucht und sie autonom zusammenfasst"},
-        query_field_hint={'en': "Your question", 'de': "Deine Frage"},
+        name1={"en": "Let an", "de": "Lass einen"},
+        name2={"en": "Agent do Research", "de": "Agent Forschung betreiben"},
+        help_text={
+            "en": "An agent that looks for documents and summarizes them autonomously",
+            "de": "Ein Agent, der nach Dokumenten sucht und sie autonom zusammenfasst",
+        },
+        query_field_hint={"en": "Your question", "de": "Deine Frage"},
         supports_filters=False,
         needs_user_input=True,
         needs_result_language=True,
@@ -39,7 +49,8 @@ class ResearchAgentWorkflow(WorkflowBase):
 
         search_task = SearchTaskSettings(
             dataset_id=settings.dataset_id,
-            user_input=settings.user_input or "",  # this is the full, natural language question (of course your agent could first generate a better one)
+            user_input=settings.user_input
+            or "",  # this is the full, natural language question (of course your agent could first generate a better one)
             query=None,  # this is the query used for keyword search, if auto_set_filters is set, its generated automatically
             result_language=settings.result_language,
             auto_set_filters=settings.auto_set_filters,
@@ -64,9 +75,12 @@ class ResearchAgentWorkflow(WorkflowBase):
             field_type=FieldType.STRING,
             expression=f"Is the item relevant to the question '{settings.user_input}'?",
             prompt_template=None,  # set this if you want to use a custom prompt, otherwise a default is used
-            source_fields=[COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS],
-            module='llm',  # there is also a special 'relevance' module, but that's a different story
-            parameters={'model': Google_Gemini_Flash_1_5_v1.__name__, 'language': settings.result_language},
+            source_fields=[
+                COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,
+                COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
+            ],
+            module="llm",  # there is also a special 'relevance' module, but that's a different story
+            parameters={"model": Google_Gemini_Flash_1_5_v1.__name__, "language": settings.result_language},
             auto_run_for_candidates=True,  # set this to run this column for all search results
         )
         time.sleep(2)  # just for the demo to understand the process
@@ -86,7 +100,7 @@ class ResearchAgentWorkflow(WorkflowBase):
             assert isinstance(data.value, str)  # could by dict or list for other column types
 
             # set the relevance of an item:
-            if 'yes' in data.value.lower():
+            if "yes" in data.value.lower():
                 item.relevance = ItemRelevance.RELEVANT_ACCORDING_TO_AI
                 item.save(update_fields=["relevance"])
 
@@ -94,7 +108,10 @@ class ResearchAgentWorkflow(WorkflowBase):
         writing_task = WritingTask(
             collection=collection,
             name="Final Answer",
-            source_fields=[COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS],
+            source_fields=[
+                COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,
+                COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
+            ],
             use_all_items=True,
             module=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
             prompt=f"Summarize the results of the search in regard to this question '{settings.user_input}'."

@@ -1,4 +1,3 @@
-
 import re
 from collections import defaultdict
 
@@ -7,9 +6,10 @@ english_ignore_words = ["with", "is", "were", "in", "the", "a", "an", "of", "thi
 ignore_words = set(academic_ignore_words + english_ignore_words)
 html_tag_regex = re.compile(r"<.{1,8}?>(.{1,100}?)</.{1,8}?>", re.IGNORECASE)
 latex_math_env_regex = re.compile(r"\$.{1,100}?\$", re.IGNORECASE)
-word_split_regex = re.compile(r'[\s/]')
+word_split_regex = re.compile(r"[\s/]")
 is_number_like_regex = re.compile(r"^[0-9.,-]+$")
 is_plural_abbreviation_regex = re.compile(r"([A-Z]+?)(s\b)")
+
 
 # from AbsClust:
 def correct_plural_abbreviation(word):
@@ -19,6 +19,7 @@ def correct_plural_abbreviation(word):
         return word[:-1]
     return word
 
+
 def correct_first_letter(word):
     """corrects first letter, e.g. Word -> word
     use this instead of .lower to maintain abbreviations
@@ -26,6 +27,7 @@ def correct_first_letter(word):
     if word[0].isupper() and word[1:].islower():
         return word.lower()
     return word
+
 
 def tokenize(text, context_specific_ignore_words=set(), use_lower_case=True):
     # this method is called very often and a performance bottleneck
@@ -82,7 +84,10 @@ for word in tokenized:
 
 print(f"word_counts: {word_counts}")
 
-compressed = "|".join(f"{count}:{word}" if count > 1 else word for word, count in sorted(word_counts.items(), key=lambda x: x[1], reverse=True))
+compressed = "|".join(
+    f"{count}:{word}" if count > 1 else word
+    for word, count in sorted(word_counts.items(), key=lambda x: x[1], reverse=True)
+)
 
 print(f"compressed: {compressed}")
 print(f"len(compressed): {len(compressed)}")
@@ -96,4 +101,3 @@ Results:
 almost no further reduction when compressing the tokenized abstract as a count of words
 
 """
-

@@ -8,13 +8,13 @@ from tqdm import tqdm
 
 if sys.platform == "darwin":
     # Macbook
-    data_root = Path('/Users/tim/vector-search/pubmed_embeddings/')
+    data_root = Path("/Users/tim/vector-search/pubmed_embeddings/")
 else:
     # Desktop
-    data_root = Path('/data/pubmed_embeddings/')
+    data_root = Path("/data/pubmed_embeddings/")
 
 
-abstracts_path = data_root / 'pubmed_landscape_abstracts.csv'
+abstracts_path = data_root / "pubmed_landscape_abstracts.csv"
 
 pmid_to_pos_and_length = {}
 
@@ -42,7 +42,7 @@ pos1, length1 = x["1133453"]
 
 with open(abstracts_path, "r+") as f:
     data = mmap.mmap(f.fileno(), 0)
-    abstract = data[pos1:pos1+length1].decode()
+    abstract = data[pos1 : pos1 + length1].decode()
 
 print(abstract)
 

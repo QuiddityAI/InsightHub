@@ -42,14 +42,16 @@ class Tender(pydantic.BaseModel):
 def scrape_service_bund_portal(max_results: int = 200):
     results_per_page = 100
     total = 0
-    url = f"{base_url}Content/DE/Ausschreibungen/Suche/Formular.html?view=processForm&resultsPerPage={results_per_page}"
+    url = (
+        f"{base_url}Content/DE/Ausschreibungen/Suche/Formular.html?view=processForm&resultsPerPage={results_per_page}"
+    )
 
     while total < max_results and url:
         html_text = requests.get(url).text
         soup = BeautifulSoup(html_text, "html.parser")
         results_on_this_page = extract_results_from_page(soup)
         pks = [result.detail_page for result in results_on_this_page]
-        pk_exists = check_pk_existence(DATASET_ID, pks, ACCESS_TOKEN)['pk_exists']
+        pk_exists = check_pk_existence(DATASET_ID, pks, ACCESS_TOKEN)["pk_exists"]
         new_results = []
         for result in tqdm(results_on_this_page):
             total += 1
@@ -62,6 +64,7 @@ def scrape_service_bund_portal(max_results: int = 200):
                 print(f"Error adding details to {result}: {e}")
                 # print stack trace
                 import traceback
+
                 traceback.print_exc()
             new_results.append(result)
             if total >= max_results:
@@ -93,13 +96,7 @@ def extract_results_from_page(soup: BeautifulSoup) -> list[Tender]:
         # strip the session id:
         detail_page = detail_page.split(".html")[0] + ".html"
         title = item.find("a")["title"].replace("Zur Ausschreibung '", "").strip("'")
-        publisher = (
-            item.find("a")
-            .find("p")
-            .get_text(strip=True)
-            .replace("Vergabestelle", "")
-            .strip()
-        )
+        publisher = item.find("a").find("p").get_text(strip=True).replace("Vergabestelle", "").strip()
         published = (
             item.find("div", attrs={"aria-labelledby": "date"})
             .find("p")
@@ -144,7 +141,9 @@ def add_details(tender: Tender) -> Tender:
         article = soup.find("article")
         # <p class="arbeitgeber">Vergabestelle: Landkreis Rotenburg (Wümme) </p>
         if article.find("p", class_="arbeitgeber"):
-            tender.publisher = article.find("p", class_="arbeitgeber").get_text(strip=True).replace("Vergabestelle: ", "")
+            tender.publisher = (
+                article.find("p", class_="arbeitgeber").get_text(strip=True).replace("Vergabestelle: ", "")
+            )
 
         # "Kurzinfos"
         shortlist_section = soup.find("section", class_="shortlist")
@@ -184,10 +183,7 @@ def add_details(tender: Tender) -> Tender:
         for li in linklist_div.find_all("li"):
             a_tag = li.find("a")
             link_title = a_tag.get_text(strip=True)
-            linklist_info[link_title] = {
-                "href": a_tag["href"],
-                "description": a_tag["title"]
-            }
+            linklist_info[link_title] = {"href": a_tag["href"], "description": a_tag["title"]}
         tender.links = linklist_info
         tender.external_detail_page = linklist_info.get("Bekanntmachung (HTML-Seite)", {}).get("href", None)
         if tender.external_detail_page:
@@ -201,6 +197,7 @@ def add_details(tender: Tender) -> Tender:
         print(html_text)
         # print stack trace
         import traceback
+
         traceback.print_exc()
     return tender
 

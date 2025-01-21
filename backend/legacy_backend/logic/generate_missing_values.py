@@ -46,9 +46,15 @@ def generate_missing_values(task: GenerationTask):
     # update_database_layout(dataset_id)
     # TODO: store time of last layout update in dataset and compare with date of last change
 
-    pipeline_steps, required_fields, potentially_changed_fields = get_pipeline_steps(dataset, only_fields=[field_identifier])
-    potentially_changed_text_fields, potentially_changed_vector_fields = separate_text_and_vector_fields(dataset, potentially_changed_fields)
-    task.add_log(f"The following fields will potentially be changed: text fields {potentially_changed_text_fields}, vector fields {potentially_changed_vector_fields}")
+    pipeline_steps, required_fields, potentially_changed_fields = get_pipeline_steps(
+        dataset, only_fields=[field_identifier]
+    )
+    potentially_changed_text_fields, potentially_changed_vector_fields = separate_text_and_vector_fields(
+        dataset, potentially_changed_fields
+    )
+    task.add_log(
+        f"The following fields will potentially be changed: text fields {potentially_changed_text_fields}, vector fields {potentially_changed_vector_fields}"
+    )
 
     if task.regenerate_all:
         task.add_log(f"Deleting content of field {field_identifier} because all items should be regenerated")
@@ -57,7 +63,9 @@ def generate_missing_values(task: GenerationTask):
         if task.clear_all_output_fields:
             additional_fields_to_clear = potentially_changed_fields - {field_identifier}
             for additional_field in additional_fields_to_clear:
-                task.add_log(f"Deleting content of field {additional_field} because all output fields should be cleared, too")
+                task.add_log(
+                    f"Deleting content of field {additional_field} because all output fields should be cleared, too"
+                )
                 time.sleep(2)  # waiting for the deletion of the previous field to be finished
                 delete_field_content(dataset_id, additional_field)
                 task.add_log(f"Deleted content of field {additional_field}")
@@ -69,12 +77,16 @@ def generate_missing_values(task: GenerationTask):
         # TODO: remove when qdrant isn't used anymore
         required_fields |= index_settings.filtering_fields
     required_text_fields, required_vector_fields = separate_text_and_vector_fields(dataset, required_fields)
-    task.add_log(f"The following fields will be retrieved: text fields {required_text_fields}, vector fields {required_vector_fields}")
+    task.add_log(
+        f"The following fields will be retrieved: text fields {required_text_fields}, vector fields {required_vector_fields}"
+    )
 
     search_engine_client = TextSearchEngineClient.get_instance()
     vector_db_client = VectorSearchEngineClient.get_instance()
     items_processed = 0
-    total_items_estimated = search_engine_client.get_all_items_with_missing_field_count(dataset.actual_database_name, field_identifier)
+    total_items_estimated = search_engine_client.get_all_items_with_missing_field_count(
+        dataset.actual_database_name, field_identifier
+    )
     is_vector_field = dataset.schema.object_fields[field_identifier].field_type == FieldType.VECTOR
     is_array_field = dataset.schema.object_fields[field_identifier].is_array
     if is_vector_field:
@@ -103,13 +115,17 @@ def generate_missing_values(task: GenerationTask):
         progress = items_processed / float(total_items_estimated)
         task.progress = progress
         task.save(update_fields=["progress"])
-        task.add_log(f"Processed {items_processed} of {total_items_estimated} ({progress * 100:.1f} %)\n" + \
-            f"Time per item: generation {generation_duration / len(elements) * 1000:.2f} ms, index update {index_update_duration / len(elements) * 1000:.2f} ms, total {duration / len(elements) * 1000:.2f} ms\n" + \
-            f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min")
+        task.add_log(
+            f"Processed {items_processed} of {total_items_estimated} ({progress * 100:.1f} %)\n"
+            + f"Time per item: generation {generation_duration / len(elements) * 1000:.2f} ms, index update {index_update_duration / len(elements) * 1000:.2f} ms, total {duration / len(elements) * 1000:.2f} ms\n"
+            + f"Estimated remaining time: {(duration / len(elements) * (total_items_estimated - items_processed)) / 60.0:.1f} min"
+        )
 
     batch_size = task.batch_size
 
-    generator = search_engine_client.get_all_items_with_missing_field(dataset.actual_database_name, field_identifier, required_text_fields, internal_batch_size=batch_size)
+    generator = search_engine_client.get_all_items_with_missing_field(
+        dataset.actual_database_name, field_identifier, required_text_fields, internal_batch_size=batch_size
+    )
     elements = []
     last_batch_time = time.time()
     skipped_items = 0
@@ -124,7 +140,13 @@ def generate_missing_values(task: GenerationTask):
                 return
             if is_vector_field:
                 items_where_vector_already_exists = vector_db_client.get_items_by_ids(
-                    dataset, [x["_id"] for x in elements], field_identifier, is_array_field, return_payloads=False, return_vectors=False)
+                    dataset,
+                    [x["_id"] for x in elements],
+                    field_identifier,
+                    is_array_field,
+                    return_payloads=False,
+                    return_vectors=False,
+                )
                 if len(items_where_vector_already_exists) == len(elements):
                     skipped_items += len(elements)
                     elements = []
@@ -163,7 +185,9 @@ def generate_missing_values(task: GenerationTask):
     task.save(update_fields=["status"])
 
 
-def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]], elements: list[dict], log_error: Callable=logging.warning) -> dict:
+def generate_missing_values_for_given_elements(
+    pipeline_steps: list[list[dict]], elements: list[dict], log_error: Callable = logging.warning
+) -> dict:
     # when adapting this function, also adapt insert_many() in insert_logic.py
     changed_fields = defaultdict(set)
     for phase in pipeline_steps:
@@ -177,8 +201,7 @@ def generate_missing_values_for_given_elements(pipeline_steps: list[list[dict]],
                 if pipeline_step.target_field in element and element[pipeline_step.target_field] is not None:
                     continue
 
-                if (pipeline_step.condition_function is not None
-                    and not pipeline_step.condition_function(element)):
+                if pipeline_step.condition_function is not None and not pipeline_step.condition_function(element):
                     continue
 
                 source_data: list | dict = []
@@ -228,14 +251,16 @@ def _update_indexes_with_generated_values(dataset, elements, changed_fields):
         vectors = []
         payloads = []
         for element_index, element in enumerate(elements):
-            if vector_field not in changed_fields[element_index] \
-                and len(changed_fields[element_index] & index_settings.filtering_fields) == 0:
+            if (
+                vector_field not in changed_fields[element_index]
+                and len(changed_fields[element_index] & index_settings.filtering_fields) == 0
+            ):
                 # TODO: if only a filtering field changed, the other filtering fields might not be present (currently they are)
                 # Does qdrant support a partial update on the payload? Or does it replace the payload? If it can, then other fields are not required
                 continue
             if vector_field not in element or element[vector_field] is None:
                 continue
-            ids.append(element['_id'])
+            ids.append(element["_id"])
             vectors.append(element[vector_field])
 
             filtering_attributes = {}
@@ -259,4 +284,6 @@ def _update_indexes_with_generated_values(dataset, elements, changed_fields):
 
     if text_search_updates:
         search_engine_client = TextSearchEngineClient.get_instance()
-        search_engine_client.upsert_items(dataset.actual_database_name, [item["_id"] for item in text_search_updates], text_search_updates)
+        search_engine_client.upsert_items(
+            dataset.actual_database_name, [item["_id"] for item in text_search_updates], text_search_updates
+        )

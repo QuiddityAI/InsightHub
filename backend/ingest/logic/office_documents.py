@@ -14,6 +14,7 @@ from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult, AiFileProc
 from ingest.logic.common import UPLOADED_FILES_FOLDER, store_thumbnail
 from ingest.logic.pdferret_client import extract_using_pdferret
 from ingest.prompts import folder_summary_prompt
+
 # from ingest.logic.video import process_video
 
 
@@ -28,7 +29,10 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
 
     def process_file_batch(batch):
         try:
-            parsed, failed = extract_using_pdferret([f'{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}' for input_item in batch], doc_lang=document_language)
+            parsed, failed = extract_using_pdferret(
+                [f"{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}" for input_item in batch],
+                doc_lang=document_language,
+            )
         except ReadTimeout:
             logging.error("PDFerret timeout")
             failed = [DotDict({"file": item.uploaded_file_path, "exc": "pdferret timeout"}) for item in batch]
@@ -72,7 +76,9 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
     return [results[(input_item["folder"] or "") + "/" + input_item["file_name"]] for input_item in input_items]
 
 
-def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, parameters: DotDict) -> AiFileProcessingOutput:
+def ai_file_processing_single(
+    input_item: AiFileProcessingInput, parsed_data, parameters: DotDict
+) -> AiFileProcessingOutput:
     file_metainfo = parsed_data.metainfo
 
     # MetaInfo({'doi': '', 'title': ['Protokoll', 'Druck'], 'abstract': '',
@@ -98,13 +104,13 @@ def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, pa
     max_chunks = 100
     chunks = []
     for chunk in parsed_data.chunks:
-        if not chunk['text']:
+        if not chunk["text"]:
             continue
-        chunk['non_embeddable_content'] = None
-        if len(chunk['text']) > max_chars_per_chunk:
-            chunk['text'] = chunk['text'][:max_chars_per_chunk] + "..."
+        chunk["non_embeddable_content"] = None
+        if len(chunk["text"]) > max_chars_per_chunk:
+            chunk["text"] = chunk["text"][:max_chars_per_chunk] + "..."
         chunks.append(chunk)
-    full_text = " ".join([chunk['text'] for chunk in chunks[:max_chunks]])
+    full_text = " ".join([chunk["text"] for chunk in chunks[:max_chunks]])
 
     content_date = None
     if file_metainfo.mentioned_date:
@@ -133,8 +139,11 @@ def ai_file_processing_single(input_item: AiFileProcessingInput, parsed_data, pa
         full_text=full_text,
         full_text_chunks=chunks,
         summary=file_metainfo.abstract or "",
-        thumbnail_path=store_thumbnail(base64.decodebytes(file_metainfo.thumbnail.encode('utf-8')),
-                                       input_item.uploaded_file_path) if file_metainfo.thumbnail else None,  # relative to UPLOADED_FILES_FOLDER
+        thumbnail_path=store_thumbnail(
+            base64.decodebytes(file_metainfo.thumbnail.encode("utf-8")), input_item.uploaded_file_path
+        )
+        if file_metainfo.thumbnail
+        else None,  # relative to UPLOADED_FILES_FOLDER
         title=file_metainfo.title or input_item.file_name,
         type_description=file_metainfo.document_type or "",
         people=file_metainfo.authors or [],
@@ -177,7 +186,9 @@ def get_parent_folders(folder) -> list:
     return folders
 
 
-def import_office_document(files: list[UploadedOrExtractedFile], parameters: DotDict, on_progress=None) -> tuple[list[dict], list[dict]]:
+def import_office_document(
+    files: list[UploadedOrExtractedFile], parameters: DotDict, on_progress=None
+) -> tuple[list[dict], list[dict]]:
     if not files:
         return [], []
 
@@ -189,15 +200,15 @@ def import_office_document(files: list[UploadedOrExtractedFile], parameters: Dot
         folder = uploaded_file.metadata.folder if uploaded_file.metadata else None
         item = {
             "title": uploaded_file.original_filename,
-            #"type_description": None,  # don't overwrite potentially already existing fields
-            #"abstract": None,
-            #"ai_tags": [],
-            #"content_date": None,
-            #"content_time": None,
+            # "type_description": None,  # don't overwrite potentially already existing fields
+            # "abstract": None,
+            # "ai_tags": [],
+            # "content_date": None,
+            # "content_time": None,
             "language": parameters.get("document_language", "en"),
-            #"thumbnail_path": None,  # relative to UPLOADED_FILES_FOLDER
-            #"full_text": None,
-            #"full_text_chunks": [],
+            # "thumbnail_path": None,  # relative to UPLOADED_FILES_FOLDER
+            # "full_text": None,
+            # "full_text_chunks": [],
             "file_created_at": uploaded_file.metadata.created_at if uploaded_file.metadata else None,
             "file_updated_at": uploaded_file.metadata.updated_at if uploaded_file.metadata else None,
             "file_name": uploaded_file.original_filename,
@@ -293,9 +304,11 @@ Nutze auch den Ordnername für Hinweise aus die Bedeutung eines Dokuments.
 Antworte nur mit dem JSON-Objekt. Antworte mit einem vollständigen JSON-Objekt, auch wenn du nicht alle Felder ausfüllen kannst.
     """
 
-    prompt = (prompt_de.replace("{{ title }}", title)
-              .replace("{{ folder }}", folder or "")
-              .replace("{{ content }}", full_text[:1000]))
+    prompt = (
+        prompt_de.replace("{{ title }}", title)
+        .replace("{{ folder }}", folder or "")
+        .replace("{{ content }}", full_text[:1000])
+    )
     model = BaseLLMModel.load(Google_Gemini_Flash_1_5_v1.__name__)
     response = model.generate_prompt_response(
         system_prompt=prompt,

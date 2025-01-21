@@ -6,6 +6,7 @@ from transformers import AutoTokenizer, AutoModel
 
 # from https://github.com/berenslab/pubmed-landscape/blob/main/pubmed_landscape_src/data.py
 
+
 @torch.no_grad()
 def generate_embeddings(abstracts, tokenizer, model, device):
     """Generate embeddings using BERT-based model.
@@ -21,7 +22,7 @@ def generate_embeddings(abstracts, tokenizer, model, device):
         BERT-based model.
     device : str, {"cuda", "cpu"}
         "cuda" if torch.cuda.is_available() else "cpu".
-        
+
     Returns
     -------
     embedding_cls : ndarray
@@ -44,7 +45,7 @@ def generate_embeddings(abstracts, tokenizer, model, device):
     # inference
     print("run model...")
     begin = time.time()
-    outputs = model(**inputs)[0].cpu().detach() 
+    outputs = model(**inputs)[0].cpu().detach()
     end = time.time()
     print(f"Time: {end - begin:.2f} sec")
 
@@ -52,14 +53,14 @@ def generate_embeddings(abstracts, tokenizer, model, device):
     embedding_sep = outputs[:, -1, :].numpy()
     embedding_cls = outputs[:, 0, :].numpy()
 
-    
-    return embedding_cls, embedding_sep, embedding_av 
+    return embedding_cls, embedding_sep, embedding_av
 
 
 # from https://github.com/berenslab/pubmed-landscape/blob/main/scripts/02-ls-data-obtain-BERT-embeddings.ipynb
 
+
 def run(text):
-    # specifying model 
+    # specifying model
     checkpoint = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
 
     print("tokenizer...")
@@ -67,12 +68,13 @@ def run(text):
     print("model...")
     model = AutoModel.from_pretrained(checkpoint)
     print("device...")
-    device = 'cpu'
+    device = "cpu"
     model = model.to(device)
     print("generate_embeddings...")
     _, embedding, _ = generate_embeddings(text, tokenizer, model, device)
     print("done")
     return embedding
+
 
 if __name__ == "__main__":
     embedding = run("paper about skin cancer")

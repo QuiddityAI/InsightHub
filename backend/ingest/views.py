@@ -32,8 +32,8 @@ def upload_files_route(
     *args,
     **kwargs,
 ):
-    """ Upload individual files or zip archives.
-    Will be stored, extracted and post-processed (OCR etc.), then imported. """
+    """Upload individual files or zip archives.
+    Will be stored, extracted and post-processed (OCR etc.), then imported."""
     if not request.user.is_authenticated and dataset_auth_token != "fixme":  # TODO: use proper auth token
         return HttpResponse(status=401)
 
@@ -53,7 +53,17 @@ def upload_files_route(
             # logging.warning(f"Metadata for file {key}: {metadata}")
             custom_file.metadata = UploadedFileMetadata(**json.loads(metadata))
         custom_uploaded_files.append(custom_file)
-    task_id = upload_files_or_forms(dataset_id, import_converter, custom_uploaded_files, None, collection_id, collection_class, user_id, blocking, skip_generators)
+    task_id = upload_files_or_forms(
+        dataset_id,
+        import_converter,
+        custom_uploaded_files,
+        None,
+        collection_id,
+        collection_class,
+        user_id,
+        blocking,
+        skip_generators,
+    )
     # usually, all in-memory files of the request would be closed and deleted after the request is done
     # in this case, we want to keep them open and close them manually in the background thread
     # so we need to remove the files from the request object:

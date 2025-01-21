@@ -11,11 +11,9 @@ from ..notifier import default_notifier
 from .other_views import is_from_backend
 
 
-
-
 @csrf_exempt
 def convert_smart_query_to_parameters(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponse(status=405)
     # route is available without login
 
@@ -163,8 +161,7 @@ JSON:
     user_prompt = f"Query: {query}\nJSON:\n"
 
     # logging.warning(prompt)
-    history = [ { "role": "system", "content": system_prompt },
-                { "role": "user", "content": user_prompt } ]
+    history = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
     approved = False
     if user_id:
         usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
@@ -186,5 +183,5 @@ JSON:
         logging.error(f"Error in converting smart query to parameters: {response_text}")
         search_parameters = None
 
-    result = json.dumps({ "search_parameters": search_parameters })
-    return HttpResponse(result, status=200, content_type='application/json')
+    result = json.dumps({"search_parameters": search_parameters})
+    return HttpResponse(result, status=200, content_type="application/json")

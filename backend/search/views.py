@@ -9,7 +9,12 @@ from data_map_backend.models import DataCollection, Dataset
 from data_map_backend.schemas import CollectionIdentifier
 from legacy_backend.database_client.text_search_engine_client import TextSearchEngineClient
 
-from search.schemas import RunSearchTaskPayload, SearchTaskSettings, RunPreviousSearchTaskPayload, GetPlainResultsPaylaod
+from search.schemas import (
+    RunSearchTaskPayload,
+    SearchTaskSettings,
+    RunPreviousSearchTaskPayload,
+    GetPlainResultsPaylaod,
+)
 from search.logic.execute_search import run_search_task, add_items_from_active_sources
 from search.logic.approve_items_and_exit_search import approve_relevant_search_results, exit_search_mode
 
@@ -120,11 +125,9 @@ def exit_search_mode_route(request: HttpRequest, payload: CollectionIdentifier):
         return HttpResponse(status=401)
 
     try:
-        collection = (
-            DataCollection.objects
-            .only("created_by", "items_last_changed", "search_sources", "explanation_log")
-            .get(id=payload.collection_id)
-        )
+        collection = DataCollection.objects.only(
+            "created_by", "items_last_changed", "search_sources", "explanation_log"
+        ).get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if collection.created_by != request.user:

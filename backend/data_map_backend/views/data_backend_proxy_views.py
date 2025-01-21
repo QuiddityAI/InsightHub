@@ -56,17 +56,21 @@ def data_backend_proxy_view(request, sub_path: str):
     elif path.startswith("/data_backend/dataset/"):
         path = "/data_backend/dataset"
 
-    if path not in checks_for_routes_partially_available_without_log_in \
-        and path not in checks_for_routes_always_needing_authentication:
+    if (
+        path not in checks_for_routes_partially_available_without_log_in
+        and path not in checks_for_routes_always_needing_authentication
+    ):
         logging.error(f"Unexpected route: {path}")
         return HttpResponse(status=404)
 
-    if path in checks_for_routes_partially_available_without_log_in and \
-        not checks_for_routes_partially_available_without_log_in[path](request):
+    if (
+        path in checks_for_routes_partially_available_without_log_in
+        and not checks_for_routes_partially_available_without_log_in[path](request)
+    ):
         return HttpResponse(status=401)
-    if path in checks_for_routes_always_needing_authentication and \
-        (not request.user.is_authenticated or \
-        not checks_for_routes_always_needing_authentication[path](request)):
+    if path in checks_for_routes_always_needing_authentication and (
+        not request.user.is_authenticated or not checks_for_routes_always_needing_authentication[path](request)
+    ):
         return HttpResponse(status=401)
 
     # forward the request to the data backend
@@ -74,7 +78,9 @@ def data_backend_proxy_view(request, sub_path: str):
     url = DATA_BACKEND_HOST + full_path
     response = requests.request(request.method, url, data=request.body, headers=request.headers)
 
-    return HttpResponse(response.content, status=response.status_code, content_type=response.headers.get("Content-Type"))
+    return HttpResponse(
+        response.content, status=response.status_code, content_type=response.headers.get("Content-Type")
+    )
 
 
 def _check_map_or_search_body(request):
@@ -120,7 +126,7 @@ def _check_remote_db_access(request):
     dataset = Dataset.objects.get(id=params.dataset_id)
     access_token = params.access_token
     assert isinstance(dataset.merged_advanced_options, dict)
-    if access_token not in dataset.merged_advanced_options.get('access_tokens', {}):
+    if access_token not in dataset.merged_advanced_options.get("access_tokens", {}):
         return False
     return True
 

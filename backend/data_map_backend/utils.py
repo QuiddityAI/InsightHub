@@ -10,12 +10,20 @@ from .models import DatasetField
 
 
 def get_vector_field_dimensions(field: DatasetField):
-    return field.generator.embedding_space.dimensions if field.generator and field.generator.embedding_space else \
-        (field.embedding_space.dimensions if field.embedding_space else (field.index_parameters or {}).get('vector_size'))
+    return (
+        field.generator.embedding_space.dimensions
+        if field.generator and field.generator.embedding_space
+        else (
+            field.embedding_space.dimensions
+            if field.embedding_space
+            else (field.index_parameters or {}).get("vector_size")
+        )
+    )
 
 
 class DotDict(dict):
     """dot.notation access to dictionary attributes"""
+
     # from https://stackoverflow.com/a/23689767
 
     def __getattr__(self, name: str) -> Any:
@@ -76,8 +84,8 @@ def profile(func):
         ret = func(*args, **kwargs)
         pr.disable()
         s = io.StringIO()
-        ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
-        ps.sort_stats('cumulative')
+        ps = pstats.Stats(pr, stream=s).sort_stats("cumulative")
+        ps.sort_stats("cumulative")
         ps.print_stats(10)
         logging.warning(s.getvalue())
         return ret
@@ -85,10 +93,11 @@ def profile(func):
     return wrapper
 
 
-def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, **d_kwargs):
+def profile_with_viztracer(*d_args, max_stack_depth: int | None = 7, **d_kwargs):
     from viztracer import VizTracer
+
     if max_stack_depth:
-        d_kwargs['max_stack_depth'] = max_stack_depth
+        d_kwargs["max_stack_depth"] = max_stack_depth
 
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -96,7 +105,7 @@ def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, **d_kwargs):
                 *d_args,
                 output_file=f"trace_{func.__name__}.json",
                 **d_kwargs,
-                ) as tracer:
+            ) as tracer:
                 ret = func(*args, **kwargs)
             return ret
 
@@ -104,6 +113,7 @@ def profile_with_viztracer(*d_args, max_stack_depth: int | None=7, **d_kwargs):
         # open in https://ui.perfetto.dev
 
         return wrapper
+
     return decorator
 
 

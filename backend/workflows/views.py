@@ -22,7 +22,6 @@ api = NinjaAPI(urls_namespace="workflows")
 
 @api.post("get_available_workflows")
 def get_available_workflows_route(request: HttpRequest, payload: AvailableWorkflowsPaylaod):
-
     try:
         dataset = Dataset.objects.select_related("schema").get(id=payload.dataset_id)
     except Dataset.DoesNotExist:

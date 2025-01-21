@@ -11,7 +11,7 @@ class BaseNotifier:
         raise NotImplementedError()
 
     def send(self, kind, message, user=None):
-        if user and (user.is_staff or 'remondis' in user.email):
+        if user and (user.is_staff or "remondis" in user.email):
             # not logging staff actions for now
             return
         prfx = kind + ": \n"
@@ -42,11 +42,7 @@ class TgNotifier(BaseNotifier):
 
     def _send(self, text):
         logging.info(text)
-        if (
-            os.environ.get("ABSCLUST_ENVIRONMENT") == "development"
-            or self.token is None
-            or self.chat_id is None
-        ):
+        if os.environ.get("ABSCLUST_ENVIRONMENT") == "development" or self.token is None or self.chat_id is None:
             return
         url = f"https://api.telegram.org/bot{self.token}/sendMessage?chat_id={self.chat_id}&text={text}"
         res = requests.get(url).json()
@@ -63,6 +59,7 @@ def load_env_file():
                 continue
             key, value = line.strip().split("=")
             os.environ[key] = value
+
 
 load_env_file()
 

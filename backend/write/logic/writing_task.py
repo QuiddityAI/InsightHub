@@ -32,6 +32,7 @@ def execute_writing_task_safe(task: WritingTask):
     except Exception as e:
         logging.error(e)
         import traceback
+
         logging.error(traceback.format_exc())
         task.is_processing = False
         task.save()
@@ -43,11 +44,15 @@ def _execute_writing_task(task: WritingTask):
         task.save()
         return
     assert isinstance(task.source_fields, list)
-    if '_all_columns' in task.source_fields:
+    if "_all_columns" in task.source_fields:
         source_columns = CollectionColumn.objects.filter(collection=task.collection)
     else:
-        source_column_identifiers = [name.replace("_column__", "") for name in task.source_fields if name.startswith("_column__")]
-        source_columns = CollectionColumn.objects.filter(collection=task.collection, identifier__in=source_column_identifiers)
+        source_column_identifiers = [
+            name.replace("_column__", "") for name in task.source_fields if name.startswith("_column__")
+        ]
+        source_columns = CollectionColumn.objects.filter(
+            collection=task.collection, identifier__in=source_column_identifiers
+        )
     contexts = []
     items: list[CollectionItem] = []
     if task.use_all_items:
@@ -64,14 +69,16 @@ def _execute_writing_task(task: WritingTask):
         elif item.field_type == FieldType.IDENTIFIER:
             assert item.dataset_id is not None
             assert item.item_id is not None
-            item_context = get_item_question_context_native(item.dataset_id, item.item_id, task.source_fields, task.prompt)['context']
+            item_context = get_item_question_context_native(
+                item.dataset_id, item.item_id, task.source_fields, task.prompt
+            )["context"]
             text = f"Document ID: {len(references) + 1}\n{item_context}"
             for additional_source_column in source_columns:
                 if not item.column_data:
                     continue
                 column_data = item.column_data.get(additional_source_column.identifier)
-                if column_data and column_data.get('value'):
-                    if "\n" in column_data['value']:
+                if column_data and column_data.get("value"):
+                    if "\n" in column_data["value"]:
                         text += f"{additional_source_column.name}:\n{column_data['value']}\n"
                     else:
                         text += f"{additional_source_column.name}: {column_data['value']}\n"
@@ -80,10 +87,12 @@ def _execute_writing_task(task: WritingTask):
             continue
         contexts.append(text)
 
-    for previous_task in WritingTask.objects.filter(collection=task.collection).order_by('created_at')[:3]:
+    for previous_task in WritingTask.objects.filter(collection=task.collection).order_by("created_at")[:3]:
         if previous_task == task:
             continue
-        contexts.append(f"Previously answered question: \"{previous_task.prompt}\":\nGenerated Response:\n{previous_task.text}")
+        contexts.append(
+            f'Previously answered question: "{previous_task.prompt}":\nGenerated Response:\n{previous_task.text}'
+        )
 
     context = "\n\n".join(contexts)
 
@@ -98,7 +107,7 @@ def _execute_writing_task(task: WritingTask):
     ai_credits = model.config.euro_per_1M_output_tokens / 5.0
     usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by.id, "External AI")  # type: ignore
     result = usage_tracker.track_usage(ai_credits, f"write summary using {model.__class__.__name__}")
-    if result['approved'] == True:
+    if result["approved"] == True:
         response = model.generate_prompt_response(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
@@ -118,21 +127,25 @@ def _execute_writing_task(task: WritingTask):
     metadata = defaultdict(dict)
     for reference in used_references:
         dataset = DotDict(get_serialized_dataset_cached(reference[0]))
-        item = get_document_details_by_id(reference[0], reference[1], tuple(dataset.schema.result_list_rendering.required_fields))
+        item = get_document_details_by_id(
+            reference[0], reference[1], tuple(dataset.schema.result_list_rendering.required_fields)
+        )
         metadata[reference[0]][reference[1]] = item
 
-    task.previous_versions.append({
-        'created_at': task.changed_at.isoformat(),
-        'text': task.text,
-        'additional_results': task.additional_results,
-    })
+    task.previous_versions.append(
+        {
+            "created_at": task.changed_at.isoformat(),
+            "text": task.text,
+            "additional_results": task.additional_results,
+        }
+    )
     if len(task.previous_versions) > 3:
         task.previous_versions = task.previous_versions[-3:]  # type: ignore
     task.text = response_text
     task.additional_results = {  # type: ignore
-        'used_prompt': f"system_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
-        'references': references,
-        'reference_metadata': metadata,
+        "used_prompt": f"system_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
+        "references": references,
+        "reference_metadata": metadata,
     }
     task.is_processing = False
     task.save()

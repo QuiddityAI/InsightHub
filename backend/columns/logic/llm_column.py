@@ -9,7 +9,9 @@ from columns.prompts import item_relevance_prompt, item_relevance_prompt_de
 from columns.schemas import CellData, Criterion
 
 
-def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: int, is_relevance_column: bool = False) -> CellData:
+def generate_llm_cell_data(
+    input_data: str, column: CollectionColumn, user_id: int, is_relevance_column: bool = False
+) -> CellData:
     default_model = Google_Gemini_Flash_1_5_v1.__name__
     model_name = column.parameters.get("model") or default_model
 
@@ -30,7 +32,7 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
     ai_credits = model.config.euro_per_1M_output_tokens / 5.0
     usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
     result = usage_tracker.track_usage(ai_credits, f"extract information using {model.__class__.__name__}")
-    if result['approved'] != True:
+    if result["approved"] != True:
         cell_data.value = "AI usage limit exceeded"
         return cell_data
 
@@ -40,15 +42,15 @@ def generate_llm_cell_data(input_data: str, column: CollectionColumn, user_id: i
         system_prompt = column.prompt_template
     elif is_relevance_column:
         translated_prompts = {
-            'en': item_relevance_prompt,
-            'de': item_relevance_prompt_de,
+            "en": item_relevance_prompt,
+            "de": item_relevance_prompt_de,
         }
         language = column.parameters.get("language") or "en"
         system_prompt = translated_prompts.get(language, item_relevance_prompt)
     else:
         translated_prompts = {
-            'en': table_cell_prompt,
-            'de': table_cell_prompt_de,
+            "en": table_cell_prompt,
+            "de": table_cell_prompt_de,
         }
         language = column.parameters.get("language") or "en"
         system_prompt = translated_prompts.get(language, table_cell_prompt)

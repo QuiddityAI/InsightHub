@@ -26,7 +26,7 @@ model = None
 
 def get_bert_embeddings(texts, model_name, embedding_strategy):
     global tokenizer, model, current_checkpoint
-    device = 'cuda'
+    device = "cuda"
     checkpoint = bert_models[model_name]
     if current_checkpoint != checkpoint:
         tokenizer = AutoTokenizer.from_pretrained(checkpoint)
@@ -60,8 +60,11 @@ def get_bert_embeddings(texts, model_name, embedding_strategy):
 
 # from https://github.com/berenslab/pubmed-landscape/blob/main/pubmed_landscape_src/data.py
 
+
 @torch.no_grad()
-def generate_embeddings(texts: str | list[str], tokenizer: transformers.PreTrainedTokenizerBase, model: transformers.BertModel, device: str):
+def generate_embeddings(
+    texts: str | list[str], tokenizer: transformers.PreTrainedTokenizerBase, model: transformers.BertModel, device: str
+):
     inputs = tokenizer(
         texts,
         padding=True,
@@ -88,7 +91,7 @@ def test_embedding():
     global tokenizer, model, current_checkpoint
     # checkpoint = bert_models["BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"]
     checkpoint = bert_models["scibert_scivocab_uncased"]
-    device = 'cuda'
+    device = "cuda"
     tokenizer = AutoTokenizer.from_pretrained(checkpoint)
     model = AutoModel.from_pretrained(checkpoint)
     model = model.to(device)
@@ -114,9 +117,15 @@ def test_embedding():
 
     embeddings_single_item = generate_embeddings(texts[:1], tokenizer, model, device)
     embeddings_batch = generate_embeddings(texts, tokenizer, model, device)
-    print(f"Single and batch are the same: {all(np.abs(embeddings_single_item[0][0] - embeddings_batch[0][0])) < 0.001}")
-    print(f"Single and batch are the same: {all(np.abs(embeddings_single_item[1][0] - embeddings_batch[1][0])) < 0.001}")
-    print(f"Single and batch are the same: {all(np.abs(embeddings_single_item[2][0] - embeddings_batch[2][0])) < 0.001}")
+    print(
+        f"Single and batch are the same: {all(np.abs(embeddings_single_item[0][0] - embeddings_batch[0][0])) < 0.001}"
+    )
+    print(
+        f"Single and batch are the same: {all(np.abs(embeddings_single_item[1][0] - embeddings_batch[1][0])) < 0.001}"
+    )
+    print(
+        f"Single and batch are the same: {all(np.abs(embeddings_single_item[2][0] - embeddings_batch[2][0])) < 0.001}"
+    )
 
     batch_size = 64  # batch size could be even larger with 12 GB GPU, but this is already fast
 

@@ -10,7 +10,7 @@ import orjson
 
 from data_backend_client import update_database_layout, insert_many, files_in_folder
 
-sys.path.append('../../data_backend/')
+sys.path.append("../../data_backend/")
 from utils.dotdict import DotDict
 
 

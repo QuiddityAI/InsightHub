@@ -36,7 +36,7 @@ def test_dataset_serialization():
 def test_vector_db_client(dataset):
     vse_client = VectorSearchEngineClient()
 
-    vector_field = 'openai_vector'
+    vector_field = "openai_vector"
 
     # vse_client.remove_dataset(dataset.id, vector_field)
     vse_client.ensure_dataset_field_exists(dataset, vector_field)
@@ -46,7 +46,7 @@ def test_vector_db_client(dataset):
         "year": 2017,
     }
 
-    vse_client.upsert_items(dataset.actual_database_name, vector_field, [32, 34], [item, item], [[4, 5, 6, 7]]*2)
+    vse_client.upsert_items(dataset.actual_database_name, vector_field, [32, 34], [item, item], [[4, 5, 6, 7]] * 2)
 
     items = vse_client.get_items_near_vector(dataset, vector_field, [7, 8, 4, 5], {}, limit=5)
     print(items)
@@ -61,14 +61,14 @@ def test_insert_many_books():
     counter = 0
 
     # see here: https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews?select=books_data.csv
-    with open('/data/kaggle_amazon_book_reviews_3M/books_data.csv') as csvfile:
+    with open("/data/kaggle_amazon_book_reviews_3M/books_data.csv") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in tqdm.tqdm(reader, total=240000):
-            #print(json.dumps(row, indent=4))
-            #break
+            # print(json.dumps(row, indent=4))
+            # break
             try:
-                row['authors'] = json.loads(row['authors'].replace("'", '"')) if row['authors'] else []
-                row['categories'] = json.loads(row['categories'].replace("'", '"')) if row['categories'] else []
+                row["authors"] = json.loads(row["authors"].replace("'", '"')) if row["authors"] else []
+                row["categories"] = json.loads(row["categories"].replace("'", '"')) if row["categories"] else []
             except json.decoder.JSONDecodeError:
                 print("Json decode error")
                 continue
@@ -99,10 +99,10 @@ def test_insert_many_fashion():
     counter = 0
 
     # see here: https://www.kaggle.com/datasets/paramaggarwal/fashion-product-images-dataset
-    with open('/data/kaggle_fashion_44k/styles.csv') as csvfile:
+    with open("/data/kaggle_fashion_44k/styles.csv") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in tqdm.tqdm(reader, total=max_elements):
-            row['image'] = f'/data/kaggle_fashion_44k/images/{row["id"]}.jpg'
+            row["image"] = f'/data/kaggle_fashion_44k/images/{row["id"]}.jpg'
             elements.append(row)
             counter += 1
 
@@ -127,4 +127,3 @@ if __name__ == "__main__":
     # test_vector_db_client(dataset)
     # test_insert_many_books()
     test_insert_many_fashion()
-

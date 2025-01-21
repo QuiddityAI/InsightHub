@@ -1,4 +1,3 @@
-
 writing_task_prompt = """\
 You are an expert in writing. You will be given a task to write a text based on the provided documents.
 

@@ -29,9 +29,11 @@ def forward_local_db(params: DotDict):
             return search_engine_client.get_item_count(local_dataset, **params.arguments)
         elif params.function_name == "get_items_by_ids":
             result = search_engine_client.get_items_by_ids(local_dataset, **params.arguments)
-            result = [{key: getattr(item, key, None) for key in ['id', 'payload', 'vector']} for item in result]
+            result = [{key: getattr(item, key, None) for key in ["id", "payload", "vector"]} for item in result]
             return result
         elif params.function_name == "get_items_near_vector":
             result = search_engine_client.get_items_near_vector(local_dataset, **params.arguments)
-            result = [{key: getattr(item, key, None) for key in ['id', 'score', 'payload', 'vector']} for item in result]
+            result = [
+                {key: getattr(item, key, None) for key in ["id", "score", "payload", "vector"]} for item in result
+            ]
             return result

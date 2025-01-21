@@ -14,7 +14,16 @@ def import_files(path, dataset_id, max_items=1000000):
     batch = []
     batch_size = 10
     total_items = 0
-    extensions = (".doc", ".docx", ".pdf", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", )
+    extensions = (
+        ".doc",
+        ".docx",
+        ".pdf",
+        ".ppt",
+        ".pptx",
+        ".xls",
+        ".xlsx",
+        ".txt",
+    )
     skip_first = 0
     csv_log.append([dataset_id, max_items, path, skip_first])
 
@@ -38,7 +47,7 @@ def import_files(path, dataset_id, max_items=1000000):
             utf8_file_path = file_path.encode("utf-8")
             print(f"Fixing encoding of file path: {iso_file_path} -> {utf8_file_path} ({file_path})")
             for part in range(len(file_path.split("/"))):
-                part_path = "/".join(file_path.split("/")[:part+1])
+                part_path = "/".join(file_path.split("/")[: part + 1])
                 if not part_path:
                     continue
                 if not os.path.exists(part_path):
@@ -69,15 +78,17 @@ def import_files(path, dataset_id, max_items=1000000):
         if len(batch) >= batch_size:
             print(f"Uploading batch of {len(batch)} items, index {i}")
             t1 = time.time()
-            result = upload_files(dataset_id, "filesystem_file_german", 1, 10, "office_document", file_paths=batch, exclude_prefix=path)
+            result = upload_files(
+                dataset_id, "filesystem_file_german", 1, 10, "office_document", file_paths=batch, exclude_prefix=path
+            )
             t2 = time.time()
             duration = t2 - t1
             per_item = duration / len(batch)
             print(f"--- Duration: {duration:.3f}s, time per item: {per_item:.2f} s")
             csv_log.append([i, total_items, duration, per_item])
-            for failed_file in result['status']['failed_files']:
-                csv_log.append([i, total_items, failed_file['filename'], 'failed: ' + failed_file['reason']])
-            failed_filenames = [failed_file['filename'] for failed_file in result['status']['failed_files']]
+            for failed_file in result["status"]["failed_files"]:
+                csv_log.append([i, total_items, failed_file["filename"], "failed: " + failed_file["reason"]])
+            failed_filenames = [failed_file["filename"] for failed_file in result["status"]["failed_files"]]
             for file in batch:
                 if file.split("/")[-1] not in failed_filenames:
                     csv_log.append([i, total_items, file, "success"])
@@ -88,15 +99,17 @@ def import_files(path, dataset_id, max_items=1000000):
 
     if batch:
         t1 = time.time()
-        result = upload_files(dataset_id, "filesystem_file_english", 1, 10, "office_document_en", file_paths=batch, exclude_prefix=path)
+        result = upload_files(
+            dataset_id, "filesystem_file_english", 1, 10, "office_document_en", file_paths=batch, exclude_prefix=path
+        )
         t2 = time.time()
         duration = t2 - t1
         per_item = duration / len(batch)
         print(f"--- Duration: {duration:.3f}s, time per item: {per_item:.2f} s")
         csv_log.append([i, total_items, duration, per_item])
-        for failed_file in result['status']['failed_files']:
-            csv_log.append([i, total_items, failed_file['filename'], 'failed: ' + failed_file['reason']])
-        failed_filenames = [failed_file['filename'] for failed_file in result['status']['failed_files']]
+        for failed_file in result["status"]["failed_files"]:
+            csv_log.append([i, total_items, failed_file["filename"], "failed: " + failed_file["reason"]])
+        failed_filenames = [failed_file["filename"] for failed_file in result["status"]["failed_files"]]
         for file in batch:
             if file.split("/")[-1] not in failed_filenames:
                 csv_log.append([i, total_items, file, "success"])
@@ -111,4 +124,3 @@ if __name__ == "__main__":
         with open(f"import_log_{time.strftime('%Y%m%d_%H%M%S')}.csv", "w") as f:
             writer = csv.writer(f)
             writer.writerows(csv_log)
-

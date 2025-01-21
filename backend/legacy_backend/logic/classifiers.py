@@ -1,4 +1,3 @@
-
 # when using classifier class to color an attribute, it must have a version / last changed date in parameters to make caching work
 
 # simple use cases:
@@ -39,7 +38,7 @@ def get_embedding_space_from_ds_and_field(ds_and_field: tuple[int, str]) -> DotD
 
 
 def _get_task_id(collection_id: int, class_name: str, embedding_space_identifier: int):
-    return f'{collection_id}_{class_name}_{embedding_space_identifier}'
+    return f"{collection_id}_{class_name}_{embedding_space_identifier}"
 
 
 RETRAINING_TASKS = {}  # collection_id -> task status (class name, progress)
@@ -49,9 +48,9 @@ def get_retraining_status(collection_id: int, class_name: str, embedding_space_i
     status = RETRAINING_TASKS.get(_get_task_id(collection_id, class_name, embedding_space_identifier))
     if isinstance(status, dict):
         status = copy.copy(status)
-        if 'thread' in status:
-            del status['thread']
-        if status['status'] == 'done':
+        if "thread" in status:
+            del status["thread"]
+        if status["status"] == "done":
             del RETRAINING_TASKS[_get_task_id(collection_id, class_name, embedding_space_identifier)]
     return status
 
@@ -59,17 +58,17 @@ def get_retraining_status(collection_id: int, class_name: str, embedding_space_i
 def start_retrain(collection_id: int, class_name: str, embedding_space_identifier: int, deep_train=False):
     thread = Thread(target=_retrain_safe, args=(collection_id, class_name, embedding_space_identifier, deep_train))
     RETRAINING_TASKS[_get_task_id(collection_id, class_name, embedding_space_identifier)] = {
-        'class_name': class_name,
-        'progress': 0,
-        'status': 'running',
-        'error': '',
-        'thread': thread,
-        'time_finished': None,
+        "class_name": class_name,
+        "progress": 0,
+        "status": "running",
+        "error": "",
+        "thread": thread,
+        "time_finished": None,
     }
     thread.start()
     # general clean up: delete other status after 5 minutes:
     for other_task_id, other_status in RETRAINING_TASKS.items():
-        if other_status.get('time_finished') and time.time() - other_status['time_finished'] > 300:
+        if other_status.get("time_finished") and time.time() - other_status["time_finished"] > 300:
             del RETRAINING_TASKS[other_task_id]
 
 
@@ -84,9 +83,9 @@ def _retrain_safe(collection_id, class_name, embedding_space_identifier, deep_tr
         _retrain(collection_id, class_name, embedding_space_identifier, deep_train)
     except Exception as e:
         task_id = _get_task_id(collection_id, class_name, embedding_space_identifier)
-        RETRAINING_TASKS[task_id]['status'] = 'error'
-        RETRAINING_TASKS[task_id]['error'] = str(e)
-        RETRAINING_TASKS[task_id]['time_finished'] = time.time()
+        RETRAINING_TASKS[task_id]["status"] = "error"
+        RETRAINING_TASKS[task_id]["error"] = str(e)
+        RETRAINING_TASKS[task_id]["time_finished"] = time.time()
         logging.exception(e)
 
 
@@ -101,15 +100,17 @@ def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=F
     vector_db_client = VectorSearchEngineClient.get_instance()
     included_dataset_ids = set()
     for i, example in enumerate(examples):
-        RETRAINING_TASKS[task_id]['progress'] = i / len(examples)
+        RETRAINING_TASKS[task_id]["progress"] = i / len(examples)
         vector = None
-        if example['field_type'] == FieldType.IDENTIFIER:
-            dataset_id = example['dataset_id']
-            item_id = example['item_id']
+        if example["field_type"] == FieldType.IDENTIFIER:
+            dataset_id = example["dataset_id"]
+            item_id = example["item_id"]
             # TODO: batch process
             dataset = get_dataset(dataset_id)
             source_fields = []
-            dataset_specific_settings = next(filter(lambda item: item.dataset_id == dataset_id, collection.dataset_specific_settings), None)
+            dataset_specific_settings = next(
+                filter(lambda item: item.dataset_id == dataset_id, collection.dataset_specific_settings), None
+            )
             vector_field = None
             if dataset_specific_settings:
                 source_fields = dataset_specific_settings.relevant_object_fields
@@ -119,7 +120,11 @@ def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=F
                 if field_name in dataset.schema.object_fields:
                     field = dataset.schema.object_fields[field_name]
                     try:
-                        field_embedding_space_identifier = field.generator.embedding_space.identifier if field.generator else field.embedding_space.identifier
+                        field_embedding_space_identifier = (
+                            field.generator.embedding_space.identifier
+                            if field.generator
+                            else field.embedding_space.identifier
+                        )
                     except AttributeError:
                         field_embedding_space_identifier = None
                     if embedding_space_identifier == field_embedding_space_identifier:
@@ -128,9 +133,11 @@ def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=F
             if vector_field:
                 included_dataset_ids.add((dataset_id, vector_field))
                 try:
-                    logging.warning(f'Getting vector for {dataset_id} {item_id} {vector_field}')
+                    logging.warning(f"Getting vector for {dataset_id} {item_id} {vector_field}")
                     is_array_field = dataset.schema.object_fields[vector_field].is_array
-                    results = vector_db_client.get_items_by_ids(dataset, [item_id], vector_field, is_array_field, return_vectors=True, return_payloads=False)
+                    results = vector_db_client.get_items_by_ids(
+                        dataset, [item_id], vector_field, is_array_field, return_vectors=True, return_payloads=False
+                    )
                 except Exception as e:
                     logging.warning(e)
                     results = []
@@ -138,7 +145,9 @@ def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=F
                     vector = results[0].vector[vector_field]
                 if not vector:
                     pipeline_steps, required_fields, _ = get_pipeline_steps(dataset, only_fields=[vector_field])
-                    item = get_document_details_by_id(dataset_id, item_id, fields=tuple(required_fields), database_name=dataset.actual_database_name)
+                    item = get_document_details_by_id(
+                        dataset_id, item_id, fields=tuple(required_fields), database_name=dataset.actual_database_name
+                    )
                     assert item is not None
                     generate_missing_values_for_given_elements(pipeline_steps, [item])
                     vector = item[vector_field]
@@ -146,7 +155,7 @@ def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=F
             # not implemented yet
             vector = None
         if vector is not None:
-            if example['is_positive']:
+            if example["is_positive"]:
                 positive_vectors.append(vector)
             else:
                 negative_vectors.append(vector)
@@ -155,7 +164,7 @@ def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=F
     decision_vector = None
     if positive_vectors:
         decision_vector = np.average(positive_vectors, axis=0)
-        #if negative_vectors:
+        # if negative_vectors:
         #    decision_vector -= np.average(negative_vectors, axis=0)
 
     if decision_vector is not None:
@@ -170,9 +179,18 @@ def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=F
             random_negative_vectors = []
             for dataset_id, vector_field in included_dataset_ids:
                 dataset = get_dataset(dataset_id)
-                random_items = text_search_engine_client.get_random_items(dataset.actual_database_name, negative_items_per_dataset, [])
+                random_items = text_search_engine_client.get_random_items(
+                    dataset.actual_database_name, negative_items_per_dataset, []
+                )
                 is_array_field = dataset.schema.object_fields[vector_field].is_array
-                results = vector_db_client.get_items_by_ids(dataset, [e['_id'] for e in random_items], vector_field, is_array_field, return_vectors=True, return_payloads=False)
+                results = vector_db_client.get_items_by_ids(
+                    dataset,
+                    [e["_id"] for e in random_items],
+                    vector_field,
+                    is_array_field,
+                    return_vectors=True,
+                    return_payloads=False,
+                )
                 for result in results:
                     vector = result.vector[vector_field]
                     random_negative_vectors.append(vector)
@@ -180,21 +198,32 @@ def _retrain(collection_id, class_name, embedding_space_identifier, deep_train=F
             if random_negative_vectors:
                 negative_vectors = np.array(negative_vectors)
                 random_negative_vectors = np.array(random_negative_vectors)
-                negative_vectors = np.concatenate([negative_vectors, random_negative_vectors]) if len(negative_vectors) > 0 else random_negative_vectors
+                negative_vectors = (
+                    np.concatenate([negative_vectors, random_negative_vectors])
+                    if len(negative_vectors) > 0
+                    else random_negative_vectors
+                )
                 metrics_with_random_data = get_metrics(decision_vector, positive_vectors, negative_vectors)
         metrics = {
-            'without_random_data': metrics_without_random_data,
-            'with_random_data': metrics_with_random_data,
+            "without_random_data": metrics_without_random_data,
+            "with_random_data": metrics_with_random_data,
         }
-        highest_score = metrics_without_random_data['highest_score'] if metrics_without_random_data else None
-        best_threshold = metrics_without_random_data['best_threshold'] if metrics_without_random_data else None
-        set_trained_classifier(collection_id, class_name, embedding_space_identifier, decision_vector.tolist(), highest_score, best_threshold, metrics)
+        highest_score = metrics_without_random_data["highest_score"] if metrics_without_random_data else None
+        best_threshold = metrics_without_random_data["best_threshold"] if metrics_without_random_data else None
+        set_trained_classifier(
+            collection_id,
+            class_name,
+            embedding_space_identifier,
+            decision_vector.tolist(),
+            highest_score,
+            best_threshold,
+            metrics,
+        )
     else:
         logging.warning(f"Decision vector not created")
 
-
-    RETRAINING_TASKS[task_id]['status'] = 'done'
-    RETRAINING_TASKS[task_id]['time_finished'] = time.time()
+    RETRAINING_TASKS[task_id]["status"] = "done"
+    RETRAINING_TASKS[task_id]["time_finished"] = time.time()
 
 
 def get_metrics(decision_vector, positive_vectors, negative_vectors):
@@ -225,11 +254,11 @@ def get_metrics(decision_vector, positive_vectors, negative_vectors):
             best_precision = precision
             best_recall = recall
     metrics = {
-        'highest_score': np.max(positive_scores),
-        'best_f1': best_f1,
-        'best_threshold': best_threshold,
-        'best_precision': best_precision,
-        'best_recall': best_recall,
+        "highest_score": np.max(positive_scores),
+        "best_f1": best_f1,
+        "best_threshold": best_threshold,
+        "best_precision": best_precision,
+        "best_recall": best_recall,
     }
     return metrics
 

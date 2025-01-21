@@ -1,8 +1,7 @@
-
 # Note: also update backend/data_map_backend/models.py -> FieldType
 
 
-class FieldType():
+class FieldType:
     TEXT = "TEXT"
     STRING = "STRING"
     IDENTIFIER = "IDENTIFIER"

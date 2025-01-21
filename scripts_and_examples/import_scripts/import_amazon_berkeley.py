@@ -10,7 +10,7 @@ import orjson
 
 from data_backend_client import update_database_layout, insert_many, files_in_folder
 
-sys.path.append('../../data_backend/')
+sys.path.append("../../data_backend/")
 from utils.dotdict import DotDict
 
 
@@ -180,8 +180,12 @@ def preprocess_item(raw_item: DotDict, image_id_to_path) -> dict:
         "asin": raw_item.item_id,
         "name": raw_item.item_name[0].value if raw_item.item_name else None,
         "description": raw_item.product_description[0].value if raw_item.product_description else None,
-        "bullet_points": [e["value"] for e in raw_item.bullet_point if e["language_tag"].startswith("en_")] if raw_item.bullet_point else None,
-        "keywords": list({e["value"] for e in raw_item.item_keywords if e["language_tag"].startswith("en_")}) if raw_item.item_keywords else None,
+        "bullet_points": [e["value"] for e in raw_item.bullet_point if e["language_tag"].startswith("en_")]
+        if raw_item.bullet_point
+        else None,
+        "keywords": list({e["value"] for e in raw_item.item_keywords if e["language_tag"].startswith("en_")})
+        if raw_item.item_keywords
+        else None,
         "image": image_id_to_path[raw_item.main_image_id] if raw_item.main_image_id else None,
         "other_images": [image_id_to_path[e] for e in raw_item.other_image_id] if raw_item.other_image_id else None,
         "category": raw_item.product_type[0].value if raw_item.product_type else None,
@@ -208,7 +212,7 @@ def import_dataset():
     total_items = 0
 
     image_id_to_path = {}
-    with gzip.open("/data/amazon_products_berkeley/images/metadata/images.csv.gz",'r') as f:
+    with gzip.open("/data/amazon_products_berkeley/images/metadata/images.csv.gz", "r") as f:
         for row in f:
             row = row.decode().strip()
             row = row.split(",")
@@ -217,7 +221,7 @@ def import_dataset():
     gz_files = files_in_folder("/data/amazon_products_berkeley/listings/metadata")
 
     for filename in tqdm.tqdm(gz_files):
-        with gzip.open(filename,'r') as f:
+        with gzip.open(filename, "r") as f:
             for line in tqdm.tqdm(f):
                 try:
                     raw_item = orjson.loads(line)

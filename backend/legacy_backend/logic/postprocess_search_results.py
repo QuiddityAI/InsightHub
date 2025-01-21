@@ -24,12 +24,15 @@ def enrich_search_results(search_results: list[object], query: str):
         most_important_words = list(vocabulary[sort_indexes_of_important_words[-5:]][::-1])
         item["most_important_words"] = most_important_words
 
-        words_to_highlight = query.split(' ') + most_important_words
-        important_words_regex = re.compile(f"\\b({'|'.join(re.escape(word) for word in words_to_highlight if word not in words_ignored_for_highlighting)})\\b", flags=re.IGNORECASE)
+        words_to_highlight = query.split(" ") + most_important_words
+        important_words_regex = re.compile(
+            f"\\b({'|'.join(re.escape(word) for word in words_to_highlight if word not in words_ignored_for_highlighting)})\\b",
+            flags=re.IGNORECASE,
+        )
 
         item["abstract"] = item["abstract"].replace("\n", "<br>")
         replacement = '<span class="font-bold">\\1</span>'
-        item["title_enriched"] = important_words_regex.sub(replacement,  item["title"])
+        item["title_enriched"] = important_words_regex.sub(replacement, item["title"])
         item["abstract_enriched"] = important_words_regex.sub(replacement, item["abstract"])
 
     return search_results

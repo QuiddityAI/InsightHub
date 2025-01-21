@@ -4,17 +4,22 @@ import logging
 from ..api_clients.cohere_reranking import get_reranking_results
 from data_map_backend.utils import DotDict
 from ..logic.search import get_search_results
-from ..logic.search_common import get_relevant_parts_of_item_using_query_vector, get_field_similarity_threshold, get_suitable_generator, get_document_details_by_id
+from ..logic.search_common import (
+    get_relevant_parts_of_item_using_query_vector,
+    get_field_similarity_threshold,
+    get_suitable_generator,
+    get_document_details_by_id,
+)
 from ..logic.chat_and_extraction_common import get_context_for_each_item_in_search_results, _sort_fields_logically
 from data_map_backend.views.other_views import get_serialized_dataset_cached
 
 
 def get_global_question_context(search_settings: dict) -> dict:
-    """ Given a natural language question, return the context that
+    """Given a natural language question, return the context that
     is relevant to answer the question using an LLM from any matching items
     in the specified dataset(s) (aka 'global').
 
-    The question is the search query in the search_settings dict. """
+    The question is the search query in the search_settings dict."""
 
     # Global question should use the top-5 hybrid search results as context.
     # The descriptive text fields (aka short text fields) should always be included as context.
@@ -33,32 +38,40 @@ def get_global_question_context(search_settings: dict) -> dict:
     search_settings["auto_relax_query"] = True
 
     try:
-        params_str = json.dumps({'search': search_settings}, indent=2)  # for caching
-        result = get_search_results(params_str, purpose='list')
+        params_str = json.dumps({"search": search_settings}, indent=2)  # for caching
+        result = get_search_results(params_str, purpose="list")
     except ValueError as e:
         logging.error(e)
         import traceback
+
         traceback.print_exc()
-        return {'context': None, 'error': str(e.args)}  # TODO: there could be other reasons, e.g. dataset not found
+        return {"context": None, "error": str(e.args)}  # TODO: there could be other reasons, e.g. dataset not found
 
     sorted_ids = result["sorted_ids"]
-    items_by_dataset = result['items_by_dataset']
+    items_by_dataset = result["items_by_dataset"]
 
-    question = search_settings.get('all_field_query', '')
-    contexts = get_context_for_each_item_in_search_results(sorted_ids, items_by_dataset,
-                                                           reranked_chunks=2 if chunk_rerank else 0, question=question)
+    question = search_settings.get("all_field_query", "")
+    contexts = get_context_for_each_item_in_search_results(
+        sorted_ids, items_by_dataset, reranked_chunks=2 if chunk_rerank else 0, question=question
+    )
     if item_rerank:
         reranking = get_reranking_results(question, tuple(contexts), num_results_in_context)
         contexts = [contexts[reranking_result.index] for reranking_result in reranking.results]
     context = "\n".join(contexts)
 
-    return {'context': context}
+    return {"context": context}
 
 
-def get_item_question_context(dataset_id: int, item_id: str, source_fields: list[str], question: str,
-                              max_characters_per_field: int | None = 5000, max_total_characters: int | None = None) -> dict:
+def get_item_question_context(
+    dataset_id: int,
+    item_id: str,
+    source_fields: list[str],
+    question: str,
+    max_characters_per_field: int | None = 5000,
+    max_total_characters: int | None = None,
+) -> dict:
     dataset = get_serialized_dataset_cached(dataset_id)
-    required_fields = {'_id'}
+    required_fields = {"_id"}
     source_fields_set = set(source_fields)
     if "_descriptive_text_fields" in source_fields_set:
         required_fields = required_fields.union(dataset.schema.descriptive_text_fields)
@@ -86,8 +99,8 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
         else:
             value = full_item.get(source_field, "n/a")
             value = str(value)[:max_characters_per_field] if max_characters_per_field else str(value)
-            name = dataset.schema.object_fields.get(source_field, {}).get('name', None) or source_field
-            text += f'{name}: {value}\n'
+            name = dataset.schema.object_fields.get(source_field, {}).get("name", None) or source_field
+            text += f"{name}: {value}\n"
             if max_total_characters and len(text) >= max_total_characters:
                 break
 
@@ -99,10 +112,12 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
             chunk_vector_field = DotDict(dataset.schema.object_fields.get(chunk_vector_field_name))
             chunk_field = chunk_vector_field.source_fields[0]
             chunks = full_item.get(chunk_field, [])
-            full_text = " ".join([chunk.get('text', '') for chunk in chunks])
-            if len(chunks) <= max_chunks_to_show_all and (not max_characters_per_field or len(full_text) <= max_characters_per_field):
-                text += f'Full Text:\n'
-                text += f'{full_text}\n'
+            full_text = " ".join([chunk.get("text", "") for chunk in chunks])
+            if len(chunks) <= max_chunks_to_show_all and (
+                not max_characters_per_field or len(full_text) <= max_characters_per_field
+            ):
+                text += f"Full Text:\n"
+                text += f"{full_text}\n"
             else:
                 generator_function = get_suitable_generator(dataset, chunk_vector_field_name)
                 assert generator_function is not None
@@ -110,20 +125,32 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
                 query_vector = generator_function([[question]])[0]
                 score_threshold = get_field_similarity_threshold(chunk_vector_field, input_is_image=False)
                 result = get_relevant_parts_of_item_using_query_vector(
-                    dataset, item_id, chunk_vector_field_name, query_vector, score_threshold,
-                    max_selected_chunks, rerank=True, query=question, source_texts=chunks)
+                    dataset,
+                    item_id,
+                    chunk_vector_field_name,
+                    query_vector,
+                    score_threshold,
+                    max_selected_chunks,
+                    rerank=True,
+                    query=question,
+                    source_texts=chunks,
+                )
 
-                include_beginning_and_end = (not max_characters_per_field or max_characters_per_field >= 5000) and len(chunks) > max_selected_chunks
+                include_beginning_and_end = (not max_characters_per_field or max_characters_per_field >= 5000) and len(
+                    chunks
+                ) > max_selected_chunks
                 if include_beginning_and_end:
                     # being generous and including beginning and end of full text as those contain important information usually
-                    beginning = " ".join([chunk.get('text', '') for chunk in chunks[:3]])
-                    text += f'Beginning of Full Text:\n'
-                    text += f'{beginning}\n\n'
+                    beginning = " ".join([chunk.get("text", "") for chunk in chunks[:3]])
+                    text += f"Beginning of Full Text:\n"
+                    text += f"{beginning}\n\n"
 
-                for part in result.get('_relevant_parts', []):
-                    chunk_before = chunks[part.get("index") - 1].get('text', '') if part.get("index") > 0 else ""
-                    this_chunk = chunks[part.get("index")].get('text', '')
-                    chunk_after = chunks[part.get("index") + 1].get('text', '') if part.get("index") + 1 < len(chunks) else ""
+                for part in result.get("_relevant_parts", []):
+                    chunk_before = chunks[part.get("index") - 1].get("text", "") if part.get("index") > 0 else ""
+                    this_chunk = chunks[part.get("index")].get("text", "")
+                    chunk_after = (
+                        chunks[part.get("index") + 1].get("text", "") if part.get("index") + 1 < len(chunks) else ""
+                    )
                     relevant_text = f"[...] {chunk_before[-200:]} {this_chunk} {chunk_after[:200]} [...]"
                     if max_characters_per_field:
                         relevant_text = relevant_text[:max_characters_per_field]
@@ -133,11 +160,11 @@ def get_item_question_context(dataset_id: int, item_id: str, source_fields: list
                         break
 
                 if include_beginning_and_end:
-                    end = " ".join([chunk.get('text', '') for chunk in chunks[-3:]])
-                    text += f'End of Full Text:\n'
-                    text += f'{end}\n\n'
+                    end = " ".join([chunk.get("text", "") for chunk in chunks[-3:]])
+                    text += f"End of Full Text:\n"
+                    text += f"{end}\n\n"
 
     if max_total_characters and len(text) > max_total_characters:
-        text = text[:max_total_characters - 1] + "\n"
+        text = text[: max_total_characters - 1] + "\n"
 
-    return {'context': text}
+    return {"context": text}
