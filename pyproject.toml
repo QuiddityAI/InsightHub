@@ -20,6 +20,11 @@ target-version = ['py311']
 extend-exclude = '''
     .*/migrations/0[0-9]{3}_.+\.py
 '''
+
+[tool.isort]
+src_paths = ["backend", "scripts_and_examples/import_scripts"]
+profile = "black"
+
 [project]
 authors = [
     {name = "Tim Henning", email = "tim@luminosuslight.de"},
