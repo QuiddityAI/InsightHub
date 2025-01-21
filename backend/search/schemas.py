@@ -111,3 +111,8 @@ class GetPlainResultsPaylaod(Schema):
     dataset_id: int
     access_token: str
     query_body: dict
+
+
+class UpdateSearchTaskExecutionSettingsPayload(Schema):
+    task_id: str
+    updates: dict

@@ -3,8 +3,10 @@ import {
   PencilIcon,
   NoSymbolIcon,
   ChevronUpIcon,
+  StarIcon,
 } from "@heroicons/vue/24/outline"
 
+import Checkbox from 'primevue/checkbox';
 
 import BorderlessButton from "../widgets/BorderlessButton.vue";
 import SearchFilterList from "./SearchFilterList.vue";
@@ -29,6 +31,7 @@ export default {
   emits: ["edit_search_task"],
   data() {
     return {
+      show_periodic_execution_settings: false,
     }
   },
   computed: {
@@ -40,6 +43,7 @@ export default {
     }
   },
   mounted() {
+    this.show_periodic_execution_settings = this.collectionStore.collection.most_recent_search_task?.run_on_new_items || false
   },
   watch: {
   },
@@ -74,6 +78,11 @@ export default {
 
       <div class="flex-1"></div>
 
+      <BorderlessButton @click="show_periodic_execution_settings = !show_periodic_execution_settings" class="py-1"
+        :highlighted="show_periodic_execution_settings"
+        v-tooltip.bottom="{value: 'Save / execute periodically', showDelay: 400}">
+        <StarIcon class="h-5 w-5 inline" />
+      </BorderlessButton>
       <BorderlessButton @click="$emit('edit_search_task')" class="py-1"
         v-tooltip.bottom="{value: 'Edit the search query and filters', showDelay: 400}">
         <PencilIcon class="h-5 w-5 inline" /> Edit
@@ -82,6 +91,18 @@ export default {
         v-tooltip.bottom="{value: 'Remove search results and show saved items', showDelay: 400}">
         <NoSymbolIcon class="h-5 w-5 inline" /> Exit
       </BorderlessButton>
+    </div>
+
+    <div v-if="show_periodic_execution_settings" class="flex flex-row items-center gap-4">
+      <div class="flex flex-row items-center">
+        <Checkbox v-model="collectionStore.collection.most_recent_search_task.run_on_new_items"
+          @change="collectionStore.commit_most_recent_search_task_execution_settings()"
+          class="" :binary="true" />
+        <button class="ml-2 text-xs text-gray-500"
+          @click="collectionStore.collection.most_recent_search_task.run_on_new_items = !collectionStore.collection.most_recent_search_task.run_on_new_items; collectionStore.commit_most_recent_search_task_execution_settings()">
+          Run for new items
+        </button>
+      </div>
     </div>
   </div>
 </template>

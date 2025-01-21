@@ -475,6 +475,17 @@ export const useCollectionStore = defineStore("collection", {
           that.update_collection({update_items: true})
         })
     },
+    commit_most_recent_search_task_execution_settings() {
+      const body = {
+        task_id: this.collection.most_recent_search_task.id,
+        updates: {
+          run_on_new_items: this.collection.most_recent_search_task.run_on_new_items,
+        },
+      }
+      httpClient
+        .post("/api/v1/search/update_search_task_execution_settings", body)
+        .then((response) => { })
+    },
     exit_search_mode() {
       const that = this
       const body = {

@@ -23,6 +23,7 @@ from search.schemas import (
     GetPlainResultsPaylaod,
     RunPreviousSearchTaskPayload,
     RunSearchTaskPayload,
+    UpdateSearchTaskExecutionSettingsPayload,
 )
 
 api = NinjaAPI(urls_namespace="search")
@@ -204,3 +205,27 @@ def get_plain_results_route(request: HttpRequest, payload: GetPlainResultsPaylao
     results = text_db_client.get_plain_results(dataset, payload.query_body)
 
     return HttpResponse(json.dumps(results), status=200, content_type="application/json")
+
+
+@api.post("update_search_task_execution_settings")
+def update_search_task_execution_settings_route(
+    request: HttpRequest, payload: UpdateSearchTaskExecutionSettingsPayload
+):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        task = SearchTask.objects.select_related("collection__created_by").get(id=payload.task_id)
+    except SearchTask.DoesNotExist:
+        return HttpResponse(status=404)
+    if task.collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    allowed_keys = {"run_on_new_items"}
+    for key, value in payload.updates.items():
+        if key not in allowed_keys:
+            return HttpResponse(status=400)
+        setattr(task, key, value)
+    task.save(update_fields=list(payload.updates.keys()))
+
+    return HttpResponse(status=204, content_type="application/json")
