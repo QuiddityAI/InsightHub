@@ -63,6 +63,10 @@ export default {
       }
     },
     is_irrelevant_according_to_ai() {
+      if (this.collection_item.relevance <= ItemRelevance.REJECTED_BY_AI) {
+         // overriden by user or other AI judgment
+        return true
+      }
       if (this.collection_item.relevance >= ItemRelevance.APPROVED_BY_AI) {
          // overriden by user or other AI judgment
         return false

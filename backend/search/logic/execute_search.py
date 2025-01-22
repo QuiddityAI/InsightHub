@@ -210,17 +210,24 @@ def add_items_from_task(
     if results["sorted_ids"]:
         items_by_dataset = results["items_by_dataset"]
         new_items = []
-        existing_item_ids = []
+        updated_items = []
+        existing_items_by_id = {}
         if not is_new_collection:
-            existing_item_ids = CollectionItem.objects.filter(
+            existing_items = CollectionItem.objects.filter(
                 collection=collection,
                 dataset_id=parameters.dataset_id,
                 item_id__in=[ds_and_item_id[1] for ds_and_item_id in results["sorted_ids"]],
-            ).values_list("item_id", flat=True)
+            )
+            existing_items_by_id = {item.item_id: item for item in existing_items}
         for i, ds_and_item_id in enumerate(results["sorted_ids"]):
-            if ds_and_item_id[1] in existing_item_ids:
-                continue
             value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
+            if ds_and_item_id[1] in existing_items_by_id:
+                item = existing_items_by_id[ds_and_item_id[1]]
+                item.search_source_id = str(task.id)
+                item.search_score = 1 / (status.retrieved + i + 1)
+                item.relevant_parts = value.get("_relevant_parts", [])  # type: ignore
+                updated_items.append(item)
+                continue
             item = CollectionItem(
                 date_added=parameters.created_at,
                 search_source_id=task.id,
@@ -236,6 +243,7 @@ def add_items_from_task(
             )
             new_items.append(item)
         CollectionItem.objects.bulk_create(new_items)
+        CollectionItem.objects.bulk_update(updated_items, ["search_source_id", "search_score", "relevant_parts"])
         collection.items_last_changed = timezone.now()
 
     collection.search_mode = True
