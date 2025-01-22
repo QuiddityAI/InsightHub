@@ -32,7 +32,7 @@ export default {
       const dataset_ids = new Set()
       // FIXME: this only uses the last search
       if (this.collectionStore.collection.most_recent_search_task.dataset_id !== null) {
-        dataset_ids.add(search_source.dataset_id)
+        dataset_ids.add(this.collectionStore.collection.most_recent_search_task.dataset_id)
       }
       this.dataset_ids = Array.from(dataset_ids)
       for (const dataset_id of dataset_ids) {
