@@ -98,6 +98,11 @@ export default {
       </BorderButton>
     </div>
 
+    <div v-if="collectionStore.search_mode && !more_results_are_available && is_last_page"
+      class="my-5 w-full flex flex-row justify-center text-sm text-gray-400">
+      No more results available
+    </div>
+
   </div>
 </template>
 

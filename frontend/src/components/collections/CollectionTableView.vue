@@ -135,6 +135,11 @@ export default {
               Show More Results <PlusIcon class="h-4 w-4 inline"></PlusIcon>
             </BorderButton>
           </div>
+
+          <div v-if="collectionStore.search_mode && !more_results_are_available && is_last_page && slotProps.index == collectionStore.collection_items.length - 1"
+            class="my-5 w-full flex flex-row justify-center text-sm text-gray-400">
+            No more results available
+          </div>
         </template>
       </Column>
       <Column v-for="(column, index) in collection.columns" :key="column.identifier" :header="false">
