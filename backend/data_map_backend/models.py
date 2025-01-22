@@ -1346,6 +1346,12 @@ class SearchTask(models.Model):
         blank=False,
         null=False,
     )
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=False,
+        null=False,
+    )
     settings = models.JSONField(
         verbose_name="Settings",
         help_text="Settings for the search task",
