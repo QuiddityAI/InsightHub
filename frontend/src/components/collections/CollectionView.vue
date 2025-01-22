@@ -19,6 +19,7 @@ import Dialog from 'primevue/dialog';
 import OverlayPanel from 'primevue/overlaypanel';
 import Paginator from "primevue/paginator"
 import Dropdown from 'primevue/dropdown';
+import Checkbox from 'primevue/checkbox';
 
 import CollectionTableView from "./CollectionTableView.vue"
 import ExportCollectionArea from "./ExportCollectionArea.vue";
@@ -213,7 +214,7 @@ export default {
         </BorderButton>
 
         <OverlayPanel ref="layout_dialog">
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-2 w-[140px]">
             <div class="flex flex-row">
               <BorderButton @click="collectionStore.update_ui_settings({item_layout: CollectionItemLayout.COLUMNS})" class="h-6 rounded-r-none border-r-0"
                 :highlighted="collection.ui_settings.item_layout === CollectionItemLayout.COLUMNS"
@@ -248,6 +249,15 @@ export default {
                 v-tooltip.bottom="{ value: 'Full Items' }">
                 L
               </BorderButton>
+            </div>
+
+            <div class="flex flex-row gap-1">
+              <Checkbox v-model="collection.ui_settings.hide_checked_items_in_search"
+                inputId="only_show_unchecked_in_search" :binary="true" class="scale-75"
+                @change="collectionStore.update_ui_settings({hide_checked_items_in_search: collection.ui_settings.hide_checked_items_in_search}, true)" />
+              <label for="only_show_unchecked_in_search" class="text-sm text-gray-500">
+                Hide checked items in search
+              </label>
             </div>
           </div>
 

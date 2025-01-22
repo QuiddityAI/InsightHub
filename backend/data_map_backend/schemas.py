@@ -29,6 +29,7 @@ class CollectionUiSettings(Schema):
     item_layout: str = "columns"  # one of 'columns', 'grid', 'spreadsheet'
     item_size_mode: int = CollectionItemSizeMode.FULL
     show_visibility_filters: bool = False
+    hide_checked_items_in_search: bool = False
 
 
 class SetUiSettingsPayload(Schema):

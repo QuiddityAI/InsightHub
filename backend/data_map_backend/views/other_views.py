@@ -960,6 +960,8 @@ def get_filtered_collection_items(
 
     if collection.search_mode:
         search_results = all_items.filter(search_source_id=task.id)  # type: ignore
+        if collection.ui_settings.get("hide_checked_items_in_search"):
+            search_results = search_results.filter(relevance=ItemRelevance.CANDIDATE)
         return_items = search_results
         return_items = return_items.order_by("-search_score")
     else:

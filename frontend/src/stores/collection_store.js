@@ -206,7 +206,7 @@ export const useCollectionStore = defineStore("collection", {
           }
         })
     },
-    update_ui_settings(updated_settings) {
+    update_ui_settings(updated_settings, load_items=false) {
       this.collection.ui_settings = {...this.collection.ui_settings, ...updated_settings}
       const body = {
         collection_id: this.collection.id,
@@ -214,7 +214,10 @@ export const useCollectionStore = defineStore("collection", {
       }
       httpClient
         .post("/api/v1/collections/set_ui_settings", body)
-        .then(function (response) {
+        .then((response) => {
+          if (load_items) {
+            this.load_collection_items()
+          }
         })
     },
     // ------------------
@@ -402,6 +405,9 @@ export const useCollectionStore = defineStore("collection", {
         .post("/org/data_map/set_collection_item_relevance", body)
         .then((response) => {
           collection_item.relevance = relevance
+          if (this.search_mode && this.collection.ui_settings.hide_checked_items_in_search) {
+            this.load_collection_items()
+          }
         })
     },
     approve_relevant_search_results() {
@@ -422,7 +428,7 @@ export const useCollectionStore = defineStore("collection", {
         collection_id: this.collection_id,
         class_name: this.class_name,
       }
-      const go_to_next_page = this.first_index + this.per_page == this.item_count
+      const go_to_next_page = this.first_index + this.per_page == this.filtered_count
       httpClient
         .post("/api/v1/search/add_more_items_from_active_task", body)
         .then((response) => {

@@ -207,10 +207,10 @@ def add_items_from_task(
     legacy_params = _convert_retrieval_settings_to_old_format(parameters, status, ignore_last_retrieval)
     results = get_search_results(json.dumps(legacy_params), "list")
 
+    new_items = []
+    updated_items = []
     if results["sorted_ids"]:
         items_by_dataset = results["items_by_dataset"]
-        new_items = []
-        updated_items = []
         existing_items_by_id = {}
         if not is_new_collection:
             existing_items = CollectionItem.objects.filter(
@@ -279,7 +279,7 @@ def add_items_from_task(
         collection.save(update_fields=["search_mode", "items_last_changed", "explanation_log"])
     else:
         collection.save(update_fields=["search_mode", "items_last_changed"])
-    return new_items
+    return new_items + updated_items
 
 
 def _convert_retrieval_settings_to_old_format(
