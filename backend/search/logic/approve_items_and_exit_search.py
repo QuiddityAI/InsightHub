@@ -14,6 +14,7 @@ from data_map_backend.models import (
     DataCollection,
     FieldType,
 )
+from data_map_backend.schemas import ItemRelevance
 from legacy_backend.logic.chat_and_extraction import get_item_question_context
 from search.prompts import approve_using_comparison_prompt
 from search.schemas import ApprovalUsingComparisonReason, SearchTaskSettings
@@ -73,7 +74,7 @@ def auto_approve_items(
 
     changed_items = []
     for item, relevance_score in sorted_items:
-        item.relevance = 2
+        item.relevance = ItemRelevance.APPROVED_BY_AI
         changed_items.append(item)
     CollectionItem.objects.bulk_update(changed_items, ["relevance"])
     if relevance_columns and from_ui:
@@ -140,7 +141,7 @@ def approve_using_comparison(
         if collection_item is None:
             continue
         selected_items.add(collection_item)
-        collection_item.relevance = 2
+        collection_item.relevance = ItemRelevance.APPROVED_BY_AI
         if relevance_column:
             criterion = Criterion(criteria="Comparison of Documents", fulfilled=True, reason=result.reason)
             add_criterion(collection_item, criterion, relevance_column)
@@ -148,7 +149,7 @@ def approve_using_comparison(
 
     unselected_items = [item for item in new_items if item not in selected_items]
     for collection_item in unselected_items:
-        collection_item.relevance = -1
+        collection_item.relevance = ItemRelevance.REJECTED_BY_AI
         if relevance_column:
             criterion = Criterion(criteria="Comparison of Documents", fulfilled=False, reason="Not selected")
             add_criterion(collection_item, criterion, relevance_column)
@@ -176,21 +177,27 @@ def add_criterion(collection_item: CollectionItem, new_criterion: Criterion, rel
 def exit_search_mode(collection: DataCollection, class_name: str, from_ui: bool = False):
     if not collection.search_mode:
         return
+    # delete candidates without data:
+    # (candidates aren't visible outside of search mode anyway, but we don't want to keep them in the database)
     all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
-    candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
-    num_candidates = candidates.count()
-    # TODO: delete only those without column data
-    candidates.delete()
-    collection.items_last_changed = timezone.now()
+    candidates = all_items.filter(relevance=ItemRelevance.CANDIDATE)
+    candidates_without_data = candidates.filter(Q(column_data=None) | Q(column_data={}))
+
+    if candidates_without_data:
+        candidates_without_data.delete()
+        collection.items_last_changed = timezone.now()
+
     collection.search_mode = False
 
-    if num_candidates and from_ui:
-        collection.log_explanation(f"Removed {num_candidates} **not approved** items", save=False)
-    collection.save(update_fields=["items_last_changed", "search_mode", "explanation_log"])
+    if from_ui:
+        collection.log_explanation(f"Removed any **non-approved** items", save=False)
+        collection.save(update_fields=["items_last_changed", "search_mode", "explanation_log"])
+    else:
+        collection.save(update_fields=["items_last_changed", "search_mode"])
 
 
 def approve_relevant_search_results(collection: DataCollection, class_name: str, from_ui: bool = False):
     all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
-    candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
+    candidates = all_items.filter(relevance=ItemRelevance.CANDIDATE)
     auto_approve_items(collection, candidates, max_selections=None, from_ui=from_ui)
     exit_search_mode(collection, class_name, from_ui)

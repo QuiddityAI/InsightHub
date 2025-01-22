@@ -105,7 +105,7 @@ class ResearchAgentWorkflow(WorkflowBase):
 
             # set the relevance of an item:
             if "yes" in data.value.lower():
-                item.relevance = ItemRelevance.RELEVANT_ACCORDING_TO_AI
+                item.relevance = ItemRelevance.APPROVED_BY_AI
                 item.save(update_fields=["relevance"])
 
         # create the final result:

@@ -13,7 +13,7 @@ import ExpandableTextArea from "../widgets/ExpandableTextArea.vue"
 import RelevantPartsKeyword from "../search/RelevantPartsKeyword.vue"
 import RelevantPartsVector from "../search/RelevantPartsVector.vue"
 
-import { CollectionItemSizeMode } from "../../utils/utils.js"
+import { CollectionItemSizeMode, ItemRelevance } from "../../utils/utils.js"
 import { httpClient } from "../../api/httpClient"
 
 import { mapStores } from "pinia"
@@ -63,7 +63,7 @@ export default {
       }
     },
     is_irrelevant_according_to_ai() {
-      if (this.collection_item.relevance >= 2) {
+      if (this.collection_item.relevance >= ItemRelevance.APPROVED_BY_AI) {
          // overriden by user or other AI judgment
         return false
       }
@@ -78,7 +78,7 @@ export default {
       return false
     },
     is_candidate() {
-      return this.collection_item.relevance >= -1 && this.collection_item.relevance <= 1
+      return this.collection_item.relevance === ItemRelevance.CANDIDATE
     },
     actual_size_mode() {
       if (this.is_irrelevant_according_to_ai && this.size_mode > CollectionItemSizeMode.MEDIUM) {
@@ -258,15 +258,15 @@ export default {
             </ArrowRightIcon>
           </div>
           <BorderlessButton
-            hover_color="hover:text-green-500" highlight_color="text-green-500"
-            :highlighted="collection_item.relevance > 0" :default_padding="false" class="p-1"
+            hover_color="hover:text-green-500" :highlight_color="collection_item.relevance >= ItemRelevance.APPROVED_BY_USER ? 'text-green-500' : 'text-orange-400'"
+            :highlighted="collection_item.relevance > ItemRelevance.CANDIDATE" :default_padding="false" class="p-1"
             v-tooltip.bottom="{ value: 'Add this item permanently' }"
             @click="collectionStore.set_item_relevance(collection_item, 3)">
             <HandThumbUpIcon class="h-4 w-4"></HandThumbUpIcon>
           </BorderlessButton>
           <BorderlessButton
-            hover_color="hover:text-red-500" highlight_color="text-red-500"
-            :highlighted="collection_item.relevance < 0" :default_padding="false" class="p-1"
+            hover_color="hover:text-red-500" :highlight_color="collection_item.relevance <= ItemRelevance.REJECTED_BY_USER ? 'text-red-500' : 'text-orange-400'"
+            :highlighted="collection_item.relevance < ItemRelevance.CANDIDATE" :default_padding="false" class="p-1"
             v-tooltip.bottom="{ value: 'Mark this item as irrelevant, hide from future searches in this collection' }"
             @click="collectionStore.set_item_relevance(collection_item, -3)">
             <HandThumbDownIcon class="h-4 w-4"></HandThumbDownIcon>

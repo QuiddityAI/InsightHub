@@ -394,7 +394,6 @@ export const useCollectionStore = defineStore("collection", {
     },
     // ------------------
     set_item_relevance(collection_item, relevance) {
-      const that = this
       const body = {
         collection_item_id: collection_item.id,
         relevance: relevance,
@@ -406,7 +405,6 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     approve_relevant_search_results() {
-      const that = this
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
@@ -414,7 +412,7 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/search/approve_relevant_search_results", body)
         .then((response) => {
-          that.update_collection({update_items: true})
+          this.update_collection({update_items: true})
         })
     },
     // ------------------

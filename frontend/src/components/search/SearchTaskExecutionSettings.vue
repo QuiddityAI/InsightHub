@@ -53,7 +53,7 @@ export default {
         :inputId="`run_on_new_items_${task.id}`" size="small" :binary="true" class="scale-75"
         @change="collectionStore.commit_search_task_execution_settings(task)" />
       <label :for="`run_on_new_items_${task.id}`" class="text-sm text-gray-500">
-        Watch new dataset items and add matching ones automatically
+        Watch new {{ collectionStore.entity_name_plural }} and add matching ones automatically
       </label>
     </div>
 

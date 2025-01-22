@@ -143,15 +143,16 @@ def run_search_task(
     def after_columns_were_processed_internal(new_items):
         if search_task.auto_approve:
             auto_approve_items(collection, new_items, search_task.max_selections, from_ui)
-
-        if search_task.approve_using_comparison:
+        elif search_task.approve_using_comparison:
             if from_ui:
                 collection.log_explanation(
                     "Use AI model to **compare search results** and **approve best items**", save=False
                 )
             approve_using_comparison(collection, new_items, search_task.max_selections, search_task)
+        elif not from_ui and task.run_on_new_items:
+            auto_approve_items(collection, new_items, search_task.max_selections, from_ui)
 
-        if search_task.exit_search_mode:
+        if search_task.exit_search_mode or not from_ui:
             exit_search_mode(collection, "_default", from_ui)
 
         if after_columns_were_processed:

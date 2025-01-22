@@ -11,11 +11,11 @@ class CollectionItemSizeMode:
 
 
 class ItemRelevance:
-    RELEVANT_ACCORDING_TO_USER = 2
-    RELEVANT_ACCORDING_TO_AI = 1
+    APPROVED_BY_USER = 2
+    APPROVED_BY_AI = 1
     CANDIDATE = 0  # e.g. a search result, will be removed when exiting search mode
-    NOT_RELEVANT_ACCORDING_TO_AI = -1
-    NOT_RELEVANT_ACCORDING_TO_USER = -2
+    REJECTED_BY_AI = -1
+    REJECTED_BY_USER = -2
 
 
 class CollectionIdentifier(Schema):

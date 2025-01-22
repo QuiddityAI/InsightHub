@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
+from data_map_backend.schemas import ItemRelevance
 from data_map_backend.utils import DotDict
 from filter.schemas import CollectionFilter
 from search.schemas import SearchTaskSettings
@@ -962,7 +963,11 @@ def get_filtered_collection_items(
         return_items = search_results
         return_items = return_items.order_by("-search_score")
     else:
-        return_items = all_items.filter(relevance__gte=2) if is_positive else all_items.filter(relevance__lte=-2)
+        return_items = (
+            all_items.filter(relevance__gte=ItemRelevance.APPROVED_BY_AI)
+            if is_positive
+            else all_items.filter(relevance__lte=ItemRelevance.REJECTED_BY_AI)
+        )
         return_items = return_items.order_by(order_by, "-search_score")
 
     for filter_data in collection.filters:
