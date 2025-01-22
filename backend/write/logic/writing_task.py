@@ -1,16 +1,28 @@
-from collections import defaultdict
 import json
 import logging
 import threading
+from collections import defaultdict
 
+from django.db.models.manager import BaseManager
 from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
 
-from data_map_backend.models import CollectionItem, CollectionColumn, ServiceUsage, FieldType, WritingTask
-from write.prompts import writing_task_prompt
+from data_map_backend.models import (
+    CollectionColumn,
+    CollectionItem,
+    FieldType,
+    ServiceUsage,
+    WritingTask,
+)
+from data_map_backend.schemas import ItemRelevance
 from data_map_backend.utils import DotDict
-
-from legacy_backend.logic.chat_and_extraction import get_item_question_context as get_item_question_context_native
-from legacy_backend.logic.search_common import get_document_details_by_id, get_serialized_dataset_cached
+from legacy_backend.logic.chat_and_extraction import (
+    get_item_question_context as get_item_question_context_native,
+)
+from legacy_backend.logic.search_common import (
+    get_document_details_by_id,
+    get_serialized_dataset_cached,
+)
+from write.prompts import writing_task_prompt
 
 
 def execute_writing_task_thread(task: WritingTask):
@@ -54,9 +66,9 @@ def _execute_writing_task(task: WritingTask):
             collection=task.collection, identifier__in=source_column_identifiers
         )
     contexts = []
-    items: list[CollectionItem] = []
+    items: list[CollectionItem] | BaseManager[CollectionItem] = []
     if task.use_all_items:
-        items = task.collection.items.filter(relevance__gte=0)  # type: ignore
+        items = task.collection.items.filter(relevance__gte=ItemRelevance.APPROVED_BY_AI)  # type: ignore
     else:
         assert isinstance(task.selected_item_ids, list)
         items = [CollectionItem.objects.get(id=item_id) for item_id in task.selected_item_ids]
