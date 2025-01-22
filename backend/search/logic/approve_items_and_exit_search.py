@@ -24,6 +24,7 @@ def auto_approve_items(
     collection: DataCollection,
     new_items: list[CollectionItem] | BaseManager[CollectionItem],
     max_selections: int | None,
+    forced_selections: int = 0,
     from_ui: bool = False,
 ):
     fallback_items = []
@@ -48,12 +49,15 @@ def auto_approve_items(
         relevant_items = [[item, 0.5] for item in new_items]
 
     if not relevant_items:
-        if fallback_items:
+        if fallback_items and forced_selections:
             # if there are not truly relevant items, but some with a relevance score > 0, we take the best one to have at least one
             # (sometimes even items with a low relevance score can be useful by using their fulltext)
             if min([x[1] for x in fallback_items]) != max([x[1] for x in fallback_items]):
                 fallback_items = sorted(fallback_items, key=lambda x: x[1], reverse=True)
-            relevant_items = fallback_items[:1]
+            relevant_items = fallback_items[:forced_selections]
+        elif forced_selections:
+            # no relevant items, but we take one anyway in case our relevance model is wrong:
+            relevant_items = [[item, 0.5] for item in new_items[:forced_selections]]
         else:
             # no relevant and no fallback items:
             if relevance_columns and from_ui:
@@ -89,8 +93,9 @@ def auto_approve_items(
 def approve_using_comparison(
     collection: DataCollection,
     new_items: list[CollectionItem] | BaseManager[CollectionItem],
-    max_selections: int | None,
     search_task: SearchTaskSettings,
+    max_selections: int | None = None,
+    forced_selections: int = 0,
 ):
     prompt = approve_using_comparison_prompt[search_task.result_language or "en"]
     prompt = prompt.replace("{{ user_input }}", search_task.user_input)
@@ -100,7 +105,8 @@ def approve_using_comparison(
     fields = [
         COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,
     ]
-    for collection_item in new_items:
+    max_items_per_comparison = 15
+    for collection_item in new_items[:max_items_per_comparison]:
         if collection_item.field_type != FieldType.IDENTIFIER:
             continue
         assert collection_item.dataset_id is not None
@@ -136,6 +142,14 @@ def approve_using_comparison(
 
     relevance_column = relevance_columns[0] if relevance_columns else None
     selected_items = set()
+    if max_selections is not None:
+        results = list(results)[:max_selections]
+
+    if not results and forced_selections:
+        # no results, but we take one anyway in case our relevance model is wrong:
+        reason = "Forced selection because no relevant ones were found"
+        results = [ApprovalUsingComparisonReason(item_id=item.id, reason=reason) for item in new_items[:forced_selections]]  # type: ignore
+
     for result in results:
         collection_item = next((item for item in new_items if item.id == result.item_id), None)  # type: ignore
         if collection_item is None:
@@ -199,5 +213,5 @@ def exit_search_mode(collection: DataCollection, class_name: str, from_ui: bool 
 def approve_relevant_search_results(collection: DataCollection, class_name: str, from_ui: bool = False):
     all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
     candidates = all_items.filter(relevance=ItemRelevance.CANDIDATE)
-    auto_approve_items(collection, candidates, max_selections=None, from_ui=from_ui)
+    auto_approve_items(collection, candidates, max_selections=None, forced_selections=0, from_ui=from_ui)
     exit_search_mode(collection, class_name, from_ui)

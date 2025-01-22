@@ -32,10 +32,18 @@ class SearchTaskSettings(Schema):
     approve_using_comparison: bool = False  # compare the top-n results directly using an LLM
     exit_search_mode: bool = False  # leave search mode after auto-approval
 
-    candidates_per_step: int = 10
-    min_selections: int = 1
-    max_selections: int = 3
-    max_selection_candidates: int = 10
+    candidates_per_step: int = 10  # aka initially retrieved items / page size, could be e.g. 2000 when building a map
+
+    forced_selections: int = (
+        0  # in initial step / round, e.g. 1 when trying to answer a question, 0 when checking if relevant item exists
+    )
+    min_selections: int = (
+        0  # alternative to forced_selections: retrieve new rounds until this number of items is selected (not implemented yet)
+    )
+    max_candidates: int = (
+        100  # before stop looking for min_selections items, or for auto-approval of new items in the background
+    )
+    max_selections: Optional[int] = None  # limit when answering question, none when looking for complete set
 
     # similarity search:
     reference_dataset_id: Optional[int] = None

@@ -54,6 +54,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
             auto_approve=False,
             approve_using_comparison=True,
             exit_search_mode=True,
+            forced_selections=1,
             max_selections=10,
         )
 

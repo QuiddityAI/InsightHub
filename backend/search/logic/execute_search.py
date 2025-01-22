@@ -80,7 +80,7 @@ def create_and_run_search_task(
         search_type=search_task.search_type,
         dataset_id=search_task.dataset_id,
         result_language=search_task.result_language or "en",
-        limit=search_task.candidates_per_step,
+        limit=search_task.candidates_per_step,  # uses max_candidates if not from_ui
         # external_input
         keyword_query=keyword_query,
         vector=None,
@@ -139,15 +139,21 @@ def run_search_task(
 
     def after_columns_were_processed_internal(new_items):
         if search_task.auto_approve:
-            auto_approve_items(collection, new_items, search_task.max_selections, from_ui)
+            auto_approve_items(
+                collection, new_items, search_task.max_selections, search_task.forced_selections, from_ui
+            )
         elif search_task.approve_using_comparison:
             if from_ui:
                 collection.log_explanation(
                     "Use AI model to **compare search results** and **approve best items**", save=False
                 )
-            approve_using_comparison(collection, new_items, search_task.max_selections, search_task)
+            approve_using_comparison(
+                collection, new_items, search_task, search_task.max_selections, search_task.forced_selections
+            )
         elif not from_ui and task.run_on_new_items:
-            auto_approve_items(collection, new_items, search_task.max_selections, from_ui)
+            auto_approve_items(
+                collection, new_items, search_task.max_selections, search_task.forced_selections, from_ui
+            )
 
         if search_task.exit_search_mode or not from_ui:
             exit_search_mode(collection, "_default", from_ui)
@@ -179,10 +185,14 @@ def add_items_from_task_and_run_columns(
     new_items = add_items_from_task(collection, task, ignore_last_retrieval, is_new_collection, from_ui)
 
     def in_thread():
-        max_evaluated_candidates = 10
+        if from_ui:
+            max_processed_items = 10
+            items_to_process = new_items[:max_processed_items]
+        else:
+            items_to_process = new_items
         for column in collection.columns.filter(auto_run_for_candidates=True):  # type: ignore
             assert isinstance(column, CollectionColumn)
-            process_cells_blocking(new_items[:max_evaluated_candidates], column, collection, user_id)
+            process_cells_blocking(items_to_process, column, collection, user_id)
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 
@@ -200,6 +210,10 @@ def add_items_from_task(
 ) -> list[CollectionItem]:
     parameters = RetrievalParameters(**task.retrieval_parameters)
     status = RetrievalStatus(**task.last_retrieval_status)
+
+    if not from_ui:
+        # directly retrieve all items
+        parameters.limit = task.settings.max_candidates
 
     legacy_params = _convert_retrieval_parameters_to_old_format(parameters, status, ignore_last_retrieval)
     results = get_search_results(json.dumps(legacy_params), "list")
