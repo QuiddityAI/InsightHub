@@ -123,7 +123,7 @@ def run_previous_search_task_route(request: HttpRequest, payload: RunPreviousSea
 
     def thread_function():
         try:
-            run_search_task(collection, previous_task, request.user.id)  # type: ignore
+            run_search_task(previous_task, request.user.id, from_ui=True)  # type: ignore
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
@@ -161,7 +161,7 @@ def run_existing_search_task_route(request: HttpRequest, payload: RunExistingSea
 
     def thread_function():
         try:
-            run_search_task(collection, task, request.user.id)  # type: ignore
+            run_search_task(task, request.user.id, from_ui=True)  # type: ignore
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
@@ -191,7 +191,13 @@ def add_more_items_from_active_task_route(request: HttpRequest, payload: Collect
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    new_items = add_items_from_task_and_run_columns(collection, collection.most_recent_search_task, request.user.id, ignore_last_retrieval=False, is_new_collection=False)  # type: ignore
+    new_items = add_items_from_task_and_run_columns(
+        collection.most_recent_search_task,  # type: ignore
+        request.user.id,  # type: ignore
+        ignore_last_retrieval=False,
+        is_new_collection=False,
+        from_ui=True,
+    )
     result = {"new_item_count": len(new_items)}
 
     return HttpResponse(json.dumps(result), status=200, content_type="application/json")
@@ -211,7 +217,7 @@ def exit_search_mode_route(request: HttpRequest, payload: CollectionIdentifier):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    exit_search_mode(collection, payload.class_name)
+    exit_search_mode(collection, payload.class_name, from_ui=True)
 
     return HttpResponse(status=204, content_type="application/json")
 
@@ -228,7 +234,7 @@ def approve_relevant_search_results_route(request: HttpRequest, payload: Collect
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    approve_relevant_search_results(collection, payload.class_name)
+    approve_relevant_search_results(collection, payload.class_name, from_ui=True)
 
     return HttpResponse(status=204, content_type="application/json")
 

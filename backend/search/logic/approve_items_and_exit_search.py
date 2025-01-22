@@ -23,6 +23,7 @@ def auto_approve_items(
     collection: DataCollection,
     new_items: list[CollectionItem] | BaseManager[CollectionItem],
     max_selections: int | None,
+    from_ui: bool = False,
 ):
     fallback_items = []
     relevant_items = []
@@ -54,7 +55,7 @@ def auto_approve_items(
             relevant_items = fallback_items[:1]
         else:
             # no relevant and no fallback items:
-            if relevance_columns:
+            if relevance_columns and from_ui:
                 collection.log_explanation(
                     f"Evaluated top {len(new_items)} items **one-by-one using an LLM**, but couldn't find a relevant one",
                     save=True,
@@ -75,12 +76,12 @@ def auto_approve_items(
         item.relevance = 2
         changed_items.append(item)
     CollectionItem.objects.bulk_update(changed_items, ["relevance"])
-    if relevance_columns:
+    if relevance_columns and from_ui:
         collection.log_explanation(
             f"Evaluated top {len(new_items)} items **one-by-one using an LLM** and approved {len(changed_items)} of them",
             save=True,
         )
-    else:
+    elif from_ui:
         collection.log_explanation(f"Added {len(changed_items)} to the collection", save=True)
 
 
@@ -172,7 +173,9 @@ def add_criterion(collection_item: CollectionItem, new_criterion: Criterion, rel
         collection_item.column_data[relevance_column.identifier] = column_content
 
 
-def exit_search_mode(collection: DataCollection, class_name: str):
+def exit_search_mode(collection: DataCollection, class_name: str, from_ui: bool = False):
+    if not collection.search_mode:
+        return
     all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
     candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
     num_candidates = candidates.count()
@@ -181,13 +184,13 @@ def exit_search_mode(collection: DataCollection, class_name: str):
     collection.items_last_changed = timezone.now()
     collection.search_mode = False
 
-    if num_candidates:
+    if num_candidates and from_ui:
         collection.log_explanation(f"Removed {num_candidates} **not approved** items", save=False)
     collection.save(update_fields=["items_last_changed", "search_mode", "explanation_log"])
 
 
-def approve_relevant_search_results(collection: DataCollection, class_name: str):
+def approve_relevant_search_results(collection: DataCollection, class_name: str, from_ui: bool = False):
     all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
     candidates = all_items.filter(Q(relevance=0) | Q(relevance=1) | Q(relevance=-1))
-    auto_approve_items(collection, candidates, max_selections=None)
-    exit_search_mode(collection, class_name)
+    auto_approve_items(collection, candidates, max_selections=None, from_ui=from_ui)
+    exit_search_mode(collection, class_name, from_ui)

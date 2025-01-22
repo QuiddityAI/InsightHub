@@ -108,77 +108,83 @@ def create_and_run_search_task(
         last_retrieval_status=status.dict(),
     )
     return run_search_task(
-        collection,
         task,
         user_id,
         after_columns_were_processed=after_columns_were_processed,
         is_new_collection=is_new_collection,
         set_agent_step=False,
+        from_ui=True,
     )
 
 
 def run_search_task(
-    collection: DataCollection,
     task: SearchTask,
     user_id: int,
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
     set_agent_step: bool = True,
+    from_ui: bool = False,
 ) -> list[CollectionItem]:
-    if set_agent_step:
+    collection = task.collection
+    if set_agent_step and from_ui:
         collection.current_agent_step = "Running search task..."
         collection.save(update_fields=["current_agent_step"])
 
-    if not is_new_collection:
-        exit_search_mode(collection, "_default")  # removes candidates and disables sources
+    exit_search_mode(collection, "_default", from_ui)  # removes candidates
     search_task = SearchTaskSettings(**task.settings)
-    collection.most_recent_search_task = task  # type: ignore
-    if not search_task.exit_search_mode:
-        collection.search_task_navigation_history.append(str(task.id))
-    collection.save(update_fields=["most_recent_search_task", "search_task_navigation_history"])
+
+    if from_ui:
+        collection.most_recent_search_task = task  # type: ignore
+        if not search_task.exit_search_mode:
+            collection.search_task_navigation_history.append(str(task.id))
+
+        collection.save(update_fields=["most_recent_search_task", "search_task_navigation_history"])
 
     def after_columns_were_processed_internal(new_items):
         if search_task.auto_approve:
-            auto_approve_items(collection, new_items, search_task.max_selections)
+            auto_approve_items(collection, new_items, search_task.max_selections, from_ui)
 
         if search_task.approve_using_comparison:
-            collection.log_explanation(
-                "Use AI model to **compare search results** and **approve best items**", save=False
-            )
+            if from_ui:
+                collection.log_explanation(
+                    "Use AI model to **compare search results** and **approve best items**", save=False
+                )
             approve_using_comparison(collection, new_items, search_task.max_selections, search_task)
 
         if search_task.exit_search_mode:
-            exit_search_mode(collection, "_default")
+            exit_search_mode(collection, "_default", from_ui)
 
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 
     new_items = add_items_from_task_and_run_columns(
-        collection, task, user_id, True, is_new_collection, after_columns_were_processed_internal
+        task, user_id, True, is_new_collection, from_ui, after_columns_were_processed_internal
     )
     return new_items
 
 
 def add_items_from_task_and_run_columns(
-    collection: DataCollection,
     task: SearchTask,
     user_id: int,
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
+    from_ui: bool = True,
     after_columns_were_processed: Callable | None = None,
 ) -> list[CollectionItem]:
-    # removing visibility filters because otherwise new items might not be visible
-    collection.filters = []
-    collection.save(update_fields=["filters"])
+    collection = task.collection
 
-    new_items = add_items_from_task(collection, task, ignore_last_retrieval, is_new_collection)
+    # removing visibility filters because otherwise new items might not be visible
+    if from_ui and collection.filters:
+        collection.filters = []
+        collection.save(update_fields=["filters"])
+
+    new_items = add_items_from_task(collection, task, ignore_last_retrieval, is_new_collection, from_ui)
 
     def in_thread():
         max_evaluated_candidates = 10
-        for column in collection.columns.all():  # type: ignore
+        for column in collection.columns.filter(auto_run_for_candidates=True):  # type: ignore
             assert isinstance(column, CollectionColumn)
-            if column.auto_run_for_candidates:
-                process_cells_blocking(new_items[:max_evaluated_candidates], column, collection, user_id)
+            process_cells_blocking(new_items[:max_evaluated_candidates], column, collection, user_id)
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 
@@ -188,73 +194,82 @@ def add_items_from_task_and_run_columns(
 
 
 def add_items_from_task(
-    collection: DataCollection, task: SearchTask, ignore_last_retrieval: bool = True, is_new_collection: bool = False
+    collection: DataCollection,
+    task: SearchTask,
+    ignore_last_retrieval: bool = True,
+    is_new_collection: bool = False,
+    from_ui: bool = True,
 ) -> list[CollectionItem]:
     parameters = RetrievalParameters(**task.retrieval_parameters)
     status = RetrievalStatus(**task.last_retrieval_status)
 
     legacy_params = _convert_retrieval_settings_to_old_format(parameters, status, ignore_last_retrieval)
     results = get_search_results(json.dumps(legacy_params), "list")
-    items_by_dataset = results["items_by_dataset"]
-    new_items = []
-    existing_item_ids = []
-    if not is_new_collection:
-        existing_item_ids = CollectionItem.objects.filter(
-            collection=collection,
-            dataset_id=parameters.dataset_id,
-            item_id__in=[ds_and_item_id[1] for ds_and_item_id in results["sorted_ids"]],
-        ).values_list("item_id", flat=True)
-    for i, ds_and_item_id in enumerate(results["sorted_ids"]):
-        if ds_and_item_id[1] in existing_item_ids:
-            continue
-        value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
-        item = CollectionItem(
-            date_added=parameters.created_at,
-            search_source_id=task.id,
-            collection=collection,
-            relevance=0,
-            classes=["_default"],
-            field_type=FieldType.IDENTIFIER,
-            dataset_id=ds_and_item_id[0],
-            item_id=ds_and_item_id[1],
-            metadata=value,
-            search_score=1 / (status.retrieved + i + 1),
-            relevant_parts=value.get("_relevant_parts", []),
-        )
-        new_items.append(item)
-    CollectionItem.objects.bulk_create(new_items)
 
-    if ignore_last_retrieval:
-        status.retrieved = len(results["sorted_ids"])
-    else:
-        status.retrieved += len(results["sorted_ids"])
-    status.available = max(results["total_matches"], status.retrieved)
-    status.available_is_exact = (
-        parameters.retrieval_mode == RetrievalMode.KEYWORD or len(results["sorted_ids"]) < parameters.page_size
-    )
-    task.last_retrieval_status = status.dict()
-    task.save(update_fields=["last_retrieval_status"])
+    if results["sorted_ids"]:
+        items_by_dataset = results["items_by_dataset"]
+        new_items = []
+        existing_item_ids = []
+        if not is_new_collection:
+            existing_item_ids = CollectionItem.objects.filter(
+                collection=collection,
+                dataset_id=parameters.dataset_id,
+                item_id__in=[ds_and_item_id[1] for ds_and_item_id in results["sorted_ids"]],
+            ).values_list("item_id", flat=True)
+        for i, ds_and_item_id in enumerate(results["sorted_ids"]):
+            if ds_and_item_id[1] in existing_item_ids:
+                continue
+            value = items_by_dataset[ds_and_item_id[0]][ds_and_item_id[1]]
+            item = CollectionItem(
+                date_added=parameters.created_at,
+                search_source_id=task.id,
+                collection=collection,
+                relevance=0,
+                classes=["_default"],
+                field_type=FieldType.IDENTIFIER,
+                dataset_id=ds_and_item_id[0],
+                item_id=ds_and_item_id[1],
+                metadata=value,
+                search_score=1 / (status.retrieved + i + 1),
+                relevant_parts=value.get("_relevant_parts", []),
+            )
+            new_items.append(item)
+        CollectionItem.objects.bulk_create(new_items)
+        collection.items_last_changed = timezone.now()
 
-    collection.items_last_changed = timezone.now()
-    if parameters.retrieval_mode == RetrievalMode.KEYWORD:
-        collection.log_explanation(
-            f"Added {len(new_items)} search results found by **included keywords**",
-            save=False,
-        )
-    elif parameters.retrieval_mode == RetrievalMode.VECTOR:
-        collection.log_explanation(
-            f"Added {len(new_items)} search results found by **AI-based semantic similarity** (vector search)",
-            save=False,
-        )
-    elif parameters.retrieval_mode == RetrievalMode.HYBRID:
-        collection.log_explanation(
-            f"Added {len(new_items)} search results found by a combination of **included keywords** and **AI-based semantic similarity** (vector search)",
-            save=False,
-        )
-    if parameters.use_reranking:
-        collection.log_explanation("Re-ordered top results using an **AI-based re-ranking model**", save=False)
     collection.search_mode = True
-    collection.save(update_fields=["search_mode", "items_last_changed", "explanation_log"])
+    if from_ui:
+        if ignore_last_retrieval:
+            status.retrieved = len(results["sorted_ids"])
+        else:
+            status.retrieved += len(results["sorted_ids"])
+        status.available = max(results["total_matches"], status.retrieved)
+        status.available_is_exact = (
+            parameters.retrieval_mode == RetrievalMode.KEYWORD or len(results["sorted_ids"]) < parameters.page_size
+        )
+        task.last_retrieval_status = status.dict()
+        task.save(update_fields=["last_retrieval_status"])
+
+        if parameters.retrieval_mode == RetrievalMode.KEYWORD:
+            collection.log_explanation(
+                f"Added {len(new_items)} search results found by **included keywords**", save=False
+            )
+        elif parameters.retrieval_mode == RetrievalMode.VECTOR:
+            collection.log_explanation(
+                f"Added {len(new_items)} search results found by **AI-based semantic similarity** (vector search)",
+                save=False,
+            )
+        elif parameters.retrieval_mode == RetrievalMode.HYBRID:
+            collection.log_explanation(
+                f"Added {len(new_items)} search results found by a combination of **included keywords** and **AI-based semantic similarity** (vector search)",
+                save=False,
+            )
+        if parameters.use_reranking:
+            collection.log_explanation("Re-ordered top results using an **AI-based re-ranking model**", save=False)
+
+        collection.save(update_fields=["search_mode", "items_last_changed", "explanation_log"])
+    else:
+        collection.save(update_fields=["search_mode", "items_last_changed"])
     return new_items
 
 

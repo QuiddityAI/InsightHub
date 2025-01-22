@@ -42,7 +42,7 @@ export default {
     <button class="flex felx-row gap-2 hover:text-blue-500"
       v-tooltip.bottom="{value: 'Run this search task', showDelay: 400}"
       @click="collectionStore.run_existing_search_task(task.id)">
-      {{ task.settings.user_input }}
+      {{ task.settings.user_input || 'Search Task' }}
     </button>
 
     <SearchTaskExecutionSettings :task="collectionStore.collection.most_recent_search_task">
