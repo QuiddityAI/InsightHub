@@ -6,19 +6,15 @@ import {
   StarIcon,
 } from "@heroicons/vue/24/outline"
 
-import Checkbox from 'primevue/checkbox';
-
 import BorderlessButton from "../widgets/BorderlessButton.vue";
 import SearchFilterList from "./SearchFilterList.vue";
+import SearchTaskExecutionSettings from "./SearchTaskExecutionSettings.vue";
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
-import { useMapStateStore } from "../../stores/map_state_store"
 import { useCollectionStore } from '../../stores/collection_store';
-import { httpClient } from "../../api/httpClient"
 
 const appState = useAppStateStore()
-const mapState = useMapStateStore()
 const collectionStore = useCollectionStore()
 
 </script>
@@ -35,7 +31,6 @@ export default {
     }
   },
   computed: {
-    ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
     ...mapStores(useCollectionStore),
     retrieval_parameters() {
@@ -43,7 +38,8 @@ export default {
     }
   },
   mounted() {
-    this.show_periodic_execution_settings = this.collectionStore.collection.most_recent_search_task?.run_on_new_items || false
+    const task = this.collectionStore.collection.most_recent_search_task
+    this.show_periodic_execution_settings = task?.is_saved || task?.run_on_new_items || false
   },
   watch: {
   },
@@ -93,16 +89,9 @@ export default {
       </BorderlessButton>
     </div>
 
-    <div v-if="show_periodic_execution_settings" class="flex flex-row items-center gap-4">
-      <div class="flex flex-row items-center">
-        <Checkbox v-model="collectionStore.collection.most_recent_search_task.run_on_new_items"
-          @change="collectionStore.commit_most_recent_search_task_execution_settings()"
-          class="" :binary="true" />
-        <button class="ml-2 text-xs text-gray-500"
-          @click="collectionStore.collection.most_recent_search_task.run_on_new_items = !collectionStore.collection.most_recent_search_task.run_on_new_items; collectionStore.commit_most_recent_search_task_execution_settings()">
-          Run for new items
-        </button>
-      </div>
+    <div v-if="show_periodic_execution_settings" class="flex flex-row items-center gap-4 mb-1">
+      <SearchTaskExecutionSettings :task="collectionStore.collection.most_recent_search_task">
+      </SearchTaskExecutionSettings>
     </div>
   </div>
 </template>

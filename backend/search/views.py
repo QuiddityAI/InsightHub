@@ -1,12 +1,14 @@
 import json
 import threading
 
+from django.db.models import Q
 from django.http import HttpResponse, HttpRequest
 from django.forms.models import model_to_dict
 from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection, Dataset, SearchTask
 from data_map_backend.schemas import CollectionIdentifier
+from data_map_backend.serializers import SearchTaskSerializer
 from legacy_backend.database_client.text_search_engine_client import (
     TextSearchEngineClient,
 )
@@ -21,6 +23,7 @@ from search.logic.execute_search import (
 )
 from search.schemas import (
     GetPlainResultsPaylaod,
+    RunExistingSearchTaskPayload,
     RunPreviousSearchTaskPayload,
     RunSearchTaskPayload,
     UpdateSearchTaskExecutionSettingsPayload,
@@ -138,6 +141,44 @@ def run_previous_search_task_route(request: HttpRequest, payload: RunPreviousSea
     return HttpResponse(status=204, content_type="application/json")
 
 
+@api.post("run_existing_search_task")
+def run_existing_search_task_route(request: HttpRequest, payload: RunExistingSearchTaskPayload):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        task = SearchTask.objects.select_related("collection").get(id=payload.task_id)
+    except SearchTask.DoesNotExist:
+        return HttpResponse(status=404)
+    if task.collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    collection = task.collection
+
+    collection.agent_is_running = True
+    collection.current_agent_step = "Running search task..."
+    collection.save(update_fields=["agent_is_running", "current_agent_step"])
+
+    def thread_function():
+        try:
+            run_search_task(collection, task, request.user.id)  # type: ignore
+        finally:
+            collection.agent_is_running = False
+            collection.current_agent_step = None
+            collection.save(update_fields=["agent_is_running", "current_agent_step"])
+
+    thread = threading.Thread(target=thread_function)
+    thread.start()
+    if payload.wait_for_ms > 0:
+        try:
+            thread.join(timeout=payload.wait_for_ms / 1000)
+        except TimeoutError:
+            # if the thread is still running after the timeout, we just let it run
+            pass
+
+    return HttpResponse(status=204)
+
+
 @api.post("add_more_items_from_active_task")
 def add_more_items_from_active_task_route(request: HttpRequest, payload: CollectionIdentifier):
     if not request.user.is_authenticated:
@@ -221,11 +262,30 @@ def update_search_task_execution_settings_route(
     if task.collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    allowed_keys = {"run_on_new_items"}
+    allowed_keys = {"is_saved", "run_on_new_items"}
     for key, value in payload.updates.items():
         if key not in allowed_keys:
             return HttpResponse(status=400)
         setattr(task, key, value)
+
+    if task.run_on_new_items:
+        task.is_saved = True
     task.save(update_fields=list(payload.updates.keys()))
 
     return HttpResponse(status=204, content_type="application/json")
+
+
+@api.post("get_saved_search_tasks")
+def get_saved_search_tasks_route(request: HttpRequest, payload: CollectionIdentifier):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    tasks = SearchTask.objects.filter(
+        Q(is_saved=True) | Q(run_on_new_items=True),
+        collection=payload.collection_id,
+        collection__created_by=request.user,
+    ).order_by("-created_at")
+    print(tasks)
+    results = SearchTaskSerializer(tasks, many=True).data
+
+    return HttpResponse(json.dumps({"tasks": results}), status=200, content_type="application/json")

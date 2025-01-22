@@ -20,7 +20,7 @@ class ItemRelevance:
 
 class CollectionIdentifier(Schema):
     collection_id: int
-    class_name: str
+    class_name: str = "_default"
 
 
 class CollectionUiSettings(Schema):

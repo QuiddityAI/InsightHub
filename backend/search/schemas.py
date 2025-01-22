@@ -116,3 +116,8 @@ class GetPlainResultsPaylaod(Schema):
 class UpdateSearchTaskExecutionSettingsPayload(Schema):
     task_id: str
     updates: dict
+
+
+class RunExistingSearchTaskPayload(Schema):
+    task_id: str
+    wait_for_ms: int = 0

@@ -31,6 +31,7 @@ export const useCollectionStore = defineStore("collection", {
       filtered_count: null,
       items_last_retrieved: new Date(2020, 1, 1),
       update_collection_is_scheduled: false,
+      saved_search_tasks: [],
 
       // Pagination
       first_index: 0,
@@ -95,6 +96,7 @@ export const useCollectionStore = defineStore("collection", {
       this.first_index = 0
       this.order_by_field = 'date_added'
       this.order_descending = true
+      this.saved_search_tasks = []
       this.eventBus.emit("collection_changed", {collection_id: null, class_name: null})
 
       const queryParams = new URLSearchParams(window.location.search)
@@ -475,16 +477,25 @@ export const useCollectionStore = defineStore("collection", {
           that.update_collection({update_items: true})
         })
     },
-    commit_most_recent_search_task_execution_settings() {
+    commit_search_task_execution_settings(task) {
+      if (task.run_on_new_items) {
+        task.is_saved = true
+      }
       const body = {
-        task_id: this.collection.most_recent_search_task.id,
+        task_id: task.id,
         updates: {
-          run_on_new_items: this.collection.most_recent_search_task.run_on_new_items,
+          is_saved: task.is_saved,
+          run_on_new_items: task.run_on_new_items,
         },
       }
       httpClient
         .post("/api/v1/search/update_search_task_execution_settings", body)
-        .then((response) => { })
+        .then((response) => {
+          this.fetch_saved_search_tasks()
+          if (this.collection.most_recent_search_task?.id === task.id) {
+            update_object(this.collection.most_recent_search_task, task)
+          }
+        })
     },
     exit_search_mode() {
       const that = this
@@ -652,6 +663,27 @@ export const useCollectionStore = defineStore("collection", {
           this.update_collection({update_items: true})
         })
     },
+    // ----------------------------- Saved / Periodic Search Tasks -----------------------------
+    fetch_saved_search_tasks() {
+      const body = {
+        collection_id: this.collection_id,
+      }
+      httpClient
+        .post("/api/v1/search/get_saved_search_tasks", body)
+        .then((response) => {
+          this.saved_search_tasks = response.data["tasks"]
+        })
+    },
+    run_existing_search_task(task_id) {
+      const body = {
+        task_id: task_id,
+      }
+      httpClient
+        .post("/api/v1/search/run_existing_search_task", body)
+        .then((response) => {
+          this.update_collection({update_items: true})
+        })
+    }
   },
   getters: {
     item_count() {

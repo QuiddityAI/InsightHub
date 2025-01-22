@@ -35,6 +35,7 @@ import MapWithLabelsAndButtons from "../map/MapWithLabelsAndButtons.vue";
 import CollectionItemGrid from "./CollectionItemGrid.vue";
 import CollectionSpreadsheetView from "./CollectionSpreadsheetView.vue";
 import FilterBar from "./FilterBar.vue";
+import SavedSearchTasksList from "./SavedSearchTasksList.vue";
 
 import { CollectionItemSizeMode, CollectionItemLayout } from "../../utils/utils.js"
 
@@ -470,9 +471,14 @@ export default {
         </BorderlessButton>
 
         <div v-if="collection.ui_settings.secondary_view === 'more'"
-          class="overflow-hidden h-full shadow-md">
-          <ExplanationLog class="h-full overflow-y-auto">
+          class="overflow-y-auto h-full shadow-md flex flex-col gap-10 pt-12 pb-7">
+
+          <SavedSearchTasksList>
+          </SavedSearchTasksList>
+
+          <ExplanationLog>
           </ExplanationLog>
+
         </div>
 
         <div v-if="collection.ui_settings.secondary_view === 'map'"

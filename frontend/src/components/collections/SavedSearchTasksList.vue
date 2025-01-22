@@ -1,22 +1,14 @@
 <script setup>
 
-import { PaperAirplaneIcon } from "@heroicons/vue/24/outline"
-
-import { marked } from "marked";
-
-import Message from 'primevue/message';
 import { useToast } from 'primevue/usetoast';
 
-import { httpClient, djangoClient } from "../../api/httpClient"
-import { languages } from "../../utils/utils"
+import SearchTaskListItem from './SearchTaskListItem.vue';
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
-import { useMapStateStore } from "../../stores/map_state_store"
 import { useCollectionStore } from "../../stores/collection_store"
 
 const appState = useAppStateStore()
-const mapState = useMapStateStore()
 const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
@@ -32,11 +24,11 @@ export default {
     }
   },
   computed: {
-    ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
     ...mapStores(useCollectionStore),
   },
   mounted() {
+    this.collectionStore.fetch_saved_search_tasks()
   },
   watch: {
   },
@@ -49,20 +41,20 @@ export default {
   <div class="flex flex-col gap-5 px-10">
     <div class="flex flex-row items-center gap-3">
       <h3 class="font-bold text-[15px]">
-        Explanation
+        Saved / Periodic Searches
       </h3>
     </div>
 
     <ul class="flex flex-col gap-5">
-      <li v-for="explanation in collectionStore.collection.explanation_log"
-        class="list-disc ml-5 text-gray-600" v-html="marked.parse(explanation.explanation)">
-      </li>
+      <SearchTaskListItem v-for="task in collectionStore.saved_search_tasks"
+        :task="task">
+      </SearchTaskListItem>
     </ul>
 
-    <div v-if="collectionStore.collection.explanation_log.length === 0">
-      <Message severity="info">
-        No explanations available yet
-      </Message>
+    <div v-if="collectionStore.saved_search_tasks.length === 0">
+      <div class="text-gray-400 ml-3 -mt-3">
+        No saved searches yet
+      </div>
     </div>
   </div>
 
