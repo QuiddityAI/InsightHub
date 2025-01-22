@@ -33,6 +33,9 @@ export default {
   computed: {
     ...mapStores(useAppStateStore),
     ...mapStores(useCollectionStore),
+    search_settings() {
+      return this.collectionStore.collection.most_recent_search_task?.settings
+    },
     retrieval_parameters() {
       return this.collectionStore.collection.most_recent_search_task?.retrieval_parameters
     }
@@ -63,7 +66,7 @@ export default {
 
       <div>
         <span class="text-gray-700">
-          {{ retrieval_parameters.query }}
+          {{ search_settings.user_input || "No search query" }}
         </span>
         <SearchFilterList
           :filters="retrieval_parameters.filters || []"

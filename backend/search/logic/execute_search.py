@@ -56,15 +56,14 @@ def create_and_run_search_task(
     collection.current_agent_step = "Running search task..."
     collection.save(update_fields=["current_agent_step"])
 
-    if not search_task.query:
-        search_task.query = search_task.user_input
+    keyword_query = search_task.user_input
 
     if search_task.auto_set_filters:
         collection.log_explanation("Use AI model to generate **suitable query**", save=False)
         prompt = search_query_prompt[search_task.result_language or "en"].replace(
             "{{ user_input }}", search_task.user_input
         )
-        search_task.query = Google_Gemini_Flash_1_5_v1().generate_short_text(prompt) or search_task.query
+        keyword_query = Google_Gemini_Flash_1_5_v1().generate_short_text(prompt) or keyword_query
 
         # filter_prompt_template = get_filter_prompt(search_task.dataset_id, search_task.result_language or 'en')
         # if filter_prompt_template:
@@ -81,21 +80,19 @@ def create_and_run_search_task(
         search_type=search_task.search_type,
         dataset_id=search_task.dataset_id,
         result_language=search_task.result_language or "en",
-        page_size=search_task.candidates_per_step,
+        limit=search_task.candidates_per_step,
         # external_input
-        query=search_task.query,
+        keyword_query=keyword_query,
         vector=None,
         filters=search_task.filters or [],
         ranking_settings=search_task.ranking_settings or {},
         retrieval_mode=search_task.retrieval_mode or "hybrid",
-        auto_relax_query=True,
+        auto_relax_query=search_task.auto_relax_query,
         use_reranking=True,
         # similar_to_item
         reference_item_id=search_task.reference_item_id,
         reference_dataset_id=search_task.reference_dataset_id,
         origin_name=search_task.origin_name,
-        # similar_to_collection
-        reference_collection_id=search_task.reference_collection_id,
         # random_sample: no parameters, always same seed
     )
     status = RetrievalStatus(retrieved=0, available=None, available_is_exact=True)
@@ -204,7 +201,7 @@ def add_items_from_task(
     parameters = RetrievalParameters(**task.retrieval_parameters)
     status = RetrievalStatus(**task.last_retrieval_status)
 
-    legacy_params = _convert_retrieval_settings_to_old_format(parameters, status, ignore_last_retrieval)
+    legacy_params = _convert_retrieval_parameters_to_old_format(parameters, status, ignore_last_retrieval)
     results = get_search_results(json.dumps(legacy_params), "list")
 
     new_items = []
@@ -254,7 +251,7 @@ def add_items_from_task(
             status.retrieved += len(results["sorted_ids"])
         status.available = max(results["total_matches"], status.retrieved)
         status.available_is_exact = (
-            parameters.retrieval_mode == RetrievalMode.KEYWORD or len(results["sorted_ids"]) < parameters.page_size
+            parameters.retrieval_mode == RetrievalMode.KEYWORD or len(results["sorted_ids"]) < parameters.limit
         )
         task.last_retrieval_status = status.dict()
         task.save(update_fields=["last_retrieval_status"])
@@ -282,40 +279,38 @@ def add_items_from_task(
     return new_items + updated_items
 
 
-def _convert_retrieval_settings_to_old_format(
-    retrieval_settings: RetrievalParameters,
+def _convert_retrieval_parameters_to_old_format(
+    retrieval_parameters: RetrievalParameters,
     status: RetrievalStatus,
     ignore_last_retrieval: bool = True,
 ) -> dict:
     params = {
         "search": {
-            "dataset_ids": [retrieval_settings.dataset_id],
+            "dataset_ids": [retrieval_parameters.dataset_id],
             "task_type": "quick_search",
-            "search_type": retrieval_settings.search_type,
-            "retrieval_mode": retrieval_settings.retrieval_mode or "hybrid",
+            "search_type": retrieval_parameters.search_type,
+            "retrieval_mode": retrieval_parameters.retrieval_mode or "hybrid",
             "use_separate_queries": False,
-            "all_field_query": retrieval_settings.query,
+            "all_field_query": retrieval_parameters.keyword_query,
             "internal_input_weight": 0.7,
             "use_similarity_thresholds": True,
-            "auto_relax_query": retrieval_settings.auto_relax_query,
+            "auto_relax_query": retrieval_parameters.auto_relax_query,
             "use_reranking": (
-                retrieval_settings.use_reranking
-                if retrieval_settings.search_type == SearchType.EXTERNAL_INPUT
+                retrieval_parameters.use_reranking
+                if retrieval_parameters.search_type == SearchType.EXTERNAL_INPUT
                 else False
             ),
-            "filters": retrieval_settings.filters or [],
-            "result_language": retrieval_settings.result_language or "en",
-            "ranking_settings": retrieval_settings.ranking_settings or {},
+            "filters": retrieval_parameters.filters or [],
+            "result_language": retrieval_parameters.result_language or "en",
+            "ranking_settings": retrieval_parameters.ranking_settings or {},
             "similar_to_item_id": (
-                [retrieval_settings.reference_dataset_id, retrieval_settings.reference_item_id]
-                if retrieval_settings.reference_item_id
+                [retrieval_parameters.reference_dataset_id, retrieval_parameters.reference_item_id]
+                if retrieval_parameters.reference_item_id
                 else None
             ),
-            "result_list_items_per_page": retrieval_settings.page_size,
+            "result_list_items_per_page": retrieval_parameters.limit,
             "result_list_current_page": (
-                status.retrieved // retrieval_settings.page_size
-                if status.retrieved and not ignore_last_retrieval
-                else 0
+                status.retrieved // retrieval_parameters.limit if status.retrieved and not ignore_last_retrieval else 0
             ),
             "max_sub_items_per_item": 1,
             "return_highlights": True,
