@@ -31,8 +31,9 @@ export default {
       const filters = {}
       const dataset_ids = new Set()
       // FIXME: this only uses the last search
-      if (this.collectionStore.collection.most_recent_search_task.dataset_id !== null) {
-        dataset_ids.add(this.collectionStore.collection.most_recent_search_task.dataset_id)
+      const task = this.collectionStore.collection.most_recent_search_task
+      if (task && task.dataset_id !== null) {
+        dataset_ids.add(task.dataset_id)
       }
       this.dataset_ids = Array.from(dataset_ids)
       for (const dataset_id of dataset_ids) {
