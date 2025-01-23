@@ -8,6 +8,7 @@ import Chip from "primevue/chip"
 
 import BorderlessButton from "../widgets/BorderlessButton.vue";
 import WordCloud from "../filter/WordCloud.vue";
+import StatisticList from "../search/StatisticList.vue";
 
 import RangeFilterList from "../search/RangeFilterList.vue";
 import TextFilterInput from "./TextFilterInput.vue";
@@ -84,6 +85,8 @@ export default {
             class="ml-2 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
       </div>
     </div>
+
+    <StatisticList></StatisticList>
 
     <WordCloud v-if="show_word_cloud">
     </WordCloud>

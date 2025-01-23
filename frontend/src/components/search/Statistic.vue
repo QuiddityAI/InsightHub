@@ -1,16 +1,26 @@
 <script setup>
+
+import ProgressSpinner from "primevue/progressspinner"
+
+import { debounce } from '../../utils/utils';
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from '../../stores/collection_store'
+
+import { httpClient } from "../../api/httpClient"
+
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 </script>
 
 <script>
 
 export default {
   inject: ["eventBus"],
-  props: ["statistic"],
+  props: ["statistic", "dataset_id", "required_fields"],
   emits: [],
   data() {
     return {
@@ -18,109 +28,58 @@ export default {
       series: [],
       categories: [],
       category_field: null,
+      is_loading: false,
+      create_plot_debounced: debounce(() => {
+        this.create_plot()
+      }, 500),
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
     this.create_plot()
-    this.eventBus.on("visible_result_ids_updated", () => {
-      this.create_plot()
-    })
+    this.eventBus.on("collection_filters_changed", this.create_plot_debounced)
+  },
+  unmounted() {
+    this.eventBus.off("collection_filters_changed", this.create_plot_debounced)
   },
   watch: {
-    "appStateStore.map_item_details"(new_val, old_val) {
-      this.create_plot()
-    },
   },
   methods: {
     create_plot() {
-      var begin = new Date().getTime() / 1000;
-      const item_details = this.appStateStore.map_item_details
-
-      const y_counts = {}
-      const y_values = {}
-      for (const ds_and_item_id of this.appStateStore.visible_result_ids) {
-        const ds_items = item_details[ds_and_item_id[0]]
-        if (!ds_items) continue
-        const item = ds_items[ds_and_item_id[1]]
-
-        const categories = this.statistic.x_type === "array_item_category" ? item[this.statistic.x] : [item[this.statistic.x]]
-        if (categories === undefined) {
-          continue
-        }
-        for (const category of categories) {
-          y_counts[category] = (y_counts[category] || 0) + 1
-        }
-        for (const y_params of this.statistic.y) {
-          const value = y_params.field ? item[y_params.field] : null
-          for (const category of categories) {
-            if (!y_values.hasOwnProperty(category)) {
-              y_values[category] = {}
-            }
-            y_values[category][y_params.name] = (y_values[category][y_params.name] || 0) + value
+      this.is_loading = true
+      const body = {
+        collection_id: this.collectionStore.collection_id,
+        dataset_id: this.dataset_id,
+        statistic_parameters: this.statistic,
+        required_fields: this.required_fields,
+      }
+      httpClient
+        .post("/api/v1/filter/get_statistic_data", body)
+        .then((response) => {
+          this.categories = response.data.categories
+          this.options = {
+            xaxis: {
+              categories: this.categories,
+            },
+            yaxis: {
+              show: false,
+            },
+            tooltip: {  // show tooltip for full height of chart, not only when hovering directly over bar
+              shared: true,
+              intersect: false
+            },
+            dataLabels: {  // numbers on bars
+              enabled: false,
+            },
           }
-        }
-      }
-      for (const y_params of this.statistic.y) {
-        if (y_params.type === "mean") {
-          for (const category in y_values) {
-            y_values[category][y_params.name] = (y_values[category][y_params.name] / y_counts[category]).toFixed(0)
-          }
-        }
-      }
-
-      const max_columns = this.statistic.max_columns || 20
-      let union_of_top_n_categories_per_y = []
-      for (const y_params of this.statistic.y) {
-        let top_n_categories = []
-        if (y_params.type === "mean") {
-          top_n_categories = Object.keys(y_counts).sort((a, b) => y_values[b][y_params.name] - y_values[a][y_params.name]).slice(0, max_columns / this.statistic.y.length)
-        } else {
-          top_n_categories = Object.keys(y_counts).sort((a, b) => y_counts[b] - y_counts[a]).slice(0, max_columns / this.statistic.y.length)
-        }
-        union_of_top_n_categories_per_y = [...new Set([...union_of_top_n_categories_per_y, ...top_n_categories])]
-      }
-
-      // sort categories by mean of all values in each category:
-      union_of_top_n_categories_per_y.sort((a, b) => {
-        const a_max = Math.max(...Object.values(y_values[a])) / Object.keys(y_values[a]).length
-        const b_max = Math.max(...Object.values(y_values[b])) / Object.keys(y_values[b]).length
-        return b_max - a_max  // descending
-      })
-      const categories = union_of_top_n_categories_per_y
-      if (this.statistic.order_by === "x") {
-        categories.sort()
-      }
-      this.category_field = this.statistic.x
-      this.categories = categories
-
-      const series = []
-      for (const y_params of this.statistic.y) {
-        series.push({
-          name: y_params.name,
-          data: y_params.type === "mean" ? categories.map(k => y_values[k][y_params.name] || 0) : categories.map(k => y_counts[k] || 0),
+          this.series = response.data.series
+          this.category_field = this.statistic.x
+          this.is_loading = false
         })
-      }
-
-      this.options = {
-        xaxis: {
-          categories: categories,
-        },
-        yaxis: {
-          show: false,
-        },
-        tooltip: {  // show tooltip for full height of chart, not only when hovering directly over bar
-          shared: true,
-          intersect: false
-        },
-        dataLabels: {  // numbers on bars
-          enabled: false,
-        },
-      }
-      this.series = series
 
       const example_config = {
         "required_fields": [
@@ -164,8 +123,6 @@ export default {
           }
         ]
       }
-
-      //console.log(`time to plot: ${(new Date().getTime() / 1000) - begin}`)
     },
     clickHandler(event, chartContext, config) {
       if (config.dataPointIndex === undefined) {
@@ -177,41 +134,37 @@ export default {
       if (category === undefined) {
         return
       }
-      if (this.mapStateStore.visibility_filters.some(filter_item => filter_item.display_name === display_name)) {
-        return
-      }
 
-      let filter_fn = null
-      if (this.statistic.x_type === "array_item_category") {
-        filter_fn = (item) => {
-          // the category is always stored as a string, so we need to convert the candidates to strings as well
-          return item[category_field].map(String).includes(category)
-        }
-      } else {
-        filter_fn = (item) => {
-          // the category is always stored as a string, so we need to convert the candidates to strings as well
-          return String(item[category_field]) === category
-        }
-      }
+      const filter_type = this.statistic.x_type === "array_item_category" ? "metadata_value_contains" : "metadata_value_is"
 
-      this.mapStateStore.visibility_filters.push({
+      const filter_uid = `statistic_filter`
+      const text_filter = {
+        uid: filter_uid,
         display_name: display_name,
-        filter_fn: filter_fn,
-      })
-      this.eventBus.emit("visibility_filters_changed")
+        removable: true,
+        filter_type: filter_type,
+        value: category,
+        field: category_field,
+      }
+      this.collectionStore.add_filter(text_filter)
     },
   },
 }
 </script>
 
 <template>
-  <apexchart
-    type="bar"
-    :options="options"
-    :series="series"
-    height="220px"
-    @click="clickHandler">
-  </apexchart>
+  <div>
+    <div class="flex flex-col items-center">
+      <ProgressSpinner class="h-5 w-5" v-if="is_loading" />
+    </div>
+    <apexchart
+      type="bar"
+      :options="options"
+      :series="series"
+      height="220px"
+      @click="clickHandler">
+    </apexchart>
+  </div>
 </template>
 
 <style>

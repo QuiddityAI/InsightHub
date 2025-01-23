@@ -7,11 +7,12 @@ from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
 from data_map_backend.models import CollectionItem, DataCollection
-from data_map_backend.schemas import CollectionIdentifier
+from filter.logic.statistics import get_statistic_data
 from filter.schemas import (
     AddFilterPayload,
     FilterIdentifierPayload,
     ImportantWordsPayload,
+    StatisticDataPayload,
     ValueRangeInput,
     ValueRangeOutput,
 )
@@ -93,7 +94,7 @@ def get_important_words_route(request: HttpRequest, payload: ImportantWordsPaylo
         return HttpResponse(status=401)
 
     try:
-        collection = DataCollection.objects.only("created_by").get(id=payload.collection_id)
+        collection = DataCollection.objects.get(id=payload.collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
     if collection.created_by != request.user:
@@ -101,3 +102,21 @@ def get_important_words_route(request: HttpRequest, payload: ImportantWordsPaylo
 
     words = get_important_words(collection, payload.item_ids)
     return HttpResponse(json.dumps({"words": words}), content_type="application/json")
+
+
+@api.post("get_statistic_data")
+def get_statistic_data_route(request: HttpRequest, payload: StatisticDataPayload):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        collection = DataCollection.objects.get(id=payload.collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    data = get_statistic_data(
+        collection, payload.class_name, payload.dataset_id, payload.required_fields, payload.statistic_parameters
+    )
+    return HttpResponse(json.dumps(data), content_type="application/json")

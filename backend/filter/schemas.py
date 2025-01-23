@@ -42,3 +42,11 @@ class ImportantWordsPayload(Schema):
     collection_id: int
     class_name: str
     item_ids: list[int]
+
+
+class StatisticDataPayload(Schema):
+    collection_id: int
+    class_name: str = "_default"
+    dataset_id: int
+    required_fields: list[str]
+    statistic_parameters: dict

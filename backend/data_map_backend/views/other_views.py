@@ -984,6 +984,10 @@ def get_filtered_collection_items(
             return_items = return_items.filter(**{f"metadata__{filter.field}__gte": filter.value})
         elif filter.filter_type == "metadata_value_lte":
             return_items = return_items.filter(**{f"metadata__{filter.field}__lte": filter.value})
+        elif filter.filter_type == "metadata_value_is":
+            return_items = return_items.filter(**{f"metadata__{filter.field}": filter.value})
+        elif filter.filter_type == "metadata_value_contains":
+            return_items = return_items.filter(**{f"metadata__{filter.field}__contains": filter.value})
         elif filter.filter_type == "text_query":
             return_items = apply_text_filter(return_items, filter)
 
