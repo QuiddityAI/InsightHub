@@ -252,6 +252,11 @@ export const useMapStateStore = defineStore("mapState", {
       this.per_point.y = projection_data.per_point.y
       this.per_point.cluster_id = projection_data.per_point.cluster_id
       this.per_point.collection_item_id = projection_data.per_point.collection_item_id
+      this.per_point.size = normalizeArrayMedianGamma(
+        projection_data.per_point.size,
+        2.0,
+        0.0001
+      )
       projection_data.per_point.hue.push(Math.max(...projection_data.per_point.hue) + 1)
       this.per_point.hue = normalizeArrayMedianGamma(
         projection_data.per_point.hue,

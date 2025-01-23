@@ -4,26 +4,25 @@ import threading
 
 import numpy as np
 
-from ..schemas import MapParameters, ProjectionData
-
+from data_map_backend.models import DataCollection, Dataset
+from data_map_backend.utils import DotDict
 from data_map_backend.views.other_views import (
     get_dataset_cached,
     get_serialized_dataset_cached,
 )
-from data_map_backend.models import DataCollection, Dataset
-from legacy_backend.logic.search import get_items_by_ids
-from data_map_backend.utils import DotDict
 from legacy_backend.logic.clusters_and_titles import clusterize_results
+from legacy_backend.logic.search import get_items_by_ids
 from legacy_backend.utils.collect_timings import Timings
-
 from map.logic.map_generation_steps import (
-    get_collection_items,
-    get_vector_field_dimensions,
     do_umap,
-    save_projections,
     get_cluster_titles_new,
+    get_collection_items,
     get_thumbnails,
+    get_vector_field_dimensions,
+    save_projections,
 )
+
+from ..schemas import MapParameters, ProjectionData
 
 
 def generate_new_map(collection: DataCollection, parameters: MapParameters) -> ProjectionData | str:
@@ -42,12 +41,15 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
 
     # get data items:
     map_vector_field = dataset.merged_advanced_options.get("map_vector_field", "w2v_vector")
+    point_size_field = dataset.merged_advanced_options.get("size_field", None)
     assert dataset.schema.hover_label_rendering is not None
     hover_required_fields = dataset.schema.hover_label_rendering.get("required_fields", [])
     data_item_ids = [item.item_id for item in collection_items]
     required_fields = (
         [map_vector_field] + hover_required_fields if map_vector_field != "w2v_vector" else hover_required_fields
     )
+    if point_size_field:
+        required_fields.append(point_size_field)
     data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)  # type: ignore
     timings.log("get_items_by_ids")
 
@@ -86,6 +88,12 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
         final_positions = raw_projections
         cluster_id_per_point = np.full(item_count, -1)
 
+    # point size:
+    if point_size_field:
+        point_sizes = np.array([item.get(point_size_field, 1) for item in data_items])
+    else:
+        point_sizes = np.ones(len(data_items))
+
     # save projections to collection:
     projection_data = save_projections(
         collection,
@@ -96,6 +104,7 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
         map_vector_field,
         final_positions,
         cluster_id_per_point,
+        point_sizes,
         timings,
     )
 

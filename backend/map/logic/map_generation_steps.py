@@ -81,6 +81,7 @@ def save_projections(
     map_vector_field: str,
     final_positions: np.ndarray,
     cluster_id_per_point: np.ndarray,
+    point_sizes: np.ndarray,
     timings: Timings,
 ):
     metadata = MapMetadata(
@@ -98,7 +99,7 @@ def save_projections(
         x=final_positions[:, 0].tolist(),
         y=final_positions[:, 1].tolist(),
         cluster_id=cluster_id_per_point.tolist(),
-        size=np.ones(len(data_items)).tolist(),
+        size=point_sizes.tolist(),
         hue=cluster_id_per_point.tolist(),
         sat=np.ones(len(data_items)).tolist(),
         val=np.ones(len(data_items)).tolist(),
