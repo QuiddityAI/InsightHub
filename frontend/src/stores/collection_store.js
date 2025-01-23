@@ -33,6 +33,8 @@ export const useCollectionStore = defineStore("collection", {
       items_last_retrieved: new Date(2020, 1, 1),
       update_collection_is_scheduled: false,
       saved_search_tasks: [],
+      important_words: [],
+      important_words_are_loading: false,
 
       // Pagination
       first_index: 0,
@@ -99,6 +101,8 @@ export const useCollectionStore = defineStore("collection", {
       this.order_by_field = 'date_added'
       this.order_descending = true
       this.saved_search_tasks = []
+      this.important_words = []
+      this.important_words_are_loading = false
       this.eventBus.emit("collection_changed", {collection_id: null, class_name: null})
 
       const queryParams = new URLSearchParams(window.location.search)
@@ -636,6 +640,19 @@ export const useCollectionStore = defineStore("collection", {
           if (on_success) {
             on_success(response.data)
           }
+        })
+    },
+    fetch_important_words() {
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+      }
+      this.important_words_are_loading = true
+      httpClient
+        .post("/api/v1/filter/get_important_words", body)
+        .then((response) => {
+          this.important_words = response.data.words
+          this.important_words_are_loading = false
         })
     },
     // ----------------------------- Groups / Parent - Child relations -----------------------------

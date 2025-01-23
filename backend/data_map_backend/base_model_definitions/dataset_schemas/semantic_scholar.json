@@ -12,7 +12,7 @@
   },
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2025-01-15T16:39:16.423Z",
+  "changed_at": "2025-01-23T09:45:33.106Z",
   "primary_key": "corpus_id",
   "direct_parent": null,
   "all_parents": null,
@@ -118,6 +118,7 @@
         "tooltip": "Strictly sort by number of citations, as long as the paper contains the keywords at least once"
       }
     ],
+    "show_word_cloud": true,
     "map_vector_field": "embedding_specter_v2",
     "opt_in_workflows": [
       "research_agent"

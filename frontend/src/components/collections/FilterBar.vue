@@ -1,11 +1,13 @@
 <script setup>
 import {
   InformationCircleIcon,
+  CloudIcon,
 } from "@heroicons/vue/24/outline"
 
 import Chip from "primevue/chip"
 
 import BorderlessButton from "../widgets/BorderlessButton.vue";
+import WordCloud from "../filter/WordCloud.vue";
 
 import RangeFilterList from "../search/RangeFilterList.vue";
 import TextFilterInput from "./TextFilterInput.vue";
@@ -30,6 +32,7 @@ export default {
   emits: [],
   data() {
     return {
+      show_word_cloud: false,
     }
   },
   computed: {
@@ -38,6 +41,10 @@ export default {
     ...mapStores(useCollectionStore),
   },
   mounted() {
+    const task = this.collectionStore.collection.most_recent_search_task
+    if (task && task.dataset !== null) {
+      this.show_word_cloud = this.appStateStore.datasets[task.dataset]?.merged_advanced_options?.show_word_cloud || false
+    }
   },
   watch: {
   },
@@ -59,6 +66,12 @@ export default {
 
       <TextFilterInput></TextFilterInput>
 
+      <BorderlessButton @click="show_word_cloud = !show_word_cloud"
+        :highlighted="show_word_cloud"
+        v-tooltip="{value: 'Show word cloud', showDelay: 400}">
+        <CloudIcon class="h-6 w-6">
+        </CloudIcon>
+      </BorderlessButton>
     </div>
 
     <RangeFilterList></RangeFilterList>
@@ -71,6 +84,9 @@ export default {
             class="ml-2 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
       </div>
     </div>
+
+    <WordCloud v-if="show_word_cloud">
+    </WordCloud>
 
   </div>
 </template>

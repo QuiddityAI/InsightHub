@@ -1,12 +1,20 @@
+import json
 import uuid
 from threading import Lock
 
-from ninja import NinjaAPI
-from django.http import HttpResponse, HttpRequest
 from django.db.models.manager import BaseManager
+from django.http import HttpRequest, HttpResponse
+from ninja import NinjaAPI
 
 from data_map_backend.models import CollectionItem, DataCollection
-from filter.schemas import AddFilterPayload, FilterIdentifierPayload, ValueRangeInput, ValueRangeOutput
+from data_map_backend.schemas import CollectionIdentifier
+from filter.schemas import (
+    AddFilterPayload,
+    FilterIdentifierPayload,
+    ValueRangeInput,
+    ValueRangeOutput,
+)
+from map.logic.map_generation_steps import get_important_words
 
 api = NinjaAPI(urls_namespace="filter")
 
@@ -76,3 +84,19 @@ def get_value_range_route(request: HttpRequest, payload: ValueRangeInput):
     max_value = max(values) if values else 1
     result = ValueRangeOutput(min=min_value, max=max_value)
     return result
+
+
+@api.post("get_important_words")
+def get_important_words_route(request: HttpRequest, payload: CollectionIdentifier):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        collection = DataCollection.objects.only("created_by").get(id=payload.collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    words = get_important_words(collection)
+    return HttpResponse(json.dumps({"words": words}), content_type="application/json")

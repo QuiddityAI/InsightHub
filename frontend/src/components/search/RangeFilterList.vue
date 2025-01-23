@@ -31,8 +31,8 @@ export default {
       const filters = {}
       const dataset_ids = new Set()
       const task = this.collectionStore.collection.most_recent_search_task
-      if (task && task.dataset_id !== null) {
-        dataset_ids.add(task.dataset_id)
+      if (task && task.dataset !== null) {
+        dataset_ids.add(task.dataset)
       }
       // only takes into account current page, but should be fine
       for (const item of this.collectionStore.collection_items) {
