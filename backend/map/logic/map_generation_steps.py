@@ -1,26 +1,31 @@
-from collections import defaultdict
 import logging
 import time
+from collections import defaultdict
 
 import numpy as np
 from django.db.models.manager import BaseManager
 from django.utils.timezone import now
 
-from ..schemas import MapParameters, ProjectionData, PerPointData, MapData, ClusterDescription, MapMetadata
-
-from data_map_backend.views.other_views import (
-    get_filtered_collection_items,
-)
-from data_map_backend.models import DataCollection, FieldType, Dataset
+from data_map_backend.models import DataCollection, Dataset, FieldType
 from data_map_backend.utils import DotDict
-from legacy_backend.utils.collect_timings import Timings
+from data_map_backend.views.other_views import get_filtered_collection_items
 from legacy_backend.logic.clusters_and_titles import get_cluster_titles
+from legacy_backend.utils.collect_timings import Timings
+
+from ..schemas import (
+    ClusterDescription,
+    MapData,
+    MapMetadata,
+    MapParameters,
+    PerPointData,
+    ProjectionData,
+)
 
 
 def get_collection_items(
     collection: DataCollection,
 ) -> tuple[int, BaseManager, tuple | None]:
-    items, is_search_mode, reference_ds_and_item_id = get_filtered_collection_items(
+    items, reference_ds_and_item_id = get_filtered_collection_items(
         collection, "_default", field_type=FieldType.IDENTIFIER, is_positive=True
     )
     items = items.only("id", "dataset_id", "item_id")
