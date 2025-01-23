@@ -166,7 +166,7 @@ def get_cluster_titles_new(collection: DataCollection, dataset: DotDict, project
     timings.print_to_logger()
 
 
-def get_important_words(collection: DataCollection):
+def get_important_words(collection: DataCollection, item_ids: list[int]):
     # get data:
     top_dataset_id, filtered_collection_items, reference_ds_and_item_id = get_collection_items(collection)
     if top_dataset_id == -1:
@@ -192,10 +192,7 @@ def get_important_words(collection: DataCollection):
     # get fake cluster ids and positions:
     sorted_ids = [(item.dataset_id, item.item_id) for item in all_collection_items]
     # TODO: this is inefficient:
-    cluster_id_per_point = [
-        0 if any(ds_id == s.dataset_id and item_id == s.item_id for s in filtered_collection_items) else 1
-        for ds_id, item_id in sorted_ids
-    ]
+    cluster_id_per_point = [0 if item.id in item_ids or not item_ids else 1 for item in all_collection_items]
     final_positions = np.zeros((len(sorted_ids), 2))
 
     # get title + words for fake cluster:

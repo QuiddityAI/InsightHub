@@ -1,4 +1,5 @@
 from typing import Optional
+
 from ninja import Schema
 
 
@@ -35,3 +36,9 @@ class ValueRangeInput(Schema):
 class ValueRangeOutput(Schema):
     min: float
     max: float
+
+
+class ImportantWordsPayload(Schema):
+    collection_id: int
+    class_name: str
+    item_ids: list[int]

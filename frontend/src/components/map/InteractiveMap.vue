@@ -141,6 +141,9 @@ export default {
     "mapStateStore.per_point.opacity"() {
       this.update_opacities()
     },
+    "mapStateStore.selected_collection_item_ids"() {
+      this.update_opacities()
+    },
     "collectionStore.filtered_item_ids"() {
       this.update_opacities()
     },
@@ -463,18 +466,24 @@ export default {
         // this might happen during loading a new map
         return
       }
-      if (this.collectionStore.filtered_item_ids.length === 0) {
-        this.actual_opacity = this.mapStateStore.per_point.opacity
-      } else {
-        try {
+      try {
+        if (this.mapStateStore.selected_collection_item_ids.length > 0) {
+          for (const i in this.mapStateStore.per_point.x) {
+            const collection_item_id = this.mapStateStore.per_point.collection_item_id[i]
+            const include = this.mapStateStore.selected_collection_item_ids.includes(collection_item_id)
+            this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+          }
+        } else if (this.collectionStore.filtered_item_ids.length > 0) {
           for (const i in this.mapStateStore.per_point.x) {
             const collection_item_id = this.mapStateStore.per_point.collection_item_id[i]
             const include = this.collectionStore.filtered_item_ids.includes(collection_item_id)
             this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
           }
-        } catch (e) {
-          console.warn(e)
+        } else {
+          this.actual_opacity = this.mapStateStore.per_point.opacity
         }
+      } catch (e) {
+        console.warn(e)
       }
       this.updateGeometry()
     },

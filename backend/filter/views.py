@@ -11,6 +11,7 @@ from data_map_backend.schemas import CollectionIdentifier
 from filter.schemas import (
     AddFilterPayload,
     FilterIdentifierPayload,
+    ImportantWordsPayload,
     ValueRangeInput,
     ValueRangeOutput,
 )
@@ -87,7 +88,7 @@ def get_value_range_route(request: HttpRequest, payload: ValueRangeInput):
 
 
 @api.post("get_important_words")
-def get_important_words_route(request: HttpRequest, payload: CollectionIdentifier):
+def get_important_words_route(request: HttpRequest, payload: ImportantWordsPayload):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -98,5 +99,5 @@ def get_important_words_route(request: HttpRequest, payload: CollectionIdentifie
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    words = get_important_words(collection)
+    words = get_important_words(collection, payload.item_ids)
     return HttpResponse(json.dumps({"words": words}), content_type="application/json")

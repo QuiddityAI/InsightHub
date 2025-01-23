@@ -7,9 +7,11 @@ import { debounce } from '../../utils/utils';
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
+import { useMapStateStore } from '../../stores/map_state_store';
 import { useCollectionStore } from '../../stores/collection_store';
 
 const appState = useAppStateStore()
+const mapStateStore = useMapStateStore()
 const collectionStore = useCollectionStore()
 
 </script>
@@ -23,22 +25,26 @@ export default {
   data() {
     return {
       fetch_important_words_debounced: debounce(() => {
-        this.collectionStore.fetch_important_words()
+        this.collectionStore.fetch_important_words(this.mapStateStore.selected_collection_item_ids || this.collectionStore.filtered_item_ids)
       }, 500),
     }
   },
   computed: {
     ...mapStores(useAppStateStore),
+    ...mapStores(useMapStateStore),
     ...mapStores(useCollectionStore),
   },
   mounted() {
-    this.collectionStore.fetch_important_words()
+    this.fetch_important_words_debounced()
     this.eventBus.on("collection_filters_changed", this.fetch_important_words_debounced)
   },
   unmounted() {
     this.eventBus.off("collection_filters_changed", this.fetch_important_words_debounced)
   },
   watch: {
+    "mapStateStore.selected_collection_item_ids"() {
+      this.fetch_important_words_debounced()
+    },
   },
   methods: {
     add_word_filter(text) {
@@ -60,7 +66,7 @@ export default {
 <template>
   <div
     class="mt-3 py-2 px-3 text-sm text-gray-500 rounded-md bg-gray-100/50">
-    <b>Important keywords in filtered items:</b>
+    <b>Important keywords in filtered / selected items:</b>
     <ProgressSpinner class="ml-2 w-4 h-4" v-if="collectionStore.important_words_are_loading" />
     <br>
     <VueWordCloud :words="collectionStore.important_words"

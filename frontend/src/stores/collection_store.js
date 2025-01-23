@@ -642,10 +642,11 @@ export const useCollectionStore = defineStore("collection", {
           }
         })
     },
-    fetch_important_words() {
+    fetch_important_words(item_ids) {
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
+        item_ids: item_ids,
       }
       this.important_words_are_loading = true
       httpClient
