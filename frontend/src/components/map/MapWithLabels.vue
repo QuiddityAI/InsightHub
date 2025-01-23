@@ -38,9 +38,23 @@ export default {
 
 <template>
   <div class="relative">
+
     <InteractiveMap
       class="absolute w-full h-full"
       @point_selected="appState.show_document_details" />
+
+    <div v-if="mapState.is_polar"
+      class="pointer-events-none absolute"
+      :style="{
+        left: mapState.mapLeftFromRelative(0) - ((mapState.mapLeftFromRelative(2) - mapState.mapLeftFromRelative(0)) / 2) + 'px',
+        bottom: mapState.mapBottomFromRelative(0) - ((mapState.mapLeftFromRelative(2) - mapState.mapLeftFromRelative(0)) / 2) + 'px',
+        width: mapState.mapLeftFromRelative(2) - mapState.mapLeftFromRelative(0) + 'px',
+        height: mapState.mapLeftFromRelative(2) - mapState.mapLeftFromRelative(0) + 'px',
+      }">
+      <div class="absolute h-full w-full border border-blue-500 rounded-full opacity-50"></div>
+      <div class="absolute h-full w-full scale-50 border border-blue-500 rounded-full opacity-50"></div>
+      <div class="absolute h-full w-full scale-[0.25] border border-blue-500 rounded-full opacity-50"></div>
+    </div>
 
     <CloseUpPointItems class="absolute w-full h-full" />
 

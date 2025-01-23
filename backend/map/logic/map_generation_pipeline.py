@@ -13,6 +13,7 @@ from data_map_backend.views.other_views import (
 from legacy_backend.logic.clusters_and_titles import clusterize_results
 from legacy_backend.logic.search import get_items_by_ids
 from legacy_backend.utils.collect_timings import Timings
+from legacy_backend.utils.helpers import normalize_array, polar_to_cartesian
 from map.logic.map_generation_steps import (
     do_umap,
     get_cluster_titles_new,
@@ -51,6 +52,9 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
     if point_size_field:
         required_fields.append(point_size_field)
     data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)  # type: ignore
+    reference_data_item = None
+    if reference_ds_and_item_id:
+        reference_data_item = get_items_by_ids(reference_ds_and_item_id[0], [reference_ds_and_item_id[1]], required_fields)[0]  # type: ignore
     timings.log("get_items_by_ids")
 
     if item_count >= 5:
@@ -72,11 +76,25 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
         # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
         dummy_vector = np.zeros(vector_size)
         vectors = [item.get(map_vector_field, dummy_vector) for item in data_items]
+        if reference_data_item:
+            reference_vector = reference_data_item.get(map_vector_field, dummy_vector)
 
         # get projections:
-        raw_projections = do_umap(np.array(vectors), {}, 2)
+        dimensions = 1 if reference_data_item else 2
+        raw_projections = do_umap(np.array(vectors), {}, dimensions)
         timings.log("do umap")
-        final_positions = raw_projections  # TODO: re-add polar coordinates
+
+        # convert to polar coordinates if similarity map:
+        if reference_data_item:
+            similarities = np.array([np.dot(reference_vector, vector) for vector in vectors])
+            cartesian_positions = np.zeros([len(data_items), 2])
+            cartesian_positions[:, 1] = raw_projections[:, 0]
+            cartesian_positions[:, 0] = similarities
+            final_positions = polar_to_cartesian(
+                1 - normalize_array(cartesian_positions[:, 0]), normalize_array(cartesian_positions[:, 1]) * np.pi * 2
+            )
+        else:
+            final_positions = raw_projections
 
         # clusterize:
         cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, DotDict())
@@ -105,7 +123,8 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
         final_positions,
         cluster_id_per_point,
         point_sizes,
-        timings,
+        is_polar=reference_data_item is not None,
+        timings=timings,
     )
 
     # start thread for cluster titles and thumbnails

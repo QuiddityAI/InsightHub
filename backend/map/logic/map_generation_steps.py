@@ -87,6 +87,7 @@ def save_projections(
     final_positions: np.ndarray,
     cluster_id_per_point: np.ndarray,
     point_sizes: np.ndarray,
+    is_polar: bool,
     timings: Timings,
 ):
     metadata = MapMetadata(
@@ -122,6 +123,7 @@ def save_projections(
         per_point=per_point,
         text_data_by_item=text_data_by_item,
         colorize_by_cluster_id=True,
+        is_polar=is_polar,
     )
 
     map_data = MapData(

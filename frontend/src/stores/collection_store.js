@@ -464,7 +464,6 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     run_search_task_similar_to_item(dataset_and_item_id, title) {
-      const that = this
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
@@ -479,13 +478,16 @@ export const useCollectionStore = defineStore("collection", {
           reference_dataset_id: dataset_and_item_id[0],
           reference_item_id: dataset_and_item_id[1],
           origin_name: title,
+          candidates_per_step: 50,  // to show a nice map
         },
         wait_for_ms: 200,  // wait in case search task is quick and in that case reduce flickering
       }
       httpClient
         .post("/api/v1/search/run_search_task", body)
         .then((response) => {
-          that.update_collection({update_items: true})
+          this.update_collection({update_items: true})
+          this.generate_map()
+          this.update_ui_settings({secondary_view: 'map'})
         })
     },
     commit_search_task_execution_settings(task) {
