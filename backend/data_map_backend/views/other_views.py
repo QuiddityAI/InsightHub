@@ -917,6 +917,9 @@ def get_collection_items(request):
     )
 
     filtered_count = return_items.count()
+    # filtered_item_ids is e.g. used to highlight items on the map:
+    # TODO: check if this is a performance issue when no map is used
+    filtered_item_ids = return_items.values_list("id", flat=True)
 
     return_items = return_items[offset : offset + limit]
     serialized_data = CollectionItemSerializer(return_items, many=True).data
@@ -930,6 +933,7 @@ def get_collection_items(request):
         "items_last_changed": collection.items_last_changed.isoformat(),
         "search_mode": collection.search_mode,
         "filtered_count": filtered_count,
+        "filtered_item_ids": list(filtered_item_ids),
     }
     result = json.dumps(result)
 

@@ -30,10 +30,13 @@ export default {
     range_filters() {
       const filters = {}
       const dataset_ids = new Set()
-      // FIXME: this only uses the last search
       const task = this.collectionStore.collection.most_recent_search_task
       if (task && task.dataset_id !== null) {
         dataset_ids.add(task.dataset_id)
+      }
+      // only takes into account current page, but should be fine
+      for (const item of this.collectionStore.collection_items) {
+        dataset_ids.add(item.dataset_id)
       }
       this.dataset_ids = Array.from(dataset_ids)
       for (const dataset_id of dataset_ids) {

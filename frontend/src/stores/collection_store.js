@@ -29,6 +29,7 @@ export const useCollectionStore = defineStore("collection", {
       collection_items: null,
       search_mode: false,
       filtered_count: null,
+      filtered_item_ids: [],
       items_last_retrieved: new Date(2020, 1, 1),
       update_collection_is_scheduled: false,
       saved_search_tasks: [],
@@ -92,6 +93,7 @@ export const useCollectionStore = defineStore("collection", {
       this.collection_items = []
       this.search_mode = false
       this.filtered_count = null
+      this.filtered_item_ids = []
       this.items_last_retrieved = new Date(2020, 1, 1)
       this.first_index = 0
       this.order_by_field = 'date_added'
@@ -250,6 +252,7 @@ export const useCollectionStore = defineStore("collection", {
           this.items_last_retrieved = response.data['items_last_changed']
           this.search_mode = response.data['search_mode']
           this.filtered_count = response.data['filtered_count']
+          this.filtered_item_ids = response.data['filtered_item_ids']
           this.eventBus.emit("collection_items_loaded")
           if (items_changed_on_server) {
             this.eventBus.emit("collection_items_changed_on_server")
