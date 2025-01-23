@@ -25,7 +25,11 @@ export default {
   data() {
     return {
       fetch_important_words_debounced: debounce(() => {
-        this.collectionStore.fetch_important_words(this.mapStateStore.selected_collection_item_ids || this.collectionStore.filtered_item_ids)
+        let item_ids = this.mapStateStore.selected_collection_item_ids
+        if (item_ids.length === 0) {
+          item_ids = this.collectionStore.filtered_item_ids
+        }
+        this.collectionStore.fetch_important_words(item_ids)
       }, 500),
     }
   },
