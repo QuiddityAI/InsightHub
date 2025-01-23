@@ -48,7 +48,7 @@ export default {
       </label>
     </div>
 
-    <div class="flex flex-row items-center gap-1">
+    <div class="flex flex-row items-center gap-1" v-if="appState.user.is_staff">
       <Checkbox v-model="task.run_on_new_items"
         :inputId="`run_on_new_items_${task.id}`" size="small" :binary="true" class="scale-75"
         @change="collectionStore.commit_search_task_execution_settings(task)" />
