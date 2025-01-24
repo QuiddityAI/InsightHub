@@ -7,6 +7,7 @@ from django.forms.models import model_to_dict
 from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection, Dataset, SearchTask
+from data_map_backend.notifier import default_notifier
 from data_map_backend.schemas import CollectionIdentifier
 from data_map_backend.serializers import SearchTaskSerializer
 from legacy_backend.database_client.text_search_engine_client import (
@@ -47,6 +48,7 @@ def run_search_task_route(request: HttpRequest, payload: RunSearchTaskPayload):
     collection.agent_is_running = True
     collection.current_agent_step = "Running search task..."
     collection.save(update_fields=["agent_is_running", "current_agent_step"])
+    default_notifier.info(f"Running search task for user input '{payload.search_task.user_input}'", request.user)
 
     def thread_function():
         try:

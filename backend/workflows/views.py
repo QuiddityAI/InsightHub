@@ -1,14 +1,7 @@
 import json
 
-from django.http import HttpResponse, HttpRequest
-
+from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
-
-from data_map_backend.models import DataCollection, User, Dataset
-from data_map_backend.serializers import CollectionSerializer
-from data_map_backend.schemas import CollectionIdentifier
-from workflows.schemas import CreateCollectionSettings, AvailableWorkflowsPaylaod, WorkflowMetadata
-from workflows.logic import create_collection_using_workflow, workflows_by_id
 
 # need to be loaded somewhere (after Django apps where loaded, therfore not in __init__.py)
 import workflows.available_workflows.agent_workflows
@@ -16,6 +9,16 @@ import workflows.available_workflows.base_workflows
 import workflows.available_workflows.map_workflows
 import workflows.available_workflows.question_workflows
 import workflows.available_workflows.search_workflows
+from data_map_backend.models import DataCollection, Dataset, User
+from data_map_backend.notifier import default_notifier
+from data_map_backend.schemas import CollectionIdentifier
+from data_map_backend.serializers import CollectionSerializer
+from workflows.logic import create_collection_using_workflow, workflows_by_id
+from workflows.schemas import (
+    AvailableWorkflowsPaylaod,
+    CreateCollectionSettings,
+    WorkflowMetadata,
+)
 
 api = NinjaAPI(urls_namespace="workflows")
 
@@ -64,6 +67,9 @@ def create_collection_route(request: HttpRequest, payload: CreateCollectionSetti
 
     assert isinstance(request.user, User)
     collection = create_collection_using_workflow(request.user, payload)
+    default_notifier.info(
+        f"Running workflow {payload.workflow_id} for user input '{payload.user_input}'", request.user
+    )
 
     dataset_dict = CollectionSerializer(instance=collection).data
     result = json.dumps(dataset_dict)
