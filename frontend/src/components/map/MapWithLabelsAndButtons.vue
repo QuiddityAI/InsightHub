@@ -50,13 +50,14 @@ export default {
     ...mapStores(useCollectionStore),
   },
   mounted() {
-    const no_map_but_items = !this.collectionStore.collection?.map_metadata.created_at && this.collectionStore.collection?.actual_classes[0].positive_count
-    const update_times_are_known = this.collectionStore.collection?.map_metadata.created_at && this.collectionStore.collection?.items_last_changed
+    const has_items = this.collectionStore.collection?.actual_classes[0].positive_count > 0
+    const no_map_but_items = !this.collectionStore.collection?.map_metadata?.created_at && has_items
+    const update_times_are_known = this.collectionStore.collection?.map_metadata?.created_at && this.collectionStore.collection?.items_last_changed
     let map_outdated = false
     if (update_times_are_known) {
       map_outdated = new Date(this.collectionStore.collection?.map_metadata.created_at) < new Date(this.collectionStore.collection?.items_last_changed)
     }
-    if (no_map_but_items || map_outdated) {
+    if (no_map_but_items || (map_outdated && has_items)) {
       this.generate_map_debounce()
     } else {
       this.collectionStore.get_existing_projections()

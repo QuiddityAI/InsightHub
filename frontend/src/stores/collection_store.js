@@ -485,9 +485,10 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/search/run_search_task", body)
         .then((response) => {
-          this.update_collection({update_items: true})
-          this.generate_map()
-          this.update_ui_settings({secondary_view: 'map'})
+          this.update_collection({update_items: true}, () => {
+            this.generate_map()
+            this.update_ui_settings({secondary_view: 'map'})
+          })
         })
     },
     commit_search_task_execution_settings(task) {
@@ -557,7 +558,7 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     generate_map() {
-      if (!this.collection.map_metadata.length) {
+      if (!this.collection.map_metadata?.length) {
         this.collection.map_metadata = {}
       }
       this.collection.map_metadata.projections_are_ready = false

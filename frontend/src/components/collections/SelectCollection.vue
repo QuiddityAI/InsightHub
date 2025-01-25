@@ -18,10 +18,10 @@ export default {
   expose: ["selected_collection_id", "selected_collection_class"],
   watch: {
     selected_collection_id() {
-      this.selected_collection_class =
-        this.appStateStore.collections[
+      const collection = this.appStateStore.collections[
           this.appStateStore.collections.findIndex((e) => e.id == this.selected_collection_id)
-        ].actual_classes[0].name
+        ]
+      this.selected_collection_class = collection?.actual_classes[0].name
     },
   },
   computed: {
