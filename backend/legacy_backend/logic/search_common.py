@@ -852,7 +852,7 @@ def get_document_details_by_id(
         try:
             abstract = get_abstract(int(item["corpus_id"]))
         except Exception as e:
-            logging.warning(f"Could not get abstract for corpus_id {item['corpus_id']}: {e}")
+            logging.warning(f"Could not get abstract for corpus_id {item.get('corpus_id')}: {e}")
             abstract = {}
         item["oa_url"] = (abstract.get("openaccessinfo") or {}).get("url")
         item["oa_status"] = (abstract.get("openaccessinfo") or {}).get("status")
