@@ -55,7 +55,7 @@ export default {
       const filter_uid = `word_cloud_filter`
       const text_filter = {
         uid: filter_uid,
-        display_name: `Contains: ${text}`,
+        display_name: `${this.$t('WordCloud.contains-filter-name')} ${text}`,
         removable: true,
         filter_type: "text_query",
         value: text,
@@ -70,7 +70,7 @@ export default {
 <template>
   <div
     class="mt-3 py-2 px-3 text-sm text-gray-500 rounded-md bg-gray-100/50">
-    <b>Important keywords in filtered / selected items:</b>
+    <b>{{ $t('WordCloud.important-keywords-in-filtered-selected-items') }}</b>
     <ProgressSpinner class="ml-2 w-4 h-4" v-if="collectionStore.important_words_are_loading" />
     <br>
     <VueWordCloud :words="collectionStore.important_words"

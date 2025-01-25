@@ -191,7 +191,7 @@ export default {
           <button v-if="schema?.is_group_field && item[schema.is_group_field]"
             @click="collectionStore.show_group(item._dataset_id, item._id, `Directly in ${schema?.advanced_options?.group_name || 'Group'} '${rendering.title(item)}'`)"
             class="ml-2 px-2 py-[1px] rounded-xl bg-gray-100 text-xs text-gray-500 hover:bg-gray-200">
-            Show {{ schema?.advanced_options?.group_name || 'Group' }}
+            {{ $t('CollectionItem.show-group-children', [schema?.advanced_options?.group_name || $t('CollectionItem.group-generic-name')]) }}
           </button>
         </div>
 
@@ -233,19 +233,19 @@ export default {
         <div class="flex-1"></div>
 
         <span v-if="main_relevance_influence === 'vector'"
-          v-tooltip.bottom="{ value: 'This item was mainly found because it matches the meaning of the search query.', showDelay: 500 }"
+          v-tooltip.bottom="{ value: $t('CollectionItem.found-by-meaning-tooltip'), showDelay: 500 }"
           class="text-xs text-gray-400">
-          Found by Meaning
+          {{ $t('CollectionItem.found-by-meaning') }}
         </span>
         <span v-if="main_relevance_influence === 'keyword'"
-          v-tooltip.bottom="{ value: 'This item was mainly found because it contains keywords of the search query.', showDelay: 500 }"
+          v-tooltip.bottom="{ value: $t('CollectionItem.found-by-keywords-tooltip'), showDelay: 500 }"
           class="text-xs text-gray-400">
-          Found by Keywords
+          {{ $t('CollectionItem.found-by-keywords') }}
         </span>
         <span v-if="main_relevance_influence === 'both'"
-          v-tooltip.bottom="{ value: 'This item was found by meaning and keywords.', showDelay: 500 }"
+          v-tooltip.bottom="{ value: $t('CollectionItem.found-by-both-tooltip'), showDelay: 500 }"
           class="text-xs text-gray-400">
-          Found by Meaning & Keywords
+          {{ $t('CollectionItem.found-by-meaning-and-keywords') }}
         </span>
 
         <span class="italic px-2 text-xs text-gray-500">
@@ -257,28 +257,28 @@ export default {
         <div class="flex flex-row gap-1 items-center ring-orange-200 rounded"
           :class="{'ring-[1px]': is_candidate}">
           <div v-if="is_candidate" class="ml-1 mr-2 h-5 w-5 text-orange-400"
-              v-tooltip.bottom="{value: 'This item is temporary. Save it, otherwise it will be removed from the collection.'}">
+              v-tooltip.bottom="{value: $t('CollectionItem.temporary-item-explanation')}">
             <ArrowRightIcon class="w-full h-full">
             </ArrowRightIcon>
           </div>
           <BorderlessButton
             hover_color="hover:text-green-500" :highlight_color="collection_item.relevance >= ItemRelevance.APPROVED_BY_USER ? 'text-green-500' : 'text-orange-400'"
             :highlighted="collection_item.relevance > ItemRelevance.CANDIDATE" :default_padding="false" class="p-1"
-            v-tooltip.bottom="{ value: 'Add this item permanently' }"
+            v-tooltip.bottom="{ value: $t('CollectionItem.add-this-item-permanently') }"
             @click="collectionStore.set_item_relevance(collection_item, 3)">
             <HandThumbUpIcon class="h-4 w-4"></HandThumbUpIcon>
           </BorderlessButton>
           <BorderlessButton
             hover_color="hover:text-red-500" :highlight_color="collection_item.relevance <= ItemRelevance.REJECTED_BY_USER ? 'text-red-500' : 'text-orange-400'"
             :highlighted="collection_item.relevance < ItemRelevance.CANDIDATE" :default_padding="false" class="p-1"
-            v-tooltip.bottom="{ value: 'Mark this item as irrelevant, hide from future searches in this collection' }"
+            v-tooltip.bottom="{ value: $t('CollectionItem.mark-this-item-as-irrelevant') }"
             @click="collectionStore.set_item_relevance(collection_item, -3)">
             <HandThumbDownIcon class="h-4 w-4"></HandThumbDownIcon>
           </BorderlessButton>
           <BorderlessButton v-if="show_remove_button"
             hover_color="hover:text-red-500" :default_padding="false" class="p-1"
             @click.stop="collectionStore.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_item.collection, collection_item.classes.length ? collection_item.classes[0] : '_default')"
-            v-tooltip.bottom="{ value: 'Remove from this collection', showDelay: 400 }">
+            v-tooltip.bottom="{ value: $t('CollectionItem.remove-from-this-collection'), showDelay: 400 }">
             <TrashIcon class="h-4 w-4"></TrashIcon>
           </BorderlessButton>
         </div>
@@ -290,7 +290,7 @@ export default {
   <div v-else>
     <button v-if="show_remove_button"
         @click.stop="collectionStore.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_item.collection, collection_item.classes.length ? collection_item.classes[0] : '_default')"
-        v-tooltip.right="{ value: 'Remove from this collection', showDelay: 400 }"
+        v-tooltip.right="{ value: $t('CollectionItem.remove-from-this-collection'), showDelay: 400 }"
         class="text-sm text-gray-400 hover:text-red-600">
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </button>

@@ -57,16 +57,16 @@ export default {
 
       <BorderlessButton v-if="collectionStore.collection.search_task_navigation_history.length >= 2"
         @click="collectionStore.run_previous_search_task"
-        v-tooltip.bottom="{value: 'Go to the previous search result', showDelay: 400}"
+        v-tooltip.bottom="{value: $t('SearchModeBar.go-to-the-previous-search-result'), showDelay: 400}"
         class="h-full -mr-3 -ml-3">
         <ChevronUpIcon class="h-5 w-5" />
       </BorderlessButton>
 
-      <span class="flex-none text-blue-500">Search Mode:</span>
+      <span class="flex-none text-blue-500">{{ $t('SearchModeBar.search-mode') }}</span>
 
       <div>
         <span class="text-gray-700">
-          {{ search_settings.user_input || "No search query" }}
+          {{ search_settings.user_input || $t('SearchModeBar.no-search-query') }}
         </span>
         <SearchFilterList
           :filters="retrieval_parameters.filters || []"
@@ -79,16 +79,16 @@ export default {
 
       <BorderlessButton @click="show_periodic_execution_settings = !show_periodic_execution_settings" class="py-1"
         :highlighted="show_periodic_execution_settings"
-        v-tooltip.bottom="{value: 'Save / execute periodically', showDelay: 400}">
+        v-tooltip.bottom="{value: $t('SearchModeBar.save-execute-periodically'), showDelay: 400}">
         <StarIcon class="h-5 w-5 inline" />
       </BorderlessButton>
       <BorderlessButton @click="$emit('edit_search_task')" class="py-1"
-        v-tooltip.bottom="{value: 'Edit the search query and filters', showDelay: 400}">
-        <PencilIcon class="h-5 w-5 inline" /> Edit
+        v-tooltip.bottom="{value: $t('SearchModeBar.edit-the-search-query-and-filters'), showDelay: 400}">
+        <PencilIcon class="h-5 w-5 inline" /> {{ $t('SearchModeBar.edit') }}
       </BorderlessButton>
       <BorderlessButton @click="collectionStore.exit_search_mode" class="py-1"
-        v-tooltip.bottom="{value: 'Remove search results and show saved items', showDelay: 400}">
-        <NoSymbolIcon class="h-5 w-5 inline" /> Exit
+        v-tooltip.bottom="{value: $t('SearchModeBar.exit-search-tooltip'), showDelay: 400}">
+        <NoSymbolIcon class="h-5 w-5 inline" /> {{ $t('SearchModeBar.exit') }}
       </BorderlessButton>
     </div>
 

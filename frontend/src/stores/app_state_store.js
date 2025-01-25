@@ -95,14 +95,14 @@ export const useAppStateStore = defineStore("appState", {
       selected_writing_task_id: null,
       selected_writing_task: null,
       column_modules: [
-        { identifier: 'llm', name: 'LLM', help_text: 'Uses AI to answer a question based on each item separately', highlight: true },
-        { identifier: 'relevance', name: 'Relevance', help_text: 'Uses AI to check if an item is relevant given a set of criteria', highlight: true },
-        { identifier: 'web_search', name: 'Web Search', help_text: 'Searches for the item on the internet and extracts the text of the top webpages', highlight: true },
-        { identifier: 'website_scraping', name: 'Website Text', help_text: 'Extracts the text of a given URL', highlight: false },
-        { identifier: 'item_field', name: 'Item Field', help_text: 'Copies the value of a field of the original item. It can then be used for sorting, maps and charts.', highlight: true },
-        { identifier: 'notes', name: 'Manual Notes', help_text: 'A column for your own notes', highlight: true },
+        { identifier: 'llm', name: 'app_state_store.column-module-llm', help_text: 'app_state_store.column-module-llm-tooltip', highlight: true },
+        { identifier: 'relevance', name: 'app_state_store.column-module-relevance', help_text: 'app_state_store.column-module-relevance-tooltip', highlight: true },
+        { identifier: 'web_search', name: 'app_state_store.column-module-web-search', help_text: 'Searches for the item on the internet and extracts the text of the top webpages', highlight: true },
+        { identifier: 'website_scraping', name: 'app_state_store.column-module-website-text', help_text: 'Extracts the text of a given URL', highlight: false },
+        { identifier: 'item_field', name: 'app_state_store.column-module-item-field', help_text: 'Copies the value of a field of the original item. It can then be used for sorting, maps and charts.', highlight: true },
+        { identifier: 'notes', name: 'app_state_store.column-module-manual-notes', help_text: 'A column for your own notes', highlight: true },
         // { identifier: 'python_expression', name: 'Python Expression', help_text: 'Allows to use Python to process an item', highlight: false },
-        { identifier: 'email', name: 'E-Mail', help_text: 'Send an e-mail with information about the item (in development)', highlight: false },
+        { identifier: 'email', name: 'app_state_store.column-module-email', help_text: 'Send an e-mail with information about the item (in development)', highlight: false },
       ],
 
       settings: {

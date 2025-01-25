@@ -44,7 +44,7 @@ export default {
         :inputId="`is_saved_${task.id}`" size="small" :binary="true" class="scale-75"
         @change="collectionStore.commit_search_task_execution_settings(task)" />
       <label :for="`is_saved_${task.id}`" class="text-sm text-gray-500">
-        Save
+        {{ $t('SearchTaskExecutionSettings.save') }}
       </label>
     </div>
 
@@ -53,7 +53,7 @@ export default {
         :inputId="`run_on_new_items_${task.id}`" size="small" :binary="true" class="scale-75"
         @change="collectionStore.commit_search_task_execution_settings(task)" />
       <label :for="`run_on_new_items_${task.id}`" class="text-sm text-gray-500">
-        Watch new {{ collectionStore.entity_name_plural }} and add matching ones automatically
+        {{ $t('SearchTaskExecutionSettings.run-on-new-items', [collectionStore.entity_name_plural]) }}
       </label>
     </div>
 

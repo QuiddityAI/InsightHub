@@ -3,16 +3,20 @@
     "what-do-you-want-to-do": "What do you want to do?",
     "language-of-the-query-and-search-results": "Language of the query and search results",
     "create-collection-using-this-workflow": "Create collection using this workflow",
-    "retrieval-mode-keyword": "Use this to find specific words.\\nSupports operators like AND / OR / NOT.",
-    "retrieval-mode-vector": "Use this to search for broader topics or information\\nthat can be described in many different ways.\\n\\nNote: this might return almost all documents, but sorted\\nso that the most relevant ones are at the top.\\nOnly supports quoted phrases, not the AND / OR / NOT operators.",
-    "retrieval-mode-hybrid": "Combines keyword and meaning search.\\n\\nNote: this might return almost all documents, but sorted\\nso that the most relevant ones are at the top.\\nOnly supports quoted phrases, not the AND / OR / NOT operators.",
+    "retrieval-mode-keyword": "Use this to find specific words.\nSupports operators like AND / OR / NOT.",
+    "retrieval-mode-vector": "Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.",
+    "retrieval-mode-hybrid": "Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.",
     "add-filters-and-change-search-options": "Add filters and change search options",
     "vector-search-not-available-for-this-dataset": "Meaning / hybrid search is not yet available for this dataset.",
     "query-operators-not-supported-for-vector-search": "The operators AND / OR are not supported for 'meaning' and 'hybrid' searches.\nPlease use filters and quoted phrases here or switch to 'keyword' search.",
     "use-double-quotes-instead-of-single-quotes-to-search-for-phrases": "Note: use double quotes instead of single quotes to search for phrases.",
     "auto-set-filters": "Auto-detect language, required filters and search strategy",
     "preview-feature": "This feature is in preview and might not work as expected.",
-    "go": "Go"
+    "go": "Go",
+    "keyword-search": "Keywords",
+    "meaning-search": "Meaning",
+    "hybrid-search": "Both",
+    "filter": "Filter"
   },
   "CollectionList": {
     "log-in-to-use-collections": "Log in to use collections",
@@ -62,6 +66,152 @@
   "CollectionView": {
     "summary-secondary-view": "Summary",
     "map-secondary-view": "Map",
-    "more-secondary-view": "More"
+    "more-secondary-view": "More",
+    "search-task-dialog-header": "Create / Modify Search Task",
+    "change-layout": "Change layout",
+    "column-layout": "Column Layout",
+    "grid-layout": "Grid Layout",
+    "spreadsheet-layout": "Spreadsheet Layout",
+    "item-size-small": "Minimal Items",
+    "item-size-medium": "Medium Items",
+    "item-size-full": "Full Items",
+    "hide-checked-items-in-search": "Hide checked items in search",
+    "filter-items": "Filter items",
+    "show-items-marked-as-irrelevant": "Show items marked as irrelevant",
+    "delete-collection": "Delete collection",
+    "hide-secondary-view": "Hide",
+    "full-screen-secondary-view": "Full Screen"
+  },
+  "AddFilterMenu": {
+    "field": "Field...",
+    "operator": "Operator...",
+    "add-filter": "Add Filter",
+    "note-not-all-filters-might-be-available-in-meaning-or-hybrid-mode": "Note: not all filters might be available in 'meaning' or 'hybrid' mode.",
+    "descriptive-text-is-a-shortcut-for-these-fields": "* 'Descriptive Text' is a shortcut for these fields:"
+  },
+  "SearchModeBar": {
+    "go-to-the-previous-search-result": "Go to the previous search result",
+    "search-mode": "Search Mode:",
+    "no-search-query": "No search query",
+    "save-execute-periodically": "Save / execute periodically",
+    "edit-the-search-query-and-filters": "Edit the search query and filters",
+    "exit-search-tooltip": "Remove search results and show saved items",
+    "edit": "Edit",
+    "exit": "Exit"
+  },
+  "SearchTaskExecutionSettings": {
+    "save": "Save",
+    "run-on-new-items": "Watch new {0} and add matching ones automatically"
+  },
+  "AgentModeBar": {
+    "processing": "Processing:",
+    "cancel": "Cancel"
+  },
+  "WritingTaskArea": {
+    "ideas": "Ideas:",
+    "hint-only-ask-about-existing-items": "Ask questions that can be answered using the items in this collection.",
+    "question-submit-button": "Ask",
+    "create-custom-writing-task": "Create custom writing task",
+    "new-writing-task-name": "New Writing Task",
+    "quick-question-placeholder": "Quick Question"
+  },
+  "FilterBar": {
+    "filter-existing-items-search-results": "Filter existing items / search results",
+    "collection-item-filter-tooltip": "This only affects already existing items / results.\\nTo apply a filter to the normal search, use the filters there.",
+    "show-word-cloud": "Show word cloud",
+    "remove-filter": "Remove Filter"
+  },
+  "TextFilterInput": {
+    "text-filter-placeholder": "Text Filter..."
+  },
+  "StatisticList": {
+    "statistics": "Statistics:"
+  },
+  "WordCloud": {
+    "important-keywords-in-filtered-selected-items": "Important keywords in filtered / selected items:",
+    "contains-filter-name": "Contains:"
+  },
+  "item-view": {
+    "no-items-yet": "No items yet",
+    "search-results": "Search Results",
+    "approve-all": "Approve All",
+    "no-not-already-evaluated-items-found": "No not-already-evaluated items found",
+    "no-items-found": "No items found",
+    "search-result-tooltip": "Only search results are shown. &nbsp Exit search to remove results and show saved items.",
+    "approve-all-tooltip": "Approve all (relevant) search results and leave search mode",
+    "items-column-header": "Items",
+    "show-more-results": "Add More Results",
+    "no-more-results-available": "No more results available",
+    "number-of-retrieved-results": "{0} of {1}{2} results retrieved",
+    "click-to-change-criteria": "Click to change criteria",
+    "add-column": "Column",
+    "add-column-tooltip": "Add Column"
+  },
+  "CollectionItem": {
+    "show-group-children": "Show {0}",
+    "group-generic-name": "Group",
+    "found-by-meaning": "Found by Meaning",
+    "found-by-keywords": "Found by Keywords",
+    "found-by-meaning-and-keywords": "Found by Meaning & Keywords",
+    "found-by-meaning-tooltip": "This item was mainly found because it matches the meaning of the search query.",
+    "found-by-keywords-tooltip": "This item was mainly found because it contains keywords of the search query.",
+    "found-by-both-tooltip": "This item was found by meaning and keywords.",
+    "temporary-item-explanation": "This item is temporary. Save it, otherwise it will be removed from the collection.",
+    "add-this-item-permanently": "Add this item permanently",
+    "mark-this-item-as-irrelevant": "Mark this item as irrelevant, hide from future searches in this collection",
+    "remove-from-this-collection": "Remove from this collection"
+  },
+  "AddColumnDialog": {
+    "show-advanced-modules": "Show advanced modules",
+    "language-tooltip": "Language of the question and results ('world' for auto-detect)",
+    "auto-title": "Auto Title",
+    "auto-language": "Auto Language",
+    "default-sources": "Default Sources",
+    "default-sources-tooltip": "Uncheck if anything beside the items text fields is relevant",
+    "default-prompt-tooltip": "Uncheck to use a custom prompt",
+    "auto-language-tooltip": "Auto-set language of question + results",
+    "auto-title-tooltip": "Auto-set title of column",
+    "default-email-template": "Default Template",
+    "auto-prompt": "Auto Prompt",
+    "auto-run-for-approved-items": "Auto-run for Approved Items",
+    "auto-run-for-candidates": "Auto-run for Candidates",
+    "auto-run-approved-tooltip": "Execute this as soon as an item is approved",
+    "auto-run-candidates-tooltip": "Execute this automatically for candidates (e.g. search results)",
+    "column-title-placeholder": "Column Title",
+    "using-full-text-hint-1": "Using the full text of an item might be slow and expensive.\nThe full text will also be limited to the maximum text length of the AI module, which might lead to unpredictable results.",
+    "using-full-text-hint-2": "Consider using 'Full Text Excerpts' instead, which selects only the most relevant parts of the full text.",
+    "custom-llm": "Custom",
+    "add-and-process-current-page": "Add & Process Current Page",
+    "add-without-processing": "Add without Processing",
+    "add-column": "Add Column",
+    "small-ai": "Small AI",
+    "medium-ai": "Medium AI",
+    "large-ai": "Large AI",
+    "small-ai-subtitle": "cheap + fast, simple",
+    "medium-ai-subtitle": "balanced",
+    "large-ai-subtitle": "expensive + slow, smart",
+    "expression-label-llm": "Query / Task",
+    "expression-label-relevance": "Relevance Criteria",
+    "expression-label-email": "E-Mail addresses (comma-separated)",
+    "expression-label-other": "Expression",
+    "sources-label-llm": "Sources:",
+    "sources-label-url": "URL Field:",
+    "sources-label-web-search": "Query:",
+    "sources-label-item-field": "Field:",
+    "sources-label-other": "Sources:",
+    "prompt-label-llm": "Custom Prompt (see explanation below)",
+    "prompt-label-email": "E-Mail Template (see explanation below)",
+    "prompt-label-other": "Prompt"
+  },
+  "app_state_store": {
+    "column-module-llm": "LLM",
+    "column-module-relevance": "Relevance",
+    "column-module-web-search": "Web Search",
+    "column-module-website-text": "Website Text",
+    "column-module-item-field": "Item Field",
+    "column-module-manual-notes": "Manual Notes",
+    "column-module-email": "E-Mail",
+    "column-module-llm-tooltip": "Uses AI to answer a question based on each item separately",
+    "column-module-relevance-tooltip": "Uses AI to check if an item is relevant given a set of criteria"
   }
 }

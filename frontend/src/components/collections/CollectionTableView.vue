@@ -86,11 +86,11 @@ export default {
       <template #empty>
         <div v-if="collectionStore.search_mode"
           class="pl-3 xl:pl-8 py-10 flex flex-col gap-3 items-center text-gray-500">
-          {{ collection.ui_settings.hide_checked_items_in_search ? 'No not-already-evaluated items found' : 'No items found' }}
+          {{ collection.ui_settings.hide_checked_items_in_search ? $t('item-view.no-not-already-evaluated-items-found') : $t('item-view.no-items-found') }}
         </div>
         <div v-else
           class="pl-3 xl:pl-8 py-10 flex flex-row justify-center text-gray-500">
-          No items yet
+          {{ $t('item-view.no-items-yet') }}
         </div>
       </template>
       <Column header="" class="pl-5 xl:pl-10 min-w-[520px]">
@@ -99,20 +99,20 @@ export default {
             <div class="w-20"></div>
             <span
               class="text-sm text-center"
-              v-tooltip.bottom="{value: 'Only search results are shown. &nbsp Exit search to remove results and show saved items.'}">
-              Search Results
-              <span class="text-xs text-gray-500">({{ `${retrieved_results} of ${available_results}${any_source_is_estimated ? '+': ''}` }})</span>
+              v-tooltip.bottom="{value: $t('item-view.search-result-tooltip')}">
+              {{ $t('item-view.search-results') }}
+              <span class="text-xs text-gray-500">({{ $t('item-view.number-of-retrieved-results', [retrieved_results, available_results, any_source_is_estimated ? '+': '']) }})</span>
               <InformationCircleIcon class="ml-1 h-4 w-4 inline text-blue-500">
               </InformationCircleIcon>
             </span>
             <BorderlessButton @click="collectionStore.approve_relevant_search_results"
-              v-tooltip.bottom="{ value: 'Approve all (relevant) search results and leave search mode', showDelay: 400}">
-              Approve All
+              v-tooltip.bottom="{ value: $t('item-view.approve-all-tooltip'), showDelay: 400}">
+              {{ $t('item-view.approve-all') }}
             </BorderlessButton>
           </div>
           <span v-else
             class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center">
-            {{ collectionStore.entity_name_plural || 'Items' }}
+            {{ collectionStore.entity_name_plural || $t('item-view.items-column-header') }}
           </span>
         </template>
         <template #body="slotProps">
@@ -131,14 +131,14 @@ export default {
             class="my-5 w-full flex flex-row justify-center">
             <BorderButton @click="collectionStore.add_more_items_from_active_task"
               class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
-              v-tooltip.top="{ value: `${retrieved_results} of ${available_results}${any_source_is_estimated ? '+': ''} results retrieved`}">
-              Show More Results <PlusIcon class="h-4 w-4 inline"></PlusIcon>
+              v-tooltip.top="{ value: $t('item-view.number-of-retrieved-results', [retrieved_results, available_results, any_source_is_estimated ? '+': ''])}">
+              {{ $t('item-view.show-more-results') }} <PlusIcon class="h-4 w-4 inline"></PlusIcon>
             </BorderButton>
           </div>
 
           <div v-if="collectionStore.search_mode && !more_results_are_available && is_last_page && slotProps.index == collectionStore.collection_items.length - 1"
             class="my-5 w-full flex flex-row justify-center text-sm text-gray-400">
-            No more results available
+            {{ $t('item-view.no-more-results-available') }}
           </div>
         </template>
       </Column>
@@ -147,7 +147,7 @@ export default {
           <button class="rounded-md bg-white shadow-sm text-sm hover:text-blue-500 py-1 px-2 w-full"
             @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
             {{ column.name }}
-            <span v-if="column.module === 'relevance'" class="ml-2 text-xs text-gray-500">Click to change criteria</span>
+            <span v-if="column.module === 'relevance'" class="ml-2 text-xs text-gray-500">{{ $t('item-view.click-to-change-criteria') }}</span>
           </button>
         </template>
         <template #body="slotProps">
@@ -161,7 +161,7 @@ export default {
         <template #header="slotProps">
           <button class="rounded-md bg-gray-100 shadow-sm text-sm hover:text-blue-500 py-1 px-3 w-[120px]"
             @click="$emit('add_column')">
-            <PlusIcon class="h-4 w-4 inline"></PlusIcon> Column
+            <PlusIcon class="h-4 w-4 inline"></PlusIcon> {{ $t('item-view.add-column') }}
           </button>
         </template>
         <template #body="slotProps">

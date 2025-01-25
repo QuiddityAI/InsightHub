@@ -22,7 +22,6 @@ const toast = useToast()
 </script>
 
 <script>
-
 export default {
   inject: ["eventBus"],
   props: ["collection", "collection_class"],
@@ -33,9 +32,9 @@ export default {
       selected_module: 'llm',
       selected_llm: 'Google_Gemini_Flash_1_5_v1',
       default_models: [
-        {'title': 'Small AI', 'subtitle': 'cheap + fast, simple', 'model': 'Mistral_Ministral8b'},
-        {'title': 'Medium AI', 'subtitle': 'balanced', 'model': 'Google_Gemini_Flash_1_5_v1'},
-        {'title': 'Large AI', 'subtitle': 'expensive + slow, smart', 'model': 'Mistral_Mistral_Large'},
+        {'title': this.$t('AddColumnDialog.small-ai'), 'subtitle': this.$t('AddColumnDialog.small-ai-subtitle'), 'model': 'Mistral_Ministral8b'},
+        {'title': this.$t('AddColumnDialog.medium-ai'), 'subtitle': this.$t('AddColumnDialog.medium-ai-subtitle'), 'model': 'Google_Gemini_Flash_1_5_v1'},
+        {'title': this.$t('AddColumnDialog.large-ai'), 'subtitle': this.$t('AddColumnDialog.large-ai-subtitle'), 'model': 'Mistral_Mistral_Large'},
       ],
       selected_language: null,
       show_advanced_modules: false,
@@ -63,35 +62,35 @@ export default {
     },
     expression_label() {
       if (this.selected_module === 'llm') {
-        return 'Query / Task'
+        return this.$t('AddColumnDialog.expression-label-llm')
       } else if (this.selected_module === 'relevance') {
-        return 'Relevance Criteria'
+        return this.$t('AddColumnDialog.expression-label-relevance')
       } else if (this.selected_module === 'email') {
-        return 'E-Mail addresses (comma-separated)'
+        return this.$t('AddColumnDialog.expression-label-email')
       } else {
-        return 'Expression'
+        return this.$t('AddColumnDialog.expression-label-other')
       }
     },
     sources_label() {
       if (this.selected_module === 'llm' || this.selected_module === 'relevance') {
-        return 'Sources:'
+        return this.$t('AddColumnDialog.sources-label-llm')
       } else if (this.selected_module === 'website_scraping') {
-        return 'URL Field:'
+        return this.$t('AddColumnDialog.sources-label-url')
       } else if (this.selected_module === 'web_search') {
-        return 'Query:'
+        return this.$t('AddColumnDialog.sources-label-web-search')
       } else if (this.selected_module === 'item_field') {
-        return 'Field:'
+        return this.$t('AddColumnDialog.sources-label-item-field')
       } else {
-        return 'Sources:'
+        return this.$t('AddColumnDialog.sources-label-other')
       }
     },
     prompt_label() {
       if (this.selected_module === 'llm') {
-        return 'Custom Prompt (see explanation below)'
+        return this.$t('AddColumnDialog.prompt-label-llm')
       } else if (this.selected_module === 'email') {
-        return 'E-Mail Template (see explanation below)'
+        return this.$t('AddColumnDialog.prompt-label-email')
       } else {
-        return 'Prompt'
+        return this.$t('AddColumnDialog.prompt-label-other')
       }
     },
     show_process_now_button() {
@@ -208,9 +207,9 @@ export default {
       <BorderButton v-for="module in appState.column_modules.filter(module => module.highlight)"
         @click="selected_module = module.identifier"
         :highlighted="selected_module === module.identifier">
-        {{ module.name }}
+        {{ $t(module.name) }}
       </BorderButton>
-      <BorderButton v-tooltip.top="{ value: 'Show advanced modules' }"
+      <BorderButton v-tooltip.top="{ value: $t('AddColumnDialog.show-advanced-modules') }"
         @click="show_advanced_modules = !show_advanced_modules"
         :highlighted="show_advanced_modules">
         ...
@@ -224,7 +223,7 @@ export default {
       </BorderButton>
     </div>
     <div class="text-xs text-gray-500">
-      {{ appState.column_modules.find(module => module.identifier === selected_module).help_text }}
+      {{ $t(appState.column_modules.find(module => module.identifier === selected_module).help_text) }}
     </div>
 
     <div class="flex flex-row items-center mb-4 mt-4" v-if="['llm', 'relevance', 'email'].includes(selected_module)">
@@ -235,60 +234,60 @@ export default {
         :available_language_codes="['en', 'de']"
         v-model="selected_language"
         :offer_wildcard="true" :use_last_used_language="false"
-        tooltip="Language of the question and results ('world' for auto-detect)">
+        :tooltip="$t('AddColumnDialog.language-tooltip')">
       </LanguageSelect>
     </div>
 
     <div class="flex flex-row gap-5 items-center">
       <div class="flex flex-row items-center"
-        v-tooltip.top="{ value: 'Auto-set title of column' }">
+        v-tooltip.top="{ value: $t('AddColumnDialog.auto-title-tooltip') }">
         <Checkbox v-model="use_auto_title" :binary="true" />
         <button class="ml-2 text-xs text-gray-500"
           @click="use_auto_title = !use_auto_title">
-          Auto Title
+          {{ $t('AddColumnDialog.auto-title') }}
         </button>
       </div>
       <div class="flex flex-row items-center" v-if="['llm', 'relevance'].includes(selected_module)"
-        v-tooltip.top="{ value: 'Auto-set language of question + results' }">
+        v-tooltip.top="{ value: $t('AddColumnDialog.auto-language-tooltip') }">
         <Checkbox v-model="use_auto_language" :binary="true" />
         <button class="ml-2 text-xs text-gray-500"
           @click="use_auto_language = !use_auto_language">
-          Auto Language
+          {{ $t('AddColumnDialog.auto-language') }}
         </button>
       </div>
       <div class="flex flex-row items-center" v-if="['llm', 'email'].includes(selected_module)"
-        v-tooltip.top="{ value: 'Uncheck to use a custom prompt' }">
+        v-tooltip.top="{ value: $t('AddColumnDialog.default-prompt-tooltip') }">
         <Checkbox v-model="use_auto_prompt" :binary="true" />
         <button class="ml-2 text-xs text-gray-500"
           @click="use_auto_prompt = !use_auto_prompt">
-          {{ selected_module == 'email' ? 'Default Template' : 'Auto Prompt' }}
+          {{ selected_module == 'email' ? $t('AddColumnDialog.default-email-template') : $t('AddColumnDialog.auto-prompt') }}
         </button>
       </div>
       <div class="flex flex-row items-center" v-if="['llm', 'relevance', 'email'].includes(selected_module)"
-        v-tooltip.top="{ value: 'Uncheck if anything beside the items text fields is relevant' }">
+        v-tooltip.top="{ value: $t('AddColumnDialog.default-sources-tooltip') }">
         <Checkbox v-model="use_default_sources" :binary="true" />
         <button class="ml-2 text-xs text-gray-500"
           @click="use_default_sources = !use_default_sources">
-          Default Sources
+          {{ $t('AddColumnDialog.default-sources') }}
         </button>
       </div>
     </div>
 
     <div class="flex flex-row gap-5 items-center" v-if="!['notes', 'item_field'].includes(selected_module)">
       <div class="flex flex-row items-center"
-        v-tooltip.top="{ value: 'Execute this as soon as an item is approved' }">
+        v-tooltip.top="{ value: $t('AddColumnDialog.auto-run-approved-tooltip') }">
         <Checkbox v-model="auto_run_for_approved_items" :binary="true" />
         <button class="ml-2 text-xs text-gray-500"
           @click="auto_run_for_approved_items = !auto_run_for_approved_items">
-          Auto-run for Approved Items
+          {{ $t('AddColumnDialog.auto-run-for-approved-items') }}
         </button>
       </div>
       <div class="flex flex-row items-center"
-        v-tooltip.top="{ value: 'Execute this automatically for candidates (e.g. search results)' }">
+        v-tooltip.top="{ value: $t('AddColumnDialog.auto-run-candidates-tooltip') }">
         <Checkbox v-model="auto_run_for_candidates" :binary="true" />
         <button class="ml-2 text-xs text-gray-500"
           @click="auto_run_for_candidates = !auto_run_for_candidates">
-          Auto-run for Candidates
+          {{ $t('AddColumnDialog.auto-run-for-candidates') }}
         </button>
       </div>
     </div>
@@ -296,7 +295,7 @@ export default {
     <div class="flex flex-row items-center" v-if="!use_auto_title">
       <input ref="new_question_name" type="text" v-model="title"
         class="flex-none w-2/3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-        placeholder="Column Title" />
+        :placeholder="$t('AddColumnDialog.column-title-placeholder')" />
     </div>
 
     <div class="flex flex-row items-center" v-if="!use_auto_prompt">
@@ -332,11 +331,10 @@ export default {
           class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       </div>
     </div>
-    <Message v-if="show_full_text_issue_hint" class="text-gray-500">
-      Using the full text of an item might be slow and expensive. The full text will also be limited to the
-      maximum text length of the AI module, which might lead to unpredictable results.
+    <Message v-if="show_full_text_issue_hint" class="text-gray-500 whitespace-pre-wrap">
+      {{ $t('AddColumnDialog.using-full-text-hint-1') }}
       <br>
-      Consider using 'Full Text Excerpts' instead, which selects only the most relevant parts of the full text.
+      {{ $t('AddColumnDialog.using-full-text-hint-2') }}
     </Message>
 
 
@@ -353,7 +351,7 @@ export default {
         @click="use_custom_llm = true"
         :highlighted="use_custom_llm">
         <div class="flex flex-col">
-          <div class="font-semibold">Custom</div>
+          <div class="font-semibold">{{ $t('AddColumnDialog.custom-llm') }}</div>
         </div>
       </BorderButton>
     </div>
@@ -369,13 +367,13 @@ export default {
         class="rounded-md border-0 px-2 py-1.5 bg-green-100 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
         @click="add_extraction_question(true)">
-        Add & Process Current Page
+        {{ $t('AddColumnDialog.add-and-process-current-page') }}
       </button>
       <button v-if="show_add_without_processing_button"
         class="rounded-md border-0 px-2 py-1.5 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         type="button"
         @click="add_extraction_question(false)">
-        {{ show_process_now_button ? 'Add without Processing' : 'Add Column' }}
+        {{ show_process_now_button ? $t('AddColumnDialog.add-without-processing') : $t('AddColumnDialog.add-column') }}
       </button>
     </div>
   </div>

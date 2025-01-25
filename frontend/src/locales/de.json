@@ -7,12 +7,16 @@
     "language-of-the-query-and-search-results": "Sprache der Abfrage und Suchergebnisse",
     "preview-feature": "Diese Funktion befindet sich in der Vorschau und funktioniert möglicherweise nicht wie erwartet.",
     "query-operators-not-supported-for-vector-search": "Die Operatoren AND / OR werden für die Suche nach „Bedeutung“ und „Hybrid“ nicht unterstützt.\nBitte verwende hier Filter und Anführungszeichen oder wechsel zur Suche nach „Schlüsselwort“.",
-    "retrieval-mode-hybrid": "Kombiniert Schlüsselwort- und Bedeutungssuche.\\n\\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\\nso, dass die relevantesten oben stehen.\\nUnterstützt nur Phrasen in Anführungszeichen, nicht die Operatoren AND/OR/NOT.",
-    "retrieval-mode-keyword": "Verwende dies, um spezifische Wörter zu finden.\\nUnterstützt Operatoren wie AND / OR / NOT.",
-    "retrieval-mode-vector": "Verwende diese Option, um nach umfassenderen Themen oder Informationen zu suchen,\\ndie auf viele verschiedene Arten beschrieben werden können.\\n\\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\\nso dass die relevantesten oben stehen.\\nUnterstützt nur zitierte Phrasen \n, nicht die Operatoren AND / OR / NOT.",
+    "retrieval-mode-hybrid": "Kombiniert Schlüsselwort- und Bedeutungssuche.\n\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\nso, dass die relevantesten oben stehen.\nUnterstützt nur Phrasen in Anführungszeichen, nicht die Operatoren AND/OR/NOT.",
+    "retrieval-mode-keyword": "Verwende dies, um spezifische Wörter zu finden.\nUnterstützt Operatoren wie AND / OR / NOT.",
+    "retrieval-mode-vector": "Verwende diese Option, um nach umfassenderen Themen oder Informationen zu suchen,\ndie auf viele verschiedene Arten beschrieben werden können.\n\nHinweis: Dies gibt möglicherweise fast alle Dokumente zurück, jedoch sortiert\nso dass die relevantesten oben stehen.\nUnterstützt nur zitierte Phrasen, nicht die Operatoren AND / OR / NOT.",
     "use-double-quotes-instead-of-single-quotes-to-search-for-phrases": "Hinweis: Verwende für die Suche nach Phrasen doppelte Anführungszeichen anstelle einfacher Anführungszeichen.",
     "vector-search-not-available-for-this-dataset": "Für diesen Datensatz ist die Bedeutungs-/Hybridsuche noch nicht verfügbar.",
-    "go": "Los"
+    "go": "Los",
+    "filter": "Filter",
+    "hybrid-search": "Beides",
+    "keyword-search": "Stichwörter",
+    "meaning-search": "Bedeutung"
   },
   "CollectionList": {
     "log-in-to-use-collections": "Melde dich an, um Sammlungen anzulegen",
@@ -62,6 +66,152 @@
   "CollectionView": {
     "map-secondary-view": "Karte",
     "more-secondary-view": "Anderes",
-    "summary-secondary-view": "Zusammenfassung"
+    "summary-secondary-view": "Zusammenfassung",
+    "change-layout": "Layout ändern",
+    "column-layout": "Spalten-Layout",
+    "delete-collection": "Sammlung löschen",
+    "filter-items": "Elemente filtern",
+    "full-screen-secondary-view": "Vollbild",
+    "grid-layout": "Raster-Layout",
+    "hide-checked-items-in-search": "Gespeicherte Elemente in der Suche ausblenden",
+    "hide-secondary-view": "Ausblenden",
+    "item-size-full": "Vollständige Ansicht",
+    "item-size-medium": "Mittlere Ansicht",
+    "item-size-small": "Minimale Ansicht",
+    "search-task-dialog-header": "Suchauftrag erstellen/ändern",
+    "show-items-marked-as-irrelevant": "Zeige Elemente, die als irrelevant gekennzeichnet sind",
+    "spreadsheet-layout": "Tabellen-Layout"
+  },
+  "AddFilterMenu": {
+    "add-filter": "Filter hinzufügen",
+    "descriptive-text-is-a-shortcut-for-these-fields": "* „Beschreibender Text“ ist eine Abkürzung für diese Felder:",
+    "field": "Feld...",
+    "note-not-all-filters-might-be-available-in-meaning-or-hybrid-mode": "Hinweis: Nicht alle Filter sind möglicherweise im \"Bedeutung\" oder \"Hybrid\" -Modus verfügbar.",
+    "operator": "Funktion..."
+  },
+  "AgentModeBar": {
+    "cancel": "Abbrechen",
+    "processing": "Läuft:"
+  },
+  "FilterBar": {
+    "collection-item-filter-tooltip": "Dies betrifft nur bereits vorhandene Elemente / Ergebnisse.\nUm einen Filter auf die normale Suche anzuwenden, verwende die dortigen Filter.",
+    "filter-existing-items-search-results": "Vorhandene Elemente filtern",
+    "remove-filter": "Filter entfernen",
+    "show-word-cloud": "Wortwolke anzeigen"
+  },
+  "SearchModeBar": {
+    "edit-the-search-query-and-filters": "Bearbeite die Suchabfrage und die Filter",
+    "exit-search-tooltip": "Suchergebnisse entfernen und gespeicherte Elemente anzeigen",
+    "go-to-the-previous-search-result": "Gehe zum vorherigen Suchergebnis",
+    "no-search-query": "Keine Suchtext",
+    "save-execute-periodically": "Speichern / regelmäßig ausführen",
+    "search-mode": "Suchmodus:",
+    "edit": "Bearbeiten",
+    "exit": "Beenden"
+  },
+  "SearchTaskExecutionSettings": {
+    "run-on-new-items": "Neue {0} beobachten, passende automatisch hinzufügen",
+    "save": "Speichern"
+  },
+  "StatisticList": {
+    "statistics": "Statistiken:"
+  },
+  "TextFilterInput": {
+    "text-filter-placeholder": "Textfilter ..."
+  },
+  "WordCloud": {
+    "contains-filter-name": "Enthält:",
+    "important-keywords-in-filtered-selected-items": "Wichtige Schlüsselwörter in gefilterten / ausgewählten Elementen:"
+  },
+  "WritingTaskArea": {
+    "create-custom-writing-task": "Benutzerdefinierte Schreibaufgabe erstellen",
+    "hint-only-ask-about-existing-items": "Stelle Fragen, die mit den Elementen in dieser Sammlung beantwortet werden können.",
+    "ideas": "Ideen:",
+    "new-writing-task-name": "Neue Schreibaufgabe",
+    "question-submit-button": "Los",
+    "quick-question-placeholder": "Frage eingeben..."
+  },
+  "item-view": {
+    "add-column": "Spalte",
+    "add-column-tooltip": "Spalte hinzufügen",
+    "approve-all": "Alle hinzufügen",
+    "approve-all-tooltip": "Speichere alle (relevanten) Suchergebnisse und verlasse den Suchmodus",
+    "click-to-change-criteria": "Hier Kriterien ändern",
+    "items-column-header": "Elemente",
+    "no-items-found": "Keine Ergebnisse gefunden",
+    "no-items-yet": "Noch keine Elemente",
+    "no-more-results-available": "Keine weiteren Ergebnisse verfügbar",
+    "no-not-already-evaluated-items-found": "Keine (noch nicht gespeicherten) Ergebnisse gefunden",
+    "number-of-retrieved-results": "{0} von {1} {2} Ergebnissen abgerufen",
+    "search-result-tooltip": "Es werden nur Suchergebnisse angezeigt.",
+    "search-results": "Suchergebnisse",
+    "show-more-results": "Mehr Ergebnisse hinzufügen"
+  },
+  "AddColumnDialog": {
+    "add-and-process-current-page": "Hinzufügen und ausführen",
+    "add-column": "Spalte hinzufügen",
+    "add-without-processing": "Hinzufügen, aber nicht ausführen",
+    "auto-language": "Auto-Sprache",
+    "auto-language-tooltip": "Automatisches erkennen der Sprache der Frage und Ergebnisse",
+    "auto-prompt": "Auto-Prompt",
+    "auto-run-approved-tooltip": "Automatisch für validierte Elemente ausführen (als relevant markierte)",
+    "auto-run-candidates-tooltip": "Automatisch für Kandidaten ausführen (z. B. Suchergebnisse)",
+    "auto-run-for-approved-items": "Automatisch für validierte Elemente ausführen",
+    "auto-run-for-candidates": "Automatisch für Kandidaten ausführen",
+    "auto-title": "Auto-Titel",
+    "auto-title-tooltip": "Titel der Spalte automatisch festlegen",
+    "column-title-placeholder": "Spaltenentitel",
+    "custom-llm": "Andere",
+    "default-email-template": "Standardvorlage",
+    "default-prompt-tooltip": "Deaktivieren, um einen benutzerdefinierten Prompt zu verwenden",
+    "default-sources": "Standardquellen",
+    "default-sources-tooltip": "Deaktivieren, wenn etwas außer den normalen Textfeldern der Elemente relevant ist",
+    "language-tooltip": "Sprache der Frage und Ergebnisse ('Welt' für automatische Erkennung)",
+    "show-advanced-modules": "Fortgeschrittene Module zeigen",
+    "using-full-text-hint-1": "Die Verwendung des vollständigen Textes eines Artikels kann langsam und teuer sein.\nDer vollständige Text ist auch auf die maximale Textlänge des KI -Moduls beschränkt, was zu unvorhersehbaren Ergebnissen führen kann.",
+    "using-full-text-hint-2": "Erwäge stattdessen die Verwendung von „Volltextauszügen“, bei denen nur die relevantesten Teile des Volltexts ausgewählt werden.",
+    "expression-label-email": "E-Mail-Adressen (durch Kommas getrennt)",
+    "expression-label-llm": "Prompt / Aufgabe",
+    "expression-label-other": "Aufgabe",
+    "expression-label-relevance": "Relevanzkriterien",
+    "large-ai": "Große KI",
+    "large-ai-subtitle": "Teuer, langsam, schlau",
+    "medium-ai": "Mittlere KI",
+    "medium-ai-subtitle": "ausgewogen",
+    "prompt-label-email": "E-Mail-Vorlage (siehe Erläuterung unten)",
+    "prompt-label-llm": "Benutzerdefinierter Prompt (siehe Erläuterung unten)",
+    "prompt-label-other": "Prompt",
+    "small-ai": "Kleine KI",
+    "small-ai-subtitle": "günstig, schnell, einfach",
+    "sources-label-item-field": "Feld:",
+    "sources-label-llm": "Quellen:",
+    "sources-label-other": "Quellen:",
+    "sources-label-url": "URL-Feld:",
+    "sources-label-web-search": "Suchanfrage:"
+  },
+  "CollectionItem": {
+    "add-this-item-permanently": "Dieses Ergebnis dauerhaft hinzufügen",
+    "found-by-both-tooltip": "Dieses Ergebnis wurde durch Bedeutung und Schlüsselwörter gefunden.",
+    "found-by-keywords": "Durch Stichworte gefunden",
+    "found-by-keywords-tooltip": "Dieser Artikel wurde hauptsächlich gefunden, da er Schlüsselwörter der Suchanfrage enthält.",
+    "found-by-meaning": "Durch Bedeutung gefunden",
+    "found-by-meaning-and-keywords": "Durch Bedeutung gefunden",
+    "found-by-meaning-tooltip": "Dieser Artikel wurde hauptsächlich gefunden, weil er mit der Bedeutung der Suchanfrage übereinstimmt.",
+    "group-generic-name": "Gruppe",
+    "mark-this-item-as-irrelevant": "Markiere dieses Ergebnis als irrelevant und blende es in zukünftigen Suchanfragen in dieser Sammlung aus",
+    "remove-from-this-collection": "Aus dieser Sammlung entfernen",
+    "show-group-children": "{0} anzeigen",
+    "temporary-item-explanation": "Dieses Element ist temporär. \nSpeichere es, sonst wird es aus der Sammlung entfernt."
+  },
+  "app_state_store": {
+    "column-module-email": "E-Mail",
+    "column-module-item-field": "Element-Feld",
+    "column-module-llm": "LLM",
+    "column-module-llm-tooltip": "Verwendet KI, um eine Frage basierend auf jedem Element separat zu beantworten",
+    "column-module-manual-notes": "Eigene Notizen",
+    "column-module-relevance": "Relevanz",
+    "column-module-relevance-tooltip": "Verwendet KI, um zu prüfen, ob ein Ergebnis angesichts einer Reihe von Kriterien relevant ist",
+    "column-module-web-search": "Websuche",
+    "column-module-website-text": "Website-Text"
   }
 }

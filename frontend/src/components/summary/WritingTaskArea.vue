@@ -199,7 +199,7 @@ export default {
 
       <div class="flex flex-col gap-2 items-start mb-10" v-if="writing_task_ids.length === 0">
         <span class="text-sm text-gray-500">
-          Ideas:
+          {{ $t('WritingTaskArea.ideas') }}
         </span>
         <button v-for="template in templates" :key="template.intent"
           @click="create_from_template(template)"
@@ -210,24 +210,24 @@ export default {
 
       <div class="flex flex-col gap-2">
         <span class="text-xs text-gray-400 text-center">
-          Ask questions that can be answered using the items in this collection.
+          {{ $t('WritingTaskArea.hint-only-ask-about-existing-items') }}
         </span>
 
         <div class="flex flex-row gap-2">
-          <input v-model="quick_question_text" placeholder="Quick Question"
+          <input v-model="quick_question_text" :placeholder="$t('WritingTaskArea.quick-question-placeholder')"
             @keyup.enter="quick_question(quick_question_text)"
             class="flex-1 px-2 py-1 rounded text-sm text-gray-800 border border-gray-200" />
           <BorderButton @click="quick_question(quick_question_text)"
             class="">
-            Ask
+            {{ $t('WritingTaskArea.question-submit-button') }}
           </BorderButton>
         </div>
 
 
         <div class="flex flex-row gap-3">
-          <BorderButton @click="add_writing_task('New Writing Task')"
+          <BorderButton @click="add_writing_task($t('WritingTaskArea.new-writing-task-name'))"
             class="flex-1 px-2 py-1">
-            Create custom writing task
+            {{ $t('WritingTaskArea.create-custom-writing-task') }}
           </BorderButton>
         </div>
       </div>

@@ -59,8 +59,8 @@ export default {
 
     <div class="flex flex-row items-center gap-4">
       <span class="flex-none text-gray-500"
-        v-tooltip="{value: 'This only affects already existing items / results.\nTo apply a filter to the normal search, use the filters there.', showDelay: 400}">
-        Filter existing items / search results
+        v-tooltip="{value: $t('FilterBar.collection-item-filter-tooltip'), showDelay: 400}">
+        {{ $t('FilterBar.filter-existing-items-search-results') }}
         <InformationCircleIcon class="h-4 w-4 inline text-blue-500">
         </InformationCircleIcon>:
       </span>
@@ -69,7 +69,7 @@ export default {
 
       <BorderlessButton @click="show_word_cloud = !show_word_cloud"
         :highlighted="show_word_cloud"
-        v-tooltip="{value: 'Show word cloud', showDelay: 400}">
+        v-tooltip="{value: $t('FilterBar.show-word-cloud'), showDelay: 400}">
         <CloudIcon class="h-6 w-6">
         </CloudIcon>
       </BorderlessButton>
@@ -81,7 +81,7 @@ export default {
       <div v-for="filter in collectionStore.collection.filters" :key="filter.uid" class="flex items-center gap-1 bg-red-100 px-2 py-[2px] rounded-full">
         <span class="text-gray-500">{{ filter.display_name }}</span>
         <!-- don't use built-in 'removable' feature of Chip because it would remove the element even for future filter list -->
-        <button v-if="filter.removable" @click="collectionStore.remove_filter(filter.uid)" v-tooltip="{value: 'Remove Filter', showDelay: 400}"
+        <button v-if="filter.removable" @click="collectionStore.remove_filter(filter.uid)" v-tooltip="{value: $t('FilterBar.remove-filter'), showDelay: 400}"
             class="ml-2 h-4 w-4 flex items-center justify-center rounded-full bg-white text-xs text-gray-500">X</button>
       </div>
     </div>

@@ -93,14 +93,14 @@ export default {
 
       <BorderButton @click="collectionStore.add_more_items_from_active_task"
         class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
-        v-tooltip.top="{ value: `${retrieved_results} of ${available_results}${any_source_is_estimated ? '+': ''} results retrieved`}">
-        Show More Results <PlusIcon class="h-4 w-4 inline"></PlusIcon>
+        v-tooltip.top="{ value: $t('item-view.number-of-retrieved-results', [retrieved_results, available_results, any_source_is_estimated ? '+': ''])}">
+        {{ $t('item-view.show-more-results') }} <PlusIcon class="h-4 w-4 inline"></PlusIcon>
       </BorderButton>
     </div>
 
     <div v-if="collectionStore.search_mode && !more_results_are_available && is_last_page"
       class="my-5 w-full flex flex-row justify-center text-sm text-gray-400">
-      No more results available
+      {{ $t('item-view.no-more-results-available') }}
     </div>
 
   </div>
