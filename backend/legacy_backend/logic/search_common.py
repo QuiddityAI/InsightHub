@@ -1,32 +1,35 @@
+import copy
+import json
 import logging
 import math
-import copy
-from typing import Iterable
 from functools import lru_cache
-import json
+from typing import Iterable
 
-import numpy as np
 import cachetools.func
+import numpy as np
 
-from ..utils.field_types import FieldType
-from ..utils.collect_timings import Timings
 from data_map_backend.utils import DotDict, pk_to_uuid_id
-from ..utils.source_plugin_types import SourcePlugin
-
-from ..api_clients.cohere_reranking import get_reranking_results
-from ..api_clients import openalex_api
-
-from ..database_client.django_client import get_generators, get_dataset, get_related_collection_items
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..database_client.text_search_engine_client import TextSearchEngineClient
-
-from ..logic.postprocess_search_results import enrich_search_results
-from ..logic.generator_functions import get_generator_function_from_field, get_generator_function
-from ..logic.autocut import get_number_of_useful_items
-
-from ..utils.helpers import normalize_array
-
 from data_map_backend.views.other_views import get_serialized_dataset_cached
+
+from ..api_clients import openalex_api
+from ..api_clients.cohere_reranking import get_reranking_results
+from ..database_client.django_client import (
+    get_dataset,
+    get_generators,
+    get_related_collection_items,
+)
+from ..database_client.text_search_engine_client import TextSearchEngineClient
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..logic.autocut import get_number_of_useful_items
+from ..logic.generator_functions import (
+    get_generator_function,
+    get_generator_function_from_field,
+)
+from ..logic.postprocess_search_results import enrich_search_results
+from ..utils.collect_timings import Timings
+from ..utils.field_types import FieldType
+from ..utils.helpers import normalize_array
+from ..utils.source_plugin_types import SourcePlugin
 
 
 class QueryInput(object):
@@ -675,12 +678,13 @@ def adapt_filters_to_dataset(
                         {"field": field, "value": filter_["value"], "operator": filter_["operator"]}
                     )
                 removed_filters.append(filter_)
-    if result_language and dataset.merged_advanced_options.get("language_filtering"):
-        language_filtering = dataset.merged_advanced_options.language_filtering
-        if not language_filtering.format == "iso_639_set_1":
-            logging.warning(f"Unsupported language filtering format '{language_filtering.format}'")
-        else:
-            additional_filters.append({"field": language_filtering.field, "value": result_language, "operator": "is"})
+    # FIXME: disable hard language filtering for now, as it is often not wanted, rather use manual filters for now
+    # if result_language and dataset.merged_advanced_options.get("language_filtering"):
+    #     language_filtering = dataset.merged_advanced_options.language_filtering
+    #     if not language_filtering.format == "iso_639_set_1":
+    #         logging.warning(f"Unsupported language filtering format '{language_filtering.format}'")
+    #     else:
+    #         additional_filters.append({"field": language_filtering.field, "value": result_language, "operator": "is"})
     filters.extend(additional_filters)
     for filter_ in filters:
         if filter_ in removed_filters:
@@ -746,6 +750,7 @@ def workaround_to_filter_by_institution_using_openalex(dataset, filters, limit):
 import pickle
 import time
 from pathlib import Path
+
 import orjson
 
 base_download_folder = f"/data/semantic_scholar"
