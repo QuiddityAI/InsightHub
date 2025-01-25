@@ -117,6 +117,10 @@ export const available_filter_operators = [
   { id: "gt", title: ">" },
   { id: "gte", title: ">=" },
 ]
+export const additional_filter_operators = [
+  { id: "in", title: "in" },
+  { id: "not_in", title: "not in" },
+]
 
 
 export function debounce(func, timeout = 300) {

@@ -4,7 +4,7 @@ import Chip from 'primevue/chip';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
-import { available_filter_operators } from '../../utils/utils'
+import { available_filter_operators, additional_filter_operators } from '../../utils/utils'
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 </script>
@@ -47,7 +47,8 @@ export default {
         const field_details = this.appStateStore.datasets[filter.dataset_id].schema.object_fields[filter.field]
         field_name = field_details.name || field_details.identifier
       }
-      const operator = available_filter_operators.find(op => op.id === filter.operator)
+      const operators = available_filter_operators.concat(additional_filter_operators)
+      const operator = operators.find(op => op.id === filter.operator)
       return `${field_name} ${operator.title} '${filter.value}'`
     },
   },
