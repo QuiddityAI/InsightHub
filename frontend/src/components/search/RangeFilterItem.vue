@@ -70,14 +70,14 @@ export default {
   methods: {
     update_boundaries(on_success=null) {
       this.collectionStore.get_value_range(this.range_filter.field, (value_range) => {
-        this.min_value = value_range.min
-        this.max_value = value_range.max
-        if (this.value[0] === null || this.value[0] < value_range.min || this.value[0] > value_range.max) {
+        if (this.value[0] === null || this.value[0] === this.min_value || this.value[0] < value_range.min || this.value[0] > value_range.max) {
           this.value[0] = value_range.min
         }
-        if (this.value[1] === null || this.value[1] < value_range.min || this.value[1] > value_range.max) {
+        if (this.value[1] === null || this.value[1] === this.max_value || this.value[1] < value_range.min || this.value[1] > value_range.max) {
           this.value[1] = value_range.max
         }
+        this.min_value = value_range.min
+        this.max_value = value_range.max
         const any_ds_field_is_integer = this.dataset_ids.some(
           (ds_id) => this.appStateStore.datasets[ds_id]?.schema.object_fields[this.range_filter.field]?.field_type === FieldType.INTEGER
         )
