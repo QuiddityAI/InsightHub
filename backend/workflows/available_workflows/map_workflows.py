@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 
-from data_map_backend.models import DataCollection
+from data_map_backend.models import DataCollection, Dataset
 from data_map_backend.schemas import CollectionUiSettings
 from search.logic.execute_search import create_and_run_search_task
 from search.schemas import SearchTaskSettings, SearchType
@@ -38,6 +38,29 @@ class OverviewMapWorkflow(WorkflowBase):
     def run(self, collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
         collection.ui_settings = CollectionUiSettings(secondary_view="map", show_visibility_filters=True).model_dump()
         collection.save(update_fields=["ui_settings"])
+        dataset = Dataset.objects.get(id=settings.dataset_id)
+        if settings.result_language and dataset.merged_advanced_options.get("language_filtering"):
+            language_filtering: dict = dataset.merged_advanced_options.get("language_filtering", {})
+            if not settings.filters:
+                settings.filters = []
+            if settings.result_language == "en":
+                settings.filters.append(
+                    {
+                        "dataset_id": settings.dataset_id,
+                        "field": language_filtering.get("field"),
+                        "value": "en",
+                        "operator": "is",
+                    }
+                )
+            else:
+                settings.filters.append(
+                    {
+                        "dataset_id": settings.dataset_id,
+                        "field": language_filtering.get("field"),
+                        "value": ["en", settings.result_language],
+                        "operator": "in",
+                    }
+                )
         if settings.user_input:
             search_task = SearchTaskSettings(
                 dataset_id=settings.dataset_id,
