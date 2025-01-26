@@ -157,7 +157,8 @@ def run_search_task(
             )
 
         if search_task.exit_search_mode or not from_ui:
-            exit_search_mode(collection, "_default", from_ui)
+            deleted_item_ids = exit_search_mode(collection, "_default", from_ui)
+            new_items = [item for item in new_items if item.id not in deleted_item_ids]
 
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
@@ -218,7 +219,7 @@ def add_items_from_task(
 
     if not from_ui:
         # directly retrieve all items
-        parameters.limit = task.settings.max_candidates
+        parameters.limit = task.settings.get("max_candidates", 10)
 
     if parameters.retrieval_mode != RetrievalMode.KEYWORD and restrict_to_item_ids:
         logging.warning("Restricting to item IDs is only supported for keyword search for now")
@@ -263,6 +264,7 @@ def add_items_from_task(
                 metadata=value,
                 search_score=1 / (status.retrieved + i + 1),
                 relevant_parts=value.get("_relevant_parts", []),
+                # TODO: mark this item as added in background if from_ui is False?
             )
             new_items.append(item)
         CollectionItem.objects.bulk_create(new_items)

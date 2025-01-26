@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from data_map_backend.models import SearchTask
 from data_map_backend.utils import DotDict, pk_to_uuid_id
+from search.logic.notify_about_new_items import notify_about_new_items
 
 from ..database_client.django_client import get_dataset
 from ..database_client.text_search_engine_client import TextSearchEngineClient
@@ -177,6 +178,9 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
                 set_agent_step=False,
                 from_ui=False,
                 restrict_to_item_ids=item_ids,
+                after_columns_were_processed=lambda new_items: notify_about_new_items(
+                    dataset.id, task.collection, new_items
+                ),
             )
             # items are auto-approved and search mode is left
 

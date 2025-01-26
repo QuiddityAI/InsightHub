@@ -197,6 +197,9 @@ export const useCollectionStore = defineStore("collection", {
         }
       })
     },
+    commit_notification_emails() {
+      this.set_collection_attributes({notification_emails: this.collection.notification_emails})
+    },
     delete_collection(collection_id) {
       const that = this
       const delete_collection_body = {

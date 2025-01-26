@@ -188,16 +188,18 @@ def add_criterion(collection_item: CollectionItem, new_criterion: Criterion, rel
         collection_item.column_data[relevance_column.identifier] = column_content
 
 
-def exit_search_mode(collection: DataCollection, class_name: str, from_ui: bool = False):
+def exit_search_mode(collection: DataCollection, class_name: str, from_ui: bool = False) -> list:
     if not collection.search_mode:
-        return
+        return []
     # delete candidates without data:
     # (candidates aren't visible outside of search mode anyway, but we don't want to keep them in the database)
     all_items = CollectionItem.objects.filter(collection=collection, classes__contains=[class_name])
     candidates = all_items.filter(relevance=ItemRelevance.CANDIDATE)
     candidates_without_data = candidates.filter(Q(column_data=None) | Q(column_data={}))
 
+    deleted_item_ids = []
     if candidates_without_data:
+        deleted_item_ids = list(candidates_without_data.values_list("id", flat=True))
         candidates_without_data.delete()
         collection.items_last_changed = timezone.now()
 
@@ -208,6 +210,7 @@ def exit_search_mode(collection: DataCollection, class_name: str, from_ui: bool 
         collection.save(update_fields=["items_last_changed", "search_mode", "explanation_log"])
     else:
         collection.save(update_fields=["items_last_changed", "search_mode"])
+    return deleted_item_ids
 
 
 def approve_relevant_search_results(collection: DataCollection, class_name: str, from_ui: bool = False):

@@ -1210,6 +1210,13 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
+    notification_emails = models.TextField(
+        verbose_name="Notification Emails",
+        help_text="Email addresses for notifications about new items, comma separated",
+        default="",
+        blank=True,
+        null=False,
+    )
 
     @property
     def actual_classes(self) -> list:

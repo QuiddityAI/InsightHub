@@ -4,6 +4,7 @@ import { useToast } from 'primevue/usetoast';
 
 import SearchTaskListItem from './SearchTaskListItem.vue';
 
+import { debounce } from '../../utils/utils';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useCollectionStore } from "../../stores/collection_store"
@@ -21,6 +22,9 @@ export default {
   emits: [],
   data() {
     return {
+      commit_notification_emails_debounce: debounce(() => {
+        collectionStore.commit_notification_emails()
+      }, 1000),
     }
   },
   computed: {
@@ -43,6 +47,13 @@ export default {
       <h3 class="font-bold text-[15px]">
         Saved / Periodic Searches
       </h3>
+    </div>
+
+    <div class="flex flex-row items-center gap-3">
+      <input class="w-full px-2 border border-gray-300 rounded-md text-sm"
+        placeholder="E-Mail addresses to notify for new items (comma separated)"
+        v-model="collectionStore.collection.notification_emails"
+        @change="commit_notification_emails_debounce">
     </div>
 
     <ul class="flex flex-col gap-5">

@@ -782,6 +782,7 @@ def set_collection_attributes(request):
 
     allowed_fields = [
         "name",
+        "notification_emails",
     ]
 
     for key in updates.keys():

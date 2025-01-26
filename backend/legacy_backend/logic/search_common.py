@@ -647,6 +647,8 @@ def check_filters(dataset: DotDict, filters: list[dict], retrieval_mode: str):
             continue
         if filter_["field"] == "_all_parents":
             continue
+        if filter_["field"] == "_id":
+            continue
         if filter_["field"] not in dataset.schema.object_fields:
             raise ValueError(f"Filter field '{filter_['field']}' not found")
         field = DotDict(dataset.schema.object_fields[filter_["field"]])
