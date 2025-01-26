@@ -772,7 +772,7 @@ export const useCollectionStore = defineStore("collection", {
       for (const column of state.collection.columns) {
         available_fields[column.identifier] = {
           identifier: '_column__' + column.identifier,
-          name: `${this.$t('general.column')}: ${column.name}`,
+          name: `${$t('general.column')}: ${column.name}`,
         }
       }
       available_fields['_descriptive_text_fields'] = {
