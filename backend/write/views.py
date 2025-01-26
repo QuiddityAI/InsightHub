@@ -1,16 +1,18 @@
-import logging
 import json
+import logging
 
-from django.http import HttpResponse, HttpRequest
-
+from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection, WritingTask
-from data_map_backend.serializers import WritingTaskSerializer
 from data_map_backend.schemas import CollectionIdentifier
-
+from data_map_backend.serializers import WritingTaskSerializer
 from write.logic.writing_task import execute_writing_task_thread
-from write.schemas import AddWritingTaskPayload, WritingTaskIdentifier, UpdateWritingTaskPayload
+from write.schemas import (
+    AddWritingTaskPayload,
+    UpdateWritingTaskPayload,
+    WritingTaskIdentifier,
+)
 
 api = NinjaAPI(urls_namespace="write")
 
@@ -51,7 +53,8 @@ def add_writing_task_route(request: HttpRequest, paylaod: AddWritingTaskPayload)
         collection_id=paylaod.collection_id,
         class_name=paylaod.class_name,
         name=paylaod.name,
-        module="Mistral_Mistral_Large",
+        model="Mistral_Mistral_Large",  # might be overwritten by options
+        source_fields=["_descriptive_text_fields", "_full_text_snippets"],  # might be overwritten by options
     )
     if paylaod.options:
         for key, value in paylaod.options.items():
@@ -113,10 +116,12 @@ def update_writing_task_route(request: HttpRequest, payload: UpdateWritingTaskPa
     task.source_fields = payload.source_fields  # type: ignore
     task.use_all_items = payload.use_all_items
     task.selected_item_ids = payload.selected_item_ids  # type: ignore
-    task.module = payload.module
+    task.model = payload.model
     task.parameters = payload.parameters  # type: ignore
-    if payload.prompt is not None:
-        task.prompt = payload.prompt
+    if payload.expression is not None:
+        task.expression = payload.expression
+    if payload.prompt_template is not None:
+        task.prompt_template = payload.prompt_template
     if payload.text is not None and payload.text != task.text:
         if not task.previous_versions:
             task.previous_versions = []  # type: ignore

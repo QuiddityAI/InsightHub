@@ -41,9 +41,7 @@ export default {
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       @click="appState.show_document_details([node.attrs.dataset_id, node.attrs.item_id])"
-      class="cursor-pointer">
-      [{{ node.attrs.reference_idx }}]
-    </span>
+      class="cursor-pointer">[{{ node.attrs.reference_idx }}]</span>
 
     <OverlayPanel ref="reference_tooltip" class="absolute z-10">
       <ReferenceHoverInfo

@@ -1,4 +1,6 @@
-writing_task_prompt = """\
+from collections import defaultdict
+
+writing_task_prompt_en = """\
 You are an expert in writing. You will be given a task to write a text based on the provided documents.
 
 Follow the task exactly. Only use information that is directly stated in the documents.
@@ -15,5 +17,14 @@ The documents are the following:
 
 {{ context }}
 
-Reply only with the requested text, without introductory sentence.
+Reply only with the requested text in the language of the question, without introductory sentence.
 """
+writing_task_prompt: dict[str, str] = defaultdict(lambda: writing_task_prompt_en)
+
+
+writing_task_prompt_without_items_en = """\
+You are a helpful assistant.
+
+{{ context }}
+"""
+writing_task_prompt_without_items: dict[str, str] = defaultdict(lambda: writing_task_prompt_without_items_en)

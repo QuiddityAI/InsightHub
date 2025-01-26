@@ -51,7 +51,7 @@ export default {
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
         dataset_id: null,
-        name: 'Descriptive Text*',
+        name: this.$t('general.descriptive-text-fields') + " *",
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },

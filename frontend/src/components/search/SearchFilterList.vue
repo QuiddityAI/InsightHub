@@ -38,7 +38,7 @@ export default {
       }
       let field_name = ""
       if (filter.field === '_descriptive_text_fields') {
-        field_name = 'Descriptive Text'
+        field_name = this.$t('general.descriptive-text-fields')
       } else if (filter.field === '_parent') {
         field_name = 'Parent'
       } else if (filter.field === '_all_parents') {

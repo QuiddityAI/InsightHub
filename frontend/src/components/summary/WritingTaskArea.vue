@@ -27,21 +27,15 @@ export default {
       collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       writing_task_ids: [],
       quick_question_text: '',
-      item_selection_options: [
-        {label: 'All Items', value: true},
-        {label: 'Selected Items', value: false},
-      ],
-      edit_mode: false,
-      show_used_prompt: false,
 
       templates: [
         {
           intent: 'Summarize the items',
           name: 'Summary',
           options: {
-            prompt: 'Summarize the main points of the items in this collection.',
+            expression: 'Summarize the main points of the items in this collection.',
             source_fields: ['_descriptive_text_fields'],
-            module: 'Mistral_Mistral_Large',
+            model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -49,9 +43,9 @@ export default {
           intent: 'Key Challenges',
           name: 'Challenges',
           options: {
-            prompt: 'Summarize the key challenges mentioned in the items in this collection.',
+            expression: 'Summarize the key challenges mentioned in the items in this collection.',
             source_fields: ['_descriptive_text_fields'],
-            module: 'Mistral_Mistral_Large',
+            model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -59,9 +53,9 @@ export default {
           intent: 'Possible Research Questions',
           name: 'Research Questions',
           options: {
-            prompt: 'What are some possible research questions that come up when looking at the items in this collection? Use bullet points in markdown syntax.',
+            expression: 'What are some possible research questions that come up when looking at the items in this collection? Use bullet points in markdown syntax.',
             source_fields: ['_descriptive_text_fields'],
-            module: 'Mistral_Mistral_Large',
+            model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -71,45 +65,6 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
-    references() {
-      const task = this.appStateStore.selected_writing_task
-      if (task && task.additional_results && task.additional_results.references) {
-        let references = ''
-        let i = 1
-        for (const ds_and_item_id of task.additional_results.references) {
-          references += `${i}. ${ds_and_item_id[0]}: ${ds_and_item_id[1]}\n`
-          i += 1
-        }
-        return references
-      }
-      return ''
-    },
-    available_source_fields() {
-      const available_fields = {}
-      // for (const dataset of this.included_datasets) {
-      //   for (const field of Object.values(dataset.schema.object_fields)) {
-      //     available_fields[field.identifier] = {
-      //       identifier: field.identifier,
-      //       name: field.name || field.identifier,
-      //     }
-      //   }
-      // }
-      for (const column of this.collection.columns) {
-        available_fields[column.identifier] = {
-          identifier: '_column__' + column.identifier,
-          name: column.name,
-        }
-      }
-      available_fields['_descriptive_text_fields'] = {
-        identifier: '_descriptive_text_fields',
-        name: 'Descriptive Text',
-      }
-      available_fields['_full_text_snippets'] = {
-        identifier: '_full_text_snippets',
-        name: 'Full Text Excerpts',
-      }
-      return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
-    },
   },
   mounted() {
     this.get_writing_tasks()
@@ -131,7 +86,7 @@ export default {
         console.error(error)
       })
     },
-    add_writing_task(name, options = null, run_now = false) {
+    add_writing_task(name, options = {}, run_now = false) {
       const that = this
       const body = {
         collection_id: this.collection_id,
@@ -141,7 +96,7 @@ export default {
         run_now: run_now,
       }
       if (this.appStateStore.user.preferences.default_large_llm) {
-        body.options.module = this.appStateStore.user.preferences.default_large_llm
+        body.options.model = this.appStateStore.user.preferences.default_large_llm
       }
       httpClient.post(`/api/v1/write/add_writing_task`, body)
       .then(function (response) {
@@ -160,12 +115,16 @@ export default {
         return
       }
       const options = {
-        prompt: question,
+        expression: question,
         source_fields: ['_descriptive_text_fields', '_all_columns'],
-        module: 'Mistral_Mistral_Large',
+        model: 'Mistral_Mistral_Large',
         use_all_items: true,
       }
-      this.add_writing_task(question, options, true)
+      let name_ellipsis = question.slice(0, 100)
+      if (name_ellipsis.length < question.length) {
+        name_ellipsis += '...'
+      }
+      this.add_writing_task(name_ellipsis, options, true)
       this.quick_question_text = ''
     },
     delete_writing_task(writing_task_id) {
@@ -181,6 +140,15 @@ export default {
         console.error(error)
       })
     },
+    insertNewline(event) {
+      const textarea = event.target;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      this.quick_question_text = this.quick_question_text.substring(0, start) + '\n' + this.quick_question_text.substring(end);
+      this.$nextTick(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 1;
+      });
+    }
   },
 }
 </script>
@@ -214,9 +182,12 @@ export default {
         </span>
 
         <div class="flex flex-row gap-2">
-          <input v-model="quick_question_text" :placeholder="$t('WritingTaskArea.quick-question-placeholder')"
-            @keyup.enter="quick_question(quick_question_text)"
-            class="flex-1 px-2 py-1 rounded text-sm text-gray-800 border border-gray-200" />
+          <textarea v-model="quick_question_text" :placeholder="$t('WritingTaskArea.quick-question-placeholder')"
+            @keyup.enter="!$event.shiftKey && quick_question(quick_question_text)"
+            @keydown.enter.prevent="!$event.shiftKey"
+            @keydown.shift.enter.stop
+            @keydown.shift.enter="insertNewline"
+            class="flex-1 px-2 py-1 rounded text-sm text-gray-800 border border-gray-200 h-8" />
           <BorderButton @click="quick_question(quick_question_text)"
             class="">
             {{ $t('WritingTaskArea.question-submit-button') }}

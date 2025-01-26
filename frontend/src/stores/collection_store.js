@@ -772,16 +772,16 @@ export const useCollectionStore = defineStore("collection", {
       for (const column of state.collection.columns) {
         available_fields[column.identifier] = {
           identifier: '_column__' + column.identifier,
-          name: `Column: ${column.name}`,
+          name: `${this.$t('general.column')}: ${column.name}`,
         }
       }
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
-        name: 'All short descriptive text fields',
+        name: $t('general.descriptive-text-fields-long'),
       }
       available_fields['_full_text_snippets'] = {
         identifier: '_full_text_snippets',
-        name: 'Full text excerpts',
+        name: $t('general.full-text-excerpts')
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },

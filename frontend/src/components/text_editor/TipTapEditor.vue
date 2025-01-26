@@ -30,8 +30,7 @@ export default {
       type: String,
       default: '',
     },
-    reference_metadata: null,
-    result_list_rendering: null,
+    reference_order: null,
   },
 
   emits: ['update:modelValue', 'change'],
@@ -55,28 +54,15 @@ export default {
       let text = markdown
 
       // replace references in the style [datset_id, item_id] with <item-reference> components:
-      const regex = /\[([0-9]+),\s([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\]/g;
-      let match;
-      let reference_order = []
+      const regex = /\[([0-9]+),\s([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\]/g
+      let match
       while ((match = regex.exec(text)) !== null) {
         try {
           const dataset_id = match[1]
           const item_id = match[2]
-          const item = this.reference_metadata[dataset_id][item_id]
-          let i = reference_order.length + 1
-          if (reference_order.includes(item_id)) {
-            i = reference_order.indexOf(item_id) + 1
-          } else {
-            reference_order.push(item_id)
-          }
-          const rendering = this.appStateStore.datasets[dataset_id].schema.result_list_rendering
-          const title = rendering.title(item)
-          // const replacement = `<span \
-          //   onmouseenter="reference_mouse_enter('${dataset_id}', '${item_id}', event); return false;" \
-          //   onmouseleave="reference_mouse_leave('${dataset_id}', '${item_id}', event); return false;" \
-          //   onclick="reference_clicked('${dataset_id}', '${item_id}', event); return false;" \
-          //   class="text-sky-700 cursor-pointer">[${i}]</span>`;
-          const replacement = `<item-reference dataset_id="${dataset_id}" item_id="${item_id}" reference_idx="${i}" reference_title="${title}"></item-reference>`;
+          console.log(dataset_id, item_id, this.reference_order)
+          const idx = this.reference_order.findIndex(([d, i]) => d.toString() === dataset_id && i === item_id) + 1
+          const replacement = `<item-reference dataset_id="${dataset_id}" item_id="${item_id}" reference_idx="${idx}"></item-reference>`;
           text = text.replace(match[0], replacement);
         } catch (error) {
           console.error(error)

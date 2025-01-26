@@ -213,5 +213,29 @@
     "column-module-email": "E-Mail",
     "column-module-llm-tooltip": "Uses AI to answer a question based on each item separately",
     "column-module-relevance-tooltip": "Uses AI to check if an item is relevant given a set of criteria"
+  },
+  "WritingTask": {
+    "use-default-system-prompt": "Use default system-prompt",
+    "prompt-template-placeholder": "Prompt Template (use placeholders like {0} and {1})",
+    "writing-task-name-placeholder": "Writing Task Name",
+    "regenerate-this-writing-task": "Re-generate this writing task",
+    "configure-this-writing-task": "Configure this writing task",
+    "delete-writing-task": "Delete writing task",
+    "writing-task-dialog-name": "Writing Task",
+    "select-sources-placeholder": "Select Sources...",
+    "model-select-tooltip": "Select the AI model to use for this writing task",
+    "save-changes": "Save Changes",
+    "revert-changes-tooltip": "Go back to last version",
+    "expression-placeholder": "Task / Question",
+    "used-prompt-dialog-header": "Used Prompt",
+    "show-the-used-prompt": "Show the used prompt",
+    "revert-changes-alert": "Are you sure you want to revert to the last version? This cannot be undone.",
+    "source-select-label": "Source(s)"
+  },
+  "general": {
+    "descriptive-text-fields": "Descriptive Text",
+    "full-text-excerpts": "Full Text Excerpts",
+    "descriptive-text-fields-long": "All short descriptive text fields",
+    "column": "Column"
   }
 }

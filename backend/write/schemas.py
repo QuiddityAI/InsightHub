@@ -19,7 +19,8 @@ class UpdateWritingTaskPayload(Schema):
     source_fields: list = []
     use_all_items: bool = True
     selected_item_ids: list = []
-    module: str | None = None
+    model: str | None = None
     parameters: dict = {}
-    prompt: str | None = None
+    expression: str | None = None
+    prompt_template: str | None = None
     text: str | None = None

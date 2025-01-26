@@ -1721,12 +1721,32 @@ class WritingTask(models.Model):
         null=False,
     )
     is_processing = models.BooleanField(verbose_name="Is Processing", default=False, blank=False, null=False)
+
+    # source fields and items:
     source_fields = models.JSONField(verbose_name="Source Fields", default=list, blank=True, null=False)
     use_all_items = models.BooleanField(verbose_name="Use All Items", default=True, blank=False, null=False)
     selected_item_ids = models.JSONField(verbose_name="Selected Item IDs", default=list, blank=True, null=False)
-    module = models.CharField(verbose_name="Code Module Name", max_length=200, blank=True, null=True)
-    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=True)
-    prompt = models.TextField(verbose_name="Prompt", blank=True, null=True)
+
+    # model and prompt:
+    model = models.CharField(verbose_name="LLM Model", max_length=200, blank=True, null=True)
+    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=False)
+    include_previous_tasks = models.BooleanField(
+        verbose_name="Include Previous Tasks",
+        help_text="Allows for a chat-like experience",
+        default=True,
+        blank=False,
+        null=False,
+    )
+    expression = models.TextField(verbose_name="Task / Question", blank=True, null=True)
+    prompt_template = models.TextField(
+        verbose_name="Prompt Template",
+        help_text="Template for the prompt if this column uses an LLM. If empty, a default template is used. "
+        + "There are some special variables like {{ context }} and {{ expression }} that can be used.",
+        blank=True,
+        null=True,
+    )
+
+    # result:
     text = models.TextField(verbose_name="Text", blank=True, null=True)
     additional_results = models.JSONField(verbose_name="Additional Results", default=dict, blank=True, null=True)
     previous_versions = models.JSONField(verbose_name="Previous Versions", default=list, blank=True, null=False)

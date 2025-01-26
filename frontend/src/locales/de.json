@@ -213,5 +213,29 @@
     "column-module-relevance-tooltip": "Verwendet KI, um zu prüfen, ob ein Ergebnis angesichts einer Reihe von Kriterien relevant ist",
     "column-module-web-search": "Websuche",
     "column-module-website-text": "Website-Text"
+  },
+  "WritingTask": {
+    "use-default-system-prompt": "Standard System-Prompt benutzen",
+    "prompt-template-placeholder": "Prompt-Vorlage (verwende Platzhalter wie {0} und {1})",
+    "configure-this-writing-task": "Konfiguriere diese Schreibaufgabe",
+    "delete-writing-task": "Schreibaufgabe löschen",
+    "expression-placeholder": "Aufgabe / Frage",
+    "model-select-tooltip": "Wähle das KI -Modell für diese Schreibaufgabe aus",
+    "regenerate-this-writing-task": "Generiere diese Schreibaufgabe neu",
+    "revert-changes-alert": "Bist du sicher, dass du zur letzten Version zurückkehren möchtest? \nDies kann nicht rückgängig gemacht werden.",
+    "revert-changes-tooltip": "Stelle die letzte Version wieder her",
+    "save-changes": "Änderungen speichern",
+    "select-sources-placeholder": "Quellen auswählen ...",
+    "show-the-used-prompt": "Zeige den verwendeten Prompt an",
+    "used-prompt-dialog-header": "Genutzter Promot",
+    "writing-task-dialog-name": "Schreibaufgabe",
+    "writing-task-name-placeholder": "Name",
+    "source-select-label": "Quelle(n)"
+  },
+  "general": {
+    "column": "Spalte",
+    "descriptive-text-fields": "Beschreibender Text",
+    "descriptive-text-fields-long": "Alle kurzen beschreibenden Textfelder",
+    "full-text-excerpts": "Volltextauszüge"
   }
 }
