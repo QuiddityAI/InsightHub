@@ -111,7 +111,9 @@
   },
   "SearchTaskExecutionSettings": {
     "run-on-new-items": "Neue {0} beobachten, passende automatisch hinzufügen",
-    "save": "Speichern"
+    "save": "Speichern",
+    "query-relaxation-should-be-turned-off": "'Query Relaxation' sollte üblicherweise ausgeschaltet werden in diesem Fall",
+    "only-available-for-keyword-searches": "Periodische Suchaufträge sind zur Zeit nur für Stichwortensuchen möglich"
   },
   "StatisticList": {
     "statistics": "Statistiken:"
@@ -237,5 +239,10 @@
     "descriptive-text-fields": "Beschreibender Text",
     "descriptive-text-fields-long": "Alle kurzen beschreibenden Textfelder",
     "full-text-excerpts": "Volltextauszüge"
+  },
+  "SearchTaskDialog": {
+    "auto-relax-query": "Suche nach einzelnen Worten wenn keine Ergebnisse mit allen gefunden werden",
+    "query-relaxation-tooltip": "sogenanntes 'Query Relaxation'",
+    "advanced-settings": "Erweiterte Einstellungen"
   }
 }

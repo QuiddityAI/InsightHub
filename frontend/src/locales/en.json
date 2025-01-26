@@ -101,7 +101,9 @@
   },
   "SearchTaskExecutionSettings": {
     "save": "Save",
-    "run-on-new-items": "Watch new {0} and add matching ones automatically"
+    "run-on-new-items": "Watch new {0} and add matching ones automatically",
+    "query-relaxation-should-be-turned-off": "Query Relaxation' should usually be turned off for periodic tasks",
+    "only-available-for-keyword-searches": "Periodic searches are currently only available for keyword searches."
   },
   "AgentModeBar": {
     "processing": "Processing:",
@@ -237,5 +239,10 @@
     "full-text-excerpts": "Full Text Excerpts",
     "descriptive-text-fields-long": "All short descriptive text fields",
     "column": "Column"
+  },
+  "SearchTaskDialog": {
+    "auto-relax-query": "Look for individual words if no results are found with all words",
+    "query-relaxation-tooltip": "known as \\'query relaxation\\",
+    "advanced-settings": "Advanced Settings"
   }
 }

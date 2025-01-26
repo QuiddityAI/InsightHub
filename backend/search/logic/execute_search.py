@@ -121,6 +121,7 @@ def run_search_task(
     is_new_collection: bool = False,
     set_agent_step: bool = True,
     from_ui: bool = False,
+    restrict_to_item_ids: list[int] | None = None,
 ) -> list[CollectionItem]:
     collection = task.collection
     if set_agent_step and from_ui:
@@ -162,7 +163,7 @@ def run_search_task(
             after_columns_were_processed(new_items)
 
     new_items = add_items_from_task_and_run_columns(
-        task, user_id, True, is_new_collection, from_ui, after_columns_were_processed_internal
+        task, user_id, True, is_new_collection, from_ui, restrict_to_item_ids, after_columns_were_processed_internal
     )
     return new_items
 
@@ -173,6 +174,7 @@ def add_items_from_task_and_run_columns(
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     from_ui: bool = True,
+    restrict_to_item_ids: list[int] | None = None,
     after_columns_were_processed: Callable | None = None,
 ) -> list[CollectionItem]:
     collection = task.collection
@@ -182,7 +184,9 @@ def add_items_from_task_and_run_columns(
         collection.filters = []
         collection.save(update_fields=["filters"])
 
-    new_items = add_items_from_task(collection, task, ignore_last_retrieval, is_new_collection, from_ui)
+    new_items = add_items_from_task(
+        collection, task, ignore_last_retrieval, is_new_collection, from_ui, restrict_to_item_ids
+    )
 
     def in_thread():
         if from_ui:
@@ -207,6 +211,7 @@ def add_items_from_task(
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     from_ui: bool = True,
+    restrict_to_item_ids: list[int] | None = None,
 ) -> list[CollectionItem]:
     parameters = RetrievalParameters(**task.retrieval_parameters)
     status = RetrievalStatus(**task.last_retrieval_status)
@@ -215,7 +220,14 @@ def add_items_from_task(
         # directly retrieve all items
         parameters.limit = task.settings.max_candidates
 
-    legacy_params = _convert_retrieval_parameters_to_old_format(parameters, status, ignore_last_retrieval)
+    if parameters.retrieval_mode != RetrievalMode.KEYWORD and restrict_to_item_ids:
+        logging.warning("Restricting to item IDs is only supported for keyword search for now")
+        # because for vector search without having a threshold, it would just add all items
+        return []
+
+    legacy_params = _convert_retrieval_parameters_to_old_format(
+        parameters, status, ignore_last_retrieval, restrict_to_item_ids
+    )
     results = get_search_results(json.dumps(legacy_params), "list")
 
     new_items = []
@@ -297,7 +309,18 @@ def _convert_retrieval_parameters_to_old_format(
     retrieval_parameters: RetrievalParameters,
     status: RetrievalStatus,
     ignore_last_retrieval: bool = True,
+    restrict_to_item_ids: list[int] | None = None,
 ) -> dict:
+    filters = retrieval_parameters.filters or []
+    if restrict_to_item_ids is not None:
+        filters.append(
+            {
+                "field": "_id",
+                "dataset_id": retrieval_parameters.dataset_id,  # not sure if this is needed
+                "operator": "in",
+                "value": restrict_to_item_ids,
+            }
+        )
     params = {
         "search": {
             "dataset_ids": [retrieval_parameters.dataset_id],
@@ -308,13 +331,15 @@ def _convert_retrieval_parameters_to_old_format(
             "all_field_query": retrieval_parameters.keyword_query,
             "internal_input_weight": 0.7,
             "use_similarity_thresholds": True,
-            "auto_relax_query": retrieval_parameters.auto_relax_query,
+            # auto relax query doesn't make sense for periodic tasks, where restrict_to_item_ids is usually used
+            "auto_relax_query": not restrict_to_item_ids and retrieval_parameters.auto_relax_query,
             "use_reranking": (
-                retrieval_parameters.use_reranking
+                # restrict_to_item_ids is usually used when adding items in the background, reranking isn't needed then
+                not restrict_to_item_ids and retrieval_parameters.use_reranking
                 if retrieval_parameters.search_type == SearchType.EXTERNAL_INPUT
                 else False
             ),
-            "filters": retrieval_parameters.filters or [],
+            "filters": filters,
             "result_language": retrieval_parameters.result_language or "en",
             "ranking_settings": retrieval_parameters.ranking_settings or {},
             "similar_to_item_id": (
