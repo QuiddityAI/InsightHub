@@ -54,9 +54,6 @@ export default {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
     ...mapStores(useCollectionStore),
-    available_modules() {
-      return this.appStateStore.column_modules
-    },
     show_full_text_issue_hint() {
       return this.selected_source_fields.find((field) => field !== "_full_text_snippets" && field.includes("full_text"))
     },
