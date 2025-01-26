@@ -219,7 +219,7 @@ export default {
       <BorderButton v-for="module in appState.column_modules.filter(module => !module.highlight)"
         @click="selected_module = module.identifier"
         :highlighted="selected_module === module.identifier">
-        {{ module.name }}
+        {{ $t(module.name) }}
       </BorderButton>
     </div>
     <div class="text-xs text-gray-500">
