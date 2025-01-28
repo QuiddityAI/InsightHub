@@ -11,6 +11,7 @@ from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
     DataCollection,
+    Dataset,
     FieldType,
     SearchTask,
 )
@@ -74,6 +75,17 @@ def create_and_run_search_task(
         #         search_task.filters = filters
 
         # TODO: also get best ranking mode?
+
+    # TODO: use dataset cache as this increases latency of every search
+    dataset = Dataset.objects.select_related("schema").get(id=search_task.dataset_id)
+    default_filters: list = dataset.merged_advanced_options.get("default_filters", [])
+    if default_filters:
+        search_task.filters = search_task.filters or []
+        for filter in default_filters:
+            if any(f["field"] == filter["field"] for f in search_task.filters):
+                continue
+            filter["dataset_id"] = search_task.dataset_id
+            search_task.filters.append(filter)
 
     parameters = RetrievalParameters(
         created_at=timezone.now().isoformat(),

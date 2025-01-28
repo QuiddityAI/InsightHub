@@ -49,7 +49,8 @@ export default {
       }
       const operators = available_filter_operators.concat(additional_filter_operators)
       const operator = operators.find(op => op.id === filter.operator)
-      return `${field_name} ${operator.title} '${filter.value}'`
+      const negate = filter.negate ? 'NOT ' : ''
+      return `${negate}${field_name} ${operator.title} '${filter.value}'`
     },
   },
 }
