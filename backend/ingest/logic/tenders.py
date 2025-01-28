@@ -1,13 +1,12 @@
 import logging
-from typing import Callable
 from multiprocessing.pool import ThreadPool
-
-from ninja import Schema
+from typing import Callable
 
 from llmonkey.llms import BaseLLMModel, Nebius_Llama_3_1_8B_cheap
+from ninja import Schema
 
-from data_map_backend.utils import DotDict
 from columns.logic.website_scraping_column import scrape_website_plain
+from data_map_backend.utils import DotDict
 
 LlmModel = Nebius_Llama_3_1_8B_cheap
 
@@ -29,12 +28,12 @@ def tender_enrichment_generator(input_items: list[dict], log_error: Callable, pa
     results = []
     target_field_value = True  # just storing that this item was processed
     batch = []
-    batch_size = 5
+    batch_size = 10
     document_language = parameters.get("document_language", "en")
     metadata_language = parameters.get("metadata_language", "en")
 
     def process_batch(batch):
-        with ThreadPool(5) as pool:
+        with ThreadPool(batch_size) as pool:
             new_results = pool.map(enrich_tender, batch)
         for result in new_results:
             results.append([target_field_value, result.model_dump()])
@@ -82,23 +81,21 @@ def _summarize_tender_information(item: TenderInput, website_text: str | None = 
     if summary == "n/a":
         summary = ""
 
-    system_prompt = f"""Du bekommst vom Nutzer die Beschreibung und den Text einer Webseite einer Ausschreibung.
-    Fasse die zu erbringenden Leistungen in kurzen Stichpunkten zusammen. Lasse andere Informationen weg.
-    Wenn die Informationen nicht ausreichen oder der Text nur Fehlermeldungen beinhaltet, antworte mit "n/a"."""
-    services = model.generate_short_text(system_prompt=system_prompt, user_prompt=user_prompt) or "n/a"
-    if services == "n/a":
-        services = ""
+    # system_prompt = f"""Du bekommst vom Nutzer die Beschreibung und den Text einer Webseite einer Ausschreibung.
+    # Fasse die zu erbringenden Leistungen in kurzen Stichpunkten zusammen. Lasse andere Informationen weg.
+    # Wenn die Informationen nicht ausreichen oder der Text nur Fehlermeldungen beinhaltet, antworte mit "n/a"."""
+    # services = model.generate_short_text(system_prompt=system_prompt, user_prompt=user_prompt) or "n/a"
+    # if services == "n/a":
+    #     services = ""
 
-    system_prompt = f"""Du bekommst vom Nutzer die Beschreibung und den Text einer Webseite einer Ausschreibung.
-    Fasse die Anforderungen an den Bieter in kurzen Stichpunkten zusammen. Lasse andere Informationen weg.
-    Wenn die Informationen nicht ausreichen oder der Text nur Fehlermeldungen beinhaltet, antworte mit "n/a"."""
-    requirements = model.generate_short_text(system_prompt=system_prompt, user_prompt=user_prompt) or "n/a"
-    if requirements == "n/a":
-        requirements = ""
+    # system_prompt = f"""Du bekommst vom Nutzer die Beschreibung und den Text einer Webseite einer Ausschreibung.
+    # Fasse die Anforderungen an den Bieter in kurzen Stichpunkten zusammen. Lasse andere Informationen weg.
+    # Wenn die Informationen nicht ausreichen oder der Text nur Fehlermeldungen beinhaltet, antworte mit "n/a"."""
+    # requirements = model.generate_short_text(system_prompt=system_prompt, user_prompt=user_prompt) or "n/a"
+    # if requirements == "n/a":
+    #     requirements = ""
 
-    return TenderEnrichmentOutput(
-        summary=summary, website_text=website_text or "", services=services, requirements=requirements
-    )
+    return TenderEnrichmentOutput(summary=summary, website_text=website_text or "", services="", requirements="")
 
 
 # evergabe.de: paywall, aber infos sind in <pre> auf service.bund.de
