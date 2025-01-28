@@ -3,13 +3,12 @@ import logging
 import os
 
 import requests
-
-from ..utils import DotDict
-from ..models import Dataset, DataCollection
-from ..data_backend_client import DATA_BACKEND_HOST
-
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+
+from ..data_backend_client import DATA_BACKEND_HOST
+from ..models import DataCollection, Dataset
+from ..utils import DotDict
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 
@@ -32,7 +31,6 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/item_question_context": _check_if_from_backend,
         "/data_backend/global_question_context": _check_if_from_backend,
         "/data_backend/delete_dataset_content": _check_if_from_backend,
-        "/data_backend/remove_items": _check_if_from_backend,
         "/data_backend/dataset": _check_if_from_backend,
         "/data_backend/update_database_layout": _check_if_from_backend,
         "/data_backend/health": _check_if_from_backend,

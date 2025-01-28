@@ -1,30 +1,29 @@
-from collections import defaultdict
 import datetime
 import json
 import logging
+import os
 import random
 import string
 import threading
-import os
+from collections import defaultdict
 
 import numpy as np
+import requests
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import AbstractUser
 from django.utils.safestring import mark_safe
-import requests
-
 from simple_history.models import HistoricalRecords
 
+from legacy_backend.logic.insert_logic import remove_dataset_items_from_databases
+
+from .chatgpt_client import get_chatgpt_response_using_history
 from .data_backend_client import (
     DATA_BACKEND_HOST,
-    get_item_by_id,
     delete_dataset_content,
     get_global_question_context,
+    get_item_by_id,
 )
-from .data_backend_client import remove_items as remove_items_from_data_backend
-from .chatgpt_client import get_chatgpt_response_using_history
-
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 
@@ -892,12 +891,11 @@ class Dataset(models.Model):
         collection_items.delete()
 
     def remove_items(self, item_ids: list):
-        remove_items_from_data_backend(self.id, item_ids)
+        remove_dataset_items_from_databases(self.id, item_ids)  # type: ignore
         for item_id in item_ids:
             collection_items = CollectionItem.objects.filter(item_id=item_id)  # type: ignore
             collection_items.delete()
-            logging.warning(f"Removed item {item_id} from dataset {self.id}")
-        
+            logging.warning(f"Removed item {item_id} from dataset {self.id}")  # type: ignore
 
     def delete_with_content(self):
         self.delete_content()
