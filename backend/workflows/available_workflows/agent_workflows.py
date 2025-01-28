@@ -55,7 +55,6 @@ class ResearchAgentWorkflow(WorkflowBase):
             dataset_id=settings.dataset_id,
             user_input=settings.user_input
             or "",  # this is the full, natural language question (of course your agent could first generate a better one)
-            query=None,  # this is the query used for keyword search, if auto_set_filters is set, its generated automatically
             result_language=settings.result_language,
             auto_set_filters=settings.auto_set_filters,
             filters=settings.filters,
@@ -117,8 +116,8 @@ class ResearchAgentWorkflow(WorkflowBase):
                 COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
             ],
             use_all_items=True,
-            module=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
-            prompt=f"Summarize the results of the search in regard to this question '{settings.user_input}'.",
+            model=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
+            expression=f"Summarize the results of the search in regard to this question '{settings.user_input}'.",
             # its always using a default prompt plus this prompt, I just realized it doesn't have the option to override the default prompt yet
         )
         writing_task.save()

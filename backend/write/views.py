@@ -4,7 +4,11 @@ import logging
 from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
-from data_map_backend.models import DataCollection, WritingTask
+from data_map_backend.models import (
+    COLUMN_META_SOURCE_FIELDS,
+    DataCollection,
+    WritingTask,
+)
 from data_map_backend.schemas import CollectionIdentifier
 from data_map_backend.serializers import WritingTaskSerializer
 from write.logic.writing_task import execute_writing_task_thread
@@ -54,7 +58,10 @@ def add_writing_task_route(request: HttpRequest, paylaod: AddWritingTaskPayload)
         class_name=paylaod.class_name,
         name=paylaod.name,
         model="Mistral_Mistral_Large",  # might be overwritten by options
-        source_fields=["_descriptive_text_fields", "_full_text_snippets"],  # might be overwritten by options
+        source_fields=[
+            COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,
+            COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
+        ],  # might be overwritten by options
     )
     if paylaod.options:
         for key, value in paylaod.options.items():

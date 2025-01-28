@@ -67,9 +67,9 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
                 COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
             ],
             use_all_items=True,
-            module=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
+            model=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
         )
-        writing_task.prompt = settings.user_input
+        writing_task.expression = settings.user_input
         writing_task.save()
         collection.ui_settings = CollectionUiSettings(secondary_view="summary").model_dump()
         collection.save(update_fields=["ui_settings"])
