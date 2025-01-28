@@ -68,7 +68,7 @@ def notify_about_new_items(
     text = text.replace("{{ new_items }}", "\n\n".join(new_item_texts))
 
     for email_address in email_addresses:
-        send_email("New items added in Quiddity", text, [email_address])
+        send_email("New items added in Quiddity", text, [email_address.strip()])
 
 
 def send_email(subject, text, recipients):
