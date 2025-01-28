@@ -1,21 +1,22 @@
-from collections import defaultdict
 import logging
 import time
+from collections import defaultdict
 from typing import Callable
 
-from ..database_client.django_client import get_dataset
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..database_client.text_search_engine_client import TextSearchEngineClient
+from data_map_backend.models import GenerationTask
+from data_map_backend.utils import DotDict
+from data_map_backend.views.other_views import get_serialized_dataset_cached
 
+from ..database_client.django_client import get_dataset
+from ..database_client.text_search_engine_client import TextSearchEngineClient
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
 from ..logic.extract_pipeline import get_pipeline_steps
 from ..logic.insert_logic import get_index_settings, update_database_layout
-from ..logic.search_common import separate_text_and_vector_fields, fill_in_vector_data_list
-
-from data_map_backend.utils import DotDict
+from ..logic.search_common import (
+    fill_in_vector_data_list,
+    separate_text_and_vector_fields,
+)
 from ..utils.field_types import FieldType
-
-from data_map_backend.models import GenerationTask
-from data_map_backend.views.other_views import get_serialized_dataset_cached
 
 
 def delete_field_content(dataset_id: int, field_identifier: str):
@@ -227,6 +228,7 @@ def generate_missing_values_for_given_elements(
                 for element_index, result in zip(element_indexes, results):
                     target_field_value, result_dict = result
                     elements[element_index][pipeline_step.target_field] = target_field_value
+                    changed_fields[element_index].add(pipeline_step.target_field)
                     if not result_dict:
                         # e.g. when an error happened during the generation
                         continue
