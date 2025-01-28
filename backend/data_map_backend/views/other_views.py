@@ -122,7 +122,11 @@ def get_available_organizations(request):
 
     # restrict some domains to certain organizations:
     hostname = request.META.get("HTTP_HOST")
-    hostnames_that_show_all_orgs = ["home-server:55140", "feldberg.absclust.com", "www.luminosus.org:55140"]
+    hostnames_that_show_all_orgs = [
+        "home-server:55140",
+        "feldberg.absclust.com",
+        "backend-staging-at:55125",
+    ]
     hostnames_that_show_all_orgs += os.environ.get("HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS", "").split(",")
 
     if hostname not in hostnames_that_show_all_orgs and not hostname.startswith(("localhost", "127.0.0.1")):
@@ -1304,6 +1308,32 @@ def get_generators(request):
     result = json.dumps(serialized_data)
 
     return HttpResponse(result, status=200, content_type="application/json")
+
+
+@csrf_exempt
+def remove_items(request):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        data = json.loads(request.body)
+        dataset_id = data["dataset_id"]
+        item_ids = data["item_ids"]
+    except (KeyError, ValueError):
+        return HttpResponse(status=400)
+
+    try:
+        dataset: Dataset = Dataset.objects.get(id=dataset_id)
+        dataset.remove_items(item_ids)
+    except Dataset.DoesNotExist:
+        return HttpResponse(status=404)
+    except Exception as e:
+        logging.error(e)
+        return HttpResponse(status=500)
+
+    return HttpResponse(status=204)
 
 
 """

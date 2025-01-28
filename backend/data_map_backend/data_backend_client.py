@@ -3,7 +3,6 @@ from typing import Iterable
 
 import requests
 
-
 DATA_BACKEND_HOST = os.getenv("data_backend_host", "http://localhost:55123")
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")

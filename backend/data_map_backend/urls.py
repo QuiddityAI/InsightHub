@@ -33,6 +33,7 @@ urlpatterns = [
     path("stored_map_data", other_views.get_stored_map_data),
     path("delete_stored_map", other_views.delete_stored_map),
     path("get_generators", other_views.get_generators),
+    path("remove_items", other_views.remove_items),
     path("create_chat_from_search_settings", question_views.create_chat_from_search_settings),
     path("add_collection_class_chat", question_views.add_collection_class_chat),
     path("add_chat_question", question_views.add_chat_question),

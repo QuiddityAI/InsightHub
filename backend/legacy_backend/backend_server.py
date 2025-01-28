@@ -1,43 +1,60 @@
 import json
+import logging
 import os
 from copy import deepcopy
 from threading import Thread
-import logging
 
 import cbor2
+from django.http import FileResponse, HttpResponse
+from django.http.response import HttpResponseBase
+from django.urls import path
 from django.utils.datastructures import MultiValueDict
+from django.views.decorators.csrf import csrf_exempt
 
-from .utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
 from data_map_backend.utils import DotDict
-
-from .logic.mapping_task import get_map_selection_statistics, get_or_create_map, get_map_results
-from .logic.insert_logic import insert_many, insert_vectors, update_database_layout, delete_dataset_content
-from .logic.search import (
-    get_search_results,
-    get_search_results_for_stored_map,
-    get_item_count,
-    get_random_items,
-    get_items_having_value_count,
+from ingest.logic.upload_files import (
+    UPLOADED_FILES_FOLDER,
+    get_upload_task_status,
+    upload_files_or_forms,
 )
-from .logic.search_common import get_document_details_by_id
-from .logic.generate_missing_values import delete_field_content, generate_missing_values
-from .logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
-from .logic.classifiers import get_retraining_status, start_retrain
-from ingest.logic.upload_files import upload_files_or_forms, get_upload_task_status, UPLOADED_FILES_FOLDER
 from ingest.schemas import CustomUploadedFile, UploadedFileMetadata
-from .logic.chat_and_extraction import get_global_question_context, get_item_question_context
-from .logic.export_converters import export_collection, export_collection_table, export_item
 
 from .database_client.django_client import add_stored_map, get_or_create_default_dataset
 from .database_client.forward_local_db import forward_local_db
 from .database_client.text_search_engine_client import TextSearchEngineClient
 from .database_client.vector_search_engine_client import VectorSearchEngineClient
-
-from django.urls import path
-from django.http import HttpResponse, FileResponse
-from django.http.response import HttpResponseBase
-from django.views.decorators.csrf import csrf_exempt
-
+from .logic.chat_and_extraction import (
+    get_global_question_context,
+    get_item_question_context,
+)
+from .logic.classifiers import get_retraining_status, start_retrain
+from .logic.export_converters import (
+    export_collection,
+    export_collection_table,
+    export_item,
+)
+from .logic.generate_missing_values import delete_field_content, generate_missing_values
+from .logic.insert_logic import (
+    delete_dataset_content,
+    insert_many,
+    insert_vectors,
+    update_database_layout,
+)
+from .logic.mapping_task import (
+    get_map_results,
+    get_map_selection_statistics,
+    get_or_create_map,
+)
+from .logic.search import (
+    get_item_count,
+    get_items_having_value_count,
+    get_random_items,
+    get_search_results,
+    get_search_results_for_stored_map,
+)
+from .logic.search_common import get_document_details_by_id
+from .logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR
+from .utils.custom_json_encoder import CustomJSONEncoder, HumanReadableJSONEncoder
 
 # --- New Routes: ---
 

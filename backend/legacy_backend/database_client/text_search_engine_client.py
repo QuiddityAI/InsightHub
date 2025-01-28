@@ -210,8 +210,18 @@ class TextSearchEngineClient(object):
 
         run_in_batches_without_result(list(zip(ids, payloads)), 512, upsert_batch)
 
-    def remove_items(self, dataset_id: str, primary_key_field: str, item_pks: list[str]):
-        pass
+    def remove_items(self, dataset: DotDict | Dataset, item_ids: list[str]):
+        if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
+            return use_remote_db(
+                dataset=dataset,
+                db_type="text_search_engine",
+                function_name="remove_items",
+                arguments={"item_ids": item_ids},
+            )
+        body = {"query": {"terms": {"_id": item_ids}}}
+        index_name = dataset.actual_database_name
+        response = self.client.delete_by_query(index=index_name, body=body)
+        logging.warning(f"Deleted items from text search engine: {response}")
 
     def get_items_by_ids(self, dataset: DotDict, ids: Iterable[str], fields: Iterable[str]) -> list:
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
