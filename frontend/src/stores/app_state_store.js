@@ -1327,13 +1327,22 @@ export const useAppStateStore = defineStore("appState", {
       this.set_two_dimensional_projection()
       this.request_search_results()
     },
-    show_document_details(dataset_and_item_id, initial_item=null, relevant_parts=null, query=null) {
+    show_document_details(dataset_and_item_id, initial_item=null, relevant_parts=null, query=null, in_new_tab=false) {
+      const queryParams = new URLSearchParams(window.location.search)
+      queryParams.set("item_details", dataset_and_item_id.join(","))
+      console.log("showing document details", dataset_and_item_id, in_new_tab)
+      if (in_new_tab) {
+        window.open(window.location.pathname + "?" + queryParams.toString(), "_blank")
+        return
+      }
+      history.replaceState(null, null, "?" + queryParams.toString())
       this.selected_document_relevant_parts = relevant_parts || []
       this.selected_document_query = query || ""
       this.selected_document_ds_and_id = dataset_and_item_id
       this.selected_document_initial_item = initial_item || this.get_item_by_ds_and_id(dataset_and_item_id)
-      const pointIdx = this.mapState.per_point.item_id.indexOf(dataset_and_item_id)
       this.document_details_dialog_is_visible = true
+
+      const pointIdx = this.mapState.per_point.item_id.indexOf(dataset_and_item_id)
       if (pointIdx !== -1) {
         this.mapState.markedPointIdx = pointIdx
         this.mapState.visited_point_indexes.push(pointIdx)
@@ -1348,6 +1357,10 @@ export const useAppStateStore = defineStore("appState", {
       this.selected_document_query = ""
       this.selected_document_initial_item = null
       this.mapState.markedPointIdx = -1
+
+      const queryParams = new URLSearchParams(window.location.search)
+      queryParams.delete("item_details")
+      history.replaceState(null, null, "?" + queryParams.toString())
     },
     set_polar_projection() {
       this.settings.projection.use_polar_coordinates = true

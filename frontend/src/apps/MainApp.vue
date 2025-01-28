@@ -112,6 +112,14 @@ export default {
         this.appStateStore.reset_search_box()
         this.appStateStore.reset_search_results_and_map()
       }
+      if (queryParams.get("item_details")) {
+        console.log("item_details", queryParams.get("item_details"))
+        let [ds_id, item_id] = queryParams.get("item_details").split(",")
+        ds_id = parseInt(ds_id)
+        setTimeout(() => {
+          this.appStateStore.show_document_details([ds_id, item_id])
+        }, 500)
+      }
       this.collectionStore.check_url_parameters()
     },
     // show_score_info_chart() {

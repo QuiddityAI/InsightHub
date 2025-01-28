@@ -180,7 +180,7 @@ export default {
           <img v-if="rendering.icon(item) && (!rendering.tagline(item) || actual_size_mode < CollectionItemSizeMode.MEDIUM)" :src="rendering.icon(item)" class="h-5 w-5 mr-2" />
           <button class="min-w-0 text-left text-[16px] font-['Lexend'] font-medium leading-tight break-words text-sky-700 hover:underline"
             v-html="rendering.title(item)"
-            @click="appState.show_document_details([dataset_id, item_id], collection_item.metadata, collection_item.relevant_parts, original_query)">
+            @click="appState.show_document_details([dataset_id, item_id], collection_item.metadata, collection_item.relevant_parts, original_query, /*in_new_tab*/ $event.metaKey)">
           </button>
           <div class="flex-1"></div>
           <span v-for="badge in rendering.badges(item)?.filter(badge => badge.applies)"
