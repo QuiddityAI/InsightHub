@@ -45,7 +45,7 @@ export default {
       {{ task.settings.user_input || 'Search Task' }}
     </button>
 
-    <SearchTaskExecutionSettings :task="collectionStore.collection.most_recent_search_task">
+    <SearchTaskExecutionSettings :task="task">
     </SearchTaskExecutionSettings>
 
     </div>
