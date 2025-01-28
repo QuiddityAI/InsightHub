@@ -227,6 +227,7 @@ def delete_dataset_content(dataset_id: int):
     search_engine_client.remove_dataset(dataset)
 
 
+
 def remove_dataset_items_from_databases(dataset_id: int, item_ids: list[str]):
     dataset = get_dataset(dataset_id)
     search_engine_client = TextSearchEngineClient.get_instance()

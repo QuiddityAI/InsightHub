@@ -31,6 +31,7 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/item_question_context": _check_if_from_backend,
         "/data_backend/global_question_context": _check_if_from_backend,
         "/data_backend/delete_dataset_content": _check_if_from_backend,
+        "/data_backend/remove_items": _check_if_from_backend,
         "/data_backend/dataset": _check_if_from_backend,
         "/data_backend/update_database_layout": _check_if_from_backend,
         "/data_backend/health": _check_if_from_backend,

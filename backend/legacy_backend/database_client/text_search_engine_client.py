@@ -210,6 +210,7 @@ class TextSearchEngineClient(object):
 
         run_in_batches_without_result(list(zip(ids, payloads)), 512, upsert_batch)
 
+
     def remove_items(self, dataset: DotDict | Dataset, item_ids: list[str]):
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:
             return use_remote_db(

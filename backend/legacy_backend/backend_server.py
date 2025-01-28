@@ -12,11 +12,6 @@ from django.utils.datastructures import MultiValueDict
 from django.views.decorators.csrf import csrf_exempt
 
 from data_map_backend.utils import DotDict
-from ingest.logic.upload_files import (
-    UPLOADED_FILES_FOLDER,
-    get_upload_task_status,
-    upload_files_or_forms,
-)
 from ingest.schemas import CustomUploadedFile, UploadedFileMetadata
 
 from .database_client.django_client import add_stored_map, get_or_create_default_dataset
