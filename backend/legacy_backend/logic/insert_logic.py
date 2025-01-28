@@ -1,12 +1,12 @@
-from uuid import uuid4
 import logging
-
-from ..database_client.django_client import get_dataset
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..database_client.text_search_engine_client import TextSearchEngineClient
-from ..logic.extract_pipeline import get_pipeline_steps
+from uuid import uuid4
 
 from data_map_backend.utils import DotDict, pk_to_uuid_id
+
+from ..database_client.django_client import get_dataset
+from ..database_client.text_search_engine_client import TextSearchEngineClient
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..logic.extract_pipeline import get_pipeline_steps
 from ..utils.field_types import FieldType
 
 
@@ -227,7 +227,8 @@ def delete_dataset_content(dataset_id: int):
     search_engine_client.remove_dataset(dataset)
 
 
-def remove_items(dataset_id: int, item_ids: list[str]):
+
+def remove_dataset_items_from_databases(dataset_id: int, item_ids: list[str]):
     dataset = get_dataset(dataset_id)
     search_engine_client = TextSearchEngineClient.get_instance()
     search_engine_client.remove_items(dataset, item_ids)
@@ -237,4 +238,3 @@ def remove_items(dataset_id: int, item_ids: list[str]):
     for field in index_settings.all_vector_fields:
         is_array_field = dataset.schema.object_fields[field].is_array
         vector_db_client.remove_items(dataset.actual_database_name, field, item_ids, is_array_field)
-    

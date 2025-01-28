@@ -123,7 +123,6 @@ def get_available_organizations(request):
     # restrict some domains to certain organizations:
     hostname = request.META.get("HTTP_HOST")
     hostnames_that_show_all_orgs = [
-        "localhost:55140",
         "home-server:55140",
         "feldberg.absclust.com",
         "backend-staging-at:55125",

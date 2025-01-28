@@ -29,6 +29,19 @@ def run_search_task(
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
 ) -> list[CollectionItem]:
+    """
+    Executes a search task on a given data collection.
+
+    Args:
+        collection (DataCollection): The data collection to perform the search on.
+        search_task (SearchTaskSettings): The settings for the search task.
+        user_id (int): The ID of the user initiating the search.
+        after_columns_were_processed (Callable, optional): A callback function to be called after columns are processed. Defaults to None.
+        is_new_collection (bool, optional): Flag indicating if the collection is new. Defaults to False.
+
+    Returns:
+        list[CollectionItem]: A list of collection items resulting from the search task.
+    """
     if not is_new_collection:
         exit_search_mode(collection, "_default")
 
