@@ -190,7 +190,7 @@ approve_using_comparison_prompt["de"] = approve_using_comparison_prompt_de
 notification_email_en = """\
 Hello,
 
-there were items added to your collection:
+there were items added to your collection "{{ collection_name }}":
 
 {{ new_items }}
 
@@ -204,7 +204,7 @@ This email was sent by Quiddity.
 notification_email_de = """\
 Hallo,
 
-es wurden Elemente zu deiner Sammlung hinzugefügt:
+es wurden Elemente zu deiner Sammlung hinzugefügt "{{ collection_name }}":
 
 {{ new_items }}
 

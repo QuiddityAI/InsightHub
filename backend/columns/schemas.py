@@ -1,4 +1,5 @@
 from typing import Optional
+
 from ninja import Schema
 
 
@@ -69,3 +70,6 @@ class Criterion(Schema):
     fulfilled: bool
     reason: str
     supporting_quote: str | None = None
+
+    def __str__(self):
+        return f'{self.criteria} ({self.fulfilled}): {self.reason} ("{self.supporting_quote}")'
