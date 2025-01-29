@@ -18,6 +18,8 @@ from search.prompts import notification_email
 def notify_about_new_items(
     dataset_id: int, collection: DataCollection, new_collection_items: Iterable[CollectionItem]
 ):
+    if not new_collection_items:
+        return
     email_addresses: list[str] = collection.notification_emails.split(",")
     if not email_addresses:
         return
