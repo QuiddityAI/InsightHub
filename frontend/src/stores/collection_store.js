@@ -714,7 +714,17 @@ export const useCollectionStore = defineStore("collection", {
         .then((response) => {
           this.update_collection({update_items: true})
         })
-    }
+    },
+    test_notification_email() {
+      const body = {
+        collection_id: this.collection_id,
+      }
+      httpClient
+        .post("/api/v1/search/test_notification_email", body)
+        .then((response) => {
+          this.toast.add({severity: 'success', summary: 'Test email sent', detail: 'Test email sent', life: 3000})
+        })
+    },
   },
   getters: {
     item_count() {

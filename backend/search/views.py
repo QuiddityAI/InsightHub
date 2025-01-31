@@ -1,4 +1,5 @@
 import json
+import logging
 import threading
 
 from django.db.models import Q
@@ -6,9 +7,9 @@ from django.http import HttpResponse, HttpRequest
 from django.forms.models import model_to_dict
 from ninja import NinjaAPI
 
-from data_map_backend.models import DataCollection, Dataset, SearchTask
+from data_map_backend.models import CollectionItem, DataCollection, Dataset, SearchTask
 from data_map_backend.notifier import default_notifier
-from data_map_backend.schemas import CollectionIdentifier
+from data_map_backend.schemas import CollectionIdentifier, ItemRelevance
 from data_map_backend.serializers import SearchTaskSerializer
 from legacy_backend.database_client.text_search_engine_client import (
     TextSearchEngineClient,
@@ -22,6 +23,7 @@ from search.logic.execute_search import (
     create_and_run_search_task,
     run_search_task,
 )
+from search.logic.notify_about_new_items import notify_about_new_items
 from search.schemas import (
     GetPlainResultsPaylaod,
     RunExistingSearchTaskPayload,
@@ -297,3 +299,27 @@ def get_saved_search_tasks_route(request: HttpRequest, payload: CollectionIdenti
     results = SearchTaskSerializer(tasks, many=True).data
 
     return HttpResponse(json.dumps({"tasks": results}), status=200, content_type="application/json")
+
+
+@api.post("test_notification_email")
+def test_notification_email_route(request: HttpRequest, payload: CollectionIdentifier):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        collection = DataCollection.objects.get(id=payload.collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    possible_items = collection.items.order_by("?").filter(  # type: ignore
+        dataset_id__isnull=False, relevance__gte=ItemRelevance.APPROVED_BY_AI
+    )
+    random_item: CollectionItem = possible_items.first()
+    assert random_item.dataset_id is not None
+    dataset_id: int = random_item.dataset_id
+    more_items = possible_items.filter(dataset_id=dataset_id)[:3]
+    notify_about_new_items(dataset_id, collection, more_items)
+
+    return HttpResponse(status=204)

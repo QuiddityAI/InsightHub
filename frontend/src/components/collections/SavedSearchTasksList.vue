@@ -3,6 +3,7 @@
 import { useToast } from 'primevue/usetoast';
 
 import SearchTaskListItem from './SearchTaskListItem.vue';
+import BorderButton from '../widgets/BorderButton.vue';
 
 import { debounce } from '../../utils/utils';
 import { mapStores } from "pinia"
@@ -50,10 +51,14 @@ export default {
     </div>
 
     <div class="flex flex-row items-center gap-3">
-      <input class="w-full px-2 border border-gray-300 rounded-md text-sm"
+      <input class="flex-1 px-2 border border-gray-200 rounded-md text-sm"
         placeholder="E-Mail addresses to notify for new items (comma separated)"
         v-model="collectionStore.collection.notification_emails"
         @change="commit_notification_emails_debounce">
+      <BorderButton class="h-full" v-if="appState.dev_mode"
+        @click="collectionStore.test_notification_email">
+        Send Test e-Mail
+      </BorderButton>
     </div>
 
     <ul class="flex flex-col gap-5">
