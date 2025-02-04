@@ -53,7 +53,7 @@ def _execute_writing_task(task: WritingTask):
     # source items:
     items: BaseManager[CollectionItem]
     if task.use_all_items:
-        items = task.collection.items.filter(relevance__gte=ItemRelevance.APPROVED_BY_AI)  # type: ignore
+        items = task.collection.items.filter(relevance__gte=ItemRelevance.APPROVED_BY_AI)
     else:
         assert isinstance(task.selected_item_ids, list)
         items = CollectionItem.objects.filter(id__in=task.selected_item_ids)
@@ -85,7 +85,7 @@ def _execute_writing_task(task: WritingTask):
         item_text = None
         if item.field_type == FieldType.TEXT:
             # TODO: use same format as for other items
-            item_text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
+            item_text = json.dumps({"_id": item.id, "text": item.value}, indent=2)
         elif item.field_type == FieldType.IDENTIFIER:
             assert item.dataset_id is not None
             assert item.item_id is not None
@@ -127,7 +127,7 @@ def _execute_writing_task(task: WritingTask):
 
     # save results:
     task.text = response_text
-    task.additional_results = {  # type: ignore
+    task.additional_results = {
         "used_prompt": f"model: {model.__class__.__name__}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
         "references": provided_data_items,
     }
@@ -153,7 +153,7 @@ def _execute_writing_task_without_items(task: WritingTask):
 
     # save results:
     task.text = response_text
-    task.additional_results = {  # type: ignore
+    task.additional_results = {
         "used_prompt": f"model: {model.__class__.__name__}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
         "references": [],
     }
@@ -166,9 +166,7 @@ def _get_previous_tasks_context(task: WritingTask):
     # previous tasks:
     max_previous_tasks = 5
     for previous_task in (
-        WritingTask.objects.filter(collection=task.collection)
-        .exclude(id=task.id)  # type: ignore
-        .order_by("created_at")
+        WritingTask.objects.filter(collection=task.collection).exclude(id=task.id).order_by("created_at")
     )[:max_previous_tasks]:
         contexts.append(
             f'Previously answered question: "{previous_task.expression}":\nGenerated Response:\n{previous_task.text}'
@@ -214,4 +212,4 @@ def _move_last_result_to_previous_versions(task: WritingTask):
         }
     )
     if len(task.previous_versions) > 3:
-        task.previous_versions = task.previous_versions[-3:]  # type: ignore
+        task.previous_versions = task.previous_versions[-3:]

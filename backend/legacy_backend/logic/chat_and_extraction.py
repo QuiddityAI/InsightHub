@@ -1,17 +1,21 @@
 import json
 import logging
 
-from ..api_clients.cohere_reranking import get_reranking_results
 from data_map_backend.utils import DotDict
+from data_map_backend.views.other_views import get_serialized_dataset_cached
+
+from ..api_clients.cohere_reranking import get_reranking_results
+from ..logic.chat_and_extraction_common import (
+    _sort_fields_logically,
+    get_context_for_each_item_in_search_results,
+)
 from ..logic.search import get_search_results
 from ..logic.search_common import (
-    get_relevant_parts_of_item_using_query_vector,
-    get_field_similarity_threshold,
-    get_suitable_generator,
     get_document_details_by_id,
+    get_field_similarity_threshold,
+    get_relevant_parts_of_item_using_query_vector,
+    get_suitable_generator,
 )
-from ..logic.chat_and_extraction_common import get_context_for_each_item_in_search_results, _sort_fields_logically
-from data_map_backend.views.other_views import get_serialized_dataset_cached
 
 
 def get_global_question_context(search_settings: dict) -> dict:
@@ -85,7 +89,7 @@ def get_item_question_context(
             required_fields.add(chunk_field)
     required_fields.update([field for field in source_fields if not field.startswith("_")])
 
-    full_item = get_document_details_by_id(dataset_id, item_id, tuple(required_fields), None) or {}  # type: ignore
+    full_item = get_document_details_by_id(dataset_id, item_id, tuple(required_fields), None) or {}
 
     text = ""
     source_fields = list(source_fields_set)

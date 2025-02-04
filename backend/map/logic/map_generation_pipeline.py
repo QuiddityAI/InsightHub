@@ -51,10 +51,12 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
     )
     if point_size_field:
         required_fields.append(point_size_field)
-    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)  # type: ignore
+    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)
     reference_data_item = None
     if reference_ds_and_item_id:
-        reference_data_item = get_items_by_ids(reference_ds_and_item_id[0], [reference_ds_and_item_id[1]], required_fields)[0]  # type: ignore
+        reference_data_item = get_items_by_ids(
+            reference_ds_and_item_id[0], [reference_ds_and_item_id[1]], required_fields
+        )[0]
     timings.log("get_items_by_ids")
 
     if item_count >= 5:

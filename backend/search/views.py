@@ -196,8 +196,11 @@ def add_more_items_from_active_task_route(request: HttpRequest, payload: Collect
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
+    if not collection.most_recent_search_task:
+        return HttpResponse(status=400)
+
     new_items = add_items_from_task_and_run_columns(
-        collection.most_recent_search_task,  # type: ignore
+        collection.most_recent_search_task,
         request.user.id,  # type: ignore
         ignore_last_retrieval=False,
         is_new_collection=False,

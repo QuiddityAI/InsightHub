@@ -34,21 +34,21 @@ def notify_about_new_items(
     domain = "https://feldberg.absclust.com"
     if dataset.organization.domains:
         domain = "https://" + dataset.organization.domains[0]
-    collection_url = f"{domain}/?organization_id={dataset.organization.id}&collection_id={collection.id}"  # type: ignore
+    collection_url = f"{domain}/?organization_id={dataset.organization.id}&collection_id={collection.id}"
     text = text.replace("{{ collection_url }}", collection_url)
 
     if not dataset.schema.default_search_fields:
         logging.warning("No default search fields set for dataset %s", dataset_id)
         return
     title_field = dataset.schema.default_search_fields[0]
-    columns: list[CollectionColumn] = list(collection.columns.all())  # type: ignore
+    columns: list[CollectionColumn] = list(collection.columns.all())
     new_item_texts: list[str] = []
     for item in new_collection_items:
         if not item.relevance >= ItemRelevance.APPROVED_BY_AI:
             continue
         metadata = item.metadata
         if not metadata:
-            logging.warning("No metadata found for item %s", item.id)  # type: ignore
+            logging.warning("No metadata found for item %s", item.id)
             continue
         item_text = f"{title_field}: {metadata.get(title_field, '-')}\n"
         for column in columns:
@@ -62,7 +62,7 @@ def notify_about_new_items(
                     item_text += "- " + str(criterion) + "\n"
             else:
                 item_text += f"{column.name}: {data.value if data else '-'}\n"
-        item_url = f"{collection_url}&item_details={item.dataset_id},{item.item_id}"  # type: ignore
+        item_url = f"{collection_url}&item_details={item.dataset_id},{item.item_id}"
         item_text += f"URL: {item_url}\n"
         item_text += "\n"
         new_item_texts.append(item_text)

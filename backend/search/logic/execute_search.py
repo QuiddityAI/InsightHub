@@ -207,7 +207,7 @@ def add_items_from_task_and_run_columns(
             items_to_process = new_items[:max_processed_items]
         else:
             items_to_process = new_items
-        for column in collection.columns.filter(auto_run_for_candidates=True):  # type: ignore
+        for column in collection.columns.filter(auto_run_for_candidates=True):
             assert isinstance(column, CollectionColumn)
             process_cells_blocking(items_to_process, column, collection, user_id)
         if after_columns_were_processed:
@@ -261,7 +261,7 @@ def add_items_from_task(
                 item = existing_items_by_id[ds_and_item_id[1]]
                 item.search_source_id = str(task.id)
                 item.search_score = 1 / (status.retrieved + i + 1)
-                item.relevant_parts = value.get("_relevant_parts", [])  # type: ignore
+                item.relevant_parts = value.get("_relevant_parts", [])
                 updated_items.append(item)
                 continue
             item = CollectionItem(

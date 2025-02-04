@@ -1,21 +1,21 @@
-import time
 import logging
+import time
 
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
 
+from .logic.map_generation_pipeline import generate_new_map
 from .schemas import (
-    NewMapPayload,
     MapData,
     MapMetadata,
+    NewMapPayload,
     ProjectionsEndpointResponse,
     RemoveCollectionItemsPayload,
     RemoveCollectionItemsResponse,
 )
-from .logic.map_generation_pipeline import generate_new_map
 
 api = NinjaAPI(urls_namespace="map")
 
@@ -132,7 +132,7 @@ def remove_collection_items_route(request: HttpRequest, payload: RemoveCollectio
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    collection_items = collection.items.filter(id__in=payload.item_ids)  # type: ignore
+    collection_items = collection.items.filter(id__in=payload.item_ids)
     removed_item_ids = list(collection_items.values_list("id", flat=True))
     collection_items.delete()
 

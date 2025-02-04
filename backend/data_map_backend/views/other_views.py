@@ -7,7 +7,7 @@ from functools import lru_cache, reduce
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.db.models.manager import BaseManager
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
@@ -143,18 +143,16 @@ def get_available_organizations(request):
         serialized["is_member"] = is_member
         if is_member:
             serialized["datasets"] = [
-                dataset.id  # type: ignore
+                dataset.id
                 for dataset in Dataset.objects.filter(
-                    Q(organization_id=organization.id)  # type: ignore
+                    Q(organization_id=organization.id)
                     & (Q(is_public=True) | Q(is_organization_wide=True) | Q(admins=request.user))
                 )
             ]
         else:
             serialized["datasets"] = [
-                dataset.id  # type: ignore
-                for dataset in Dataset.objects.filter(
-                    Q(organization_id=organization.id) & Q(is_public=True)  # type: ignore
-                )
+                dataset.id
+                for dataset in Dataset.objects.filter(Q(organization_id=organization.id) & Q(is_public=True))
             ]
 
     result = json.dumps(serialized_data)
@@ -247,7 +245,7 @@ def get_available_datasets(request):
     #         continue
     #     elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
     #         continue
-    #     result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
+    #     result.append({"id": dataset.id, "name": dataset.name,
     #                    "entity_name": dataset.schema.entity_name, "entity_name_plural": dataset.schema.entity_name_plural,
     #                    "short_description": dataset.schema.short_description,
     #                    })
@@ -522,7 +520,7 @@ def add_search_history_item(request):
     item.organization_id = organization_id  # type: ignore
     item.name = name
     item.display_name = display_name
-    item.parameters = parameters  # type: ignore
+    item.parameters = parameters
     item.save()
     try:
         user = User.objects.get(id=item.user_id) if item.user_id else None  # type: ignore
@@ -564,7 +562,7 @@ def update_search_history_item(request):
     item.total_matches = total_matches
     item.auto_relaxed = auto_relaxed
     item.cluster_count = cluster_count
-    item.result_information = result_information  # type: ignore
+    item.result_information = result_information
     item.save()
 
     serialized_data = SearchHistoryItemSerializer(instance=item).data
@@ -598,7 +596,7 @@ def get_search_history(request):
 
 
 @csrf_exempt
-def add_collection(request):
+def add_collection(request: HttpRequest) -> HttpResponse:
     if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -669,9 +667,9 @@ def add_collection_class(request):
         return HttpResponse(status=401)
 
     if item.class_names == None:
-        item.class_names = [class_name]  # type: ignore
+        item.class_names = [class_name]
     elif class_name not in item.class_names:
-        item.class_names.append(class_name)  # type: ignore
+        item.class_names.append(class_name)
     item.save()
 
     return HttpResponse(None, status=204)
@@ -946,14 +944,14 @@ def get_filtered_collection_items(
 ) -> tuple[BaseManager[CollectionItem], tuple[int, str] | None]:
     if field_type:
         all_items = CollectionItem.objects.filter(
-            collection_id=collection.id,  # type: ignore
+            collection_id=collection.id,
             field_type=field_type,
             # is_positive=is_positive,  # FIXME: is_positive will be replaced by relevance
             classes__contains=[class_name],
         )
     else:
         # return all items
-        all_items = CollectionItem.objects.filter(collection_id=collection.id, classes__contains=[class_name])  # type: ignore
+        all_items = CollectionItem.objects.filter(collection_id=collection.id, classes__contains=[class_name])
 
     reference_ds_and_item_id = None
     task: SearchTask | None = collection.most_recent_search_task
@@ -963,8 +961,7 @@ def get_filtered_collection_items(
         if settings.reference_dataset_id and settings.reference_item_id:
             reference_ds_and_item_id = (settings.reference_dataset_id, settings.reference_item_id)
 
-    if collection.search_mode:
-        search_results = all_items.filter(search_source_id=task.id)  # type: ignore
+        search_results = all_items.filter(search_source_id=task.id)
         if collection.ui_settings.get("hide_checked_items_in_search"):
             search_results = search_results.filter(relevance=ItemRelevance.CANDIDATE)
         return_items = search_results
@@ -1081,7 +1078,7 @@ def add_item_to_collection(request):
 
     exists = False
     for item in items:
-        if class_name in item.classes:  # type: ignore
+        if class_name in item.classes:
             # the item exists already, but the weight might need to be updated:
             item.weight = weight
             item.save()
@@ -1092,7 +1089,7 @@ def add_item_to_collection(request):
         item = CollectionItem()
         item.collection_id = collection_id  # type: ignore
         item.is_positive = is_positive
-        item.classes = [class_name]  # type: ignore
+        item.classes = [class_name]
         item.field_type = field_type
         item.value = value
         item.dataset_id = dataset_id
@@ -1103,7 +1100,7 @@ def add_item_to_collection(request):
     dataset_dict = CollectionItemSerializer(instance=item).data
     serialized_data = json.dumps(dataset_dict)
 
-    collection.items_last_changed = timezone.now().isoformat()  # type: ignore
+    collection.items_last_changed = timezone.now()
     collection.save()
 
     return HttpResponse(serialized_data, status=200, content_type="application/json")
@@ -1160,8 +1157,8 @@ def remove_collection_item(request):
 
     collection_item.delete()
 
-    # for class_name in collection_item.classes:  # type: ignore
-    collection_item.collection.items_last_changed = timezone.now().isoformat()  # type: ignore
+    # for class_name in collection_item.classes:
+    collection_item.collection.items_last_changed = timezone.now()
     collection_item.collection.save(update_fields=["items_last_changed"])
 
     return HttpResponse(None, status=204)
@@ -1209,7 +1206,7 @@ def remove_collection_item_by_value(request):
         removed_items.append(item_dict)
         item.delete()
 
-    collection.items_last_changed = timezone.now().isoformat()  # type: ignore
+    collection.items_last_changed = timezone.now()
     collection.save(update_fields=["items_last_changed"])
 
     serialized_data = json.dumps(removed_items)
@@ -1240,7 +1237,7 @@ def add_stored_map(request):
     item.organization_id = organization_id  # type: ignore
     item.name = name
     item.display_name = display_name
-    item.map_data = map_data.encode()  # type: ignore  # FIXME: base64 str needs to be decoded
+    item.map_data = map_data.encode()  # FIXME: base64 str needs to be decoded
     item.save()
 
     serialized_data = StoredMapSerializer(instance=item).data

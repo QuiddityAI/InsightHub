@@ -447,7 +447,7 @@ def get_vector_search_results(
         score_threshold=score_threshold,
         is_array_field=is_array_field,
         max_sub_items=max_sub_items or 1,
-    )  # type: ignore
+    )
     items = {}
     for i, item in enumerate(vector_search_result):
         items[item.id] = {
@@ -804,7 +804,7 @@ def get_abstract(corpusid):
 def get_document_details_by_id(
     dataset_id: int,
     item_id: str,
-    fields: tuple[str],
+    fields: tuple[str, ...],
     relevant_parts: str | None = None,
     database_name: str | None = None,
     top_n_full_text_chunks: int | None = None,
@@ -909,18 +909,18 @@ def get_document_details_by_id(
 
     if relevant_parts_list:
         for relevant_part in relevant_parts_list:
-            if relevant_part["index"] is not None:  # type: ignore
+            if relevant_part["index"] is not None:
                 # materialize chunk text:
                 try:
-                    relevant_part["value"] = item[relevant_part["field"]][relevant_part["index"]]  # type: ignore
+                    relevant_part["value"] = item[relevant_part["field"]][relevant_part["index"]]
                 except (IndexError, KeyError):
-                    relevant_part["value"] = None  # type: ignore
-                relevant_part["array_size"] = len(item.get(relevant_part["field"], []))  # type: ignore
+                    relevant_part["value"] = None
+                relevant_part["array_size"] = len(item.get(relevant_part["field"], []))
         item["_relevant_parts"] = relevant_parts_list
 
     for field in additional_fields:
-        if field not in original_fields and field in item:  # type: ignore
-            del item[field]  # type: ignore
+        if field not in original_fields and field in item:
+            del item[field]
 
     if include_related_collection_items:
         item["_related_collection_items"] = get_related_collection_items(dataset_id, item_id, include_column_data=True)

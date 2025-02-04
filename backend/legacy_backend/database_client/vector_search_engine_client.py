@@ -563,7 +563,7 @@ class VectorSearchEngineClient(object):
             # TODO: return sub-items vectors by iterating over ids and fetch vectors for each parent item
         hits = self.client.retrieve(
             collection_name=self._get_collection_name(dataset.actual_database_name, vector_field),
-            ids=ids,  # type: ignore
+            ids=ids,
             with_payload=return_payloads,
             with_vectors=return_vectors,
         )

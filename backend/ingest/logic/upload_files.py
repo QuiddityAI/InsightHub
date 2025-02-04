@@ -1,27 +1,37 @@
-from typing import Callable, Iterable, Optional
+import datetime
 import logging
 import os
-import uuid
 import threading
-import datetime
+import uuid
+from typing import Callable, Iterable, Optional
 
-from legacy_backend.utils.field_types import FieldType
-from legacy_backend.database_client.text_search_engine_client import TextSearchEngineClient
+from ingest.logic.common import UPLOADED_FILES_FOLDER
+from ingest.logic.generic_import_formats import import_csv, import_website_url
+from ingest.logic.office_documents import import_office_document
+from ingest.logic.scientific_articles import (
+    scientific_article_csv,
+    scientific_article_form,
+    scientific_article_pdf,
+)
+from ingest.logic.store_on_disk import store_uploaded_file, unpack_archive
+from ingest.schemas import (
+    CustomUploadedFile,
+    UploadedFileMetadata,
+    UploadedOrExtractedFile,
+)
 from legacy_backend.database_client.django_client import (
+    add_item_to_collection,
     get_dataset,
     get_import_converter,
-    add_item_to_collection,
     get_service_usage,
     track_service_usage,
 )
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
+)
 from legacy_backend.logic.insert_logic import insert_many, update_database_layout
 from legacy_backend.logic.local_map_cache import clear_local_map_cache
-from ingest.schemas import UploadedOrExtractedFile, CustomUploadedFile, UploadedFileMetadata
-from ingest.logic.office_documents import import_office_document
-from ingest.logic.scientific_articles import scientific_article_pdf, scientific_article_csv, scientific_article_form
-from ingest.logic.generic_import_formats import import_csv, import_website_url
-from ingest.logic.common import UPLOADED_FILES_FOLDER
-from ingest.logic.store_on_disk import store_uploaded_file, unpack_archive
+from legacy_backend.utils.field_types import FieldType
 
 upload_tasks = {}
 
@@ -186,7 +196,7 @@ def _store_files_and_import_them(
 
             traceback.print_exc()
             failed_files.append({"filename": file.name, "reason": str(e)})
-        _set_task_status(dataset_id, task_id, "storing files", i / len(raw_files))  # type: ignore
+        _set_task_status(dataset_id, task_id, "storing files", i / len(raw_files))
 
     if not uploaded_files:
         return [], failed_files

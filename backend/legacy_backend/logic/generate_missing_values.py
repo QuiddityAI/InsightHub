@@ -39,7 +39,7 @@ def generate_missing_values(task: GenerationTask):
     task.save(update_fields=["status", "log", "stop_flag"])
     logging.warning(f"Generating missing values for dataset {task.dataset}, field {task.field}...")
     task.add_log(f"Generating missing values for dataset {task.dataset}, field {task.field}...")
-    dataset_id: int = task.dataset.id  # type: ignore
+    dataset_id: int = task.dataset.id
     field_identifier: str = task.field.identifier
     dataset = get_serialized_dataset_cached(dataset_id)
 

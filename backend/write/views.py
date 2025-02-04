@@ -36,7 +36,7 @@ def get_writing_tasks_route(request: HttpRequest, payload: CollectionIdentifier)
     tasks = WritingTask.objects.filter(collection_id=payload.collection_id, class_name=payload.class_name)
     tasks = tasks.order_by("created_at")
 
-    task_ids = [{"id": task.id, "name": task.name} for task in tasks]  # type: ignore
+    task_ids = [{"id": task.id, "name": task.name} for task in tasks]
 
     return HttpResponse(json.dumps(task_ids), content_type="application/json", status=200)
 
@@ -120,18 +120,18 @@ def update_writing_task_route(request: HttpRequest, payload: UpdateWritingTaskPa
         return HttpResponse(status=401)
 
     task.name = payload.name
-    task.source_fields = payload.source_fields  # type: ignore
+    task.source_fields = payload.source_fields
     task.use_all_items = payload.use_all_items
-    task.selected_item_ids = payload.selected_item_ids  # type: ignore
+    task.selected_item_ids = payload.selected_item_ids
     task.model = payload.model
-    task.parameters = payload.parameters  # type: ignore
+    task.parameters = payload.parameters
     if payload.expression is not None:
         task.expression = payload.expression
     if payload.prompt_template is not None:
         task.prompt_template = payload.prompt_template
     if payload.text is not None and payload.text != task.text:
         if not task.previous_versions:
-            task.previous_versions = []  # type: ignore
+            task.previous_versions = []
         task.previous_versions.append(
             {
                 "created_at": task.changed_at.isoformat(),
@@ -140,7 +140,7 @@ def update_writing_task_route(request: HttpRequest, payload: UpdateWritingTaskPa
             }
         )
         if len(task.previous_versions) > 3:
-            task.previous_versions = task.previous_versions[-3:]  # type: ignore
+            task.previous_versions = task.previous_versions[-3:]
         task.text = payload.text
     task.save()
 

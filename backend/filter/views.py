@@ -79,7 +79,7 @@ def get_value_range_route(request: HttpRequest, payload: ValueRangeInput):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    collection_items: BaseManager[CollectionItem] = collection.items.all()  # type: ignore
+    collection_items: BaseManager[CollectionItem] = collection.items.all()
     values = collection_items.values_list(f"metadata__{payload.field_name}")
     values = [v for v, in values if v is not None]
     min_value = min(values) if values else 0

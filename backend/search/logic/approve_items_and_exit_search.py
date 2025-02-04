@@ -29,7 +29,7 @@ def auto_approve_items(
 ):
     fallback_items = []
     relevant_items = []
-    relevance_columns = [column for column in collection.columns.all() if column.module == "relevance"]  # type: ignore
+    relevance_columns = [column for column in collection.columns.all() if column.module == "relevance"]
     if relevance_columns:
         for item in new_items:
             for column in relevance_columns:  # should be only one in most cases
@@ -99,7 +99,7 @@ def approve_using_comparison(
 ):
     prompt = approve_using_comparison_prompt[search_task.result_language or "en"]
     prompt = prompt.replace("{{ user_input }}", search_task.user_input)
-    relevance_columns = [column for column in collection.columns.all() if column.module == "relevance"]  # type: ignore
+    relevance_columns = [column for column in collection.columns.all() if column.module == "relevance"]
 
     documents = ""
     fields = [
@@ -115,7 +115,7 @@ def approve_using_comparison(
             collection_item.dataset_id, collection_item.item_id, fields, search_task.user_input
         )["context"]
         # input_data has newline at the end
-        documents += f"document_id {collection_item.id}:\n{input_data}"  # type: ignore
+        documents += f"document_id {collection_item.id}:\n{input_data}"
         for column in relevance_columns:  # should be only one in most cases
             assert isinstance(column, CollectionColumn)
             column_content = collection_item.column_data.get(column.identifier)
@@ -148,10 +148,12 @@ def approve_using_comparison(
     if not results and forced_selections:
         # no results, but we take one anyway in case our relevance model is wrong:
         reason = "Forced selection because no relevant ones were found"
-        results = [ApprovalUsingComparisonReason(item_id=item.id, reason=reason) for item in new_items[:forced_selections]]  # type: ignore
+        results = [
+            ApprovalUsingComparisonReason(item_id=item.id, reason=reason) for item in new_items[:forced_selections]
+        ]
 
     for result in results:
-        collection_item = next((item for item in new_items if item.id == result.item_id), None)  # type: ignore
+        collection_item = next((item for item in new_items if item.id == result.item_id), None)
         if collection_item is None:
             continue
         selected_items.add(collection_item)

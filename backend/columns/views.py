@@ -175,7 +175,7 @@ def set_cell_data_route(request: HttpRequest, payload: CellDataPayload):
         return HttpResponse(status=401)
 
     if not item.column_data:
-        item.column_data = {}  # type: ignore
+        item.column_data = {}
 
     item.column_data[payload.column_identifier] = payload.cell_data
     item.save(update_fields=["column_data"])

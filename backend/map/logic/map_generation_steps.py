@@ -199,7 +199,7 @@ def get_important_words(collection: DataCollection, item_ids: list[int]):
 
     # get title + words for fake cluster:
     cluster_data = get_cluster_titles(
-        cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, Timings()
+        cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, Timings()  # type: ignore
     )
     return cluster_data[0]["important_words"] if cluster_data else []
 

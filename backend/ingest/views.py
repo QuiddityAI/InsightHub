@@ -51,7 +51,7 @@ def upload_files_route(
         if isinstance(result, HttpResponse):
             return result
         dataset = result
-        dataset_id = dataset.id  # type: ignore
+        dataset_id = dataset.id
 
     FILES: MultiValueDict = request.FILES
     custom_uploaded_files = []

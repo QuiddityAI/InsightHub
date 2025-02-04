@@ -13,8 +13,8 @@ def get_statistic_data(
     filtered_collection_items = filtered_collection_items.filter(dataset_id=dataset_id)
 
     dataset: Dataset = get_dataset_cached(dataset_id)
-    data_item_ids = [item.item_id for item in filtered_collection_items]
-    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)  # type: ignore
+    data_item_ids = [item.item_id for item in filtered_collection_items if item.item_id]
+    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)
     items_by_dataset = {dataset_id: {item["_id"]: item for item in data_items}}
     ds_and_item_ids = [(item.dataset_id, item.item_id) for item in filtered_collection_items]
 
