@@ -1,4 +1,5 @@
 import logging
+import time
 from uuid import uuid4
 
 from data_map_backend.models import SearchTask
@@ -175,6 +176,9 @@ def run_periodic_searches(dataset_id: int, item_ids: list[str], restrict_to_coll
     if restrict_to_collection_id is not None:
         tasks = tasks.filter(collection_id=restrict_to_collection_id)
     tasks = tasks.select_related("collection")
+    if tasks.exists():
+        # give the database some time to update the new items, just in case
+        time.sleep(0.3)
     for task in tasks:
         # FIXME: searching is blocking, but column processing is in thread
         # could be a problem if many items are inserted in multiple insert_many calls
