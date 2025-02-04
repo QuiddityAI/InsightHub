@@ -1,7 +1,7 @@
 import logging
 import os
 import smtplib
-from email.mime.text import MIMEText
+from email.message import EmailMessage
 from typing import Iterable
 
 from columns.schemas import CellData, Criterion
@@ -50,7 +50,8 @@ def notify_about_new_items(
         if not metadata:
             logging.warning("No metadata found for item %s", item.id)
             continue
-        item_text = f"{title_field}: {metadata.get(title_field, '-')}\n"
+        item_url = f"{collection_url}&item_details={item.dataset_id},{item.item_id}"
+        item_text = f"**{metadata.get(title_field, 'New Item')}** ([open]({item_url})):\n\n"
         for column in columns:
             data: CellData = CellData(**item.column_data.get(column.identifier, {}))
             if not data.value:
@@ -58,37 +59,46 @@ def notify_about_new_items(
             if column.module == "relevance":
                 assert isinstance(data.value, dict)
                 criteria = [Criterion(**c) for c in data.value["criteria_review"]]
-                for criterion in criteria:
-                    item_text += "- " + str(criterion) + "\n"
+                for c in criteria:
+                    item_text += f"- **{c.criteria}** {'✓' if c.fulfilled else '❌'}: {c.reason} (<i>'{c.supporting_quote}'</i>)\n"
             else:
-                item_text += f"{column.name}: {data.value if data else '-'}\n"
-        item_url = f"{collection_url}&item_details={item.dataset_id},{item.item_id}"
-        item_text += f"URL: {item_url}\n"
+                item_text += f"- **{column.name}**: {data.value if data else '-'}\n"
         item_text += "\n"
         new_item_texts.append(item_text)
 
     text = text.replace("{{ new_items }}", "\n\n".join(new_item_texts))
 
     for email_address in email_addresses:
-        send_email("New items added in Quiddity", text, [email_address.strip()])
+        send_markdown_email("New items added in Quiddity", text, [email_address.strip()])
 
 
-def send_email(subject, text, recipients):
+def send_markdown_email(subject, markdown, recipients):
+    import markdown as markdown_module
+
+    html = markdown_module.markdown(markdown)
+    send_email(subject, markdown, html, recipients)
+
+
+def send_email(subject, plain_text, html, recipients):
     sender = os.getenv("NOTIFICATION_EMAIL_ADDRESS")
     if not sender:
         logging.warning("No email address set for sending notifications")
         return
-    msg = MIMEText(text)
+    msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = sender
     msg["To"] = ", ".join(recipients)
+    msg.set_content(plain_text)
+    if html:
+        msg.add_alternative(html, subtype="html")
+
     host = os.getenv("NOTIFICATION_EMAIL_SMTP_HOST")
     port = int(os.getenv("NOTIFICATION_EMAIL_SMTP_PORT", 0))
     user = os.getenv("NOTIFICATION_EMAIL_SMTP_USER")
     password = os.getenv("NOTIFICATION_EMAIL_SMTP_PASSWORD")
     if not password:
         logging.warning("Would have sent email but no password set")
-        logging.warning(text)
+        logging.warning(plain_text)
         return
     assert host and port and user and password
     with smtplib.SMTP_SSL(host, port) as smtp_server:

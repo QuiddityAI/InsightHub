@@ -188,31 +188,27 @@ approve_using_comparison_prompt["de"] = approve_using_comparison_prompt_de
 
 
 notification_email_en = """\
-Hello,
-
-there were items added to your collection "{{ collection_name }}":
+## New items in *{{ collection_name }}*:
 
 {{ new_items }}
 
-You can view the collection here: {{ collection_url }}
+You can view the whole collection [here]({{ collection_url }}).
 
 --
 
-This email was sent by Quiddity.
+_This email was sent by Quiddity._
 """
 
 notification_email_de = """\
-Hallo,
-
-es wurden Elemente zu deiner Sammlung hinzugefügt "{{ collection_name }}":
+## Neue Elemente in *{{ collection_name }}*:
 
 {{ new_items }}
 
-Du kannst die Sammlung hier ansehen: {{ collection_url }}
+Du kannst die gesammte Sammlung [hier]({{ collection_url }}) ansehen.
 
 --
 
-Diese E-Mail wurde von Quiddity gesendet.
+_Diese E-Mail wurde von Quiddity gesendet._
 """
 
 notification_email: defaultdict[str, str] = defaultdict(lambda: notification_email_en)
