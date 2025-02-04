@@ -715,9 +715,10 @@ export const useCollectionStore = defineStore("collection", {
           this.update_collection({update_items: true})
         })
     },
-    test_notification_email() {
+    test_notification_email({run_on_current_candidates = false} = {}) {
       const body = {
         collection_id: this.collection_id,
+        run_on_current_candidates: run_on_current_candidates,
       }
       httpClient
         .post("/api/v1/search/test_notification_email", body)

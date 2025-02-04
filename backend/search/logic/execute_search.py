@@ -133,7 +133,7 @@ def run_search_task(
     is_new_collection: bool = False,
     set_agent_step: bool = True,
     from_ui: bool = False,
-    restrict_to_item_ids: list[int] | None = None,
+    restrict_to_item_ids: list[str] | None = None,
 ) -> list[CollectionItem]:
     collection = task.collection
     if set_agent_step and from_ui:
@@ -187,7 +187,7 @@ def add_items_from_task_and_run_columns(
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     from_ui: bool = True,
-    restrict_to_item_ids: list[int] | None = None,
+    restrict_to_item_ids: list[str] | None = None,
     after_columns_were_processed: Callable | None = None,
 ) -> list[CollectionItem]:
     collection = task.collection
@@ -224,7 +224,7 @@ def add_items_from_task(
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     from_ui: bool = True,
-    restrict_to_item_ids: list[int] | None = None,
+    restrict_to_item_ids: list[str] | None = None,
 ) -> list[CollectionItem]:
     parameters = RetrievalParameters(**task.retrieval_parameters)
     status = RetrievalStatus(**task.last_retrieval_status)
@@ -323,7 +323,7 @@ def _convert_retrieval_parameters_to_old_format(
     retrieval_parameters: RetrievalParameters,
     status: RetrievalStatus,
     ignore_last_retrieval: bool = True,
-    restrict_to_item_ids: list[int] | None = None,
+    restrict_to_item_ids: list[str] | None = None,
 ) -> dict:
     filters = retrieval_parameters.filters or []
     if restrict_to_item_ids is not None:

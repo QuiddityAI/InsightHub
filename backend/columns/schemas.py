@@ -59,7 +59,7 @@ class CellData(Schema):
     used_prompt: str | None = None
     used_llm_model: str | None = None
     used_module: str | None = None
-    changed_at: str
+    changed_at: str | None = None
     is_ai_generated: bool = False
     is_computed: bool = False
     is_manually_edited: bool = False

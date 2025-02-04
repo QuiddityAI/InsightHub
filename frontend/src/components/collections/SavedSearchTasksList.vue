@@ -56,8 +56,12 @@ export default {
         v-model="collectionStore.collection.notification_emails"
         @change="commit_notification_emails_debounce">
       <BorderButton class="h-full" v-if="appState.dev_mode"
-        @click="collectionStore.test_notification_email">
-        Send Test e-Mail
+        @click="collectionStore.test_notification_email({run_on_current_candidates: false})">
+        Send test e-Mail
+      </BorderButton>
+      <BorderButton class="h-full" v-if="appState.dev_mode"
+        @click="collectionStore.test_notification_email({run_on_current_candidates: true})">
+        Test periodic searches on current candidates
       </BorderButton>
     </div>
 

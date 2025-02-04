@@ -161,30 +161,34 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
     search_engine_client.upsert_items(dataset.actual_database_name, [item["_id"] for item in elements], elements)
 
     # apply search tasks on new items:
+    item_ids = [item["_id"] for item in elements]
     if not skip_generators and elements:
-        from search.logic.execute_search import (
-            run_search_task,  # prevent circular import
-        )
-
-        tasks = SearchTask.objects.filter(dataset_id=dataset_id, run_on_new_items=True)
-        tasks = tasks.select_related("collection")
-        item_ids = [item["_id"] for item in elements]
-        for task in tasks:
-            # FIXME: searching is blocking, but column processing is in thread
-            # could be a problem if many items are inserted in multiple insert_many calls
-            run_search_task(
-                task,
-                task.collection.created_by.id,  # type: ignore
-                set_agent_step=False,
-                from_ui=False,
-                restrict_to_item_ids=item_ids,
-                after_columns_were_processed=lambda new_items: notify_about_new_items(
-                    dataset.id, task.collection, new_items
-                ),
-            )
-            # items are auto-approved and search mode is left
+        run_periodic_searches(dataset_id, item_ids)
 
     return [(dataset.id, item["_id"]) for item in elements]
+
+
+def run_periodic_searches(dataset_id: int, item_ids: list[str], restrict_to_collection_id: int | None = None):
+    from search.logic.execute_search import run_search_task  # prevent circular import
+
+    tasks = SearchTask.objects.filter(dataset_id=dataset_id, run_on_new_items=True)
+    if restrict_to_collection_id is not None:
+        tasks = tasks.filter(collection_id=restrict_to_collection_id)
+    tasks = tasks.select_related("collection")
+    for task in tasks:
+        # FIXME: searching is blocking, but column processing is in thread
+        # could be a problem if many items are inserted in multiple insert_many calls
+        run_search_task(
+            task,
+            task.collection.created_by.id,  # type: ignore
+            set_agent_step=False,
+            from_ui=False,
+            restrict_to_item_ids=item_ids,
+            after_columns_were_processed=lambda new_items: notify_about_new_items(
+                dataset_id, task.collection, new_items
+            ),
+        )
+        # items are auto-approved and search mode is left
 
 
 def insert_vectors(

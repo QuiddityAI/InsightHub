@@ -1244,6 +1244,11 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
 
     writing_task_count.fget.short_description = "Writing Task Count"  # type: ignore
 
+    @property
+    def first_dataset_id(self):
+        first_item = self.items.filter(field_type=FieldType.IDENTIFIER).only("dataset_id").first()
+        return first_item.dataset_id if first_item else None
+
     # def simplified_trained_classifiers(self):
     #     data = copy.deepcopy(self.trained_classifiers) or {}
     #     for embedding_space_data in data.values():

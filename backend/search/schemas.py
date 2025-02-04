@@ -128,3 +128,8 @@ class UpdateSearchTaskExecutionSettingsPayload(Schema):
 class RunExistingSearchTaskPayload(Schema):
     task_id: str
     wait_for_ms: int = 0
+
+
+class TestNotificationEmailPayload(Schema):
+    collection_id: int
+    run_on_current_candidates: bool = False

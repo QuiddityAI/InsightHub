@@ -29,6 +29,7 @@ from search.schemas import (
     RunExistingSearchTaskPayload,
     RunPreviousSearchTaskPayload,
     RunSearchTaskPayload,
+    TestNotificationEmailPayload,
     UpdateSearchTaskExecutionSettingsPayload,
 )
 
@@ -302,7 +303,7 @@ def get_saved_search_tasks_route(request: HttpRequest, payload: CollectionIdenti
 
 
 @api.post("test_notification_email")
-def test_notification_email_route(request: HttpRequest, payload: CollectionIdentifier):
+def test_notification_email_route(request: HttpRequest, payload: TestNotificationEmailPayload):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
 
@@ -313,13 +314,29 @@ def test_notification_email_route(request: HttpRequest, payload: CollectionIdent
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    possible_items = collection.items.order_by("?").filter(  # type: ignore
-        dataset_id__isnull=False, relevance__gte=ItemRelevance.APPROVED_BY_AI
-    )
-    random_item: CollectionItem = possible_items.first()
-    assert random_item.dataset_id is not None
-    dataset_id: int = random_item.dataset_id
-    more_items = possible_items.filter(dataset_id=dataset_id)[:3]
-    notify_about_new_items(dataset_id, collection, more_items)
+    dataset_id: int | None = None
+    if payload.run_on_current_candidates:
+        # actually run periodic searches on current candidates:
+        dataset_id = collection.first_dataset_id
+        if not dataset_id:
+            return HttpResponse(status=400)
+        candidates = collection.items.filter(relevance=ItemRelevance.CANDIDATE)
+        from legacy_backend.logic.insert_logic import run_periodic_searches
+
+        run_periodic_searches(
+            dataset_id, [item.item_id for item in candidates if item.item_id is not None], collection.id
+        )
+    else:
+        # just test with random items:
+        possible_items = collection.items.order_by("?").filter(
+            dataset_id__isnull=False, relevance__gte=ItemRelevance.APPROVED_BY_AI
+        )
+        random_item: CollectionItem | None = possible_items.first()
+        if not random_item:
+            return HttpResponse(status=400)
+        assert random_item.dataset_id is not None
+        dataset_id = random_item.dataset_id
+        more_items = possible_items.filter(dataset_id=dataset_id)[:3]
+        notify_about_new_items(dataset_id, collection, more_items)
 
     return HttpResponse(status=204)
