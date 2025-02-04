@@ -66,6 +66,9 @@ def notify_about_new_items(
         item_text += "\n"
         new_item_texts.append(item_text)
 
+    if not new_item_texts:
+        return
+
     text = text.replace("{{ new_items }}", "\n\n".join(new_item_texts))
 
     for email_address in email_addresses:
