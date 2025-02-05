@@ -46,6 +46,11 @@ npm install
 - the OpenSearch admin should be available at `localhost:5601`
 - check the docker logs manually for errors or install a tool to easily monitor the logs like `Dozzle`
 
+
+### Pre-commit
+
+pre-commit usage is recommended. To install it run `pip install pre-commit` and then `pre-commit install`. This will ensure continuity of the code formatting.
+
 ## Development Notes
 
 - The main structure and the level of high or low 'abstraction' is hopefully quite thought-through and should enable fast development, easy maintanability and high scalability where needed.
