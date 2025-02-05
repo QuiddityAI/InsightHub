@@ -1,28 +1,32 @@
-import logging
 import json
+import logging
 import threading
 import time
 
-from ninja import NinjaAPI
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpRequest, HttpResponse
 from llmonkey.llms import BaseLLMModel, Mistral_Ministral3b
+from ninja import NinjaAPI
 
-from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
-from data_map_backend.serializers import CollectionSerializer, CollectionColumnSerializer
-from columns.schemas import (
-    ColumnCellRange,
-    ColumnConfig,
-    CellDataPayload,
-    ColumnIdentifier,
-    UpdateColumnConfig,
-    ProcessColumnPayload,
-)
 from columns.logic.process_column import (
-    remove_column_data_from_collection_items,
     get_collection_items_from_cell_range,
     process_cells_blocking,
+    remove_column_data_from_collection_items,
 )
-from columns.prompts import column_name_prompt, column_language_prompt
+from columns.prompts import column_language_prompt, column_name_prompt
+from columns.schemas import (
+    CellDataPayload,
+    ColumnCellRange,
+    ColumnConfig,
+    ColumnIdentifier,
+    ProcessColumnPayload,
+    UpdateColumnConfig,
+)
+from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
+from data_map_backend.notifier import default_notifier
+from data_map_backend.serializers import (
+    CollectionColumnSerializer,
+    CollectionSerializer,
+)
 
 api = NinjaAPI(urls_namespace="columns")
 
@@ -31,6 +35,8 @@ api = NinjaAPI(urls_namespace="columns")
 def add_column_route(request: HttpRequest, payload: ColumnConfig):
     if not request.user.is_authenticated:
         return HttpResponse(status=401)
+
+    default_notifier.info(f"Column added: '{payload.expression}'", request.user)
 
     payload.name = payload.name.strip() if payload.name else None
     payload.expression = payload.expression.strip() if payload.expression else None
@@ -169,7 +175,7 @@ def set_cell_data_route(request: HttpRequest, payload: CellDataPayload):
         return HttpResponse(status=401)
 
     if not item.column_data:
-        item.column_data = {}  # type: ignore
+        item.column_data = {}
 
     item.column_data[payload.column_identifier] = payload.cell_data
     item.save(update_fields=["column_data"])

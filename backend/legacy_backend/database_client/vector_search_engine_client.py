@@ -1,22 +1,28 @@
+import datetime
 import logging
 import os
-from typing import Iterable, List
 import uuid
+from typing import Iterable, List
 
 import numpy as np
-
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from qdrant_client.models import Filter, FieldCondition, Range, PayloadSchemaType, NamedVector, HnswConfigDiff
 from qdrant_client.http.exceptions import UnexpectedResponse
-
-from ..database_client.remote_instance_client import use_remote_db
+from qdrant_client.models import (
+    FieldCondition,
+    Filter,
+    HnswConfigDiff,
+    NamedVector,
+    PayloadSchemaType,
+    Range,
+)
 
 from data_map_backend.utils import DotDict, pk_to_uuid_id
+
+from ..database_client.remote_instance_client import use_remote_db
 from ..utils.field_types import FieldType
 from ..utils.helpers import get_vector_field_dimensions
 from ..utils.source_plugin_types import SourcePlugin
-
 
 qdrant_host = os.getenv("vector_database_host", "localhost")
 qdrant_port = 6333
@@ -468,9 +474,19 @@ class VectorSearchEngineClient(object):
                     )
                 )
             elif filter_.operator in ["gt", "gte", "lt", "lte"]:
-                filter_types["must"].append(
-                    models.FieldCondition(key=filter_.field, range=models.Range(**{filter_.operator: filter_.value}))
-                )
+                category = "must_not" if filter_.negate else "must"
+                if isinstance(filter_.value, str):
+                    if filter_.value == "now":
+                        filter_.value = datetime.datetime.now().isoformat()
+                    filter_types[category].append(
+                        models.FieldCondition(key=filter_.field, range=models.DatetimeRange(**{filter_.operator: filter_.value}))  # type: ignore
+                    )
+                else:
+                    filter_types[category].append(
+                        models.FieldCondition(
+                            key=filter_.field, range=models.Range(**{filter_.operator: filter_.value})
+                        )
+                    )
         qdrant_filters = models.Filter(must=filter_types["must"], must_not=filter_types["must_not"])
         return qdrant_filters
 
@@ -547,7 +563,7 @@ class VectorSearchEngineClient(object):
             # TODO: return sub-items vectors by iterating over ids and fetch vectors for each parent item
         hits = self.client.retrieve(
             collection_name=self._get_collection_name(dataset.actual_database_name, vector_field),
-            ids=ids,  # type: ignore
+            ids=ids,
             with_payload=return_payloads,
             with_vectors=return_vectors,
         )

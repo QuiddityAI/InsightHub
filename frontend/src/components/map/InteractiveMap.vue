@@ -29,8 +29,10 @@ import { ensureLength } from "../../utils/utils.js"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 </script>
 
 <script>
@@ -70,6 +72,7 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
     pointsVertexShader() {
       return this.appStateStore.settings.frontend.rendering.style == "plotly"
         ? pointsVertexShaderPlotly
@@ -136,6 +139,12 @@ export default {
       this.update_opacities()
     },
     "mapStateStore.per_point.opacity"() {
+      this.update_opacities()
+    },
+    "mapStateStore.selected_collection_item_ids"() {
+      this.update_opacities()
+    },
+    "collectionStore.filtered_item_ids"() {
       this.update_opacities()
     },
   },
@@ -458,11 +467,20 @@ export default {
         return
       }
       try {
-        for (const i in this.mapStateStore.per_point.x) {
-          const item_ds_and_id = this.mapStateStore.per_point.item_id[i]
-          const item = this.mapStateStore.text_data[item_ds_and_id[0]][item_ds_and_id[1]]
-          const include = this.mapStateStore.visibility_filters.every(filter_item => filter_item.filter_fn(item))
-          this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+        if (this.mapStateStore.selected_collection_item_ids.length > 0) {
+          for (const i in this.mapStateStore.per_point.x) {
+            const collection_item_id = this.mapStateStore.per_point.collection_item_id[i]
+            const include = this.mapStateStore.selected_collection_item_ids.includes(collection_item_id)
+            this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+          }
+        } else if (this.collectionStore.filtered_item_ids.length > 0) {
+          for (const i in this.mapStateStore.per_point.x) {
+            const collection_item_id = this.mapStateStore.per_point.collection_item_id[i]
+            const include = this.collectionStore.filtered_item_ids.includes(collection_item_id)
+            this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+          }
+        } else {
+          this.actual_opacity = this.mapStateStore.per_point.opacity
         }
       } catch (e) {
         console.warn(e)

@@ -1,12 +1,22 @@
+import json
 import uuid
 from threading import Lock
 
-from ninja import NinjaAPI
-from django.http import HttpResponse, HttpRequest
 from django.db.models.manager import BaseManager
+from django.http import HttpRequest, HttpResponse
+from ninja import NinjaAPI
 
 from data_map_backend.models import CollectionItem, DataCollection
-from filter.schemas import AddFilterPayload, FilterIdentifierPayload, ValueRangeInput, ValueRangeOutput
+from filter.logic.statistics import get_statistic_data
+from filter.schemas import (
+    AddFilterPayload,
+    FilterIdentifierPayload,
+    ImportantWordsPayload,
+    StatisticDataPayload,
+    ValueRangeInput,
+    ValueRangeOutput,
+)
+from map.logic.map_generation_steps import get_important_words
 
 api = NinjaAPI(urls_namespace="filter")
 
@@ -69,10 +79,44 @@ def get_value_range_route(request: HttpRequest, payload: ValueRangeInput):
     if collection.created_by != request.user:
         return HttpResponse(status=401)
 
-    collection_items: BaseManager[CollectionItem] = collection.items.all()  # type: ignore
+    collection_items: BaseManager[CollectionItem] = collection.items.all()
     values = collection_items.values_list(f"metadata__{payload.field_name}")
     values = [v for v, in values if v is not None]
     min_value = min(values) if values else 0
     max_value = max(values) if values else 1
     result = ValueRangeOutput(min=min_value, max=max_value)
     return result
+
+
+@api.post("get_important_words")
+def get_important_words_route(request: HttpRequest, payload: ImportantWordsPayload):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        collection = DataCollection.objects.get(id=payload.collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    words = get_important_words(collection, payload.item_ids)
+    return HttpResponse(json.dumps({"words": words}), content_type="application/json")
+
+
+@api.post("get_statistic_data")
+def get_statistic_data_route(request: HttpRequest, payload: StatisticDataPayload):
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    try:
+        collection = DataCollection.objects.get(id=payload.collection_id)
+    except DataCollection.DoesNotExist:
+        return HttpResponse(status=404)
+    if collection.created_by != request.user:
+        return HttpResponse(status=401)
+
+    data = get_statistic_data(
+        collection, payload.class_name, payload.dataset_id, payload.required_fields, payload.statistic_parameters
+    )
+    return HttpResponse(json.dumps(data), content_type="application/json")

@@ -2,23 +2,27 @@ import time
 
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
-from data_map_backend.models import (
-    DataCollection,
-    COLUMN_META_SOURCE_FIELDS,
-    WritingTask,
-    CollectionColumn,
-    FieldType,
-    User,
-)
-from data_map_backend.schemas import CollectionUiSettings, ItemRelevance
-from search.schemas import SearchTaskSettings
-from search.logic.execute_search import run_search_task
-from write.logic.writing_task import execute_writing_task_safe
-from workflows.schemas import CreateCollectionSettings
 from columns.logic.process_column import process_cells_blocking
 from columns.schemas import CellData
-from workflows.schemas import WorkflowMetadata, WorkflowAvailability, WorkflowOrder
+from data_map_backend.models import (
+    COLUMN_META_SOURCE_FIELDS,
+    CollectionColumn,
+    DataCollection,
+    FieldType,
+    User,
+    WritingTask,
+)
+from data_map_backend.schemas import CollectionUiSettings, ItemRelevance
+from search.logic.execute_search import create_and_run_search_task
+from search.schemas import SearchTaskSettings
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
+from write.logic.writing_task import execute_writing_task_safe
 
 
 @workflow
@@ -51,7 +55,6 @@ class ResearchAgentWorkflow(WorkflowBase):
             dataset_id=settings.dataset_id,
             user_input=settings.user_input
             or "",  # this is the full, natural language question (of course your agent could first generate a better one)
-            query=None,  # this is the query used for keyword search, if auto_set_filters is set, its generated automatically
             result_language=settings.result_language,
             auto_set_filters=settings.auto_set_filters,
             filters=settings.filters,
@@ -62,7 +65,7 @@ class ResearchAgentWorkflow(WorkflowBase):
             exit_search_mode=False,
             candidates_per_step=10,  # this is the number of search results
         )
-        new_items = run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        new_items = create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
         # now the results are already there (search is run synchronously, but if there would already be columns, they are run asynchronously)
 
         time.sleep(2)  # just for the demo to understand the process
@@ -101,7 +104,7 @@ class ResearchAgentWorkflow(WorkflowBase):
 
             # set the relevance of an item:
             if "yes" in data.value.lower():
-                item.relevance = ItemRelevance.RELEVANT_ACCORDING_TO_AI
+                item.relevance = ItemRelevance.APPROVED_BY_AI
                 item.save(update_fields=["relevance"])
 
         # create the final result:
@@ -113,8 +116,8 @@ class ResearchAgentWorkflow(WorkflowBase):
                 COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
             ],
             use_all_items=True,
-            module=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
-            prompt=f"Summarize the results of the search in regard to this question '{settings.user_input}'."
+            model=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
+            expression=f"Summarize the results of the search in regard to this question '{settings.user_input}'.",
             # its always using a default prompt plus this prompt, I just realized it doesn't have the option to override the default prompt yet
         )
         writing_task.save()

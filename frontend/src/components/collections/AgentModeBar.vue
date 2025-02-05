@@ -45,14 +45,14 @@ export default {
 
 <template>
   <div class="w-full px-5 py-1 flex flex-row items-center gap-4">
-    <span class="text-orange-500">Processing:</span>
+    <span class="text-orange-500">{{ $t('AgentModeBar.processing') }}</span>
     <ProgressSpinner class="w-5 h-5 -mr-1" />
     <span class="text-gray-700">
       {{ collectionStore.collection.current_agent_step }}
     </span>
     <div class="flex-1"></div>
     <BorderlessButton @click="collectionStore.cancel_agent" class="py-1">
-      <NoSymbolIcon class="h-5 w-5 inline" /> Cancel
+      <NoSymbolIcon class="h-5 w-5 inline" /> {{ $t('AgentModeBar.cancel') }}
     </BorderlessButton>
   </div>
 </template>

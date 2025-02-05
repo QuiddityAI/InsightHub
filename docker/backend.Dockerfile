@@ -22,4 +22,4 @@ USER appuser
 WORKDIR /source_code/backend
 # using virtual env of host for now to make it easier to update packages:
 ENTRYPOINT ["/source_code/.venv/bin/python3"]
-CMD ["manage.py", "runserver", "0.0.0.0:55125"]
+CMD ["manage.py", "runserver", "--insecure", "0.0.0.0:55125"]

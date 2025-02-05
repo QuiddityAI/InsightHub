@@ -46,7 +46,7 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col gap-5 pt-12 pb-7 px-10">
+  <div class="flex flex-col gap-5 px-10">
     <div class="flex flex-row items-center gap-3">
       <h3 class="font-bold text-[15px]">
         Explanation

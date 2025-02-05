@@ -1,4 +1,5 @@
 from typing import Optional
+
 from ninja import Schema
 
 
@@ -58,7 +59,7 @@ class CellData(Schema):
     used_prompt: str | None = None
     used_llm_model: str | None = None
     used_module: str | None = None
-    changed_at: str
+    changed_at: str | None = None
     is_ai_generated: bool = False
     is_computed: bool = False
     is_manually_edited: bool = False
@@ -69,3 +70,6 @@ class Criterion(Schema):
     fulfilled: bool
     reason: str
     supporting_quote: str | None = None
+
+    def __str__(self):
+        return f'{self.criteria} ({self.fulfilled}): {self.reason} ("{self.supporting_quote}")'

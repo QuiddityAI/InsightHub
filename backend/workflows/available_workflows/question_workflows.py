@@ -1,13 +1,23 @@
 import logging
 
-from data_map_backend.models import DataCollection, COLUMN_META_SOURCE_FIELDS, WritingTask, User
+from data_map_backend.models import (
+    COLUMN_META_SOURCE_FIELDS,
+    DataCollection,
+    User,
+    WritingTask,
+)
 from data_map_backend.schemas import CollectionUiSettings
+from search.logic.execute_search import create_and_run_search_task
 from search.schemas import SearchTaskSettings
-from search.logic.execute_search import run_search_task
-from write.logic.writing_task import execute_writing_task_thread
-from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowOrder, WorkflowAvailability
 from workflows.create_columns import create_relevance_column
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
+from write.logic.writing_task import execute_writing_task_thread
 
 
 @workflow
@@ -44,6 +54,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
             auto_approve=False,
             approve_using_comparison=True,
             exit_search_mode=True,
+            forced_selections=1,
             max_selections=10,
         )
 
@@ -56,9 +67,9 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
                 COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
             ],
             use_all_items=True,
-            module=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
+            model=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
         )
-        writing_task.prompt = settings.user_input
+        writing_task.expression = settings.user_input
         writing_task.save()
         collection.ui_settings = CollectionUiSettings(secondary_view="summary").model_dump()
         collection.save(update_fields=["ui_settings"])
@@ -71,7 +82,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
             collection.agent_is_running = False
             collection.save()
 
-        run_search_task(collection, search_task, user.id, after_columns_were_processed, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user.id, after_columns_were_processed, is_new_collection=True)  # type: ignore
         collection.current_agent_step = "Waiting for search results and columns..."
         collection.save(update_fields=["current_agent_step"])
 

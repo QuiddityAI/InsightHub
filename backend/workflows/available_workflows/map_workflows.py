@@ -1,11 +1,16 @@
 from django.contrib.auth.models import User
 
-from data_map_backend.models import DataCollection
+from data_map_backend.models import DataCollection, Dataset
 from data_map_backend.schemas import CollectionUiSettings
+from search.logic.execute_search import create_and_run_search_task
 from search.schemas import SearchTaskSettings, SearchType
-from search.logic.execute_search import run_search_task
-from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowOrder, WorkflowAvailability
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
 
 
 @workflow
@@ -33,6 +38,29 @@ class OverviewMapWorkflow(WorkflowBase):
     def run(self, collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
         collection.ui_settings = CollectionUiSettings(secondary_view="map", show_visibility_filters=True).model_dump()
         collection.save(update_fields=["ui_settings"])
+        dataset = Dataset.objects.get(id=settings.dataset_id)
+        if settings.result_language and dataset.merged_advanced_options.get("language_filtering"):
+            language_filtering: dict = dataset.merged_advanced_options.get("language_filtering", {})
+            if not settings.filters:
+                settings.filters = []
+            if settings.result_language == "en":
+                settings.filters.append(
+                    {
+                        "dataset_id": settings.dataset_id,
+                        "field": language_filtering.get("field"),
+                        "value": "en",
+                        "operator": "is",
+                    }
+                )
+            else:
+                settings.filters.append(
+                    {
+                        "dataset_id": settings.dataset_id,
+                        "field": language_filtering.get("field"),
+                        "value": ["en", settings.result_language],
+                        "operator": "in",
+                    }
+                )
         if settings.user_input:
             search_task = SearchTaskSettings(
                 dataset_id=settings.dataset_id,
@@ -58,6 +86,6 @@ class OverviewMapWorkflow(WorkflowBase):
                 ranking_settings=settings.ranking_settings,
                 candidates_per_step=2000,
             )
-        run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
         collection.agent_is_running = False
         collection.save(update_fields=["agent_is_running"])

@@ -46,6 +46,9 @@ export default {
       }
       let value = this.item.column_data[this.column.identifier]?.value || ""
       if (this.column.module === 'relevance' && value && typeof value === "object") {
+        if (!value.criteria_review) {
+          return ""
+        }
         return value.criteria_review.map(item => {
             const checkbox = item.fulfilled ? "☑ " : "☐ "
             const criteria = item.criteria ? marked.parse(checkbox + item.criteria) : ""

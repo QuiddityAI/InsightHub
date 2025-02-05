@@ -53,4 +53,5 @@ volumes:
   swag_data:
 networks:
   default:
+    external: true
     name: visualdatamapnetwork

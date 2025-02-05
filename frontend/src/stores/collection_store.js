@@ -29,8 +29,12 @@ export const useCollectionStore = defineStore("collection", {
       collection_items: null,
       search_mode: false,
       filtered_count: null,
+      filtered_item_ids: [],
       items_last_retrieved: new Date(2020, 1, 1),
       update_collection_is_scheduled: false,
+      saved_search_tasks: [],
+      important_words: [],
+      important_words_are_loading: false,
 
       // Pagination
       first_index: 0,
@@ -91,10 +95,14 @@ export const useCollectionStore = defineStore("collection", {
       this.collection_items = []
       this.search_mode = false
       this.filtered_count = null
+      this.filtered_item_ids = []
       this.items_last_retrieved = new Date(2020, 1, 1)
       this.first_index = 0
       this.order_by_field = 'date_added'
       this.order_descending = true
+      this.saved_search_tasks = []
+      this.important_words = []
+      this.important_words_are_loading = false
       this.eventBus.emit("collection_changed", {collection_id: null, class_name: null})
 
       const queryParams = new URLSearchParams(window.location.search)
@@ -189,6 +197,9 @@ export const useCollectionStore = defineStore("collection", {
         }
       })
     },
+    commit_notification_emails() {
+      this.set_collection_attributes({notification_emails: this.collection.notification_emails})
+    },
     delete_collection(collection_id) {
       const that = this
       const delete_collection_body = {
@@ -204,7 +215,7 @@ export const useCollectionStore = defineStore("collection", {
           }
         })
     },
-    update_ui_settings(updated_settings) {
+    update_ui_settings(updated_settings, load_items=false) {
       this.collection.ui_settings = {...this.collection.ui_settings, ...updated_settings}
       const body = {
         collection_id: this.collection.id,
@@ -212,7 +223,10 @@ export const useCollectionStore = defineStore("collection", {
       }
       httpClient
         .post("/api/v1/collections/set_ui_settings", body)
-        .then(function (response) {
+        .then((response) => {
+          if (load_items) {
+            this.load_collection_items()
+          }
         })
     },
     // ------------------
@@ -245,6 +259,7 @@ export const useCollectionStore = defineStore("collection", {
           this.items_last_retrieved = response.data['items_last_changed']
           this.search_mode = response.data['search_mode']
           this.filtered_count = response.data['filtered_count']
+          this.filtered_item_ids = response.data['filtered_item_ids']
           this.eventBus.emit("collection_items_loaded")
           if (items_changed_on_server) {
             this.eventBus.emit("collection_items_changed_on_server")
@@ -392,7 +407,6 @@ export const useCollectionStore = defineStore("collection", {
     },
     // ------------------
     set_item_relevance(collection_item, relevance) {
-      const that = this
       const body = {
         collection_item_id: collection_item.id,
         relevance: relevance,
@@ -401,10 +415,12 @@ export const useCollectionStore = defineStore("collection", {
         .post("/org/data_map/set_collection_item_relevance", body)
         .then((response) => {
           collection_item.relevance = relevance
+          if (this.search_mode && this.collection.ui_settings.hide_checked_items_in_search) {
+            this.load_collection_items()
+          }
         })
     },
     approve_relevant_search_results() {
-      const that = this
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
@@ -412,19 +428,19 @@ export const useCollectionStore = defineStore("collection", {
       httpClient
         .post("/api/v1/search/approve_relevant_search_results", body)
         .then((response) => {
-          that.update_collection({update_items: true})
+          this.update_collection({update_items: true})
         })
     },
     // ------------------
-    add_items_from_active_sources() {
+    add_more_items_from_active_task() {
       const that = this
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
       }
-      const go_to_next_page = this.first_index + this.per_page == this.item_count
+      const go_to_next_page = this.first_index + this.per_page == this.filtered_count
       httpClient
-        .post("/api/v1/search/add_items_from_active_sources", body)
+        .post("/api/v1/search/add_more_items_from_active_task", body)
         .then((response) => {
           const new_item_count = response.data.new_item_count
           if (new_item_count > 0) {
@@ -451,7 +467,6 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     run_search_task_similar_to_item(dataset_and_item_id, title) {
-      const that = this
       const body = {
         collection_id: this.collection_id,
         class_name: this.class_name,
@@ -466,13 +481,37 @@ export const useCollectionStore = defineStore("collection", {
           reference_dataset_id: dataset_and_item_id[0],
           reference_item_id: dataset_and_item_id[1],
           origin_name: title,
+          candidates_per_step: 50,  // to show a nice map
         },
         wait_for_ms: 200,  // wait in case search task is quick and in that case reduce flickering
       }
       httpClient
         .post("/api/v1/search/run_search_task", body)
         .then((response) => {
-          that.update_collection({update_items: true})
+          this.update_collection({update_items: true}, () => {
+            this.generate_map()
+            this.update_ui_settings({secondary_view: 'map'})
+          })
+        })
+    },
+    commit_search_task_execution_settings(task) {
+      if (task.run_on_new_items) {
+        task.is_saved = true
+      }
+      const body = {
+        task_id: task.id,
+        updates: {
+          is_saved: task.is_saved,
+          run_on_new_items: task.run_on_new_items,
+        },
+      }
+      httpClient
+        .post("/api/v1/search/update_search_task_execution_settings", body)
+        .then((response) => {
+          this.fetch_saved_search_tasks()
+          if (this.collection.most_recent_search_task?.id === task.id) {
+            update_object(this.collection.most_recent_search_task, task)
+          }
         })
     },
     exit_search_mode() {
@@ -522,7 +561,7 @@ export const useCollectionStore = defineStore("collection", {
         })
     },
     generate_map() {
-      if (!this.collection.map_metadata.length) {
+      if (!this.collection.map_metadata?.length) {
         this.collection.map_metadata = {}
       }
       this.collection.map_metadata.projections_are_ready = false
@@ -609,6 +648,20 @@ export const useCollectionStore = defineStore("collection", {
           }
         })
     },
+    fetch_important_words(item_ids) {
+      const body = {
+        collection_id: this.collection_id,
+        class_name: this.class_name,
+        item_ids: item_ids,
+      }
+      this.important_words_are_loading = true
+      httpClient
+        .post("/api/v1/filter/get_important_words", body)
+        .then((response) => {
+          this.important_words = response.data.words
+          this.important_words_are_loading = false
+        })
+    },
     // ----------------------------- Groups / Parent - Child relations -----------------------------
     show_group(dataset_id, parent_id, label) {
       const new_settings = {
@@ -639,6 +692,38 @@ export const useCollectionStore = defineStore("collection", {
         .post("/api/v1/search/run_search_task", body)
         .then((response) => {
           this.update_collection({update_items: true})
+        })
+    },
+    // ----------------------------- Saved / Periodic Search Tasks -----------------------------
+    fetch_saved_search_tasks() {
+      const body = {
+        collection_id: this.collection_id,
+      }
+      httpClient
+        .post("/api/v1/search/get_saved_search_tasks", body)
+        .then((response) => {
+          this.saved_search_tasks = response.data["tasks"]
+        })
+    },
+    run_existing_search_task(task_id) {
+      const body = {
+        task_id: task_id,
+      }
+      httpClient
+        .post("/api/v1/search/run_existing_search_task", body)
+        .then((response) => {
+          this.update_collection({update_items: true})
+        })
+    },
+    test_notification_email({run_on_current_candidates = false} = {}) {
+      const body = {
+        collection_id: this.collection_id,
+        run_on_current_candidates: run_on_current_candidates,
+      }
+      httpClient
+        .post("/api/v1/search/test_notification_email", body)
+        .then((response) => {
+          this.toast.add({severity: 'success', summary: 'Test email sent', detail: 'Test email sent', life: 3000})
         })
     },
   },
@@ -701,16 +786,16 @@ export const useCollectionStore = defineStore("collection", {
       for (const column of state.collection.columns) {
         available_fields[column.identifier] = {
           identifier: '_column__' + column.identifier,
-          name: `Column: ${column.name}`,
+          name: `${$t('general.column')}: ${column.name}`,
         }
       }
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
-        name: 'All short descriptive text fields',
+        name: $t('general.descriptive-text-fields-long'),
       }
       available_fields['_full_text_snippets'] = {
         identifier: '_full_text_snippets',
-        name: 'Full text excerpts',
+        name: $t('general.full-text-excerpts')
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },

@@ -1,22 +1,21 @@
-from collections import defaultdict
-import os
 import json
 import logging
+import os
 import re
+from collections import defaultdict
 from typing import Generator, Iterable, Optional
 
-from opensearchpy import OpenSearch
 import opensearchpy.helpers
-
-from ..database_client.remote_instance_client import use_remote_db
+from opensearchpy import OpenSearch
 
 from data_map_backend.models import Dataset
 from data_map_backend.utils import DotDict
-from ..utils.field_types import FieldType
+
+from ..database_client.remote_instance_client import use_remote_db
 from ..utils.custom_json_encoder import CustomJSONEncoder
+from ..utils.field_types import FieldType
 from ..utils.helpers import run_in_batches_without_result
 from ..utils.source_plugin_types import SourcePlugin
-
 
 with open("../credentials.json", "rb") as f:
     credentials = json.load(f)
@@ -476,7 +475,8 @@ class TextSearchEngineClient(object):
                 query_filter["bool"]["must"].append({"exists": {"field": filter_.field}})
                 query_filter["bool"]["must"].append({"bool": {"must_not": [{"term": {filter_.field: ""}}]}})
             elif filter_.operator in ("lt", "lte", "gt", "gte"):
-                query_filter["bool"]["must"].append({"range": {filter_.field: {filter_.operator: filter_.value}}})
+                category = "must_not" if filter_.negate else "must"
+                query_filter["bool"][category].append({"range": {filter_.field: {filter_.operator: filter_.value}}})
         return query_filter
 
     def _convert_to_simple_query_language(self, query: str):

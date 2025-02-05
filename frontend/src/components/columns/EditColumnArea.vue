@@ -83,7 +83,7 @@ export default {
       }
     },
     human_readable_module_name(module_identifier) {
-      return this.available_modules.find((m) => m.identifier === module_identifier)?.name
+      return this.$t(this.available_modules.find((m) => m.identifier === module_identifier)?.name)
     },
     submit_changes() {
       const body = {

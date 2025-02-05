@@ -35,6 +35,7 @@ export const useMapStateStore = defineStore("mapState", {
         flatness: [],
         thumbnail_aspect_ratio: [],  // aspect ration or -1.0 if no thumbnail
       },
+      is_polar: false,
 
       clusterData: [], // array of cluster description objects
       hover_label_rendering: {},
@@ -93,6 +94,7 @@ export const useMapStateStore = defineStore("mapState", {
         flatness: [],
         thumbnail_aspect_ratio: [],
       }
+      this.is_polar = false
 
       this.clusterData = []
       this.textureAtlas = null
@@ -252,12 +254,18 @@ export const useMapStateStore = defineStore("mapState", {
       this.per_point.y = projection_data.per_point.y
       this.per_point.cluster_id = projection_data.per_point.cluster_id
       this.per_point.collection_item_id = projection_data.per_point.collection_item_id
+      this.per_point.size = normalizeArrayMedianGamma(
+        projection_data.per_point.size,
+        2.0,
+        0.0001
+      )
       projection_data.per_point.hue.push(Math.max(...projection_data.per_point.hue) + 1)
       this.per_point.hue = normalizeArrayMedianGamma(
         projection_data.per_point.hue,
         2.0
       ).slice(0, projection_data.per_point.hue.length - 1)
       this.text_data = projection_data.text_data_by_item
+      this.is_polar = projection_data.is_polar
 
       this.eventBus.emit("map_center_and_fit_data_to_active_area_smooth")
       this.eventBus.emit("map_update_geometry")

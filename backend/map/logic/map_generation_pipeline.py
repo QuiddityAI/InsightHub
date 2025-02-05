@@ -4,26 +4,26 @@ import threading
 
 import numpy as np
 
-from ..schemas import MapParameters, ProjectionData
-
+from data_map_backend.models import DataCollection, Dataset
+from data_map_backend.utils import DotDict
 from data_map_backend.views.other_views import (
     get_dataset_cached,
     get_serialized_dataset_cached,
 )
-from data_map_backend.models import DataCollection, Dataset
-from legacy_backend.logic.search import get_items_by_ids
-from data_map_backend.utils import DotDict
 from legacy_backend.logic.clusters_and_titles import clusterize_results
+from legacy_backend.logic.search import get_items_by_ids
 from legacy_backend.utils.collect_timings import Timings
-
+from legacy_backend.utils.helpers import normalize_array, polar_to_cartesian
 from map.logic.map_generation_steps import (
-    get_collection_items,
-    get_vector_field_dimensions,
     do_umap,
-    save_projections,
     get_cluster_titles_new,
+    get_collection_items,
     get_thumbnails,
+    get_vector_field_dimensions,
+    save_projections,
 )
+
+from ..schemas import MapParameters, ProjectionData
 
 
 def generate_new_map(collection: DataCollection, parameters: MapParameters) -> ProjectionData | str:
@@ -42,13 +42,21 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
 
     # get data items:
     map_vector_field = dataset.merged_advanced_options.get("map_vector_field", "w2v_vector")
+    point_size_field = dataset.merged_advanced_options.get("size_field", None)
     assert dataset.schema.hover_label_rendering is not None
     hover_required_fields = dataset.schema.hover_label_rendering.get("required_fields", [])
     data_item_ids = [item.item_id for item in collection_items]
     required_fields = (
         [map_vector_field] + hover_required_fields if map_vector_field != "w2v_vector" else hover_required_fields
     )
-    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)  # type: ignore
+    if point_size_field:
+        required_fields.append(point_size_field)
+    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)
+    reference_data_item = None
+    if reference_ds_and_item_id:
+        reference_data_item = get_items_by_ids(
+            reference_ds_and_item_id[0], [reference_ds_and_item_id[1]], required_fields
+        )[0]
     timings.log("get_items_by_ids")
 
     if item_count >= 5:
@@ -70,11 +78,25 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
         # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
         dummy_vector = np.zeros(vector_size)
         vectors = [item.get(map_vector_field, dummy_vector) for item in data_items]
+        if reference_data_item:
+            reference_vector = reference_data_item.get(map_vector_field, dummy_vector)
 
         # get projections:
-        raw_projections = do_umap(np.array(vectors), {}, 2)
+        dimensions = 1 if reference_data_item else 2
+        raw_projections = do_umap(np.array(vectors), {}, dimensions)
         timings.log("do umap")
-        final_positions = raw_projections  # TODO: re-add polar coordinates
+
+        # convert to polar coordinates if similarity map:
+        if reference_data_item:
+            similarities = np.array([np.dot(reference_vector, vector) for vector in vectors])
+            cartesian_positions = np.zeros([len(data_items), 2])
+            cartesian_positions[:, 1] = raw_projections[:, 0]
+            cartesian_positions[:, 0] = similarities
+            final_positions = polar_to_cartesian(
+                1 - normalize_array(cartesian_positions[:, 0]), normalize_array(cartesian_positions[:, 1]) * np.pi * 2
+            )
+        else:
+            final_positions = raw_projections
 
         # clusterize:
         cluster_id_per_point: np.ndarray = clusterize_results(raw_projections, DotDict())
@@ -86,6 +108,12 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
         final_positions = raw_projections
         cluster_id_per_point = np.full(item_count, -1)
 
+    # point size:
+    if point_size_field:
+        point_sizes = np.array([item.get(point_size_field, 1) for item in data_items])
+    else:
+        point_sizes = np.ones(len(data_items))
+
     # save projections to collection:
     projection_data = save_projections(
         collection,
@@ -96,7 +124,9 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
         map_vector_field,
         final_positions,
         cluster_id_per_point,
-        timings,
+        point_sizes,
+        is_polar=reference_data_item is not None,
+        timings=timings,
     )
 
     # start thread for cluster titles and thumbnails

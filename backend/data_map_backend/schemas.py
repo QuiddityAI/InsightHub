@@ -11,16 +11,16 @@ class CollectionItemSizeMode:
 
 
 class ItemRelevance:
-    RELEVANT_ACCORDING_TO_USER = 2
-    RELEVANT_ACCORDING_TO_AI = 1
+    APPROVED_BY_USER = 2
+    APPROVED_BY_AI = 1
     CANDIDATE = 0  # e.g. a search result, will be removed when exiting search mode
-    NOT_RELEVANT_ACCORDING_TO_AI = -1
-    NOT_RELEVANT_ACCORDING_TO_USER = -2
+    REJECTED_BY_AI = -1
+    REJECTED_BY_USER = -2
 
 
 class CollectionIdentifier(Schema):
     collection_id: int
-    class_name: str
+    class_name: str = "_default"
 
 
 class CollectionUiSettings(Schema):
@@ -29,6 +29,7 @@ class CollectionUiSettings(Schema):
     item_layout: str = "columns"  # one of 'columns', 'grid', 'spreadsheet'
     item_size_mode: int = CollectionItemSizeMode.FULL
     show_visibility_filters: bool = False
+    hide_checked_items_in_search: bool = False
 
 
 class SetUiSettingsPayload(Schema):

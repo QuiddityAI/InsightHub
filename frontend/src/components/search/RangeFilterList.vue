@@ -30,9 +30,13 @@ export default {
     range_filters() {
       const filters = {}
       const dataset_ids = new Set()
-      // FIXME: this does not work if the items were added manually (without a search source)
-      for (const search_source of this.collectionStore.collection.search_sources) {
-        dataset_ids.add(search_source.dataset_id)
+      const task = this.collectionStore.collection.most_recent_search_task
+      if (task && task.dataset !== null) {
+        dataset_ids.add(task.dataset)
+      }
+      // only takes into account current page, but should be fine
+      for (const item of this.collectionStore.collection_items) {
+        dataset_ids.add(item.dataset_id)
       }
       this.dataset_ids = Array.from(dataset_ids)
       for (const dataset_id of dataset_ids) {

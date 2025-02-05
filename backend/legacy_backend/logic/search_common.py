@@ -1,32 +1,35 @@
+import copy
+import json
 import logging
 import math
-import copy
-from typing import Iterable
 from functools import lru_cache
-import json
+from typing import Iterable
 
-import numpy as np
 import cachetools.func
+import numpy as np
 
-from ..utils.field_types import FieldType
-from ..utils.collect_timings import Timings
 from data_map_backend.utils import DotDict, pk_to_uuid_id
-from ..utils.source_plugin_types import SourcePlugin
-
-from ..api_clients.cohere_reranking import get_reranking_results
-from ..api_clients import openalex_api
-
-from ..database_client.django_client import get_generators, get_dataset, get_related_collection_items
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..database_client.text_search_engine_client import TextSearchEngineClient
-
-from ..logic.postprocess_search_results import enrich_search_results
-from ..logic.generator_functions import get_generator_function_from_field, get_generator_function
-from ..logic.autocut import get_number_of_useful_items
-
-from ..utils.helpers import normalize_array
-
 from data_map_backend.views.other_views import get_serialized_dataset_cached
+
+from ..api_clients import openalex_api
+from ..api_clients.cohere_reranking import get_reranking_results
+from ..database_client.django_client import (
+    get_dataset,
+    get_generators,
+    get_related_collection_items,
+)
+from ..database_client.text_search_engine_client import TextSearchEngineClient
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..logic.autocut import get_number_of_useful_items
+from ..logic.generator_functions import (
+    get_generator_function,
+    get_generator_function_from_field,
+)
+from ..logic.postprocess_search_results import enrich_search_results
+from ..utils.collect_timings import Timings
+from ..utils.field_types import FieldType
+from ..utils.helpers import normalize_array
+from ..utils.source_plugin_types import SourcePlugin
 
 
 class QueryInput(object):
@@ -444,7 +447,7 @@ def get_vector_search_results(
         score_threshold=score_threshold,
         is_array_field=is_array_field,
         max_sub_items=max_sub_items or 1,
-    )  # type: ignore
+    )
     items = {}
     for i, item in enumerate(vector_search_result):
         items[item.id] = {
@@ -644,6 +647,8 @@ def check_filters(dataset: DotDict, filters: list[dict], retrieval_mode: str):
             continue
         if filter_["field"] == "_all_parents":
             continue
+        if filter_["field"] == "_id":
+            continue
         if filter_["field"] not in dataset.schema.object_fields:
             raise ValueError(f"Filter field '{filter_['field']}' not found")
         field = DotDict(dataset.schema.object_fields[filter_["field"]])
@@ -675,12 +680,13 @@ def adapt_filters_to_dataset(
                         {"field": field, "value": filter_["value"], "operator": filter_["operator"]}
                     )
                 removed_filters.append(filter_)
-    if result_language and dataset.merged_advanced_options.get("language_filtering"):
-        language_filtering = dataset.merged_advanced_options.language_filtering
-        if not language_filtering.format == "iso_639_set_1":
-            logging.warning(f"Unsupported language filtering format '{language_filtering.format}'")
-        else:
-            additional_filters.append({"field": language_filtering.field, "value": result_language, "operator": "is"})
+    # FIXME: disable hard language filtering for now, as it is often not wanted, rather use manual filters for now
+    # if result_language and dataset.merged_advanced_options.get("language_filtering"):
+    #     language_filtering = dataset.merged_advanced_options.language_filtering
+    #     if not language_filtering.format == "iso_639_set_1":
+    #         logging.warning(f"Unsupported language filtering format '{language_filtering.format}'")
+    #     else:
+    #         additional_filters.append({"field": language_filtering.field, "value": result_language, "operator": "is"})
     filters.extend(additional_filters)
     for filter_ in filters:
         if filter_ in removed_filters:
@@ -746,6 +752,7 @@ def workaround_to_filter_by_institution_using_openalex(dataset, filters, limit):
 import pickle
 import time
 from pathlib import Path
+
 import orjson
 
 base_download_folder = f"/data/semantic_scholar"
@@ -797,7 +804,7 @@ def get_abstract(corpusid):
 def get_document_details_by_id(
     dataset_id: int,
     item_id: str,
-    fields: tuple[str],
+    fields: tuple[str, ...],
     relevant_parts: str | None = None,
     database_name: str | None = None,
     top_n_full_text_chunks: int | None = None,
@@ -847,7 +854,7 @@ def get_document_details_by_id(
         try:
             abstract = get_abstract(int(item["corpus_id"]))
         except Exception as e:
-            logging.warning(f"Could not get abstract for corpus_id {item['corpus_id']}: {e}")
+            logging.warning(f"Could not get abstract for corpus_id {item.get('corpus_id')}: {e}")
             abstract = {}
         item["oa_url"] = (abstract.get("openaccessinfo") or {}).get("url")
         item["oa_status"] = (abstract.get("openaccessinfo") or {}).get("status")
@@ -902,18 +909,18 @@ def get_document_details_by_id(
 
     if relevant_parts_list:
         for relevant_part in relevant_parts_list:
-            if relevant_part["index"] is not None:  # type: ignore
+            if relevant_part["index"] is not None:
                 # materialize chunk text:
                 try:
-                    relevant_part["value"] = item[relevant_part["field"]][relevant_part["index"]]  # type: ignore
+                    relevant_part["value"] = item[relevant_part["field"]][relevant_part["index"]]
                 except (IndexError, KeyError):
-                    relevant_part["value"] = None  # type: ignore
-                relevant_part["array_size"] = len(item.get(relevant_part["field"], []))  # type: ignore
+                    relevant_part["value"] = None
+                relevant_part["array_size"] = len(item.get(relevant_part["field"], []))
         item["_relevant_parts"] = relevant_parts_list
 
     for field in additional_fields:
-        if field not in original_fields and field in item:  # type: ignore
-            del item[field]  # type: ignore
+        if field not in original_fields and field in item:
+            del item[field]
 
     if include_related_collection_items:
         item["_related_collection_items"] = get_related_collection_items(dataset_id, item_id, include_column_data=True)

@@ -19,6 +19,7 @@ import Dialog from 'primevue/dialog';
 import OverlayPanel from 'primevue/overlaypanel';
 import Paginator from "primevue/paginator"
 import Dropdown from 'primevue/dropdown';
+import Checkbox from 'primevue/checkbox';
 
 import CollectionTableView from "./CollectionTableView.vue"
 import ExportCollectionArea from "./ExportCollectionArea.vue";
@@ -35,6 +36,7 @@ import MapWithLabelsAndButtons from "../map/MapWithLabelsAndButtons.vue";
 import CollectionItemGrid from "./CollectionItemGrid.vue";
 import CollectionSpreadsheetView from "./CollectionSpreadsheetView.vue";
 import FilterBar from "./FilterBar.vue";
+import SavedSearchTasksList from "./SavedSearchTasksList.vue";
 
 import { CollectionItemSizeMode, CollectionItemLayout } from "../../utils/utils.js"
 
@@ -113,9 +115,6 @@ export default {
     class_details() {
       return this.collection.actual_classes.find((collection_class) => collection_class.name === this.class_name)
     },
-    search_mode() {
-      return this.$refs.collection_table_view?.search_mode
-    },
   },
   mounted() {
     if (!this.collection.ui_settings.item_size_mode) {
@@ -178,7 +177,7 @@ export default {
 <template>
   <div class="flex flex-col overflow-hidden">
 
-    <Dialog v-model:visible="show_search_task_dialog" modal header="Modify Search Task">
+    <Dialog v-model:visible="show_search_task_dialog" modal :header="$t('CollectionView.search-task-dialog-header')">
       <SearchTaskDialog :collection="collection" :collection_class="class_name"
         @close="show_search_task_dialog = false"></SearchTaskDialog>
     </Dialog>
@@ -210,26 +209,26 @@ export default {
         <div class="flex-1"></div>
 
         <BorderButton @click="(event) => { $refs.layout_dialog.toggle(event) }"
-          class="h-6" v-tooltip.bottom="{ value: 'Change layout', showDelay: 400 }">
+          class="h-6" v-tooltip.bottom="{ value: $t('CollectionView.change-layout'), showDelay: 400 }">
           <TableCellsIcon class="h-4 w-4"></TableCellsIcon>
         </BorderButton>
 
         <OverlayPanel ref="layout_dialog">
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-2 w-[140px]">
             <div class="flex flex-row">
               <BorderButton @click="collectionStore.update_ui_settings({item_layout: CollectionItemLayout.COLUMNS})" class="h-6 rounded-r-none border-r-0"
                 :highlighted="collection.ui_settings.item_layout === CollectionItemLayout.COLUMNS"
-                v-tooltip.bottom="{ value: 'Column Layout' }">
+                v-tooltip.bottom="{ value: $t('CollectionView.column-layout') }">
                 <ViewColumnsIcon class="h-4 w-4"></ViewColumnsIcon>
               </BorderButton>
               <BorderButton @click="collectionStore.update_ui_settings({item_layout: CollectionItemLayout.GRID})" class="h-6 rounded-none"
                 :highlighted="collection.ui_settings.item_layout === CollectionItemLayout.GRID"
-                v-tooltip.bottom="{ value: 'Grid Layout' }">
+                v-tooltip.bottom="{ value: $t('CollectionView.grid-layout') }">
                 <Squares2X2Icon class="h-4 w-4"></Squares2X2Icon>
               </BorderButton>
               <BorderButton @click="collectionStore.update_ui_settings({item_layout: CollectionItemLayout.SPREADSHEET})" class="h-6 rounded-l-none border-l-0"
                 :highlighted="collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET"
-                v-tooltip.bottom="{ value: 'Spreadsheet Layout' }">
+                v-tooltip.bottom="{ value: $t('CollectionView.spreadsheet-layout') }">
                 <TableCellsIcon class="h-4 w-4"></TableCellsIcon>
               </BorderButton>
             </div>
@@ -237,37 +236,46 @@ export default {
             <div class="flex flex-row" v-if="collection.ui_settings.item_layout !== CollectionItemLayout.SPREADSHEET">
               <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.SMALL})" class="h-6 rounded-r-none border-r-0"
                 :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.SMALL"
-                v-tooltip.bottom="{ value: 'Minimal Items' }">
+                v-tooltip.bottom="{ value: $t('CollectionView.item-size-small') }">
                 S
               </BorderButton>
               <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.MEDIUM})" class="h-6 rounded-none"
                 :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.MEDIUM"
-                v-tooltip.bottom="{ value: 'Medium Items' }">
+                v-tooltip.bottom="{ value: $t('CollectionView.item-size-medium') }">
                 M
               </BorderButton>
               <BorderButton @click="collectionStore.update_ui_settings({item_size_mode: CollectionItemSizeMode.FULL})" class="h-6 rounded-l-none border-l-0"
                 :highlighted="collection.ui_settings.item_size_mode === CollectionItemSizeMode.FULL"
-                v-tooltip.bottom="{ value: 'Full Items' }">
+                v-tooltip.bottom="{ value: $t('CollectionView.item-size-full') }">
                 L
               </BorderButton>
+            </div>
+
+            <div class="flex flex-row gap-1">
+              <Checkbox v-model="collection.ui_settings.hide_checked_items_in_search"
+                inputId="only_show_unchecked_in_search" :binary="true" class="scale-75"
+                @change="collectionStore.update_ui_settings({hide_checked_items_in_search: collection.ui_settings.hide_checked_items_in_search}, true)" />
+              <label for="only_show_unchecked_in_search" class="text-sm text-gray-500">
+                {{ $t('CollectionView.hide-checked-items-in-search') }}
+              </label>
             </div>
           </div>
 
         </OverlayPanel>
 
         <BorderButton @click="collectionStore.update_ui_settings({show_visibility_filters: !collection.ui_settings.show_visibility_filters})" class="h-6"
-          v-tooltip.bottom="{ value: 'Filter items' }" :highlighted="collection.ui_settings.show_visibility_filters">
+          v-tooltip.bottom="{ value: $t('CollectionView.filter-items') }" :highlighted="collection.ui_settings.show_visibility_filters">
           <FunnelIcon class="h-4 w-4"></FunnelIcon>
         </BorderButton>
 
         <BorderButton @click="toggle_show_irrelevant" class="h-6"
-          v-tooltip.bottom="{ value: 'Show items marked as irrelevant' }" :highlighted="collectionStore.show_irrelevant"
+          v-tooltip.bottom="{ value: $t('CollectionView.show-items-marked-as-irrelevant') }" :highlighted="collectionStore.show_irrelevant"
           highlight_color="text-red-500">
           <HandThumbDownIcon class="h-4 w-4"></HandThumbDownIcon>
         </BorderButton>
 
         <BorderButton @click="delete_collection" class="h-6"
-          v-tooltip.bottom="{ value: 'Delete collection' }"
+          v-tooltip.bottom="{ value: $t('CollectionView.delete-collection') }"
           hover_color="hover:text-red-500">
           <TrashIcon class="h-4 w-4"></TrashIcon>
         </BorderButton>
@@ -300,14 +308,14 @@ export default {
 
         <BorderlessButton @click="collectionStore.update_ui_settings({secondary_view_is_full_screen: !collection.ui_settings.secondary_view_is_full_screen})"
           class="absolute right-12 top-3 z-50"
-          v-tooltip.bottom="{value: 'Full Screen', showDelay: 400}">
+          v-tooltip.bottom="{value: $t('CollectionView.full-screen-secondary-view'), showDelay: 400}">
           <ArrowsPointingOutIcon class="h-6 w-6" v-if="!collection.ui_settings.secondary_view_is_full_screen"></ArrowsPointingOutIcon>
           <ArrowsPointingInIcon class="h-6 w-6" v-else></ArrowsPointingInIcon>
         </BorderlessButton>
 
         <BorderlessButton @click="collectionStore.update_ui_settings({secondary_view: null})"
           class="absolute right-3 top-3 z-50"
-          v-tooltip.bottom="{value: 'Hide', showDelay: 400}">
+          v-tooltip.bottom="{value: $t('CollectionView.hide-secondary-view'), showDelay: 400}">
           <XMarkIcon class="h-6 w-6"></XMarkIcon>
         </BorderlessButton>
 
@@ -356,8 +364,7 @@ export default {
             'shadow-md': collection.ui_settings.item_layout !== CollectionItemLayout.SPREADSHEET,
             'shadow-[0_2px_6px_1px_rgba(0,0,0,0.12)]': collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET,
             }">
-            <FilterBar
-              @edit_search_task="show_search_task_dialog = true" />
+            <FilterBar/>
           </div>
         </div>
 
@@ -381,7 +388,7 @@ export default {
           @add_column="show_add_column_dialog = true">
         </CollectionTableView>
 
-        <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
+        <Dialog v-model:visible="show_add_column_dialog" modal :header="$t('AddColumnDialog.add-column')">
           <AddColumnDialog :collection="collection" :collection_class="class_name"
             @close="show_add_column_dialog = false">
           </AddColumnDialog>
@@ -474,9 +481,14 @@ export default {
         </BorderlessButton>
 
         <div v-if="collection.ui_settings.secondary_view === 'more'"
-          class="overflow-hidden h-full shadow-md">
-          <ExplanationLog class="h-full overflow-y-auto">
+          class="overflow-y-auto h-full shadow-md flex flex-col gap-10 pt-12 pb-7">
+
+          <SavedSearchTasksList>
+          </SavedSearchTasksList>
+
+          <ExplanationLog>
           </ExplanationLog>
+
         </div>
 
         <div v-if="collection.ui_settings.secondary_view === 'map'"

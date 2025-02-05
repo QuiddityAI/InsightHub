@@ -1,12 +1,11 @@
-import os
-import logging
-from typing import Tuple
-import json
 import datetime
+import json
+import logging
+import os
+from typing import Tuple
 
-import requests
 import cbor2
-
+import requests
 
 data_backend_url = os.getenv("backend_host", "http://127.0.0.1:55125")
 
@@ -112,7 +111,7 @@ def check_pk_existence(dataset_id: int, pks: list[str], access_token: str):
     }
     response = requests.post(url, json=data)
     if response.status_code != 200:
-        logging.error(f"Error during check_pk_existence: {repr(response)}, {response.text}")
+        logging.error(f"Error during check_pk_existence: {repr(response)}, {response.text}, {data}")
         raise Exception(response)
     return response.json()
 

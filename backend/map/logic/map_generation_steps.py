@@ -1,26 +1,36 @@
-from collections import defaultdict
 import logging
 import time
+from collections import defaultdict
 
 import numpy as np
 from django.db.models.manager import BaseManager
 from django.utils.timezone import now
 
-from ..schemas import MapParameters, ProjectionData, PerPointData, MapData, ClusterDescription, MapMetadata
-
-from data_map_backend.views.other_views import (
-    get_filtered_collection_items,
-)
-from data_map_backend.models import DataCollection, FieldType, Dataset
+from data_map_backend.models import DataCollection, Dataset, FieldType
 from data_map_backend.utils import DotDict
-from legacy_backend.utils.collect_timings import Timings
+from data_map_backend.views.other_views import (
+    get_dataset_cached,
+    get_filtered_collection_items,
+    get_serialized_dataset_cached,
+)
 from legacy_backend.logic.clusters_and_titles import get_cluster_titles
+from legacy_backend.logic.search import get_items_by_ids
+from legacy_backend.utils.collect_timings import Timings
+
+from ..schemas import (
+    ClusterDescription,
+    MapData,
+    MapMetadata,
+    MapParameters,
+    PerPointData,
+    ProjectionData,
+)
 
 
 def get_collection_items(
     collection: DataCollection,
 ) -> tuple[int, BaseManager, tuple | None]:
-    items, is_search_mode, reference_ds_and_item_id = get_filtered_collection_items(
+    items, reference_ds_and_item_id = get_filtered_collection_items(
         collection, "_default", field_type=FieldType.IDENTIFIER, is_positive=True
     )
     items = items.only("id", "dataset_id", "item_id")
@@ -76,6 +86,8 @@ def save_projections(
     map_vector_field: str,
     final_positions: np.ndarray,
     cluster_id_per_point: np.ndarray,
+    point_sizes: np.ndarray,
+    is_polar: bool,
     timings: Timings,
 ):
     metadata = MapMetadata(
@@ -93,7 +105,7 @@ def save_projections(
         x=final_positions[:, 0].tolist(),
         y=final_positions[:, 1].tolist(),
         cluster_id=cluster_id_per_point.tolist(),
-        size=np.ones(len(data_items)).tolist(),
+        size=point_sizes.tolist(),
         hue=cluster_id_per_point.tolist(),
         sat=np.ones(len(data_items)).tolist(),
         val=np.ones(len(data_items)).tolist(),
@@ -111,6 +123,7 @@ def save_projections(
         per_point=per_point,
         text_data_by_item=text_data_by_item,
         colorize_by_cluster_id=True,
+        is_polar=is_polar,
     )
 
     map_data = MapData(
@@ -153,6 +166,42 @@ def get_cluster_titles_new(collection: DataCollection, dataset: DotDict, project
     collection.save()
     timings.log("save data")
     timings.print_to_logger()
+
+
+def get_important_words(collection: DataCollection, item_ids: list[int]):
+    # get data:
+    top_dataset_id, filtered_collection_items, reference_ds_and_item_id = get_collection_items(collection)
+    if top_dataset_id == -1:
+        return []
+    all_collection_items = collection.items.only("id", "dataset_id", "item_id").filter(dataset_id=top_dataset_id)  # type: ignore
+    dataset: Dataset = get_dataset_cached(top_dataset_id)
+    dataset_serialized = get_serialized_dataset_cached(top_dataset_id)
+    datasets = {dataset_serialized.id: dataset_serialized}  # type: ignore
+    data_item_ids = [item.item_id for item in all_collection_items]
+    assert dataset.schema.hover_label_rendering is not None
+    hover_required_fields = dataset.schema.hover_label_rendering.get("required_fields", [])
+    required_fields = hover_required_fields
+    data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)  # type: ignore
+    items_by_dataset = {dataset_serialized.id: {item["_id"]: item for item in data_items}}
+
+    # get top language:
+    item_count_per_language = defaultdict(int)
+    for ds_id, ds_items in items_by_dataset.items():
+        for item in ds_items.values():
+            item_count_per_language[item.get("language", "en")] += 1
+    result_language = max(item_count_per_language, key=lambda x: item_count_per_language[x])
+
+    # get fake cluster ids and positions:
+    sorted_ids = [(item.dataset_id, item.item_id) for item in all_collection_items]
+    # TODO: this is inefficient:
+    cluster_id_per_point = [0 if item.id in item_ids or not item_ids else 1 for item in all_collection_items]
+    final_positions = np.zeros((len(sorted_ids), 2))
+
+    # get title + words for fake cluster:
+    cluster_data = get_cluster_titles(
+        cluster_id_per_point, final_positions, sorted_ids, items_by_dataset, datasets, result_language, Timings()  # type: ignore
+    )
+    return cluster_data[0]["important_words"] if cluster_data else []
 
 
 def get_thumbnails():

@@ -1,6 +1,3 @@
-from typing import Optional
-from enum import StrEnum
-
 from ninja import Schema
 
 from data_map_backend.schemas import CollectionIdentifier
@@ -37,6 +34,7 @@ class ProjectionData(Schema):
     per_point: PerPointData
     text_data_by_item: dict
     colorize_by_cluster_id: bool
+    is_polar: bool = False
 
 
 class ClusterDescription(Schema):

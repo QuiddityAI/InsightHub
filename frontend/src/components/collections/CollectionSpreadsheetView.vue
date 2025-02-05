@@ -49,17 +49,17 @@ export default {
     collection() {
       return this.collectionStore.collection
     },
-    active_search_sources() {
-      return this.collectionStore.collection.search_sources.filter((source) => source.is_active)
+    last_retrieval_status() {
+      return this.collectionStore.collection.most_recent_search_task?.last_retrieval_status
     },
     retrieved_results() {
-      return Math.max(this.active_search_sources.map((source) => source.retrieved))
+      return this.last_retrieval_status.retrieved
     },
     available_results() {
-      return Math.max(this.active_search_sources.map((source) => source.available))
+      return this.last_retrieval_status.available
     },
     any_source_is_estimated() {
-      return this.active_search_sources.some((source) => !source.available_is_exact)
+      return !this.last_retrieval_status.available_is_exact
     },
     more_results_are_available() {
       return this.retrieved_results < this.available_results || this.any_source_is_estimated
@@ -118,21 +118,21 @@ export default {
             <span
               class="flex flex-row justify-start items-center gap-1"
               v-tooltip.bottom="{value: 'Only search results are shown. \n Exit search to remove results and show saved items.'}">
-              Search Results
-              <span class="text-xs text-gray-500">({{ `${retrieved_results} of ${available_results}${any_source_is_estimated ? '+': ''}` }})</span>
+              {{ $t('item-view.search-results') }}
+              <span class="text-xs text-gray-500">({{ $t('item-view.number-of-retrieved-results', [retrieved_results, available_results, any_source_is_estimated ? '+': '']) }})</span>
               <InformationCircleIcon class="ml-1 h-4 w-4 inline text-blue-500">
               </InformationCircleIcon>
             </span>
             <BorderlessButton @click="collectionStore.approve_relevant_search_results"
               class="text-xs"
-              v-tooltip.bottom="{ value: 'Approve all (relevant) search results and leave search mode', showDelay: 400}">
-              Approve All
+              v-tooltip.bottom="{ value: $t('item-view.approve-all-tooltip'), showDelay: 400}">
+              {{ $t('item-view.approve-all') }}
             </BorderlessButton>
           </div>
 
           <div v-else
             class="text-xs font-medium text-gray-500">
-            {{ collectionStore.entity_name_plural || 'Items' }}
+            {{ collectionStore.entity_name_plural || $t('item-view.items-column-header') }}
           </div>
 
         </div>
@@ -174,7 +174,7 @@ export default {
           <Bars3BottomLeftIcon class="h-[15px] w-[15px] text-gray-500 mr-2"></Bars3BottomLeftIcon>
           <span class="text-xs font-medium text-gray-500">
             {{ column.name }}
-            <span v-if="column.module === 'relevance'" class="ml-2 text-xs text-gray-400">Click to change criteria</span>
+            <span v-if="column.module === 'relevance'" class="ml-2 text-xs text-gray-400">{{ $t('item-view.click-to-change-criteria') }}</span>
           </span>
 
         </button>
@@ -203,7 +203,7 @@ export default {
         <!-- last column header -->
         <div class="h-[32px] flex-none w-full flex flex-row justify-start items-center border-b-[1px] border-t-[1px] border-[rgba(0,0,0,0.07)]">
           <button class="h-full w-[32px] flex flex-row justify-center items-center hover:bg-gray-100 border-r-[1px] border-[rgba(0,0,0,0.07)]"
-            @click="$emit('add_column')" v-tooltip.bottom="{ value: 'Add Column', showDelay: 400 }">
+            @click="$emit('add_column')" v-tooltip.bottom="{ value: $t('item-view.add-column-tooltip'), showDelay: 400 }">
             <PlusIcon class="h-3 w-3 text-gray-600"></PlusIcon>
           </button>
         </div>
@@ -230,11 +230,16 @@ export default {
     <div v-if="collectionStore.search_mode && more_results_are_available && is_last_page"
       class="my-5 w-full flex flex-row justify-center">
 
-      <BorderButton @click="collectionStore.add_items_from_active_sources"
+      <BorderButton @click="collectionStore.add_more_items_from_active_task"
         class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
-        v-tooltip.top="{ value: `${retrieved_results} of ${available_results}${any_source_is_estimated ? '+': ''} results retrieved`}">
-        Show More Results <PlusIcon class="h-4 w-4 inline"></PlusIcon>
+        v-tooltip.top="{ value: $t('item-view.number-of-retrieved-results', [retrieved_results, available_results, any_source_is_estimated ? '+': ''])}">
+        {{ $t('item-view.show-more-results') }} <PlusIcon class="h-4 w-4 inline"></PlusIcon>
       </BorderButton>
+    </div>
+
+    <div v-if="collectionStore.search_mode && !more_results_are_available && is_last_page"
+      class="my-5 w-full flex flex-row justify-center text-sm text-gray-400">
+      {{ $t('item-view.no-more-results-available') }}
     </div>
 
   </div>

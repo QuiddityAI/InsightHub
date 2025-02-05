@@ -1,20 +1,25 @@
-from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable
 
-from django.utils import timezone
 from django.db.models.manager import BaseManager
+from django.utils import timezone
 
-from data_map_backend.models import CollectionItem, CollectionColumn, FieldType, DataCollection
-
-from legacy_backend.logic.chat_and_extraction import get_item_question_context as get_item_question_context_native
-from legacy_backend.logic.search_common import get_document_details_by_id
-
-from columns.logic.website_scraping_column import scrape_website_module
-from columns.logic.web_search_column import google_search
 from columns.logic.llm_column import generate_llm_cell_data
-from columns.schemas import ColumnCellRange, CellData
+from columns.logic.web_search_column import google_search
+from columns.logic.website_scraping_column import scrape_website_module
+from columns.schemas import CellData, ColumnCellRange
+from data_map_backend.models import (
+    CollectionColumn,
+    CollectionItem,
+    DataCollection,
+    FieldType,
+)
+from legacy_backend.logic.chat_and_extraction import (
+    get_item_question_context as get_item_question_context_native,
+)
+from legacy_backend.logic.search_common import get_document_details_by_id
 
 
 def remove_column_data_from_collection_items(collection_items: Iterable[CollectionItem], column_identifier: str):
@@ -106,7 +111,7 @@ def _process_cell_batch(
         input_data = None
         if collection_item.field_type == FieldType.TEXT:
             # the collection item is not a reference to a database item, but just a string:
-            input_data = json.dumps({"_id": collection_item.id, "text": collection_item.value}, indent=2)  # type: ignore
+            input_data = json.dumps({"_id": collection_item.id, "text": collection_item.value}, indent=2)
         elif collection_item.field_type == FieldType.IDENTIFIER:
             assert collection_item.dataset_id is not None
             assert collection_item.item_id is not None
@@ -132,10 +137,12 @@ def _process_cell_batch(
                     if column_data and column_data.get("value"):
                         input_data["_column__" + additional_source_column.identifier] = column_data["value"]
         else:
-            logging.warning(f"Column Processing: Unknown field type {collection_item.field_type} for item {collection_item.id}.")  # type: ignore
+            logging.warning(
+                f"Column Processing: Unknown field type {collection_item.field_type} for item {collection_item.id}."
+            )
 
         if not input_data:
-            logging.warning(f"Column Processing: Could not extract input dat for item {collection_item.id}.")  # type: ignore
+            logging.warning(f"Column Processing: Could not extract input dat for item {collection_item.id}.")
             return
 
         module = column.module
@@ -166,7 +173,7 @@ def _process_cell_batch(
             cell_data.is_computed = True
 
         if collection_item.column_data is None:
-            collection_item.column_data = {}  # type: ignore
+            collection_item.column_data = {}
         collection_item.column_data[column.identifier] = cell_data.dict()
         collection_item.save(update_fields=["column_data"])
 
@@ -174,7 +181,7 @@ def _process_cell_batch(
         try:
             process_cell(collection_item)
         except Exception as e:
-            logging.error(f"Error processing cell {collection_item.id}: {e}")  # type: ignore
+            logging.error(f"Error processing cell {collection_item.id}: {e}")
             import traceback
 
             logging.error(traceback.format_exc())
@@ -186,7 +193,7 @@ def _process_cell_batch(
                 collection_item.column_data[column.identifier] = cell_data.dict()
                 collection_item.save(update_fields=["column_data"])
             except Exception as e:
-                logging.error(f"Error saving error message for cell {collection_item.id}: {e}")  # type: ignore
+                logging.error(f"Error saving error message for cell {collection_item.id}: {e}")
                 import traceback
 
                 logging.error(traceback.format_exc())

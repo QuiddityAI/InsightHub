@@ -353,21 +353,21 @@ export default {
                 @click="new_settings.retrieval_mode = 'keyword'"
                 v-tooltip="{ value: $t('CreateCollectionArea.retrieval-mode-keyword'), showDelay: 400 }"
                 :class="{ 'text-blue-500': new_settings.retrieval_mode === 'keyword', 'text-gray-400': new_settings.retrieval_mode != 'keyword' }">
-                Keywords
+                {{ $t('CreateCollectionArea.keyword-search') }}
               </button>
               <button
                 class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
                 @click="new_settings.retrieval_mode = 'vector'"
                 v-tooltip="{ value: $t('CreateCollectionArea.retrieval-mode-vector'), showDelay: 400 }"
                 :class="{ 'text-blue-500': new_settings.retrieval_mode === 'vector', 'text-gray-400': new_settings.retrieval_mode != 'vector' }">
-                Meaning
+                {{ $t('CreateCollectionArea.meaning-search') }}
               </button>
               <button
                 class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
                 @click="new_settings.retrieval_mode = 'hybrid'"
                 v-tooltip="{ value: $t('CreateCollectionArea.retrieval-mode-hybrid'), showDelay: 400 }"
                 :class="{ 'text-blue-500': new_settings.retrieval_mode === 'hybrid', 'text-gray-400': new_settings.retrieval_mode != 'hybrid' }">
-                Both
+                {{ $t('CreateCollectionArea.hybrid-search') }}
               </button>
             </div>
             <div class="flex-1"></div>
@@ -385,7 +385,7 @@ export default {
                 class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
                 v-tooltip.bottom="{ value: $t('CreateCollectionArea.add-filters-and-change-search-options'), showDelay: 400 }"
                 @click="(event) => { $refs.add_filter_menu.toggle(event) }">
-                + Filter
+                + {{ $t('CreateCollectionArea.filter') }}
               </button>
               <OverlayPanel ref="add_filter_menu">
                 <AddFilterMenu @close="$refs.add_filter_menu.hide()" :filters="new_settings.filters">
@@ -413,10 +413,6 @@ export default {
           <SearchFilterList v-if="!new_settings.auto_set_filters"
             :removable="true"
             :filters="new_settings.filters"></SearchFilterList>
-
-          <div v-if="!new_settings.auto_set_filters" class="text-xs text-gray-400">
-            Coming soon: select folder to search in
-          </div>
 
           <div v-if="selected_workflow?.supports_filters"
             class="ml-1 flex flex-row items-center"

@@ -30,7 +30,7 @@ export default {
     ...mapStores(useAppStateStore),
   },
   mounted() {
-    this.selected_converter = this.dataset.schema.applicable_export_converters[0]
+    this.selected_converter = this.dataset.schema.applicable_export_converters[0] || 'full_json'
   },
   watch: {
     selected_converter() {

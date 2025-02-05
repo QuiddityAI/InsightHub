@@ -63,7 +63,7 @@ export default {
   <div class="flex-1 flex flex-row gap-1">
     <input v-model="query" type="text"
       class="ring-0 focus:ring-0 border border-gray-200 focus:border-blue-400 rounded-md px-2 py-0 w-full"
-      placeholder="Text Filter..." />
+      :placeholder="$t('TextFilterInput.text-filter-placeholder')" />
   </div>
 </template>
 

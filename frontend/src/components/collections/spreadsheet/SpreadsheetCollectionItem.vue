@@ -3,7 +3,7 @@ import {
   TrashIcon,
 } from "@heroicons/vue/24/outline"
 
-import { CollectionItemSizeMode } from "../../../utils/utils.js"
+import { CollectionItemSizeMode, ItemRelevance } from "../../../utils/utils.js"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../../stores/app_state_store"
@@ -35,7 +35,7 @@ export default {
       return this.appStateStore.datasets[this.dataset_id]?.schema
     },
     is_irrelevant_according_to_ai() {
-      if (this.collection_item.relevance >= 2) {
+      if (this.collection_item.relevance >= ItemRelevance.APPROVED_BY_AI) {
          // overriden by user or other AI judgment
         return false
       }
@@ -50,7 +50,7 @@ export default {
       return false
     },
     is_candidate() {
-      return this.collection_item.relevance >= -1 && this.collection_item.relevance <= 1
+      return this.collection_item.relevance === ItemRelevance.CANDIDATE
     },
     actual_size_mode() {
       if (this.is_irrelevant_according_to_ai && this.size_mode > CollectionItemSizeMode.MEDIUM) {
@@ -59,7 +59,8 @@ export default {
       return this.size_mode || CollectionItemSizeMode.FULL
     },
     original_query() {
-      return this.collectionStore.collection.search_sources.find(source => source.id_hash === this.collection_item.search_source_id)?.query || ""
+      // FIXME: this should use the actually used search task, not the last one
+      return this.collectionStore.collection.most_recent_search_task?.settings.user_input || ""
     },
     relevant_keyword_highlights() {
       return this.collection_item?.relevant_parts?.filter((part) => part.origin === "keyword_search") || []

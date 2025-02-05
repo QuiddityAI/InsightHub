@@ -44,6 +44,14 @@ export class CollectionItemLayout {
   static SPREADSHEET = 'spreadsheet'
 }
 
+export class ItemRelevance {
+  static APPROVED_BY_USER = 2
+  static APPROVED_BY_AI = 1
+  static CANDIDATE = 0
+  static REJECTED_BY_AI = -1
+  static REJECTED_BY_USER = -2
+}
+
 export function ellipse(text, length) {
   if (!text) return ""
   let re = new RegExp("(.{" + length + "})..+")
@@ -108,6 +116,10 @@ export const available_filter_operators = [
   { id: "lte", title: "<=" },
   { id: "gt", title: ">" },
   { id: "gte", title: ">=" },
+]
+export const additional_filter_operators = [
+  { id: "in", title: "in" },
+  { id: "not_in", title: "not in" },
 ]
 
 
@@ -184,4 +196,3 @@ export function update_object(old_obj, new_obj) {
     }
   }
 }
-

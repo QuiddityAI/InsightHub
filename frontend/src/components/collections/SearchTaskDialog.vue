@@ -11,6 +11,7 @@ import OverlayPanel from 'primevue/overlaypanel';
 import SearchFilterList from "../search/SearchFilterList.vue"
 import AddFilterMenu from "../search/AddFilterMenu.vue"
 import LanguageSelect from "../widgets/LanguageSelect.vue"
+import BorderButton from "../widgets/BorderButton.vue"
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { languages } from "../../utils/utils"
@@ -34,6 +35,7 @@ export default {
   emits: ["close"],
   data() {
     return {
+      show_advanced_settings: false,
       settings_template: {
         dataset_id: null,
         auto_set_filters: true,
@@ -42,6 +44,7 @@ export default {
         retrieval_mode: 'hybrid',
         ranking_settings: null,
         related_organization_id: null,
+        auto_relax_query: true,
       },
       new_settings: {
         dataset_id: null,
@@ -51,6 +54,7 @@ export default {
         retrieval_mode: 'hybrid',
         ranking_settings: null,
         related_organization_id: null,
+        auto_relax_query: true,
       },
     }
   },
@@ -113,12 +117,13 @@ export default {
     },
   },
   mounted() {
-    if (this.collectionStore.collection.last_search_task
-      && Object.keys(this.collectionStore.collection.last_search_task).length > 0
-      && this.collectionStore.collection.last_search_task.search_type == 'external_input') {
-      this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.last_search_task))
+    if (this.collectionStore.collection.most_recent_search_task?.settings
+      && Object.keys(this.collectionStore.collection.most_recent_search_task?.settings).length > 0
+      && this.collectionStore.collection.most_recent_search_task?.settings.search_type == 'external_input') {
+      this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.most_recent_search_task?.settings))
       this.new_settings.auto_approve = false
       this.new_settings.exit_search_mode = false
+      this.new_settings.query = undefined  // this comes from last search, but should be empty
     } else {
       this.new_settings = JSON.parse(JSON.stringify(this.settings_template))
       this.new_settings.result_language = this.appStateStore.settings.search.result_language
@@ -160,7 +165,7 @@ export default {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please select a source dataset', life: 2000 })
         return
       }
-      if (!this.new_settings.user_input && !this.new_settings.filters.length) {
+      if (!this.new_settings.user_input && !this.new_settings.filters?.length) {
         this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Please enter a query', life: 2000 })
         return
       }
@@ -184,7 +189,7 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col gap-3 mb-1">
 
     <!-- <Message severity="info">
       To search for something new / unrelated to this collection, please create a new collection instead.
@@ -227,6 +232,16 @@ export default {
         </button>
       </div>
 
+      <div
+        class="ml-1 flex flex-row items-center"
+        v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
+        <Checkbox v-model="new_settings.auto_set_filters" class="" :binary="true" :disabled="!ai_is_available" />
+        <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
+          @click="new_settings.auto_set_filters = !new_settings.auto_set_filters">
+          Auto-detect best search strategy and required filters from query
+        </button>
+      </div>
+
       <div v-if="!new_settings.auto_set_filters" class="flex flex-row gap-1 items-center">
         <div class="flex flex-row items-center gap-0 h-6">
           <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
@@ -260,17 +275,21 @@ export default {
           </option>
         </select>
         <div class="flex-1"></div>
-        <div class="flex flex-row items-center gap-0 h-6">
-          <button
-            class="border border-gray-300 rounded-md  px-1 text-sm font-['Lexend'] font-normal text-gray-400 hover:bg-gray-100"
+        <div class="flex flex-row items-center gap-2 h-6">
+          <BorderButton
             v-tooltip.bottom="{ value: 'Add filters and change search options', showDelay: 400 }"
             @click="(event) => { $refs.add_filter_menu.toggle(event) }">
             + Filter
-          </button>
+          </BorderButton>
           <OverlayPanel ref="add_filter_menu">
             <AddFilterMenu @close="$refs.add_filter_menu.hide()" :filters="new_settings.filters">
             </AddFilterMenu>
           </OverlayPanel>
+          <BorderButton :highlighted="show_advanced_settings"
+            v-tooltip.bottom="{ value: 'Show advanced settings', showDelay: 400 }"
+            @click="show_advanced_settings = !show_advanced_settings">
+            {{ $t('SearchTaskDialog.advanced-settings') }}
+          </BorderButton>
         </div>
       </div>
 
@@ -295,14 +314,19 @@ export default {
         :removable="true"
         :filters="new_settings.filters"></SearchFilterList>
 
-      <div
-        class="ml-1 mb-5 flex flex-row items-center"
-        v-tooltip.top="{ value: ai_is_available ? '' : 'No more AI credits available' }">
-        <Checkbox v-model="new_settings.auto_set_filters" class="" :binary="true" :disabled="!ai_is_available" />
-        <button class="ml-2 text-xs text-gray-500" :disabled="!ai_is_available"
-          @click="new_settings.auto_set_filters = !new_settings.auto_set_filters">
-          Auto-detect best search strategy and required filters from query
-        </button>
+      <div class="flex flex-col gap-2" v-if="show_advanced_settings">
+        <div class="flex flex-row gap-2 items-center">
+
+          <div class="flex flex-row items-center gap-1" v-if="appState.user.is_staff">
+            <Checkbox v-model="new_settings.auto_relax_query"
+              inputId="search_task_auto_relax_query" size="small" :binary="true" class="scale-75" />
+            <label for="search_task_auto_relax_query" class="text-sm text-gray-500"
+              v-tooltip.bottom="{ value: $t('SearchTaskDialog.query-relaxation-tooltip'), showDelay: 400 }">
+              {{ $t('SearchTaskDialog.auto-relax-query') }}
+            </label>
+          </div>
+
+        </div>
       </div>
 
     </div>

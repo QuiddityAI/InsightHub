@@ -1,10 +1,15 @@
 from django.contrib.auth.models import User
 
 from data_map_backend.models import DataCollection, Dataset
-from search.schemas import SearchTaskSettings, Filter
-from search.logic.execute_search import run_search_task
-from workflows.schemas import CreateCollectionSettings, WorkflowMetadata, WorkflowAvailability, WorkflowOrder
+from search.logic.execute_search import create_and_run_search_task
+from search.schemas import Filter, SearchTaskSettings
 from workflows.logic import WorkflowBase, workflow
+from workflows.schemas import (
+    CreateCollectionSettings,
+    WorkflowAvailability,
+    WorkflowMetadata,
+    WorkflowOrder,
+)
 
 
 @workflow
@@ -76,6 +81,6 @@ class ShowAllWorkflow(WorkflowBase):
             ranking_settings=settings.ranking_settings,
             candidates_per_step=10,
         )
-        run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
         collection.agent_is_running = False
         collection.save()

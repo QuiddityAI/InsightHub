@@ -1,6 +1,5 @@
 from collections import defaultdict
 
-
 search_query_prompt_en = """
 Write a search query that you would use to find the following information.
 If the user input is already a search query, write the same query.
@@ -186,3 +185,32 @@ Antworte direkt in folgendem JSON-Format (ohne jegliche zusätzliche Zeichen):
 approve_using_comparison_prompt: defaultdict[str, str] = defaultdict(lambda: approve_using_comparison_prompt_en)
 approve_using_comparison_prompt["en"] = approve_using_comparison_prompt_en
 approve_using_comparison_prompt["de"] = approve_using_comparison_prompt_de
+
+
+notification_email_en = """\
+## New items in *{{ collection_name }}*:
+
+{{ new_items }}
+
+You can view the whole collection [here]({{ collection_url }}).
+
+--
+
+_This email was sent by Quiddity._
+"""
+
+notification_email_de = """\
+## Neue Elemente in *{{ collection_name }}*:
+
+{{ new_items }}
+
+Du kannst die gesammte Sammlung [hier]({{ collection_url }}) ansehen.
+
+--
+
+_Diese E-Mail wurde von Quiddity gesendet._
+"""
+
+notification_email: defaultdict[str, str] = defaultdict(lambda: notification_email_en)
+notification_email["en"] = notification_email_en
+notification_email["de"] = notification_email_de

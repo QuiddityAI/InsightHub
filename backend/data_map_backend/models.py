@@ -5,7 +5,9 @@ import os
 import random
 import string
 import threading
+import uuid
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 import numpy as np
 import requests
@@ -14,8 +16,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
-
-from legacy_backend.logic.insert_logic import remove_dataset_items_from_databases
 
 from .chatgpt_client import get_chatgpt_response_using_history
 from .data_backend_client import (
@@ -117,6 +117,12 @@ class User(AbstractUser):
 
     def __str__(self):
         return "{}".format(self.email)
+
+
+class ModelTypedImplicitIdField:
+
+    if TYPE_CHECKING:
+        id = models.BigAutoField(primary_key=True)
 
 
 class EmbeddingSpace(models.Model):
@@ -266,7 +272,7 @@ class Generator(models.Model):
         verbose_name_plural = "Generators"
 
 
-class Organization(models.Model):
+class Organization(models.Model, ModelTypedImplicitIdField):
     name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
@@ -333,6 +339,9 @@ class Organization(models.Model):
         blank=True,
         null=True,
     )
+
+    if TYPE_CHECKING:
+        datasets = models.BaseManager["Dataset"]()
 
     history = HistoricalRecords()
 
@@ -540,7 +549,7 @@ class DatasetSchema(models.Model):
         help_text="For Word2Vec, Cluster Titles and more",
         default=list,
         blank=True,
-        null=True,
+        null=False,
     )
     default_search_fields = models.JSONField(
         verbose_name="Default Search Fields",
@@ -600,6 +609,10 @@ class DatasetSchema(models.Model):
         null=True,
     )
 
+    if TYPE_CHECKING:
+        datasets = models.BaseManager["Dataset"]()
+        object_fields = models.BaseManager["DatasetField"]()
+
     def __str__(self):
         return f"{self.name}"
 
@@ -608,7 +621,7 @@ class DatasetSchema(models.Model):
         verbose_name_plural = "Dataset Schemas"
 
 
-class DatasetField(models.Model):
+class DatasetField(models.Model, ModelTypedImplicitIdField):
     identifier = models.CharField(verbose_name="Identifier", max_length=200, blank=False, null=False)
     name = models.CharField(verbose_name="Display Name", max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
@@ -707,16 +720,22 @@ class DatasetField(models.Model):
         null=False,
     )
 
-    def items_having_value_count(self, dataset):
+    if TYPE_CHECKING:
+        generation_tasks = models.BaseManager["GenerationTask"]()
+
+    def items_having_value_count(self, dataset: "Dataset"):
         if not self.is_available_for_search and not self.is_available_for_filtering:
             # OpenSearch can't easily count values that are not indexed
             return "?"
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{dataset.id}/{self.identifier}/items_having_value_count"  # type: ignore
+            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{dataset.id}/{self.identifier}/items_having_value_count"
             result = backend_client.get(url)
             count = result.json()["count"]
             if self.field_type == FieldType.VECTOR and self.is_array:
-                url = DATA_BACKEND_HOST + f"/data_backend/dataset/{dataset.id}/{self.identifier}/sub_items_having_value_count"  # type: ignore
+                url = (
+                    DATA_BACKEND_HOST
+                    + f"/data_backend/dataset/{dataset.id}/{self.identifier}/sub_items_having_value_count"
+                )
                 result = backend_client.get(url)
                 sub_count = result.json()["count"]
                 return f"{count} (~{sub_count / count:.0f} ppi)"
@@ -748,7 +767,7 @@ def generate_unique_database_name(name: str | None = None):
     return f"dataset_{''.join(random.choices(string.ascii_lowercase, k=6))}"
 
 
-class Dataset(models.Model):
+class Dataset(models.Model, ModelTypedImplicitIdField):
     name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     schema = models.ForeignKey(
         verbose_name="Schema",
@@ -838,10 +857,13 @@ class Dataset(models.Model):
 
     history = HistoricalRecords()
 
+    if TYPE_CHECKING:
+        generation_tasks = models.BaseManager["GenerationTask"]()
+
     @property
     def item_count(self):
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/item_count"  # type: ignore
+            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/item_count"
             result = backend_client.get(url)
             return result.json()["count"]
         except Exception as e:
@@ -852,7 +874,7 @@ class Dataset(models.Model):
     @property
     def random_item(self):
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/random_item"  # type: ignore
+            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/random_item"
             result = backend_client.get(url)
             item = result.json()["item"]
 
@@ -886,11 +908,15 @@ class Dataset(models.Model):
         return {**self.schema.advanced_options, **self.advanced_options}  # type: ignore
 
     def delete_content(self):
-        delete_dataset_content(self.id)  # type: ignore
-        collection_items = CollectionItem.objects.filter(dataset_id=self.id)  # type: ignore
+        delete_dataset_content(self.id)
+        collection_items = CollectionItem.objects.filter(dataset_id=self.id)
         collection_items.delete()
 
     def remove_items(self, item_ids: list):
+        from legacy_backend.logic.insert_logic import (
+            remove_dataset_items_from_databases,
+        )
+
         remove_dataset_items_from_databases(self.id, item_ids)  # type: ignore
         for item_id in item_ids:
             collection_items = CollectionItem.objects.filter(item_id=item_id)  # type: ignore
@@ -909,7 +935,7 @@ class Dataset(models.Model):
         verbose_name_plural = "Datasets"
 
 
-class GenerationTask(models.Model):
+class GenerationTask(models.Model, ModelTypedImplicitIdField):
     created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
@@ -986,7 +1012,7 @@ class GenerationTask(models.Model):
         verbose_name_plural = "Generation Tasks"
 
 
-class SearchHistoryItem(models.Model):
+class SearchHistoryItem(models.Model, ModelTypedImplicitIdField):
     name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     display_name = models.CharField(
         verbose_name="Display Name",
@@ -1012,7 +1038,7 @@ class SearchHistoryItem(models.Model):
         blank=False,
         null=False,
     )
-    parameters = models.JSONField(verbose_name="Parameters", blank=True, null=True)
+    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=False)
     total_matches = models.IntegerField(verbose_name="Total Matches", blank=True, null=True)
     auto_relaxed = models.BooleanField(
         verbose_name="Auto Relaxed",
@@ -1021,7 +1047,9 @@ class SearchHistoryItem(models.Model):
         null=True,
     )
     cluster_count = models.IntegerField(verbose_name="Cluster Count", blank=True, null=True)
-    result_information = models.JSONField(verbose_name="Other Result Information", blank=True, null=True)
+    result_information = models.JSONField(
+        verbose_name="Other Result Information", default=dict, blank=True, null=False
+    )
 
     def __str__(self):
         return f"{self.name}"
@@ -1079,7 +1107,7 @@ def class_field_default():
     return ["_default"]
 
 
-class DataCollection(models.Model):  # aka DataCollection / DataClassification
+class DataCollection(models.Model, ModelTypedImplicitIdField):  # aka DataCollection / DataClassification
     name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
@@ -1118,7 +1146,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         help_text="Minimal list of classes shown in the UI, even if no items are present. More classes are deducted from items.",
         default=class_field_default,
         blank=True,
-        null=True,
+        null=False,
     )
     default_threshold = models.FloatField(verbose_name="Default Threshold", default=0.5, blank=False, null=False)
     per_class_thresholds = models.JSONField(
@@ -1151,24 +1179,26 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=True,
     )
-    search_sources = models.JSONField(
-        verbose_name="Search Sources",
-        help_text="A list of active and past search sources",
-        default=list,
-        blank=True,
+    search_mode = models.BooleanField(
+        verbose_name="Search Mode",
+        help_text="Whether this collection is currently in search mode (see most recent search task)",
+        default=False,
+        blank=False,
         null=False,
     )
-    search_tasks = models.JSONField(
-        verbose_name="Search Tasks",
-        help_text="List of executed search tasks",
-        default=list,
+    most_recent_search_task = models.ForeignKey(
+        verbose_name="Most Recent Search Task",
+        help_text="(is the active one if in search mode, otherwise the last one)",
+        to="SearchTask",
+        on_delete=models.SET_NULL,
+        related_name="+",
         blank=True,
-        null=False,
+        null=True,
     )
-    last_search_task = models.JSONField(
-        verbose_name="Last Search Task",
-        help_text="if search mode is still active, this is the current search task",
-        default=dict,
+    search_task_navigation_history = models.JSONField(
+        verbose_name="Search Task Navigation History",
+        help_text="List of ids of search tasks, used for back and forth navigation (for full history, see collection.search_tasks)",
+        default=list,
         blank=True,
         null=False,
     )
@@ -1207,6 +1237,20 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         blank=True,
         null=False,
     )
+    notification_emails = models.TextField(
+        verbose_name="Notification Emails",
+        help_text="Email addresses for notifications about new items, comma separated",
+        default="",
+        blank=True,
+        null=False,
+    )
+
+    if TYPE_CHECKING:
+        items = models.BaseManager["CollectionItem"]()
+        dataset_specific_settings = models.BaseManager["DatasetSpecificSettingsOfCollection"]()
+        search_tasks = models.BaseManager["SearchTask"]()
+        columns = models.BaseManager["CollectionColumn"]()
+        trained_classifiers = models.BaseManager["TrainedClassifier"]()
 
     @property
     def actual_classes(self) -> list:
@@ -1234,6 +1278,11 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
 
     writing_task_count.fget.short_description = "Writing Task Count"  # type: ignore
 
+    @property
+    def first_dataset_id(self):
+        first_item = self.items.filter(field_type=FieldType.IDENTIFIER).only("dataset_id").first()
+        return first_item.dataset_id if first_item else None
+
     # def simplified_trained_classifiers(self):
     #     data = copy.deepcopy(self.trained_classifiers) or {}
     #     for embedding_space_data in data.values():
@@ -1258,7 +1307,7 @@ class DataCollection(models.Model):  # aka DataCollection / DataClassification
         verbose_name_plural = "Data Collections"
 
 
-class DatasetSpecificSettingsOfCollection(models.Model):
+class DatasetSpecificSettingsOfCollection(models.Model, ModelTypedImplicitIdField):
     created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
@@ -1320,6 +1369,101 @@ class DatasetSpecificSettingsOfCollection(models.Model):
         unique_together = [["collection", "dataset"]]
 
 
+class SearchTask(models.Model):
+    id = models.UUIDField(
+        verbose_name="ID",
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    collection = models.ForeignKey(
+        verbose_name="Collection",
+        to=DataCollection,
+        on_delete=models.CASCADE,
+        related_name="search_tasks",
+        blank=False,
+        null=False,
+    )
+    dataset = models.ForeignKey(
+        verbose_name="Dataset",
+        to=Dataset,
+        on_delete=models.CASCADE,
+        related_name="+",
+        blank=False,
+        null=False,
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Created at",
+        default=timezone.now,
+        blank=False,
+        null=False,
+    )
+    settings = models.JSONField(
+        verbose_name="Settings",
+        help_text="Settings for the search task",
+        default=dict,
+        blank=True,
+        null=False,
+    )
+    retrieval_parameters = models.JSONField(
+        verbose_name="Retrieval Parameters",
+        help_text="Parameters for retrieval (partly generated from user input)",
+        default=dict,
+        blank=True,
+        null=False,
+    )
+    last_retrieval_status = models.JSONField(
+        verbose_name="Last Retrieval Status",
+        help_text="Status of the last retrieval (available results, retrieved results, relaxation etc.)",
+        default=dict,
+        blank=True,
+        null=False,
+    )
+    is_saved = models.BooleanField(
+        verbose_name="Is saved",
+        help_text="Whether the search task is saved",
+        default=False,
+        blank=False,
+        null=False,
+    )
+    run_on_new_items = models.BooleanField(
+        verbose_name="Run on new items",
+        help_text="Whether the search task should be run on new items",
+        default=False,
+        blank=False,
+        null=False,
+    )
+    run_periodically = models.BooleanField(
+        verbose_name="Run periodically",
+        help_text="Whether the search task should be run periodically",
+        default=False,
+        blank=False,
+        null=False,
+    )
+    period_start = models.DateTimeField(
+        verbose_name="Period start",
+        help_text="Start of the period for periodic runs",
+        blank=True,
+        null=True,
+    )
+    period_interval = models.DurationField(
+        verbose_name="Period interval",
+        help_text="Interval for periodic runs",
+        blank=True,
+        null=True,
+    )
+    last_run = models.DateTimeField(
+        verbose_name="Last run",
+        help_text="Last time the search task was run",
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        verbose_name = "Search Task"
+        verbose_name_plural = "Search Tasks"
+
+
 def get_random_string():
     return "".join(random.choices(string.ascii_lowercase, k=9))
 
@@ -1329,7 +1473,7 @@ class COLUMN_META_SOURCE_FIELDS:
     FULL_TEXT_SNIPPETS = "_full_text_snippets"
 
 
-class CollectionColumn(models.Model):
+class CollectionColumn(models.Model, ModelTypedImplicitIdField):
     created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=True, null=True)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
@@ -1402,7 +1546,7 @@ class CollectionColumn(models.Model):
         order_with_respect_to = "collection"
 
 
-class CollectionItem(models.Model):
+class CollectionItem(models.Model, ModelTypedImplicitIdField):
     collection = models.ForeignKey(
         verbose_name="Collection",
         to=DataCollection,
@@ -1534,7 +1678,7 @@ class CollectionItem(models.Model):
         verbose_name_plural = "Collection Item"
 
 
-class TrainedClassifier(models.Model):
+class TrainedClassifier(models.Model, ModelTypedImplicitIdField):
     created_at = models.DateTimeField(
         verbose_name="Created at",
         default=timezone.now,
@@ -1582,12 +1726,7 @@ class TrainedClassifier(models.Model):
     def is_up_to_date(self):
         if self.last_retrained_at is None:
             return False
-        items_last_changed = self.collection.items_last_changed.get(self.class_name, timezone.now().isoformat())  # type: ignore
-        try:
-            items_last_changed = datetime.datetime.fromisoformat(items_last_changed)
-        except Exception:
-            return False
-        return self.last_retrained_at >= items_last_changed  # type: ignore
+        return self.last_retrained_at >= self.collection.items_last_changed
 
     def __str__(self):
         return f"{self.collection.name}: {self.class_name} ({self.embedding_space.name})"
@@ -1598,7 +1737,7 @@ class TrainedClassifier(models.Model):
         unique_together = [["collection", "class_name", "embedding_space"]]
 
 
-class WritingTask(models.Model):
+class WritingTask(models.Model, ModelTypedImplicitIdField):
     name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
     collection = models.ForeignKey(
         verbose_name="Collection",
@@ -1623,14 +1762,34 @@ class WritingTask(models.Model):
         null=False,
     )
     is_processing = models.BooleanField(verbose_name="Is Processing", default=False, blank=False, null=False)
+
+    # source fields and items:
     source_fields = models.JSONField(verbose_name="Source Fields", default=list, blank=True, null=False)
     use_all_items = models.BooleanField(verbose_name="Use All Items", default=True, blank=False, null=False)
     selected_item_ids = models.JSONField(verbose_name="Selected Item IDs", default=list, blank=True, null=False)
-    module = models.CharField(verbose_name="Code Module Name", max_length=200, blank=True, null=True)
-    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=True)
-    prompt = models.TextField(verbose_name="Prompt", blank=True, null=True)
+
+    # model and prompt:
+    model = models.CharField(verbose_name="LLM Model", max_length=200, blank=True, null=True)
+    parameters = models.JSONField(verbose_name="Parameters", default=dict, blank=True, null=False)
+    include_previous_tasks = models.BooleanField(
+        verbose_name="Include Previous Tasks",
+        help_text="Allows for a chat-like experience",
+        default=True,
+        blank=False,
+        null=False,
+    )
+    expression = models.TextField(verbose_name="Task / Question", blank=True, null=True)
+    prompt_template = models.TextField(
+        verbose_name="Prompt Template",
+        help_text="Template for the prompt if this column uses an LLM. If empty, a default template is used. "
+        + "There are some special variables like {{ context }} and {{ expression }} that can be used.",
+        blank=True,
+        null=True,
+    )
+
+    # result:
     text = models.TextField(verbose_name="Text", blank=True, null=True)
-    additional_results = models.JSONField(verbose_name="Additional Results", default=dict, blank=True, null=True)
+    additional_results = models.JSONField(verbose_name="Additional Results", default=dict, blank=True, null=False)
     previous_versions = models.JSONField(verbose_name="Previous Versions", default=list, blank=True, null=False)
 
     def __str__(self):
@@ -1641,7 +1800,7 @@ class WritingTask(models.Model):
         verbose_name_plural = "Writing Tasks"
 
 
-class Chat(models.Model):
+class Chat(models.Model, ModelTypedImplicitIdField):
     name = models.CharField(verbose_name="Name", max_length=200, blank=True, null=True)
     created_by = models.ForeignKey(
         verbose_name="Created By",
@@ -1674,7 +1833,7 @@ class Chat(models.Model):
         blank=False,
         null=False,
     )
-    chat_history = models.JSONField(verbose_name="Chat History", default=list, blank=True, null=True)
+    chat_history = models.JSONField(verbose_name="Chat History", default=list, blank=True, null=False)
     is_processing = models.BooleanField(verbose_name="Is Processing", default=False, blank=False, null=False)
 
     def add_question(self, question: str, user_id: int):
@@ -1707,11 +1866,15 @@ class Chat(models.Model):
                 for item in collection_items:
                     text = None
                     if item.field_type == FieldType.TEXT:
-                        text = json.dumps({"_id": item.id, "text": item.value}, indent=2)  # type: ignore
+                        text = json.dumps({"_id": item.id, "text": item.value}, indent=2)
                     if item.field_type == FieldType.IDENTIFIER:
                         assert item.dataset_id is not None
                         assert item.item_id is not None
-                        fields = list(Dataset.objects.get(id=item.dataset_id).schema.descriptive_text_fields.all().values_list("identifier", flat=True))  # type: ignore
+                        fields = list(
+                            Dataset.objects.get(id=item.dataset_id)
+                            .schema.descriptive_text_fields.all()
+                            .values_list("identifier", flat=True)
+                        )
                         fields.append("_id")
                         full_item = get_item_by_id(item.dataset_id, item.item_id, fields)
                         text = json.dumps(full_item, indent=2)
@@ -1729,7 +1892,7 @@ class Chat(models.Model):
 
             history = []
             history.append({"role": "system", "content": system_prompt})
-            for chat_item in obj.chat_history:  # type: ignore
+            for chat_item in obj.chat_history:
                 history.append(
                     {
                         "role": chat_item["role"],
@@ -1744,7 +1907,7 @@ class Chat(models.Model):
                 response_text = "AI usage limit exceeded."
             # response_text = "I'm sorry, I can't answer that question yet."
 
-            obj.chat_history.append(  # type: ignore
+            obj.chat_history.append(
                 {
                     "role": "system",
                     "content": response_text,
@@ -1784,7 +1947,7 @@ class PeriodType(models.TextChoices):
     YEAR = "year", "Year"
 
 
-class ServiceUsagePeriod(models.Model):
+class ServiceUsagePeriod(models.Model, ModelTypedImplicitIdField):
     created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
@@ -1811,7 +1974,7 @@ class ServiceUsagePeriod(models.Model):
         unique_together = [["service_usage", "period"]]
 
 
-class ServiceUsage(models.Model):
+class ServiceUsage(models.Model, ModelTypedImplicitIdField):
     created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
     changed_at = models.DateTimeField(
         verbose_name="Changed at",
@@ -1839,6 +2002,9 @@ class ServiceUsage(models.Model):
         null=False,
     )
     warning_ratio = models.FloatField(verbose_name="Warning Ratio", default=0.8, blank=False, null=False)
+
+    if TYPE_CHECKING:
+        usage_periods = models.BaseManager["ServiceUsagePeriod"]()
 
     def get_current_period(self) -> ServiceUsagePeriod:
         if self.period_type == PeriodType.DAY:
@@ -1871,7 +2037,7 @@ class ServiceUsage(models.Model):
         usage_period.refresh_from_db()
 
         warning_threshold = self.limit_per_period * self.warning_ratio
-        should_warn = usage_period.usage > warning_threshold  # type: ignore
+        should_warn = usage_period.usage > warning_threshold
         return {"approved": True, "should_warn": should_warn}
 
     @staticmethod

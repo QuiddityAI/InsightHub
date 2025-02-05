@@ -4,7 +4,7 @@ import Chip from 'primevue/chip';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
-import { available_filter_operators } from '../../utils/utils'
+import { available_filter_operators, additional_filter_operators } from '../../utils/utils'
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 </script>
@@ -38,7 +38,7 @@ export default {
       }
       let field_name = ""
       if (filter.field === '_descriptive_text_fields') {
-        field_name = 'Descriptive Text'
+        field_name = this.$t('general.descriptive-text-fields')
       } else if (filter.field === '_parent') {
         field_name = 'Parent'
       } else if (filter.field === '_all_parents') {
@@ -47,8 +47,10 @@ export default {
         const field_details = this.appStateStore.datasets[filter.dataset_id].schema.object_fields[filter.field]
         field_name = field_details.name || field_details.identifier
       }
-      const operator = available_filter_operators.find(op => op.id === filter.operator)
-      return `${field_name} ${operator.title} '${filter.value}'`
+      const operators = available_filter_operators.concat(additional_filter_operators)
+      const operator = operators.find(op => op.id === filter.operator)
+      const negate = filter.negate ? 'NOT ' : ''
+      return `${negate}${field_name} ${operator.title} '${filter.value}'`
     },
   },
 }

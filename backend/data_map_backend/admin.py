@@ -3,51 +3,53 @@ import logging
 import os
 from threading import Thread
 
+import requests
 from django.contrib import admin
-from django.utils.safestring import mark_safe
-from django.forms import Textarea
-from django.db import models
 from django.contrib.auth.admin import UserAdmin  # type: ignore
 from django.contrib.auth.forms import UserChangeForm
 from django.core import serializers
-
-from djangoql.admin import DjangoQLSearchMixin
-import requests
-from simple_history.admin import SimpleHistoryAdmin
-from django_object_actions import DjangoObjectActions, action, takes_instance_or_queryset
-from import_export.admin import ImportExportMixin
+from django.db import models
+from django.forms import Textarea
+from django.utils.safestring import mark_safe
+from django_object_actions import (
+    DjangoObjectActions,
+    action,
+    takes_instance_or_queryset,
+)
 from django_svelte_jsoneditor.widgets import SvelteJSONEditorWidget
+from djangoql.admin import DjangoQLSearchMixin
+from import_export.admin import ImportExportMixin
+from simple_history.admin import SimpleHistoryAdmin
+
+from legacy_backend.logic.generate_missing_values import generate_missing_values
 
 from .data_backend_client import DATA_BACKEND_HOST
-
+from .import_export import UserResource
 from .models import (
+    Chat,
     CollectionColumn,
+    CollectionItem,
+    DataCollection,
+    Dataset,
     DatasetField,
     DatasetSchema,
     DatasetSpecificSettingsOfCollection,
     EmbeddingSpace,
     ExportConverter,
     FieldType,
+    GenerationTask,
     Generator,
     ImportConverter,
     Organization,
-    Dataset,
-    GenerationTask,
     SearchHistoryItem,
     ServiceUsage,
     ServiceUsagePeriod,
     StoredMap,
-    DataCollection,
-    CollectionItem,
     TrainedClassifier,
-    Chat,
-    WritingTask,
     User,
+    WritingTask,
 )
 from .utils import get_vector_field_dimensions
-from .import_export import UserResource
-from legacy_backend.logic.generate_missing_values import generate_missing_values
-
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 
@@ -629,7 +631,7 @@ class GenerationTaskAdmin(DjangoObjectActions, admin.ModelAdmin):
             except ValueError:
                 kwargs["queryset"] = DatasetField.objects.all()
             else:
-                schema = GenerationTask.objects.get(id=item_id).dataset.schema  # type: ignore
+                schema = GenerationTask.objects.get(id=item_id).dataset.schema
                 kwargs["queryset"] = DatasetField.objects.filter(schema=schema)
         return super(GenerationTaskAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -703,7 +705,7 @@ class DatasetSpecificSettingsOfCollectionAdmin(DjangoQLSearchMixin, SimpleHistor
             except ValueError:
                 kwargs["queryset"] = DatasetField.objects.filter(schema=-1)
             else:
-                schema = DatasetSpecificSettingsOfCollection.objects.get(id=item_id).dataset.schema  # type: ignore
+                schema = DatasetSpecificSettingsOfCollection.objects.get(id=item_id).dataset.schema
                 kwargs["queryset"] = DatasetField.objects.filter(schema=schema)
         return super(DatasetSpecificSettingsOfCollectionAdmin, self).formfield_for_foreignkey(
             db_field, request, **kwargs
@@ -717,7 +719,7 @@ class DatasetSpecificSettingsOfCollectionAdmin(DjangoQLSearchMixin, SimpleHistor
             except ValueError:
                 kwargs["queryset"] = DatasetField.objects.filter(schema=-1)
             else:
-                schema = DatasetSpecificSettingsOfCollection.objects.get(id=item_id).dataset.schema  # type: ignore
+                schema = DatasetSpecificSettingsOfCollection.objects.get(id=item_id).dataset.schema
                 kwargs["queryset"] = DatasetField.objects.filter(schema=schema)
         return super(DatasetSpecificSettingsOfCollectionAdmin, self).formfield_for_manytomany(
             db_field, request, **kwargs
@@ -819,7 +821,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
 
     def get_retraining_status(self, obj):
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/classifier/retraining_status"  # type: ignore
+            url = DATA_BACKEND_HOST + f"/data_backend/classifier/retraining_status"
             data = {
                 "collection_id": obj.collection_id,
                 "class_name": obj.class_name,
@@ -838,7 +840,7 @@ class TrainedClassifierAdmin(DjangoQLSearchMixin, DjangoObjectActions, admin.Mod
         except requests.exceptions.JSONDecodeError:
             return "Not currently training"
 
-    get_retraining_status.short_description = "Retraining status"  # type: ignore
+    get_retraining_status.short_description = "Retraining status"
 
     @action(label="(Re)train Classifier", description="Train classifier for this class and embedding space")
     def retrain_classifier(self, request, obj):

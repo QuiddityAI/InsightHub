@@ -1,28 +1,25 @@
-import logging
-from typing import Callable
 import json
+import logging
 import os
+from typing import Callable
 
 import openai
 
 from data_map_backend.utils import DotDict
-from ..utils.helpers import join_extracted_text_sources
-
-from ..logic.model_client import (
-    get_pubmedbert_embeddings,
-    get_sentence_transformer_embeddings,
-    get_clip_text_embeddings,
-    get_clip_image_embeddings,
-    get_infinity_embeddings,
-    add_e5_prefix,
-)
-from ..logic.chunking import chunk_text_generator
-
-from ..api_clients import deepinfra_client
-
 from ingest.logic.office_documents import ai_file_processing_generator
 from ingest.logic.tenders import tender_enrichment_generator
 
+from ..api_clients import deepinfra_client
+from ..logic.chunking import chunk_text_generator
+from ..logic.model_client import (
+    add_e5_prefix,
+    get_clip_image_embeddings,
+    get_clip_text_embeddings,
+    get_infinity_embeddings,
+    get_pubmedbert_embeddings,
+    get_sentence_transformer_embeddings,
+)
+from ..utils.helpers import join_extracted_text_sources
 
 GPU_IS_AVAILABLE = os.getenv("GPU_IS_AVAILABLE", "False") == "True"
 
@@ -131,7 +128,7 @@ def get_openai_embedding_batch(texts: list[str]):
         result: dict = openai.Embedding.create(  # type: ignore
             model=openai_model,
             input=texts[i : i + chunk_size],
-        )  # type: ignore
+        )
         # roughly 1500 characters per abstract and 260 tokens per abstract
         # -> 0.1ct per 10k tokens -> 0.1ct per 30 abstracts
         # -> 5.2 ct per 2k abstracts (one search)

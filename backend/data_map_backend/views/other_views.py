@@ -1,52 +1,55 @@
-from functools import lru_cache
 import json
 import logging
-import os
-from functools import reduce
 import operator
+import os
+from functools import lru_cache, reduce
 
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.utils import timezone
 from django.db.models.manager import BaseManager
+from django.http import HttpRequest, HttpResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import TemplateView
+
+from data_map_backend.schemas import ItemRelevance
+from data_map_backend.utils import DotDict
+from filter.schemas import CollectionFilter
+from search.schemas import SearchTaskSettings
 
 from ..models import (
-    DataCollection,
     CollectionItem,
+    DataCollection,
     Dataset,
     DatasetSchema,
     ExportConverter,
     FieldType,
+    Generator,
     ImportConverter,
     Organization,
     SearchHistoryItem,
-    StoredMap,
-    Generator,
-    TrainedClassifier,
+    SearchTask,
     ServiceUsage,
-    generate_unique_database_name,
+    StoredMap,
+    TrainedClassifier,
     User,
+    generate_unique_database_name,
 )
+from ..notifier import default_notifier
 from ..serializers import (
     CollectionItemSerializer,
     CollectionSerializer,
     DatasetSchemaSerializer,
     DatasetSerializer,
     ExportConverterSerializer,
+    GeneratorSerializer,
     ImportConverterSerializer,
     OrganizationSerializer,
     SearchHistoryItemSerializer,
     StoredMapSerializer,
-    GeneratorSerializer,
     TrainedClassifierSerializer,
 )
-from ..notifier import default_notifier
 from ..utils import is_from_backend
-from data_map_backend.utils import DotDict
-from filter.schemas import CollectionFilter
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
@@ -140,18 +143,16 @@ def get_available_organizations(request):
         serialized["is_member"] = is_member
         if is_member:
             serialized["datasets"] = [
-                dataset.id  # type: ignore
+                dataset.id
                 for dataset in Dataset.objects.filter(
-                    Q(organization_id=organization.id)  # type: ignore
+                    Q(organization_id=organization.id)
                     & (Q(is_public=True) | Q(is_organization_wide=True) | Q(admins=request.user))
                 )
             ]
         else:
             serialized["datasets"] = [
-                dataset.id  # type: ignore
-                for dataset in Dataset.objects.filter(
-                    Q(organization_id=organization.id) & Q(is_public=True)  # type: ignore
-                )
+                dataset.id
+                for dataset in Dataset.objects.filter(Q(organization_id=organization.id) & Q(is_public=True))
             ]
 
     result = json.dumps(serialized_data)
@@ -244,7 +245,7 @@ def get_available_datasets(request):
     #         continue
     #     elif not dataset.is_public and not dataset.organization.members.filter(id=request.user.id).exists():
     #         continue
-    #     result.append({"id": dataset.id, "name": dataset.name,  # type: ignore
+    #     result.append({"id": dataset.id, "name": dataset.name,
     #                    "entity_name": dataset.schema.entity_name, "entity_name_plural": dataset.schema.entity_name_plural,
     #                    "short_description": dataset.schema.short_description,
     #                    })
@@ -519,7 +520,7 @@ def add_search_history_item(request):
     item.organization_id = organization_id  # type: ignore
     item.name = name
     item.display_name = display_name
-    item.parameters = parameters  # type: ignore
+    item.parameters = parameters
     item.save()
     try:
         user = User.objects.get(id=item.user_id) if item.user_id else None  # type: ignore
@@ -561,7 +562,7 @@ def update_search_history_item(request):
     item.total_matches = total_matches
     item.auto_relaxed = auto_relaxed
     item.cluster_count = cluster_count
-    item.result_information = result_information  # type: ignore
+    item.result_information = result_information
     item.save()
 
     serialized_data = SearchHistoryItemSerializer(instance=item).data
@@ -595,7 +596,7 @@ def get_search_history(request):
 
 
 @csrf_exempt
-def add_collection(request):
+def add_collection(request: HttpRequest) -> HttpResponse:
     if request.method != "POST":
         return HttpResponse(status=405)
     if not request.user.is_authenticated and not is_from_backend(request):
@@ -666,9 +667,9 @@ def add_collection_class(request):
         return HttpResponse(status=401)
 
     if item.class_names == None:
-        item.class_names = [class_name]  # type: ignore
+        item.class_names = [class_name]
     elif class_name not in item.class_names:
-        item.class_names.append(class_name)  # type: ignore
+        item.class_names.append(class_name)
     item.save()
 
     return HttpResponse(None, status=204)
@@ -779,6 +780,7 @@ def set_collection_attributes(request):
 
     allowed_fields = [
         "name",
+        "notification_emails",
     ]
 
     for key in updates.keys():
@@ -905,15 +907,18 @@ def get_collection_items(request):
         return HttpResponse(status=400)
 
     try:
-        collection = DataCollection.objects.get(id=collection_id)
+        collection = DataCollection.objects.select_related("most_recent_search_task").get(id=collection_id)
     except DataCollection.DoesNotExist:
         return HttpResponse(status=404)
 
-    return_items, search_mode, reference_ds_and_item_id = get_filtered_collection_items(
+    return_items, reference_ds_and_item_id = get_filtered_collection_items(
         collection, class_name, field_type, is_positive, order_by
     )
 
     filtered_count = return_items.count()
+    # filtered_item_ids is e.g. used to highlight items on the map:
+    # TODO: check if this is a performance issue when no map is used
+    filtered_item_ids = return_items.values_list("id", flat=True)
 
     return_items = return_items[offset : offset + limit]
     serialized_data = CollectionItemSerializer(return_items, many=True).data
@@ -925,8 +930,9 @@ def get_collection_items(request):
     result = {
         "items": serialized_data,
         "items_last_changed": collection.items_last_changed.isoformat(),
-        "search_mode": search_mode,
+        "search_mode": collection.search_mode,
         "filtered_count": filtered_count,
+        "filtered_item_ids": list(filtered_item_ids),
     }
     result = json.dumps(result)
 
@@ -934,8 +940,8 @@ def get_collection_items(request):
 
 
 def get_filtered_collection_items(
-    collection, class_name, field_type=None, is_positive=None, order_by="-date_added"
-) -> tuple[BaseManager[CollectionItem], bool, tuple[int, str] | None]:
+    collection: DataCollection, class_name, field_type=None, is_positive=None, order_by="-date_added"
+) -> tuple[BaseManager[CollectionItem], tuple[int, str] | None]:
     if field_type:
         all_items = CollectionItem.objects.filter(
             collection_id=collection.id,
@@ -947,20 +953,25 @@ def get_filtered_collection_items(
         # return all items
         all_items = CollectionItem.objects.filter(collection_id=collection.id, classes__contains=[class_name])
 
-    active_sources = [s for s in collection.search_sources if s["is_active"]]
     reference_ds_and_item_id = None
-    if len(active_sources) == 1:
-        source = active_sources[0]
-        if source.get("reference_dataset_id") and source.get("reference_item_id"):
-            reference_ds_and_item_id = (source["reference_dataset_id"], source["reference_item_id"])
-    search_mode = len(active_sources) > 0
-    search_results = all_items.filter(search_source_id__in=[s["id_hash"] for s in active_sources])
+    task: SearchTask | None = collection.most_recent_search_task
+    if collection.search_mode:
+        assert task is not None
+        settings = SearchTaskSettings(**task.settings)
+        if settings.reference_dataset_id and settings.reference_item_id:
+            reference_ds_and_item_id = (settings.reference_dataset_id, settings.reference_item_id)
 
-    if search_mode:
+        search_results = all_items.filter(search_source_id=task.id)
+        if collection.ui_settings.get("hide_checked_items_in_search"):
+            search_results = search_results.filter(relevance=ItemRelevance.CANDIDATE)
         return_items = search_results
         return_items = return_items.order_by("-search_score")
     else:
-        return_items = all_items.filter(relevance__gte=2) if is_positive else all_items.filter(relevance__lte=-2)
+        return_items = (
+            all_items.filter(relevance__gte=ItemRelevance.APPROVED_BY_AI)
+            if is_positive
+            else all_items.filter(relevance__lte=ItemRelevance.REJECTED_BY_AI)
+        )
         return_items = return_items.order_by(order_by, "-search_score")
 
     for filter_data in collection.filters:
@@ -971,10 +982,14 @@ def get_filtered_collection_items(
             return_items = return_items.filter(**{f"metadata__{filter.field}__gte": filter.value})
         elif filter.filter_type == "metadata_value_lte":
             return_items = return_items.filter(**{f"metadata__{filter.field}__lte": filter.value})
+        elif filter.filter_type == "metadata_value_is":
+            return_items = return_items.filter(**{f"metadata__{filter.field}": filter.value})
+        elif filter.filter_type == "metadata_value_contains":
+            return_items = return_items.filter(**{f"metadata__{filter.field}__contains": filter.value})
         elif filter.filter_type == "text_query":
             return_items = apply_text_filter(return_items, filter)
 
-    return return_items, search_mode, reference_ds_and_item_id
+    return return_items, reference_ds_and_item_id
 
 
 def apply_text_filter(items: BaseManager, filter: CollectionFilter) -> BaseManager:
@@ -1063,7 +1078,7 @@ def add_item_to_collection(request):
 
     exists = False
     for item in items:
-        if class_name in item.classes:  # type: ignore
+        if class_name in item.classes:
             # the item exists already, but the weight might need to be updated:
             item.weight = weight
             item.save()
@@ -1074,7 +1089,7 @@ def add_item_to_collection(request):
         item = CollectionItem()
         item.collection_id = collection_id  # type: ignore
         item.is_positive = is_positive
-        item.classes = [class_name]  # type: ignore
+        item.classes = [class_name]
         item.field_type = field_type
         item.value = value
         item.dataset_id = dataset_id
@@ -1085,7 +1100,7 @@ def add_item_to_collection(request):
     dataset_dict = CollectionItemSerializer(instance=item).data
     serialized_data = json.dumps(dataset_dict)
 
-    collection.items_last_changed = timezone.now().isoformat()  # type: ignore
+    collection.items_last_changed = timezone.now()
     collection.save()
 
     return HttpResponse(serialized_data, status=200, content_type="application/json")
@@ -1142,8 +1157,8 @@ def remove_collection_item(request):
 
     collection_item.delete()
 
-    # for class_name in collection_item.classes:  # type: ignore
-    collection_item.collection.items_last_changed = timezone.now().isoformat()  # type: ignore
+    # for class_name in collection_item.classes:
+    collection_item.collection.items_last_changed = timezone.now()
     collection_item.collection.save(update_fields=["items_last_changed"])
 
     return HttpResponse(None, status=204)
@@ -1191,7 +1206,7 @@ def remove_collection_item_by_value(request):
         removed_items.append(item_dict)
         item.delete()
 
-    collection.items_last_changed = timezone.now().isoformat()  # type: ignore
+    collection.items_last_changed = timezone.now()
     collection.save(update_fields=["items_last_changed"])
 
     serialized_data = json.dumps(removed_items)
@@ -1222,7 +1237,7 @@ def add_stored_map(request):
     item.organization_id = organization_id  # type: ignore
     item.name = name
     item.display_name = display_name
-    item.map_data = map_data.encode()  # type: ignore  # FIXME: base64 str needs to be decoded
+    item.map_data = map_data.encode()  # FIXME: base64 str needs to be decoded
     item.save()
 
     serialized_data = StoredMapSerializer(instance=item).data

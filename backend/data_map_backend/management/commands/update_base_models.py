@@ -1,11 +1,18 @@
-import os
 import json
 import logging
-from django.core.management.base import BaseCommand, CommandError
-from django.utils.dateparse import parse_datetime
-from django.core.serializers.python import Deserializer
+import os
 
-from data_map_backend.models import DatasetSchema, EmbeddingSpace, Generator, ImportConverter, ExportConverter
+from django.core.management.base import BaseCommand, CommandError
+from django.core.serializers.python import Deserializer
+from django.utils.dateparse import parse_datetime
+
+from data_map_backend.models import (
+    DatasetSchema,
+    EmbeddingSpace,
+    ExportConverter,
+    Generator,
+    ImportConverter,
+)
 from data_map_backend.utils import DotDict
 
 
@@ -56,7 +63,7 @@ class Command(BaseCommand):
     def load_dataset_schemas(self):
         logging.warning(f"--- Loading dataset schemas")
         path = self.base_path + "dataset_schemas"
-        definitions = []
+        definitions: list[DotDict] = []
         for file in os.listdir(path):
             if file.endswith(".json"):
                 with open(path + "/" + file, "r") as f:
@@ -71,14 +78,14 @@ class Command(BaseCommand):
                 assert definition_changed_at is not None
                 if obj.changed_at < definition_changed_at:
                     needs_update = True
-                elif len(obj.object_fields.all()) != len(definition.object_fields):  # type: ignore
+                elif len(obj.object_fields.all()) != len(definition.object_fields):
                     needs_update = True
                 elif any([field["changed_at"] is not None and obj.object_fields.get(schema=obj, identifier=field["identifier"]).changed_at < parse_datetime(field["changed_at"]) for field in definition.object_fields]):  # type: ignore
                     needs_update = True
                 if needs_update:
                     logging.warning(f"[Updated] Object '{obj}' is being updated")
                     # schema itself is overwritten, but fields need to be deleted and recreated:
-                    obj.object_fields.all().delete()  # type: ignore
+                    obj.object_fields.all().delete()
                 else:
                     logging.warning(f"[Up-to-date] Object '{obj}' is already up to date")
             else:
@@ -90,7 +97,7 @@ class Command(BaseCommand):
                     for item in definition.items()
                     if item[0] not in ["applicable_import_converters", "applicable_export_converters", "object_fields"]
                 }
-                obj = DatasetSchema(**fields)  # type: ignore
+                obj = DatasetSchema(**fields)
                 obj.save()
                 obj.applicable_import_converters.set(definition.applicable_import_converters)
                 obj.applicable_export_converters.set(definition.applicable_export_converters)
@@ -103,5 +110,5 @@ class Command(BaseCommand):
                         if field["embedding_space"] is not None
                         else None
                     )
-                    obj.object_fields.create(**field)  # type: ignore
+                    obj.object_fields.create(**field)
                 obj.save()

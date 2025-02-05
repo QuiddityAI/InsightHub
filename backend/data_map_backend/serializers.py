@@ -3,18 +3,19 @@ from rest_framework import serializers as drf_serializers
 from .models import (
     Chat,
     CollectionColumn,
+    CollectionItem,
     DataCollection,
+    Dataset,
     DatasetField,
     DatasetSchema,
     DatasetSpecificSettingsOfCollection,
-    CollectionItem,
-    Dataset,
-    ExportConverter,
-    ImportConverter,
-    Generator,
     EmbeddingSpace,
+    ExportConverter,
+    Generator,
+    ImportConverter,
     Organization,
     SearchHistoryItem,
+    SearchTask,
     StoredMap,
     TrainedClassifier,
     WritingTask,
@@ -113,6 +114,12 @@ class CollectionColumnSerializer(drf_serializers.ModelSerializer):
         exclude = ["created_at", "changed_at"]
 
 
+class SearchTaskSerializer(drf_serializers.ModelSerializer):
+    class Meta:
+        model = SearchTask
+        exclude = []
+
+
 class CollectionSerializer(drf_serializers.ModelSerializer):
     user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
     related_organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
@@ -121,6 +128,7 @@ class CollectionSerializer(drf_serializers.ModelSerializer):
     columns = CollectionColumnSerializer(many=True, read_only=True)
     actual_classes = drf_serializers.ReadOnlyField()
     writing_task_count = drf_serializers.ReadOnlyField()
+    most_recent_search_task = SearchTaskSerializer(many=False, read_only=True)
 
     class Meta:
         model = DataCollection

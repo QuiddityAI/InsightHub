@@ -12,6 +12,7 @@ import ProgressSpinner from "primevue/progressspinner";
 import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
 import Skeleton from "primevue/skeleton";
+import Checkbox from "primevue/checkbox";
 
 import BorderlessButton from "../widgets/BorderlessButton.vue";
 import TipTapEditor from "../text_editor/TipTapEditor.vue";
@@ -44,6 +45,7 @@ export default {
       writing_task: null,
       show_settings_dialog: false,
       show_used_prompt: false,
+      use_default_prompt: true,
       update_writing_task_debounce: debounce((event) => {
           this.update_writing_task()
         }, 500),
@@ -71,27 +73,34 @@ export default {
       }
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
-        name: 'Descriptive Text',
+        name: this.$t('general.descriptive-text-fields'),
       }
       available_fields['_full_text_snippets'] = {
         identifier: '_full_text_snippets',
-        name: 'Full Text Excerpts',
+        name: this.$t('general.full-text-excerpts'),
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
   },
-  watch: { },
+  watch: {
+    "writing_task.prompt_template" (new_val, old_val) {
+      if (new_val === old_val) {
+        return
+      }
+      this.use_default_prompt = !new_val
+    },
+    "use_default_prompt" (new_val, old_val) {
+      if (new_val === old_val) {
+        return
+      }
+      if (new_val) {
+        this.writing_task.prompt_template = ""
+      }
+    },
+  },
   mounted() {
     this.get_writing_task(() => {
-      if (this.writing_task.name !== 'Summary+') return
-      this.writing_task.name = 'Summary'
-      this.writing_task.module = 'Mistral_Mistral_Large'
-      this.writing_task.source_fields = ['_full_text_snippets', '_descriptive_text_fields']
-      this.writing_task.use_all_items = true
-      this.writing_task.prompt = "Summarize the items in three short bullet points. Use markdown syntax."
-      this.update_writing_task(() => {
-        this.execute_writing_task()
-      })
+      this.use_default_prompt = !this.writing_task.prompt_template
     })
     this.eventBus.on("agent_stopped", this.on_agent_stopped)
   },
@@ -136,9 +145,10 @@ export default {
         name: task.name,
         source_fields: task.source_fields,
         selected_item_ids: task.selected_item_ids,
-        module: task.module,
+        model: task.model,
         parameters: task.parameters,
-        prompt: task.prompt,
+        expression: task.expression,
+        prompt_template: task.prompt_template,
         text: task.text,
       }
       httpClient.post(`/api/v1/write/update_writing_task`, body)
@@ -170,7 +180,7 @@ export default {
       })
     },
     revert_changes() {
-      if (!confirm('Are you sure you want to revert to the last version? This cannot be undone.')) {
+      if (!confirm(this.$t('WritingTask.revert-changes-alert'))) {
         return
       }
       const that = this
@@ -214,30 +224,30 @@ export default {
         {{ writing_task.name }}
       </h2>
       <h2 class="absolute top-0 text-lg font-bold font-['Lexend'] text-gray-500 peer-focus:hidden pointer-events-none">
-        <span v-if="!writing_task.name">Writing Task Name</span>
+        <span v-if="!writing_task.name">{{ $t('WritingTask.writing-task-name-placeholder') }}</span>
       </h2>
       <BorderlessButton v-if="appState.user.is_staff"
-        @click="show_used_prompt = true" v-tooltip.bottom="{ value: 'Show the used prompt' }"
+        @click="show_used_prompt = true" v-tooltip.bottom="{ value: $t('WritingTask.show-the-used-prompt') }"
         :default_padding="false" class="h-6 w-6">
         P
-        <Dialog v-model:visible="show_used_prompt" modal header="Used Prompt">
+        <Dialog v-model:visible="show_used_prompt" modal :header="$t('WritingTask.used-prompt-dialog-header')">
           <div class="overflow-y-auto max-h-[400px]"
             v-html="convert_to_html(writing_task.additional_results.used_prompt)" />
         </Dialog>
       </BorderlessButton>
       <BorderlessButton v-if="!writing_task.is_processing"
-        @click="execute_writing_task" v-tooltip.bottom="{ value: 'Re-generate this writing task' }"
+        @click="execute_writing_task" v-tooltip.bottom="{ value: $t('WritingTask.regenerate-this-writing-task') }"
         hover_color="hover:text-green-500" :default_padding="false" class="h-6 w-6">
         <ArrowPathIcon class="h-4 w-4"></ArrowPathIcon>
       </BorderlessButton>
       <ProgressSpinner v-if="writing_task.is_processing" class="h-6 w-6" strokeWidth="8" style="color: #4CAF50" />
       <BorderlessButton @click="show_settings_dialog = true"
-        v-tooltip.bottom="{ value: 'Configure this writing task' }"
+        v-tooltip.bottom="{ value: $t('WritingTask.configure-this-writing-task') }"
         :default_padding="false" class="h-6 w-6">
         <AdjustmentsHorizontalIcon class="h-4 w-4"></AdjustmentsHorizontalIcon>
       </BorderlessButton>
       <BorderlessButton @click="$emit('delete')"
-        v-tooltip.bottom="{ value: 'Delete writing task' }"
+        v-tooltip.bottom="{ value: $t('WritingTask.delete-writing-task') }"
         hover_color="hover:text-red-500" :default_padding="false" class="h-6 w-6">
         <TrashIcon class="h-4 w-4"></TrashIcon>
       </BorderlessButton>
@@ -249,15 +259,27 @@ export default {
 
       <div v-if="!writing_task.is_processing" class="w-full h-full">
         <TipTapEditor v-model="writing_task.text" @change="update_writing_task_debounce"
-          :reference_metadata="writing_task.additional_results.reference_metadata"/>
+          :reference_order="writing_task.additional_results.references"/>
       </div>
     </div>
 
-    <Dialog v-model:visible="show_settings_dialog" modal header="Writing Task">
+    <Dialog v-model:visible="show_settings_dialog" modal :header="$t('WritingTask.writing-task-dialog-name')">
 
       <div class="flex flex-col gap-5">
 
-        <textarea v-model="writing_task.prompt" placeholder="prompt"
+        <textarea v-model="writing_task.expression" :placeholder="$t('WritingTask.expression-placeholder')"
+          class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
+
+        <div class="flex flex-row gap-1">
+          <Checkbox inputId="writing_task_use_default_prompt" v-model="use_default_prompt"
+            :binary="true" class="text-sm text-gray-500" />
+          <label for="writing_task_use_default_prompt" class="text-sm text-gray-500">
+            {{ $t('WritingTask.use-default-system-prompt') }}
+          </label>
+         </div>
+
+        <textarea v-if="!use_default_prompt"
+          v-model="writing_task.prompt_template" :placeholder="$t('WritingTask.prompt-template-placeholder', ['{{ context }}', '{{ expression }}'])"
           class="rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6" />
 
           <div class="flex flex-row gap-2 items-center">
@@ -266,26 +288,26 @@ export default {
             :options="available_source_fields"
             optionLabel="name"
             optionValue="identifier"
-            placeholder="Select Sources..."
+            :placeholder="$t('WritingTask.select-sources-placeholder')"
             :maxSelectedLabels="0"
-            selectedItemsLabel="{0} Source(s)"
+            :selectedItemsLabel="`{0} ` + $t('WritingTask.source-select-label')"
             class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
         </div>
         <div class="flex-1 min-w-0">
-          <LlmSelect v-model="writing_task.module"
-            :tooltip="'Select the AI module to use for this writing task'" />
+          <LlmSelect v-model="writing_task.model"
+            :tooltip="$t('WritingTask.model-select-tooltip')" />
         </div>
       </div>
 
       <button v-if="writing_task.previous_versions?.length > 0"
         @click="revert_changes()"
-        v-tooltip.left="{'value': 'Go back to last version', showDelay: 500}"
+        v-tooltip.left="{'value': $t('WritingTask.revert-changes-tooltip'), showDelay: 500}"
         class="h-6 w-6 rounded bg-gray-100 hover:text-blue-500">
         <BackwardIcon class="m-1"></BackwardIcon>
       </button>
 
       <button @click="update_writing_task(); show_settings_dialog = false" class="px-2 py-1 rounded text-sm bg-gray-100 hover:bg-blue-100/50">
-        Save Changes
+        {{ $t('WritingTask.save-changes') }}
       </button>
 
       </div>

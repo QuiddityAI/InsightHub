@@ -1,17 +1,26 @@
-import logging
 import json
+import logging
 
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.utils.datastructures import MultiValueDict
-from ninja import NinjaAPI, Form
+from ninja import Form, NinjaAPI
 
-from legacy_backend.database_client.text_search_engine_client import TextSearchEngineClient
-from data_map_backend.views.other_views import get_or_create_default_dataset
 from data_map_backend.models import Dataset
 from data_map_backend.utils import pk_to_uuid_id
-
-from ingest.schemas import CustomUploadedFile, UploadedFileMetadata, CheckPkExistencePayload, CheckPkExistenceResponse
-from ingest.logic.upload_files import upload_files_or_forms, get_upload_task_status_by_id
+from data_map_backend.views.other_views import get_or_create_default_dataset
+from ingest.logic.upload_files import (
+    get_upload_task_status_by_id,
+    upload_files_or_forms,
+)
+from ingest.schemas import (
+    CheckPkExistencePayload,
+    CheckPkExistenceResponse,
+    CustomUploadedFile,
+    UploadedFileMetadata,
+)
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
+)
 
 api = NinjaAPI(urls_namespace="ingest")
 
@@ -42,7 +51,7 @@ def upload_files_route(
         if isinstance(result, HttpResponse):
             return result
         dataset = result
-        dataset_id = dataset.id  # type: ignore
+        dataset_id = dataset.id
 
     FILES: MultiValueDict = request.FILES
     custom_uploaded_files = []
@@ -78,7 +87,7 @@ def upload_files_route(
 @api.post("check_pk_existence")
 def check_pk_existence_route(request: HttpRequest, payload: CheckPkExistencePayload):
     try:
-        dataset = Dataset.objects.only("advanced_options", "actual_database_name").get(id=payload.dataset_id)
+        dataset = Dataset.objects.only("advanced_options", "database_name").get(id=payload.dataset_id)
     except Dataset.DoesNotExist:
         return HttpResponse(status=404)
     if payload.access_token not in (dataset.advanced_options or {}).get("access_tokens", {}):

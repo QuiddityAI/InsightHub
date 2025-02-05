@@ -42,6 +42,8 @@ const i18n = setupI18n({
     en: message_en  // always load en in the beginning to avoid warnings
   }
 })
+// hacky way to make i18n available in pinia stores, but there isn't a better way apparently
+globalThis.$t = i18n.global.t
 
 const preferred_language = navigator.languages[0].split('-')[0]
 if (SUPPORT_LOCALES.includes(preferred_language)) {
@@ -72,4 +74,3 @@ window.appState = appState
 window.collectionStore = collectionStore
 
 app.mount("#app")
-
