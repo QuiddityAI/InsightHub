@@ -17,8 +17,6 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
 
-from legacy_backend.logic.insert_logic import remove_dataset_items_from_databases
-
 from .chatgpt_client import get_chatgpt_response_using_history
 from .data_backend_client import (
     DATA_BACKEND_HOST,
@@ -915,6 +913,10 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
         collection_items.delete()
 
     def remove_items(self, item_ids: list):
+        from legacy_backend.logic.insert_logic import (
+            remove_dataset_items_from_databases,
+        )
+
         remove_dataset_items_from_databases(self.id, item_ids)  # type: ignore
         for item_id in item_ids:
             collection_items = CollectionItem.objects.filter(item_id=item_id)  # type: ignore
