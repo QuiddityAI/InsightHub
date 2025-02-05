@@ -4,6 +4,7 @@ import {
   PaperAirplaneIcon,
   ChevronLeftIcon,
   InformationCircleIcon,
+  UserCircleIcon,
  } from "@heroicons/vue/24/outline"
 
 import { useToast } from 'primevue/usetoast';
@@ -15,6 +16,8 @@ import InputSwitch from 'primevue/inputswitch';
 import SearchFilterList from "../search/SearchFilterList.vue"
 import AddFilterMenu from "../search/AddFilterMenu.vue"
 import ToolIntroBox from "../general/ToolIntroBox.vue";
+import UserMenu from "../search/UserMenu.vue";
+import LoginButton from "../general/LoginButton.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { languages } from "../../utils/utils"
@@ -257,6 +260,24 @@ export default {
 
 <template>
 
+<div>
+
+  <div class="absolute top-2 right-2 bg-white rounded-md shadow-md">
+    <LoginButton v-if="!appState.logged_in"></LoginButton>
+
+    <button v-if="appState.logged_in"
+      class="px-2 py-1 text-[13px] font-thin text-gray-500 font-[Lexend] rounded-md hover:bg-gray-100 flex flex-row items-center"
+      v-tooltip.bottom="{ value: $t('TopMenu.user-menu-logout-etc'), showDelay: 400 }"
+      @click="(event) => $refs.user_menu.toggle(event)">
+      {{ appState.user.username.substring(0, 22) + (appState.user.username.length > 22 ? '...' : '') }}
+      <UserCircleIcon class="inline-block w-4 h-4 ml-2"></UserCircleIcon>
+    </button>
+
+    <OverlayPanel ref="user_menu">
+      <UserMenu @hide="$refs.user_menu.hide()"></UserMenu>
+    </OverlayPanel>
+  </div>
+
   <div class="mt-[200px] w-[650px] flex flex-col gap-5 pb-10">
 
     <!-- create collection box -->
@@ -447,7 +468,7 @@ export default {
     <ToolIntroBox v-if="appState.organization?.tool_intro_text"></ToolIntroBox>
 
   </div>
-
+</div>
 </template>
 
 <style >

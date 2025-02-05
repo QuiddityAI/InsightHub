@@ -121,7 +121,6 @@ export default {
 <template>
   <div>
     <button
-      v-if="!appState.logged_in"
       @click="dialog_visible = true"
       class="rounded px-2 py-1 m-[3px] text-sm text-gray-500 bg-gray-100 hover:bg-blue-100">
       {{ $t('LoginButton.login-register') }}

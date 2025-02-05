@@ -8,9 +8,10 @@ import {marked} from "marked";
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 
+import ItemReferenceExtension from './item_reference_extension.js'
+
 const appState = useAppStateStore()
 
-import ItemReferenceExtension from './item_reference_extension.js'
 
 TurndownService.prototype.escape = function (string) {
   return string
@@ -125,7 +126,7 @@ export default {
 </script>
 
 <template>
-  <editor-content :editor="editor" class="use-default-html-styles use-default-html-styles-large" spellcheck="false" />
+  <editor-content :editor="editor" class="use-default-html-styles use-default-html-styles-large text-[14px]" spellcheck="false" />
 </template>
 
 <style lang="scss">

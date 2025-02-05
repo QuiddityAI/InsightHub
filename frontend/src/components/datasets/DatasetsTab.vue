@@ -102,6 +102,12 @@ export default {
       <div class="h-full flex flex-row">
 
         <!-- left side --> <div class="flex-none w-[250px] flex flex-col gap-3 p-3 overflow-y-auto bg-white shadow-md z-30">
+          <button v-if="appState.organization?.schemas_for_user_created_datasets?.length > 0"
+            class="py-1 text-sm text-gray-500 text-left pl-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:text-blue-500"
+            @click="appState.set_app_tab('collections')">
+            < Back
+          </button>
+
           <div
             v-for="category in categories"
             class="w-full rounded-md bg-gray-100 pb-2 pl-3 pr-2 pt-2">

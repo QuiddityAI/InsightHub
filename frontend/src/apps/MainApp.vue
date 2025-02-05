@@ -8,19 +8,11 @@ import Toast from 'primevue/toast';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import DynamicDialog from 'primevue/dynamicdialog'
-// import OverlayPanel from "primevue/overlaypanel";
-// import Message from 'primevue/message';
 
-import TopMenu from "../components/general/TopMenu.vue"
 import CollectionsTab from "../components/collections/CollectionsTab.vue"
 import DatasetsTab from "../components/datasets/DatasetsTab.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
 import LegalFooter from '../components/general/LegalFooter.vue';
-// import MapWithLabelsAndButtons from "../components/map/MapWithLabelsAndButtons.vue"
-// import Timings from "../components/general/Timings.vue"
-// import ExploreTab from "../components/search/ExploreTab.vue"
-// import WriteTab from "../components/collections/WriteTab.vue"
-// import ChatsTab from "../components/chats/ChatsTab.vue"
 import HoverLabel from "../components/map/HoverLabel.vue"
 
 import { httpClient } from "../api/httpClient"
@@ -251,22 +243,10 @@ export default {
         :show_close_button="false"></ObjectDetailsModal>
     </Dialog>
 
-    <!-- <MapWithLabelsAndButtons v-show="appState.selected_app_tab === 'explore' && appState.map_id"></MapWithLabelsAndButtons> -->
-
-    <!-- <Timings></Timings> -->
-
     <!-- content area -->
     <div class="h-screen flex flex-col pointer-events-none relative">
 
-      <TopMenu class="flex-none pointer-events-auto relative z-50"></TopMenu>
-
-      <!-- <ExploreTab v-show="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab> -->
-
       <CollectionsTab v-show="appState.selected_app_tab === 'collections'" class="flex-1 pointer-events-auto"></CollectionsTab>
-
-      <!-- <ChatsTab v-if="appState.selected_app_tab === 'chats'" class="flex-1 pointer-events-auto"></ChatsTab>
-
-      <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab> -->
 
       <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto relative"></DatasetsTab>
 
