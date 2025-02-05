@@ -11,9 +11,11 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
 
@@ -31,59 +33,19 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
-    this.collection = this.appStateStore.collections.find((collection) => collection.id === this.collection_item.collection)
+    this.collection = this.collectionStore.available_collections.find((collection) => collection.id === this.collection_item.collection)
   },
   watch: {
     collection_item(val, oldVal) {
-      this.collection = this.appStateStore.collections.find((collection) => collection.id === this.collection_item.collection)
+      this.collection = this.collectionStore.available_collections.find((collection) => collection.id === this.collection_item.collection)
     },
   },
   methods: {
     show_table() {
       this.eventBus.emit("show_table", {collection_id: this.collection_item.collection, class_name: this.collection_item.classes[0]})
-    },
-    run_cell(column) {
-      const that = this
-      const body = {
-        column_id: column.id,
-        class_name: this.collection_item.classes[0],
-        collection_item_id: this.collection_item.id,
-      }
-      httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
-      .then(function (response) {
-        that.collection.current_extraction_processes = response.data.current_extraction_processes
-        that.get_extraction_results(column)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    get_extraction_results(column) {
-      const that = this
-      if (!that.collection.current_extraction_processes.includes(column.identifier)) {
-        this.$emit('refresh_item')
-      } else {
-        setTimeout(() => {
-          this.update_collection_extraction_processes(() => {
-            this.get_extraction_results(column)
-          })
-        }, 1000)
-      }
-    },
-    update_collection_extraction_processes(on_success) {
-      const that = this
-      const body = {
-        collection_id: this.collection.id,
-      }
-      httpClient.post("/org/data_map/get_collection", body).then(function (response) {
-        that.collection.current_extraction_processes = response.data.current_extraction_processes
-
-        if (on_success) {
-          on_success()
-        }
-      })
     },
   },
 }
@@ -101,7 +63,7 @@ export default {
         <div class="flex-1"></div>
         <button class="text-sm text-gray-500 hover:text-sky-500"
           @click="show_table">
-          Show Table
+          Show Collection
         </button>
         <button
           @click.stop="appState.remove_item_from_collection([collection_item.dataset_id, collection_item.item_id], collection_item.collection, collection_item.classes[0])"
@@ -119,9 +81,8 @@ export default {
           </span>
         </div>
         <CollectionTableCell :item="collection_item" :column="column" class="bg-white border rounded-md"
-          :current_extraction_processes="collection.current_extraction_processes"
-          :show_overlay_buttons="true"
-          @run_cell="run_cell(column)">
+          :columns_with_running_processes="collection.columns_with_running_processes"
+          :hide_execute_button="true">
         </CollectionTableCell>
       </div>
     </div>

@@ -1,35 +1,29 @@
 name: vsm_staging
 services:
-  organization-backend-staging:
-    image: visual_data_map/organization_backend
+  backend-staging:
+    image: visual_data_map/backend
     build:
       context: ./
-      dockerfile: ./docker/organization_backend.Dockerfile
+      dockerfile: ./docker/backend.Dockerfile
     volumes:
       - ./:/source_code/
-      - "${DATA_PATH:-/data}:/data"
+      - "${DATA_PATH:-/datia}:/data"
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
     environment:
-      - data_backend_host=http://data-backend-staging:55123
+      - data_backend_host=http://localhost:55125
       - postgres_host=postgres-staging
       - BACKEND_AUTHENTICATION_SECRET
-  data-backend-staging:
-    image: visual_data_map/data_backend
-    build:
-      context: ./
-      dockerfile: ./docker/data_backend.Dockerfile
-    volumes:
-      - ./:/source_code/
-      - "${DATA_PATH:-/data}:/data"
-    depends_on:
-      - organization-backend-staging
-    environment:
       - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
-      - organization_backend_host=http://organization-backend-staging:55125
+      - backend_host=http://localhost:55125
       - vector_database_host=qdrant
       - search_engine_host=opensearch
-      - BACKEND_AUTHENTICATION_SECRET
+      - PDFERRET_BASE_URL=http://pdferret:80
       - PDFERRET_GROBID_URL=http://grobid:8070
+      - PDFERRET_TIKA_SERVER_URL=http://tika:9998
+      - TIKA_SERVER_ENDPOINT=http://tika:9998
+      - TIKA_CLIENT_ONLY=True
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
   webserver-prod-staging:
     image: visual_data_map/webserver_prod
     build:
@@ -38,10 +32,10 @@ services:
     volumes:
       - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_STAGING_EXPOSED_IP:-127.0.0.1}:55440:55140"
+      - "${WEBSERVER_STAGING_EXPOSED_IP_V4:-127.0.0.1}:55440:55140"
+      - "${WEBSERVER_STAGING_EXPOSED_IP_V6:-[::1]}:55440:55140"
     environment:
-      - organization_backend_host=http://organization-backend-staging:55125
-      - data_backend_host=http://data-backend-staging:55123
+      - backend_host=http://backend-staging:55125
   postgres-staging:
     image: postgres:16
     volumes:
@@ -59,4 +53,5 @@ volumes:
   swag_data:
 networks:
   default:
+    external: true
     name: visualdatamapnetwork

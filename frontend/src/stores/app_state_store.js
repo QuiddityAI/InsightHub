@@ -7,13 +7,15 @@ import { httpClient } from "../api/httpClient"
 
 import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
 import { useMapStateStore } from "./map_state_store"
+import { useCollectionStore } from "./collection_store";
 
 export const useAppStateStore = defineStore("appState", {
   state: () => {
     return {
       eventBus: inject("eventBus"),
-      mapState: useMapStateStore(),
       toast: useToast(),
+      mapState: useMapStateStore(),
+      collectionStore: useCollectionStore(),
 
       available_organizations: [],
       organization_id: null,
@@ -25,7 +27,7 @@ export const useAppStateStore = defineStore("appState", {
       username: null,
       dev_mode: false,
 
-      selected_app_tab: "explore",
+      selected_app_tab: "collections",
 
       show_timings: false,
       store_search_history: true,
@@ -36,7 +38,6 @@ export const useAppStateStore = defineStore("appState", {
       load_map_after_search: true,
 
       highlighted_item_id: null,
-      selected_item_id: null,
       highlighted_cluster_id: null,
       selected_cluster_id: null,
 
@@ -44,6 +45,7 @@ export const useAppStateStore = defineStore("appState", {
       available_number_fields: [],
       available_language_filters: [],
       available_ranking_options: [],
+      last_used_language: "en",
 
       // results:
       is_loading_search_results: false,
@@ -73,6 +75,10 @@ export const useAppStateStore = defineStore("appState", {
 
       // selection:
       selected_document_ds_and_id: null,  // (dataset_id, item_id)
+      selected_document_relevant_parts: [],
+      selected_document_query: "",
+      selected_document_initial_item: null,
+      document_details_dialog_is_visible: false,
 
       // collections:
       collections: [],
@@ -88,18 +94,15 @@ export const useAppStateStore = defineStore("appState", {
       // writing tasks:
       selected_writing_task_id: null,
       selected_writing_task: null,
-      available_ai_modules: [
-        { identifier: 'openai_gpt_3_5', name: 'GPT 3.5 (medium accuracy and cost)' },
-        { identifier: 'openai_gpt_4_turbo', name: 'GPT 4 Turbo (highest accuracy and cost, very slow)' },
-        { identifier: 'openai_gpt_4_o', name: 'GPT 4o (highest accuracy and cost, slow)' },
-        { identifier: 'groq_llama_3_8b', name: 'Llama 3 8B (lowest cost, low accuracy, super fast)' },
-        { identifier: 'groq_llama_3_70b', name: 'Llama 3 70B (low cost, medium accuracy, fast)' },
-      ],
-      additional_column_modules: [
-        // { identifier: 'python_expression', name: 'Python Expression' },
-        { identifier: 'website_scraping', name: 'Website Text Extraction' },
-        { identifier: 'web_search', name: 'Web Search' },
-        { identifier: 'notes', name: 'No AI, just notes' },
+      column_modules: [
+        { identifier: 'llm', name: 'app_state_store.column-module-llm', help_text: 'app_state_store.column-module-llm-tooltip', highlight: true },
+        { identifier: 'relevance', name: 'app_state_store.column-module-relevance', help_text: 'app_state_store.column-module-relevance-tooltip', highlight: true },
+        { identifier: 'web_search', name: 'app_state_store.column-module-web-search', help_text: 'Searches for the item on the internet and extracts the text of the top webpages', highlight: true },
+        { identifier: 'website_scraping', name: 'app_state_store.column-module-website-text', help_text: 'Extracts the text of a given URL', highlight: false },
+        { identifier: 'item_field', name: 'app_state_store.column-module-item-field', help_text: 'Copies the value of a field of the original item. It can then be used for sorting, maps and charts.', highlight: true },
+        { identifier: 'notes', name: 'app_state_store.column-module-manual-notes', help_text: 'A column for your own notes', highlight: true },
+        // { identifier: 'python_expression', name: 'Python Expression', help_text: 'Allows to use Python to process an item', highlight: false },
+        { identifier: 'email', name: 'app_state_store.column-module-email', help_text: 'Send an e-mail with information about the item (in development)', highlight: false },
       ],
 
       settings: {
@@ -107,7 +110,7 @@ export const useAppStateStore = defineStore("appState", {
           dataset_ids: [],
           task_type: null,  // one of quick_search, custom_search etc.
           search_type: "external_input", // or cluster, collection or similar item
-          search_algorithm: "hybrid",  // "keyword", "vector", "hybrid"
+          retrieval_mode: "hybrid",  // "keyword", "vector", "hybrid"
           use_separate_queries: false,
           all_field_query: "",
           all_field_query_negative: "",
@@ -287,6 +290,12 @@ export const useAppStateStore = defineStore("appState", {
         }
       })
     },
+    commit_user_preferences() {
+      const body = {
+        preferences: this.user.preferences,
+      }
+      httpClient.post("/org/data_map/set_user_preferences", body)
+    },
     retrieve_stored_maps_history_and_collections() {
       const that = this
       if (this.organization_id == null) {
@@ -413,10 +422,13 @@ export const useAppStateStore = defineStore("appState", {
     prepare_dataset_object(dataset) {
       // convert strings to functions:
       const result_list_rendering = dataset.schema.result_list_rendering
-      for (const field of ["title", "subtitle", "body", "image", "url", "icon", "tags"]) {
+      for (const field of ["title", "subtitle", "body", "image", "url", "icon", "badges", "tagline", "sub_tagline"]) {
         // eval?.('"use strict"; ' + code) prevents access to local variables and
         // any new variable or function declarations are scoped instead of global
         // (still a major security risk, more meant to prevent accidental bugs)
+        if (field === "badges" && !result_list_rendering[field]) {
+          result_list_rendering["badges"] = result_list_rendering["tags"]
+        }
         result_list_rendering[field] = eval?.('"use strict"; ' + result_list_rendering[field]) || ((item) => null)
       }
       dataset.schema.result_list_rendering = result_list_rendering
@@ -430,7 +442,10 @@ export const useAppStateStore = defineStore("appState", {
       dataset.schema.hover_label_rendering = hover_label_rendering
 
       const detail_view_rendering = dataset.schema.detail_view_rendering
-      for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon", "tags", "full_text_pdf_url"]) {
+      for (const field of ["title", "subtitle", "body", "image", "url", "doi", "icon", "badges", "full_text_pdf_url", "tagline", "sub_tagline"]) {
+        if (field === "badges" && !result_list_rendering[field]) {
+          result_list_rendering["badges"] = result_list_rendering["tags"]
+        }
         detail_view_rendering[field] = detail_view_rendering[field]
           ? eval?.('"use strict"; ' + detail_view_rendering[field])
           : (item) => ""
@@ -449,7 +464,7 @@ export const useAppStateStore = defineStore("appState", {
       history.replaceState(null, null, "?" + queryParams.toString())
       this.populate_search_fields_based_on_selected_datasets()
       // update default search settings:
-      this.settings.search.search_algorithm = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].merged_advanced_options.search_algorithm).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
+      this.settings.search.retrieval_mode = this.settings.search.dataset_ids.map(dataset_id => this.datasets[dataset_id].merged_advanced_options.retrieval_mode).reduce((acc, val) => val == 'keyword' || val == 'meaning' ? val : acc, "hybrid")
       this.settings.frontend.rendering.max_opacity = this.default_settings.frontend.rendering.max_opacity
       this.settings.frontend.rendering.point_size_factor = this.default_settings.frontend.rendering.point_size_factor
       for (const dataset_id of this.settings.search.dataset_ids) {
@@ -516,6 +531,7 @@ export const useAppStateStore = defineStore("appState", {
           }
         }
         if (dataset.merged_advanced_options.default_result_language) {
+          // FIXME: this is not called for new workflow with collections as the core
           that.settings.search.result_language = dataset.merged_advanced_options.default_result_language
         }
       }
@@ -523,7 +539,7 @@ export const useAppStateStore = defineStore("appState", {
       // ranking options are only supported if there is only one dataset selected:
       if (this.settings.search.dataset_ids.length == 1) {
         const dataset = this.datasets[this.settings.search.dataset_ids[0]]
-        if (dataset.merged_advanced_options.ranking_options.length > 0) {
+        if (dataset.merged_advanced_options.ranking_options?.length > 0) {
           that.available_ranking_options = dataset.merged_advanced_options.ranking_options
           that.settings.search.ranking_settings = dataset.merged_advanced_options.ranking_options[0]
         }
@@ -591,7 +607,6 @@ export const useAppStateStore = defineStore("appState", {
       this.cluster_data = []
       this.clusterIdsPerPoint = []
       this.highlighted_item_id = null
-      this.selected_item_id = null
       this.highlighted_cluster_id = null
       this.selected_cluster_id = null
       this.mapState.visited_point_indexes = []
@@ -624,6 +639,10 @@ export const useAppStateStore = defineStore("appState", {
 
       // selection:
       this.selected_document_ds_and_id = null
+      this.selected_document_relevant_parts = []
+      this.selected_document_query = ""
+      this.selected_document_initial_item = null
+      this.document_details_dialog_is_visible = false
       this.mapState.reset_visibility_filters()
 
       this.eventBus.emit("search_results_cleared")
@@ -709,10 +728,10 @@ export const useAppStateStore = defineStore("appState", {
 
       // postprocess search query:
       if (this.settings.search.search_type == "external_input"
-          && ["vector", "hybrid"].includes(this.settings.search.search_algorithm)) {
+          && ["vector", "hybrid"].includes(this.settings.search.retrieval_mode)) {
         this.convert_quoted_parts_to_filter()
       }
-      if (this.settings.search.search_algorithm != "keyword") {
+      if (this.settings.search.retrieval_mode != "keyword") {
         // for now, ranking settings are not supported in vector or hybrid search:
         this.settings.search.ranking_settings = {}
       }
@@ -1241,28 +1260,40 @@ export const useAppStateStore = defineStore("appState", {
       return origin
     },
     narrow_down_on_cluster(cluster_item) {
-      this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])
-      this.settings.search.search_type = "cluster"
-      this.settings.search.cluster_origin_map_id = this.map_id
-      this.settings.search.cluster_id = cluster_item.id
-      this.settings.search.all_field_query = ""
-      this.settings.search.all_field_query_negative = ""
-      this.settings.search.origin_display_name = cluster_item.title
-      this.set_two_dimensional_projection()
-      this.request_search_results()
+      // this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])
+      const collection_item_ids = []
+      for (const pointIdx in this.mapState.per_point.cluster_id) {
+        if (this.mapState.per_point.cluster_id[pointIdx] == cluster_item.id) {
+          collection_item_ids.push(this.mapState.per_point.collection_item_id[pointIdx])
+        }
+      }
+      const filter = {
+        uid: null,
+        display_name: cluster_item.title,
+        removable: true,
+        filter_type: "collection_item_ids",
+        value: collection_item_ids,
+        field: null,
+      }
+      this.collectionStore.add_filter(filter, () => {
+        this.set_two_dimensional_projection()  // correct?
+        this.mapState.reset_selection()
+      })
     },
-    narrow_down_on_selection(selected_items) {
-      this.settings.search.origins = (this.mapState.map_parameters.search.origins || []).concat([this.get_current_origin()])
-      this.settings.search.search_type = "map_subset"
-      this.settings.search.cluster_origin_map_id = this.map_id
-      this.settings.search.selected_items = selected_items
-      this.settings.search.all_field_query = ""
-      this.settings.search.all_field_query_negative = ""
-      this.settings.search.origin_display_name = "Custom Selection"
-      this.set_two_dimensional_projection()
-      this.mapState.visibility_filters = []
-      this.eventBus.emit("visibility_filters_updated")
-      this.request_search_results()
+    narrow_down_on_selection() {
+      if (!this.mapState.selected_collection_item_ids.length) return
+      const filter = {
+        uid: null,
+        display_name: "Custom Selection",
+        removable: true,
+        filter_type: "collection_item_ids",
+        value: this.mapState.selected_collection_item_ids,
+        field: null,
+      }
+      this.collectionStore.add_filter(filter, () => {
+        this.set_two_dimensional_projection()  // correct?
+        this.mapState.reset_selection()
+      })
     },
     show_collection_as_map(collection, class_name) {
       this.settings.search.search_type = "collection"
@@ -1296,8 +1327,21 @@ export const useAppStateStore = defineStore("appState", {
       this.set_two_dimensional_projection()
       this.request_search_results()
     },
-    show_document_details(dataset_and_item_id) {
+    show_document_details(dataset_and_item_id, initial_item=null, relevant_parts=null, query=null, in_new_tab=false) {
+      const queryParams = new URLSearchParams(window.location.search)
+      queryParams.set("item_details", dataset_and_item_id.join(","))
+      console.log("showing document details", dataset_and_item_id, in_new_tab)
+      if (in_new_tab) {
+        window.open(window.location.pathname + "?" + queryParams.toString(), "_blank")
+        return
+      }
+      history.replaceState(null, null, "?" + queryParams.toString())
+      this.selected_document_relevant_parts = relevant_parts || []
+      this.selected_document_query = query || ""
       this.selected_document_ds_and_id = dataset_and_item_id
+      this.selected_document_initial_item = initial_item || this.get_item_by_ds_and_id(dataset_and_item_id)
+      this.document_details_dialog_is_visible = true
+
       const pointIdx = this.mapState.per_point.item_id.indexOf(dataset_and_item_id)
       if (pointIdx !== -1) {
         this.mapState.markedPointIdx = pointIdx
@@ -1307,8 +1351,16 @@ export const useAppStateStore = defineStore("appState", {
       }
     },
     close_document_details() {
+      this.document_details_dialog_is_visible = false
       this.selected_document_ds_and_id = null
+      this.selected_document_relevant_parts = []
+      this.selected_document_query = ""
+      this.selected_document_initial_item = null
       this.mapState.markedPointIdx = -1
+
+      const queryParams = new URLSearchParams(window.location.search)
+      queryParams.delete("item_details")
+      history.replaceState(null, null, "?" + queryParams.toString())
     },
     set_polar_projection() {
       this.settings.projection.use_polar_coordinates = true
@@ -1332,7 +1384,7 @@ export const useAppStateStore = defineStore("appState", {
     show_similar_items(item_ds_and_id, full_item=null) {
       this.settings.search.search_type = "similar_to_item"
       this.settings.search.similar_to_item_id = item_ds_and_id
-      this.settings.search.search_algorithm = "vector"
+      this.settings.search.retrieval_mode = "vector"
       // use currently selected datasets, no need to change them
       this.settings.search.all_field_query = ""
       this.settings.search.all_field_query_negative = ""
@@ -1428,82 +1480,16 @@ export const useAppStateStore = defineStore("appState", {
     add_selected_points_to_collection(collection_id, class_name, is_positive) {
       // TODO: implement more efficient way
       for (const ds_and_item_id of this.visible_result_ids) {
-        this.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, false)
+        this.collectionStore.add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, false)
       }
       this.toast.add({severity: 'success', summary: 'Items added to collection', detail: `${this.visible_result_ids.length} items added to the collection`, life: 3000})
-    },
-    add_item_to_collection(ds_and_item_id, collection_id, class_name, is_positive, show_toast=true) {
-      const that = this
-      this.last_used_collection_id = collection_id
-      this.last_used_collection_class = class_name
-      const add_item_to_collection_body = {
-        collection_id: collection_id,
-        is_positive: is_positive,
-        class_name: class_name,
-        field_type: FieldType.IDENTIFIER,
-        value: null,
-        dataset_id: ds_and_item_id[0],
-        item_id: ds_and_item_id[1],
-        weight: 1.0,
-      }
-      httpClient
-        .post("/org/data_map/add_item_to_collection", add_item_to_collection_body)
-        .then(function (created_item) {
-          const collection = that.collections.find((collection) => collection.id === collection_id)
-          if (!collection) return
-          const class_details = collection.actual_classes.find(
-            (actual_class) => actual_class.name === class_name
-          )
-          class_details[is_positive ? "positive_count" : "negative_count"] += 1
-          that.eventBus.emit("collection_item_added", {
-            collection_id: collection.id,
-            class_name,
-            is_positive,
-            created_item: created_item.data,
-          })
-          if (show_toast) {
-            that.toast.add({severity: 'success', summary: 'Item added to collection', detail: 'Item added to the collection', life: 3000})
-          }
-        })
     },
     remove_selected_points_from_collection(collection_id, class_name) {
       // TODO: implement more efficient way
       for (const ds_and_item_id of this.visible_result_ids) {
-        this.remove_item_from_collection(ds_and_item_id, collection_id, class_name, false)
+        this.collectionStore.remove_item_from_collection(ds_and_item_id, collection_id, class_name, false)
       }
       this.toast.add({severity: 'success', summary: 'Items removed from collection', detail: `${this.visible_result_ids.length} items removed from the collection`, life: 3000})
-    },
-    remove_item_from_collection(ds_and_item_id, collection_id, class_name, show_toast=true) {
-      const that = this
-      const body = {
-        collection_id: collection_id,
-        class_name: class_name,
-        value: null,
-        dataset_id: ds_and_item_id[0],
-        item_id: ds_and_item_id[1],
-      }
-      httpClient
-        .post("/org/data_map/remove_collection_item_by_value", body)
-        .then(function (response) {
-          for (const item of response.data) {
-            const collection_item_id = item.id
-            that.eventBus.emit("collection_item_removed", {
-              collection_id,
-              class_name,
-              collection_item_id,
-            })
-            const collection = that.collections.find(
-              (collection) => collection.id === collection_id
-            )
-            const class_details = collection.actual_classes.find(
-              (actual_class) => actual_class.name === class_name
-            )
-            class_details[item.is_positive ? "positive_count" : "negative_count"] -= 1
-          }
-          if (show_toast) {
-            that.toast.add({severity: 'success', summary: 'Item removed from collection', detail: 'Item removed from the collection', life: 3000})
-          }
-        })
     },
   },
 })

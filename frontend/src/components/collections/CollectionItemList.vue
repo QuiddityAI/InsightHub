@@ -1,4 +1,10 @@
 <script setup>
+
+
+// -------------------------- Deprecated! --------------------------
+
+
+
 import { httpClient } from "../../api/httpClient"
 
 import { EllipsisVerticalIcon, TrashIcon } from "@heroicons/vue/24/outline"

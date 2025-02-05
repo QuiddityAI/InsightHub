@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root { font-family: 'Inter', system-ui; }
-@supports (font-variation-settings: normal) {
+/* @supports (font-variation-settings: normal) {
   :root { font-family: 'InterVariable', system-ui; }
-}
+} */
 
 /* Custom Tailwind CSS for PrimeVue components */
 
@@ -76,4 +76,36 @@
       --primary-highlight-hover-opacity: 0.2;
 
   }
+}
+
+.use-default-html-styles h1 {
+  font-size: 1.2em;
+  margin: 0.67em 0;
+}
+
+.use-default-html-styles h2 {
+  font-size: 1.17em;
+  margin: 0.83em 0;
+}
+
+.use-default-html-styles ul {
+  list-style-type: disc;
+  padding: 0 0 0 1.4em;
+}
+
+.use-default-html-styles ol {
+  list-style-type: decimal;
+  padding: 0 0 0 1.4em;
+}
+
+.use-default-html-styles-large p {
+  margin: 0 0 1em 0;
+}
+
+.use-default-html-styles-large ul {
+  margin: 0 0 1em 0;
+}
+
+.use-default-html-styles-large ol {
+  margin: 0 0 1em 0;
 }

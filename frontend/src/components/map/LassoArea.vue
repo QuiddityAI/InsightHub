@@ -19,7 +19,7 @@ export default {
   computed: {
     lasso_points_str() {
       return this.mapStateStore.lasso_points
-        .map((p) => `${this.mapStateStore.screenLeftFromRelative(p[0])},${this.mapStateStore.screenTopFromRelative(p[1])}`)
+        .map((p) => `${this.mapStateStore.mapLeftFromRelative(p[0])},${this.mapStateStore.mapTopFromRelative(p[1])}`)
         .join(" ")
     },
     ...mapStores(useMapStateStore),
@@ -38,7 +38,7 @@ export default {
   <svg
       v-if="lasso_points_str"
       id="lasso_area"
-      class="pointer-events-none fixed h-full w-full"
+      class="pointer-events-none"
       xmlns="http://www.w3.org/2000/svg">
       <polygon
         :points="lasso_points_str"

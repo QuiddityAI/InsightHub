@@ -10,7 +10,7 @@ import {
   Transform,
   Texture,
   TextureLoader,
-} from "https://cdn.jsdelivr.net/npm/ogl@0.0.117/+esm"
+} from "https://cdn.jsdelivr.net/npm/ogl@1.0.8/+esm"
 import * as math from "mathjs"
 import pointInPolygon from "point-in-polygon"
 
@@ -29,8 +29,10 @@ import { ensureLength } from "../../utils/utils.js"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 </script>
 
 <script>
@@ -68,6 +70,9 @@ export default {
     }
   },
   computed: {
+    ...mapStores(useMapStateStore),
+    ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
     pointsVertexShader() {
       return this.appStateStore.settings.frontend.rendering.style == "plotly"
         ? pointsVertexShaderPlotly
@@ -78,8 +83,6 @@ export default {
         ? pointsFragmentShaderPlotly
         : pointsFragmentShader3D
     },
-    ...mapStores(useMapStateStore),
-    ...mapStores(useAppStateStore),
   },
   mounted() {
     const that = this
@@ -138,35 +141,16 @@ export default {
     "mapStateStore.per_point.opacity"() {
       this.update_opacities()
     },
+    "mapStateStore.selected_collection_item_ids"() {
+      this.update_opacities()
+    },
+    "collectionStore.filtered_item_ids"() {
+      this.update_opacities()
+    },
   },
   methods: {
     resetData() {
-      this.mapStateStore.text_data = {}
-      this.mapStateStore.per_point = {
-        item_id: [],
-        cluster_id: [],
-        x: [],
-        y: [],
-        size: [],
-        hue: [],
-        sat: [],
-        val: [],
-        opacity: [],
-        secondary_hue: [],
-        secondary_sat: [],
-        secondary_val: [],
-        secondary_opacity: [],
-        flatness: [],
-        thumbnail_aspect_ratio: [],
-      }
-
-      this.mapStateStore.clusterData = []
-      this.mapStateStore.textureAtlas = null
-      this.mapStateStore.thumbnailSpriteSize = 64
-
-      this.mapStateStore.markedPointIdx = -1
-      this.mapStateStore.hovered_point_idx = -1
-
+      this.mapStateStore.reset_data()
       this.updateGeometry()
     },
     resetPanAndZoom() {
@@ -201,10 +185,22 @@ export default {
       })
     },
     setupWebGl() {
+      const that = this
       this.renderer = new Renderer({ depth: false, dpr: window.devicePixelRatio || 1.0 })
       this.glContext = this.renderer.gl
       this.$refs.webGlArea.appendChild(this.glContext.canvas)
-      this.glContext.clearColor(0.93, 0.94, 0.95, 1)
+      this.glContext.clearColor(0.85, 0.86, 0.89, 1)
+      //this.glContext.clearColor(1, 1, 1, 1)
+
+      // not tested yet, but should handle context loss
+      this.glContext.canvas.addEventListener("webglcontextlost", (event) => {
+        event.preventDefault()
+        console.error("WebGL context lost")
+      })
+      this.glContext.canvas.addEventListener("webglcontextrestored", () => {
+        console.log("WebGL context restored")
+        that.setupWebGl()
+      })
 
       this.camera = new Camera(this.glContext, {
         left: 0.00001,
@@ -214,14 +210,22 @@ export default {
       })
       this.camera.position.z = 1
 
-      const that = this
 
-      function resize() {
-        that.renderer.setSize(window.innerWidth, window.innerHeight)
+      function on_resize() {
+        if (!that.$refs.webGlArea) return
+        that.mapStateStore.map_client_x = that.$refs.webGlArea.getBoundingClientRect().x
+        that.mapStateStore.map_client_y = that.$refs.webGlArea.getBoundingClientRect().y
+        that.mapStateStore.map_client_width = that.$refs.webGlArea.clientWidth
+        that.mapStateStore.map_client_height = that.$refs.webGlArea.clientHeight
+        that.renderer.setSize(that.$refs.webGlArea.clientWidth, that.$refs.webGlArea.clientHeight)
         //that.camera.perspective({ aspect: that.glContext.canvas.width / that.glContext.canvas.height });
+        that.updateGeometry()
       }
-      window.addEventListener("resize", resize, false)
-      resize()
+      window.addEventListener("resize", on_resize, false)
+      new ResizeObserver(() => {
+        on_resize()
+      }).observe(this.$refs.webGlArea)
+      on_resize()
       this.updateGeometry()
 
       let lastUpdateTimeInMs = performance.now()
@@ -248,19 +252,29 @@ export default {
       function update(currentTimeInMs) {
         requestAnimationFrame(update)
 
-        const timeSinceLastUpdateInSec = (currentTimeInMs - lastUpdateTimeInMs) / 1000.0
+        let timeSinceLastUpdateInSec = (currentTimeInMs - lastUpdateTimeInMs) / 1000.0
         lastUpdateTimeInMs = currentTimeInMs
+        if (timeSinceLastUpdateInSec < 0.0) {
+          return
+        }
+        if (timeSinceLastUpdateInSec > 0.1) {
+          timeSinceLastUpdateInSec = 0.02
+        }
 
         if (
           that.currentPositionsX.length == 0 ||
           that.currentPositionsX.length != that.mapStateStore.per_point.x.length
-        )
+        ) {
           return
+        }
+
+        const use_animations = true
 
         // restDelta means at which distance from the target position the movement stops and they
         // jump to the target (otherwise the motion could go on forever)
         // here we assume that the plot is about 700px wide and if the delta is less than a pixel, it should stop
-        const restDelta = (math.max(that.mapStateStore.per_point.x) - math.min(that.mapStateStore.per_point.x)) / 700.0
+        const plotWidth = math.max(that.mapStateStore.per_point.x) - math.min(that.mapStateStore.per_point.x)
+        const restDelta = plotWidth > 0.0 ? plotWidth / 700.0 : 1.0
         // to make sure overshoots still work, we don't stop the motion if the speed is still
         // greater than restSpeed, here defined as restDelta per 1/5th second
         const restSpeed = restDelta / 0.2 // in restDelta units per sec
@@ -391,9 +405,10 @@ export default {
     centerAndFitDataToActiveAreaSmooth() {
       if (this.mapStateStore.per_point.x.length === 0) return
       const newBaseOffsetTarget = [-math.min(this.mapStateStore.per_point.x), -math.min(this.mapStateStore.per_point.y)]
-      const newBaseScaleTarget = [1.0, 1.0]
-      newBaseScaleTarget[0] = 1.0 / (math.max(this.mapStateStore.per_point.x) + newBaseOffsetTarget[0])
-      newBaseScaleTarget[1] = 1.0 / (math.max(this.mapStateStore.per_point.y) + newBaseOffsetTarget[1])
+      const newBaseScaleTarget = [
+        1.0 / (math.max(this.mapStateStore.per_point.x) + newBaseOffsetTarget[0] || 1.0),
+        1.0 / (math.max(this.mapStateStore.per_point.y) + newBaseOffsetTarget[1] || 1.0)
+      ]
       const offsetChange = math.max(
         math.max(newBaseOffsetTarget[0], this.mapStateStore.baseOffsetTarget[0]) /
           math.min(newBaseOffsetTarget[0], this.mapStateStore.baseOffsetTarget[0]),
@@ -447,12 +462,25 @@ export default {
     },
     update_opacities() {
       this.actual_opacity = Array(this.mapStateStore.per_point.x.length).fill(1.0)
+      if ( this.mapStateStore.per_point.x.length !== this.mapStateStore.per_point.item_id.length) {
+        // this might happen during loading a new map
+        return
+      }
       try {
-        for (const i in this.mapStateStore.per_point.x) {
-          const item_ds_and_id = this.mapStateStore.per_point.item_id[i]
-          const item = this.mapStateStore.text_data[item_ds_and_id[0]][item_ds_and_id[1]]
-          const include = this.mapStateStore.visibility_filters.every(filter_item => filter_item.filter_fn(item))
-          this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+        if (this.mapStateStore.selected_collection_item_ids.length > 0) {
+          for (const i in this.mapStateStore.per_point.x) {
+            const collection_item_id = this.mapStateStore.per_point.collection_item_id[i]
+            const include = this.mapStateStore.selected_collection_item_ids.includes(collection_item_id)
+            this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+          }
+        } else if (this.collectionStore.filtered_item_ids.length > 0) {
+          for (const i in this.mapStateStore.per_point.x) {
+            const collection_item_id = this.mapStateStore.per_point.collection_item_id[i]
+            const include = this.collectionStore.filtered_item_ids.includes(collection_item_id)
+            this.actual_opacity[i] = include ? this.mapStateStore.per_point.opacity[i] || 1.0 : 0.1
+          }
+        } else {
+          this.actual_opacity = this.mapStateStore.per_point.opacity
         }
       } catch (e) {
         console.warn(e)
@@ -460,23 +488,17 @@ export default {
       this.updateGeometry()
     },
     updateGeometry() {
+      if (!this.$refs.webGlArea) return
       const pointCount = this.mapStateStore.per_point.x.length
       this.mapStateStore.per_point.y = ensureLength(this.mapStateStore.per_point.y, pointCount, 0.0)
 
-      this.currentPositionsX = ensureLength(
-        this.currentPositionsX,
-        pointCount,
-        pointCount > 0 ? math.mean(this.mapStateStore.per_point.x) : 0.0,
-        true
-      )
-      this.currentPositionsY = ensureLength(
-        this.currentPositionsY,
-        pointCount,
-        pointCount > 0 ? math.mean(this.mapStateStore.per_point.y) : 0.0,
-        true
-      )
-      this.currentVelocityX = ensureLength(this.currentVelocityX, pointCount, 0.0, true)
-      this.currentVelocityY = ensureLength(this.currentVelocityY, pointCount, 0.0, true)
+      if (this.currentPositionsX.length !== pointCount || this.currentPositionsY.length !== pointCount) {
+        this.currentPositionsX = this.mapStateStore.per_point.x.slice()
+        this.currentPositionsY = this.mapStateStore.per_point.y.slice()
+        this.currentVelocityX = Array(pointCount).fill(0.0)
+        this.currentVelocityY = Array(pointCount).fill(0.0)
+      }
+
       this.actual_opacity = ensureLength(this.actual_opacity, pointCount, 1.0)
       this.pointVisibility = ensureLength(this.pointVisibility, pointCount, 0)
 
@@ -712,8 +734,8 @@ export default {
       this.glMesh.setParent(this.glScene)
     },
     getUniforms() {
-      const ww = window.innerWidth
-      const wh = window.innerHeight
+      const ww = this.$refs.webGlArea.clientWidth
+      const wh = this.$refs.webGlArea.clientHeight
       let selectedClusterId =
         (this.appStateStore.selected_cluster_id !== null && this.appStateStore.selected_cluster_id !== undefined)
           ? this.appStateStore.selected_cluster_id
@@ -750,6 +772,7 @@ export default {
       }
     },
     updateUniforms() {
+      if (!this.$refs.webGlArea) return
       this.glProgram.uniforms = this.getUniforms()
       this.glProgramShadows.uniforms = this.getUniforms()
       this.renderer.render({ scene: this.glScene, camera: this.camera })
@@ -837,10 +860,11 @@ export default {
       if (mouseMovementDistance > 5) return
       if (event.shiftKey) {
         const ds_and_item_id = this.mapStateStore.per_point.item_id[this.mapStateStore.hovered_point_idx]
+        const collection_item_id = this.mapStateStore.per_point.collection_item_id[this.mapStateStore.hovered_point_idx]
         if (this.mapStateStore.get_lasso_selection().includes(ds_and_item_id)) {
-          this.mapStateStore.modify_lasso_selection([ds_and_item_id], "remove")
+          this.mapStateStore.modify_lasso_selection([ds_and_item_id], [collection_item_id], "remove")
         } else {
-          this.mapStateStore.modify_lasso_selection([ds_and_item_id], "add")
+          this.mapStateStore.modify_lasso_selection([ds_and_item_id], [collection_item_id], "add")
         }
       } else {
         const dataset_and_item_id = this.mapStateStore.per_point.item_id[this.mapStateStore.hovered_point_idx]
@@ -899,15 +923,18 @@ export default {
     executeLassoSelection(mode = "replace") {
       const polygonPoints = this.mapStateStore.lasso_points
       const pointPositions = this.mapStateStore.per_point.x.map((x, i) => [x, this.mapStateStore.per_point.y[i]])
-      const selectedPointIds = []
+      const selectedPointDataIds = []
+      const collection_item_ids = []
       for (const i of Array(pointPositions.length).keys()) {
         const point = pointPositions[i]
         if (pointInPolygon(point, polygonPoints)) {
           const ds_and_item_id = this.mapStateStore.per_point.item_id[i]
-          selectedPointIds.push(ds_and_item_id)
+          selectedPointDataIds.push(ds_and_item_id)
+          const collection_item_id = this.mapStateStore.per_point.collection_item_id[i]
+          collection_item_ids.push(collection_item_id)
         }
       }
-      this.mapStateStore.modify_lasso_selection(selectedPointIds, mode)
+      this.mapStateStore.modify_lasso_selection(selectedPointDataIds, collection_item_ids, mode)
       this.mapStateStore.lasso_points = []
       this.updateGeometry()
     },
@@ -916,10 +943,10 @@ export default {
 </script>
 
 <template>
-  <div>
-    <div class="fixed h-full w-full" ref="panZoomProxy"></div>
+  <div class="" id="interactive_map">
+    <div class="absolute h-full w-full" ref="panZoomProxy"></div>
 
-    <div
+    <div id="webGlArea"
       ref="webGlArea"
       @mousemove="updateOnHover"
       @touchmove="updateOnHover"
@@ -928,7 +955,7 @@ export default {
       @touchstart="onMouseDown"
       @touchend="onMouseUp"
       @mouseleave="onMouseLeave"
-      class="fixed h-full w-full"
+      class="absolute h-full w-full"
       :class="{
         'cursor-crosshair': mapStateStore.selected_map_tool === 'lasso',
         'cursor-pointer': mapState.hovered_point_idx !== -1,

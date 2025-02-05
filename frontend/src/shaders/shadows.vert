@@ -45,7 +45,8 @@ void main() {
 
     // shadow direction:
     vec3 lightPos = vec3(lightPosition.xy, -2.0);
-    vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * vec3(zoom, zoom, 1.0);
+    float shadowOffsetZoomChange = 0.05;
+    vec3 relativeShadowOffset = (pannedAndZoomedPos - lightPos) * ((1.0 - shadowOffsetZoomChange) + vec3(zoom * shadowOffsetZoomChange, zoom * shadowOffsetZoomChange, 1.0));
     vec3 shadowOffsetPos = pannedAndZoomedPos + relativeShadowOffset * (1.0 / 200.0);
 
     // position is now in range 0.0 - 1.0
@@ -55,7 +56,7 @@ void main() {
     // (see points.vert shader for how zoomAdjustment works)
     float zoomAdjustment = (zoom - 1.0) * 0.05 + 1.0;
     float shadowScale = 1.5;
-    float pointSize = (5.0 + 15.0 * pointSize) * shadowScale * zoomAdjustment * pointSizeFactor * devicePixelRatio;
+    float pointSize = (12.0 + 10.0 * pointSize) * shadowScale * zoomAdjustment * pointSizeFactor * devicePixelRatio;
 
     vec2 quadVertexOffset = (position - 0.5) * (vec2(pointSize) / viewportSize);
     vec3 vertexPosition = pointPos + vec3(quadVertexOffset, 0.0) / devicePixelRatio;

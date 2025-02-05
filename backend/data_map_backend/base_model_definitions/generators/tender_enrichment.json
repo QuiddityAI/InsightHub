@@ -1,0 +1,28 @@
+[
+{
+  "model": "data_map_backend.generator",
+  "pk": "tender_enrichment",
+  "fields": {
+    "name": "Tender Enrichment",
+    "description": "",
+    "created_at": "2024-12-29T17:42:31.993Z",
+    "changed_at": "2024-12-29T17:43:21.202Z",
+    "requires_context": false,
+    "requires_multiple_input_fields": true,
+    "returns_multiple_fields": true,
+    "module": "tender_enrichment",
+    "embedding_space": null,
+    "is_preferred_for_search": false,
+    "default_parameters": null,
+    "parameter_description": "",
+    "input_type": "ARBITRARY_OBJECT",
+    "input_is_array": false,
+    "input_description": "",
+    "output_type": "BOOL",
+    "output_is_array": false,
+    "output_description": "",
+    "text_similarity_threshold": null,
+    "image_similarity_threshold": null
+  }
+}
+]

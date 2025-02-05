@@ -8,32 +8,33 @@ import Toast from 'primevue/toast';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import DynamicDialog from 'primevue/dynamicdialog'
-import OverlayPanel from "primevue/overlaypanel";
-import Message from 'primevue/message';
+// import OverlayPanel from "primevue/overlaypanel";
+// import Message from 'primevue/message';
 
-import MapWithLabelsAndButtons from "../components/map/MapWithLabelsAndButtons.vue"
 import TopMenu from "../components/general/TopMenu.vue"
-import Timings from "../components/general/Timings.vue"
-import ExploreTab from "../components/search/ExploreTab.vue"
 import CollectionsTab from "../components/collections/CollectionsTab.vue"
-import WriteTab from "../components/collections/WriteTab.vue"
 import DatasetsTab from "../components/datasets/DatasetsTab.vue"
-import ChatsTab from "../components/chats/ChatsTab.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
+import LegalFooter from '../components/general/LegalFooter.vue';
+// import MapWithLabelsAndButtons from "../components/map/MapWithLabelsAndButtons.vue"
+// import Timings from "../components/general/Timings.vue"
+// import ExploreTab from "../components/search/ExploreTab.vue"
+// import WriteTab from "../components/collections/WriteTab.vue"
+// import ChatsTab from "../components/chats/ChatsTab.vue"
 import HoverLabel from "../components/map/HoverLabel.vue"
 
 import { httpClient } from "../api/httpClient"
-import { FieldType, normalizeArray, normalizeArrayMedianGamma } from "../utils/utils"
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../stores/app_state_store"
 import { useMapStateStore } from "../stores/map_state_store"
+import { useCollectionStore } from '../stores/collection_store';
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
-
-// Chart.register(annotationPlugin)
+const collectionStore = useCollectionStore()
 
 const _window = window
+
 </script>
 
 <script>
@@ -41,27 +42,22 @@ export default {
   inject: ["eventBus"],
   data() {
     return {
-      // tabs:
-      selected_tab: "results",
-
-      show_details_dialog: false,
-
-      score_info_chart: null,
+      // score_info_chart: null,
     }
   },
   methods: {
-    updateMapPassiveMargin() {
-      if (window.innerWidth > 768) {
-        this.mapStateStore.passiveMarginsLRTB = [
-          window.innerWidth * 0.5 + 50,
-          100,
-          120,
-          70,
-        ]
-      } else {
-        this.mapStateStore.passiveMarginsLRTB = [50, 50, 250, 50]
-      }
-    },
+    // updateMapPassiveMargin() {
+    //   if (window.innerWidth > 768) {
+    //     this.mapStateStore.passiveMarginsLRTB = [
+    //       window.innerWidth * 0.5 + 50,
+    //       100,
+    //       120,
+    //       70,
+    //     ]
+    //   } else {
+    //     this.mapStateStore.passiveMarginsLRTB = [50, 50, 250, 50]
+    //   }
+    // },
     evaluate_url_query_parameters() {
       const queryParams = new URLSearchParams(window.location.search)
       if (queryParams.get("error") !== null) {
@@ -116,62 +112,71 @@ export default {
         this.appStateStore.reset_search_box()
         this.appStateStore.reset_search_results_and_map()
       }
-    },
-    show_score_info_chart() {
-      if (this.score_info_chart) this.score_info_chart.destroy()
-      const datasets = []
-      const annotations = []
-      const colors = ["red", "green", "blue", "purple", "fuchsia", "aqua", "yellow", "navy"]
-      let i = 0
-      let maxElements = 1
-      for (const score_info_title in this.appStateStore.search_result_score_info) {
-        maxElements = Math.max(
-          maxElements,
-          this.appStateStore.search_result_score_info[score_info_title].scores.length
-        )
-        datasets.push({
-          label: score_info_title,
-          data: this.appStateStore.search_result_score_info[score_info_title].scores,
-          borderWidth: 1,
-          pointStyle: false,
-          borderColor: colors[i],
-        })
-        annotations.push({
-          type: "line",
-          mode: "vertical",
-          xMax: this.appStateStore.search_result_score_info[score_info_title].cutoff_index,
-          xMin: this.appStateStore.search_result_score_info[score_info_title].cutoff_index,
-          borderColor: colors[i],
-          label: {
-            display: false,
-            content: score_info_title,
-            position: {
-              x: "center",
-              y: "top",
-            },
-          },
-        })
-        i += 1
+      if (queryParams.get("item_details")) {
+        let [ds_id, item_id] = queryParams.get("item_details").split(",")
+        ds_id = parseInt(ds_id)
+        setTimeout(() => {
+          this.appStateStore.show_document_details([ds_id, item_id])
+        }, 500)
       }
-      this.score_info_chart = new Chart(this.$refs.score_info_chart, {
-        type: "line",
-        data: {
-          labels: [...Array(maxElements).keys()],
-          datasets: datasets,
-        },
-        options: {
-          plugins: {
-            annotation: {
-              annotations: annotations,
-            },
-          },
-        },
-      })
+      this.collectionStore.check_url_parameters()
     },
+    // show_score_info_chart() {
+    //   if (this.score_info_chart) this.score_info_chart.destroy()
+    //   const datasets = []
+    //   const annotations = []
+    //   const colors = ["red", "green", "blue", "purple", "fuchsia", "aqua", "yellow", "navy"]
+    //   let i = 0
+    //   let maxElements = 1
+    //   for (const score_info_title in this.appStateStore.search_result_score_info) {
+    //     maxElements = Math.max(
+    //       maxElements,
+    //       this.appStateStore.search_result_score_info[score_info_title].scores.length
+    //     )
+    //     datasets.push({
+    //       label: score_info_title,
+    //       data: this.appStateStore.search_result_score_info[score_info_title].scores,
+    //       borderWidth: 1,
+    //       pointStyle: false,
+    //       borderColor: colors[i],
+    //     })
+    //     annotations.push({
+    //       type: "line",
+    //       mode: "vertical",
+    //       xMax: this.appStateStore.search_result_score_info[score_info_title].cutoff_index,
+    //       xMin: this.appStateStore.search_result_score_info[score_info_title].cutoff_index,
+    //       borderColor: colors[i],
+    //       label: {
+    //         display: false,
+    //         content: score_info_title,
+    //         position: {
+    //           x: "center",
+    //           y: "top",
+    //         },
+    //       },
+    //     })
+    //     i += 1
+    //   }
+    //   this.score_info_chart = new Chart(this.$refs.score_info_chart, {
+    //     type: "line",
+    //     data: {
+    //       labels: [...Array(maxElements).keys()],
+    //       datasets: datasets,
+    //     },
+    //     options: {
+    //       plugins: {
+    //         annotation: {
+    //           annotations: annotations,
+    //         },
+    //       },
+    //     },
+    //   })
+    // },
   },
   computed: {
     ...mapStores(useAppStateStore),
     ...mapStores(useMapStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
     const that = this
@@ -182,30 +187,30 @@ export default {
         // retrieving stored maps history and collections is done in callback when organization_id is set
       })
     })
-    this.eventBus.on("datasets_are_loaded", () => {
-      const queryParams = new URLSearchParams(window.location.search)
-      if (queryParams.get("map_id")) {
-        that.appStateStore.show_stored_map(queryParams.get("map_id"))
-      }
-    })
+    // this.eventBus.on("datasets_are_loaded", () => {
+    //   const queryParams = new URLSearchParams(window.location.search)
+    //   if (queryParams.get("map_id")) {
+    //     that.appStateStore.show_stored_map(queryParams.get("map_id"))
+    //   }
+    // })
 
-    this.updateMapPassiveMargin()
-    window.addEventListener("resize", this.updateMapPassiveMargin)
+    // this.updateMapPassiveMargin()
+    // window.addEventListener("resize", this.updateMapPassiveMargin)
+
     window.addEventListener("popstate", this.evaluate_url_query_parameters)
 
-    this.eventBus.on("show_results_tab", () => {
-      // FIXME: outdated use of selected_tab
-      this.selected_tab = "results"
-    })
-    this.eventBus.on("show_chat", ({chat_id}) => {
-      // FIXME: outdated use of selected_tab
-      this.selected_tab = "chats"
-    })
     this.eventBus.on("show_table", ({collection_id, class_name}) => {
       this.appStateStore.selected_app_tab = "collections"
     })
-    this.eventBus.on("show_score_info_chart", () => {
-      this.show_score_info_chart()
+    // this.eventBus.on("show_score_info_chart", () => {
+    //   this.show_score_info_chart()
+    // })
+
+    this.eventBus.on("projections_received", ({projections}) => {
+      this.mapStateStore.set_projection_data(projections)
+    })
+    this.eventBus.on("cluster_info_received", ({cluster_info}) => {
+      this.mapStateStore.set_cluster_info(cluster_info)
     })
 
     if (window.innerWidth < 768) {
@@ -217,17 +222,15 @@ export default {
     "appStateStore.organization_id"() {
       this.appStateStore.reset_search_results_and_map()
       this.appStateStore.retrieve_stored_maps_history_and_collections()
-    },
-    'appStateStore.selected_document_ds_and_id'() {
-      if (this.appStateStore.selected_app_tab === 'explore') { return }
-      this.show_details_dialog = !!this.appStateStore.selected_document_ds_and_id
+      // set title of page to organization.tool_title:
+      document.title = this.appStateStore.organization.tool_title || "Quiddity InsightHub"
     },
   },
 }
 </script>
 
 <template>
-  <main class="">
+  <main class="relative">
 
     <Toast position="top-right"></Toast>
     <DynamicDialog />
@@ -239,66 +242,47 @@ export default {
     </Dialog>
 
     <Dialog
-      v-model:visible="show_details_dialog"
-      :style="{'max-width': '650px', width: '650px'}"
-      @hide="appState.selected_document_ds_and_id = null">
-      <ObjectDetailsModal
-        :initial_item="appState.get_item_by_ds_and_id(appState.selected_document_ds_and_id)"
-        :dataset="appState.datasets[appState.selected_document_ds_and_id[0]]"
+      v-model:visible="appState.document_details_dialog_is_visible"
+      :style="{'max-width': '700px', 'width': '700px'}" modal closeOnEscape :dismissableMask="true"
+      @hide="appState.close_document_details">
+      <ObjectDetailsModal v-if="appState.selected_document_ds_and_id"
+        :initial_item="appState.selected_document_initial_item"
+        :dataset="appState.selected_document_ds_and_id ? appState.datasets[appState.selected_document_ds_and_id[0]] : null"
         :show_close_button="false"></ObjectDetailsModal>
     </Dialog>
 
-    <MapWithLabelsAndButtons v-show="appState.selected_app_tab === 'explore' && appState.map_id"></MapWithLabelsAndButtons>
+    <!-- <MapWithLabelsAndButtons v-show="appState.selected_app_tab === 'explore' && appState.map_id"></MapWithLabelsAndButtons> -->
 
-    <Timings></Timings>
+    <!-- <Timings></Timings> -->
 
     <!-- content area -->
-    <div class="h-screen flex flex-col pointer-events-none relative p-0 md:pt-3 md:px-4">
+    <div class="h-screen flex flex-col pointer-events-none relative">
 
-      <TopMenu class="flex-none pointer-events-auto"></TopMenu>
+      <TopMenu class="flex-none pointer-events-auto relative z-50"></TopMenu>
 
-      <ExploreTab v-show="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab>
+      <!-- <ExploreTab v-show="appState.selected_app_tab === 'explore'" class="flex-1"></ExploreTab> -->
 
       <CollectionsTab v-show="appState.selected_app_tab === 'collections'" class="flex-1 pointer-events-auto"></CollectionsTab>
 
-      <ChatsTab v-if="appState.selected_app_tab === 'chats'" class="flex-1 pointer-events-auto"></ChatsTab>
+      <!-- <ChatsTab v-if="appState.selected_app_tab === 'chats'" class="flex-1 pointer-events-auto"></ChatsTab>
 
-      <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab>
+      <WriteTab v-if="appState.selected_app_tab === 'write'" class="flex-1 pointer-events-auto"></WriteTab> -->
 
-      <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto"></DatasetsTab>
+      <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto relative"></DatasetsTab>
 
     </div>
 
-    <HoverLabel class="absolute top-0 h-screen w-screen" />
-
-    <div class="absolute flex flex-row gap-2 text-xs text-gray-400"
+    <LegalFooter class="absolute z-50"
       :class="{
         'bottom-1': appState.selected_app_tab === 'explore',
         'right-3': appState.selected_app_tab === 'explore',
-        'bottom-4': appState.selected_app_tab !== 'explore',
-        'right-6': appState.selected_app_tab !== 'explore',
+        'bottom-2': appState.selected_app_tab !== 'explore',
+        'right-3': appState.selected_app_tab !== 'explore',
       }">
-      <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/imprint">
-        Imprint
-      </a>
-      |
-      <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/terms_of_services">
-        Terms of Services
-      </a>
-      |
-      <a class="hover:underline" target="_blank" href="https://absclust.com/disclaimers/privacy">
-        Privacy Policy
-      </a>
-    </div>
+    </LegalFooter>
 
-    <!-- <div
-      v-if="appState.organization ? !appState.organization.workspace_tool_title : true"
-      class="absolute -right-3 bottom-4 rounded-xl bg-black py-1 pl-3 pr-5 font-['Lexend'] shadow-sm">
-      <span class="font-bold text-white">Quiddity</span>
-      <span class="font-light text-gray-200">Workspace</span>
-    </div> -->
+    <HoverLabel class="absolute w-full h-full z-50" />
 
-    <!--  -->
   </main>
 </template>
 

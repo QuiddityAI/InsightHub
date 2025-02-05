@@ -1,13 +1,6 @@
 <script setup>
 import {
-  AdjustmentsHorizontalIcon,
-  MinusCircleIcon,
   HomeIcon,
-  ClockIcon,
-  BookmarkIcon,
-  MagnifyingGlassIcon,
-  ChatBubbleLeftIcon,
-  PaperAirplaneIcon,
   UserCircleIcon,
 } from "@heroicons/vue/24/outline"
 
@@ -18,12 +11,14 @@ import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store";
 
 import UserMenu from "../search/UserMenu.vue";
 import LoginButton from "../general/LoginButton.vue";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 </script>
 
@@ -41,6 +36,7 @@ export default {
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
     this.internal_organization_id = this.appStateStore.organization_id
@@ -63,23 +59,23 @@ export default {
 
 <template>
 
-  <div class="flex flex-col p-2 bg-white md:rounded-md shadow-sm">
+  <div class="flex flex-col px-2 bg-white shadow-sm">
 
     <div class="flex-none flex flex-row items-center justify-center mx-3">
 
       <a
         v-tooltip.right="{ value: 'Reset search', showDelay: 400 }"
         :href="`?organization_id=${appState.organization_id}`"
-        class="w-8 rounded p-2 text-gray-400 hover:bg-gray-100">
+        class="w-5 h-5 rounded p-[2px] text-gray-400 hover:bg-gray-100">
         <HomeIcon></HomeIcon>
       </a>
 
       <div class="ml-1 flex-initial"
-        v-tooltip.bottom="{ value: 'Select the organization', showDelay: 400 }">
+        v-tooltip.bottom="{ value: $t('TopMenu.select-the-organization'), showDelay: 400 }">
         <select
           v-model="internal_organization_id"
           @change="organization_id_changed_by_user"
-          class="w-full rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
+          class="w-full rounded-md border-none pb-0 pl-2 pr-8 pt-0 text-[13px] font-thin text-gray-500 font-[Lexend]">
           <option v-for="item in appState.available_organizations" :value="item.id" selected>
             {{ item.name }}
           </option>
@@ -88,34 +84,37 @@ export default {
 
       <div class="flex-1"></div>
 
-      <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-600">
-        <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'explore'}"
+      <div class="hidden md:flex flex-row gap-4 lg:gap-8 text-gray-500 text-sm font-[Lexend] font-thin">
+        <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'explore'}"
           @click="appState.set_app_tab('explore')">
-          Explore</button>
-         <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'collections'}"
-          @click="appState.set_app_tab('collections')">
-          Collect & Process</button>
-         <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
+          Explore</button> -->
+         <button class="hover:text-blue-500" :class="{'font-medium': appState.selected_app_tab === 'collections'}"
+          @click="appState.set_app_tab('collections'); collectionStore.close_collection()">
+          {{ appState.organization?.tool_title || 'Quiddity InsightHub' }}
+         </button>
+         <!-- <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'chats'}"
           v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('chats')">
           Chat</button>
          <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'write'}"
           v-if="appState.user?.is_staff"
           @click="appState.set_app_tab('write')">
-          Write</button>
-         <button class="hover:text-blue-500" :class="{'text-blue-500': appState.selected_app_tab === 'datasets'}"
+          Write</button> -->
+         <button v-if="appState.organization?.schemas_for_user_created_datasets?.length > 0"
+           class="hover:text-blue-500"
+           :class="{'font-bold': appState.selected_app_tab === 'datasets'}"
           @click="appState.set_app_tab('datasets')">
-          Upload Files</button>
+          {{ $t('TopMenu.upload-files') }}</button>
       </div>
 
       <div class="flex-1"></div>
 
       <!-- wrapping login area in div to make it roughly the same width as organization dropdown -->
-      <div class="flex-none flex flex-row place-content-end w-min-0 w-48">
+      <div class="flex-none flex flex-row place-content-end min-w-0">
         <LoginButton></LoginButton>
 
-        <button v-if="appState.logged_in" class="pl-2 pr-1 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-100"
-          v-tooltip.bottom="{ value: 'User Menu (logout etc.)', showDelay: 400 }"
+        <button v-if="appState.logged_in" class="pl-2 pr-1 py-1 text-[13px] font-thin text-gray-500 font-[Lexend] rounded-md hover:bg-gray-100"
+          v-tooltip.bottom="{ value: $t('TopMenu.user-menu-logout-etc'), showDelay: 400 }"
           @click="(event) => $refs.user_menu.toggle(event)">
           {{ appState.user.username.substring(0, 22) + (appState.user.username.length > 22 ? '...' : '') }}
           <UserCircleIcon class="inline-block w-5 h-5 pb-1 ml-2"></UserCircleIcon>
@@ -128,13 +127,13 @@ export default {
 
     </div>
 
-    <div class="flex flex-row items-center justify-center">
-      <select class="md:hidden rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
-        <option>Explore</option>
-        <option>Collect & Process</option>
-        <option>Chat</option>
-        <option v-if="appState.user?.is_staff">Write</option>
-        <option>Upload Files</option>
+    <div class="flex flex-row items-center justify-center md:hidden">
+      <select class="rounded-md border-transparent pb-1 pl-2 pr-8 pt-1 text-sm font-['Lexend'] font-bold text-black">
+        <!-- <option>Explore</option> -->
+        <option>Quiddity InsightHub</option>
+        <!-- <option>Chat</option>
+        <option v-if="appState.user?.is_staff">Write</option> -->
+        <option>{{ $t('TopMenu.upload-files') }}</option>
       </select>
     </div>
 

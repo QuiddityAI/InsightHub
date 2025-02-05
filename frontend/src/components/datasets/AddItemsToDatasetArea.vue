@@ -14,6 +14,7 @@ import Checkbox from 'primevue/checkbox';
 
 import CollectionItem from "../collections/CollectionItem.vue";
 import SelectCollection from '../collections/SelectCollection.vue';
+import ReferenceHoverInfo from "../collections/ReferenceHoverInfo.vue";
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
@@ -98,8 +99,10 @@ export default {
         }
       }
 
+      let i = 0
       for (let file of event.files) {
-        formData.append(fileUploaderComponent.name, file, file.name);
+        formData.append(fileUploaderComponent.name + i, file, file.name);
+        i++
       }
 
       xhr.upload.addEventListener('progress', (event) => {
@@ -216,8 +219,8 @@ export default {
       if (!this.check_service_usage(1)) {
         return
       }
-      const collection_id = this.target_collection?.id
-      const collection_class = this.target_collection_class
+      let collection_id = this.target_collection?.id
+      let collection_class = this.target_collection_class
       if (this.add_to_collection) {
         const collection_selection = this.$refs.collection_selection
         if (collection_selection.selected_collection_id) {
@@ -236,7 +239,7 @@ export default {
         items: [this.manually_created_item],
       }
       httpClient
-        .post("/data_backend/import_items", body)
+        .post("/data_backend/import_forms", body)
         .then(function (response) {
           that.set_actual_dataset_id(response.data.dataset_id)
           that.get_upload_task_status()
@@ -251,39 +254,47 @@ export default {
 </script>
 
 <template>
-  <div class="mb-3 mt-2 flex flex-col gap-2">
-    <div class="flex flex-row items-center">
-      <span class="text-md text-gray-600 mr-4">File Type:</span>
-      <Dropdown
-        id="import_type"
-        v-model="selected_import_converter"
-        :options="schema.applicable_import_converters"
-        optionLabel="display_name"
-        placeholder="Select an import type"/>
-    </div>
-    <div class="border-l-4 border-gray-200 pl-4 mt-2">
-      <div v-if="selected_import_converter?.description" class="mr-2 mb-2 text-sm text-gray-500"
-        v-html="selected_import_converter?.description.replaceAll('\n', '<br>')">
+  <div class="flex flex-col">
+
+    <div class="flex flex-row flex-wrap gap-5">
+
+      <div class="flex-1 min-w-[370px] flex flex-col">
+        <div class="flex flex-row items-center">
+          <span class="text-md text-gray-600 mr-4">Select File Type:</span>
+          <Dropdown
+            id="import_type"
+            v-model="selected_import_converter"
+            :options="schema.applicable_import_converters"
+            optionLabel="display_name"
+            placeholder="Select an import type"/>
+        </div>
+        <div class="border-l-4 border-gray-200 pl-4 mt-2">
+          <div v-if="selected_import_converter?.description" class="mr-2 mb-2 text-sm text-gray-500"
+            v-html="selected_import_converter?.description.replaceAll('\n', '<br>')">
+          </div>
+          <div v-if="selected_import_converter?.example_file_url" class="mr-2 mb-2 text-sm text-gray-500">
+            <a :href="selected_import_converter.example_file_url" target="_blank" class="text-blue-500">Example file</a>
+          </div>
+        </div>
       </div>
-      <div v-if="selected_import_converter?.example_file_url" class="mr-2 mb-2 text-sm text-gray-500">
-        <a :href="selected_import_converter.example_file_url" target="_blank" class="text-blue-500">Example file</a>
-      </div>
-    </div>
-    <div v-if="selected_import_converter && !target_collection" class="mt-1 mb-3">
-      <div class="flex flex-row items-center">
-        <label class="mr-4 text-md text-gray-600" for="target_collection">
-          Add to Collection (optional):
-        </label>
-        <Checkbox v-model="add_to_collection" :binary="true" class="mr-2"></Checkbox>
-        <SelectCollection v-show="add_to_collection" ref="collection_selection">
-        </SelectCollection>
-      </div>
-      <div class="border-l-4 border-gray-200 pl-4 mt-2">
-        <div v-if="selected_import_converter?.description" class="mr-2 mb-2 text-sm text-gray-500">
-          Adds all uploaded files to a specific collection. Useful to directly process all items in a table.
+
+      <div class="flex-1 min-w-[370px] flex flex-col" v-if="selected_import_converter && !target_collection">
+        <div class="flex flex-row items-center">
+          <label class="mr-4 text-md text-gray-600" for="target_collection">
+            Add to Collection (optional):
+          </label>
+          <Checkbox v-model="add_to_collection" :binary="true" class="mr-2"></Checkbox>
+          <SelectCollection v-show="add_to_collection" ref="collection_selection">
+          </SelectCollection>
+        </div>
+        <div class="border-l-4 border-gray-200 pl-4 mt-2">
+          <div v-if="selected_import_converter?.description" class="mr-2 mb-2 text-sm text-gray-500">
+            Adds all uploaded files to a specific collection. Useful to directly process all items in a table.
+          </div>
         </div>
       </div>
     </div>
+
     <div v-if="selected_import_converter && selected_import_converter.manual_insert_form?.length">
       <div v-for="field in selected_import_converter.manual_insert_form">
         <label :for="field.identifier" class="mr-2 text-sm text-gray-700">{{ field.label }}:</label>
@@ -291,69 +302,73 @@ export default {
       </div>
       <button @click="manually_create_item()">Create Item</button>
     </div>
-    <div>
-      <span class="text-sm text-gray-600 mb-1"
+
+    <div class="flex flex-row justify-end">
+      <span class="text-sm text-gray-400"
         v-tooltip.top="{ value: 'This is the amount of items you can upload per month with your current plan.', showDelay: 400 }">
         {{ service_usage_info.usage_current_period }} / {{ service_usage_info.limit_per_period }} items uploaded this month
       </span>
     </div>
-    <FileUpload
-      v-if="selected_import_converter && !selected_import_converter.manual_insert_form?.length"
-      ref="fileUploader"
-      name="files[]"
-      url="/data_backend/upload_files"
-      :multiple="true"
-      :maxFileSize="10000000000"
-      :fileLimit="500"
-      customUpload
-      @uploader="custom_file_uploader"
-      >
-      <template #content="{ files, uploadedFiles, removeFileCallback, messages, progress, onMessageClose }">
-        <div v-if="files.length > 0 || upload_in_progress">
-          <div class="flex flex-col gap-1">
-            <span v-if="files.length > 0" class="text-gray-700">Selected files: {{ files.length }} </span>
-            <ProgressBar v-if="progress > 0" :value="progress" :showValue="false" />
-            <Message v-for="msg of messages" :key="msg" severity="error" @close="onMessageClose">{{ msg }}</Message>
-            <div v-for="(file, index) of files" :key="file.name + file.type + file.size" class="card m-0 px-2 flex flex-row justify-between items-center gap-1">
-              <span class="max-w-[350px] font-semibold break-words">{{ file.name }}</span>
-              <div class="flex-1"></div>
-              <Badge value="Waiting" severity="warning" class="flex-none w-14" />
-              <Button label="X" @click="removeFileCallback(index)" outlined rounded  severity="danger" />
+
+    <div class="mt-2 mb-2 rounded-md" style="box-shadow: 0px 3px 12px 1px rgba(0,0,0,0.12);">
+      <FileUpload
+        v-if="selected_import_converter && !selected_import_converter.manual_insert_form?.length"
+        ref="fileUploader"
+        name="file_"
+        url="/api/v1/ingest/upload_files"
+        :multiple="true"
+        :maxFileSize="10000000000"
+        :fileLimit="500"
+        customUpload
+        @uploader="custom_file_uploader"
+        >
+        <template #content="{ files, uploadedFiles, removeFileCallback, messages, progress, onMessageClose }">
+          <div v-if="files.length > 0 || upload_in_progress">
+            <div class="flex flex-col gap-1">
+              <span v-if="files.length > 0" class="text-gray-700">Selected files: {{ files.length }} </span>
+              <ProgressBar v-if="progress > 0" :value="progress" :showValue="false" />
+              <Message v-for="msg of messages" :key="msg" severity="error" @close="onMessageClose">{{ msg }}</Message>
+              <div v-for="(file, index) of files" :key="file.name + file.type + file.size" class="card m-0 px-2 flex flex-row justify-between items-center gap-1">
+                <span class="max-w-[350px] font-semibold break-words">{{ file.name }}</span>
+                <div class="flex-1"></div>
+                <Badge value="Waiting" severity="warning" class="flex-none w-14" />
+                <Button label="X" @click="removeFileCallback(index)" outlined rounded  severity="danger" />
+              </div>
             </div>
           </div>
-        </div>
-        <div v-if="upload_in_progress" class="mt-2">
-          <p class="text-gray-700">Uploading files...</p>
-        </div>
+          <div v-if="upload_in_progress" class="mt-2">
+            <p class="text-gray-700">Uploading files...</p>
+          </div>
 
-        <div v-if="uploadedFiles.length > 0">
-          <span class="text-gray-700">Uploaded files: {{ uploadedFiles.length }} </span>
-          <!-- <div class="flex flex-col gap-1">
-            <div v-for="(file, index) of uploadedFiles" :key="file.name + file.type + file.size" class="card m-0 px-2 flex flex-row justify-between items-center gap-1">
-              <span class="font-semibold">{{ file.name }}</span>
-              <div class="flex-1"></div>
-              <Badge value="Completed" severity="success" class="flex-none w-18" />
-              <Button label="X" @click="removeUploadedFileCallback(index)" outlined rounded  severity="danger" />
-            </div>
-          </div> -->
-        </div>
-      </template>
-      <template #empty>
-        <div v-if="!upload_in_progress">
-          <p class="text-sm text-gray-600">Drag and drop files here to upload.<br><br>
-            You can upload individual files or .zip / .tar.gz archives containing multiple files.
-          </p>
-        </div>
-      </template>
-    </FileUpload>
+          <div v-if="uploadedFiles.length > 0">
+            <span class="text-gray-700">Uploaded files: {{ uploadedFiles.length }} </span>
+            <!-- <div class="flex flex-col gap-1">
+              <div v-for="(file, index) of uploadedFiles" :key="file.name + file.type + file.size" class="card m-0 px-2 flex flex-row justify-between items-center gap-1">
+                <span class="font-semibold">{{ file.name }}</span>
+                <div class="flex-1"></div>
+                <Badge value="Completed" severity="success" class="flex-none w-18" />
+                <Button label="X" @click="removeUploadedFileCallback(index)" outlined rounded  severity="danger" />
+              </div>
+            </div> -->
+          </div>
+        </template>
+        <template #empty>
+          <div v-if="!upload_in_progress">
+            <p class="text-sm text-gray-600">Drag and drop files here to upload.<br><br>
+              You can upload individual files or .zip / .tar.gz archives containing multiple files.
+            </p>
+          </div>
+        </template>
+      </FileUpload>
+    </div>
 
     <div class="text-xs text-gray-400">
       Disclaimer: Do not upload personal, sensitive or confidential data.
-      Uploading files is only meant for processing them within out tool, not for long-term storage.
+      Uploading files is only meant for processing them within our tool, not for long-term storage.
       Always keep a local copy of the files, we don't guarantee their availability.
     </div>
 
-    <p v-if="upload_tasks.length !== 0" class="text-gray-700">
+    <p v-if="upload_tasks.length !== 0" class="text-gray-700 mt-5 mb-3">
       Recent uploads:
     </p>
 
@@ -382,12 +397,10 @@ export default {
           v-for="ds_and_item_id in task.inserted_ids.slice(0, 10)"
           :key="ds_and_item_id.join('_')"
           class="justify-between pb-3">
-          <CollectionItem
+          <ReferenceHoverInfo class="border border-gray-200 m-2 p-2 rounded-md"
             :dataset_id="ds_and_item_id[0]"
-            :item_id="ds_and_item_id[1]"
-            :is_positive="true"
-            :show_remove_button="false">
-          </CollectionItem>
+            :item_id="ds_and_item_id[1]">
+          </ReferenceHoverInfo>
         </li>
       </ul>
     </div>

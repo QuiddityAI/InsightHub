@@ -1,0 +1,17 @@
+"""
+s3://<bucket-name>/
+    models/
+        <model-id>/
+            model_gen.py
+            model_state.json
+    input_data/
+        test_questions.jsonl
+    adversarial_data/
+        <experiment-id>/
+            generated.txt
+    evaluations/
+        <experiment-id>/
+            metrics.json
+            confusion_matrix.png
+
+"""

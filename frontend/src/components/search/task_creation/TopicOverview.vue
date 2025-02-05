@@ -65,7 +65,7 @@ export default {
       return [grouped["Public Sources"], grouped["Your Files"]]
     },
     query_uses_operators_and_meaning() {
-      const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.search_algorithm)
+      const uses_meaning = ["vector", "hybrid"].includes(this.appStateStore.settings.search.retrieval_mode)
       const operators = [" AND ", " OR ", " NOT "]
       const uses_operators = operators.some((op) => this.appStateStore.settings.search.all_field_query.includes(op))
       return uses_operators && uses_meaning
@@ -128,7 +128,7 @@ export default {
         if (search_parameters.search_type == "meaning") {
           search_parameters.search_type = "vector"
         }
-        this.appStateStore.settings.search.search_algorithm = search_parameters.search_type
+        this.appStateStore.settings.search.retrieval_mode = search_parameters.search_type
         this.use_smart_search = false
         if (on_success) {
           on_success()
@@ -144,10 +144,10 @@ export default {
       this.processing_smart_search = true
       setTimeout(() => {
         this.suggested_subareas = [
-            {title: "Corrosion in Aluminium Wire Bonding", description: "Investigating the effects of corrosion on aluminium wire bonding", query: "baz", filters: [], search_algorithm: "keyword"},
-            {title: "Degradation Mechanisms", description: "Exploring the various degradation mechanisms in wire bonding", query: "baz", filters: [], search_algorithm: "keyword"},
-            {title: "Intermetallic Compound Formation", description: "Studying the formation of intermetallic compounds in wire bonding", query: "baz", filters: [], search_algorithm: "keyword"},
-            {title: "Thermal Cycling", description: "Analyzing the impact of thermal cycling on wire bonding", query: "baz", filters: [], search_algorithm: "keyword"},
+            {title: "Corrosion in Aluminium Wire Bonding", description: "Investigating the effects of corrosion on aluminium wire bonding", query: "baz", filters: [], retrieval_mode: "keyword"},
+            {title: "Degradation Mechanisms", description: "Exploring the various degradation mechanisms in wire bonding", query: "baz", filters: [], retrieval_mode: "keyword"},
+            {title: "Intermetallic Compound Formation", description: "Studying the formation of intermetallic compounds in wire bonding", query: "baz", filters: [], retrieval_mode: "keyword"},
+            {title: "Thermal Cycling", description: "Analyzing the impact of thermal cycling on wire bonding", query: "baz", filters: [], retrieval_mode: "keyword"},
         ]
         this.selected_subareas = this.suggested_subareas
         this.processing_smart_search = false
@@ -176,8 +176,8 @@ export default {
       const title = this.new_subarea_title.trim()
       const query = `${this.appStateStore.settings.search.all_field_query} ${title}`
       const description = "Manually added subarea"
-      const search_algorithm = this.appStateStore.settings.search.search_algorithm
-      const subarea = {title, description, query, search_algorithm}
+      const retrieval_mode = this.appStateStore.settings.search.retrieval_mode
+      const subarea = {title, description, query, retrieval_mode}
       this.suggested_subareas.push(subarea)
       this.selected_subareas.push(subarea)
     },
@@ -187,7 +187,7 @@ export default {
     run_example_query(example) {
       this.appStateStore.settings.search.all_field_query = example.query
       this.appStateStore.settings.search.filters = example.filters || []
-      this.appStateStore.settings.search.search_algorithm = example.search_type
+      this.appStateStore.settings.search.retrieval_mode = example.search_type
       this.use_smart_search = example.use_smart_search || true
     },
   },
@@ -283,21 +283,21 @@ export default {
           <div v-if="!use_smart_search" class="mt-3 ml-0 flex flex-row gap-1 items-center">
             <div class="flex flex-row items-center gap-0 h-6">
               <button class="border border-gray-300 rounded-l-md px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-                @click="appState.settings.search.search_algorithm = 'keyword'"
+                @click="appState.settings.search.retrieval_mode = 'keyword'"
                 v-tooltip="{ value: 'Use this to find specific words.\nSupports operators like AND / OR / NOT.', showDelay: 400 }"
-                :class="{'text-blue-500': appState.settings.search.search_algorithm === 'keyword', 'text-gray-400': appState.settings.search.search_algorithm != 'keyword'}">
+                :class="{'text-blue-500': appState.settings.search.retrieval_mode === 'keyword', 'text-gray-400': appState.settings.search.retrieval_mode != 'keyword'}">
                 Keywords
               </button>
               <button class="border border-gray-300  rounded-none px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-                @click="appState.settings.search.search_algorithm = 'vector'"
+                @click="appState.settings.search.retrieval_mode = 'vector'"
                 v-tooltip="{ value: 'Use this to search for broader topics or information\nthat can be described in many different ways.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-                :class="{'text-blue-500': appState.settings.search.search_algorithm === 'vector', 'text-gray-400': appState.settings.search.search_algorithm != 'vector'}">
+                :class="{'text-blue-500': appState.settings.search.retrieval_mode === 'vector', 'text-gray-400': appState.settings.search.retrieval_mode != 'vector'}">
                 Meaning
               </button>
               <button class="border border-gray-300 rounded-r-md  px-1 text-sm font-['Lexend'] font-normal hover:bg-gray-100"
-                @click="appState.settings.search.search_algorithm = 'hybrid'"
+                @click="appState.settings.search.retrieval_mode = 'hybrid'"
                 v-tooltip="{ value: 'Combines keyword and meaning search.\n\nNote: this might return almost all documents, but sorted\nso that the most relevant ones are at the top.\nOnly supports quoted phrases, not the AND / OR / NOT operators.', showDelay: 400 }"
-                :class="{'text-blue-500': appState.settings.search.search_algorithm === 'hybrid', 'text-gray-400': appState.settings.search.search_algorithm != 'hybrid'}">
+                :class="{'text-blue-500': appState.settings.search.retrieval_mode === 'hybrid', 'text-gray-400': appState.settings.search.retrieval_mode != 'hybrid'}">
                 Both
               </button>
             </div>

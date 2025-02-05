@@ -14,7 +14,7 @@ const toast = useToast()
 
 export default {
   inject: ["eventBus"],
-  props: [],
+  props: ["filters"],
   emits: ["close"],
   data() {
     return {
@@ -40,7 +40,7 @@ export default {
           if (!field.is_available_for_filtering) continue
           const index_params = field.index_parameters || {}
           const no_index_in_vector_db = index_params.no_index_in_vector_database || index_params.exclude_from_vector_database
-          if (this.appStateStore.settings.search.search_algorithm !== 'keyword' && no_index_in_vector_db) continue
+          if (this.appStateStore.settings.search.retrieval_mode !== 'keyword' && no_index_in_vector_db) continue
           available_fields[field.identifier] = {
             identifier: field.identifier,
             dataset_id: dataset_id,  // for now, filters are applied to all matching fields in any dataset, but we need one dataset as a reference for the field description
@@ -51,7 +51,7 @@ export default {
       available_fields['_descriptive_text_fields'] = {
         identifier: '_descriptive_text_fields',
         dataset_id: null,
-        name: 'Descriptive Text*',
+        name: this.$t('general.descriptive-text-fields') + " *",
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },
@@ -83,11 +83,11 @@ export default {
   },
   methods: {
     add_filter() {
-      if (!this.selected_filter_field || !this.selected_operator || !this.filter_value) {
+      if (!this.selected_filter_field || !this.selected_operator) {
         this.$toast.add({ severity: 'warn', summary: 'Missing field', detail: 'A field is missing', life: 2000 })
         return
       }
-      this.appStateStore.settings.search.filters.push({
+      this.filters.push({
         field: this.selected_filter_field.identifier,
         dataset_id: this.selected_filter_field.dataset_id,
         operator: this.selected_operator,
@@ -122,7 +122,7 @@ export default {
 
             class="w-full h-full mr-4 text-sm text-gray-500 border-1 border-gray-300 rounded-l-md focus:border-blue-500 focus:ring-blue-500">
             <option :value="null">
-              Field...
+              {{ $t('AddFilterMenu.field') }}
             </option>
             <option v-for="field in available_filter_fields" :value="field">
               {{ field.name }}
@@ -133,7 +133,7 @@ export default {
           <select v-model="selected_operator"
             class="w-full h-full mr-4 text-sm text-gray-500 border-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
             <option :value="null">
-              Operator...
+              {{ $t('AddFilterMenu.operator') }}
             </option>
             <option v-for="field in available_filter_operators" :value="field.id">
               {{ field.title }}
@@ -150,13 +150,13 @@ export default {
           class="rounded-r-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
           type="button"
           @click="add_filter()">
-          Add Filter
+          {{ $t('AddFilterMenu.add-filter') }}
         </button>
       </div>
 
-      <h3 class="mt-4 text-sm text-gray-400">Note: not all filters might be available in 'meaning' or 'hybrid' mode.</h3>
+      <h3 class="mt-4 text-sm text-gray-400">{{ $t('AddFilterMenu.note-not-all-filters-might-be-available-in-meaning-or-hybrid-mode') }}</h3>
 
-      <h3 class="mt-3 text-sm text-gray-400">* 'Descriptive Text' is a shortcut for these fields:</h3>
+      <h3 class="mt-3 text-sm text-gray-400">{{ $t('AddFilterMenu.descriptive-text-is-a-shortcut-for-these-fields') }}</h3>
       <ul>
         <li v-for="ds_fields in descriptive_text_field_details" class="text-sm text-gray-400">
           - {{ ds_fields.dataset_name }}: <em>{{ ds_fields.descriptive_text_field_names.join(", ") }}</em>

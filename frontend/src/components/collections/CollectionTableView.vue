@@ -1,505 +1,179 @@
 <script setup>
+
 import {
-  TrashIcon,
   PlusIcon,
-  ChevronRightIcon,
+  TrashIcon,
+  InformationCircleIcon,
 } from "@heroicons/vue/24/outline"
+
 import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Button from 'primevue/button';
-import MultiSelect from 'primevue/multiselect';
-import Paginator from "primevue/paginator"
-import OverlayPanel from 'primevue/overlaypanel';
-import Dropdown from 'primevue/dropdown';
-import Message from 'primevue/message';
-import Dialog from "primevue/dialog";
-import Textarea from 'primevue/textarea';
 
-import WritingTaskArea from "./WritingTaskArea.vue";
 import CollectionItem from "./CollectionItem.vue"
-import ExportTableArea from "./ExportTableArea.vue";
 import CollectionTableCell from "./CollectionTableCell.vue";
-import ObjectDetailsModal from "../search/ObjectDetailsModal.vue";
-import AddItemsToCollectionArea from "./AddItemsToCollectionArea.vue";
+import BorderButton from "../widgets/BorderButton.vue";
+import BorderlessButton from "../widgets/BorderlessButton.vue";
+import EditColumnArea from "../columns/EditColumnArea.vue";
 
 import { FieldType } from "../../utils/utils"
 import { httpClient, djangoClient } from "../../api/httpClient"
+
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
+
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
+
 </script>
 
 <script>
 
 export default {
   inject: ["eventBus"],
-  props: ["collection_id", "class_name", "is_positive"],
-  emits: [],
+  props: ["collection_id", "class_name", "is_positive", "item_size_mode"],
+  expose: [],
+  emits: ["add_column"],
   data() {
     return {
-      collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
-      collection_items: [],
-
-      show_add_column_dialog: false,
-      show_add_item_dialog: false,
-      selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
-      selected_module: 'openai_gpt_4_o',
-
-      first_index: 0,
-      per_page: 10,
-      order_by_field: 'date_added',
-      order_descending: true,
-
       selected_column: null,
-
-      show_writing_tasks: false,
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
-    included_datasets() {
-      const dataset_ids = new Set()
-      for (const item of this.collection_items) {
-        const dataset_id = item.dataset_id
-        dataset_ids.add(dataset_id)
-      }
-      return Array.from(dataset_ids).map((dataset_id) => this.appStateStore.datasets[dataset_id])
+    ...mapStores(useCollectionStore),
+    collection() {
+      return this.collectionStore.collection
     },
-    available_source_fields() {
-      const available_fields = {}
-      const unsupported_field_types = [FieldType.VECTOR, FieldType.CLASS_PROBABILITY, FieldType.ARBITRARY_OBJECT]
-      function capitalizeFirstLetter(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-      }
-      for (const dataset of this.included_datasets) {
-        if (!dataset?.schema?.object_fields) continue
-        for (const field of Object.values(dataset.schema.object_fields)) {
-          if (unsupported_field_types.includes(field.field_type)) {
-            continue
-          }
-          available_fields[field.identifier] = {
-            identifier: field.identifier,
-            name: `${capitalizeFirstLetter(dataset.schema.entity_name)}: ${field.name || field.identifier}`,
-          }
-        }
-      }
-      for (const column of this.collection.columns) {
-        available_fields[column.identifier] = {
-          identifier: '_column__' + column.identifier,
-          name: `Column: ${column.name}`,
-        }
-      }
-      available_fields['_descriptive_text_fields'] = {
-        identifier: '_descriptive_text_fields',
-        name: 'All short descriptive text fields',
-      }
-      available_fields['_full_text_snippets'] = {
-        identifier: '_full_text_snippets',
-        name: 'Full text excerpts',
-      }
-      return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
+    last_retrieval_status() {
+      return this.collectionStore.collection.most_recent_search_task?.last_retrieval_status
     },
-    available_order_by_fields() {
-      const available_fields = {}
-      for (const column of this.collection.columns) {
-        available_fields[column.identifier] = {
-          identifier: 'column_data__' + column.identifier + '__value',
-          name: column.name,
-        }
-      }
-      available_fields['date_added'] = {
-        identifier: 'date_added',
-        name: 'Date Added',
-      }
-      available_fields['changed_at'] = {
-        identifier: 'changed_at',
-        name: 'Last Changed',
-      }
-      return Object.values(available_fields)
+    retrieved_results() {
+      return this.last_retrieval_status.retrieved
     },
-    available_modules() {
-      return this.appStateStore.available_ai_modules.concat(this.appStateStore.additional_column_modules)
+    available_results() {
+      return this.last_retrieval_status.available
     },
-    show_full_text_issue_hint() {
-      return this.selected_source_fields.find((field) => field !== "_full_text_snippets" && field.includes("full_text"))
+    any_source_is_estimated() {
+      return !this.last_retrieval_status.available_is_exact
     },
-    item_count() {
-      const class_details = this.collection.actual_classes.find((actual_class) => actual_class.name === this.class_name)
-      return class_details["positive_count"]
-    }
+    more_results_are_available() {
+      return this.retrieved_results < this.available_results || this.any_source_is_estimated
+    },
+    is_last_page() {
+      return (collectionStore.first_index + collectionStore.per_page) >= collectionStore.filtered_count
+    },
   },
   mounted() {
-    const that = this
-    this.load_collection_items()
-    this.eventBus.on("collection_item_added", ({collection_id, class_name, is_positive, created_item}) => {
-      if (collection_id === this.collection_id && class_name === this.class_name && is_positive === this.is_positive) {
-        that.load_collection_items()
-      }
-    })
-    this.eventBus.on("collection_item_removed", ({collection_id, class_name, collection_item_id}) => {
-      if (collection_id === this.collection_id && class_name === this.class_name) {
-        const item_index = that.collection_items.findIndex((item) => item.id === collection_item_id)
-        if (item_index >= 0) {
-          that.collection_items.splice(item_index, 1)
-        }
-      }
-    })
   },
   watch: {
-    first_index() {
-      this.load_collection_items()
-    },
-    order_by_field() {
-      this.load_collection_items()
-    },
-    order_descending() {
-      this.load_collection_items()
-    },
   },
   methods: {
-    load_collection_items(only_update_specific_columns=null) {
-      const that = this
-      const body = {
-        collection_id: this.collection.id,
-        class_name: this.class_name,
-        type: FieldType.IDENTIFIER,
-        is_positive: this.is_positive,
-        offset: this.first_index,
-        limit: this.per_page,
-        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
-        include_column_data: true,
-      }
-      httpClient.post("/org/data_map/get_collection_items", body).then(function (response) {
-        if (only_update_specific_columns) {
-          for (const item of response.data) {
-            const existing_item = that.collection_items.find((i) => i.id === item.id)
-            if (!existing_item) continue
-            for (const column_identifier of only_update_specific_columns) {
-              existing_item.column_data[column_identifier] = item.column_data[column_identifier]
-            }
-          }
-        } else {
-          that.collection_items = response.data
-        }
-      })
-    },
-    update_collection(on_success=null) {
-      const that = this
-      const body = {
-        collection_id: this.collection.id,
-      }
-      httpClient.post("/org/data_map/get_collection", body).then(function (response) {
-        if (JSON.stringify(response.data.columns) !== JSON.stringify(that.collection.columns)) {
-          that.collection.columns = response.data.columns
-        }
-        that.collection.current_extraction_processes = response.data.current_extraction_processes
-
-        if (on_success) {
-          on_success()
-        }
-      })
-    },
-    add_extraction_question(name, prompt, process_current_page=false) {
-      if (!name || !this.selected_source_fields.length) {
-        return
-      }
-      const that = this
-      const body = {
-        collection_id: this.collection_id,
-        field_type: FieldType.TEXT,
-        name: name,
-        expression: prompt,
-        source_fields: this.selected_source_fields,
-        module: this.selected_module,
-      }
-      httpClient.post(`/org/data_map/add_collection_column`, body)
-      .then(function (response) {
-        if (!that.collection.columns) {
-          that.collection.columns = []
-        }
-        const column = response.data
-        that.collection.columns.push(column)
-        if (process_current_page) {
-          that.extract_question(column.id, true)
-        }
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-      this.$refs.new_question_name.value = ''
-      this.$refs.new_question_prompt.value = ''
-    },
-    delete_column(column_id) {
-      const that = this
-      if (!confirm("Are you sure you want to delete this column and all of the extraction results and notes?")) {
-        return
-      }
-      const body = {
-        column_id: column_id,
-      }
-      httpClient.post(`/org/data_map/delete_collection_column`, body)
-      .then(function (response) {
-        that.collection.columns = that.collection.columns.filter((column) => column.id !== column_id)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    remove_results(column_id, only_current_page=true, force=false, on_success=null) {
-      const that = this
-      if (!only_current_page && !force && !confirm("This will remove the column content for all items in the collection. Are you sure?")) {
-        return
-      }
-      const body = {
-        column_id: column_id,
-        class_name: this.class_name,
-        offset: only_current_page ? this.first_index : 0,
-        limit: only_current_page ? this.per_page : -1,
-        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
-      }
-      httpClient.post(`/org/data_map/remove_collection_class_column_data`, body)
-      .then(function (response) {
-        if (on_success) {
-          on_success()
-        }
-        that.get_extraction_results(column_id)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    extract_question(column_id, only_current_page=true) {
-      const that = this
-      if (!only_current_page && !confirm("This will extract the question for all items in the collection. This might be long running and expensive. Are you sure?")) {
-        return
-      }
-      const body = {
-        column_id: column_id,
-        class_name: this.class_name,
-        offset: only_current_page ? this.first_index : 0,
-        limit: only_current_page ? this.per_page : -1,
-        order_by: (this.order_descending ? "-" : "") + this.order_by_field,
-      }
-      httpClient.post(`/org/data_map/extract_question_from_collection_class_items`, body)
-      .then(function (response) {
-        that.collection.current_extraction_processes = response.data.current_extraction_processes
-        that.get_extraction_results(column_id)
-      })
-      .catch(function (error) {
-        console.error(error)
-      })
-    },
-    get_extraction_results(column_id) {
-      const column_identifier = this.collection.columns.find((column) => column.id === column_id).identifier
-      this.load_collection_items([column_identifier])
-      this.update_collection(() => {
-        if (this.collection.current_extraction_processes.includes(column_identifier)) {
-          setTimeout(() => {
-            this.get_extraction_results(column_id)
-          }, 1000)
-        }
-      })
-    },
-    human_readable_source_fields(fields) {
-      return fields.map((field) => this.available_source_fields.find((f) => f.identifier === field).name).join(", ")
-    },
-    human_readable_module_name(module_identifier) {
-      return this.available_modules.find((m) => m.identifier === module_identifier)?.name
-    },
   },
 }
 </script>
 
 <template>
-  <div class="flex flex-row">
-    <div class="flex-1 flex flex-col overflow-x-hidden">
+  <div class="flex flex-col items-center" v-if="collection">
 
-      <div class="w-full flex flex-row gap-3 mb-3">
-        <button @click="show_add_column_dialog = true" class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
-          Add Column <PlusIcon class="inline h-4 w-4"></PlusIcon>
-        </button>
-        <Dialog v-model:visible="show_add_column_dialog" modal header="Add Column">
-          <div class="flex flex-col gap-3">
-            <div class="flex flex-row items-center">
-              <input
-                ref="new_question_name"
-                type="text"
-                class="flex-none w-2/3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                placeholder="Column Name"/>
-            </div>
-            <div class="flex flex-row gap-2 items-center">
-              <div class="flex-1 min-w-0">
-                <MultiSelect v-model="selected_source_fields"
-                  :options="available_source_fields"
-                  optionLabel="name"
-                  optionValue="identifier"
-                  placeholder="Select Sources..."
-                  :maxSelectedLabels="0"
-                  selectedItemsLabel="{0} Source(s)"
-                  class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <Dropdown v-model="selected_module"
-                  :options="available_modules"
-                  optionLabel="name"
-                  optionValue="identifier"
-                  placeholder="Select Module.."
-                  class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-              </div>
-            </div>
-            <Message v-if="show_full_text_issue_hint" class="text-gray-500">
-              Using the full text of an item might be slow and expensive. The full text will also be limited to the maximum text length of the AI module, which might lead to unpredictable results.
-              <br>
-              Consider using 'Full Text Excerpts' instead, which selects only the most relevant parts of the full text.
-            </Message>
-            <div class="flex flex-row items-center">
-              <textarea
-                ref="new_question_prompt"
-                type="text"
-                class="flex-auto rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                placeholder="Question / Prompt"/>
-            </div>
-            <div class="flex flex-row gap-3">
-              <button
-                class="rounded-md border-0 px-2 py-1.5 bg-green-100 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                type="button"
-                @click="show_add_column_dialog = false; add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, true)">
-                Add Question & Process Current Page
-              </button>
-              <button
-                class="rounded-md border-0 px-2 py-1.5 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-                type="button"
-                @click="show_add_column_dialog = false; add_extraction_question($refs.new_question_name.value, $refs.new_question_prompt.value, false)">
-                Add without Processing
-              </button>
-            </div>
+    <DataTable :value="collectionStore.collection_items" tableStyle="" scrollable size="small"
+      class="min-h-0 overflow-x-auto max-w-full" ref="table">
+      <template #empty>
+        <div v-if="collectionStore.search_mode"
+          class="pl-3 xl:pl-8 py-10 flex flex-col gap-3 items-center text-gray-500">
+          {{ collection.ui_settings.hide_checked_items_in_search ? $t('item-view.no-not-already-evaluated-items-found') : $t('item-view.no-items-found') }}
+        </div>
+        <div v-else
+          class="pl-3 xl:pl-8 py-10 flex flex-row justify-center text-gray-500">
+          {{ $t('item-view.no-items-yet') }}
+        </div>
+      </template>
+      <Column header="" class="pl-5 xl:pl-10 min-w-[520px]">
+        <template #header="slotProps">
+          <div v-if="collectionStore.search_mode" class="rounded-md bg-white shadow-sm w-full py-1 px-2 flex flex-row justify-between">
+            <div class="w-20"></div>
+            <span
+              class="text-sm text-center"
+              v-tooltip.bottom="{value: $t('item-view.search-result-tooltip')}">
+              {{ $t('item-view.search-results') }}
+              <span class="text-xs text-gray-500">({{ $t('item-view.number-of-retrieved-results', [retrieved_results, available_results, any_source_is_estimated ? '+': '']) }})</span>
+              <InformationCircleIcon class="ml-1 h-4 w-4 inline text-blue-500">
+              </InformationCircleIcon>
+            </span>
+            <BorderlessButton @click="collectionStore.approve_relevant_search_results"
+              v-tooltip.bottom="{ value: $t('item-view.approve-all-tooltip'), showDelay: 400}">
+              {{ $t('item-view.approve-all') }}
+            </BorderlessButton>
           </div>
-        </Dialog>
-
-        <button @click="show_add_item_dialog = true" class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
-          Add Items <PlusIcon class="inline h-4 w-4"></PlusIcon>
-        </button>
-        <Dialog v-model:visible="show_add_item_dialog" modal header="Add Items">
-          <AddItemsToCollectionArea
-            :collection="collection"
-            :collection_class="class_name"
-            @items_added="load_collection_items"
-            ></AddItemsToCollectionArea>
-        </Dialog>
-
-        <div class="flex-1"></div>
-        <button @click="event => {$refs.export_dialog.toggle(event)}"
-          class="py-1 px-2 rounded-md bg-gray-100 text-gray-500 text-sm font-semibold hover:bg-blue-100/50">
-          Export Table
-        </button>
-        <button v-if="appState.user.is_staff" @click="show_writing_tasks = !show_writing_tasks"
-          class="py-1 px-2 rounded-md bg-green-100 text-sm font-semibold hover:bg-blue-100/50">
-          {{ show_writing_tasks ? 'Hide' : 'Show' }} Writing Tasks <ChevronRightIcon class="inline h-4 w-4"></ChevronRightIcon>
-        </button>
-
-        <OverlayPanel ref="export_dialog">
-          <ExportTableArea :collection_id="collection_id" :class_name="class_name">
-          </ExportTableArea>
-        </OverlayPanel>
-      </div>
-
-      <DataTable :value="collection_items" tableStyle="" scrollable scrollHeight="flex" size="small" class="min-h-0 overflow-x-auto">
-        <template #empty>
-          <div class="py-10 flex flex-row justify-center text-gray-500">No items yet</div>
+          <span v-else
+            class="text-sm rounded-md bg-white shadow-sm w-full py-1 px-2 text-center">
+            {{ collectionStore.entity_name_plural || $t('item-view.items-column-header') }}
+          </span>
         </template>
-        <Column header="">
-          <template #header="slotProps">
-            <span class="text-sm">Item</span>
-          </template>
-          <template #body="slotProps">
-            <CollectionItem
-              :dataset_id="slotProps.data.dataset_id"
-              :item_id="slotProps.data.item_id"
-              :is_positive="slotProps.data.is_positive"
-              :show_remove_button="true"
-              @remove="appState.remove_item_from_collection([slotProps.data.dataset_id, slotProps.data.item_id], collection_id, class_name)"
-              class="min-w-[350px] max-w-[520px]">
-            </CollectionItem>
-          </template>
-        </Column>
-        <Column v-for="column in collection.columns" :header="false">
-          <template #header="slotProps">
-            <button class="rounded-md bg-gray-100 text-sm hover:bg-blue-100/50 py-1 px-2"
-              @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
-              {{ column.name }}
-            </button>
-          </template>
-          <template #body="slotProps">
-            <CollectionTableCell :item="slotProps.data" :column="column"
-              class="max-w-[400px]"
-              :current_extraction_processes="collection.current_extraction_processes"
-              :show_overlay_buttons="false">
-            </CollectionTableCell>
-          </template>
-        </Column>
-      </DataTable>
+        <template #body="slotProps">
+          <CollectionItem
+            :dataset_id="slotProps.data.dataset_id"
+            :item_id="slotProps.data.item_id"
+            :initial_item="slotProps.data.metadata"
+            :is_positive="slotProps.data.is_positive"
+            :show_remove_button="true"
+            :collection_item="slotProps.data"
+            :size_mode="item_size_mode"
+            class="min-w-[520px] max-w-[520px]">
+          </CollectionItem>
 
-      <div class="flex flex-row items-center justify-center">
-        <Paginator v-model:first="first_index" :rows="per_page" :total-records="item_count"
-          class="mt-[0px]"></Paginator>
-        <Dropdown v-model="order_by_field"
-          :options="available_order_by_fields"
-          optionLabel="name"
-          optionValue="identifier"
-          placeholder="Order By..."
-          class="w-40 mr-2 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
-        <button @click="order_descending = !order_descending"
-          v-tooltip="{'value': 'Sort Order', showDelay: 500}"
-          class="w-8 h-8 text-sm text-gray-400 rounded bg-white border border-gray-300 hover:bg-gray-100">
-          {{ order_descending ? '▼' : '▲' }}
-        </button>
-      </div>
-
-      <OverlayPanel ref="column_options">
-          <div class="w-[400px] flex flex-col gap-2">
-            <!-- <h3 class="font-bold">{{ selected_column.name }}</h3> -->
-            <div class="flex flex-row">
-              <p class="flex-1">{{ selected_column.expression }}</p>
-              <button
-                @click="delete_column(selected_column.id); $refs.column_options.hide()"
-                class="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-red-500">
-                <TrashIcon class="h-4 w-4"></TrashIcon>
-              </button>
-            </div>
-            <p class="text-xs text-gray-500">{{ human_readable_source_fields(selected_column.source_fields) }}</p>
-            <p class="text-xs text-gray-500">{{ human_readable_module_name(selected_column.module) }}</p>
-            <div v-if="selected_column.module && selected_column.module !== 'notes'" class="flex flex-row gap-2">
-              <button @click="extract_question(selected_column.id, true); $refs.column_options.hide()"
-                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-                Extract <span class="text-gray-500">(current page)</span></button>
-              <button @click="extract_question(selected_column.id, false); $refs.column_options.hide()"
-                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-green-800">
-                Extract <span class="text-gray-500">(all)</span></button>
-            </div>
-
-            <div class="flex flex-row gap-2">
-              <button @click="remove_results(selected_column.id, true)"
-                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-                Remove results<br><span class="text-gray-500">(current page)</span></button>
-              <button @click="remove_results(selected_column.id, false)"
-                class="flex-1 p-1 bg-gray-100 hover:bg-blue-100/50 rounded text-sm text-red-800">
-                Remove results<br><span class="text-gray-500">(all)</span></button>
-            </div>
+          <div v-if="collectionStore.search_mode && more_results_are_available && is_last_page && slotProps.index == collectionStore.collection_items.length - 1"
+            class="my-5 w-full flex flex-row justify-center">
+            <BorderButton @click="collectionStore.add_more_items_from_active_task"
+              class="py-1 px-2 rounded-md border border-gray-200 text-sm font-semibold hover:bg-blue-100/50"
+              v-tooltip.top="{ value: $t('item-view.number-of-retrieved-results', [retrieved_results, available_results, any_source_is_estimated ? '+': ''])}">
+              {{ $t('item-view.show-more-results') }} <PlusIcon class="h-4 w-4 inline"></PlusIcon>
+            </BorderButton>
           </div>
-      </OverlayPanel>
-    </div>
 
-    <WritingTaskArea v-if="show_writing_tasks" class="flex-none w-[500px]"
-      :collection_id="collection_id" :class_name="class_name">
-    </WritingTaskArea>
+          <div v-if="collectionStore.search_mode && !more_results_are_available && is_last_page && slotProps.index == collectionStore.collection_items.length - 1"
+            class="my-5 w-full flex flex-row justify-center text-sm text-gray-400">
+            {{ $t('item-view.no-more-results-available') }}
+          </div>
+        </template>
+      </Column>
+      <Column v-for="(column, index) in collection.columns" :key="column.identifier" :header="false">
+        <template #header="slotProps">
+          <button class="rounded-md bg-white shadow-sm text-sm hover:text-blue-500 py-1 px-2 w-full"
+            @click="event => {selected_column = column; $refs.column_options.toggle(event)}">
+            {{ column.name }}
+            <span v-if="column.module === 'relevance'" class="ml-2 text-xs text-gray-500">{{ $t('item-view.click-to-change-criteria') }}</span>
+          </button>
+        </template>
+        <template #body="slotProps">
+          <CollectionTableCell :item="slotProps.data" :column="column"
+            :columns_with_running_processes="collection.columns_with_running_processes"
+            :item_size_mode="item_size_mode">
+          </CollectionTableCell>
+        </template>
+      </Column>
+      <Column class="pr-5 xl:pr-10">
+        <template #header="slotProps">
+          <button class="rounded-md bg-gray-100 shadow-sm text-sm hover:text-blue-500 py-1 px-3 w-[120px]"
+            @click="$emit('add_column')">
+            <PlusIcon class="h-4 w-4 inline"></PlusIcon> {{ $t('item-view.add-column') }}
+          </button>
+        </template>
+        <template #body="slotProps">
+
+        </template>
+      </Column>
+    </DataTable>
+
+    <EditColumnArea ref="column_options" :selected_column="selected_column">
+    </EditColumnArea>
 
   </div>
-
 </template>
 
 <style scoped>

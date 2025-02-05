@@ -33,10 +33,10 @@ npm install
 - By default, the docker setup uses `/data/quiddity_data` as a folder to store app data. Make sure it exists and is writable or change the mounting point in the docker-compose.yaml file to something else.
 - If an Nvidia GPU is available, copy the `docker-compose.override.gpu_template.yaml` file to `docker-compose.override.yaml`
 - Make sure the env variables and credential files described in `required_environment_variables.txt` exist
-- Organization-backend database: start the postgres container using `docker compose up -d postgres`, then run `./manage.py migrate` in the `organization_backend` folder
+- Django backend database: start the postgres container using `docker compose up -d postgres`, then run `./manage.py migrate` in the `backend` folder
   - If starting without a database backup, run `python manage.py createsuperuser` to create the first user
-  - To use a backup, run `./manage.py loaddata db_export.json` in the `organization_backend` folder
-- Run `python manage.py collectstatic` in the `organization_backend` folder
+  - To use a backup, run `./manage.py loaddata db_export.json` in the `backend` folder
+- Run `python manage.py collectstatic` in the `backend` folder
 - (optionally) Set up VSCode by installing recommended extensions in `vsc-extensions.txt` (can be installed using `VSC Export & Import` extensions, but should be done carefully)
 - run `docker compose up -d`
 

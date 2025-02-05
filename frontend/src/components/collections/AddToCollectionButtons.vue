@@ -32,14 +32,14 @@ export default {
       if (this.appStateStore.last_used_collection_id === null) {
         return "Select collection"
       }
-      const base_name = this.appStateStore.collections.find((e) => e.id == this.appStateStore.last_used_collection_id).name
+      let base_name = this.appStateStore.collections.find((e) => e.id == this.appStateStore.last_used_collection_id).name
       if (base_name.length > 20) {
         base_name = `${base_name.slice(0, 20)}...`
       }
       if (this.appStateStore.last_used_collection_class == "_default") {
         return base_name
       } else {
-        const class_name = this.appStateStore.last_used_collection_class
+        let class_name = this.appStateStore.last_used_collection_class
         if (class_name.length > 20) {
           class_name = `${class_name.slice(0, 20)}...`
         }

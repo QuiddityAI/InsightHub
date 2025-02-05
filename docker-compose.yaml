@@ -10,42 +10,32 @@ services:
       - model_server_cache:/home/appuser/.cache/
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55180:55180"
-  organization-backend:
-    image: visual_data_map/organization_backend
+  backend:
+    image: visual_data_map/backend
     build:
       context: ./
-      dockerfile: ./docker/organization_backend.Dockerfile
+      dockerfile: ./docker/backend.Dockerfile
     volumes:
       - ./:/source_code/
       - "${DATA_PATH:-/data}:/data"
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55125:55125"
-    # Note: by default, the data-backend is and should not be accessible from the outside
     environment:
-      - data_backend_host=http://data-backend:55123
+      - data_backend_host=http://localhost:55125
       - postgres_host=postgres
       - BACKEND_AUTHENTICATION_SECRET
-  data-backend:
-    image: visual_data_map/data_backend
-    build:
-      context: ./
-      dockerfile: ./docker/data_backend.Dockerfile
-    volumes:
-      - ./:/source_code/
-      - "${DATA_PATH:-/data}:/data"
-    # ports:  # expose port outside of this virtual network
-    #   - "127.0.0.1:55123:55123"
-    # Note: this port is indirectly exposed through a proxy in the vite webserver
-    depends_on:
-      - organization-backend
-    environment:
       - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
-      - organization_backend_host=http://organization-backend:55125
+      - backend_host=http://localhost:55125
       - vector_database_host=qdrant
       - search_engine_host=opensearch
-      - BACKEND_AUTHENTICATION_SECRET
+      - PDFERRET_BASE_URL=http://pdferret:80
       - PDFERRET_GROBID_URL=http://grobid:8070
+      - PDFERRET_TIKA_SERVER_URL=http://tika:9998
+      - TIKA_SERVER_ENDPOINT=http://tika:9998
+      - TIKA_CLIENT_ONLY=True
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
   webserver:
     image: visual_data_map/webserver
     build:
@@ -56,10 +46,10 @@ services:
     volumes:
       - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_EXPOSED_IP:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
     environment:
-      - organization_backend_host=http://organization-backend:55125
-      - data_backend_host=http://data-backend:55123
+      - backend_host=http://backend:55125
   webserver-prod:
     image: visual_data_map/webserver_prod
     build:
@@ -70,10 +60,10 @@ services:
     volumes:
       - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_EXPOSED_IP:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
+      - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
     environment:
-      - organization_backend_host=http://organization-backend:55125
-      - data_backend_host=http://data-backend:55123
+      - backend_host=http://backend:55125
   qdrant:
     image: "qdrant/qdrant:latest"
     volumes:
@@ -119,25 +109,6 @@ services:
     volumes:
       - infinity_model_cache:/app/.cache/torch
     command: --model-name-or-path intfloat/e5-base-v2 --port 55181 --engine ctranslate2
-  grobid:
-    image: lfoppiano/grobid:latest-develop
-    init: true
-    # ports:  # expose port outside of this virtual network
-    #   - "127.0.0.1:8070:8070"
-    #   - "127.0.0.1:8071:8071"
-    environment:
-      - grobid__3rdparty__pdf2xml__memory__limit__mb=8000
-    deploy:
-      resources:
-        limits:
-          #cpus: "20"
-          memory: "8192mb"
-  # unstructured:
-  #   image: unstructured-io/unstructured-api:latest
-  #   ports:
-  #     - "127.0.0.1:8000:55005"
-  #   environment:
-  #     - UNSTRUCTURED_API_KEY="visual_data_map"
   swag:
     image: lscr.io/linuxserver/swag:latest
     container_name: swag

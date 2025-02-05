@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:19.9.0 AS vite_env
+FROM --platform=$BUILDPLATFORM node:22.13.0 AS vite_env
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
 COPY package.json /app

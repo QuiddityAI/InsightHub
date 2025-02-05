@@ -1,0 +1,952 @@
+{
+  "name": "Semantic Scholar",
+  "entity_name": "article",
+  "entity_name_plural": "articles",
+  "translated_entity_name": {
+    "plural": {
+      "de": "Artikel"
+    },
+    "singular": {
+      "de": "Artikel"
+    }
+  },
+  "short_description": null,
+  "created_at": "2024-03-05T14:44:12.758Z",
+  "changed_at": "2025-01-23T09:45:33.106Z",
+  "primary_key": "corpus_id",
+  "direct_parent": null,
+  "all_parents": null,
+  "is_group_field": null,
+  "thumbnail_image": null,
+  "descriptive_text_fields": [
+    "title",
+    "abstract"
+  ],
+  "default_search_fields": [
+    "title",
+    "abstract",
+    "tldr",
+    "full_text",
+    "embedding_specter_v2"
+  ],
+  "advanced_options": {
+    "size_field": "cited_by",
+    "access_tokens": {
+      "mfoClZqtnpB4ObEA53tOCyB1oKx3DiIr": "staging_server"
+    },
+    "range_filters": [
+      {
+        "field": "publication_year",
+        "display_name": "Year"
+      },
+      {
+        "field": "cited_by",
+        "display_name": "Citations"
+      }
+    ],
+    "retrieval_mode": "keyword",
+    "example_queries": [
+      {
+        "query": "papers about Mxene before 2020"
+      },
+      {
+        "query": "corona"
+      },
+      {
+        "query": "influence of social media on the youth"
+      }
+    ],
+    "ranking_options": [
+      {
+        "title": "Recent & popular papers",
+        "tooltip": "Rank mostly by relevance, but slightly favor recent and highly cited papers",
+        "boost_function": {
+          "functions": [
+            {
+              "field_value_factor": {
+                "field": "cited_by",
+                "factor": 0.003,
+                "missing": 0,
+                "modifier": "log2p"
+              }
+            },
+            {
+              "exp": {
+                "publication_year": {
+                  "decay": 0.5,
+                  "scale": "20",
+                  "offset": "1",
+                  "origin": "2025"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "Relevance only",
+        "tooltip": "Rank by similarity to query only"
+      },
+      {
+        "sort": [
+          {
+            "publication_year": {
+              "order": "desc",
+              "missing": "_last"
+            }
+          },
+          {
+            "publication_date": {
+              "order": "desc",
+              "missing": "_last"
+            }
+          }
+        ],
+        "title": "Newest first",
+        "tooltip": "Strictly sort by publication date, as long as the paper contains the keywords at least once"
+      },
+      {
+        "sort": [
+          {
+            "cited_by": {
+              "order": "desc",
+              "missing": "_last"
+            }
+          }
+        ],
+        "title": "Most cited first",
+        "tooltip": "Strictly sort by number of citations, as long as the paper contains the keywords at least once"
+      }
+    ],
+    "show_word_cloud": true,
+    "map_vector_field": "embedding_specter_v2",
+    "opt_in_workflows": [
+      "research_agent"
+    ],
+    "example_questions": [
+      {
+        "question": "What can Mxenes be used for?"
+      },
+      {
+        "question": "What is aerosinusitis?"
+      }
+    ],
+    "excluded_workflows": [
+      "show_all"
+    ],
+    "export_button_name": "Cite",
+    "language_filtering": {
+      "field": "language",
+      "format": "iso_639_set_1",
+      "options": [
+        "en",
+        "de"
+      ]
+    },
+    "highlighted_workflows": [
+      "overview_map"
+    ],
+    "default_result_language": "en",
+    "ignored_keyword_highlight_fields": [
+      "title",
+      "abstract",
+      "tldr"
+    ]
+  },
+  "result_list_rendering": {
+    "url": "item => null",
+    "body": "item => `${item.abstract}`",
+    "tags": "(item) => {return [ {'label': 'PDF', 'tooltip': 'PDF is available', 'applies': !!item.oa_url},] }",
+    "image": "item => null",
+    "title": "item => `${item.title}`",
+    "subtitle": "item => `${item.publication_year} | Cited by: ${item.cited_by} | ${item.venue || item.journal} | ${item.authors ? item.authors.join(', ') : ''}`",
+    "required_fields": [
+      "title",
+      "venue",
+      "journal",
+      "publication_year",
+      "authors",
+      "abstract",
+      "oa_url",
+      "cited_by"
+    ]
+  },
+  "hover_label_rendering": {
+    "image": "(item) => { return null }",
+    "title": "(item) => { return item.title }",
+    "subtitle": "(item) => { return null }",
+    "required_fields": [
+      "title",
+      "abstract"
+    ]
+  },
+  "detail_view_rendering": {
+    "url": "item => null",
+    "body": "item => (item.tldr?.length ? `<cite> TLDR: ${item.tldr}</cite>` : '') + `${item.abstract}`",
+    "tags": "(item) => {return [ {'label': 'OA', 'tooltip': 'Open Access', 'applies': item.is_open_access},] }",
+    "image": "item => null",
+    "links": [
+      {
+        "url": "item => `https://api.semanticscholar.org/CorpusID:${item.corpus_id}`",
+        "label": "@ Semantic Scholar",
+        "tooltip": "Open this paper in Semantic Scholar"
+      },
+      {
+        "url": "item => item.oa_url",
+        "label": "PDF",
+        "tooltip": "Open PDF directly"
+      }
+    ],
+    "title": "item => `${item.title}`",
+    "subtitle": "item => `${item.publication_year} | Cited by: ${item.cited_by} | ${item.venue || item.journal} | ${item.authors ? item.authors.join(', ') : ''}`",
+    "required_fields": [
+      "corpus_id",
+      "title",
+      "venue",
+      "journal",
+      "publication_year",
+      "authors",
+      "abstract",
+      "tldr",
+      "oa_url",
+      "cited_by"
+    ]
+  },
+  "statistics": {
+    "groups": [
+      {
+        "plots": [
+          {
+            "x": "publication_year",
+            "y": [
+              {
+                "name": "Citations",
+                "type": "mean",
+                "field": "cited_by"
+              },
+              {
+                "name": "# Articles",
+                "type": "count",
+                "field": null
+              }
+            ],
+            "title": "Citations",
+            "x_type": "category",
+            "order_by": "x",
+            "max_columns": 10
+          }
+        ],
+        "title": "By Year"
+      },
+      {
+        "plots": [
+          {
+            "x": "journal",
+            "y": [
+              {
+                "name": "Citations",
+                "type": "mean",
+                "field": "cited_by"
+              },
+              {
+                "name": "# Articles",
+                "type": "count",
+                "field": null
+              }
+            ],
+            "title": "Citations",
+            "x_type": "category",
+            "order_by": "y_max",
+            "max_columns": 10
+          }
+        ],
+        "title": "By Journal"
+      },
+      {
+        "plots": [
+          {
+            "x": "authors",
+            "y": [
+              {
+                "name": "Citations",
+                "type": "mean",
+                "field": "cited_by"
+              },
+              {
+                "name": "# Articles",
+                "type": "count",
+                "field": null
+              }
+            ],
+            "title": "Citations",
+            "x_type": "array_item_category",
+            "order_by": "y_max",
+            "max_columns": 10
+          }
+        ],
+        "title": "By Author"
+      }
+    ],
+    "required_fields": [
+      "publication_year",
+      "cited_by",
+      "journal",
+      "authors"
+    ]
+  },
+  "filter_prompts": "",
+  "applicable_import_converters": [],
+  "applicable_export_converters": [
+    "apa",
+    "bibtex",
+    "ris"
+  ],
+  "identifier": "semantic_scholar",
+  "object_fields": [
+    {
+      "identifier": "corpus_id",
+      "name": "S2 Corpus ID",
+      "created_at": "2024-03-05T14:46:52.937Z",
+      "changed_at": "2024-07-10T06:32:35.880Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "IDENTIFIER",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 0
+    },
+    {
+      "identifier": "title",
+      "name": "Title",
+      "created_at": "2024-03-05T14:46:52.937Z",
+      "changed_at": "2024-06-24T11:08:32.437Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TEXT",
+      "is_array": false,
+      "language_analysis": "english",
+      "additional_language_analysis": [
+        "german"
+      ],
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 1
+    },
+    {
+      "identifier": "abstract",
+      "name": "Abstract / tldr",
+      "created_at": "2024-03-05T14:46:52.937Z",
+      "changed_at": "2024-07-10T06:31:24.991Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TEXT",
+      "is_array": false,
+      "language_analysis": "english",
+      "additional_language_analysis": [
+        "german"
+      ],
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 2
+    },
+    {
+      "identifier": "authors",
+      "name": "Authors",
+      "created_at": "2024-06-24T11:08:32.420Z",
+      "changed_at": "2024-07-10T06:33:02.010Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "STRING",
+      "is_array": true,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 3
+    },
+    {
+      "identifier": "author_ids",
+      "name": "Author IDs",
+      "created_at": "2024-06-24T11:08:32.421Z",
+      "changed_at": "2024-07-10T06:33:15.997Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "IDENTIFIER",
+      "is_array": true,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 4
+    },
+    {
+      "identifier": "doi",
+      "name": "DOI",
+      "created_at": "2024-06-24T11:08:32.421Z",
+      "changed_at": "2024-07-10T06:33:23.132Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "IDENTIFIER",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 5
+    },
+    {
+      "identifier": "venue",
+      "name": "Venue",
+      "created_at": "2024-06-24T11:08:32.422Z",
+      "changed_at": "2024-07-10T06:34:29.989Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TAG",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 6
+    },
+    {
+      "identifier": "publication_year",
+      "name": "Publication Year",
+      "created_at": "2024-06-24T11:08:32.422Z",
+      "changed_at": "2024-06-24T11:08:32.441Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "INTEGER",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 7
+    },
+    {
+      "identifier": "cited_by",
+      "name": "Cited By Count",
+      "created_at": "2024-06-24T11:08:32.423Z",
+      "changed_at": "2024-06-24T11:26:59.082Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "INTEGER",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 8
+    },
+    {
+      "identifier": "influential_citation_count",
+      "name": "Influential Citation Count",
+      "created_at": "2024-06-24T11:08:32.423Z",
+      "changed_at": "2024-07-21T12:47:29.410Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "INTEGER",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 9
+    },
+    {
+      "identifier": "publication_date",
+      "name": "Publication Date",
+      "created_at": "2024-06-24T11:08:32.424Z",
+      "changed_at": "2024-06-24T11:08:32.444Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "DATE",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 11
+    },
+    {
+      "identifier": "publication_types",
+      "name": "Publication Types",
+      "created_at": "2024-06-24T11:08:32.424Z",
+      "changed_at": "2024-07-10T06:38:33.268Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TAG",
+      "is_array": true,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": false
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 12
+    },
+    {
+      "identifier": "journal",
+      "name": "Journal",
+      "created_at": "2024-06-24T11:08:32.425Z",
+      "changed_at": "2024-07-10T06:38:43.893Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TAG",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 13
+    },
+    {
+      "identifier": "journal_info",
+      "name": "Journal Info",
+      "created_at": "2024-06-24T11:08:32.425Z",
+      "changed_at": "2024-06-24T11:28:25.504Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "ARBITRARY_OBJECT",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 14
+    },
+    {
+      "identifier": "language",
+      "name": "Language",
+      "created_at": "2024-06-24T11:12:19.458Z",
+      "changed_at": "2024-07-21T12:36:04.907Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TAG",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 16
+    },
+    {
+      "identifier": "full_text",
+      "name": null,
+      "created_at": "2024-06-24T11:12:19.458Z",
+      "changed_at": "2024-06-24T11:26:59.083Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TEXT",
+      "is_array": false,
+      "language_analysis": "english",
+      "additional_language_analysis": [
+        "german"
+      ],
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 17
+    },
+    {
+      "identifier": "full_text_chunks",
+      "name": null,
+      "created_at": "2024-06-24T11:26:59.057Z",
+      "changed_at": "2024-06-24T11:26:59.084Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "CHUNK",
+      "is_array": true,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 18
+    },
+    {
+      "identifier": "embedding_specter_v2",
+      "name": null,
+      "created_at": "2024-06-24T11:26:59.057Z",
+      "changed_at": "2024-07-06T16:34:48.822Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "VECTOR",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {
+        "datatype": "float16"
+      },
+      "generator": "allenai/specter2_base",
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [
+        "title",
+        "abstract"
+      ],
+      "should_be_generated": false,
+      "_order": 19
+    },
+    {
+      "identifier": "chunk_embeddings_specter_v2",
+      "name": null,
+      "created_at": "2024-06-24T11:26:59.057Z",
+      "changed_at": "2024-07-06T16:34:03.453Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "VECTOR",
+      "is_array": true,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {
+        "datatype": "float16"
+      },
+      "generator": "allenai/specter2_base",
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [
+        "full_text_chunks"
+      ],
+      "should_be_generated": false,
+      "_order": 20
+    },
+    {
+      "identifier": "thumbnail_path",
+      "name": "Thumbnail Path",
+      "created_at": "2024-06-24T11:32:31.420Z",
+      "changed_at": "2024-06-24T11:32:31.456Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "IMAGE",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 21
+    },
+    {
+      "identifier": "enhancement_info",
+      "name": "Enhancement Info",
+      "created_at": "2024-06-24T11:32:31.421Z",
+      "changed_at": "2024-06-24T11:32:31.457Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "ARBITRARY_OBJECT",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 22
+    },
+    {
+      "identifier": "tldr",
+      "name": "TLDR",
+      "created_at": "2024-06-24T11:48:30.299Z",
+      "changed_at": "2024-06-24T11:49:17.187Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TEXT",
+      "is_array": false,
+      "language_analysis": "english",
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": true,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 23
+    },
+    {
+      "identifier": "oa_url",
+      "name": "PDF Link",
+      "created_at": "2024-07-21T12:13:41.615Z",
+      "changed_at": "2024-07-21T12:14:46.473Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "URL",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": true,
+      "index_parameters": {
+        "no_index_in_vector_database": true,
+        "exclude_from_vector_database": true
+      },
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 24
+    },
+    {
+      "identifier": "oa_status",
+      "name": "Open Access Status",
+      "created_at": "2024-07-21T12:13:41.615Z",
+      "changed_at": "2024-07-21T12:13:41.652Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "TAG",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 25
+    },
+    {
+      "identifier": "oa_license",
+      "name": "Open Access License",
+      "created_at": "2024-07-21T12:13:41.616Z",
+      "changed_at": "2024-07-21T12:13:41.652Z",
+      "schema": "semantic_scholar",
+      "description": null,
+      "field_type": "STRING",
+      "is_array": false,
+      "language_analysis": null,
+      "additional_language_analysis": [],
+      "embedding_space": null,
+      "is_available_for_search": false,
+      "text_similarity_threshold": null,
+      "image_similarity_threshold": null,
+      "is_available_for_filtering": false,
+      "index_parameters": {},
+      "generator": null,
+      "generator_parameters": null,
+      "generating_condition": "",
+      "source_fields": [],
+      "should_be_generated": false,
+      "_order": 26
+    }
+  ]
+}

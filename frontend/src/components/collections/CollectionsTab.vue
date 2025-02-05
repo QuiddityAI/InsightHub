@@ -3,17 +3,19 @@
 import Message from 'primevue/message';
 
 import CollectionList from "../collections/CollectionList.vue"
-import CollectionClassesList from "../collections/CollectionClassesList.vue"
-import CollectionClassDetails from "../collections/CollectionClassDetails.vue"
+import CollectionView from "../collections/CollectionView.vue"
+import CreateCollectionArea from './CreateCollectionArea.vue';
 
 import { useToast } from 'primevue/usetoast';
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
+import { useCollectionStore } from "../../stores/collection_store"
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
+const collectionStore = useCollectionStore()
 const toast = useToast()
 
 </script>
@@ -26,61 +28,54 @@ export default {
   emits: [],
   data() {
     return {
-      currently_selected_collection: null,
-      currently_selected_collection_class: null,
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
+    ...mapStores(useCollectionStore),
   },
   mounted() {
-    this.eventBus.on("show_table", ({collection_id, class_name}) => {
-      this.currently_selected_collection = collection_id
-      this.currently_selected_collection_class = class_name
-    })
+    this.eventBus.on("show_table", this.on_show_table)
+  },
+  unmounted() {
+    this.eventBus.off("show_table", this.on_show_table)
   },
   watch: {
+    'appStateStore.organization'(newVal, oldVal) {
+      if (newVal) {
+        this.collectionStore.get_available_collections(this.appStateStore.organization.id)
+      }
+    },
   },
   methods: {
+    on_show_table({collection_id, class_name}) {
+      this.collectionStore.open_collection(collection_id, class_name)
+    },
   },
 }
 </script>
 
 <template>
-  <div class="mt-3 mb-3 pt-4 pb-3 px-5 shadow-sm rounded-md bg-white overflow-hidden">
+  <div class="overflow-hidden flex flex-row relative bg-gray-200">
 
-    <div v-if="!appState.logged_in" class="h-full flex flex-row gap-5 items-center justify-center">
-      <Message :closable="false">
-        Log in to save items in collections and extract information in a table
-      </Message>
-    </div>
+    <!-- Left Side Bar -->
+    <CollectionList
+      class="absolute z-40">
+    </CollectionList>
 
-    <div v-if="appState.logged_in" class="h-full flex flex-row gap-5 items-center justify-center">
+    <!-- placeholder for collection list (which is absolute positioned) -->
+    <div class="min-w-[250px]" v-if="!collectionStore.collection"></div>
 
-      <CollectionList
-        v-if="!currently_selected_collection && !currently_selected_collection_class"
-        class="w-[500px] h-full overflow-y-auto"
-        @collection_selected="(collection_id) => currently_selected_collection = collection_id"
-        @class_selected="(class_name) => currently_selected_collection_class = class_name">
-      </CollectionList>
+    <!-- Right Side Content -->
+    <CollectionView v-if="collectionStore.collection"
+      class="flex-1 h-full relative z-20">
+    </CollectionView>
 
-      <CollectionClassesList
-        v-if="currently_selected_collection && !currently_selected_collection_class"
-        class="w-[500px] h-full overflow-y-auto"
-        :collection_id="currently_selected_collection"
-        @class_selected="(class_name) => currently_selected_collection_class = class_name"
-        @close="currently_selected_collection = null">
-      </CollectionClassesList>
-
-      <CollectionClassDetails
-        v-if="currently_selected_collection && currently_selected_collection_class"
-        class="flex-1 h-full"
-        :collection_id="currently_selected_collection"
-        :class_name="currently_selected_collection_class"
-        @close="currently_selected_collection = null; currently_selected_collection_class = null">
-      </CollectionClassDetails>
-
+    <div v-else
+      class="h-full w-full flex flex-col gap-5 items-center overflow-y-auto">
+      <CreateCollectionArea
+      ></CreateCollectionArea>
     </div>
 
   </div>

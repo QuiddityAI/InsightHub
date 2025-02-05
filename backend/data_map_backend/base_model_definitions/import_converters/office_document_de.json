@@ -1,0 +1,19 @@
+[
+{
+  "model": "data_map_backend.importconverter",
+  "pk": "office_document_de",
+  "fields": {
+    "display_name": "Office Document German",
+    "created_at": "2024-10-08T12:59:13.680Z",
+    "changed_at": "2024-11-08T13:51:16.262Z",
+    "description": "Allows to import any kind of office documents.",
+    "module": "office_document",
+    "parameters": {
+      "summary_language": "de",
+      "document_language": "de"
+    },
+    "example_file_url": null,
+    "manual_insert_form": []
+  }
+}
+]

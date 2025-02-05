@@ -24,8 +24,7 @@ __pycache__/
 
 absclust_search_cache.pkl
 embedding_cache.pkl
-data_backend/map_data/
-data_backend/openalex_completed_files.txt
+backend/legacy_backend/openalex_completed_files.txt
 
 credentials.json
 openai_credentials.json
@@ -43,11 +42,12 @@ notes.md
 list_view_template.json
 
 .venv/
-data_backend/pdferret.log
+backend/pdferret.log
 
 swag_https_proxy_config/
 !swag_https_proxy_config/nginx/site-confs/default.conf
 
 trace_*.json
 
-docker-compose.override.yaml
+docker-compose*.override.yaml
+*cookies.pkl

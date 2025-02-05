@@ -71,7 +71,11 @@ from data_backend_client import update_database_layout, insert_many
 
 def preprocess_item(raw_item: dict) -> dict:
     raw_item["stars"] = float(raw_item["stars"].split(" ")[0]) if "stars" in raw_item and raw_item["stars"] else None
-    raw_item["ratings"] = int(raw_item["ratings"].split(" ")[0].replace(",", "")) if "ratings" in raw_item and raw_item["ratings"] else None
+    raw_item["ratings"] = (
+        int(raw_item["ratings"].split(" ")[0].replace(",", ""))
+        if "ratings" in raw_item and raw_item["ratings"]
+        else None
+    )
     if "review" in raw_item:
         if isinstance(raw_item["review"], dict):
             raw_item["reviews"] = raw_item["review"]
@@ -90,7 +94,12 @@ def preprocess_item(raw_item: dict) -> dict:
     if "desc" in raw_item:
         raw_item["description"] = raw_item["desc"]
         del raw_item["desc"]
-    if "price" in raw_item and isinstance(raw_item["price"], str) and raw_item["price"] != "" and "$" in raw_item["price"]:
+    if (
+        "price" in raw_item
+        and isinstance(raw_item["price"], str)
+        and raw_item["price"] != ""
+        and "$" in raw_item["price"]
+    ):
         try:
             raw_item["price"] = float(raw_item["price"].split(" ")[0].replace("$", "").replace(",", ""))
         except ValueError as e:
@@ -121,7 +130,7 @@ def import_dataset():
     items = []
     total_items = 0
 
-    with open('/data/amazon_esci_s_1_6M/esci.json', "r") as f:
+    with open("/data/amazon_esci_s_1_6M/esci.json", "r") as f:
         for row in tqdm.tqdm(f, total=max_items):
             raw_item = orjson.loads(row)
             if raw_item.get("locale") not in ("en", "us"):
@@ -129,8 +138,8 @@ def import_dataset():
             if "img" not in raw_item and "image" not in raw_item:
                 continue
             item = preprocess_item(raw_item)
-            #print(json.dumps(item, indent=2, ensure_ascii=False))
-            #break
+            # print(json.dumps(item, indent=2, ensure_ascii=False))
+            # break
 
             items.append(item)
             total_items += 1
