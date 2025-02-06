@@ -25,7 +25,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="fact_from_single_document",
         order=WorkflowOrder.question + 1,
-        name1={"en": "Find a", "de": "Finde einen"},
+        name1={"en": "💬 Find a", "de": "💬 Finde einen"},
         name2={"en": "Fact in a <entity_name_singular>", "de": "Fakt in Dokumenten"},
         help_text={
             "en": "For questions that can be answered based on one item",
@@ -92,7 +92,7 @@ class CollectFactsFromMultipleDocumentsWorkflow(FindFactFromSingleDocumentWorkfl
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="facts_from_multiple_documents",
         order=WorkflowOrder.question + 2,
-        name1={"en": "Collect Facts", "de": "Sammle Fakten"},
+        name1={"en": "📜 Collect Facts", "de": "📜 Sammle Fakten"},
         name2={"en": "From Multiple <entity_name_plural>", "de": "Aus mehreren Dokumenten"},
         help_text={
             "en": "Collect information found in multiple documents",
@@ -114,7 +114,7 @@ class BeyondExistingFactsWorkflow(FindFactFromSingleDocumentWorkflow):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="beyond_existing_facts",
         order=WorkflowOrder.question + 3,
-        name1={"en": "Write a report", "de": "Bericht über"},
+        name1={"en": "🕵️ Write a report", "de": "🕵️ Bericht über"},
         name2={"en": "Beyond individual Facts", "de": "einzelne Fakten hinaus"},
         help_text={
             "en": "E.g. analyze the status and history of a project",
@@ -125,7 +125,7 @@ class BeyondExistingFactsWorkflow(FindFactFromSingleDocumentWorkflow):
         needs_user_input=True,
         needs_result_language=True,
         availability=WorkflowAvailability.in_development,
-        needs_opt_in=False,
+        needs_opt_in=True,
     )
 
     # TODO: currently uses the same logic as FindFactFromSingleDocumentWorkflow

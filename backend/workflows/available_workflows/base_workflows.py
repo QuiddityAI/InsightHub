@@ -17,7 +17,7 @@ class EmptyCollectionWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="empty_collection",
         order=WorkflowOrder.base + 90,  # usually the last one
-        name1={"en": "Empty Collection", "de": "Leere Sammlung"},
+        name1={"en": "🗒️ Empty Collection", "de": "🗒️ Leere Sammlung"},
         name2={"en": "For Notes and Documents", "de": "Für Notizen und Dokumente"},
         help_text={
             "en": "Create an empty collection to collect notes or documents",
@@ -41,7 +41,7 @@ class ShowAllWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="show_all",
         order=WorkflowOrder.base + 1,
-        name1={"en": "Show", "de": "Zeige"},
+        name1={"en": "↕️ Show", "de": "↕️ Zeige"},
         name2={"en": "All <entity_name_plural>", "de": "Alle <entity_name_plural>"},
         help_text={
             "en": "Show all top-level items (e.g. to navigate through a folder hierarchy or show most recent items)",

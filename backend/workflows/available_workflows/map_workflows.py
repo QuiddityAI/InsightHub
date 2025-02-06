@@ -18,7 +18,7 @@ class OverviewMapWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="overview_map",
         order=WorkflowOrder.map + 1,
-        name1={"en": "Show a visual", "de": "Zeige eine visuelle"},
+        name1={"en": "🌍 Show a visual", "de": "🌍 Eine visuelle"},
         name2={"en": "Overview Map of <entity_name_plural>", "de": "Karte von Ergebnissen"},
         help_text={
             "en": "Show a large set of items on a visual map",

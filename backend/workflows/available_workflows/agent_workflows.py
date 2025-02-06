@@ -29,7 +29,7 @@ class ResearchAgentWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="research_agent",
         order=WorkflowOrder.agent + 1,
-        name1={"en": "Let an", "de": "Lass einen"},
+        name1={"en": "🕵️ Let an", "de": "🕵️ Lass einen"},
         name2={"en": "Agent do Research", "de": "Agent Forschung betreiben"},
         help_text={
             "en": "An agent that looks for documents and summarizes them autonomously",
@@ -39,7 +39,8 @@ class ResearchAgentWorkflow(WorkflowBase):
         supports_filters=False,
         needs_user_input=True,
         needs_result_language=True,
-        availability=WorkflowAvailability.preview,
+        availability=WorkflowAvailability.in_development,
+        needs_opt_in=True,
     )
 
     def run(self, collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:

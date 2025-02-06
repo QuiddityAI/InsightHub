@@ -16,7 +16,7 @@ class ClassicSearchWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="classic_search",
         order=WorkflowOrder.search + 1,
-        name1={"en": "Find a single", "de": "Finde einzelne"},
+        name1={"en": "🔍 Find a single", "de": "🔍 Finde einzelne"},
         name2={
             "en": "Known <entity_name_singular>",
             "de": "Bekannte <entity_name_plural>",
@@ -54,7 +54,7 @@ class AssistedSearchWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="assisted_search",
         order=WorkflowOrder.search + 2,
-        name1={"en": "Find a set of", "de": "Finde mehrere"},
+        name1={"en": "✅ Find a set of", "de": "✅ Finde mehrere"},
         name2={"en": "Matching <entity_name_plural>", "de": "Passende <entity_name_plural>"},
         help_text={
             "en": "Evaluates every result separately, good to collect a set of <entity_name_plural>",
