@@ -67,6 +67,7 @@ dependencies = [
     "psycopg2-binary",
     "pypdfium2",
     "pyspellchecker",
+    "python-box",
     "qdrant-client",
     "ratelimit",
     "scikit-learn",
