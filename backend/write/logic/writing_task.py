@@ -3,8 +3,9 @@ import logging
 import threading
 
 from django.db.models.manager import BaseManager
-from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
+from llmonkey.llms import BaseLLMModel
 
+from config.utils import get_default_model
 from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
@@ -183,7 +184,7 @@ def _format_prompt_and_get_result(task: WritingTask, context: str, prompt_templa
     else:
         user_prompt = task.expression
 
-    default_model = Google_Gemini_Flash_1_5_v1.__name__
+    default_model = get_default_model("large").__class__.__name__
     model = BaseLLMModel.load(task.model or default_model)
 
     # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:

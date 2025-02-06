@@ -2,11 +2,11 @@ import threading
 import logging
 
 from django.utils import timezone
-from llmonkey.llms import Mistral_Ministral3b
+import dspy
 
 from data_map_backend.models import DataCollection, User
 from workflows.schemas import CreateCollectionSettings, WorkflowMetadata
-from workflows.prompts import query_language_prompt
+from config.utils import get_default_dspy_llm
 
 
 class WorkflowBase:
@@ -19,6 +19,18 @@ class WorkflowBase:
 
 
 workflows_by_id: dict[str, type[WorkflowBase]] = {}
+
+
+class QueryLanguageSignature(dspy.Signature):
+    """Given the user question or task and the title, provide the language code of this question or task.
+    Output language code should be a two-letter code.
+    """
+
+    user_question: str = dspy.InputField()
+    language_code: str = dspy.OutputField()
+
+
+query_language_predictor = dspy.Predict(QueryLanguageSignature)
 
 
 def workflow(cls: type[WorkflowBase]):
@@ -48,11 +60,14 @@ def create_collection_using_workflow(user: User, settings: CreateCollectionSetti
             assert workflow_cls
 
             if settings.auto_set_filters and workflow_cls.metadata.needs_result_language:
-                prompt = query_language_prompt.replace("{{ query }}", settings.user_input or "")
-                settings.result_language = (
-                    Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
-                )
-
+                if not settings.user_input:
+                    settings.result_language = "en"
+                else:
+                    model = get_default_dspy_llm(query_language_predictor)
+                    with dspy.context(lm=dspy.LM(**model.to_litellm())):
+                        settings.result_language = query_language_predictor(
+                            user_question=settings.user_input
+                        ).language_code
             workflow_cls().run(collection, settings, user)
         except Exception as e:
             collection.agent_is_running = False

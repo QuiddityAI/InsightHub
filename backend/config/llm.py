@@ -11,7 +11,7 @@ default_models = box.Box(
 
 default_signature_models = box.Box(
     {
-        "TitleSignature": "Mistral_Ministral3b",
+        "TitleSignature": "Mistral_Ministral8b",
         "ColumnLanguageSignature": "Mistral_Ministral3b",
         "QueryLanguageSignature": "Mistral_Ministral3b",
         "DocComparisonSignature": "Google_Gemini_Flash_1_5_v1",

@@ -4,7 +4,7 @@ import threading
 from typing import Callable
 
 from django.utils import timezone
-from llmonkey.llms import Google_Gemini_Flash_1_5_v1
+import dspy
 
 from columns.logic.process_column import process_cells_blocking
 from data_map_backend.models import (
@@ -21,7 +21,6 @@ from search.logic.approve_items_and_exit_search import (
     auto_approve_items,
     exit_search_mode,
 )
-from search.prompts import search_query_prompt
 from search.schemas import (
     RetrievalMode,
     RetrievalParameters,
@@ -29,8 +28,30 @@ from search.schemas import (
     SearchTaskSettings,
     SearchType,
 )
+from config.utils import get_default_dspy_llm
 
 # from search.logic.extract_filters import get_filter_prompt, extract_filters
+
+
+class SearchQuerySignature(dspy.Signature):
+    """
+    Write a search query that you would use to find the following information.
+     If the user input is already a search query, write the same query.
+
+     Examples:
+     User input: "What is the capital of France?"
+     Search query: "capital of France"
+
+     User input: "a technical drawing of a car in a PDF file"
+     Search query: "technical drawing car PDF"
+    """
+
+    user_input: str = dspy.InputField()
+    target_language: str = dspy.InputField()
+    search_query: str = dspy.OutputField(desc="Resulting search query in target_languge")
+
+
+search_query_predictor = dspy.Predict(SearchQuerySignature)
 
 
 def create_and_run_search_task(
@@ -61,10 +82,15 @@ def create_and_run_search_task(
 
     if search_task.auto_set_filters:
         collection.log_explanation("Use AI model to generate **suitable query**", save=False)
-        prompt = search_query_prompt[search_task.result_language or "en"].replace(
-            "{{ user_input }}", search_task.user_input
-        )
-        keyword_query = Google_Gemini_Flash_1_5_v1().generate_short_text(prompt) or keyword_query
+        model = get_default_dspy_llm(search_query_predictor)
+        try:
+            with dspy.context(lm=dspy.LM(**model.to_litellm())):
+                keyword_query = search_query_predictor(
+                    user_input=search_task.user_input, target_language=search_task.result_language or "en"
+                ).search_query
+        except Exception as e:
+            logging.error(f"Error generating search query: {e}")
+            keyword_query = search_task.user_input
 
         # filter_prompt_template = get_filter_prompt(search_task.dataset_id, search_task.result_language or 'en')
         # if filter_prompt_template:

@@ -6,14 +6,15 @@ import requests
 from llmonkey.llms import Mistral_Pixtral, Nebius_Llama_3_1_70B_fast, Google_Gemini_Flash_1_5_v1
 
 from data_map_backend.utils import DotDict
+from config.llm import default_pdferret_models
 
 PDFERRET_BASE_URL = os.getenv("PDFERRET_BASE_URL", "http://localhost:8000")
 
 
 def extract_using_pdferret(
     file_paths: list[str],
-    vision_model: str = Google_Gemini_Flash_1_5_v1.__name__,
-    text_model: str = Google_Gemini_Flash_1_5_v1.__name__,
+    vision_model: str = default_pdferret_models.vision,
+    text_model: str = default_pdferret_models.text,
     doc_lang: str = "en",
     return_images: bool = True,
 ) -> tuple[list[DotDict], list[DotDict]]:

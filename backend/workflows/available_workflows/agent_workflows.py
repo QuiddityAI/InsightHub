@@ -1,7 +1,5 @@
 import time
 
-from llmonkey.llms import Google_Gemini_Flash_1_5_v1
-
 from columns.logic.process_column import process_cells_blocking
 from columns.schemas import CellData
 from data_map_backend.models import (
@@ -23,6 +21,7 @@ from workflows.schemas import (
     WorkflowOrder,
 )
 from write.logic.writing_task import execute_writing_task_safe
+from config.utils import get_default_model
 
 
 @workflow
@@ -83,7 +82,7 @@ class ResearchAgentWorkflow(WorkflowBase):
                 COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
             ],
             module="llm",  # there is also a special 'relevance' module, but that's a different story
-            parameters={"model": Google_Gemini_Flash_1_5_v1.__name__, "language": settings.result_language},
+            parameters={"model": get_default_model("medium").__class__.__name__, "language": settings.result_language},
             auto_run_for_candidates=True,  # set this to run this column for all search results
         )
         time.sleep(2)  # just for the demo to understand the process

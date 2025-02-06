@@ -1,7 +1,6 @@
-from llmonkey.llms import Google_Gemini_Flash_1_5_v1
-
 from data_map_backend.models import DataCollection, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType, User
 from workflows.prompts import criteria_prompt
+from config.utils import get_default_model
 
 
 def create_relevance_column(
@@ -9,7 +8,8 @@ def create_relevance_column(
 ) -> CollectionColumn:
     prompt = criteria_prompt[language or "en"].replace("{{ query }}", query)
     default_criteria = "- is relevant to the query '{{ query }}'".replace("{{ query }}", query)
-    criteria_list = Google_Gemini_Flash_1_5_v1().generate_short_text(prompt) or default_criteria
+    med_model = get_default_model("medium")
+    criteria_list = med_model.generate_short_text(prompt) or default_criteria
 
     column = CollectionColumn(
         collection=collection,
@@ -24,7 +24,7 @@ def create_relevance_column(
         ],
         module="relevance",
         parameters={
-            "model": user.preferences.get("default_small_llm") or Google_Gemini_Flash_1_5_v1.__name__,
+            "model": user.preferences.get("default_small_llm") or med_model.__class__.__name__,
             "language": language,
         },
         auto_run_for_candidates=True,

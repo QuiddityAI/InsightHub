@@ -51,3 +51,4 @@ trace_*.json
 
 docker-compose*.override.yaml
 *cookies.pkl
+data/*

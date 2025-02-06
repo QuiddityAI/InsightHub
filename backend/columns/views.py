@@ -4,15 +4,14 @@ import threading
 import time
 
 from django.http import HttpRequest, HttpResponse
-from llmonkey.llms import BaseLLMModel, Mistral_Ministral3b
+from llmonkey.llms import BaseLLMModel
 from ninja import NinjaAPI
-
+import dspy
 from columns.logic.process_column import (
     get_collection_items_from_cell_range,
     process_cells_blocking,
     remove_column_data_from_collection_items,
 )
-from columns.prompts import column_language_prompt, column_name_prompt
 from columns.schemas import (
     CellDataPayload,
     ColumnCellRange,
@@ -27,6 +26,32 @@ from data_map_backend.serializers import (
     CollectionColumnSerializer,
     CollectionSerializer,
 )
+from config.utils import get_default_dspy_llm
+
+
+class TitleSignature(dspy.Signature):
+    """Given the user question or task, provide a short title that best describes the results of this question or task.
+    Title should consist of 1-3 words.
+    """
+
+    user_question: str = dspy.InputField()
+    target_language: str = dspy.InputField(desc="The desired output language for the title")
+    title: str = dspy.OutputField()
+
+
+title_predictor = dspy.Predict(TitleSignature)
+
+
+class ColumnLanguageSignature(dspy.Signature):
+    """Given the user question or task and the title, provide the language code of this question or task.
+    Output language code should be a two-letter code.
+    """
+
+    user_question: str = dspy.InputField()
+    language_code: str = dspy.OutputField()
+
+
+column_language_predictor = dspy.Predict(ColumnLanguageSignature)
 
 api = NinjaAPI(urls_namespace="columns")
 
@@ -44,38 +69,36 @@ def add_column_route(request: HttpRequest, payload: ColumnConfig):
         return HttpResponse(status=400)
 
     if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
-        prompt = column_language_prompt.replace("{{ expression }}", payload.expression or "").replace(
-            "{{ title }}", payload.name or ""
-        )
-        payload.parameters["language"] = (
-            Mistral_Ministral3b().generate_short_text(prompt, exact_required_length=2, temperature=0.3) or "en"
-        )
+        model = get_default_dspy_llm(column_language_predictor)
+        with dspy.context(lm=dspy.LM(**model.to_litellm())):
+            lang = column_language_predictor(user_question=payload.expression).language_code
+        payload.parameters["language"] = lang
+    else:
+        lang = payload.parameters.get("language")
 
     if not payload.name:
         if payload.module == "llm":
-            assert payload.expression
-            prompt = column_name_prompt[payload.parameters.get("language") or "en"].replace(
-                "{{ expression }}", payload.expression
-            )
-            payload.name = Mistral_Ministral3b().generate_short_text(prompt) or "Column"
-            if not payload.name:
-                logging.error("Could not generate name for column.")
+            if not payload.expression:
+                logging.error("No expression provided for LLM column.")
                 return HttpResponse(status=400)
-        elif payload.module == "relevance":
-            payload.name = "Relevance"
-        elif payload.module == "web_search":
-            payload.name = "Web Search"
-        elif payload.module == "item_field":
-            payload.name = payload.source_fields[0]
-        elif payload.module == "notes":
-            payload.name = "Notes"
-        elif payload.module == "website_scraping":
-            payload.name = "Website Text"
-        elif payload.module == "email":
-            payload.name = "E-Mail"
+            try:
+                model = get_default_dspy_llm(title_predictor)
+                with dspy.context(lm=dspy.LM(**model.to_litellm())):
+                    payload.name = title_predictor(user_question=payload.expression, target_language=lang).title
+            except Exception as e:
+                payload.name = "Column"
         else:
-            payload.name = "Column"
-    assert payload.name
+            module_name_map = {
+                "relevance": "Relevance",
+                "web_search": "Web Search",
+                "item_field": payload.source_fields[0],
+                "notes": "Notes",
+                "website_scraping": "Website Text",
+                "email": "E-Mail",
+            }
+            payload.name = module_name_map.get(payload.module, "Column")
+    if not payload.name:
+        return HttpResponse(status=400)
 
     if not payload.identifier:
         identifier = payload.name.replace(" ", "_").lower()

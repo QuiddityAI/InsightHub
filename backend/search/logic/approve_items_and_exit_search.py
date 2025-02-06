@@ -1,10 +1,7 @@
-import logging
-from typing import Iterable
-
 from django.db.models import Q
 from django.db.models.manager import BaseManager
 from django.utils import timezone
-from llmonkey.llms import Google_Gemini_Flash_1_5_v1
+import dspy
 
 from columns.schemas import Criterion
 from data_map_backend.models import (
@@ -18,6 +15,28 @@ from data_map_backend.schemas import ItemRelevance
 from legacy_backend.logic.chat_and_extraction import get_item_question_context
 from search.prompts import approve_using_comparison_prompt
 from search.schemas import ApprovalUsingComparisonReason, SearchTaskSettings
+from config.utils import get_default_dspy_llm
+
+
+class DocComparisonSignature(dspy.Signature):
+    """
+    Compare the following documents and select those that should be used to answer a question.
+    It is possible that no document is relevant. It is also possible that multiple or all documents are relevant.
+    If a document is relevant but another is more relevant for the same information, select only the more relevant document.
+    Select only as many documents as are necessary to answer the question.
+    If multiple documents are very similar or identical, select only the newest one (or the first one, if this cannot be determined).
+    Only the metadata of each document will be displayed, not the full content.
+    If a relevance justification is provided ("Relevance: reason"), trust this justification.
+    """
+
+    documents: list[str] = dspy.InputField()
+    target_language: str = dspy.InputField(desc="The desired output language for reason")
+    selected_documents: dict[str, str] = dspy.OutputField(
+        desc="Dictionary having item_id as key and a very short explanation of why the criterion is fulfilled or not (in target_language)"
+    )
+
+
+doc_comparison = dspy.Predict(DocComparisonSignature)
 
 
 def auto_approve_items(
@@ -129,16 +148,12 @@ def approve_using_comparison(
                     documents += f"Relevance: {criterion.reason}\n"
                     if criterion.supporting_quote:
                         documents += f"  Quote: {criterion.supporting_quote}\n"
-        documents += "\n"
+        documents += "\n\n\n"
 
-    prompt = prompt.replace("{{ documents }}", documents)
-
-    results, original_response = Google_Gemini_Flash_1_5_v1().generate_structured_array_response(
-        ApprovalUsingComparisonReason,
-        system_prompt=prompt,
-        user_prompt="",
-    )  # type: ignore
-    results: Iterable[ApprovalUsingComparisonReason] = results
+    model = get_default_dspy_llm(doc_comparison)
+    with dspy.context(lm=dspy.LM(**model.to_litellm())):
+        sel_docs = doc_comparison(documents=documents, target_language=search_task.result_language).selected_documents
+    results = [ApprovalUsingComparisonReason(item_id=k, reason=v) for k, v in sel_docs.items()]
 
     relevance_column = relevance_columns[0] if relevance_columns else None
     selected_items = set()

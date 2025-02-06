@@ -1,9 +1,8 @@
-import logging
-
 from django.utils import timezone
-from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1
+from llmonkey.llms import BaseLLMModel
 
 from data_map_backend.models import CollectionColumn, ServiceUsage
+from config.utils import get_default_model
 from columns.schemas import CellData, Criterion
 import dspy
 
@@ -102,7 +101,7 @@ def generate_custom_prompt_response(
 def generate_llm_cell_data(
     input_data: str, column: CollectionColumn, user_id: int, is_relevance_column: bool = False
 ) -> CellData:
-    default_model = Google_Gemini_Flash_1_5_v1.__name__
+    default_model = get_default_model("medium").__class__.__name__
     model_name = column.parameters.get("model") or default_model
 
     cell_data = CellData(
@@ -122,7 +121,6 @@ def generate_llm_cell_data(
     ai_credits = model.config.euro_per_1M_output_tokens / 5.0
     usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
     result = usage_tracker.track_usage(ai_credits, f"extract information using {model.__class__.__name__}")
-    if result["approved"] != True:
     if result["approved"] != True:
         cell_data.value = "AI usage limit exceeded"
         return cell_data

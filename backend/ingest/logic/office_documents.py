@@ -6,7 +6,7 @@ import datetime
 from typing import Callable
 from multiprocessing.pool import ThreadPool
 
-from llmonkey.llms import BaseLLMModel, Google_Gemini_Flash_1_5_v1, Nebius_Llama_3_1_8B_cheap
+from config.utils import get_default_model
 from requests import ReadTimeout
 
 from data_map_backend.utils import DotDict
@@ -139,11 +139,11 @@ def ai_file_processing_single(
         full_text=full_text,
         full_text_chunks=chunks,
         summary=file_metainfo.abstract or "",
-        thumbnail_path=store_thumbnail(
-            base64.decodebytes(file_metainfo.thumbnail.encode("utf-8")), input_item.uploaded_file_path
-        )
-        if file_metainfo.thumbnail
-        else None,  # relative to UPLOADED_FILES_FOLDER
+        thumbnail_path=(
+            store_thumbnail(base64.decodebytes(file_metainfo.thumbnail.encode("utf-8")), input_item.uploaded_file_path)
+            if file_metainfo.thumbnail
+            else None
+        ),  # relative to UPLOADED_FILES_FOLDER
         title=file_metainfo.title or input_item.file_name,
         type_description=file_metainfo.document_type or "",
         people=file_metainfo.authors or [],
@@ -156,7 +156,7 @@ def ai_file_processing_single(
 def ai_file_processing_single_folder(input_item: AiFileProcessingInput, parameters: DotDict) -> AiFileProcessingOutput:
     prompt = folder_summary_prompt[parameters.get("metadata_language", "en")]
     prompt = prompt.replace("{{ context }}", input_item.full_text or "")
-    description = Nebius_Llama_3_1_8B_cheap().generate_short_text(prompt, max_tokens=2000)
+    description = get_default_model("small").generate_short_text(prompt, max_tokens=2000)
 
     return AiFileProcessingOutput(
         content_date=None,
@@ -309,7 +309,7 @@ Antworte nur mit dem JSON-Objekt. Antworte mit einem vollständigen JSON-Objekt,
         .replace("{{ folder }}", folder or "")
         .replace("{{ content }}", full_text[:1000])
     )
-    model = BaseLLMModel.load(Google_Gemini_Flash_1_5_v1.__name__)
+    model = get_default_model("medium")
     response = model.generate_prompt_response(
         system_prompt=prompt,
         max_tokens=2000,
