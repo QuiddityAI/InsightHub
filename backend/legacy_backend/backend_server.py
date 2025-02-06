@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from data_map_backend.utils import DotDict
 from ingest.schemas import CustomUploadedFile, UploadedFileMetadata
+from ingest.logic.common import UPLOADED_FILES_FOLDER
 
 from .database_client.django_client import add_stored_map, get_or_create_default_dataset
 from .database_client.forward_local_db import forward_local_db
