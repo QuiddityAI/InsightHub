@@ -1,12 +1,12 @@
-import threading
 import logging
+import threading
 
 from django.utils import timezone
 import dspy
 
 from data_map_backend.models import DataCollection, User
-from workflows.schemas import CreateCollectionSettings, WorkflowMetadata
 from config.utils import get_default_dspy_llm
+from workflows.schemas import CreateCollectionSettings, WorkflowMetadata
 
 
 class WorkflowBase:
@@ -58,6 +58,9 @@ def create_collection_using_workflow(user: User, settings: CreateCollectionSetti
                 logging.warning(f"Requested unsupported workflow: {settings.workflow_id}")
                 workflow_cls = workflows_by_id["empty_collection"]
             assert workflow_cls
+            collection.log_explanation(
+                f"Running workflow: {workflow_cls.metadata.name1} {workflow_cls.metadata.name2}", save=False
+            )
 
             if settings.auto_set_filters and workflow_cls.metadata.needs_result_language:
                 if not settings.user_input:

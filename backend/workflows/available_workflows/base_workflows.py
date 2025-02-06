@@ -75,9 +75,9 @@ class ShowAllWorkflow(WorkflowBase):
             dataset_id=settings.dataset_id,
             user_input=settings.user_input or "",
             result_language=settings.result_language,
-            auto_set_filters=False,
+            auto_set_filters=settings.auto_set_filters,
             filters=settings.filters,
-            retrieval_mode="keyword",
+            retrieval_mode="keyword",  # doesn't matter, no text query
             ranking_settings=settings.ranking_settings,
             candidates_per_step=10,
         )
