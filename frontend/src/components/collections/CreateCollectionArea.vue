@@ -153,7 +153,6 @@ export default {
   },
   mounted() {
     this.new_settings = JSON.parse(JSON.stringify(this.settings_template))
-    this.new_settings.result_language = this.appStateStore.settings.search.result_language
     // increase example query index every few seconds
     setInterval(() => {
       this.example_query_index = this.example_query_index + 1
@@ -180,9 +179,6 @@ export default {
     'appStateStore.settings.search.ranking_settings'(new_val, old_val) {
       // TODO: change this?
       this.new_settings.ranking_settings = new_val
-    },
-    'appStateStore.settings.search.result_language'(new_val, old_val) {
-      this.new_settings.result_language = new_val
     },
     'new_settings.dataset_id'(new_val, old_val) {
       // TODO: the logic to change dataset dependend options should be moved somewhere else, this is just retrofitting

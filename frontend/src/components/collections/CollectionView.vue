@@ -183,7 +183,7 @@ export default {
     </Dialog>
 
     <!-- Top Area -->
-    <div class="flex-none pb-2 flex flex-col gap-3 overflow-hidden bg-white z-40"
+    <div class="flex-none pb-2 flex flex-col bg-white z-40"
       :class="{
         'shadow-md': collection.ui_settings.item_layout !== CollectionItemLayout.SPREADSHEET,
         'border-b': collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET,
@@ -196,7 +196,7 @@ export default {
           @click="collectionStore.close_collection()">
         </ChevronLeftIcon>
 
-        <p class="text-xl font-['Lexend'] font-medium text-black min-w-[300px] max-w-[calc(100%-520px)]"
+        <p class="text-xl font-['Lexend'] font-medium text-black min-w-[300px] max-w-[calc(100%-590px)]"
           contenteditable @blur="collectionStore.set_collection_attributes({name: $event.target.innerText})"
           @keydown.enter="$event.target.blur()" @keydown.esc="$event.target.innerText = collection.name; $event.target.blur()"
           spellcheck="false">

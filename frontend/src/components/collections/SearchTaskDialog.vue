@@ -123,13 +123,11 @@ export default {
       this.new_settings = JSON.parse(JSON.stringify(this.collectionStore.collection.most_recent_search_task?.settings))
       this.new_settings.auto_approve = false
       this.new_settings.exit_search_mode = false
-      this.new_settings.query = undefined  // this comes from last search, but should be empty
+      this.new_settings.keyword_query = undefined  // this comes from last search, but should be empty
     } else {
       this.new_settings = JSON.parse(JSON.stringify(this.settings_template))
-      this.new_settings.result_language = this.appStateStore.settings.search.result_language
     }
 
-    this.new_settings.ranking_settings = this.appStateStore.settings.search.ranking_settings
     if (this.new_settings.dataset_id === null) {
       this.new_settings.dataset_id = this.appStateStore.settings.search.dataset_ids.length ? this.appStateStore.settings.search.dataset_ids[0] : null
     }
@@ -139,13 +137,6 @@ export default {
     this.eventBus.off("datasets_are_loaded", this.on_dataset_loaded)
   },
   watch: {
-    'appStateStore.settings.search.ranking_settings'(new_val, old_val) {
-      // TODO: change this?
-      this.new_settings.ranking_settings = new_val
-    },
-    'appStateStore.settings.search.result_language'(new_val, old_val) {
-      this.new_settings.result_language = new_val
-    },
     'new_settings.dataset_id'(new_val, old_val) {
       // TODO: the logic to change dataset dependend options should be moved somewhere else, this is just retrofitting
       if (new_val === null && new_val === undefined) return
@@ -270,6 +261,9 @@ export default {
           v-if="appState.available_ranking_options.length > 1 && new_settings.retrieval_mode === 'keyword'"
           class="border border-gray-300 rounded-md text-sm text-gray-400 font-['Lexend'] font-normal pl-2 pr-8 py-0"
           v-tooltip.bottom="{ value: new_settings.ranking_settings?.tooltip, showDelay: 400 }">
+          <option :value="new_settings.ranking_settings">
+            {{ new_settings.ranking_settings.title }}
+          </option>
           <option v-for="ranking_settings in appState.available_ranking_options" :value="ranking_settings">
             {{ ranking_settings.title }}
           </option>
