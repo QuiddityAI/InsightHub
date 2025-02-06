@@ -60,7 +60,7 @@ export default {
   <div v-if="filters  && filters.length" class="flex flex-row flex-wrap gap-2">
     <Chip v-for="filter, index in filters"
       :removable="removable" @remove="remove_filter(index)">
-      <span class="text-xs">{{ get_filter_label(filter) }}</span>
+      <span class="text-xs font-bold text-gray-600">{{ get_filter_label(filter) }}</span>
     </Chip>
   </div>
 

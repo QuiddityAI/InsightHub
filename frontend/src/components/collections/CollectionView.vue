@@ -341,7 +341,7 @@ export default {
         <div v-if="collectionStore.search_mode || collection.agent_is_running"
           class="flex-none flex flex-col gap-3 w-full px-5 mb-3 xl:mb-5">
 
-          <div class="w-full mx-auto max-w-[700px] bg-white rounded-lg flex flex-row"
+          <div class="w-full mx-auto max-w-[700px] bg-white rounded-2xl flex flex-row"
           :class="{
             'shadow-md': collection.ui_settings.item_layout !== CollectionItemLayout.SPREADSHEET,
             'shadow-[0_2px_6px_1px_rgba(0,0,0,0.12)]': collection.ui_settings.item_layout === CollectionItemLayout.SPREADSHEET,

@@ -6,6 +6,8 @@ import {
   StarIcon,
 } from "@heroicons/vue/24/outline"
 
+import Chip from "primevue/chip"
+
 import BorderlessButton from "../widgets/BorderlessButton.vue";
 import SearchFilterList from "./SearchFilterList.vue";
 import SearchTaskExecutionSettings from "./SearchTaskExecutionSettings.vue";
@@ -38,6 +40,9 @@ export default {
     },
     retrieval_parameters() {
       return this.collectionStore.collection.most_recent_search_task?.retrieval_parameters
+    },
+    dataset_name() {
+      return this.appStateStore.datasets[this.search_settings.dataset_id]?.name
     }
   },
   mounted() {
@@ -52,50 +57,105 @@ export default {
 </script>
 
 <template>
-  <div class="w-full px-5 py-1 flex flex-col gap-1">
-    <div class="flex flex-row items-center gap-4">
+  <div class="w-full px-5 pt-3 pb-4 flex flex-col gap-4">
 
+    <div class="flex flex-row justify-center relative">
       <BorderlessButton v-if="collectionStore.collection.search_task_navigation_history.length >= 2"
         @click="collectionStore.run_previous_search_task"
         v-tooltip.bottom="{value: $t('SearchModeBar.go-to-the-previous-search-result'), showDelay: 400}"
-        class="h-full -mr-3 -ml-3">
+        class="absolute left-0">
         <ChevronUpIcon class="h-5 w-5" />
       </BorderlessButton>
 
-      <span class="flex-none text-blue-500">{{ $t('SearchModeBar.search-mode') }}</span>
-
-      <div>
-        <span class="text-gray-700">
-          {{ search_settings.user_input || $t('SearchModeBar.no-search-query') }}
-        </span>
-        <SearchFilterList
-          :filters="retrieval_parameters.filters || []"
-          :removable="false"
-          class="-ml-1 mt-1 mb-1">
-        </SearchFilterList>
+      <div class="flex-none text-sm text-blue-400">
+        Suchen in <span class="font-bold italic text-blue-400">{{ dataset_name }}</span>
       </div>
 
-      <div class="flex-1"></div>
-
-      <BorderlessButton @click="show_periodic_execution_settings = !show_periodic_execution_settings" class="py-1"
-        :highlighted="show_periodic_execution_settings"
-        v-tooltip.bottom="{value: $t('SearchModeBar.save-execute-periodically'), showDelay: 400}">
-        <StarIcon class="h-5 w-5 inline" />
-      </BorderlessButton>
-      <BorderlessButton @click="$emit('edit_search_task')" class="py-1"
-        v-tooltip.bottom="{value: $t('SearchModeBar.edit-the-search-query-and-filters'), showDelay: 400}">
-        <PencilIcon class="h-5 w-5 inline" /> {{ $t('SearchModeBar.edit') }}
-      </BorderlessButton>
-      <BorderlessButton @click="collectionStore.exit_search_mode" class="py-1"
+      <BorderlessButton class="absolute right-0"
+        @click="collectionStore.exit_search_mode"
         v-tooltip.bottom="{value: $t('SearchModeBar.exit-search-tooltip'), showDelay: 400}">
         <NoSymbolIcon class="h-5 w-5 inline" /> {{ $t('SearchModeBar.exit') }}
       </BorderlessButton>
     </div>
 
+    <button class="border border-gray-200 rounded-lg shadow-md bg-white hover:border-blue-300"
+      @click="$emit('edit_search_task')">
+      <div class="flex flex-row items-center pl-3 pr-1 py-1">
+
+        <span v-if="search_settings.search_type === 'external_input' && search_settings.user_input"
+          class="text-gray-600 font-medium">
+          {{ search_settings.user_input || $t('SearchModeBar.no-search-query') }}
+        </span>
+        <span v-if="search_settings.search_type === 'external_input' && !search_settings.user_input"
+          class="text-gray-600 font-medium">
+          All Items
+        </span>
+        <span v-if="search_settings.search_type === 'random_sample'"
+          class="text-gray-600 font-medium">
+          All Items / Random Subset
+        </span>
+        <span v-if="search_settings.search_type === 'similar_to_item'"
+          class="text-gray-600 font-medium">
+          Similar to: {{ search_settings.origin_name || '?' }}
+        </span>
+
+        <div class="flex-1"></div>
+
+        <BorderlessButton @click.stop="show_periodic_execution_settings = !show_periodic_execution_settings" class="py-1"
+          :highlighted="show_periodic_execution_settings"
+          v-tooltip.bottom="{value: $t('SearchModeBar.save-execute-periodically'), showDelay: 400}">
+          <StarIcon class="h-5 w-5 inline" />
+        </BorderlessButton>
+        <BorderlessButton @click.stop="$emit('edit_search_task')" class="py-1"
+          v-tooltip.bottom="{value: $t('SearchModeBar.edit-the-search-query-and-filters'), showDelay: 400}">
+          <PencilIcon class="h-5 w-5 inline" />
+        </BorderlessButton>
+
+      </div>
+
+    </button>
+
+    <div class="flex flex-row flex-wrap gap-2">
+      <Chip v-if="search_settings.user_input || retrieval_parameters.keyword_query">
+        <span class="text-xs font-normal text-gray-600">
+          Mode: {{ search_settings.retrieval_mode }}
+        </span>
+      </Chip>
+      <Chip v-if="search_settings.ranking_settings">
+        <span class="text-xs font-normal text-gray-600">
+          Sort: {{ search_settings.ranking_settings.title }}
+        </span>
+      </Chip>
+      <Chip v-if="search_settings.result_language">
+        <span class="text-xs font-normal text-gray-600">
+          {{ search_settings.result_language }}
+          <!-- {{ languages.find(d => d.code === search_settings.result_language).flag }} -->
+        </span>
+      </Chip>
+      <Chip v-if="search_settings.user_input || retrieval_parameters.keyword_query">
+        <span class="text-xs font-normal text-gray-600">
+            {{ search_settings.auto_relax_query ? 'Auto Relax' : 'No Auto Relax' }}
+        </span>
+      </Chip>
+      <Chip v-if="search_settings.user_input !== retrieval_parameters.keyword_query">
+        <span class="text-xs font-normal text-gray-600">
+          Generated keyword query: '{{ retrieval_parameters.keyword_query }}'
+        </span>
+      </Chip>
+      <SearchFilterList
+        :filters="retrieval_parameters.filters || []"
+        :removable="false"
+        class="">
+      </SearchFilterList>
+    </div>
+
+
+
     <div v-if="show_periodic_execution_settings" class="flex flex-row items-center gap-4 mb-1">
       <SearchTaskExecutionSettings :task="collectionStore.collection.most_recent_search_task">
       </SearchTaskExecutionSettings>
     </div>
+
   </div>
 </template>
 
