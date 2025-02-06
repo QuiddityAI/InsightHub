@@ -283,7 +283,7 @@ export default {
     <!-- create collection box -->
     <div class="bg-white rounded-lg shadow-md transition-[height] duration-200 ease-out overflow-hidden min-h-0 max-h-none"
     :style="{ height: container_height }">
-      <div class="flex flex-col gap-8 pt-1 pb-10" ref="container">
+      <div class="flex flex-col gap-6 pt-1 pb-10" ref="container">
 
         <div class="flex flex-row gap-2 items-center justify-between px-3">
           <div class="flex-none w-10">
@@ -313,7 +313,7 @@ export default {
 
         <div v-if="selected_workflow == null" class="flex flex-col gap-5 items-start">
 
-          <h1 class="pl-11 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
+          <h1 class="pl-11 pt-1 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
             {{ $t('CreateCollectionArea.what-do-you-want-to-do') }}
           </h1>
 
@@ -336,7 +336,7 @@ export default {
 
         </div>
 
-        <div v-if="selected_workflow != null" class="flex flex-col gap-4 px-7">
+        <div v-if="selected_workflow != null" class="flex flex-col gap-3 px-7">
 
           <div class="text-xl font-bold text-gray-800">
             {{ selected_workflow.name1[language] || selected_workflow.name1.en }}
@@ -345,12 +345,12 @@ export default {
             </span>:
           </div>
 
-          <div class="text-xs font-normal text-gray-500 -mt-3 mb-2 flex flex-row items-center gap-1">
+          <div class="text-xs font-normal text-gray-500 -mt-1 mb-2 flex flex-row items-center gap-1">
             <InformationCircleIcon class="h-4 w-4 inline"></InformationCircleIcon>
             {{ fill_placeholders(selected_workflow.help_text[language] || selected_workflow.help_text.en) }}
           </div>
 
-          <div class="relative flex-none h-10 flex flex-row gap-3 items-center">
+          <div class="relative mt-3 flex-none h-10 flex flex-row gap-3 items-center">
             <input type="search" name="search" @keyup.enter="create_collection" v-model="new_settings.user_input"
               autocomplete="off" v-if="selected_workflow?.supports_user_input"
               :placeholder="fill_placeholders(selected_workflow?.query_field_hint[language] || selected_workflow.query_field_hint.en)"
@@ -465,7 +465,7 @@ export default {
     </div>
 
     <!-- tool intro box -->
-    <ToolIntroBox v-if="appState.organization?.tool_intro_text"></ToolIntroBox>
+    <ToolIntroBox v-if="appState.organization?.tool_intro_text && !selected_workflow"></ToolIntroBox>
 
   </div>
 </div>

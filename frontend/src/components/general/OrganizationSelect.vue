@@ -55,19 +55,14 @@ export default {
 <template>
   <div class="flex-none flex flex-row items-center gap-1">
 
-    <a
-      v-tooltip.right="{ value: 'Reset search', showDelay: 400 }"
-      :href="`?organization_id=${appState.organization_id}`"
-      class="w-5 h-5 rounded p-[2px] text-gray-400 hover:bg-gray-100">
-      <HomeIcon></HomeIcon>
-    </a>
+    <HomeIcon class="w-4 h-4 text-gray-400"></HomeIcon>
 
     <div class="flex-1"
       v-tooltip.bottom="{ value: $t('TopMenu.select-the-organization'), showDelay: 400 }">
       <select
         v-model="internal_organization_id"
         @change="organization_id_changed_by_user"
-        class="w-full rounded-md border-none pb-0 pl-2 pr-8 pt-0 text-[13px] font-thin text-gray-500 font-[Lexend]">
+        class="w-full rounded-md border-none pb-0 pl-2 pr-8 pt-0 text-[14px] font-thin text-gray-500 font-[Lexend]">
         <option v-for="item in appState.available_organizations" :value="item.id" selected>
           {{ item.name }}
         </option>
