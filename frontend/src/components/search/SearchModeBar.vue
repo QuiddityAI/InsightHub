@@ -83,19 +83,19 @@ export default {
       <div class="flex flex-row items-center pl-3 pr-1 py-1">
 
         <span v-if="search_settings.search_type === 'external_input' && search_settings.user_input"
-          class="text-gray-600 font-medium">
+          class="text-gray-600 font-medium text-left">
           {{ search_settings.user_input || $t('SearchModeBar.no-search-query') }}
         </span>
         <span v-if="search_settings.search_type === 'external_input' && !search_settings.user_input"
-          class="text-gray-600 font-medium">
+          class="text-gray-600 font-medium text-left">
           All Items
         </span>
         <span v-if="search_settings.search_type === 'random_sample'"
-          class="text-gray-600 font-medium">
+          class="text-gray-600 font-medium text-left">
           All Items / Random Subset
         </span>
         <span v-if="search_settings.search_type === 'similar_to_item'"
-          class="text-gray-600 font-medium">
+          class="text-gray-600 font-medium text-left">
           Similar to: {{ search_settings.origin_name || '?' }}
         </span>
 
@@ -116,32 +116,35 @@ export default {
     </button>
 
     <div class="flex flex-row flex-wrap gap-2">
-      <Chip v-if="search_settings.user_input || retrieval_parameters.keyword_query">
-        <span class="text-xs font-normal text-gray-600">
+      <Chip v-if="(search_settings.user_input || retrieval_parameters.keyword_query) && search_settings.search_type === 'external_input'">
+        <span class="text-xs font-normal text-gray-500">
           Mode: {{ search_settings.retrieval_mode }}
         </span>
       </Chip>
       <Chip v-if="search_settings.ranking_settings">
-        <span class="text-xs font-normal text-gray-600">
+        <span class="text-xs font-normal text-gray-500">
           Sort: {{ search_settings.ranking_settings.title }}
         </span>
       </Chip>
       <Chip v-if="search_settings.result_language">
-        <span class="text-xs font-normal text-gray-600">
+        <span class="text-xs font-normal text-gray-500">
           {{ search_settings.result_language }}
           <!-- {{ languages.find(d => d.code === search_settings.result_language).flag }} -->
         </span>
       </Chip>
-      <Chip v-if="search_settings.user_input || retrieval_parameters.keyword_query">
-        <span class="text-xs font-normal text-gray-600">
+      <Chip v-if="(search_settings.user_input || retrieval_parameters.keyword_query)
+          && search_settings.search_type === 'external_input'
+          && search_settings.retrieval_mode !== 'vector'">
+        <span class="text-xs font-normal text-gray-500">
             {{ search_settings.auto_relax_query ? 'Auto Relax' : 'No Auto Relax' }}
         </span>
       </Chip>
       <Chip v-if="search_settings.user_input !== retrieval_parameters.keyword_query">
-        <span class="text-xs font-normal text-gray-600">
+        <span class="text-xs font-normal text-gray-500">
           Generated keyword query: '{{ retrieval_parameters.keyword_query }}'
         </span>
       </Chip>
+
       <SearchFilterList
         :filters="retrieval_parameters.filters || []"
         :removable="false"
