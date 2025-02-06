@@ -39,7 +39,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-%q9_x-^4%d128ss#4xp&*hzg%%7&gru*=mg@qzb=w)$40_5lae"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ.get("QUIDDITY_DEBUG", False) == "1"
 
 ALLOWED_HOSTS = ["*"]  # TODO: change this as soons as fixed IP is used to IPv4 and v6 of server
 
