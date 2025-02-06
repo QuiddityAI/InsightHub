@@ -80,30 +80,44 @@ def create_and_run_search_task(
 
     keyword_query = search_task.user_input
 
+    # TODO: use dataset cache as this increases latency of every search
+    dataset = Dataset.objects.select_related("schema").get(id=search_task.dataset_id)
+
     if search_task.auto_set_filters:
-        collection.log_explanation("Use AI model to generate **suitable query**", save=False)
-        model = get_default_dspy_llm("search_query")
+
+        if search_task.user_input:
+            collection.log_explanation("Use AI model to generate **suitable query**", save=False)
+            model = get_default_dspy_llm("search_query")
         try:
             with dspy.context(lm=dspy.LM(**model.to_litellm())):
                 keyword_query = search_query_predictor(
                     user_input=search_task.user_input, target_language=search_task.result_language or "en"
-                ).search_query
+                ).search_query or keyword_query
         except Exception as e:
             logging.error(f"Error generating search query: {e}")
-            keyword_query = search_task.user_input
 
-        # filter_prompt_template = get_filter_prompt(search_task.dataset_id, search_task.result_language or 'en')
-        # if filter_prompt_template:
-        #     collection.log_explanation("Use AI model to determine **best filters settings**", save=False)
-        #     filter_prompt = filter_prompt_template.replace("{{ user_input }}", search_task.user_input)
-        #     filters = extract_filters(search_task, filter_prompt)
-        #     if filters:
-        #         search_task.filters = filters
+            # filter_prompt_template = get_filter_prompt(search_task.dataset_id, search_task.result_language or 'en')
+            # if filter_prompt_template:
+            #     collection.log_explanation("Use AI model to determine **best filters settings**", save=False)
+            #     filter_prompt = filter_prompt_template.replace("{{ user_input }}", search_task.user_input)
+            #     filters = extract_filters(search_task, filter_prompt)
+            #     if filters:
+            #         search_task.filters = filters
 
         # TODO: also get best ranking mode?
 
-    # TODO: use dataset cache as this increases latency of every search
-    dataset = Dataset.objects.select_related("schema").get(id=search_task.dataset_id)
+        ranking_options = dataset.merged_advanced_options.get("ranking_options", [])
+        if not search_task.ranking_settings:
+            search_task.ranking_settings = ranking_options[0] if ranking_options else {}
+
+        # if no user input was provided (e.g. to show all items), make sure to use an appropriate ranking mode:
+        if search_task.ranking_settings.get("needs_user_input") and not search_task.user_input:
+            # get first option that doesn't need user input (e.g. alphabetical or newest first instead of relevance):
+            for option in ranking_options:
+                if not option.get("needs_user_input"):
+                    search_task.ranking_settings = option
+                    break
+
     default_filters: list = dataset.merged_advanced_options.get("default_filters", [])
     if default_filters:
         search_task.filters = search_task.filters or []
