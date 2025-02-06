@@ -12,7 +12,7 @@
   },
   "short_description": null,
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2025-02-06T09:33:44.252Z",
+  "changed_at": "2025-02-06T15:54:32.965Z",
   "primary_key": "corpus_id",
   "direct_parent": null,
   "all_parents": null,
@@ -81,11 +81,13 @@
               }
             }
           ]
-        }
+        },
+        "needs_user_input": true
       },
       {
         "title": "Relevance only",
-        "tooltip": "Rank by similarity to query only"
+        "tooltip": "Rank by similarity to query only",
+        "needs_user_input": true
       },
       {
         "sort": [

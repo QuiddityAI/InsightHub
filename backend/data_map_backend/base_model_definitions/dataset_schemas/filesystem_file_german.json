@@ -12,7 +12,7 @@
   },
   "short_description": "Files uploaded from a file system structure",
   "created_at": "2024-03-05T14:44:12.758Z",
-  "changed_at": "2025-01-15T16:38:50.663Z",
+  "changed_at": "2025-02-06T15:53:58.638Z",
   "primary_key": "full_path",
   "direct_parent": "folder",
   "all_parents": "parent_folders",
@@ -40,7 +40,8 @@
     "ranking_options": [
       {
         "title": "Relevance only",
-        "tooltip": "Rank by similarity to query only"
+        "tooltip": "Rank by similarity to query only",
+        "needs_user_input": true
       },
       {
         "title": "Relevant & recent documents",
@@ -56,7 +57,8 @@
               }
             }
           ]
-        }
+        },
+        "needs_user_input": true
       },
       {
         "sort": [
