@@ -330,6 +330,11 @@ export default {
             </button>
           </div>
 
+          <Message v-if="appStateStore.datasets[new_settings.dataset_id]?.schema.identifier == 'semantic_scholar'"
+            class="ml-10" size="small">
+            Note: Our database only contains papers up until July 2024.
+          </Message>
+
         </div>
 
         <div v-if="selected_workflow != null" class="flex flex-col gap-3 px-7">
