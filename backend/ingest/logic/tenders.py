@@ -1,14 +1,26 @@
-import logging
 from multiprocessing.pool import ThreadPool
 from typing import Callable
 
-from llmonkey.llms import BaseLLMModel, Nebius_Llama_3_1_8B_cheap
 from ninja import Schema
 
 from columns.logic.website_scraping_column import scrape_website_plain
 from data_map_backend.utils import DotDict
+import dspy
+from config.utils import get_default_dspy_llm
 
-LlmModel = Nebius_Llama_3_1_8B_cheap
+
+class TenderSummarySignature:
+    """You receive the description and text of a tender web page from the user.
+    Summarize the subject of the tender and the services to be provided in about 2-3 sentences.
+    If the information is not sufficient or the text only contains error messages, answer with "n/a".
+    Answer must be in German."""
+
+    description: str = dspy.InputField()
+    website_text: str = dspy.InputField()
+    summary: str = dspy.OutputField()
+
+
+tender_summary = dspy.Predict(TenderSummarySignature)
 
 
 class TenderInput(Schema):
@@ -71,29 +83,15 @@ def enrich_tender(item: TenderInput) -> TenderEnrichmentOutput:
 def _summarize_tender_information(item: TenderInput, website_text: str | None = None) -> TenderEnrichmentOutput:
     if not item.description and not website_text:
         return TenderEnrichmentOutput(summary="", website_text="")
-    model = LlmModel()
-    user_prompt = f"Beschreibung:\n{item.description[:10000] if item.description else 'n/a' or 'n/a'}\n\nWebsite Text:\n{website_text[:10000] if website_text else 'n/a' or 'n/a'}"
+    model = get_default_dspy_llm("tender_summary")
+    with dspy.context(lm=dspy.LM(**model.to_litellm())):
+        summary = tender_summary(
+            description=item.description[:10000] if item.description else "n/a",
+            website_text=website_text[:10000] if website_text else "n/a",
+        ).summary
 
-    system_prompt = f"""Du bekommst vom Nutzer die Beschreibung und den Text einer Webseite einer Ausschreibung.
-    Fasse den Gegenstand der Ausschreibung und die zu erbringenden Leistungen in etwa 2-3 Sätzen zusammen.
-    Wenn die Informationen nicht ausreichen oder der Text nur Fehlermeldungen beinhaltet, antworte mit "n/a"."""
-    summary = model.generate_short_text(system_prompt=system_prompt, user_prompt=user_prompt) or "n/a"
     if summary == "n/a":
         summary = ""
-
-    # system_prompt = f"""Du bekommst vom Nutzer die Beschreibung und den Text einer Webseite einer Ausschreibung.
-    # Fasse die zu erbringenden Leistungen in kurzen Stichpunkten zusammen. Lasse andere Informationen weg.
-    # Wenn die Informationen nicht ausreichen oder der Text nur Fehlermeldungen beinhaltet, antworte mit "n/a"."""
-    # services = model.generate_short_text(system_prompt=system_prompt, user_prompt=user_prompt) or "n/a"
-    # if services == "n/a":
-    #     services = ""
-
-    # system_prompt = f"""Du bekommst vom Nutzer die Beschreibung und den Text einer Webseite einer Ausschreibung.
-    # Fasse die Anforderungen an den Bieter in kurzen Stichpunkten zusammen. Lasse andere Informationen weg.
-    # Wenn die Informationen nicht ausreichen oder der Text nur Fehlermeldungen beinhaltet, antworte mit "n/a"."""
-    # requirements = model.generate_short_text(system_prompt=system_prompt, user_prompt=user_prompt) or "n/a"
-    # if requirements == "n/a":
-    #     requirements = ""
 
     return TenderEnrichmentOutput(summary=summary, website_text=website_text or "", services="", requirements="")
 
