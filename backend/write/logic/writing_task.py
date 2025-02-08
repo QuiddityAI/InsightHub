@@ -3,6 +3,7 @@ import logging
 import threading
 
 from django.db.models.manager import BaseManager
+import dspy
 from llmonkey.llms import BaseLLMModel
 
 from config.utils import get_default_model
@@ -18,6 +19,29 @@ from legacy_backend.logic.chat_and_extraction import (
     get_item_question_context as get_item_question_context_native,
 )
 from write.prompts import writing_task_prompt, writing_task_prompt_without_items
+
+
+class WritingTaskSignature(dspy.Signature):
+    """You are an expert in writing. You will be given a task to write a text based on the provided documents.
+    Follow the task exactly. Only use information that is directly stated in the documents.
+    If the documents do not contain the answer, state that.
+    If they contain conflicting information, state that as well.
+    If they don't contain exactly the answer but related information, explicitly state that but still provide a summary of the rest of the information.
+
+    Use markdown to format your text. Use bullet points and numbered lists where appropriate.
+    Highlight important phrases using two asterisks.
+
+    Mention the document ID where a statement is taken from behind the sentence, with the document id in square brackets, like this: [3].
+
+    Reply only with the requested text in the language of the question, without introductory sentence.
+    """
+
+    task: str = dspy.InputField()
+    documents: str = dspy.InputField(desc="Relevant documents for the task")
+    output: str = dspy.OutputField(desc="The generated text based on the documents")
+
+
+writing_task_writer = dspy.Predict(WritingTaskSignature)
 
 
 def execute_writing_task_thread(task: WritingTask):
@@ -112,12 +136,13 @@ def _execute_writing_task(task: WritingTask):
         contexts.extend(_get_previous_tasks_context(task))
     context = "\n\n".join(contexts)
 
-    # prompt:
-    language = task.parameters.get("language", "en")
-    prompt_template = task.prompt_template or writing_task_prompt[language]
-
-    # get LLM answer:
-    response_text, model, system_prompt, user_prompt = _format_prompt_and_get_result(task, context, prompt_template)
+    # if the prompt was not provided by the user, use the default DSPy model:
+    if not task.prompt_template:
+        response_text, model, system_prompt, user_prompt = _execute_default_writing_task(task, context)
+    else:
+        response_text, model, system_prompt, user_prompt = _format_prompt_and_get_result(
+            task, context, task.prompt_template
+        )
 
     # replace reference numbers with actual document IDs:
     for i, ds_and_item_id in enumerate(provided_data_items):
@@ -175,8 +200,26 @@ def _get_previous_tasks_context(task: WritingTask):
     return contexts
 
 
+def _execute_default_writing_task(task: WritingTask, context: str):
+    assert task.expression is not None, "Expression must be set for writing task"
+
+    default_model = get_default_model("large").__class__.__name__
+    model = BaseLLMModel.load(task.model or default_model)
+
+    # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:
+    ai_credits = model.config.euro_per_1M_output_tokens / 5.0
+    usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by.id, "External AI")  # type: ignore
+    result = usage_tracker.track_usage(ai_credits, f"write summary using {model.__class__.__name__}")
+    if result["approved"] == True:
+        with dspy.context(lm=dspy.LM(**model.to_litellm(), max_tokens=10000, temperature=0.7)):  # type: ignore
+            response_text = writing_task_writer(task=task.expression, documents=context).output
+    else:
+        response_text = "AI usage limit exceeded"
+    return response_text, model, "WritingTaskSignature", task.expression
+
+
 def _format_prompt_and_get_result(task: WritingTask, context: str, prompt_template):
-    assert task.expression is not None
+    assert task.expression is not None, "Expression must be set for writing task"
     system_prompt = prompt_template.replace("{{ context }}", context)
     if "{{ expression }}" in prompt_template:
         system_prompt = system_prompt.replace("{{ expression }}", task.expression)
