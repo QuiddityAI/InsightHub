@@ -6,6 +6,7 @@ from workflows.logic import WorkflowBase, workflow
 from workflows.schemas import (
     CreateCollectionSettings,
     WorkflowAvailability,
+    WorkflowCategory,
     WorkflowMetadata,
     WorkflowOrder,
 )
@@ -15,6 +16,7 @@ from workflows.schemas import (
 class ClassicSearchWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="classic_search",
+        categories=[WorkflowCategory.search_and_curate],
         order=WorkflowOrder.search + 1,
         name1={"en": "🔍 Find a single", "de": "🔍 Finde einzelne"},
         name2={
@@ -53,6 +55,7 @@ class ClassicSearchWorkflow(WorkflowBase):
 class AssistedSearchWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="assisted_search",
+        categories=[WorkflowCategory.search_and_curate],
         order=WorkflowOrder.search + 2,
         name1={"en": "✅ Find a set of", "de": "✅ Finde mehrere"},
         name2={"en": "Matching <entity_name_plural>", "de": "Passende <entity_name_plural>"},

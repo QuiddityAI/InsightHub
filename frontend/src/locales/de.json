@@ -16,7 +16,16 @@
     "filter": "Filter",
     "hybrid-search": "Beides",
     "keyword-search": "Stichwörter",
-    "meaning-search": "Bedeutung"
+    "meaning-search": "Bedeutung",
+    "category_answer": "Antworten",
+    "category_answer_subtitle": "Fakten finden, Entitäten auflisten, Übersichten generieren",
+    "category_process": "Automatisieren",
+    "category_process_subtitle": "Verarbeite mehrere Elemente mit KI und automatisiere Arbeitsabläufe",
+    "category_search": "Suchen",
+    "category_search_subtitle": "Finde einzelne Elemente oder kuratiere einen Satz von mehreren",
+    "category_store_and_share": "Wissen Ablegen & Teilen",
+    "category_store_and_share_subtitle": "Schreibe Wissen auf und teile Sammlungen",
+    "category_all": "Alle"
   },
   "CollectionList": {
     "log-in-to-use-collections": "Melde dich an, um Sammlungen anzulegen",

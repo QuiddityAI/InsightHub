@@ -23,8 +23,16 @@ class WorkflowAvailability(StrEnum):
     in_development = "in_development"
 
 
+class WorkflowCategory(StrEnum):
+    search_and_curate = "search_and_curate"
+    answer_and_report = "answer_and_report"
+    process_and_automate = "process_and_automate"
+    store_and_share = "store_and_share"
+
+
 class WorkflowMetadata(Schema):
     workflow_id: str
+    categories: list[WorkflowCategory] = [WorkflowCategory.search_and_curate]
     order: int = 9999
     name1: dict = {"en": "Unnamed"}  # most fields can use <entity_name_singular> and <entity_name_plural> placeholders
     name2: dict = {"en": "Workflow"}  # name1 is the upper part in the UI, name2 is the main part

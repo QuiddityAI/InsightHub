@@ -16,7 +16,16 @@
     "keyword-search": "Keywords",
     "meaning-search": "Meaning",
     "hybrid-search": "Both",
-    "filter": "Filter"
+    "filter": "Filter",
+    "category_search": "Search",
+    "category_answer": "Answer",
+    "category_process": "Process",
+    "category_store_and_share": "Store & Share Knowledge",
+    "category_search_subtitle": "Find individual items or curate a set of them",
+    "category_answer_subtitle": "Find facts, list & count entities, generate overviews",
+    "category_process_subtitle": "Process multiple items using AI, automate workflows",
+    "category_store_and_share_subtitle": "Write down your knowledge and share item collections",
+    "category_all": "All"
   },
   "CollectionList": {
     "log-in-to-use-collections": "Log in to use collections",

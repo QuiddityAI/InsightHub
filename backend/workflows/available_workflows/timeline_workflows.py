@@ -7,6 +7,7 @@ from workflows.logic import WorkflowBase, workflow
 from workflows.schemas import (
     CreateCollectionSettings,
     WorkflowAvailability,
+    WorkflowCategory,
     WorkflowMetadata,
     WorkflowOrder,
 )
@@ -16,6 +17,7 @@ from workflows.schemas import (
 class TimelineWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="timeline",
+        categories=[WorkflowCategory.answer_and_report],
         order=WorkflowOrder.other + 1,
         name1={"en": "Create a", "de": "Erstelle eine"},
         name2={"en": "Timeline of Events", "de": "Zeitleiste der Ereignisse"},

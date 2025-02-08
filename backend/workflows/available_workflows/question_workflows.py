@@ -14,6 +14,7 @@ from workflows.logic import WorkflowBase, workflow
 from workflows.schemas import (
     CreateCollectionSettings,
     WorkflowAvailability,
+    WorkflowCategory,
     WorkflowMetadata,
     WorkflowOrder,
 )
@@ -24,6 +25,7 @@ from write.logic.writing_task import execute_writing_task_thread
 class FindFactFromSingleDocumentWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="fact_from_single_document",
+        categories=[WorkflowCategory.answer_and_report],
         order=WorkflowOrder.question + 1,
         name1={"en": "💬 Find a", "de": "💬 Finde einen"},
         name2={"en": "Fact in a <entity_name_singular>", "de": "Fakt in Dokumenten"},
@@ -91,6 +93,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
 class CollectFactsFromMultipleDocumentsWorkflow(FindFactFromSingleDocumentWorkflow):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="facts_from_multiple_documents",
+        categories=[WorkflowCategory.answer_and_report],
         order=WorkflowOrder.question + 2,
         name1={"en": "📜 Collect Facts", "de": "📜 Sammle Fakten"},
         name2={"en": "From Multiple <entity_name_plural>", "de": "Aus mehreren Dokumenten"},
@@ -113,6 +116,7 @@ class CollectFactsFromMultipleDocumentsWorkflow(FindFactFromSingleDocumentWorkfl
 class BeyondExistingFactsWorkflow(FindFactFromSingleDocumentWorkflow):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="beyond_existing_facts",
+        categories=[WorkflowCategory.answer_and_report],
         order=WorkflowOrder.question + 3,
         name1={"en": "🕵️ Write a report", "de": "🕵️ Bericht über"},
         name2={"en": "Beyond individual Facts", "de": "einzelne Fakten hinaus"},

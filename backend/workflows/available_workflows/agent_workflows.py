@@ -17,6 +17,7 @@ from workflows.logic import WorkflowBase, workflow
 from workflows.schemas import (
     CreateCollectionSettings,
     WorkflowAvailability,
+    WorkflowCategory,
     WorkflowMetadata,
     WorkflowOrder,
 )
@@ -28,6 +29,7 @@ from config.utils import get_default_model
 class ResearchAgentWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="research_agent",
+        categories=[WorkflowCategory.answer_and_report],
         order=WorkflowOrder.agent + 1,
         name1={"en": "🕵️ Let an", "de": "🕵️ Lass einen"},
         name2={"en": "Agent do Research", "de": "Agent Forschung betreiben"},

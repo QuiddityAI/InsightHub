@@ -7,6 +7,7 @@ from workflows.logic import WorkflowBase, workflow
 from workflows.schemas import (
     CreateCollectionSettings,
     WorkflowAvailability,
+    WorkflowCategory,
     WorkflowMetadata,
     WorkflowOrder,
 )
@@ -16,6 +17,7 @@ from workflows.schemas import (
 class EmptyCollectionWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="empty_collection",
+        categories=[WorkflowCategory.store_and_share],
         order=WorkflowOrder.base + 90,  # usually the last one
         name1={"en": "🗒️ Empty Collection", "de": "🗒️ Leere Sammlung"},
         name2={"en": "For Notes and Documents", "de": "Für Notizen und Dokumente"},
@@ -40,6 +42,7 @@ class EmptyCollectionWorkflow(WorkflowBase):
 class ShowAllWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="show_all",
+        categories=[WorkflowCategory.search_and_curate, WorkflowCategory.process_and_automate],
         order=WorkflowOrder.base + 1,
         name1={"en": "↕️ Show", "de": "↕️ Zeige"},
         name2={"en": "All <entity_name_plural>", "de": "Alle <entity_name_plural>"},

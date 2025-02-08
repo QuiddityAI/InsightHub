@@ -8,6 +8,7 @@ from workflows.logic import WorkflowBase, workflow
 from workflows.schemas import (
     CreateCollectionSettings,
     WorkflowAvailability,
+    WorkflowCategory,
     WorkflowMetadata,
     WorkflowOrder,
 )
@@ -17,6 +18,7 @@ from workflows.schemas import (
 class OverviewMapWorkflow(WorkflowBase):
     metadata: WorkflowMetadata = WorkflowMetadata(
         workflow_id="overview_map",
+        categories=[WorkflowCategory.search_and_curate],
         order=WorkflowOrder.map + 1,
         name1={"en": "🌍 Show a visual", "de": "🌍 Eine visuelle"},
         name2={"en": "Overview Map of <entity_name_plural>", "de": "Karte von Ergebnissen"},

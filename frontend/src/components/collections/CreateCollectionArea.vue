@@ -69,6 +69,7 @@ export default {
         related_organization_id: null,
       },
       workflows: [],
+      workflow_category: null,
 
       example_query_index: 0,
     }
@@ -149,6 +150,22 @@ export default {
     },
     language() {
       return navigator.language.split('-')[0]
+    },
+    filtered_workflows() {
+      return this.workflows.filter(workflow => this.workflow_category === null || workflow.categories.includes(this.workflow_category))
+    },
+    available_categories() {
+      const categories = [
+        { id: "search_and_curate", name: this.$t('CreateCollectionArea.category_search'), subtitle: this.$t('CreateCollectionArea.category_search_subtitle') },
+        { id: "answer_and_report", name: this.$t('CreateCollectionArea.category_answer'), subtitle: this.$t('CreateCollectionArea.category_answer_subtitle') },
+        { id: "process_and_automate", name: this.$t('CreateCollectionArea.category_process'), subtitle: this.$t('CreateCollectionArea.category_process_subtitle') },
+        { id: "store_and_share", name: this.$t('CreateCollectionArea.category_store_and_share'), subtitle: this.$t('CreateCollectionArea.category_store_and_share_subtitle') },
+      ]
+      const available_categories = categories.filter(category => this.workflows.some(workflow => workflow.categories.includes(category.id)))
+      return ([{ id: null, name: this.$t('CreateCollectionArea.category_all'), subtitle: null }]).concat(available_categories)
+    },
+    selected_category() {
+      return this.available_categories.find(category => category.id === this.workflow_category)
     },
   },
   mounted() {
@@ -313,8 +330,20 @@ export default {
             {{ $t('CreateCollectionArea.what-do-you-want-to-do') }}
           </h1>
 
+          <div class="ml-11 -mb-5 flex flex-row gap-6">
+            <button v-for="category in available_categories" @click="workflow_category = category.id"
+              class="py-[1px] text-sm font-semibold rounded-md text-gray-500 hover:text-gray-700"
+              :class="{ 'underline': workflow_category === category.id }">
+              {{ category.name }}
+            </button>
+          </div>
+
+          <div v-if="selected_category?.subtitle != null" class="ml-11 mt-2 -mb-5 text-sm text-gray-500 italic">
+            → {{ selected_category.subtitle }}
+          </div>
+
           <div class="flex flex-row w-full items-center gap-5 pl-10 pr-7 py-4 overflow-x-auto">
-            <button v-for="workflow in workflows" @click="select_workflow(workflow)"
+            <button v-for="workflow in filtered_workflows" @click="select_workflow(workflow)"
               class="min-w-[170px] w-[170px] h-[93px] px-3 py-3 bg-gray-100 shadow-md rounded-xl flex flex-col gap-0 items-start justify-start group"
               :class="{
                 'border': new_settings.workflow_id == workflow.workflow_id,

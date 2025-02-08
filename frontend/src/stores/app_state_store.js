@@ -1330,7 +1330,6 @@ export const useAppStateStore = defineStore("appState", {
     show_document_details(dataset_and_item_id, initial_item=null, relevant_parts=null, query=null, in_new_tab=false) {
       const queryParams = new URLSearchParams(window.location.search)
       queryParams.set("item_details", dataset_and_item_id.join(","))
-      console.log("showing document details", dataset_and_item_id, in_new_tab)
       if (in_new_tab) {
         window.open(window.location.pathname + "?" + queryParams.toString(), "_blank")
         return
