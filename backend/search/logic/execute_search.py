@@ -82,7 +82,7 @@ def create_and_run_search_task(
 
     if search_task.auto_set_filters:
         collection.log_explanation("Use AI model to generate **suitable query**", save=False)
-        model = get_default_dspy_llm(search_query_predictor)
+        model = get_default_dspy_llm("search_query")
         try:
             with dspy.context(lm=dspy.LM(**model.to_litellm())):
                 keyword_query = search_query_predictor(

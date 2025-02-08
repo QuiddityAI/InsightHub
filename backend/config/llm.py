@@ -9,13 +9,14 @@ default_models = box.Box(
 )
 
 
-default_signature_models = box.Box(
+default_dspy_models = box.Box(
     {
-        "TitleSignature": "Mistral_Ministral8b",
-        "ColumnLanguageSignature": "Mistral_Ministral3b",
-        "QueryLanguageSignature": "Mistral_Ministral3b",
-        "DocComparisonSignature": "Google_Gemini_Flash_1_5_v1",
-        "SearchQuerySignature": "Google_Gemini_Flash_1_5_v1",
+        "column_title": "Mistral_Ministral8b",
+        "column_language": "Mistral_Ministral3b",
+        "query_language": "Mistral_Ministral3b",
+        "doc_comparison": "Google_Gemini_Flash_1_5_v1",
+        "search_query": "Google_Gemini_Flash_1_5_v1",
+        "tender_summary": "Mistrall_Ministral8b",
     }
 )
 

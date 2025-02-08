@@ -150,7 +150,7 @@ def approve_using_comparison(
                         documents += f"  Quote: {criterion.supporting_quote}\n"
         documents += "\n\n\n"
 
-    model = get_default_dspy_llm(doc_comparison)
+    model = get_default_dspy_llm("doc_comparison")
     with dspy.context(lm=dspy.LM(**model.to_litellm())):
         sel_docs = doc_comparison(documents=documents, target_language=search_task.result_language).selected_documents
     results = [ApprovalUsingComparisonReason(item_id=k, reason=v) for k, v in sel_docs.items()]

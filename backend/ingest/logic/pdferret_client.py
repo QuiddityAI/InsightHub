@@ -3,8 +3,6 @@ import json
 import logging
 
 import requests
-from llmonkey.llms import Mistral_Pixtral, Nebius_Llama_3_1_70B_fast, Google_Gemini_Flash_1_5_v1
-
 from data_map_backend.utils import DotDict
 from config.llm import default_pdferret_models
 

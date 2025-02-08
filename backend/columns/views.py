@@ -69,7 +69,7 @@ def add_column_route(request: HttpRequest, payload: ColumnConfig):
         return HttpResponse(status=400)
 
     if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
-        model = get_default_dspy_llm(column_language_predictor)
+        model = get_default_dspy_llm("column_language")
         with dspy.context(lm=dspy.LM(**model.to_litellm())):
             lang = column_language_predictor(user_question=payload.expression).language_code
         payload.parameters["language"] = lang
@@ -82,7 +82,7 @@ def add_column_route(request: HttpRequest, payload: ColumnConfig):
                 logging.error("No expression provided for LLM column.")
                 return HttpResponse(status=400)
             try:
-                model = get_default_dspy_llm(title_predictor)
+                model = get_default_dspy_llm("column_title")
                 with dspy.context(lm=dspy.LM(**model.to_litellm())):
                     payload.name = title_predictor(user_question=payload.expression, target_language=lang).title
             except Exception as e:

@@ -63,7 +63,7 @@ def create_collection_using_workflow(user: User, settings: CreateCollectionSetti
                 if not settings.user_input:
                     settings.result_language = "en"
                 else:
-                    model = get_default_dspy_llm(query_language_predictor)
+                    model = get_default_dspy_llm("query_language")
                     with dspy.context(lm=dspy.LM(**model.to_litellm())):
                         settings.result_language = query_language_predictor(
                             user_question=settings.user_input
