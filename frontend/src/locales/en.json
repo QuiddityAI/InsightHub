@@ -106,7 +106,8 @@
     "edit-the-search-query-and-filters": "Edit the search query and filters",
     "exit-search-tooltip": "Remove search results and show saved items",
     "edit": "Edit",
-    "exit": "Exit"
+    "exit": "Exit",
+    "search-in": "Search in"
   },
   "SearchTaskExecutionSettings": {
     "save": "Save",

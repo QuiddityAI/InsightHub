@@ -116,7 +116,8 @@
     "save-execute-periodically": "Speichern / regelmäßig ausführen",
     "search-mode": "Suchmodus:",
     "edit": "Bearbeiten",
-    "exit": "Beenden"
+    "exit": "Beenden",
+    "search-in": "Suchen in"
   },
   "SearchTaskExecutionSettings": {
     "run-on-new-items": "Neue {0} beobachten, passende automatisch hinzufügen",

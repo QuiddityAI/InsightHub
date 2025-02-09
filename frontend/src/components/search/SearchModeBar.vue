@@ -68,7 +68,7 @@ export default {
       </BorderlessButton>
 
       <div class="flex-none text-sm text-blue-400">
-        Suchen in <span class="font-bold italic text-blue-400">{{ dataset_name }}</span>
+        {{ $t('SearchModeBar.search-in') }} <span class="font-bold italic text-blue-400">{{ dataset_name }}</span>
       </div>
 
       <BorderlessButton class="absolute right-0"
