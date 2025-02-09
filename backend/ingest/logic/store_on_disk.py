@@ -1,18 +1,17 @@
+import datetime
+import hashlib
 import logging
 import os
-import uuid
 import tarfile
+import uuid
 import zipfile
-import hashlib
-import datetime
-
-from werkzeug.utils import secure_filename
 
 from django.core.files import File
+from werkzeug.utils import secure_filename
 
 from data_map_backend.models import ServiceUsage
-from ingest.schemas import UploadedOrExtractedFile, UploadedFileMetadata
 from ingest.logic.common import UPLOADED_FILES_FOLDER
+from ingest.schemas import UploadedFileMetadata, UploadedOrExtractedFile
 
 # only applies to single files, not archives
 # (this is also why it can't be enforced by flask's max_content_length)
@@ -72,6 +71,8 @@ def unpack_archive(file: File, dataset_id: int, user_id: int) -> tuple[list[Uplo
                 )
             full_path = member.name if isinstance(member, tarfile.TarInfo) else member.filename
             file_name = os.path.basename(full_path)
+            if file_name == ".DS_Store":
+                continue
             folder = os.path.dirname(full_path)
             logging.warning(f"extracting file: {full_path}")
             try:
