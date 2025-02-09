@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from data_map_backend.utils import DotDict
 from ingest.logic.common import UPLOADED_FILES_FOLDER
+from ingest.logic.upload_files import get_upload_task_status
 from ingest.schemas import CustomUploadedFile, UploadedFileMetadata
 from ingest.logic.common import UPLOADED_FILES_FOLDER
 

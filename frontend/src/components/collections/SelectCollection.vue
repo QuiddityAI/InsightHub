@@ -54,7 +54,7 @@ export default {
       <option
         v-for="class_details in appState.collections[
           appState.collections.findIndex((e) => e.id == selected_collection_id)
-        ].actual_classes"
+        ]?.actual_classes"
         :value="class_details.name">
         {{ class_details.name == "_default" ? "Items" : class_details.name }}
       </option>
