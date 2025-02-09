@@ -52,3 +52,5 @@ trace_*.json
 docker-compose*.override.yaml
 *cookies.pkl
 data/*
+
+scripts_and_examples/generated_data/*
