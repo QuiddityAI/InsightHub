@@ -50,8 +50,8 @@ def get_available_workflows_route(request: HttpRequest, payload: AvailableWorkfl
             continue
         if available_workflows and workflow_cls.metadata.workflow_id not in available_workflows:
             continue
-        if workflow_cls.metadata.needs_opt_in and workflow_cls.metadata.workflow_id not in opt_in_workflows:
-            continue
+        # if workflow_cls.metadata.needs_opt_in and workflow_cls.metadata.workflow_id not in opt_in_workflows:
+        #     continue
         additional_workflows.append(workflow_cls.metadata)
 
     additional_workflows = sorted(additional_workflows, key=lambda x: x.order)
