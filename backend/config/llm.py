@@ -16,7 +16,7 @@ default_dspy_models = box.Box(
         "query_language": "Mistral_Ministral3b",
         "doc_comparison": "Google_Gemini_Flash_1_5_v1",
         "search_query": "Google_Gemini_Flash_1_5_v1",
-        "tender_summary": "Mistral_Ministral8b",
+        "tender_summary": "Google_Gemini_Flash_1_5",
     }
 )
 

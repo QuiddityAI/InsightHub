@@ -10,10 +10,15 @@ from config.utils import get_default_dspy_llm
 
 
 class TenderSummarySignature:
-    """You receive the description and text of a tender web page from the user.
+    """\
+    You receive a description and text of a webpage for a tender from the user.
     Summarize the subject of the tender and the services to be provided in about 2-3 sentences.
-    If the information is not sufficient or the text only contains error messages, answer with "n/a".
-    Answer must be in German."""
+    If the information is insufficient, respond only with "n/a".
+    If the text only contains error messages, respond only with "n/a".
+    If there is some relevant information, but also error messages, summarize the relevant information and ignore the error messages.
+    If the text is only about the tender platform, respond only with "n/a".
+    Respond in German.
+    """
 
     description: str = dspy.InputField()
     website_text: str = dspy.InputField()
