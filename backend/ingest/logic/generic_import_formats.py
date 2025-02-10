@@ -1,8 +1,9 @@
 import csv
+
 import requests
 
-from ingest.schemas import UploadedOrExtractedFile
 from ingest.logic.common import UPLOADED_FILES_FOLDER
+from ingest.schemas import UploadedOrExtractedFile
 
 
 def import_csv(paths: list[UploadedOrExtractedFile], parameters, on_progress=None) -> tuple[list[dict], list[dict]]:
@@ -14,7 +15,7 @@ def import_csv(paths: list[UploadedOrExtractedFile], parameters, on_progress=Non
     for uploaded_file in paths:
         csv_reader = csv.DictReader(open(f"{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}", "r"))
         for i, row in enumerate(csv_reader):
-            row = {k.strip().lower(): v.strip() for k, v in row.items()}
+            row = {k.strip().lower(): v.strip() for k, v in row.items() if k is not None}
             items.append(row)
         if on_progress:
             on_progress(0.5 + (len(items) / len(paths)) * 0.5)
