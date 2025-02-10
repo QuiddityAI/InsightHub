@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Generator, Iterable, Optional
 
 import opensearchpy.helpers
-from opensearchpy import OpenSearch
+from opensearchpy import OpenSearch, RequestError
 
 from data_map_backend.models import Dataset
 from data_map_backend.utils import DotDict
@@ -62,13 +62,69 @@ class TextSearchEngineClient(object):
             return
 
         index_name = dataset.actual_database_name
-        index_body = {}
+        index_body = {
+            "settings": {
+                "analysis": {
+                    "filter": {
+                        "german_synonym": {"type": "synonym", "synonyms_path": "german_synonym.txt"},
+                        "german_decompounder": {
+                            "type": "hyphenation_decompounder",
+                            "word_list_path": "german_decompound.txt",
+                            "hyphenation_patterns_path": "hyphenation_patterns_de_DR.xml",
+                            "only_longest_match": True,  # see https://discuss.elastic.co/t/compound-word-token-filter-only-longest-match-doesnt-work-as-expected-in-some-scenarios/195470
+                            "min_subword_size": 3,
+                        },
+                        "german_stemmer": {"type": "stemmer", "language": "light_german"},
+                        "german_stop": {"type": "stop", "stopwords": "_german_", "remove_trailing": False},
+                    },
+                    "analyzer": {
+                        "german_no_decompound": {
+                            "tokenizer": "standard",
+                            "filter": [
+                                "lowercase",
+                                "german_stop",
+                                "german_normalization",  # replaces umlauts with their base characters
+                                "german_stemmer",
+                            ],
+                        },
+                        "german_decompound": {
+                            "tokenizer": "standard",
+                            "filter": [
+                                "lowercase",
+                                "german_stop",
+                                "german_normalization",  # replaces umlauts with their base characters
+                                "german_decompounder",
+                                "german_stemmer",
+                            ],
+                        },
+                        "german_decompound_synonyms": {
+                            "tokenizer": "standard",
+                            "filter": [
+                                "lowercase",
+                                "german_normalization",
+                                "german_decompounder",
+                                "german_synonym",  # must be before german_stop, as otherwise parsing the synonyms doesn't work because stopwords are removed
+                                "german_stop",
+                                "german_stemmer",
+                            ],
+                        },
+                    },
+                }
+            }
+        }
         try:
             response = self.client.indices.create(index_name, body=index_body)
+        except RequestError as e:
+            if e.error == "resource_already_exists_exception":
+                logging.warning(f"Index {index_name} already exists, continuing.")
+            else:
+                logging.error(
+                    f"Error during creating index: type {type(e)}, error: {e}, info: {e.info}, status_code: {e.status_code}"
+                )
+                raise e
         except Exception as e:
             logging.warning(f"Error during creating index: type {type(e)}, error: {e}")
-            logging.warning(f"If this is an resource_already_exists_exception error, it can be ignored.")
-            # opensearchpy.exceptions.RequestError: RequestError(400, 'resource_already_exists_exception', 'index [dataset_4/1kYO7nOKQm2LMbosdiPeXw] already exists')
+            raise e
         else:
             logging.info(response)
 
@@ -121,15 +177,28 @@ class TextSearchEngineClient(object):
                 ) and field.field_type != FieldType.VECTOR
                 properties[field.identifier]["index"] = indexed
             if open_search_type == "text" and field.language_analysis:
-                properties[field.identifier]["analyzer"] = field.language_analysis
+                if field.language_analysis == "german":
+                    properties[field.identifier]["analyzer"] = "german_decompound"
+                    properties[field.identifier]["search_analyzer"] = "german_no_decompound"
+                else:
+                    properties[field.identifier]["analyzer"] = field.language_analysis
             if open_search_type == "text" and field.additional_language_analysis:
                 for language in field.additional_language_analysis:
-                    properties[field.identifier]["fields"] = {
-                        language: {
-                            "type": "text",
-                            "analyzer": language,
+                    if field.language_analysis == "german":
+                        properties[field.identifier]["fields"] = {
+                            language: {
+                                "type": "text",
+                                "analyzer": "german_decompound",
+                                "search_analyzer": "german_no_decompound",
+                            }
                         }
-                    }
+                    else:
+                        properties[field.identifier]["fields"] = {
+                            language: {
+                                "type": "text",
+                                "analyzer": language,
+                            }
+                        }
             if field.field_type == FieldType.STRING:
                 # STRING fields should be searchable by both tokenized and exact values (e.g. filenames), so we need a keyword field
                 properties[field.identifier]["fields"] = {
@@ -208,7 +277,6 @@ class TextSearchEngineClient(object):
                     raise ValueError(response)
 
         run_in_batches_without_result(list(zip(ids, payloads)), 512, upsert_batch)
-
 
     def remove_items(self, dataset: DotDict | Dataset, item_ids: list[str]):
         if dataset.source_plugin == SourcePlugin.REMOTE_DATASET:

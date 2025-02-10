@@ -74,6 +74,9 @@ services:
     image: "opensearchproject/opensearch:latest"
     volumes:
       - opensearch_data:/usr/share/opensearch/data
+      - ./docker/resources/german_decompound.txt:/usr/share/opensearch/config/german_decompound.txt
+      - ./docker/resources/german_synonym.txt:/usr/share/opensearch/config/german_synonym.txt
+      - ./docker/resources/hyphenation_patterns_de_DR.xml:/usr/share/opensearch/config/hyphenation_patterns_de_DR.xml
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:9200:9200"
     #   - "127.0.0.1:9600:9600"
