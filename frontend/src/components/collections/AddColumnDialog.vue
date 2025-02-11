@@ -1,200 +1,209 @@
 <script setup>
+import { ref, computed, watch, inject } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import MultiSelect from 'primevue/multiselect';
 import Message from 'primevue/message';
 import Checkbox from 'primevue/checkbox';
+import { useI18n } from 'vue-i18n';
 
 import LanguageSelect from "../widgets/LanguageSelect.vue"
 import BorderButton from "../widgets/BorderButton.vue"
 import LlmSelect from '../widgets/LlmSelect.vue';
 
-import { httpClient, djangoClient } from "../../api/httpClient"
+import { httpClient } from "../../api/httpClient"
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 import { useCollectionStore } from "../../stores/collection_store"
 import { FieldType } from "../../utils/utils"
 
+// Props and emits
+const props = defineProps(['collection', 'collection_class'])
+const emit = defineEmits(['close'])
+
+// Store initialization
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const collectionStore = useCollectionStore()
 const toast = useToast()
-</script>
+const eventBus = inject('eventBus')
 
-<script>
-export default {
-  inject: ["eventBus"],
-  props: ["collection", "collection_class"],
-  emits: ["close"],
-  data() {
-    return {
-      selected_source_fields: ['_descriptive_text_fields', '_full_text_snippets'],
-      selected_module: 'llm',
-      selected_llm: 'Google_Gemini_Flash_1_5_v1',
-      default_models: [
-        {'title': this.$t('AddColumnDialog.small-ai'), 'subtitle': this.$t('AddColumnDialog.small-ai-subtitle'), 'model': 'Mistral_Ministral8b'},
-        {'title': this.$t('AddColumnDialog.medium-ai'), 'subtitle': this.$t('AddColumnDialog.medium-ai-subtitle'), 'model': 'Google_Gemini_Flash_1_5_v1'},
-        {'title': this.$t('AddColumnDialog.large-ai'), 'subtitle': this.$t('AddColumnDialog.large-ai-subtitle'), 'model': 'Mistral_Mistral_Large'},
-      ],
-      selected_language: null,
-      show_advanced_modules: false,
-      use_auto_title: true,
-      use_auto_prompt: true,
-      use_auto_language: true,
-      use_custom_llm: false,
-      use_default_sources: true,
-      auto_run_for_approved_items: false,
-      auto_run_for_candidates: false,
-      title: '',
-      expression: '',
-      custom_prompt: '',
-    }
-  },
-  computed: {
-    ...mapStores(useMapStateStore),
-    ...mapStores(useAppStateStore),
-    ...mapStores(useCollectionStore),
-    show_full_text_issue_hint() {
-      return this.selected_source_fields.find((field) => field !== "_full_text_snippets" && field.includes("full_text"))
-    },
-    expression_label() {
-      if (this.selected_module === 'llm') {
-        return this.$t('AddColumnDialog.expression-label-llm')
-      } else if (this.selected_module === 'relevance') {
-        return this.$t('AddColumnDialog.expression-label-relevance')
-      } else if (this.selected_module === 'email') {
-        return this.$t('AddColumnDialog.expression-label-email')
-      } else {
-        return this.$t('AddColumnDialog.expression-label-other')
-      }
-    },
-    sources_label() {
-      if (this.selected_module === 'llm' || this.selected_module === 'relevance') {
-        return this.$t('AddColumnDialog.sources-label-llm')
-      } else if (this.selected_module === 'website_scraping') {
-        return this.$t('AddColumnDialog.sources-label-url')
-      } else if (this.selected_module === 'web_search') {
-        return this.$t('AddColumnDialog.sources-label-web-search')
-      } else if (this.selected_module === 'item_field') {
-        return this.$t('AddColumnDialog.sources-label-item-field')
-      } else {
-        return this.$t('AddColumnDialog.sources-label-other')
-      }
-    },
-    prompt_label() {
-      if (this.selected_module === 'llm') {
-        return this.$t('AddColumnDialog.prompt-label-llm')
-      } else if (this.selected_module === 'email') {
-        return this.$t('AddColumnDialog.prompt-label-email')
-      } else {
-        return this.$t('AddColumnDialog.prompt-label-other')
-      }
-    },
-    show_process_now_button() {
-      return !['email', 'notes'].includes(this.selected_module)
-    },
-    show_add_without_processing_button() {
-      return !['item_field'].includes(this.selected_module)
-    },
-  },
-  mounted() {
-  },
-  watch: {
-    use_auto_title(value) {
-      if (value) {
-        this.title = ''
-      }
-    },
-    use_auto_language(value) {
-      if (value) {
-        this.selected_language = null
-      }
-    },
-    use_auto_prompt(value) {
-      if (value) {
-        this.custom_prompt = ''
-      }
-    },
-    selected_module(value) {
-      this.set_default_values()
-    },
-  },
-  methods: {
-    set_default_values() {
-      this.use_auto_title = true
-      this.use_auto_prompt = true
-      this.use_auto_language = true
-      this.auto_run_for_approved_items = false
-      this.auto_run_for_candidates = false
-      this.use_default_sources = true
-      if (this.selected_module === 'llm') {
-      } else if (this.selected_module === 'relevance') {
-        this.auto_run_for_candidates = true
-      } else if (this.selected_module === 'website_scraping') {
-        this.use_default_sources = false  // always using custom sources
-      } else if (this.selected_module === 'web_search') {
-        this.use_default_sources = false  // always using custom sources
-      } else if (this.selected_module === 'item_field') {
-        this.use_default_sources = false  // always using custom sources
-        this.auto_run_for_candidates = true
-        this.auto_run_for_approved_items = true
-        this.use_auto_title = true  // always using field as title
-      } else if (this.selected_module === 'email') {
-        this.use_auto_language = false  // language must be set
-        this.selected_language = 'en'
-      } else if (this.selected_module === 'notes') {
-        this.auto_run_for_candidates = false
-        this.auto_run_for_approved_items = false
-      }
-      if (['item_field', 'web_search', 'website_scraping'].includes(this.selected_module)) {
-        this.selected_source_fields = []
-      } else {
-        this.selected_source_fields = ['_descriptive_text_fields', '_full_text_snippets']
-      }
-    },
-    add_extraction_question(process_current_page=false) {
-      // TODO: check for missing values
-      const parameters = {}
-      if (['llm', 'relevance', 'email'].includes(this.selected_module)) {
-        parameters.model = this.selected_llm
-      }
-      if (['llm', 'relevance', 'email'].includes(this.selected_module)) {
-        parameters.language = this.selected_language
-      }
-      let field_type = FieldType.TEXT
-      if (['relevance'].includes(this.selected_module)) {
-        field_type = FieldType.ARBITRARY_OBJECT
-      }
-      const body = {
-        collection_id: this.collectionStore.collection_id,
-        field_type: field_type,
-        name: this.title,
-        expression: this.expression,
-        source_fields: this.selected_source_fields,
-        module: this.selected_module,
-        prompt_template: this.custom_prompt,
-        auto_run_for_approved_items: this.auto_run_for_approved_items,
-        auto_run_for_candidates: this.auto_run_for_candidates,
-        parameters: parameters,
-      }
-      httpClient.post(`/api/v1/columns/add_column`, body)
-      .then((response) => {
-        if (!this.collection.columns) {
-          this.collection.columns = []
-        }
-        const column = response.data
-        this.collection.columns.push(column)
-        if (process_current_page) {
-          this.collectionStore.extract_question(column.id, true)
-        }
-      })
-      .catch((error) => {
-        console.error(error)
-      })
-      this.$emit('close')
-    },
-  },
+// Reactive state
+const selected_source_fields = ref(['_descriptive_text_fields', '_full_text_snippets'])
+const selected_module = ref('llm')
+const selected_llm = ref('Google_Gemini_Flash_1_5_v1')
+const selected_language = ref(null)
+const show_advanced_modules = ref(false)
+const use_auto_title = ref(true)
+const use_auto_prompt = ref(true)
+const use_auto_language = ref(true)
+const use_custom_llm = ref(false)
+const use_default_sources = ref(true)
+const auto_run_for_approved_items = ref(false)
+const auto_run_for_candidates = ref(false)
+const title = ref('')
+const expression = ref('')
+const custom_prompt = ref('')
+
+const { t } = useI18n();
+
+// Constants
+const default_models = [
+  { 'title': t('AddColumnDialog.small-ai'), 'subtitle': t('AddColumnDialog.small-ai-subtitle'), 'model': 'Mistral_Ministral8b' },
+  { 'title': t('AddColumnDialog.medium-ai'), 'subtitle': t('AddColumnDialog.medium-ai-subtitle'), 'model': 'Google_Gemini_Flash_1_5_v1' },
+  { 'title': t('AddColumnDialog.large-ai'), 'subtitle': t('AddColumnDialog.large-ai-subtitle'), 'model': 'Mistral_Mistral_Large' },
+]
+
+// Computed properties
+const show_full_text_issue_hint = computed(() => {
+  return selected_source_fields.value.find((field) => field !== "_full_text_snippets" && field.includes("full_text"))
+})
+
+const expression_label = computed(() => {
+  if (selected_module.value === 'llm') {
+    return t('AddColumnDialog.expression-label-llm')
+  } else if (selected_module.value === 'relevance') {
+    return t('AddColumnDialog.expression-label-relevance')
+  } else if (selected_module.value === 'email') {
+    return t('AddColumnDialog.expression-label-email')
+  } else {
+    return t('AddColumnDialog.expression-label-other')
+  }
+})
+
+const sources_label = computed(() => {
+  if (selected_module.value === 'llm' || selected_module.value === 'relevance') {
+    return t('AddColumnDialog.sources-label-llm')
+  } else if (selected_module.value === 'website_scraping') {
+    return t('AddColumnDialog.sources-label-url')
+  } else if (selected_module.value === 'web_search') {
+    return t('AddColumnDialog.sources-label-web-search')
+  } else if (selected_module.value === 'item_field') {
+    return t('AddColumnDialog.sources-label-item-field')
+  } else {
+    return t('AddColumnDialog.sources-label-other')
+  }
+})
+
+const prompt_label = computed(() => {
+  if (selected_module.value === 'llm') {
+    return t('AddColumnDialog.prompt-label-llm')
+  } else if (selected_module.value === 'email') {
+    return t('AddColumnDialog.prompt-label-email')
+  } else {
+    return t('AddColumnDialog.prompt-label-other')
+  }
+})
+
+const show_process_now_button = computed(() => {
+  return !['email', 'notes'].includes(selected_module.value)
+})
+
+const show_add_without_processing_button = computed(() => {
+  return !['item_field'].includes(selected_module.value)
+})
+
+// Methods
+const set_default_values = () => {
+  use_auto_title.value = true
+  use_auto_prompt.value = true
+  use_auto_language.value = true
+  auto_run_for_approved_items.value = false
+  auto_run_for_candidates.value = false
+  use_default_sources.value = true
+
+  if (selected_module.value === 'llm') {
+    // Default values already set
+  } else if (selected_module.value === 'relevance') {
+    auto_run_for_candidates.value = true
+  } else if (selected_module.value === 'website_scraping') {
+    use_default_sources.value = false
+  } else if (selected_module.value === 'web_search') {
+    use_default_sources.value = false
+  } else if (selected_module.value === 'item_field') {
+    use_default_sources.value = false
+    auto_run_for_candidates.value = true
+    auto_run_for_approved_items.value = true
+    use_auto_title.value = true
+  } else if (selected_module.value === 'email') {
+    use_auto_language.value = false
+    selected_language.value = 'en'
+  } else if (selected_module.value === 'notes') {
+    auto_run_for_candidates.value = false
+    auto_run_for_approved_items.value = false
+  }
+
+  if (['item_field', 'web_search', 'website_scraping'].includes(selected_module.value)) {
+    selected_source_fields.value = []
+  } else {
+    selected_source_fields.value = ['_descriptive_text_fields', '_full_text_snippets']
+  }
 }
+
+const add_extraction_question = (process_current_page = false) => {
+  const parameters = {}
+  if (['llm', 'relevance', 'email'].includes(selected_module.value)) {
+    parameters.model = selected_llm.value
+    parameters.language = selected_language.value
+  }
+
+  let field_type = FieldType.TEXT
+  if (['relevance'].includes(selected_module.value)) {
+    field_type = FieldType.ARBITRARY_OBJECT
+  }
+
+  const body = {
+    collection_id: collectionStore.collection_id,
+    field_type: field_type,
+    name: title.value,
+    expression: expression.value,
+    source_fields: selected_source_fields.value,
+    module: selected_module.value,
+    prompt_template: custom_prompt.value,
+    auto_run_for_approved_items: auto_run_for_approved_items.value,
+    auto_run_for_candidates: auto_run_for_candidates.value,
+    parameters: parameters,
+  }
+
+  httpClient.post(`/api/v1/columns/add_column`, body)
+    .then((response) => {
+      if (!props.collection.columns) {
+        props.collection.columns = []
+      }
+      const column = response.data
+      props.collection.columns.push(column)
+      if (process_current_page) {
+        collectionStore.extract_question(column.id, true)
+      }
+    })
+    .catch((error) => {
+      console.error(error)
+    })
+  emit('close')
+}
+
+// Watchers
+watch(use_auto_title, (value) => {
+  if (value) {
+    title.value = ''
+  }
+})
+
+watch(use_auto_language, (value) => {
+  if (value) {
+    selected_language.value = null
+  }
+})
+
+watch(use_auto_prompt, (value) => {
+  if (value) {
+    custom_prompt.value = ''
+  }
+})
+
+watch(selected_module, () => {
+  set_default_values()
+})
 </script>
 
 <template>
