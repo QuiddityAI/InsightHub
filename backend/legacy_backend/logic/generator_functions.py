@@ -1,7 +1,8 @@
-import json
 import logging
 import os
 from typing import Callable
+
+import litellm
 
 from data_map_backend.utils import DotDict
 from ingest.logic.office_documents import ai_file_processing_generator
@@ -13,9 +14,9 @@ from legacy_backend.logic.model_client import (
     add_e5_prefix,
     get_clip_image_embeddings,
     get_clip_text_embeddings,
-    get_infinity_embeddings,
+    get_local_embeddings,
+    get_hosted_embeddings,
     get_pubmedbert_embeddings,
-    get_sentence_transformer_embeddings,
 )
 from legacy_backend.utils.helpers import join_extracted_text_sources
 
@@ -42,47 +43,63 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
     parameters = DotDict(parameters)
     generator: Callable | None = None
     default_log = logging.warning
-    if module == "pubmedbert":
-        generator = lambda batch, log_error=default_log: get_pubmedbert_embeddings(
+
+    def pubmedbert_generator(batch, log_error=default_log):
+        return get_pubmedbert_embeddings(
             [join_extracted_text_sources(source_fields_list) for source_fields_list in batch]
         )
-    elif module == "sentence_transformer":
-        if parameters.model_name == "intfloat/e5-base-v2":
 
-            def generator_fn(batch, log_error=default_log):
-                preprocessed_texts = [join_extracted_text_sources(t) for t in batch]
-                preprocessed_texts = add_e5_prefix(preprocessed_texts, parameters.prefix)
-                if GPU_IS_AVAILABLE or len(batch) == 1:
-                    return get_infinity_embeddings(preprocessed_texts, parameters.model_name)
-                return deepinfra_client.get_embeddings(preprocessed_texts, parameters.model_name)
+    # migrated to litellm
+    def open_ai_text_embedding_ada_002_generator(batch, log_error=default_log):
+        return get_openai_embedding_batch([join_extracted_text_sources(t) for t in batch])
 
-            generator = generator_fn
-        else:
-            generator = lambda batch, log_error=default_log: get_sentence_transformer_embeddings(
-                [join_extracted_text_sources(t) for t in batch], parameters.model_name, parameters.prefix
+    # migrated to litellm
+    def sentence_transformer_generator(batch, log_error=default_log):
+        if GPU_IS_AVAILABLE or len(batch) == 1:
+            return get_local_embeddings(
+                add_e5_prefix([join_extracted_text_sources(t) for t in batch], parameters.prefix),
+                parameters.model_name,
             )
-    elif module == "clip_text":
-        generator = lambda batch, log_error=default_log: get_clip_text_embeddings(
-            [join_extracted_text_sources(t) for t in batch], parameters.model_name
-        )
-    elif module == "clip_image":
-        generator = lambda batch, log_error=default_log: get_clip_image_embeddings(
+        else:
+            return get_hosted_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name)
+
+    def clip_text_generator(batch, log_error=default_log):
+        return get_clip_text_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name)
+
+    def clip_image_generator(batch, log_error=default_log):
+        return get_clip_image_embeddings(
             [field for source_fields in batch for field in source_fields], parameters.model_name
         )
-    elif module == "favicon_url":
-        generator = lambda batch, log_error=default_log: [get_favicon_url(urls[0]) for urls in batch if urls]
-    elif module == "chunking":
-        generator = lambda batch, log_error=default_log: chunk_text_generator(
-            batch, parameters.chunk_size_in_characters, parameters.overlap_in_characters
-        )
-    elif module == "ai_file_processing":
-        generator = lambda batch, log_error=default_log: ai_file_processing_generator(batch, log_error, parameters)
-    elif module == "scientific_article_processing":
-        generator = lambda batch, log_error=default_log: scientific_article_processing_generator(
-            batch, log_error, parameters
-        )
-    elif module == "tender_enrichment":
-        generator = lambda batch, log_error=default_log: tender_enrichment_generator(batch, log_error, parameters)
+
+    def favicon_url_generator(batch, log_error=default_log):
+        return [get_favicon_url(urls[0]) for urls in batch if urls]
+
+    def chunking_generator(batch, log_error=default_log):
+        return chunk_text_generator(batch, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
+
+    def ai_file_processing_generator_func(batch, log_error=default_log):
+        return ai_file_processing_generator(batch, log_error, parameters)
+
+    def scientific_article_processing_func(batch, log_error=default_log):
+        return scientific_article_processing_generator(batch, log_error, parameters)
+
+    def tender_enrichment_generator_func(batch, log_error=default_log):
+        return tender_enrichment_generator(batch, log_error, parameters)
+
+    generator_mapping = {
+        "pubmedbert": pubmedbert_generator,
+        "open_ai_text_embedding_ada_002": open_ai_text_embedding_ada_002_generator,
+        "sentence_transformer": sentence_transformer_generator,
+        "clip_text": clip_text_generator,
+        "clip_image": clip_image_generator,
+        "favicon_url": favicon_url_generator,
+        "chunking": chunking_generator,
+        "ai_file_processing": ai_file_processing_generator_func,
+        "tender_enrichment": tender_enrichment_generator_func,
+        "scientific_article_processing": scientific_article_processing_func,
+    }
+
+    generator = generator_mapping.get(module)
 
     if not generator:
         logging.error(f"Generator module {module} not found")
@@ -110,6 +127,27 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
         return generate_value_for_each_element_in_array_field
     else:
         return generator
+
+
+def get_openai_embedding_batch(texts: list[str]):
+    results = []
+
+    chunk_size = 35  # 2000 / 60 requests per minute (limit for first 48h)
+    for i in range(0, len(texts), chunk_size):
+        resp = litellm.embedding(
+            model="openai/text-embedding-ada-002",
+            input=texts[i : i + chunk_size],
+            api_key=os.getenv("OPENAI_API_KEY"),
+        )
+
+        # roughly 1500 characters per abstract and 260 tokens per abstract
+        # -> 0.1ct per 10k tokens -> 0.1ct per 30 abstracts
+        # -> 5.2 ct per 2k abstracts (one search)
+        # -> 60M abstracts would be 1560€
+        for result_item in resp["data"]:
+            results.append(result_item["embedding"])
+
+    return results
 
 
 def get_favicon_url(url):

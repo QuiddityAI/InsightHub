@@ -1,12 +1,13 @@
+import asyncio
 import logging
 import os
 import pickle
 from collections import defaultdict
+import litellm
+import base64
+import config.embeddings as emb_config
 
-import numpy as np
-import requests
 
-embedding_model = "BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
 embedding_strategy = "sep_token"
 embedding_cache_path = "embedding_cache.pkl"
 
@@ -23,79 +24,72 @@ def save_embedding_cache():
         pickle.dump(embedding_cache, f)
 
 
-def get_embedding(text: str, text_id: str = "") -> np.ndarray:
-    return get_pubmedbert_embeddings([text])[0]
-
-
 def get_pubmedbert_embeddings(texts: list[str]):
-    url = os.getenv("model_server_host", "http://localhost:55180") + "/api/embedding/bert"
-    data = {
-        "texts": texts,
-        "model_name": embedding_model,
-        "embedding_strategy": embedding_strategy,
-    }
-    result = requests.post(url, json=data)
-    embeddings = np.asarray(result.json()["embeddings"])
+    raise NotImplementedError("PubmedBERT embeddings are not supported in this version")
+
+
+def get_clip_text_embeddings(texts: list[str], model_name: str | None = None) -> list[list[float]]:
+    logging.warning("model_name is ignored for clip embeddings")
+    embeddings = []
+    for txt in texts:  # google model ony supports single text as input
+        response = litellm.embedding(
+            input=txt,
+            **emb_config.clip_model_kwargs,  # type: ignore
+        )
+        embeddings.append(response.data[0]["embedding"])
     return embeddings
 
 
-def get_sentence_transformer_embeddings(texts: list[str], model_name: str, prefix: str):
-    url = os.getenv("model_server_host", "http://localhost:55180") + "/api/embedding/sentence_transformer"
-    data = {
-        "texts": texts,
-        "model_name": model_name,
-        "prefix": prefix,
-    }
-    result = requests.post(url, json=data)
-    embeddings = np.asarray(result.json()["embeddings"])
+def get_clip_image_embeddings(image_paths: list[str], model_name: str | None = None) -> list[list[float]]:
+    logging.warning("model_name is ignored for clip embeddings")
+
+    def encode_image_to_base64(image_path: str) -> str:
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
+
+    encoded_images = ["data:image/jpeg;base64," + encode_image_to_base64(image_path) for image_path in image_paths]
+
+    embeddings = []
+    for img in encoded_images:  # google model ony supports single image as input
+        response = litellm.embedding(
+            input=img,
+            **emb_config.clip_model_kwargs,  # type: ignore
+        )
+        embeddings.append(response.data[0]["embedding"])
     return embeddings
 
 
-def get_clip_text_embeddings(texts: list[str], model_name: str):
-    url = os.getenv("model_server_host", "http://localhost:55180") + "/api/embedding/clip/text"
-    data = {
-        "texts": texts,
-        "model_name": model_name,
-    }
-    result = requests.post(url, json=data)
-    embeddings = np.asarray(result.json()["embeddings"])
-    return embeddings
-
-
-def get_clip_image_embeddings(image_paths: list[str], model_name: str):
-    url = os.getenv("model_server_host", "http://localhost:55180") + "/api/embedding/clip/image"
-    data = {
-        "image_paths": image_paths,
-        "model_name": model_name,
-    }
-    result = requests.post(url, json=data)
-    embeddings = np.asarray(result.json()["embeddings"])
-    return embeddings
-
-
-def add_e5_prefix(texts: list[str], prefix: str, max_text_length: int = 1000):
+def add_e5_prefix(texts: list[str], prefix: str, max_text_length: int = 2000):
+    # e5 supports 512 tokens ~ 2000 characters
     prefix = prefix or "query:"
     # alternative: "passage: " for documents meant for retrieval
     texts = [prefix + " " + t[:max_text_length] for t in texts]
     return texts
 
 
-def get_infinity_embeddings(texts: list[str], model_name: str):
+def get_local_embeddings(texts: list[str], model_name: str) -> list[list[float]]:
     batch_size = 256
     embeddings = []
     for i in range(0, len(texts), batch_size):
-        embeddings.extend(_get_infinity_embeddings(texts[i : i + batch_size], model_name))
+        embeddings.extend(_get_local_litellm_embeddings(texts[i : i + batch_size], model_name))
     return embeddings
 
 
-def _get_infinity_embeddings(texts: list[str], model_name: str):
-    url = os.getenv("infinity_server_host", "http://infinity-model-server:55181") + "/embeddings"
-    data = {"input": texts, "model": model_name}
-    result = requests.post(url, json=data)
-    try:
-        embeddings = np.asarray([x["embedding"] for x in result.json()["data"]])
-    except KeyError:
-        logging.error("Batch of embeddings lost because at least one could not be processed by Infinity")
-        logging.error(result.json())
-        return [np.zeros(768) for _ in range(len(texts))]
+def get_hosted_embeddings(texts: list[str], model_name: str) -> list[list[float]]:
+    batch_size = 256
+    embeddings = []
+    for i in range(0, len(texts), batch_size):
+        embeddings.extend(_get_hosted_litellm_embeddings(texts[i : i + batch_size], model_name))
     return embeddings
+
+
+def _get_local_litellm_embeddings(texts: list[str], model_name: str):
+    promise = litellm.aembedding(input=texts, **emb_config.get_local_emb_litellm_kwargs(model_name))
+    resp = asyncio.run(promise)
+    return [d["embedding"] for d in resp["data"]]
+
+
+def _get_hosted_litellm_embeddings(texts: list[str], model_name: str):
+    promise = litellm.aembedding(input=texts, **emb_config.get_hosted_emb_litellm_kwargs(model_name))
+    resp = asyncio.run(promise)
+    return [d["embedding"] for d in resp["data"]]
