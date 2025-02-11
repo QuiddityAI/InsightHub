@@ -3,10 +3,11 @@ import logging
 import threading
 from typing import Callable
 
-from django.utils import timezone
 import dspy
+from django.utils import timezone
 
 from columns.logic.process_column import process_cells_blocking
+from config.utils import get_default_dspy_llm
 from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
@@ -28,7 +29,6 @@ from search.schemas import (
     SearchTaskSettings,
     SearchType,
 )
-from config.utils import get_default_dspy_llm
 
 # from search.logic.extract_filters import get_filter_prompt, extract_filters
 
@@ -88,13 +88,16 @@ def create_and_run_search_task(
         if search_task.user_input:
             collection.log_explanation("Use AI model to generate **suitable query**", save=False)
             model = get_default_dspy_llm("search_query")
-        try:
-            with dspy.context(lm=dspy.LM(**model.to_litellm())):
-                keyword_query = search_query_predictor(
-                    user_input=search_task.user_input, target_language=search_task.result_language or "en"
-                ).search_query or keyword_query
-        except Exception as e:
-            logging.error(f"Error generating search query: {e}")
+            try:
+                with dspy.context(lm=dspy.LM(**model.to_litellm())):
+                    keyword_query = (
+                        search_query_predictor(
+                            user_input=search_task.user_input, target_language=search_task.result_language or "en"
+                        ).search_query
+                        or keyword_query
+                    )
+            except Exception as e:
+                logging.error(f"Error generating search query: {e}")
 
             # filter_prompt_template = get_filter_prompt(search_task.dataset_id, search_task.result_language or 'en')
             # if filter_prompt_template:
