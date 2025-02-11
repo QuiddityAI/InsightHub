@@ -54,3 +54,4 @@ docker-compose*.override.yaml
 data/*
 
 scripts_and_examples/generated_data/*
+cpython*
