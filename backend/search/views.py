@@ -3,8 +3,8 @@ import logging
 import threading
 
 from django.db.models import Q
-from django.http import HttpResponse, HttpRequest
 from django.forms.models import model_to_dict
+from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
 from data_map_backend.models import CollectionItem, DataCollection, Dataset, SearchTask
@@ -322,7 +322,7 @@ def test_notification_email_route(request: HttpRequest, payload: TestNotificatio
         # actually run periodic searches on current candidates:
         dataset_id = collection.first_dataset_id
         if not dataset_id:
-            return HttpResponse(status=400)
+            return HttpResponse(status=400, content="No dataset_id found")
         candidates = collection.items.filter(relevance=ItemRelevance.CANDIDATE)
         from legacy_backend.logic.insert_logic import run_periodic_searches
 
@@ -336,7 +336,7 @@ def test_notification_email_route(request: HttpRequest, payload: TestNotificatio
         )
         random_item: CollectionItem | None = possible_items.first()
         if not random_item:
-            return HttpResponse(status=400)
+            return HttpResponse(status=400, content="No approved items to test with")
         assert random_item.dataset_id is not None
         dataset_id = random_item.dataset_id
         more_items = possible_items.filter(dataset_id=dataset_id)[:3]

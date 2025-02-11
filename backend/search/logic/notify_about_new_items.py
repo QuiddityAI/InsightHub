@@ -51,7 +51,7 @@ def notify_about_new_items(
             logging.warning("No metadata found for item %s", item.id)
             continue
         item_url = f"{collection_url}&item_details={item.dataset_id},{item.item_id}"
-        item_text = f"**{metadata.get(title_field, 'New Item')}** ([open]({item_url})):\n\n"
+        item_text = f"### {metadata.get(title_field, 'New Item')} ([open]({item_url})):\n\n"
         for column in columns:
             data: CellData = CellData(**item.column_data.get(column.identifier, {}))
             if not data.value:
@@ -63,7 +63,7 @@ def notify_about_new_items(
                     item_text += f"- **{c.criteria}** {'✓' if c.fulfilled else '❌'}: {c.reason} (<i>'{c.supporting_quote}'</i>)\n"
             else:
                 item_text += f"- **{column.name}**: {data.value if data else '-'}\n"
-        item_text += "\n"
+        item_text += "\n---\n"
         new_item_texts.append(item_text)
 
     if not new_item_texts:

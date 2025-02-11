@@ -188,7 +188,9 @@ approve_using_comparison_prompt["de"] = approve_using_comparison_prompt_de
 
 
 notification_email_en = """\
-## New items in *{{ collection_name }}*:
+## New items ➔ *{{ collection_name }}*:
+
+---
 
 {{ new_items }}
 
@@ -200,7 +202,9 @@ _This email was sent by Quiddity._
 """
 
 notification_email_de = """\
-## Neue Elemente in *{{ collection_name }}*:
+## Neue Elemente ➔ *{{ collection_name }}*:
+
+---
 
 {{ new_items }}
 
