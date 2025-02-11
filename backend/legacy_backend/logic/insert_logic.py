@@ -188,8 +188,9 @@ def run_periodic_searches(dataset_id: int, item_ids: list[str], restrict_to_coll
             set_agent_step=False,
             from_ui=False,
             restrict_to_item_ids=item_ids,
-            after_columns_were_processed=lambda new_items: notify_about_new_items(
-                dataset_id, task.collection, new_items
+            # providing collection as parameter as otherwise it is passed as a reference to the last loop iteration:
+            after_columns_were_processed=lambda new_items, collection=task.collection: notify_about_new_items(
+                dataset_id, collection, new_items
             ),
         )
         # items are auto-approved and search mode is left
@@ -260,7 +261,6 @@ def delete_dataset_content(dataset_id: int):
         vector_db_client.delete_field(dataset.actual_database_name, field, is_array_field)
     search_engine_client = TextSearchEngineClient.get_instance()
     search_engine_client.remove_dataset(dataset)
-
 
 
 def remove_dataset_items_from_databases(dataset_id: int, item_ids: list[str]):
