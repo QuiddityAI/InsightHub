@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import other_views, question_views, smart_search_views
+from .views import other_views, question_views
 
 urlpatterns = [
     path("health", other_views.get_health),
@@ -33,5 +33,4 @@ urlpatterns = [
     path("get_export_converter", other_views.get_export_converter),
     path("track_service_usage", question_views.track_service_usage),
     path("get_service_usage", question_views.get_service_usage),
-    path("convert_smart_query_to_parameters", smart_search_views.convert_smart_query_to_parameters),
 ]
