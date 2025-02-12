@@ -1,7 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
 from .models import (
-    Chat,
     CollectionColumn,
     CollectionItem,
     DataCollection,
@@ -158,9 +157,3 @@ class WritingTaskSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = WritingTask
         exclude = []
-
-
-class ChatSerializer(drf_serializers.ModelSerializer):
-    class Meta:
-        model = Chat
-        exclude = ["created_at", "changed_at"]

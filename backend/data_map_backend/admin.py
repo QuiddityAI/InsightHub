@@ -27,7 +27,6 @@ from legacy_backend.logic.insert_logic import update_database_layout
 
 from .import_export import UserResource
 from .models import (
-    Chat,
     CollectionColumn,
     CollectionItem,
     DataCollection,
@@ -903,22 +902,6 @@ class DataCollectionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         TrainedClassifierInline,
         WritingTaskInline,
     ]
-
-    formfield_overrides = {
-        models.TextField: {"widget": Textarea(attrs={"rows": 2})},
-        models.JSONField: {"widget": json_widget},
-    }
-
-
-@admin.register(Chat)
-class ChatAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
-    djangoql_completion_enabled_by_default = False
-    list_display = ("created_at", "created_by", "name", "collection")
-    list_display_links = ("name",)
-    search_fields = ("id", "name")
-    list_filter = ("created_by",)
-    ordering = ["-created_at"]
-    readonly_fields = ("changed_at", "created_at")
 
     formfield_overrides = {
         models.TextField: {"widget": Textarea(attrs={"rows": 2})},
