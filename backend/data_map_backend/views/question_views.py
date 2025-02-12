@@ -8,7 +8,6 @@ from django.views.decorators.csrf import csrf_exempt
 
 from data_map_backend import prompts
 from data_map_backend.data_backend_client import get_item_question_context
-from data_map_backend.groq_client import GROQ_MODELS, get_groq_response_using_history
 from data_map_backend.models import Chat, DataCollection, Dataset, ServiceUsage, User
 from data_map_backend.notifier import default_notifier
 from data_map_backend.prompts import item_relevancy_prompt, search_question_prompt
@@ -332,7 +331,7 @@ def _judge_item_relevancy_using_llm(
     if result["approved"]:
         if delay:
             time.sleep(delay / 1000)
-        response_text = get_groq_response_using_history(history, GROQ_MODELS.LLAMA_3_70B)  # type: ignore
+        response_text = "Not supported anymore"
         assert response_text
         try:
             relevancy = json.loads(response_text)
