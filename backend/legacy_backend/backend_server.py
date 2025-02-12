@@ -15,16 +15,11 @@ from data_map_backend.utils import DotDict
 from ingest.logic.common import UPLOADED_FILES_FOLDER
 from ingest.logic.upload_files import get_upload_task_status
 from ingest.schemas import CustomUploadedFile, UploadedFileMetadata
-from ingest.logic.common import UPLOADED_FILES_FOLDER
 
 from .database_client.django_client import add_stored_map, get_or_create_default_dataset
 from .database_client.forward_local_db import forward_local_db
 from .database_client.text_search_engine_client import TextSearchEngineClient
 from .database_client.vector_search_engine_client import VectorSearchEngineClient
-from .logic.chat_and_extraction import (
-    get_global_question_context,
-    get_item_question_context,
-)
 from .logic.classifiers import get_retraining_status, start_retrain
 from .logic.export_converters import (
     export_collection,
@@ -286,46 +281,6 @@ def get_search_list_result_endpoint(
     data = json.dumps(result, cls=CustomJSONEncoder)
     headers = {"Content-Type": "application/json"}
     return HttpResponse(data, status=200, headers=headers)
-
-
-@convert_flask_to_django_route("/data_backend/global_question_context", methods=["POST"])
-def get_global_question_context_route(
-    request,
-):
-    data: dict | None = request.json
-    if not data or "search_settings" not in data:
-        return "no data", 400
-    result = get_global_question_context(data["search_settings"])
-    if result is None or result.get("error"):
-        return result.get("error", "error"), 500
-
-    json_data = json.dumps(result)
-    headers = {"Content-Type": "application/json"}
-    return HttpResponse(json_data, status=200, headers=headers)
-
-
-@convert_flask_to_django_route("/data_backend/item_question_context", methods=["POST"])
-def get_item_question_context_route(
-    request,
-):
-    data: dict | None = request.json
-    if not data:
-        return "no data", 400
-    data = DotDict(data)
-    result = get_item_question_context(
-        data.dataset_id,
-        data.item_id,
-        data.source_fields,
-        data.question,
-        data.max_characters_per_field,
-        data.max_total_characters,
-    )
-    if result is None or result.get("error"):
-        return result.get("error", "error"), 500
-
-    json_data = json.dumps(result)
-    headers = {"Content-Type": "application/json"}
-    return HttpResponse(json_data, status=200, headers=headers)
 
 
 @convert_flask_to_django_route("/data_backend/delete_dataset_content", methods=["POST"])

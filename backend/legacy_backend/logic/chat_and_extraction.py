@@ -1,69 +1,14 @@
-import json
 import logging
 
 from data_map_backend.utils import DotDict
 from data_map_backend.views.other_views import get_serialized_dataset_cached
-
-from ..api_clients.cohere_reranking import get_reranking_results
-from ..logic.chat_and_extraction_common import (
-    _sort_fields_logically,
-    get_context_for_each_item_in_search_results,
-)
-from ..logic.search import get_search_results
-from ..logic.search_common import (
+from legacy_backend.logic.chat_and_extraction_common import _sort_fields_logically
+from legacy_backend.logic.search_common import (
     get_document_details_by_id,
     get_field_similarity_threshold,
     get_relevant_parts_of_item_using_query_vector,
     get_suitable_generator,
 )
-
-
-def get_global_question_context(search_settings: dict) -> dict:
-    """Given a natural language question, return the context that
-    is relevant to answer the question using an LLM from any matching items
-    in the specified dataset(s) (aka 'global').
-
-    The question is the search query in the search_settings dict."""
-
-    # Global question should use the top-5 hybrid search results as context.
-    # The descriptive text fields (aka short text fields) should always be included as context.
-    # If there is full text available, the keyword results should have the provided snippet as context
-    # and the chunk vector results the (max 2) best chunks with extended context.
-
-    num_results_in_context = 5
-    item_rerank = True
-    chunk_rerank = True
-    oversample_for_reranking = 3 if item_rerank else 0
-    search_settings["result_list_items_per_page"] = num_results_in_context + oversample_for_reranking
-    search_settings["retrieval_mode"] = "hybrid"
-    search_settings["max_sub_items_per_item"] = 2
-    search_settings["return_highlights"] = True
-    search_settings["use_bolding_in_highlights"] = False
-    search_settings["auto_relax_query"] = True
-
-    try:
-        params_str = json.dumps({"search": search_settings}, indent=2)  # for caching
-        result = get_search_results(params_str, purpose="list")
-    except ValueError as e:
-        logging.error(e)
-        import traceback
-
-        traceback.print_exc()
-        return {"context": None, "error": str(e.args)}  # TODO: there could be other reasons, e.g. dataset not found
-
-    sorted_ids = result["sorted_ids"]
-    items_by_dataset = result["items_by_dataset"]
-
-    question = search_settings.get("all_field_query", "")
-    contexts = get_context_for_each_item_in_search_results(
-        sorted_ids, items_by_dataset, reranked_chunks=2 if chunk_rerank else 0, question=question
-    )
-    if item_rerank:
-        reranking = get_reranking_results(question, tuple(contexts), num_results_in_context)
-        contexts = [contexts[reranking_result.index] for reranking_result in reranking.results]
-    context = "\n".join(contexts)
-
-    return {"context": context}
 
 
 def get_item_question_context(

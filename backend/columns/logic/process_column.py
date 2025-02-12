@@ -16,9 +16,7 @@ from data_map_backend.models import (
     DataCollection,
     FieldType,
 )
-from legacy_backend.logic.chat_and_extraction import (
-    get_item_question_context as get_item_question_context_native,
-)
+from legacy_backend.logic.chat_and_extraction import get_item_question_context
 from legacy_backend.logic.search_common import get_document_details_by_id
 
 
@@ -116,7 +114,7 @@ def _process_cell_batch(
             assert collection_item.dataset_id is not None
             assert collection_item.item_id is not None
             if input_type == "natural_language":
-                input_data = get_item_question_context_native(
+                input_data = get_item_question_context(
                     collection_item.dataset_id, collection_item.item_id, column.source_fields, column.expression or ""
                 )["context"]
                 for additional_source_column in source_columns:

@@ -38,44 +38,6 @@ def get_item_by_id(dataset_id: int, item_id: str, fields: Iterable[str]):
     return result.json()
 
 
-def get_global_question_context(search_settings: dict):
-    url = DATA_BACKEND_HOST + f"/data_backend/global_question_context"
-    data = {
-        "search_settings": search_settings,
-    }
-    headers = {
-        "Authorization": f"{BACKEND_AUTHENTICATION_SECRET}",
-    }
-    result = requests.post(url, json=data, headers=headers)
-    result.raise_for_status()
-    return result.json()["context"]
-
-
-def get_item_question_context(
-    dataset_id: int,
-    item_id: str,
-    source_fields: list[str],
-    question: str,
-    max_characters_per_field: int | None = 5000,
-    max_total_characters: int | None = None,
-):
-    url = DATA_BACKEND_HOST + f"/data_backend/item_question_context"
-    data = {
-        "dataset_id": dataset_id,
-        "item_id": item_id,
-        "source_fields": source_fields,
-        "question": question,
-        "max_characters_per_field": max_characters_per_field,
-        "max_total_characters": max_total_characters,
-    }
-    headers = {
-        "Authorization": f"{BACKEND_AUTHENTICATION_SECRET}",
-    }
-    result = requests.post(url, json=data, headers=headers)
-    result.raise_for_status()
-    return result.json()["context"]
-
-
 def delete_dataset_content(dataset_id: int):
     url = DATA_BACKEND_HOST + f"/data_backend/delete_dataset_content"
     data = {

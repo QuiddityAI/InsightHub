@@ -20,7 +20,6 @@ from simple_history.models import HistoricalRecords
 from .data_backend_client import (
     DATA_BACKEND_HOST,
     delete_dataset_content,
-    get_global_question_context,
     get_item_by_id,
 )
 
@@ -1885,7 +1884,8 @@ class Chat(models.Model, ModelTypedImplicitIdField):
                         break
             else:
                 assert isinstance(obj.search_settings, dict)
-                context = get_global_question_context(obj.search_settings)
+                # context = get_global_question_context(obj.search_settings)
+                context = "Not supported anymore"
                 system_prompt += "\n\n" + context + "\n"
             logging.warning(system_prompt)
 

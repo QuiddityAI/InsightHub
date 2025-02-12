@@ -29,7 +29,6 @@ def data_backend_proxy_view(request, sub_path: str):
         "/data_backend/remote_db_access": _check_remote_db_access,
         "/data_backend/local_image": lambda x: True,  # TODO, but not very harmful, need to know file name
         "/data_backend/item_question_context": _check_if_from_backend,
-        "/data_backend/global_question_context": _check_if_from_backend,
         "/data_backend/delete_dataset_content": _check_if_from_backend,
         "/data_backend/remove_items": _check_if_from_backend,
         "/data_backend/dataset": _check_if_from_backend,
