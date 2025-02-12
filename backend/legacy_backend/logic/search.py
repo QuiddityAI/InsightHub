@@ -550,31 +550,6 @@ def get_search_results_included_in_collection(
     return sort_items_and_complete_them(dataset, total_items, required_fields, limit, timings)
 
 
-def get_search_results_for_stored_map(map_data):
-    timings = Timings()
-    params = DotDict(map_data["parameters"])
-    search_settings = params.search
-    purpose = "list"
-    limit = (
-        search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
-    )
-    page = search_settings.result_list_current_page if purpose == "list" else 0
-
-    # TODO: implement paging
-    sorted_ids = map_data["results"]["per_point_data"]["item_ids"][:limit]
-    all_items_by_dataset = map_data["results"]["slimmed_items_per_dataset"]
-    items_by_dataset = defaultdict(dict)
-    for dataset_id, item_id in sorted_ids:
-        items_by_dataset[dataset_id][item_id] = all_items_by_dataset[dataset_id][item_id]
-
-    result = {
-        "sorted_ids": sorted_ids,
-        "items_by_dataset": items_by_dataset,
-        "timings": timings.get_timestamps(),
-    }
-    return result
-
-
 def get_search_results_for_global_map(
     dataset, search_settings: DotDict, vectorize_settings: DotDict, purpose: str, timings: Timings
 ) -> tuple[list, dict, dict, int]:

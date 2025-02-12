@@ -45,7 +45,6 @@ from .models import (
     SearchHistoryItem,
     ServiceUsage,
     ServiceUsagePeriod,
-    StoredMap,
     TrainedClassifier,
     User,
     WritingTask,
@@ -654,16 +653,6 @@ class SearchHistoryItemAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     formfield_overrides = {
         models.JSONField: {"widget": json_widget},
     }
-
-
-@admin.register(StoredMap)
-class StoredMapAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
-    djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ("id", "name")
-    list_display_links = ("id", "name")
-    search_fields = ("name",)
-    ordering = ["name"]
-    readonly_fields = ("changed_at", "created_at")
 
 
 @admin.register(DatasetSpecificSettingsOfCollection)

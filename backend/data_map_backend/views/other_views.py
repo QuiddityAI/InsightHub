@@ -30,7 +30,6 @@ from ..models import (
     SearchHistoryItem,
     SearchTask,
     ServiceUsage,
-    StoredMap,
     TrainedClassifier,
     User,
     generate_unique_database_name,
@@ -46,7 +45,6 @@ from ..serializers import (
     ImportConverterSerializer,
     OrganizationSerializer,
     SearchHistoryItemSerializer,
-    StoredMapSerializer,
     TrainedClassifierSerializer,
 )
 from ..utils import is_from_backend
@@ -1212,105 +1210,6 @@ def remove_collection_item_by_value(request):
     serialized_data = json.dumps(removed_items)
 
     return HttpResponse(serialized_data, status=200, content_type="application/json")
-
-
-@csrf_exempt
-def add_stored_map(request):
-    if request.method != "POST":
-        return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
-
-    try:
-        data = json.loads(request.body)
-        user_id: int = data["user_id"]
-        organization_id: int = data["organization_id"]
-        name: str = data["name"]
-        display_name: str = data["display_name"]
-        map_id: str = data["map_id"]
-        map_data: str = data["map_data"]
-    except (KeyError, ValueError):
-        return HttpResponse(status=400)
-
-    item = StoredMap(id=map_id)
-    item.user_id = user_id  # call comes from backend, thats why request.user is not valid  # type: ignore
-    item.organization_id = organization_id  # type: ignore
-    item.name = name
-    item.display_name = display_name
-    item.map_data = map_data.encode()  # FIXME: base64 str needs to be decoded
-    item.save()
-
-    serialized_data = StoredMapSerializer(instance=item).data
-    result = json.dumps(serialized_data)
-
-    return HttpResponse(result, status=200, content_type="application/json")
-
-
-@csrf_exempt
-def get_stored_maps(request):
-    if request.method != "POST":
-        return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
-
-    try:
-        data = json.loads(request.body)
-        organization_id: int = data["organization_id"]
-    except (KeyError, ValueError):
-        return HttpResponse(status=400)
-
-    # TODO: also show public ones
-    items = StoredMap.objects.filter(user_id=request.user.id, organization_id=organization_id).order_by("created_at")[
-        :25
-    ]
-    serialized_data = StoredMapSerializer(items, many=True).data
-    result = json.dumps(serialized_data)
-
-    return HttpResponse(result, status=200, content_type="application/json")
-
-
-@csrf_exempt
-def get_stored_map_data(request):
-    if request.method != "POST":
-        return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
-
-    try:
-        data = json.loads(request.body)
-        map_id: str = data["map_id"]
-    except (KeyError, ValueError):
-        return HttpResponse(status=400)
-    try:
-        map_item = StoredMap.objects.get(id=map_id)
-    except StoredMap.DoesNotExist:
-        return HttpResponse(status=404)
-    result = map_item.map_data
-
-    return HttpResponse(result, status=200, content_type="application/octet-stream")
-
-
-@csrf_exempt
-def delete_stored_map(request):
-    if request.method != "POST":
-        return HttpResponse(status=405)
-    if not request.user.is_authenticated and not is_from_backend(request):
-        return HttpResponse(status=401)
-
-    try:
-        data = json.loads(request.body)
-        stored_map_id: int = data["stored_map_id"]
-    except (KeyError, ValueError):
-        return HttpResponse(status=400)
-
-    try:
-        map = StoredMap.objects.get(id=stored_map_id)
-    except StoredMap.DoesNotExist:
-        return HttpResponse(status=404)
-    if map.user != request.user:
-        return HttpResponse(status=401)
-
-    return HttpResponse(None, status=204)
 
 
 @csrf_exempt

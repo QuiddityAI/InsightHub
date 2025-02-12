@@ -85,11 +85,7 @@ export default {
         queryParams.get("organization_id") === String(this.appStateStore.organization_id)
       ) {
         // If this method was called because the user pressed the back arrow in the browser and
-        // the dataset is the same, the stored_map might be different.
-        // In this case, the datasets are still loaded and we can directly load the map:
-        if (queryParams.get("map_id")) {
-          this.appStateStore.show_stored_map(queryParams.get("map_id"))
-        }
+        // the dataset is the same, the dataset_ids might be different
         if (queryParams.get("dataset_ids")) {
           const dataset_ids = queryParams.get("dataset_ids").split(",").map((x) => parseInt(x))
           this.appStateStore.settings.search.dataset_ids = dataset_ids
@@ -179,12 +175,6 @@ export default {
         // retrieving stored maps history and collections is done in callback when organization_id is set
       })
     })
-    // this.eventBus.on("datasets_are_loaded", () => {
-    //   const queryParams = new URLSearchParams(window.location.search)
-    //   if (queryParams.get("map_id")) {
-    //     that.appStateStore.show_stored_map(queryParams.get("map_id"))
-    //   }
-    // })
 
     // this.updateMapPassiveMargin()
     // window.addEventListener("resize", this.updateMapPassiveMargin)
@@ -213,7 +203,7 @@ export default {
   watch: {
     "appStateStore.organization_id"() {
       this.appStateStore.reset_search_results_and_map()
-      this.appStateStore.retrieve_stored_maps_history_and_collections()
+      this.appStateStore.retrieve_history_and_collections()
       // set title of page to organization.tool_title:
       document.title = this.appStateStore.organization.tool_title || "Quiddity InsightHub"
     },

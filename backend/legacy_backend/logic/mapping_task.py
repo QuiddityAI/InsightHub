@@ -13,7 +13,6 @@ from data_map_backend.utils import DotDict
 from ..database_client.django_client import (
     answer_question_using_items,
     get_dataset,
-    get_stored_map_data,
     get_trained_classifier,
 )
 from ..logic.add_vectors import add_missing_map_vectors
@@ -87,11 +86,6 @@ default_map_data = {
 
 def get_or_create_map(params, ignore_cache: bool) -> str:
     map_id: str = get_map_parameters_hash(params)
-
-    if map_id not in local_maps and not ignore_cache:
-        map_data = get_stored_map_data(map_id)
-        if map_data:
-            local_maps[map_id] = map_data
 
     if map_id not in local_maps or ignore_cache:
         map_data = deepcopy(default_map_data)
@@ -753,11 +747,6 @@ def clusterize_and_render_phase(
 def get_map_selection_statistics(map_id: str, selected_ids: list[tuple[int, str]]) -> dict | None:
     if not selected_ids:
         return None
-    if map_id not in local_maps:
-        # map is not in cache anymore, try to get it from storage again:
-        map_data = get_stored_map_data(map_id)
-        if map_data:
-            local_maps[map_id] = map_data
     map_data = local_maps.get(map_id)
     if not map_data:
         return None
@@ -791,14 +780,6 @@ def get_map_selection_statistics(map_id: str, selected_ids: list[tuple[int, str]
 
 
 def get_map_results(map_id) -> dict | None:
-    if map_id not in local_maps:
-        map_data = get_stored_map_data(map_id)
-        if map_data:
-            local_maps[map_id] = map_data
-        else:
-            logging.warning("map_id not found")
-            return None
-
     result = local_maps[map_id]
     result["last_accessed"] = time.time()
     # TODO: go through local_maps every hour and delete that ones that weren't been accessed in the last hour

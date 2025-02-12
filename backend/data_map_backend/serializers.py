@@ -16,7 +16,6 @@ from .models import (
     Organization,
     SearchHistoryItem,
     SearchTask,
-    StoredMap,
     TrainedClassifier,
     WritingTask,
 )
@@ -159,15 +158,6 @@ class WritingTaskSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = WritingTask
         exclude = []
-
-
-class StoredMapSerializer(drf_serializers.ModelSerializer):
-    user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
-    organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
-
-    class Meta:
-        model = StoredMap
-        exclude = ["map_data"]
 
 
 class ChatSerializer(drf_serializers.ModelSerializer):

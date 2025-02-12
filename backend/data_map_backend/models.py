@@ -1,4 +1,3 @@
-import datetime
 import json
 import logging
 import os
@@ -16,13 +15,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
-
-from legacy_backend.logic.insert_logic import delete_dataset_content
-from legacy_backend.logic.search import (
-    get_item_count,
-    get_items_having_value_count,
-    get_random_items,
-)
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 
@@ -726,6 +718,8 @@ class DatasetField(models.Model, ModelTypedImplicitIdField):
         if not self.is_available_for_search and not self.is_available_for_filtering:
             # OpenSearch can't easily count values that are not indexed
             return "?"
+        from legacy_backend.logic.search import get_items_having_value_count
+
         try:
             count = get_items_having_value_count(dataset.id, self.identifier)
             if self.field_type == FieldType.VECTOR and self.is_array:
@@ -854,6 +848,8 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
 
     @property
     def item_count(self):
+        from legacy_backend.logic.search import get_item_count
+
         try:
             return get_item_count(self.id)
         except Exception as e:
@@ -863,6 +859,8 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
 
     @property
     def random_item(self):
+        from legacy_backend.logic.search import get_random_items
+
         try:
             items = get_random_items(self.id, 1)
             item = items[0] if len(items) else {}
@@ -897,6 +895,8 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
         return {**self.schema.advanced_options, **self.advanced_options}  # type: ignore
 
     def delete_content(self):
+        from legacy_backend.logic.insert_logic import delete_dataset_content
+
         delete_dataset_content(self.id)
         collection_items = CollectionItem.objects.filter(dataset_id=self.id)
         collection_items.delete()
@@ -1046,50 +1046,6 @@ class SearchHistoryItem(models.Model, ModelTypedImplicitIdField):
     class Meta:
         verbose_name = "Search History Item"
         verbose_name_plural = "Search History Items"
-
-
-class StoredMap(models.Model):
-    id = models.CharField(
-        verbose_name="ID",
-        primary_key=True,
-        editable=False,
-        max_length=50,
-        blank=False,
-        null=False,
-    )
-    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
-    display_name = models.CharField(
-        verbose_name="Display Name",
-        help_text="Name to be displayed in the frontend, including HTML markup",
-        max_length=300,
-        blank=True,
-        null=True,
-    )
-    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
-    changed_at = models.DateTimeField(
-        verbose_name="Changed at",
-        auto_now=True,
-        editable=False,
-        blank=False,
-        null=False,
-    )
-    user = models.ForeignKey(verbose_name="User", to=User, on_delete=models.CASCADE, blank=False, null=False)
-    organization = models.ForeignKey(
-        verbose_name="Organization",
-        to=Organization,
-        related_name="+",
-        on_delete=models.CASCADE,
-        blank=False,
-        null=False,
-    )
-    map_data = models.BinaryField(verbose_name="Data", blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.name}"
-
-    class Meta:
-        verbose_name = "Stored Map"
-        verbose_name_plural = "Stored Maps"
 
 
 def class_field_default():

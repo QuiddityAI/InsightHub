@@ -89,7 +89,6 @@ export const useAppStateStore = defineStore("appState", {
       chats: [],
 
       search_history: [],
-      stored_maps: [],
 
       // writing tasks:
       selected_writing_task_id: null,
@@ -296,7 +295,7 @@ export const useAppStateStore = defineStore("appState", {
       }
       httpClient.post("/org/data_map/set_user_preferences", body)
     },
-    retrieve_stored_maps_history_and_collections() {
+    retrieve_history_and_collections() {
       const that = this
       if (this.organization_id == null) {
         console.log("organization_id is null, cannot retrieve stored maps, history and collections")
@@ -325,16 +324,6 @@ export const useAppStateStore = defineStore("appState", {
         .post("/org/data_map/get_collections", get_collections_body)
         .then(function (response) {
           that.collections = response.data || []
-        })
-
-      this.stored_maps = []
-      const get_stored_maps_body = {
-        organization_id: this.organization_id,
-      }
-      httpClient
-        .post("/org/data_map/get_stored_maps", get_stored_maps_body)
-        .then(function (response) {
-          that.stored_maps = response.data
         })
 
       this.chats = []
@@ -1410,71 +1399,6 @@ export const useAppStateStore = defineStore("appState", {
     },
     get_hover_rendering_by_index(item_index) {
       return this.get_dataset_by_index(item_index)?.schema.hover_label_rendering
-    },
-    store_current_map() {
-      const that = this
-      const [name, display_name] = this.get_current_map_name()
-      if (!name) return
-      const store_map_body = {
-        user_id: this.user.id,
-        organization_id: this.organization_id,
-        name: name,
-        display_name: display_name,
-        map_id: this.map_id,
-      }
-      httpClient.post("/data_backend/map/store", store_map_body).then(function (response) {
-        that.stored_maps.push(response.data)
-      })
-    },
-    delete_stored_map(stored_map_id) {
-      const that = this
-      const delete_stored_map_body = {
-        stored_map_id: stored_map_id,
-      }
-      httpClient
-        .post("/org/data_map/delete_stored_map", delete_stored_map_body)
-        .then(function (response) {
-          const index_to_be_removed = that.stored_maps.findIndex((item) => item.id === stored_map_id)
-          if (index_to_be_removed !== null) {
-            that.stored_maps.splice(index_to_be_removed, 1)
-          }
-        })
-    },
-    show_stored_map(stored_map_id) {
-      // console.log("showing stored map", stored_map_id)
-      const that = this
-
-      this.reset_search_results_and_map()
-      this.eventBus.emit("show_results_tab")
-
-      that.map_id = stored_map_id
-      const body = {
-        map_id: this.map_id,
-      }
-
-      httpClient
-        .post("/data_backend/stored_map/parameters_and_search_results", body)
-        .then(function (response) {
-          const parameters = response.data.parameters
-          that.settings = parameters
-          that.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")
-
-          // now done when map results are received
-          //that.show_received_search_results(response.data)
-
-          that.map_viewport_is_adjusted = false
-          that.map_is_in_progess = true
-          that.extended_search_results_are_loading = true
-          that.request_mapping_progress()
-        })
-        .catch(function (error) {
-          if (error.response && error.response.status === 404) {
-            // map doesn't exist anymore, go back to clear page and reset URL parameters:
-            that.show_error_dialog = true
-            that.error_dialog_message = `The requested map doesn't exist anymore.`
-            that.reset_search_box()
-          }
-        })
     },
     add_selected_points_to_collection(collection_id, class_name, is_positive) {
       // TODO: implement more efficient way
