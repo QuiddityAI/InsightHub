@@ -5,8 +5,8 @@ default_embedding_provider = "sentence_transformer"
 
 # TODO: intfloat/e5-large-v2 is not available in ollama, need to add it manually
 local_embedding_models = {
-    "intfloat/e5-base-v2": "ollama/jeffh/intfloat-e5-base-v2:f16",
-    "intfloat/multilingual-e5-base": "ollama/yxchia/multilingual-e5-base",
+    "intfloat/e5-base-v2": "openai/jeffh/intfloat-e5-base-v2:f16",
+    "intfloat/multilingual-e5-base": "openai/yxchia/multilingual-e5-base",
 }
 
 
@@ -15,7 +15,7 @@ def get_local_emb_litellm_kwargs(model: str) -> dict:
     if model_str is None:
         raise ValueError(f"Model {model} not present in ollama")
     api_base = os.getenv("LOCAL_OLLAMA_URL", "http://ollama:11434")
-    return dict(model=model_str, api_base=api_base)
+    return dict(model=model_str, api_base=api_base + "/v1/")
 
 
 def get_hosted_emb_litellm_kwargs(model: str) -> dict:

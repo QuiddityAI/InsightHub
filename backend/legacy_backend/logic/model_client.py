@@ -1,11 +1,13 @@
-import asyncio
+from collections import defaultdict
 import logging
 import os
 import pickle
-from collections import defaultdict
 import litellm
 import base64
 import config.embeddings as emb_config
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 embedding_strategy = "sep_token"
@@ -84,12 +86,10 @@ def get_hosted_embeddings(texts: list[str], model_name: str) -> list[list[float]
 
 
 def _get_local_litellm_embeddings(texts: list[str], model_name: str):
-    promise = litellm.aembedding(input=texts, **emb_config.get_local_emb_litellm_kwargs(model_name))
-    resp = asyncio.run(promise)
+    resp = litellm.embedding(input=texts, **emb_config.get_local_emb_litellm_kwargs(model_name))
     return [d["embedding"] for d in resp["data"]]
 
 
 def _get_hosted_litellm_embeddings(texts: list[str], model_name: str):
-    promise = litellm.aembedding(input=texts, **emb_config.get_hosted_emb_litellm_kwargs(model_name))
-    resp = asyncio.run(promise)
+    resp = litellm.embedding(input=texts, **emb_config.get_hosted_emb_litellm_kwargs(model_name))
     return [d["embedding"] for d in resp["data"]]
