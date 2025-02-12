@@ -1,10 +1,9 @@
 FROM --platform=$BUILDPLATFORM nvidia/cuda:12.0.0-runtime-ubuntu22.04 AS cuda_python_env
-RUN apt update
-RUN apt install -y software-properties-common
+RUN apt update && apt install -y software-properties-common
 RUN add-apt-repository -y ppa:deadsnakes/ppa && apt update
 # to prevent tzdata installation from asking questions:
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt install -y python3.11 python3.11-dev python3-pip curl git
+RUN apt update && apt install -y python3.11 python3.11-dev python3-pip curl git
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/bin" sh
 ENV VIRTUAL_ENV=/opt/venv
 RUN uv venv --python-preference=only-system $VIRTUAL_ENV --python 3.11
