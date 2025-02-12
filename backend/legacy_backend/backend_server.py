@@ -11,18 +11,25 @@ from django.views.decorators.csrf import csrf_exempt
 from data_map_backend.utils import DotDict
 from ingest.logic.common import UPLOADED_FILES_FOLDER
 from ingest.logic.upload_files import get_upload_task_status, upload_files_or_forms
-
-from .database_client.django_client import get_or_create_default_dataset
-from .database_client.forward_local_db import forward_local_db
-from .database_client.text_search_engine_client import TextSearchEngineClient
-from .database_client.vector_search_engine_client import VectorSearchEngineClient
-from .logic.export_converters import (
+from legacy_backend.database_client.django_client import get_or_create_default_dataset
+from legacy_backend.database_client.forward_local_db import forward_local_db
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
+)
+from legacy_backend.database_client.vector_search_engine_client import (
+    VectorSearchEngineClient,
+)
+from legacy_backend.logic.export_converters import (
     export_collection,
     export_collection_table,
     export_item,
 )
-from .logic.insert_logic import insert_many, insert_vectors, update_database_layout
-from .logic.search_common import get_document_details_by_id
+from legacy_backend.logic.insert_logic import (
+    insert_many,
+    insert_vectors,
+    update_database_layout,
+)
+from legacy_backend.logic.search_common import get_document_details_by_id
 
 # --- New Routes: ---
 

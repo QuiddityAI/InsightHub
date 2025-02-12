@@ -9,18 +9,22 @@ from threading import Thread
 import numpy as np
 
 from data_map_backend.utils import DotDict
-
-from ..database_client.django_client import (
+from legacy_backend.database_client.django_client import (
     answer_question_using_items,
     get_dataset,
     get_trained_classifier,
 )
-from ..logic.add_vectors import add_missing_map_vectors
-from ..logic.classifiers import get_embedding_space_from_ds_and_field
-from ..logic.clusters_and_titles import clusterize_results, get_cluster_titles
-from ..logic.extract_pipeline import get_pipeline_steps
-from ..logic.generate_missing_values import generate_missing_values_for_given_elements
-from ..logic.local_map_cache import (
+from legacy_backend.logic.add_vectors import add_missing_map_vectors
+from legacy_backend.logic.classifiers import get_embedding_space_from_ds_and_field
+from legacy_backend.logic.clusters_and_titles import (
+    clusterize_results,
+    get_cluster_titles,
+)
+from legacy_backend.logic.extract_pipeline import get_pipeline_steps
+from legacy_backend.logic.generate_missing_values import (
+    generate_missing_values_for_given_elements,
+)
+from legacy_backend.logic.local_map_cache import (
     cache_full_item_data,
     get_cached_full_item_data,
     get_map_parameters_hash,
@@ -31,17 +35,23 @@ from ..logic.local_map_cache import (
     projection_stage_hash_to_map_id,
     vectorize_stage_hash_to_map_id,
 )
-from ..logic.search import get_full_results_from_meta_info, get_search_results
-from ..logic.search_common import fill_in_details_from_text_storage
-from ..logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR, generate_thumbnail_atlas
-from ..utils.collect_timings import Timings
-from ..utils.helpers import (
+from legacy_backend.logic.search import (
+    get_full_results_from_meta_info,
+    get_search_results,
+)
+from legacy_backend.logic.search_common import fill_in_details_from_text_storage
+from legacy_backend.logic.thumbnail_atlas import (
+    THUMBNAIL_ATLAS_DIR,
+    generate_thumbnail_atlas,
+)
+from legacy_backend.utils.collect_timings import Timings
+from legacy_backend.utils.helpers import (
     get_field_from_all_items,
     get_vector_field_dimensions,
     normalize_array,
     polar_to_cartesian,
 )
-from ..utils.source_plugin_types import SourcePlugin
+from legacy_backend.utils.source_plugin_types import SourcePlugin
 
 # import umap  # imported lazily when used
 

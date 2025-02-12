@@ -5,8 +5,7 @@ import requests
 
 from data_map_backend.models import Dataset
 from data_map_backend.utils import DotDict
-
-from ..utils.custom_json_encoder import CustomJSONEncoder
+from legacy_backend.utils.custom_json_encoder import CustomJSONEncoder
 
 
 def use_remote_db(dataset: DotDict | Dataset, db_type: str, function_name: str, arguments: dict) -> Any:

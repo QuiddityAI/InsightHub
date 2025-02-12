@@ -21,12 +21,8 @@ from djangoql.admin import DjangoQLSearchMixin
 from import_export.admin import ImportExportMixin
 from simple_history.admin import SimpleHistoryAdmin
 
-from data_map_backend.views.data_backend_proxy_views import DATA_BACKEND_HOST
-from legacy_backend.logic.generate_missing_values import generate_missing_values
-from legacy_backend.logic.insert_logic import update_database_layout
-
-from .import_export import UserResource
-from .models import (
+from data_map_backend.import_export import UserResource
+from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
     DataCollection,
@@ -48,7 +44,10 @@ from .models import (
     User,
     WritingTask,
 )
-from .utils import get_vector_field_dimensions
+from data_map_backend.utils import get_vector_field_dimensions
+from data_map_backend.views.data_backend_proxy_views import DATA_BACKEND_HOST
+from legacy_backend.logic.generate_missing_values import generate_missing_values
+from legacy_backend.logic.insert_logic import update_database_layout
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 

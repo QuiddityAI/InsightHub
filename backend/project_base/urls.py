@@ -28,11 +28,10 @@ from data_map_backend.views.collection_management import (
 from filter.views import api as filter_api
 from ingest.views import api as ingest_api
 from map.views import api as map_api
+from project_base.views import change_password_from_app, login_from_app, signup_from_app
 from search.views import api as search_api
 from workflows.views import api as workflows_api
 from write.views import api as write_api
-
-from .views import change_password_from_app, login_from_app, signup_from_app
 
 
 def redirect_to_admin(request):

@@ -1,6 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import (
+from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
     DataCollection,

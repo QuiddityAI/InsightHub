@@ -18,11 +18,10 @@ from qdrant_client.models import (
 )
 
 from data_map_backend.utils import DotDict, pk_to_uuid_id
-
-from ..database_client.remote_instance_client import use_remote_db
-from ..utils.field_types import FieldType
-from ..utils.helpers import get_vector_field_dimensions
-from ..utils.source_plugin_types import SourcePlugin
+from legacy_backend.database_client.remote_instance_client import use_remote_db
+from legacy_backend.utils.field_types import FieldType
+from legacy_backend.utils.helpers import get_vector_field_dimensions
+from legacy_backend.utils.source_plugin_types import SourcePlugin
 
 qdrant_host = os.getenv("vector_database_host", "localhost")
 qdrant_port = 6333

@@ -22,8 +22,7 @@ from map.logic.map_generation_steps import (
     get_vector_field_dimensions,
     save_projections,
 )
-
-from ..schemas import MapParameters, ProjectionData
+from map.schemas import MapParameters, ProjectionData
 
 
 def generate_new_map(collection: DataCollection, parameters: MapParameters) -> ProjectionData | str:

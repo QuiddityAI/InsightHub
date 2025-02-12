@@ -9,7 +9,7 @@ import PIL
 import requests
 from PIL import Image, ImageFile
 
-from ..utils.helpers import do_in_parallel
+from legacy_backend.utils.helpers import do_in_parallel
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

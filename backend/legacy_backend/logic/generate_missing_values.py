@@ -6,17 +6,20 @@ from typing import Callable
 from data_map_backend.models import GenerationTask
 from data_map_backend.utils import DotDict
 from data_map_backend.views.other_views import get_serialized_dataset_cached
-
-from ..database_client.django_client import get_dataset
-from ..database_client.text_search_engine_client import TextSearchEngineClient
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..logic.extract_pipeline import get_pipeline_steps
-from ..logic.insert_logic import get_index_settings, update_database_layout
-from ..logic.search_common import (
+from legacy_backend.database_client.django_client import get_dataset
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
+)
+from legacy_backend.database_client.vector_search_engine_client import (
+    VectorSearchEngineClient,
+)
+from legacy_backend.logic.extract_pipeline import get_pipeline_steps
+from legacy_backend.logic.insert_logic import get_index_settings, update_database_layout
+from legacy_backend.logic.search_common import (
     fill_in_vector_data_list,
     separate_text_and_vector_fields,
 )
-from ..utils.field_types import FieldType
+from legacy_backend.utils.field_types import FieldType
 
 
 def delete_field_content(dataset_id: int, field_identifier: str):

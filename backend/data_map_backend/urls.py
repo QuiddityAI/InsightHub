@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import other_views, question_views
+from data_map_backend.views import other_views, question_views
 
 urlpatterns = [
     path("health", other_views.get_health),

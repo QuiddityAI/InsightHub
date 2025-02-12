@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 from diskcache import Cache
 
-from ..logic.insert_logic import insert_many
+from legacy_backend.logic.insert_logic import insert_many
 
 KLEINANZEIGEN_URL = ""
 

@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from ..utils.helpers import normalize_array
+from legacy_backend.utils.helpers import normalize_array
 
 
 class AutocutStrategy(object):

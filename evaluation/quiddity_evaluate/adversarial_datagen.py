@@ -4,10 +4,9 @@ from typing import Any, List
 import boto3
 import dspy
 import petname
-
-from . import config
-from .data_models import ExampleDocument
-from .model_registry import ModelRegistry
+from quiddity_evaluate import config
+from quiddity_evaluate.data_models import ExampleDocument
+from quiddity_evaluate.model_registry import ModelRegistry
 
 registry = ModelRegistry()
 

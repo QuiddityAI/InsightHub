@@ -6,14 +6,13 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 from data_map_backend.utils import DotDict
-
-from ..utils.collect_timings import Timings
-from ..utils.helpers import (
+from legacy_backend.utils.collect_timings import Timings
+from legacy_backend.utils.helpers import (
     get_field_from_all_items,
     join_text_source_fields,
     normalize_array,
 )
-from ..utils.regex_tokenizer import tokenize
+from legacy_backend.utils.regex_tokenizer import tokenize
 
 
 def clusterize_results(projections, clusterizer_parameters: DotDict):

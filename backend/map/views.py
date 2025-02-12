@@ -6,9 +6,8 @@ from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection
 from data_map_backend.schemas import CollectionIdentifier
-
-from .logic.map_generation_pipeline import generate_new_map
-from .schemas import (
+from map.logic.map_generation_pipeline import generate_new_map
+from map.schemas import (
     MapData,
     MapMetadata,
     NewMapPayload,

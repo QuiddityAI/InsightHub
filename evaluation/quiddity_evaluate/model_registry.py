@@ -6,8 +6,7 @@ import tempfile
 import boto3
 import dspy
 import petname
-
-from . import config
+from quiddity_evaluate import config
 
 
 class ModelRegistry:

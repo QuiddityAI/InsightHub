@@ -5,13 +5,14 @@ import time
 import numpy as np
 
 from data_map_backend.utils import DotDict
-
-from ..logic.extract_pipeline import get_pipeline_steps
-from ..logic.generate_missing_values import generate_missing_values_for_given_elements
-from ..logic.generator_functions import get_generator_function_from_field
-from ..logic.model_client import embedding_cache, save_embedding_cache
-from ..logic.search_common import get_required_fields
-from ..utils.field_types import FieldType
+from legacy_backend.logic.extract_pipeline import get_pipeline_steps
+from legacy_backend.logic.generate_missing_values import (
+    generate_missing_values_for_given_elements,
+)
+from legacy_backend.logic.generator_functions import get_generator_function_from_field
+from legacy_backend.logic.model_client import embedding_cache, save_embedding_cache
+from legacy_backend.logic.search_common import get_required_fields
+from legacy_backend.utils.field_types import FieldType
 
 
 def add_missing_map_vectors(items: dict[str, dict], query, params: DotDict, map_data, dataset, timings):

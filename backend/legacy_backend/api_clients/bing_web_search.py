@@ -6,7 +6,7 @@ from functools import lru_cache
 import requests
 from diskcache import Cache
 
-from ..logic.insert_logic import insert_many
+from legacy_backend.logic.insert_logic import insert_many
 
 bing_subscription_key = os.environ.get("BING_SEARCH_V7_SUBSCRIPTION_KEY", "")
 bing_web_search_endpoint = os.environ.get("BING_SEARCH_V7_ENDPOINT", "") + "/v7.0/search"

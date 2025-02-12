@@ -6,7 +6,7 @@ from uuid import uuid5
 
 import numpy as np
 
-from .models import DatasetField
+from data_map_backend.models import DatasetField
 
 
 def get_vector_field_dimensions(field: DatasetField):

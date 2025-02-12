@@ -8,22 +8,29 @@ import numpy as np
 
 from data_map_backend.utils import DotDict
 from data_map_backend.views.other_views import get_serialized_dataset_cached
-
-from ..api_clients.bing_web_search import bing_web_search_formatted
-from ..api_clients.kleinanzeigen_client import get_kleinanzeigen_results
-from ..api_clients.semantic_scholar_client import semantic_scholar_search_formatted
-from ..database_client.django_client import (
+from legacy_backend.api_clients.bing_web_search import bing_web_search_formatted
+from legacy_backend.api_clients.kleinanzeigen_client import get_kleinanzeigen_results
+from legacy_backend.api_clients.semantic_scholar_client import (
+    semantic_scholar_search_formatted,
+)
+from legacy_backend.database_client.django_client import (
     get_collection,
     get_dataset,
     get_trained_classifier,
 )
-from ..database_client.text_search_engine_client import TextSearchEngineClient
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..logic.extract_pipeline import get_pipeline_steps
-from ..logic.generate_missing_values import generate_missing_values_for_given_elements
-from ..logic.local_map_cache import local_maps
-from ..logic.reranking import rerank
-from ..logic.search_common import (
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
+)
+from legacy_backend.database_client.vector_search_engine_client import (
+    VectorSearchEngineClient,
+)
+from legacy_backend.logic.extract_pipeline import get_pipeline_steps
+from legacy_backend.logic.generate_missing_values import (
+    generate_missing_values_for_given_elements,
+)
+from legacy_backend.logic.local_map_cache import local_maps
+from legacy_backend.logic.reranking import rerank
+from legacy_backend.logic.search_common import (
     QueryInput,
     adapt_filters_to_dataset,
     check_filters,
@@ -37,9 +44,9 @@ from ..logic.search_common import (
     separate_text_and_vector_fields,
     sort_items_and_complete_them,
 )
-from ..utils.collect_timings import Timings
-from ..utils.field_types import FieldType
-from ..utils.source_plugin_types import SourcePlugin
+from legacy_backend.utils.collect_timings import Timings
+from legacy_backend.utils.field_types import FieldType
+from legacy_backend.utils.source_plugin_types import SourcePlugin
 
 
 # @lru_cache()

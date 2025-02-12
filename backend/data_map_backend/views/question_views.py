@@ -5,8 +5,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from data_map_backend.models import ServiceUsage
-
-from .other_views import is_from_backend
+from data_map_backend.views.other_views import is_from_backend
 
 
 @csrf_exempt

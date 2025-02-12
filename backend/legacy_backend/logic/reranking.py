@@ -4,8 +4,8 @@ import logging
 import cohere
 from diskcache import Cache
 
-from ..api_clients.cohere_reranking import get_reranking_results
-from ..logic.chat_and_extraction_common import (
+from legacy_backend.api_clients.cohere_reranking import get_reranking_results
+from legacy_backend.logic.chat_and_extraction_common import (
     get_context_for_each_item_in_search_results,
 )
 

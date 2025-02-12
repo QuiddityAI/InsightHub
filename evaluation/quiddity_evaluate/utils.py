@@ -2,8 +2,7 @@ import json
 
 import boto3
 import dspy
-
-from .config import AWS_REGION, BUCKET
+from quiddity_evaluate.config import AWS_REGION, BUCKET
 
 
 def upload_input_data_to_s3(input_data: list[dspy.Example], s3_path: str):

@@ -7,7 +7,7 @@ from typing import Any, Iterable
 import requests
 from diskcache import Cache
 
-from ..logic.insert_logic import insert_many
+from legacy_backend.logic.insert_logic import insert_many
 
 SEMANTIC_SCHOLAR_API_KEY = os.environ.get("SEMANTIC_SCHOLAR_API_KEY", "")
 S2_API_URL = "https://api.semanticscholar.org/graph/v1"

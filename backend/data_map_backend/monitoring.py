@@ -51,7 +51,7 @@ class UserCountCollector(Collector):
         yield GaugeMetricFamily("user_count", "Number of users in the system")
 
     def collect(self):
-        from .models import User
+        from data_map_backend.models import User
 
         user_count = GaugeMetricFamily("user_count", "Number of users in the system")
         user_count.add_metric([], User.objects.count())
@@ -66,7 +66,12 @@ class UsageStatisticsCollector(Collector):
         yield GaugeMetricFamily("collection_item_count", "Number of items in collections in the system")
 
     def collect(self):
-        from .models import CollectionItem, DataCollection, Dataset, SearchHistoryItem
+        from data_map_backend.models import (
+            CollectionItem,
+            DataCollection,
+            Dataset,
+            SearchHistoryItem,
+        )
 
         search_count = GaugeMetricFamily("search_count", "Number of searches in the system")
         search_count.add_metric([], SearchHistoryItem.objects.count())

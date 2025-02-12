@@ -12,6 +12,22 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
+from data_map_backend.models import (
+    CollectionItem,
+    DataCollection,
+    Dataset,
+    DatasetSchema,
+    ExportConverter,
+    FieldType,
+    ImportConverter,
+    Organization,
+    SearchHistoryItem,
+    SearchTask,
+    ServiceUsage,
+    TrainedClassifier,
+    User,
+    generate_unique_database_name,
+)
 from data_map_backend.notifier import default_notifier
 from data_map_backend.schemas import ItemRelevance
 from data_map_backend.serializers import (
@@ -28,23 +44,6 @@ from data_map_backend.serializers import (
 from data_map_backend.utils import DotDict, is_from_backend
 from filter.schemas import CollectionFilter
 from search.schemas import SearchTaskSettings
-
-from ..models import (
-    CollectionItem,
-    DataCollection,
-    Dataset,
-    DatasetSchema,
-    ExportConverter,
-    FieldType,
-    ImportConverter,
-    Organization,
-    SearchHistoryItem,
-    SearchTask,
-    ServiceUsage,
-    TrainedClassifier,
-    User,
-    generate_unique_database_name,
-)
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
