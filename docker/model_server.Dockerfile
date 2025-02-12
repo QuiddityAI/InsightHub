@@ -10,9 +10,8 @@ RUN uv venv --python-preference=only-system $VIRTUAL_ENV --python 3.11
 RUN uv pip install --upgrade pip wheel
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
-COPY docker/docker_container_base_python_packages.txt /app
 COPY docker/model_server_requirements.txt /app
-RUN uv pip install --no-cache-dir -r docker_container_base_python_packages.txt -r model_server_requirements.txt
+RUN uv pip install --no-cache-dir -r model_server_requirements.txt
 RUN chown -R appuser /app
 RUN mkdir -p /home/appuser/.cache/huggingface
 RUN chmod -R a+rw /home/appuser/.cache

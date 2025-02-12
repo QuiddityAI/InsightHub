@@ -4,8 +4,6 @@ RUN apt update && apt install -y libgl1  # for pdfferret (and there for cv2)
 RUN apt update && apt install -y tesseract-ocr tesseract-ocr-eng ghostscript pandoc libreoffice  # for pytesseract in pdferret
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
-#COPY docker/docker_container_base_python_packages.txt /app
-#RUN pip install --no-cache-dir -r docker_container_base_python_packages.txt
 #COPY Pipfile /app
 #COPY Pipfile.lock /app
 #RUN pipenv requirements > requirements.txt \
