@@ -8,16 +8,13 @@ from typing import Iterable
 import cachetools.func
 import numpy as np
 
+from data_map_backend.models import Generator
 from data_map_backend.utils import DotDict, pk_to_uuid_id
 from data_map_backend.views.other_views import get_serialized_dataset_cached
 
 from ..api_clients import openalex_api
 from ..api_clients.cohere_reranking import get_reranking_results
-from ..database_client.django_client import (
-    get_dataset,
-    get_generators,
-    get_related_collection_items,
-)
+from ..database_client.django_client import get_related_collection_items
 from ..database_client.text_search_engine_client import TextSearchEngineClient
 from ..database_client.vector_search_engine_client import VectorSearchEngineClient
 from ..logic.autocut import get_number_of_useful_items
@@ -353,7 +350,7 @@ def get_fulltext_search_results(
 
 
 def get_suitable_generator(dataset, vector_field: str):
-    generators: list[DotDict] = get_generators()
+    generators = Generator.objects.all()
     field = dataset.schema.object_fields[vector_field]
     embedding_space_identifier = (
         field.generator.embedding_space.identifier if field.generator else field.embedding_space.identifier
@@ -382,7 +379,7 @@ def get_suitable_generator(dataset, vector_field: str):
         )
     else:
         generator_function = get_generator_function(
-            suitable_generator.module, suitable_generator.default_parameters, False
+            suitable_generator.module, suitable_generator.default_parameters or {}, False
         )
     return generator_function
 

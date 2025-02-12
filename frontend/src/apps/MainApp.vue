@@ -203,7 +203,7 @@ export default {
   watch: {
     "appStateStore.organization_id"() {
       this.appStateStore.reset_search_results_and_map()
-      this.appStateStore.retrieve_history_and_collections()
+      this.appStateStore.retrieve_collections()
       // set title of page to organization.tool_title:
       document.title = this.appStateStore.organization.tool_title || "Quiddity InsightHub"
     },

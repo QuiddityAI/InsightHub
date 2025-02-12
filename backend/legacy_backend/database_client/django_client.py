@@ -1,5 +1,3 @@
-import base64
-import json
 import logging
 import os
 from typing import Iterable
@@ -8,8 +6,6 @@ import cachetools.func
 import requests
 
 from data_map_backend.utils import DotDict
-
-from ..utils.custom_json_encoder import CustomJSONEncoder
 
 backend_url = os.getenv("backend_host", "http://localhost:55125")
 
@@ -132,15 +128,6 @@ def set_trained_classifier(
     if result.status_code != 204:
         logging.warning("Couldn't set trained classifier")
     return None
-
-
-def get_generators() -> list[DotDict]:
-    url = backend_url + "/org/data_map/get_generators"
-    result = django_client.post(url)
-    if result.status_code != 200:
-        logging.warning("Couldn't get generators")
-        return []
-    return [DotDict(generator) for generator in result.json()]
 
 
 def get_import_converter(import_converter_identifier: str) -> DotDict:

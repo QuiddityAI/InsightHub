@@ -85,11 +85,6 @@ export const useAppStateStore = defineStore("appState", {
       last_used_collection_id: null,
       last_used_collection_class: null,
 
-      // chats:
-      chats: [],
-
-      search_history: [],
-
       // writing tasks:
       selected_writing_task_id: null,
       selected_writing_task: null,
@@ -295,7 +290,7 @@ export const useAppStateStore = defineStore("appState", {
       }
       httpClient.post("/org/data_map/set_user_preferences", body)
     },
-    retrieve_history_and_collections() {
+    retrieve_collections() {
       const that = this
       if (this.organization_id == null) {
         console.log("organization_id is null, cannot retrieve stored maps, history and collections")
@@ -305,16 +300,6 @@ export const useAppStateStore = defineStore("appState", {
         console.log("not logged in, cannot retrieve stored maps, history and collections")
         return
       }
-      this.search_history = []
-      // FIXME: refactor with organization_id
-      const get_history_body = {
-        organization_id: this.organization_id,
-      }
-      httpClient
-        .post("/org/data_map/get_search_history", get_history_body)
-        .then(function (response) {
-          that.search_history = response.data
-        })
 
       this.collections = []
       const get_collections_body = {
@@ -821,15 +806,6 @@ export const useAppStateStore = defineStore("appState", {
       const that = this
       if (!this.store_search_history) return
 
-      if (
-        this.search_history.length > 0 &&
-        JSON.stringify(this.search_history[this.search_history.length - 1].parameters) ==
-          JSON.stringify(this.settings)
-      ) {
-        // -> same query as before, don't save this duplicate:
-        return
-      }
-
       const [name, display_name] = this.get_current_map_name()
       if (!name) return
 
@@ -843,7 +819,6 @@ export const useAppStateStore = defineStore("appState", {
       httpClient
         .post("/org/data_map/add_search_history_item", history_item_body)
         .then(function (response) {
-          that.search_history.push(response.data)
         })
 
       umami.track("search", { name: name })
@@ -855,7 +830,7 @@ export const useAppStateStore = defineStore("appState", {
       // TODO: check if map_settings are actully the ones in the last history item
 
       const history_item_body = {
-        item_id: this.search_history[this.search_history.length - 1].id,
+        item_id: null, // FIXME: this.search_history[this.search_history.length - 1].id,
         total_matches: this.search_result_total_matches,
         auto_relaxed: null,  // TODO: implement
         cluster_count: this.mapState.clusterData.length,
@@ -867,7 +842,6 @@ export const useAppStateStore = defineStore("appState", {
       httpClient
         .post("/org/data_map/update_search_history_item", history_item_body)
         .then(function (response) {
-          that.search_history[that.search_history.length - 1] = response.data
         })
     },
     show_received_search_results(response_data) {
