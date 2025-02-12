@@ -10,6 +10,7 @@ verify_ssl = false
 name = "nvidia"
 url = "https://pypi.nvidia.com"
 verify_ssl = true
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
@@ -50,33 +51,18 @@ dependencies = [
     "djangoql",
     "djangorestframework",
     "drf-social-oauth2",
-    "gensim",
-    "groq",
     "hdbscan",
-    "kolo",
     "llmonkey @ git+https://trel725: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@github.com/Trel725/LLMonkey.git",
-    "lingua-language-detector",
     "markdown",
-    "nltk",
-    "openai",
     "opensearch-py",
     "orjson",
-    "pandas",
-    "pdferret @ git+https://trel725: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@github.com/Trel725/pdferret.git",
     "pillow",
     "psycopg2-binary",
-    "pypdfium2",
-    "pyspellchecker",
     "python-box",
     "qdrant-client",
     "ratelimit",
     "scikit-learn",
-    "scipdf @ git+https://github.com/Trel725/scipdf_parser",
-    "scipy==1.10.1",
-    "sentence-transformers",
     "social-auth-app-django",
-    "torch",
-    "transformers",
     "umap-learn @ git+https://github.com/luminosuslight/umap_with_progress_callback.git",
     "werkzeug",
     "numpy<2.0",
@@ -89,10 +75,11 @@ readme = "README.md"
 
 [project.optional-dependencies]
 debug = ["debugpy"]
-#gpu = ["cuml-cu12==24.6.*",]
+#gpu = ["cuml-cu12==24.6.*",]  # needed for GPU based UMAP, or pip install --extra-index-url=https://pypi.nvidia.com "cuml-cu12==24.12.*"
 
 [dependency-groups]
 dev = [
     "viztracer",
     "spacy",
+    "kolo",
 ]
