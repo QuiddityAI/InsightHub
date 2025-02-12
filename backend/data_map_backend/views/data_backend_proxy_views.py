@@ -6,9 +6,9 @@ import requests
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from ..data_backend_client import DATA_BACKEND_HOST
-from ..models import DataCollection, Dataset
-from ..utils import DotDict
+from data_map_backend.data_backend_client import DATA_BACKEND_HOST
+from data_map_backend.models import DataCollection, Dataset
+from data_map_backend.utils import DotDict
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 
