@@ -334,13 +334,9 @@ def skip_some_legacy_backend_routes(record):
         "/data_backend/map/result",
         "/data_backend/document/details_by_id",
         "/data_backend/upload_files/status",
-        "/data_backend/health",
-        "/data_backend/db_health",
         "/legacy_backend/map/result",
         "/legacy_backend/document/details_by_id",
         "/legacy_backend/upload_files/status",
-        "/legacy_backend/health",
-        "/legacy_backend/db_health",
     ]
     for path in paths_excluded_from_logging:
         if path in str(record.args[0]):

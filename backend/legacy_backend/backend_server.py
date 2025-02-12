@@ -116,30 +116,6 @@ def send_from_directory(directory, filename):
     return FileResponse(open(full_path, "rb"))
 
 
-@convert_flask_to_django_route("/health", methods=["GET"])
-def health(
-    request,
-):
-    return "", 200
-
-
-@convert_flask_to_django_route("/db_health", methods=["GET"])
-def db_health(
-    request,
-):
-    try:
-        text_search_engine_client = TextSearchEngineClient()
-        if not text_search_engine_client.check_status():
-            raise Exception("Text search engine not healthy")
-        vector_search_engine_client = VectorSearchEngineClient()
-        if not vector_search_engine_client.check_status():
-            raise Exception("Vector search engine not healthy")
-    except Exception as e:
-        logging.error("Error checking database status", exc_info=True)
-        return "", 500
-    return "", 200
-
-
 @convert_flask_to_django_route("/data_backend/update_database_layout", methods=["POST"])
 def update_database_layout_route(
     request,
