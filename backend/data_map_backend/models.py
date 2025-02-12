@@ -17,7 +17,6 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
 
-from .chatgpt_client import get_chatgpt_response_using_history
 from .data_backend_client import (
     DATA_BACKEND_HOST,
     delete_dataset_content,
@@ -1902,7 +1901,8 @@ class Chat(models.Model, ModelTypedImplicitIdField):
             usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
             result = usage_tracker.track_usage(1, "chat answer")
             if result["approved"]:
-                response_text = get_chatgpt_response_using_history(history)
+                # response_text = get_chatgpt_response_using_history(history)
+                response_text = ""
             else:
                 response_text = "AI usage limit exceeded."
             # response_text = "I'm sorry, I can't answer that question yet."

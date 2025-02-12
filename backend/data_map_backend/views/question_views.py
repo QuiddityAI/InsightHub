@@ -2,18 +2,17 @@ import json
 import logging
 import time
 
+from diskcache import Cache
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from diskcache import Cache
 
-from data_map_backend.models import DataCollection, Chat, Dataset, ServiceUsage, User
-from data_map_backend.serializers import ChatSerializer
-from data_map_backend.data_backend_client import get_item_question_context
-from data_map_backend.chatgpt_client import OPENAI_MODELS, get_chatgpt_response_using_history
-from data_map_backend.groq_client import GROQ_MODELS, get_groq_response_using_history
-from data_map_backend.prompts import search_question_prompt, item_relevancy_prompt
 from data_map_backend import prompts
+from data_map_backend.data_backend_client import get_item_question_context
+from data_map_backend.groq_client import GROQ_MODELS, get_groq_response_using_history
+from data_map_backend.models import Chat, DataCollection, Dataset, ServiceUsage, User
 from data_map_backend.notifier import default_notifier
+from data_map_backend.prompts import item_relevancy_prompt, search_question_prompt
+from data_map_backend.serializers import ChatSerializer
 
 from .other_views import is_from_backend
 
@@ -267,7 +266,7 @@ def answer_question_using_items(request):
 
     history = [{"role": "system", "content": prompt}]
 
-    response_text = get_chatgpt_response_using_history(history, OPENAI_MODELS.GPT4_O)
+    response_text = "ChatGPT is not supported anymore"
 
     return HttpResponse(
         json.dumps({"answer": response_text, "prompt": prompt}), content_type="application/json", status=200

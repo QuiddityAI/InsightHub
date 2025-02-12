@@ -13,7 +13,6 @@ pip install -r requirements.txt
 
 cp ../visual-data-map/.env .
 cp ../visual-data-map-staging/credentials.json .
-cp ../visual-data-map-staging/openai_credentials.json .
 
 cp ../visual-data-map-staging/docker-compose-staging.override.yaml .
 vim ../visual-data-map-staging/.env

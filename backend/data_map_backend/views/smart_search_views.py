@@ -5,9 +5,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from ..models import ServiceUsage, User
-from ..chatgpt_client import get_chatgpt_response_using_history, OPENAI_MODELS
 from ..notifier import default_notifier
-
 from .other_views import is_from_backend
 
 
@@ -173,7 +171,7 @@ JSON:
         approved = True
 
     if approved:
-        response_text = get_chatgpt_response_using_history(history, model=OPENAI_MODELS.GPT4)
+        response_text = "Not supported anymore"
     else:
         response_text = "AI usage limit exceeded."
 
