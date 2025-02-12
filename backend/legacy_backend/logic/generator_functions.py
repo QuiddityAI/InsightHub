@@ -83,6 +83,10 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
         )
     elif module == "ai_file_processing":
         generator = lambda batch, log_error=default_log: ai_file_processing_generator(batch, log_error, parameters)
+    elif module == "scientific_article_processing":
+        generator = lambda batch, log_error=default_log: scientific_article_processing_generator(
+            batch, log_error, parameters
+        )
     elif module == "tender_enrichment":
         generator = lambda batch, log_error=default_log: tender_enrichment_generator(batch, log_error, parameters)
 

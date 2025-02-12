@@ -1,6 +1,7 @@
 from typing import Optional
-from ninja import Schema
+
 from django.core.files.uploadedfile import UploadedFile as DjangoUploadedFile
+from ninja import Field, Schema
 
 
 class UploadedFileMetadata(Schema):
@@ -41,6 +42,7 @@ class AiMetadataResult(Schema):
 
 
 class AiFileProcessingInput(Schema):
+    id: str = Field(..., alias="_id")  # always provided, other fields are mapped using generator parameters
     file_name: str = ""
     folder: str | None = None
     uploaded_file_path: str | None = ""
@@ -64,6 +66,20 @@ class AiFileProcessingOutput(Schema):
     people: list[str] = []
     video_frame_embeddings: list | None = None
     video_frame_chunks: list[dict] = []
+
+
+class ScientificArticleProcessingOutput(Schema):
+    doi: str | None = None
+    title: str | None = None
+    abstract: str | None = None
+    authors: list[str] | None = None
+    journal: str | None = None
+    publication_year: int | None = None
+    cited_by: int | None = None
+    file_path: str | None = None  # relative to UPLOADED_FILES_FOLDER
+    thumbnail_path: str | None = None  # relative to UPLOADED_FILES_FOLDER
+    full_text: str | None = None
+    full_text_original_chunks: list[dict] | None = None
 
 
 class CheckPkExistencePayload(Schema):

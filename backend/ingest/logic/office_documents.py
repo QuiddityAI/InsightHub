@@ -1,19 +1,24 @@
-import logging
-import os
-import json
 import base64
 import datetime
-from typing import Callable
+import json
+import logging
+import os
 from multiprocessing.pool import ThreadPool
+from typing import Callable
 
-from config.utils import get_default_model
 from requests import ReadTimeout
 
+from config.utils import get_default_model
 from data_map_backend.utils import DotDict
-from ingest.schemas import UploadedOrExtractedFile, AiMetadataResult, AiFileProcessingInput, AiFileProcessingOutput
 from ingest.logic.common import UPLOADED_FILES_FOLDER, store_thumbnail
-from ingest.logic.pdferret_client import extract_using_pdferret
+from ingest.logic.pdferret_client import MetaInfo, extract_using_pdferret
 from ingest.prompts import folder_summary_prompt
+from ingest.schemas import (
+    AiFileProcessingInput,
+    AiFileProcessingOutput,
+    AiMetadataResult,
+    UploadedOrExtractedFile,
+)
 
 # from ingest.logic.video import process_video
 
@@ -27,7 +32,7 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
     document_language = parameters.get("document_language", "en")
     metadata_language = parameters.get("metadata_language", "en")
 
-    def process_file_batch(batch):
+    def process_file_batch(batch: list[AiFileProcessingInput]):
         try:
             parsed, failed = extract_using_pdferret(
                 [f"{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}" for input_item in batch],
@@ -46,16 +51,16 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
         assert len(parsed) == len(batch)  # TODO: handle failed items
         for parsed_item, input_item in zip(parsed, batch):
             if not parsed_item:
-                results[(input_item.folder or "") + "/" + input_item.file_name] = [target_field_value, None]
+                results[input_item.id] = [target_field_value, None]
                 continue
             result = ai_file_processing_single(input_item, parsed_item, parameters)
-            results[(input_item.folder or "") + "/" + input_item.file_name] = [target_field_value, result.model_dump()]
+            results[input_item.id] = [target_field_value, result.model_dump()]
 
-    def process_folder_batch(batch):
+    def process_folder_batch(batch: list[AiFileProcessingInput]):
         with ThreadPool(10) as pool:
             outputs = pool.map(lambda input_item: ai_file_processing_single_folder(input_item, parameters), batch)
         for input_item, output in zip(batch, outputs):
-            results[(input_item.folder or "") + "/" + input_item.file_name] = [target_field_value, output.model_dump()]
+            results[input_item.id] = [target_field_value, output.model_dump()]
 
     for item in input_items:
         item = AiFileProcessingInput(**item)
@@ -73,13 +78,13 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
         process_file_batch(file_batch)
     if folder_batch:
         process_folder_batch(folder_batch)
-    return [results[(input_item["folder"] or "") + "/" + input_item["file_name"]] for input_item in input_items]
+    return [results[input_item["_id"]] for input_item in input_items]
 
 
 def ai_file_processing_single(
     input_item: AiFileProcessingInput, parsed_data, parameters: DotDict
 ) -> AiFileProcessingOutput:
-    file_metainfo = parsed_data.metainfo
+    file_metainfo: MetaInfo = parsed_data.metainfo
 
     # MetaInfo({'doi': '', 'title': ['Protokoll', 'Druck'], 'abstract': '',
     # 'authors': ['Georg T...', 'Klaus H...'], 'pub_date': ['2023-04-05T12:56:00Z',
@@ -141,7 +146,7 @@ def ai_file_processing_single(
         summary=file_metainfo.abstract or "",
         thumbnail_path=(
             store_thumbnail(base64.decodebytes(file_metainfo.thumbnail.encode("utf-8")), input_item.uploaded_file_path)
-            if file_metainfo.thumbnail
+            if file_metainfo.thumbnail and isinstance(file_metainfo.thumbnail, str)
             else None
         ),  # relative to UPLOADED_FILES_FOLDER
         title=file_metainfo.title or input_item.file_name,

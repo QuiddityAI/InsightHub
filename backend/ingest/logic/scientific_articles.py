@@ -1,81 +1,132 @@
-import logging
+import base64
 import csv
+import logging
 import uuid
-from dataclasses import asdict
+from typing import Callable
 
-import pypdfium2 as pdfium
+from requests import ReadTimeout
 
-from data_map_backend.utils import pk_to_uuid_id
-from ingest.schemas import UploadedOrExtractedFile
-from ingest.logic.common import UPLOADED_FILES_FOLDER
+from data_map_backend.utils import DotDict, pk_to_uuid_id
+from ingest.logic.common import UPLOADED_FILES_FOLDER, store_thumbnail
+from ingest.logic.pdferret_client import MetaInfo, extract_using_pdferret
+from ingest.schemas import (
+    AiFileProcessingInput,
+    ScientificArticleProcessingOutput,
+    UploadedOrExtractedFile,
+)
+
+
+def scientific_article_processing_generator(
+    input_items: list[dict], log_error: Callable, parameters: DotDict
+) -> list[dict]:
+    results = {}
+    target_field_value = True  # just storing that this item was processed
+    file_batch = []
+    batch_size = 10
+    document_language = parameters.get("document_language", "en")
+    metadata_language = parameters.get("metadata_language", "en")
+
+    def process_file_batch(batch: list[AiFileProcessingInput]):
+        try:
+            # FIXME: need to set metadata_extractor to Grobid to get paper related metadata like doi
+            parsed, failed = extract_using_pdferret(
+                [f"{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}" for input_item in batch],
+                doc_lang=document_language,
+            )
+        except ReadTimeout:
+            logging.error("PDFerret timeout")
+            failed = [DotDict({"file": item.uploaded_file_path, "exc": "pdferret timeout"}) for item in batch]
+            parsed = [None] * len(batch)
+        if failed:
+            for failed_item in failed:
+                if not failed_item:
+                    continue
+                # TODO: write the error in the description of the returned item?
+                log_error(f"Failed to extract text from {failed_item.file}: {failed_item.exc}")
+        assert len(parsed) == len(batch)  # TODO: handle failed items
+        for parsed_item, input_item in zip(parsed, batch):
+            if not parsed_item:
+                results[input_item.id] = [target_field_value, None]
+                continue
+            result = scientific_article_processing_single(input_item, parsed_item, parameters)
+            results[input_item.id] = [target_field_value, result.model_dump()]
+
+    for item in input_items:
+        item = AiFileProcessingInput(**item)
+        file_batch.append(item)
+        if len(file_batch) >= batch_size:
+            process_file_batch(file_batch)
+            file_batch = []
+
+    if file_batch:
+        process_file_batch(file_batch)
+
+    return [results[input_item["_id"]] for input_item in input_items]
+
+
+def scientific_article_processing_single(
+    input_item: AiFileProcessingInput, parsed_data, parameters: DotDict
+) -> ScientificArticleProcessingOutput:
+    file_metainfo: MetaInfo = parsed_data.metainfo
+
+    # OpenSearch has a limit of 32k characters per field:
+    max_chars_per_chunk = 5000
+    max_chunks = 100
+    chunks = []
+    for chunk in parsed_data.chunks:
+        if not chunk["text"]:
+            continue
+        chunk["non_embeddable_content"] = None
+        if len(chunk["text"]) > max_chars_per_chunk:
+            chunk["text"] = chunk["text"][:max_chars_per_chunk] + "..."
+        chunks.append(chunk)
+    full_text = " ".join([chunk["text"] for chunk in chunks[:max_chunks]])
+
+    try:
+        date_str = file_metainfo.pub_date[0] if isinstance(file_metainfo.pub_date, list) else file_metainfo.pub_date
+        publication_year = int(date_str.split("-")[0]) if file_metainfo.pub_date else None
+    except ValueError:
+        publication_year = None
+
+    result = ScientificArticleProcessingOutput(
+        doi=file_metainfo.doi,
+        title=file_metainfo.title or input_item.file_name,
+        abstract=file_metainfo.abstract,
+        authors=file_metainfo.authors,
+        journal="",
+        publication_year=publication_year,
+        cited_by=0,
+        file_path=input_item.uploaded_file_path,  # relative to UPLOADED_FILES_FOLDER
+        thumbnail_path=(
+            store_thumbnail(base64.decodebytes(file_metainfo.thumbnail.encode("utf-8")), input_item.uploaded_file_path)
+            if file_metainfo.thumbnail and isinstance(file_metainfo.thumbnail, str)
+            else None
+        ),  # relative to UPLOADED_FILES_FOLDER
+        full_text=full_text,
+        full_text_original_chunks=chunks,
+    )
+    return result
 
 
 def scientific_article_pdf(
-    paths: list[UploadedOrExtractedFile], parameters, on_progress=None
+    files: list[UploadedOrExtractedFile], parameters: DotDict, on_progress=None
 ) -> tuple[list[dict], list[dict]]:
-    from pdferret import PDFerret
-    import nltk
+    if not files:
+        return [], []
 
-    nltk.download("punkt")
-
-    extractor = PDFerret(text_extractor="grobid")
     if on_progress:
         on_progress(0.1)
-    parsed, failed = extractor.extract_batch(
-        [f"{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}" for uploaded_file in paths]
-    )
-    if on_progress:
-        on_progress(0.5)
-    failed_files = [{"filename": pdferror.file, "reason": pdferror.exc} for pdferror in failed]
+
     items = []
-    for parsed_pdf, uploaded_file in zip(parsed, paths):
-        pdf_metainfo = parsed_pdf.metainfo
-        if not pdf_metainfo.title and not len(parsed_pdf.chunks):
-            failed_files.append(
-                {"filename": uploaded_file.original_filename, "reason": "no title or text found, skipping"}
-            )
-            continue
-        # if not pdf_metainfo.title:
-        # failed_files.append({"filename": sub_path, "reason": "no title found, still adding to database"})
-        # add anyway because the rest of the data might be useful
-        try:
-            pub_year = int(pdf_metainfo.pub_date.split("-")[0])
-        except:
-            pub_year = None
-
-        # full_text_original_chunks = _postprocess_pdf_chunks(parsed_pdf.chunks, parsed_pdf.title.strip())
-        full_text_original_chunks = [asdict(chunk) for chunk in parsed_pdf.chunks]
-        full_text = " ".join([chunk["text"] for chunk in full_text_original_chunks])
-
-        try:
-            pdf = pdfium.PdfDocument(f"{UPLOADED_FILES_FOLDER}/{uploaded_file.local_path}")
-            first_page = pdf[0]
-            image = first_page.render(scale=1).to_pil()
-            thumbnail_path = f"{uploaded_file.local_path}.thumbnail.jpg"
-            image.save(f"{UPLOADED_FILES_FOLDER}/{thumbnail_path}", "JPEG", quality=60)
-        except Exception as e:
-            logging.warning(f"Failed to create thumbnail for {uploaded_file.local_path}: {e}")
-            thumbnail_path = None
-
-        items.append(
-            {
-                "id": pdf_metainfo.doi or pk_to_uuid_id(uploaded_file.local_path),
-                "doi": pdf_metainfo.doi,
-                "title": pdf_metainfo.title.strip() or uploaded_file.original_filename,
-                "abstract": pdf_metainfo.abstract,
-                "authors": pdf_metainfo.authors,
-                "journal": "",
-                "publication_year": pub_year,
-                "cited_by": 0,
-                "file_path": uploaded_file.local_path,  # relative to UPLOADED_FILES_FOLDER
-                "thumbnail_path": thumbnail_path,  # relative to UPLOADED_FILES_FOLDER
-                "full_text": full_text,
-                "full_text_original_chunks": full_text_original_chunks,
-            }
-        )
-        if on_progress:
-            on_progress(0.5 + (len(items) / len(paths)) * 0.5)
-    return items, failed_files
+    for uploaded_file in files:
+        item = {
+            "id": pk_to_uuid_id(uploaded_file.local_path),
+            "title": uploaded_file.original_filename,
+            "file_path": uploaded_file.local_path,  # relative to UPLOADED_FILES_FOLDER
+        }
+        items.append(item)
+    failed_items = []
+    return items, failed_items
 
 
 def _safe_to_int(s: str | None) -> int | None:

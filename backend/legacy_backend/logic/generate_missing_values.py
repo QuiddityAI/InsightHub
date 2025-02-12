@@ -209,10 +209,9 @@ def generate_missing_values_for_given_elements(
                 if pipeline_step.requires_multiple_input_fields:
                     assert isinstance(pipeline_step.source_fields, dict)
                     # pipeline_step.source_fields maps generator input -> source_field
-                    source_data = {}
+                    source_data = {"_id": element["_id"]}
                     for generator_input, source_field in pipeline_step.source_fields.items():
                         source_data[generator_input] = element.get(source_field, None)
-                    source_data = source_data
                 else:
                     for source_field in pipeline_step.source_fields:
                         if source_field in element and element[source_field] is not None:
