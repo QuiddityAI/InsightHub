@@ -1,10 +1,28 @@
+import logging
+
 from prometheus_client.core import REGISTRY, GaugeMetricFamily, StateSetMetricFamily
 from prometheus_client.registry import Collector
 
-from .data_backend_client import (
-    get_data_backend_database_health,
-    get_data_backend_health,
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
 )
+from legacy_backend.database_client.vector_search_engine_client import (
+    VectorSearchEngineClient,
+)
+
+
+def get_db_health():
+    try:
+        text_search_engine_client = TextSearchEngineClient()
+        if not text_search_engine_client.check_status():
+            raise Exception("Text search engine not healthy")
+        vector_search_engine_client = VectorSearchEngineClient()
+        if not vector_search_engine_client.check_status():
+            raise Exception("Vector search engine not healthy")
+    except Exception as e:
+        logging.error("Error checking database status", exc_info=True)
+        return False
+    return True
 
 
 class DataBackendStatusCollector(Collector):
@@ -18,12 +36,10 @@ class DataBackendStatusCollector(Collector):
         data_backend_database_status = StateSetMetricFamily(
             "data_backend_database_status", "Status of the data_backend databases"
         )
-        if get_data_backend_health():
-            data_backend_status.add_metric([], {"healthy": True})
-        else:
-            data_backend_status.add_metric([], {"healthy": False})
+        # old metric from when backend was split into two parts:
+        data_backend_status.add_metric([], {"healthy": True})
         yield data_backend_status
-        if get_data_backend_database_health():
+        if get_db_health():
             data_backend_database_status.add_metric([], {"healthy": True})
         else:
             data_backend_database_status.add_metric([], {"healthy": False})

@@ -17,10 +17,11 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
 
-from .data_backend_client import (
-    DATA_BACKEND_HOST,
-    delete_dataset_content,
-    get_item_by_id,
+from legacy_backend.logic.insert_logic import delete_dataset_content
+from legacy_backend.logic.search import (
+    get_item_count,
+    get_items_having_value_count,
+    get_random_items,
 )
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
@@ -726,16 +727,9 @@ class DatasetField(models.Model, ModelTypedImplicitIdField):
             # OpenSearch can't easily count values that are not indexed
             return "?"
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{dataset.id}/{self.identifier}/items_having_value_count"
-            result = backend_client.get(url)
-            count = result.json()["count"]
+            count = get_items_having_value_count(dataset.id, self.identifier)
             if self.field_type == FieldType.VECTOR and self.is_array:
-                url = (
-                    DATA_BACKEND_HOST
-                    + f"/data_backend/dataset/{dataset.id}/{self.identifier}/sub_items_having_value_count"
-                )
-                result = backend_client.get(url)
-                sub_count = result.json()["count"]
+                sub_count = get_items_having_value_count(dataset.id, self.identifier, count_sub_items=True)
                 return f"{count} (~{sub_count / count:.0f} ppi)"
             else:
                 return count
@@ -861,9 +855,7 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
     @property
     def item_count(self):
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/item_count"
-            result = backend_client.get(url)
-            return result.json()["count"]
+            return get_item_count(self.id)
         except Exception as e:
             return repr(e)
 
@@ -872,9 +864,8 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
     @property
     def random_item(self):
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/random_item"
-            result = backend_client.get(url)
-            item = result.json()["item"]
+            items = get_random_items(self.id, 1)
+            item = items[0] if len(items) else {}
 
             def replace_long_arrays(value):
                 if isinstance(value, list):
@@ -1874,7 +1865,7 @@ class Chat(models.Model, ModelTypedImplicitIdField):
                             .values_list("identifier", flat=True)
                         )
                         fields.append("_id")
-                        full_item = get_item_by_id(item.dataset_id, item.item_id, fields)
+                        full_item = {}  # get_item_by_id(item.dataset_id, item.item_id, fields)
                         text = json.dumps(full_item, indent=2)
                     if not text:
                         continue

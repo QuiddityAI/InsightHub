@@ -21,9 +21,10 @@ from djangoql.admin import DjangoQLSearchMixin
 from import_export.admin import ImportExportMixin
 from simple_history.admin import SimpleHistoryAdmin
 
+from data_map_backend.views.data_backend_proxy_views import DATA_BACKEND_HOST
 from legacy_backend.logic.generate_missing_values import generate_missing_values
+from legacy_backend.logic.insert_logic import update_database_layout
 
-from .data_backend_client import DATA_BACKEND_HOST
 from .import_export import UserResource
 from .models import (
     Chat,
@@ -540,11 +541,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     @action(label="Update Database Layout", description="Update Database Layout")
     def update_database_layout(self, request, obj):
-        url = DATA_BACKEND_HOST + "/data_backend/update_database_layout"
-        data = {
-            "dataset_id": obj.id,
-        }
-        backend_client.post(url, json=data)
+        update_database_layout(obj.id)
         self.message_user(request, "Updated the database layout")
 
     @action(label="Delete Content", description="Delete all items from the database")
@@ -587,29 +584,13 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
     # @action(label="Delete Content", description="Delete field data and index")
     # def delete_content(self, request, obj):
     #     # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
-    #     url = DATA_BACKEND_HOST + '/data_backend/delete_field'
-    #     data = {
-    #         'dataset_id': obj.dataset_id,
-    #         'field_identifier': obj.identifier,
-    #     }
-    #     backend_client.post(url, json=data)
+    #     delete_field_content(obj.dataset_id, obj.identifier)
     #     self.message_user(request, "Deleted this fields content")
 
-    # @action(label="Generate Missing Values", description="Generate missing values")
-    # def generate_missing_values(self, request, obj):
-    #     url = DATA_BACKEND_HOST + '/data_backend/generate_missing_values'
-    #     data = {
-    #         'dataset_id': obj.dataset_id,
-    #         'field_identifier': obj.identifier,
-    #     }
-    #     backend_client.post(url, json=data)
-    #     self.message_user(request, "Now generating missing values...")
-
-    # change_actions = ('delete_content', 'generate_missing_values')
+    # change_actions = ('delete_content', )
 
     # def action_buttons(self, obj):
-    #     return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button> \
-    #                      <button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
+    #     return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button>')
     # action_buttons.short_description = "Actions"
 
 
