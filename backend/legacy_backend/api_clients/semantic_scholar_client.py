@@ -1,17 +1,13 @@
+import logging
 import math
-from typing import Any, Iterable
 import os
 import time
-import requests
-import logging
+from typing import Any, Iterable
 
-from diskcache import Cache
 import requests
+from diskcache import Cache
 
 from ..logic.insert_logic import insert_many
-from ..utils.helpers import load_env_file
-
-load_env_file()
 
 SEMANTIC_SCHOLAR_API_KEY = os.environ.get("SEMANTIC_SCHOLAR_API_KEY", "")
 S2_API_URL = "https://api.semanticscholar.org/graph/v1"

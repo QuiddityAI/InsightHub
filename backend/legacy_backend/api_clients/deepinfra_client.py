@@ -1,14 +1,10 @@
-from concurrent.futures import ThreadPoolExecutor
 import json
-import os
 import logging
+import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable
 
-from ..utils.helpers import load_env_file
 import requests
-
-load_env_file()
-
 
 DEEPINFRA_API_KEY = os.environ.get("DEEPINFRA_API_KEY", "no_api_key")
 

@@ -1,6 +1,7 @@
-import os
-import requests
 import logging
+import os
+
+import requests
 
 
 class BaseNotifier:
@@ -49,19 +50,6 @@ class TgNotifier(BaseNotifier):
         if not res["ok"]:
             raise ValueError("Can't send message", res)
 
-
-def load_env_file():
-    with open("../.env", "r") as f:
-        for line in f:
-            if line.startswith("#"):
-                continue
-            if "=" not in line:
-                continue
-            key, value = line.strip().split("=")
-            os.environ[key] = value
-
-
-load_env_file()
 
 tg_token = os.getenv("TELEGRAM_TOKEN")
 chat_id = os.getenv("TELEGRAM_CHAT_ID")

@@ -1,15 +1,12 @@
-from functools import lru_cache
+import logging
 import os
 import time
-import requests
-import logging
+from functools import lru_cache
 
+import requests
 from diskcache import Cache
 
 from ..logic.insert_logic import insert_many
-from ..utils.helpers import load_env_file
-
-load_env_file()
 
 bing_subscription_key = os.environ.get("BING_SEARCH_V7_SUBSCRIPTION_KEY", "")
 bing_web_search_endpoint = os.environ.get("BING_SEARCH_V7_ENDPOINT", "") + "/v7.0/search"

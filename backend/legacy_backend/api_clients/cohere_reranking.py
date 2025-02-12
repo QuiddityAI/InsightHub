@@ -1,11 +1,7 @@
-import os
 import logging
+import os
 
 import cohere
-from ..utils.helpers import load_env_file
-
-load_env_file()
-
 
 co = cohere.Client(os.environ.get("COHERE_API_KEY", "no_api_key"))
 
