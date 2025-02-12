@@ -41,14 +41,14 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
     timings.log("get_dataset_cached")
 
     # get data items:
-    map_vector_field = dataset.merged_advanced_options.get("map_vector_field", "w2v_vector")
+    map_vector_field = dataset.merged_advanced_options.get("map_vector_field", None)
+    if not map_vector_field:
+        return "No map vector field specified"
     point_size_field = dataset.merged_advanced_options.get("size_field", None)
     assert dataset.schema.hover_label_rendering is not None
     hover_required_fields = dataset.schema.hover_label_rendering.get("required_fields", [])
     data_item_ids = [item.item_id for item in collection_items]
-    required_fields = (
-        [map_vector_field] + hover_required_fields if map_vector_field != "w2v_vector" else hover_required_fields
-    )
+    required_fields = [map_vector_field] + hover_required_fields
     if point_size_field:
         required_fields.append(point_size_field)
     data_items: list[dict] = get_items_by_ids(dataset.id, data_item_ids, required_fields)
@@ -61,20 +61,11 @@ def generate_new_map(collection: DataCollection, parameters: MapParameters) -> P
 
     if item_count >= 5:
         # get vectors:
-        if map_vector_field == "w2v_vector":
-            # add_w2v_vectors(ds_items, query, similar_map, origin_map,
-            #   dataset.schema.descriptive_text_fields, map_data, vectorize_stage_params_hash, timings)
-            return "W2V vectors are not supported in the new map"
-        else:
-            all_map_vectors_present = all([item.get(map_vector_field) is not None for item in data_items])
-            if not all_map_vectors_present:
-                logging.warning("Not all items have map vectors")
-                # TODO: handle this case
-        vector_size = (
-            256
-            if map_vector_field == "w2v_vector"
-            else get_vector_field_dimensions(dataset_serialized.schema.object_fields[map_vector_field])
-        )
+        all_map_vectors_present = all([item.get(map_vector_field) is not None for item in data_items])
+        if not all_map_vectors_present:
+            logging.warning("Not all items have map vectors")
+            # TODO: handle this case
+        vector_size = get_vector_field_dimensions(dataset_serialized.schema.object_fields[map_vector_field])
         # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
         dummy_vector = np.zeros(vector_size)
         vectors = [item.get(map_vector_field, dummy_vector) for item in data_items]

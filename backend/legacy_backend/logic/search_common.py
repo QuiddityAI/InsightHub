@@ -233,7 +233,6 @@ def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
     if (
         purpose == "map"
         and vectorize_settings.map_vector_field
-        and vectorize_settings.map_vector_field != "w2v_vector"
         and vectorize_settings.map_vector_field not in required_fields
     ):
         required_fields.append(vectorize_settings.map_vector_field)
@@ -242,7 +241,7 @@ def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
         required_fields.append(dataset.schema.thumbnail_image)
 
     if purpose == "map":
-        # used for cluster titles and potentially w2v:
+        # used for cluster titles:
         # TODO: this may be slow, maybe use only subset for cluster titles?
         required_fields += dataset.schema.descriptive_text_fields
         required_fields += dataset.schema.get("statistics", {}).get("required_fields", [])

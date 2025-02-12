@@ -1,19 +1,14 @@
-from collections import defaultdict
-from copy import deepcopy
-import logging
-from threading import Thread
 import json
+import logging
 import os
 import time
+from collections import defaultdict
+from copy import deepcopy
+from threading import Thread
 
 import numpy as np
 
-# import umap  # imported lazily when used
-
-from ..utils.collect_timings import Timings
-from ..utils.helpers import normalize_array, polar_to_cartesian, get_vector_field_dimensions, get_field_from_all_items
 from data_map_backend.utils import DotDict
-from ..utils.source_plugin_types import SourcePlugin
 
 from ..database_client.django_client import (
     answer_question_using_items,
@@ -21,26 +16,35 @@ from ..database_client.django_client import (
     get_stored_map_data,
     get_trained_classifier,
 )
-
-from ..logic.add_vectors import add_missing_map_vectors, add_w2v_vectors
+from ..logic.add_vectors import add_missing_map_vectors
+from ..logic.classifiers import get_embedding_space_from_ds_and_field
 from ..logic.clusters_and_titles import clusterize_results, get_cluster_titles
-from ..logic.search import get_search_results, get_full_results_from_meta_info
-from ..logic.search_common import fill_in_details_from_text_storage
-from ..logic.local_map_cache import (
-    local_maps,
-    vectorize_stage_hash_to_map_id,
-    projection_stage_hash_to_map_id,
-    get_map_parameters_hash,
-    get_search_stage_hash,
-    get_vectorize_stage_hash,
-    get_projection_stage_hash,
-    cache_full_item_data,
-    get_cached_full_item_data,
-)
-from ..logic.thumbnail_atlas import generate_thumbnail_atlas, THUMBNAIL_ATLAS_DIR
 from ..logic.extract_pipeline import get_pipeline_steps
 from ..logic.generate_missing_values import generate_missing_values_for_given_elements
-from ..logic.classifiers import get_embedding_space_from_ds_and_field
+from ..logic.local_map_cache import (
+    cache_full_item_data,
+    get_cached_full_item_data,
+    get_map_parameters_hash,
+    get_projection_stage_hash,
+    get_search_stage_hash,
+    get_vectorize_stage_hash,
+    local_maps,
+    projection_stage_hash_to_map_id,
+    vectorize_stage_hash_to_map_id,
+)
+from ..logic.search import get_full_results_from_meta_info, get_search_results
+from ..logic.search_common import fill_in_details_from_text_storage
+from ..logic.thumbnail_atlas import THUMBNAIL_ATLAS_DIR, generate_thumbnail_atlas
+from ..utils.collect_timings import Timings
+from ..utils.helpers import (
+    get_field_from_all_items,
+    get_vector_field_dimensions,
+    normalize_array,
+    polar_to_cartesian,
+)
+from ..utils.source_plugin_types import SourcePlugin
+
+# import umap  # imported lazily when used
 
 
 default_map_data = {
@@ -77,7 +81,6 @@ default_map_data = {
         },
         "thumbnail_atlas_filename": None,
         "thumbnail_sprite_size": None,
-        "w2v_embeddings_file_path": None,
     },
 }
 
@@ -190,6 +193,10 @@ def generate_map(map_id: str, ignore_cache: bool):
     # ----------------- Vectorize Phase -----------------
 
     map_vector_field = params.vectorize.map_vector_field
+    if not map_vector_field:
+        raise ValueError("map_vector_field is required")
+    elif map_vector_field == "w2v_vector":
+        raise NotImplementedError("w2v vectors are not supported anymore")
     all_map_vectors_present = all(
         [x is not None for x in get_field_from_all_items(items_by_dataset, sorted_ids, map_vector_field, None)]
     )
@@ -340,9 +347,11 @@ def thumbnail_phase(datasets, items_by_dataset, map_data, params, sorted_ids, ti
     # don't leave the field empty, otherwise the last atlas is still visible
     map_data["results"]["thumbnail_atlas_filename"] = "loading"
     thumbnail_uris = [
-        items_by_dataset[ds_id][item_id][datasets[ds_id].schema.thumbnail_image]
-        if datasets[ds_id].schema.thumbnail_image
-        else None
+        (
+            items_by_dataset[ds_id][item_id][datasets[ds_id].schema.thumbnail_image]
+            if datasets[ds_id].schema.thumbnail_image
+            else None
+        )
         for (ds_id, item_id) in sorted_ids
     ]
 
@@ -405,23 +414,8 @@ def add_missing_vectors(
 
         origin_map = local_maps[origin_map_id]
         assert origin_map is not None  # to tell pylance that this is definitely not None
-        map_data["results"]["w2v_embeddings_file_path"] = origin_map["results"]["w2v_embeddings_file_path"]
         query = origin_map["parameters"]["search"]["all_field_query"]
-    if params.vectorize.map_vector_field == "w2v_vector":
-        # FIXME: w2v vectors need to be generated for all datasets together
-        for ds_id, ds_items in items_by_dataset.items():
-            dataset = datasets[ds_id]
-            add_w2v_vectors(
-                ds_items,
-                query,
-                similar_map,
-                origin_map,
-                dataset.schema.descriptive_text_fields,
-                map_data,
-                vectorize_stage_params_hash,
-                timings,
-            )
-    elif not all_map_vectors_present:
+    if not all_map_vectors_present:
         for ds_id, ds_items in items_by_dataset.items():
             dataset = datasets[ds_id]
             if dataset.schema.object_fields[params.vectorize.map_vector_field].generator:
@@ -518,11 +512,7 @@ def projection_phase(
             # # vectors has 2000 rows and 7 columns, normalize each column separately to 0-1:
             # #vectors = (vectors - vectors.min(axis=0)) / (vectors.max(axis=0) - vectors.min(axis=0))
 
-            vector_size = (
-                256
-                if map_vector_field == "w2v_vector"
-                else get_vector_field_dimensions(example_dataset.schema.object_fields[map_vector_field])
-            )
+            vector_size = get_vector_field_dimensions(example_dataset.schema.object_fields[map_vector_field])
             # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
             dummy_vector = np.zeros(vector_size)
             vectors = np.asarray(
@@ -539,11 +529,7 @@ def projection_phase(
 
         else:
             example_dataset = datasets[sorted_ids[0][0]]
-            vector_size = (
-                256
-                if map_vector_field == "w2v_vector"
-                else get_vector_field_dimensions(example_dataset.schema.object_fields[map_vector_field])
-            )
+            vector_size = get_vector_field_dimensions(example_dataset.schema.object_fields[map_vector_field])
             # in the case the map vector can't be generated (missing images etc.), use a dummy vector:
             dummy_vector = np.zeros(vector_size)
             vectors = np.asarray(
@@ -564,9 +550,9 @@ def projection_phase(
             map_data["progress"] = {
                 "total_steps": total_iterations,
                 "current_step": current_iteration,
-                "step_title": "UMAP 2/2: finetuning"
-                if working_in_embedding_space
-                else "UMAP 1/2: pair-wise distances",
+                "step_title": (
+                    "UMAP 2/2: finetuning" if working_in_embedding_space else "UMAP 1/2: pair-wise distances"
+                ),
                 "embeddings_available": working_in_embedding_space,
             }
 

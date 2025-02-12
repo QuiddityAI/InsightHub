@@ -1,101 +1,17 @@
 import logging
 import math
-import os
-import pickle
 import time
 
 import numpy as np
 
 from data_map_backend.utils import DotDict
-from ..utils.field_types import FieldType
-from ..utils.helpers import join_text_source_fields
 
-from ..logic.model_client import save_embedding_cache, embedding_cache
-from ..logic.gensim_w2v_vectorizer import GensimW2VVectorizer
-from ..logic.generate_missing_values import generate_missing_values_for_given_elements
 from ..logic.extract_pipeline import get_pipeline_steps
+from ..logic.generate_missing_values import generate_missing_values_for_given_elements
 from ..logic.generator_functions import get_generator_function_from_field
+from ..logic.model_client import embedding_cache, save_embedding_cache
 from ..logic.search_common import get_required_fields
-from ..logic.local_map_cache import get_vectorize_stage_hash
-
-
-def add_w2v_vectors(
-    items: dict[str, dict],
-    query,
-    similar_map: dict | None,
-    origin_map: dict | None,
-    descriptive_text_fields,
-    map_data,
-    vectorize_stage_params_hash,
-    timings,
-):
-    # last_w2v_embeddings_file_path might be used if search and vectorize settings are the same
-    # or when narrowing down on subcluster of bigger map
-    last_w2v_embeddings_file_path = None
-    if similar_map and vectorize_stage_params_hash == get_vectorize_stage_hash(map_data["last_parameters"]):
-        last_w2v_embeddings_file_path = similar_map["results"]["w2v_embeddings_file_path"]
-    elif origin_map:
-        last_w2v_embeddings_file_path = origin_map["results"]["w2v_embeddings_file_path"]
-    if last_w2v_embeddings_file_path and os.path.exists(last_w2v_embeddings_file_path):
-        with open(last_w2v_embeddings_file_path, "rb") as f:
-            embeddings = pickle.load(f)
-        try:
-            query_embedding = embeddings["query"]
-            for item in items.values():
-                item_embedding = embeddings[item["_id"]]
-                item["w2v_vector"] = item_embedding
-                item["_score"] = np.dot(query_embedding, item_embedding)
-        except KeyError as e:
-            logging.warning("Existing w2v embedding file is missing an item:")
-            logging.warning(e)
-            timings.log("Existing w2v embedding file is missing an item")
-            # falling through to training model again from scratch
-            pass
-        else:
-            timings.log("reusing existing w2v embeddings")
-            return
-
-    map_data["progress"]["step_title"] = "Training model"
-    corpus = [join_text_source_fields(item, descriptive_text_fields) for item in items.values()]
-    vectorizer = GensimW2VVectorizer()
-    try:
-        vectorizer.prepare(corpus)
-    except RuntimeError as e:
-        # if the corpus is too small, the model training might fail
-        logging.warning(f"Failed to train w2v model: {e}")
-        timings.log("failed to train w2v model")
-        for i, item in enumerate(items.values()):
-            item_embedding = np.zeros(256)
-            item["w2v_vector"] = item_embedding
-        return
-    timings.log("training w2v model")
-
-    map_data["progress"]["step_title"] = "Generating vectors"
-    map_data["progress"]["total_steps"] = len(items)
-    map_data["progress"]["current_step"] = 0
-
-    embeddings = {}
-    query_embedding = vectorizer.get_embedding(query)
-    embeddings["query"] = query_embedding
-    for i, item in enumerate(items.values()):
-        text = join_text_source_fields(item, descriptive_text_fields)
-        item_embedding = vectorizer.get_embedding(text).tolist()
-        item["w2v_vector"] = item_embedding
-        # not setting the score here as it turned out to be not very useful with w2v embeddings:
-        # item["_score"] = np.dot(query_embedding, item_embedding)
-        embeddings[item["_id"]] = item_embedding
-
-        map_data["progress"]["current_step"] = i
-
-    w2v_embeddings_cache_folder = "/data/quiddity_data/w2v_embeddings"
-    if not os.path.exists(w2v_embeddings_cache_folder):
-        os.makedirs(w2v_embeddings_cache_folder)
-    w2v_embeddings_file_path = f"{w2v_embeddings_cache_folder}/w2v_embeddings_{vectorize_stage_params_hash}.pkl"
-    with open(w2v_embeddings_file_path, "wb") as f:
-        pickle.dump(embeddings, f)
-    map_data["results"]["w2v_embeddings_file_path"] = w2v_embeddings_file_path
-
-    timings.log("generating w2v embeddings")
+from ..utils.field_types import FieldType
 
 
 def add_missing_map_vectors(items: dict[str, dict], query, params: DotDict, map_data, dataset, timings):
