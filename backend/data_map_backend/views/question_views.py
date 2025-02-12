@@ -10,7 +10,6 @@ from data_map_backend import prompts
 from data_map_backend.data_backend_client import get_item_question_context
 from data_map_backend.models import Chat, DataCollection, Dataset, ServiceUsage, User
 from data_map_backend.notifier import default_notifier
-from data_map_backend.prompts import item_relevancy_prompt, search_question_prompt
 from data_map_backend.serializers import ChatSerializer
 
 from .other_views import is_from_backend
@@ -261,7 +260,8 @@ def answer_question_using_items(request):
 
     context = "\n\n".join(texts)
 
-    prompt = search_question_prompt.replace("{{ context }}", context).replace("{{ question }}", question)
+    # prompt = search_question_prompt.replace("{{ context }}", context).replace("{{ question }}", question)
+    prompt = "Not supported anymore"
 
     history = [{"role": "system", "content": prompt}]
 
@@ -316,7 +316,8 @@ def _judge_item_relevancy_using_llm(
 
     dataset = Dataset.objects.get(id=dataset_id)
 
-    prompt = item_relevancy_prompt.replace("{{ question }}", question)
+    # prompt = item_relevancy_prompt.replace("{{ question }}", question)
+    prompt = "Not supported anymore"
     prompt = prompt.replace("{{ document }}", item_context)
     assert isinstance(dataset.merged_advanced_options, dict)
     dataset_context = dataset.merged_advanced_options.get("relevancy_context", prompts.dataset_context)

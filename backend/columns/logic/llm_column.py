@@ -1,10 +1,10 @@
+import dspy
 from django.utils import timezone
 from llmonkey.llms import BaseLLMModel
 
-from data_map_backend.models import CollectionColumn, ServiceUsage
-from config.utils import get_default_model
 from columns.schemas import CellData, Criterion
-import dspy
+from config.utils import get_default_model
+from data_map_backend.models import CollectionColumn, ServiceUsage
 
 
 class RelevanceSignature(dspy.Signature):
@@ -82,6 +82,7 @@ def generate_custom_prompt_response(
 ) -> tuple[str, str]:
     """Handler for generating a custom prompt response for a column using direct call to the model."""
     system_prompt = column.prompt_template
+    assert system_prompt, "In generate_custom_prompt_response, column.prompt_template is empty"
     replacements = [
         ("title", column.name),
         ("expression", column.expression or ""),

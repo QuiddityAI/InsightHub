@@ -2,8 +2,8 @@ import json
 import logging
 import threading
 
-from django.db.models.manager import BaseManager
 import dspy
+from django.db.models.manager import BaseManager
 from llmonkey.llms import BaseLLMModel
 
 from config.utils import get_default_model
@@ -18,7 +18,7 @@ from data_map_backend.schemas import ItemRelevance
 from legacy_backend.logic.chat_and_extraction import (
     get_item_question_context as get_item_question_context_native,
 )
-from write.prompts import writing_task_prompt, writing_task_prompt_without_items
+from write.prompts import writing_task_prompt_without_items
 
 
 class WritingTaskSignature(dspy.Signature):

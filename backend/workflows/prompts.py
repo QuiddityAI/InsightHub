@@ -1,13 +1,5 @@
 from collections import defaultdict
 
-
-query_language_prompt = """
-Return the two-letter language code (like 'de' or 'en') of the following query.
-Answer only with the language code, without anything else.
-
-The query is: {{ query }}
-"""
-
 criteria_prompt_en = """
 For a given query, write a list of criteria that potential search results have to fulfill.
 Only split the query into multiple parts if it is necessary to easily evaluate the criteria.
