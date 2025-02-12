@@ -4,27 +4,20 @@ RUN apt install -y software-properties-common
 RUN add-apt-repository -y ppa:deadsnakes/ppa && apt update
 # to prevent tzdata installation from asking questions:
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt install -y python3.11 python3.11-dev python3-pip
-RUN apt install -y python3.11-venv
+RUN apt install -y python3.11 python3.11-dev python3-pip curl git
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/bin" sh
 ENV VIRTUAL_ENV=/opt/venv
-RUN python3.11 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip install --upgrade pip wheel
-RUN pip install pipenv
+RUN uv venv --python-preference=only-system $VIRTUAL_ENV --python 3.11
+RUN uv pip install --upgrade pip wheel
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
 COPY docker/docker_container_base_python_packages.txt /app
-RUN pip install --no-cache-dir -r docker_container_base_python_packages.txt
-COPY Pipfile /app
-COPY Pipfile.lock /app
-RUN apt install -y git  # needed to install pip dependencies from git repos
-RUN pipenv requirements > requirements.txt \
-    && pip install --no-cache-dir -r requirements.txt
+COPY docker/model_server_requirements.txt /app
+RUN uv pip install --no-cache-dir -r docker_container_base_python_packages.txt -r model_server_requirements.txt
 RUN chown -R appuser /app
 RUN mkdir -p /home/appuser/.cache/huggingface
 RUN chmod -R a+rw /home/appuser/.cache
-RUN apt install -y curl
-
+ENV PATH="/opt/venv/bin:$PATH"
 FROM cuda_python_env as model_server
 
 HEALTHCHECK --interval=30s --timeout=3s \
