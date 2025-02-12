@@ -6,11 +6,13 @@
     "name": "E5 Base Text Embedding",
     "description": "",
     "created_at": "2023-09-19T13:21:41.885Z",
-    "changed_at": "2024-05-30T08:04:39.140Z",
+    "changed_at": "2025-02-12T09:04:05.725Z",
     "requires_context": false,
+    "requires_multiple_input_fields": false,
+    "returns_multiple_fields": false,
     "module": "sentence_transformer",
     "embedding_space": "intfloat/e5-base-v2",
-    "is_preferred_for_search": false,
+    "is_preferred_for_search": true,
     "default_parameters": {
       "prefix": "",
       "model_name": "intfloat/e5-base-v2"
