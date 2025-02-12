@@ -7,13 +7,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0042_delete_historicaldatacollection'),
+        ("data_map_backend", "0042_delete_historicaldatacollection"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='collectionitem',
-            name='collection',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='data_map_backend.datacollection', verbose_name='Collection'),
+            model_name="collectionitem",
+            name="collection",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="items",
+                to="data_map_backend.datacollection",
+                verbose_name="Collection",
+            ),
         ),
     ]

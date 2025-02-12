@@ -1,7 +1,10 @@
-from prometheus_client.core import StateSetMetricFamily, GaugeMetricFamily, REGISTRY
+from prometheus_client.core import REGISTRY, GaugeMetricFamily, StateSetMetricFamily
 from prometheus_client.registry import Collector
 
-from .data_backend_client import get_data_backend_health, get_data_backend_database_health
+from .data_backend_client import (
+    get_data_backend_database_health,
+    get_data_backend_health,
+)
 
 
 class DataBackendStatusCollector(Collector):
@@ -47,7 +50,7 @@ class UsageStatisticsCollector(Collector):
         yield GaugeMetricFamily("collection_item_count", "Number of items in collections in the system")
 
     def collect(self):
-        from .models import SearchHistoryItem, DataCollection, Dataset, CollectionItem
+        from .models import CollectionItem, DataCollection, Dataset, SearchHistoryItem
 
         search_count = GaugeMetricFamily("search_count", "Number of searches in the system")
         search_count.add_metric([], SearchHistoryItem.objects.count())

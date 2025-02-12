@@ -2,6 +2,7 @@ import time
 
 from columns.logic.process_column import process_cells_blocking
 from columns.schemas import CellData
+from config.utils import get_default_model
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     CollectionColumn,
@@ -22,7 +23,6 @@ from workflows.schemas import (
     WorkflowOrder,
 )
 from write.logic.writing_task import execute_writing_task_safe
-from config.utils import get_default_model
 
 
 @workflow

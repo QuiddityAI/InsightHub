@@ -1,5 +1,4 @@
 from django.http import HttpResponse
-
 from ninja import NinjaAPI
 
 from data_map_backend.models import DataCollection

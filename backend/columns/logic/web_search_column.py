@@ -7,8 +7,8 @@ from columns.schemas import CellData
 
 
 def google_search(input_data, source_fields) -> CellData:
-    from bs4 import BeautifulSoup
     import requests
+    from bs4 import BeautifulSoup
 
     search = input_data.get(source_fields[0], "")
     if not search:

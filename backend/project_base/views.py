@@ -1,12 +1,13 @@
 import json
 import logging
-from django.contrib.auth import login, authenticate
+
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
-from data_map_backend.models import Organization, DataCollection, CollectionColumn, User
+from data_map_backend.models import CollectionColumn, DataCollection, Organization, User
 from data_map_backend.notifier import default_notifier
 
 

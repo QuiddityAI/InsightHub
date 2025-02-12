@@ -1,16 +1,17 @@
-import logging
-from typing import Iterable
-import requests
-import os
-import json
 import base64
+import json
+import logging
+import os
+from typing import Iterable
+
+import requests
+
+from data_map_backend.utils import DotDict
 
 from ..database_client.django_client import get_dataset
-from data_map_backend.utils import DotDict
-from ..utils.custom_json_encoder import CustomJSONEncoder
-
 from ..database_client.text_search_engine_client import TextSearchEngineClient
 from ..database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..utils.custom_json_encoder import CustomJSONEncoder
 
 
 def forward_local_db(params: DotDict):

@@ -6,46 +6,49 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0019_rename_current_extraction_processes_datacollection_columns_with_running_processes_and_more'),
+        (
+            "data_map_backend",
+            "0019_rename_current_extraction_processes_datacollection_columns_with_running_processes_and_more",
+        ),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='datacollection',
-            name='extraction_questions',
+            model_name="datacollection",
+            name="extraction_questions",
         ),
         migrations.RemoveField(
-            model_name='historicaldatacollection',
-            name='extraction_questions',
+            model_name="historicaldatacollection",
+            name="extraction_questions",
         ),
         migrations.AddField(
-            model_name='datacollection',
-            name='agent_is_running',
-            field=models.BooleanField(default=False, verbose_name='Agent is running'),
+            model_name="datacollection",
+            name="agent_is_running",
+            field=models.BooleanField(default=False, verbose_name="Agent is running"),
         ),
         migrations.AddField(
-            model_name='datacollection',
-            name='cancel_agent_flag',
-            field=models.BooleanField(default=False, verbose_name='Cancel Agent Flag'),
+            model_name="datacollection",
+            name="cancel_agent_flag",
+            field=models.BooleanField(default=False, verbose_name="Cancel Agent Flag"),
         ),
         migrations.AddField(
-            model_name='datacollection',
-            name='current_agent_step',
-            field=models.CharField(blank=True, max_length=200, null=True, verbose_name='Current Agent Step'),
+            model_name="datacollection",
+            name="current_agent_step",
+            field=models.CharField(blank=True, max_length=200, null=True, verbose_name="Current Agent Step"),
         ),
         migrations.AddField(
-            model_name='historicaldatacollection',
-            name='agent_is_running',
-            field=models.BooleanField(default=False, verbose_name='Agent is running'),
+            model_name="historicaldatacollection",
+            name="agent_is_running",
+            field=models.BooleanField(default=False, verbose_name="Agent is running"),
         ),
         migrations.AddField(
-            model_name='historicaldatacollection',
-            name='cancel_agent_flag',
-            field=models.BooleanField(default=False, verbose_name='Cancel Agent Flag'),
+            model_name="historicaldatacollection",
+            name="cancel_agent_flag",
+            field=models.BooleanField(default=False, verbose_name="Cancel Agent Flag"),
         ),
         migrations.AddField(
-            model_name='historicaldatacollection',
-            name='current_agent_step',
-            field=models.CharField(blank=True, max_length=200, null=True, verbose_name='Current Agent Step'),
+            model_name="historicaldatacollection",
+            name="current_agent_step",
+            field=models.CharField(blank=True, max_length=200, null=True, verbose_name="Current Agent Step"),
         ),
     ]

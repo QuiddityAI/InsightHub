@@ -6,22 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0017_switch_to_custom_user_model'),
+        ("data_map_backend", "0017_switch_to_custom_user_model"),
     ]
 
     operations = [
         migrations.AlterModelTable(
-            name='user',
+            name="user",
             table=None,
         ),
         migrations.AddField(
-            model_name='user',
-            name='accepted_cookies',
-            field=models.BooleanField(default=False, verbose_name='Cookies accepted'),
+            model_name="user",
+            name="accepted_cookies",
+            field=models.BooleanField(default=False, verbose_name="Cookies accepted"),
         ),
         migrations.AddField(
-            model_name='user',
-            name='accepted_emails',
-            field=models.BooleanField(default=False, verbose_name='Emails allowed'),
+            model_name="user",
+            name="accepted_emails",
+            field=models.BooleanField(default=False, verbose_name="Emails allowed"),
         ),
     ]

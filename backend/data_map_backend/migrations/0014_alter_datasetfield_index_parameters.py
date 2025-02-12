@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0013_alter_datasetfield_index_parameters'),
+        ("data_map_backend", "0013_alter_datasetfield_index_parameters"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='datasetfield',
-            name='index_parameters',
-            field=models.JSONField(blank=True, default=dict, verbose_name='Index Parameters'),
+            model_name="datasetfield",
+            name="index_parameters",
+            field=models.JSONField(blank=True, default=dict, verbose_name="Index Parameters"),
         ),
     ]

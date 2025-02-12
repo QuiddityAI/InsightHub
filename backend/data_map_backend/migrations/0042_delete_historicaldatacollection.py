@@ -6,11 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0041_datacollection_ui_settings_and_more'),
+        ("data_map_backend", "0041_datacollection_ui_settings_and_more"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='HistoricalDataCollection',
+            name="HistoricalDataCollection",
         ),
     ]

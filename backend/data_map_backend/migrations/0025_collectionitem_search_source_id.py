@@ -6,13 +6,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0024_datacollection_last_search_task_and_more'),
+        ("data_map_backend", "0024_datacollection_last_search_task_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collectionitem',
-            name='search_source_id',
-            field=models.CharField(blank=True, help_text='ID of the search source that generated this item', max_length=50, null=True, verbose_name='Search Source ID'),
+            model_name="collectionitem",
+            name="search_source_id",
+            field=models.CharField(
+                blank=True,
+                help_text="ID of the search source that generated this item",
+                max_length=50,
+                null=True,
+                verbose_name="Search Source ID",
+            ),
         ),
     ]

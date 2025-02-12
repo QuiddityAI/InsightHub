@@ -1,12 +1,13 @@
-import re
 import logging
+import re
 
 from llmonkey.llms import Google_Gemini_Flash_1_5_v1
 
-from data_map_backend.models import Dataset, DataCollection
+from data_map_backend.models import DataCollection, Dataset
 from search.schemas import Filter, SearchTaskSettings
 
 # TODO: migrate to DSPy + optimize prompts + re-enable feature
+
 
 def get_filter_prompt(dataset_id: int, language: str):
     dataset = Dataset.objects.get(id=dataset_id)

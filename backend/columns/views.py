@@ -3,10 +3,11 @@ import logging
 import threading
 import time
 
+import dspy
 from django.http import HttpRequest, HttpResponse
 from llmonkey.llms import BaseLLMModel
 from ninja import NinjaAPI
-import dspy
+
 from columns.logic.process_column import (
     get_collection_items_from_cell_range,
     process_cells_blocking,
@@ -20,13 +21,13 @@ from columns.schemas import (
     ProcessColumnPayload,
     UpdateColumnConfig,
 )
+from config.utils import get_default_dspy_llm
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
 from data_map_backend.notifier import default_notifier
 from data_map_backend.serializers import (
     CollectionColumnSerializer,
     CollectionSerializer,
 )
-from config.utils import get_default_dspy_llm
 
 
 class TitleSignature(dspy.Signature):

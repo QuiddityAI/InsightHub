@@ -1,21 +1,20 @@
 import gzip
-import requests
 import json
-from pathlib import Path
+import logging
 import os
 import pickle
-import logging
-import time
 import sys
+import time
+from pathlib import Path
 
 import orjson
-from tqdm import tqdm
-
+import requests
 from download_semantic_scholar_dataset import DatasetNames
+from tqdm import tqdm
 
 # add '../import_scripts/' to sys.path:
 sys.path.append(str(Path(__file__).resolve().parents[1] / "import_scripts"))
-from data_backend_client import update_database_layout, insert_many
+from data_backend_client import insert_many, update_database_layout
 
 # configure logging like [timestamp] [loglevel with fixed length] message
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)-8s] %(message)s")

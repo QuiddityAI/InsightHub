@@ -1,8 +1,8 @@
-from pathlib import Path
+import mmap
+import pickle
 import re
 import sys
-import pickle
-import mmap
+from pathlib import Path
 
 from tqdm import tqdm
 

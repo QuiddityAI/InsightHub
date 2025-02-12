@@ -1,10 +1,10 @@
 import logging
 import os
 import time
-import torch
-from transformers import AutoTokenizer, AutoProcessor, CLIPModel
-from PIL import Image, UnidentifiedImageError
 
+import torch
+from PIL import Image, UnidentifiedImageError
+from transformers import AutoProcessor, AutoTokenizer, CLIPModel
 
 clip_models = [
     "openai/clip-vit-base-patch32",  # 768 dimensions

@@ -1,45 +1,45 @@
-from collections import defaultdict
 import copy
 import itertools
 import json
 import logging
+from collections import defaultdict
 
 import numpy as np
 
-
-from ..utils.field_types import FieldType
-from ..utils.collect_timings import Timings
 from data_map_backend.utils import DotDict
-from ..utils.source_plugin_types import SourcePlugin
+from data_map_backend.views.other_views import get_serialized_dataset_cached
 
 from ..api_clients.bing_web_search import bing_web_search_formatted
-from ..api_clients.semantic_scholar_client import semantic_scholar_search_formatted
 from ..api_clients.kleinanzeigen_client import get_kleinanzeigen_results
-from ..database_client.django_client import get_trained_classifier, get_dataset, get_collection
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
+from ..api_clients.semantic_scholar_client import semantic_scholar_search_formatted
+from ..database_client.django_client import (
+    get_collection,
+    get_dataset,
+    get_trained_classifier,
+)
 from ..database_client.text_search_engine_client import TextSearchEngineClient
-from ..logic.local_map_cache import local_maps
+from ..database_client.vector_search_engine_client import VectorSearchEngineClient
 from ..logic.extract_pipeline import get_pipeline_steps
 from ..logic.generate_missing_values import generate_missing_values_for_given_elements
+from ..logic.local_map_cache import local_maps
+from ..logic.reranking import rerank
 from ..logic.search_common import (
     QueryInput,
+    adapt_filters_to_dataset,
+    check_filters,
+    combine_and_sort_result_sets,
+    fill_in_vector_data_list,
+    get_field_similarity_threshold,
+    get_fulltext_search_results,
     get_required_fields,
     get_vector_search_results,
     get_vector_search_results_matching_collection,
-    get_fulltext_search_results,
-    combine_and_sort_result_sets,
-    sort_items_and_complete_them,
-    get_field_similarity_threshold,
-    fill_in_vector_data_list,
-    adapt_filters_to_dataset,
-    check_filters,
     separate_text_and_vector_fields,
+    sort_items_and_complete_them,
 )
-from ..logic.reranking import rerank
-
-from ..database_client.django_client import get_dataset
-
-from data_map_backend.views.other_views import get_serialized_dataset_cached
+from ..utils.collect_timings import Timings
+from ..utils.field_types import FieldType
+from ..utils.source_plugin_types import SourcePlugin
 
 
 # @lru_cache()

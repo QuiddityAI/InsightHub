@@ -3,6 +3,7 @@ import logging
 from typing import Callable, Optional
 
 from data_map_backend.utils import DotDict
+
 from ..logic.generator_functions import get_generator_function_from_field
 
 
@@ -70,9 +71,11 @@ def get_pipeline_steps(
                         "target_field": field.identifier,
                         "requires_multiple_input_fields": field.generator.requires_multiple_input_fields,
                         "returns_multiple_fields": field.generator.returns_multiple_fields,
-                        "output_to_item_mapping": field.generator_parameters.output_to_item_mapping
-                        if field.generator.returns_multiple_fields
-                        else None,
+                        "output_to_item_mapping": (
+                            field.generator_parameters.output_to_item_mapping
+                            if field.generator.returns_multiple_fields
+                            else None
+                        ),
                     }
                 )
                 steps_added_this_phase.append(field.identifier)

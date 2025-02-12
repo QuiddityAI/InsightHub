@@ -1,17 +1,16 @@
-from pathlib import Path
+import gzip
+import mmap
+import pickle
 import random
 import re
 import sys
-import pickle
-import mmap
-import gzip
 import time
+from pathlib import Path
 
-import orjson
-from tqdm import tqdm
 import cbor2
-
+import orjson
 from download_semantic_scholar_dataset import DatasetNames
+from tqdm import tqdm
 
 file_id_to_path = {}
 corpusid_to_file_pos_and_length = {}

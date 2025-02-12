@@ -1,7 +1,9 @@
+from typing import Literal, Type
+
 import dspy
 from llmonkey.llms import BaseLLMModel
+
 from .llm import default_dspy_models, default_models
-from typing import Literal, Type
 
 
 def get_default_model(size: Literal["small", "medium", "large"]) -> BaseLLMModel:

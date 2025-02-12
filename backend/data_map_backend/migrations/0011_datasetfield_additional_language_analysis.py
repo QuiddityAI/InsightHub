@@ -6,13 +6,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0010_historicalimportconverter_manual_insert_form_and_more'),
+        ("data_map_backend", "0010_historicalimportconverter_manual_insert_form_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='datasetfield',
-            name='additional_language_analysis',
-            field=models.JSONField(blank=True, default=list, help_text="Only applicable for 'Text' fields, any of 'english, german, french, spanish, czech, russian, hindi'", null=True, verbose_name='Additional Language Processing'),
+            model_name="datasetfield",
+            name="additional_language_analysis",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="Only applicable for 'Text' fields, any of 'english, german, french, spanish, czech, russian, hindi'",
+                null=True,
+                verbose_name="Additional Language Processing",
+            ),
         ),
     ]

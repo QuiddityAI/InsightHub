@@ -1,13 +1,13 @@
 import csv
-from pathlib import Path
-import time
-import uuid
-import sys
 import datetime
 import os
+import sys
+import time
+import uuid
+from pathlib import Path
 
-import weaviate
 import numpy as np
+import weaviate
 
 if sys.platform == "darwin":
     # Macbook

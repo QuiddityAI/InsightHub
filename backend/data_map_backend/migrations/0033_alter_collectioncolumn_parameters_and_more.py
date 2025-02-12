@@ -6,33 +6,57 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0032_datacollection_map_metadata_and_more'),
+        ("data_map_backend", "0032_datacollection_map_metadata_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='collectioncolumn',
-            name='parameters',
-            field=models.JSONField(blank=True, default=dict, verbose_name='Parameters'),
+            model_name="collectioncolumn",
+            name="parameters",
+            field=models.JSONField(blank=True, default=dict, verbose_name="Parameters"),
         ),
         migrations.AlterField(
-            model_name='datacollection',
-            name='columns_with_running_processes',
-            field=models.JSONField(blank=True, default=list, verbose_name='Current Extraction Processes'),
+            model_name="datacollection",
+            name="columns_with_running_processes",
+            field=models.JSONField(blank=True, default=list, verbose_name="Current Extraction Processes"),
         ),
         migrations.AlterField(
-            model_name='dataset',
-            name='source_plugin',
-            field=models.CharField(choices=[('INTERNAL_OPENSEARCH_QDRANT', 'Internal DB (OpenSearch + Qdrant)'), ('REMOTE_DATASET', 'Remote Visual Data Map Dataset'), ('BRAVE_WEB_API', 'Brave Web Search API'), ('BING_WEB_API', 'Bing Web Search API'), ('SEMANTIC_SCHOLAR_API', 'Semantic Scholar API'), ('KLEINANZEIGEN', 'Kleinanzeigen Search')], default='INTERNAL_OPENSEARCH_QDRANT', max_length=50, verbose_name='Source Plugin'),
+            model_name="dataset",
+            name="source_plugin",
+            field=models.CharField(
+                choices=[
+                    ("INTERNAL_OPENSEARCH_QDRANT", "Internal DB (OpenSearch + Qdrant)"),
+                    ("REMOTE_DATASET", "Remote Visual Data Map Dataset"),
+                    ("BRAVE_WEB_API", "Brave Web Search API"),
+                    ("BING_WEB_API", "Bing Web Search API"),
+                    ("SEMANTIC_SCHOLAR_API", "Semantic Scholar API"),
+                    ("KLEINANZEIGEN", "Kleinanzeigen Search"),
+                ],
+                default="INTERNAL_OPENSEARCH_QDRANT",
+                max_length=50,
+                verbose_name="Source Plugin",
+            ),
         ),
         migrations.AlterField(
-            model_name='historicaldatacollection',
-            name='columns_with_running_processes',
-            field=models.JSONField(blank=True, default=list, verbose_name='Current Extraction Processes'),
+            model_name="historicaldatacollection",
+            name="columns_with_running_processes",
+            field=models.JSONField(blank=True, default=list, verbose_name="Current Extraction Processes"),
         ),
         migrations.AlterField(
-            model_name='historicaldataset',
-            name='source_plugin',
-            field=models.CharField(choices=[('INTERNAL_OPENSEARCH_QDRANT', 'Internal DB (OpenSearch + Qdrant)'), ('REMOTE_DATASET', 'Remote Visual Data Map Dataset'), ('BRAVE_WEB_API', 'Brave Web Search API'), ('BING_WEB_API', 'Bing Web Search API'), ('SEMANTIC_SCHOLAR_API', 'Semantic Scholar API'), ('KLEINANZEIGEN', 'Kleinanzeigen Search')], default='INTERNAL_OPENSEARCH_QDRANT', max_length=50, verbose_name='Source Plugin'),
+            model_name="historicaldataset",
+            name="source_plugin",
+            field=models.CharField(
+                choices=[
+                    ("INTERNAL_OPENSEARCH_QDRANT", "Internal DB (OpenSearch + Qdrant)"),
+                    ("REMOTE_DATASET", "Remote Visual Data Map Dataset"),
+                    ("BRAVE_WEB_API", "Brave Web Search API"),
+                    ("BING_WEB_API", "Bing Web Search API"),
+                    ("SEMANTIC_SCHOLAR_API", "Semantic Scholar API"),
+                    ("KLEINANZEIGEN", "Kleinanzeigen Search"),
+                ],
+                default="INTERNAL_OPENSEARCH_QDRANT",
+                max_length=50,
+                verbose_name="Source Plugin",
+            ),
         ),
     ]

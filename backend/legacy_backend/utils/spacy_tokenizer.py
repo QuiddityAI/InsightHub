@@ -1,5 +1,5 @@
-import string
 import re
+import string
 
 import spacy
 

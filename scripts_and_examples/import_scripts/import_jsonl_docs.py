@@ -1,9 +1,8 @@
-import os
 import json
-
-from data_backend_client import upload_files
+import os
 import tempfile
 
+from data_backend_client import upload_files
 
 batch = []
 batch_size = 5

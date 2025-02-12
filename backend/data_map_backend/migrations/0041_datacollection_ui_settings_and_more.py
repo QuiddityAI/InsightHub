@@ -6,18 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0040_alter_writingtask_collection_and_more'),
+        ("data_map_backend", "0040_alter_writingtask_collection_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='datacollection',
-            name='ui_settings',
-            field=models.JSONField(blank=True, default=dict, help_text='Settings for the frontend', verbose_name='UI Settings'),
+            model_name="datacollection",
+            name="ui_settings",
+            field=models.JSONField(
+                blank=True, default=dict, help_text="Settings for the frontend", verbose_name="UI Settings"
+            ),
         ),
         migrations.AddField(
-            model_name='historicaldatacollection',
-            name='ui_settings',
-            field=models.JSONField(blank=True, default=dict, help_text='Settings for the frontend', verbose_name='UI Settings'),
+            model_name="historicaldatacollection",
+            name="ui_settings",
+            field=models.JSONField(
+                blank=True, default=dict, help_text="Settings for the frontend", verbose_name="UI Settings"
+            ),
         ),
     ]

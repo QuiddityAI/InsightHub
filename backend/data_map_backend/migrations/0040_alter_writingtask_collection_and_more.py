@@ -7,29 +7,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0039_update_writing_task_model_to_new_models'),
+        ("data_map_backend", "0039_update_writing_task_model_to_new_models"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='writingtask',
-            name='collection',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, to='data_map_backend.datacollection', verbose_name='Collection'),
+            model_name="writingtask",
+            name="collection",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="data_map_backend.datacollection",
+                verbose_name="Collection",
+            ),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='writingtask',
-            name='previous_versions',
-            field=models.JSONField(blank=True, default=list, verbose_name='Previous Versions'),
+            model_name="writingtask",
+            name="previous_versions",
+            field=models.JSONField(blank=True, default=list, verbose_name="Previous Versions"),
         ),
         migrations.AlterField(
-            model_name='writingtask',
-            name='selected_item_ids',
-            field=models.JSONField(blank=True, default=list, verbose_name='Selected Item IDs'),
+            model_name="writingtask",
+            name="selected_item_ids",
+            field=models.JSONField(blank=True, default=list, verbose_name="Selected Item IDs"),
         ),
         migrations.AlterField(
-            model_name='writingtask',
-            name='source_fields',
-            field=models.JSONField(blank=True, default=list, verbose_name='Source Fields'),
+            model_name="writingtask",
+            name="source_fields",
+            field=models.JSONField(blank=True, default=list, verbose_name="Source Fields"),
         ),
     ]

@@ -20,7 +20,7 @@ varying vec3 n;
 
 void main(void) {
 	gl_PointSize = 30.0;
-	
+
 	// compute position
 	gl_Position = _mvProj * vec4(vertex, 1.0);
 
@@ -50,13 +50,13 @@ uniform sampler2D tex;
 
 void main(void)
 {
-    
+
 	vec2 uv = gl_PointCoord.xy;
-    
+
     float circleArea = 1.0 - step(0.5, length(uv - 0.5));// smoothstep(0.5, 0.4, length(uv - 0.5));
-    
+
     gl_FragColor.rgb = 0.8 + 0.2 * sin(uv.yxx) + vec3(0.1, 0.0, 0.3);
     gl_FragColor.a = circleArea;
-    
+
 	//gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
 }

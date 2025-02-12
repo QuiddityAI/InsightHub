@@ -1,8 +1,8 @@
-import re
 import os
+import re
 
-from django.utils import timezone
 from bs4 import BeautifulSoup
+from django.utils import timezone
 
 from columns.schemas import CellData
 

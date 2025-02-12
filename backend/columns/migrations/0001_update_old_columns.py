@@ -2,8 +2,9 @@
 
 from django.db import migrations
 
+
 def update_old_column(apps, schema_editor):
-    CollectionColumn = apps.get_model('data_map_backend', 'CollectionColumn')
+    CollectionColumn = apps.get_model("data_map_backend", "CollectionColumn")
     for column in CollectionColumn.objects.all():
         column.module = "llm"
         column.save()
@@ -11,8 +12,7 @@ def update_old_column(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.RunPython(update_old_column),

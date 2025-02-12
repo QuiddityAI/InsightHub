@@ -6,18 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0043_alter_collectionitem_collection'),
+        ("data_map_backend", "0043_alter_collectionitem_collection"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='generationtask',
-            name='batch_size',
-            field=models.IntegerField(default=512, verbose_name='Batch Size'),
+            model_name="generationtask",
+            name="batch_size",
+            field=models.IntegerField(default=512, verbose_name="Batch Size"),
         ),
         migrations.AddField(
-            model_name='generationtask',
-            name='clear_all_output_fields',
-            field=models.BooleanField(default=False, help_text='Clear all output fields (for multi-output generators) before generating new values', verbose_name='Clear all output fields'),
+            model_name="generationtask",
+            name="clear_all_output_fields",
+            field=models.BooleanField(
+                default=False,
+                help_text="Clear all output fields (for multi-output generators) before generating new values",
+                verbose_name="Clear all output fields",
+            ),
         ),
     ]

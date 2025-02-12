@@ -1,14 +1,13 @@
-from hashlib import md5
-import os
 import logging
-from typing import Callable
-import time
+import os
 import random
+import time
+from hashlib import md5
+from typing import Callable
 
 import PIL
-from PIL import Image
-from PIL import ImageFile
 import requests
+from PIL import Image, ImageFile
 
 from ..utils.helpers import do_in_parallel
 

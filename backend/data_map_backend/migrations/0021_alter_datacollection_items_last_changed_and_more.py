@@ -7,26 +7,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0020_remove_datacollection_extraction_questions_and_more'),
+        ("data_map_backend", "0020_remove_datacollection_extraction_questions_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='datacollection',
-            name='items_last_changed',
+            model_name="datacollection",
+            name="items_last_changed",
         ),
         migrations.RemoveField(
-            model_name='historicaldatacollection',
-            name='items_last_changed',
+            model_name="historicaldatacollection",
+            name="items_last_changed",
         ),
         migrations.AddField(
-            model_name='datacollection',
-            name='items_last_changed',
-            field=models.DateTimeField(default=django.utils.timezone.now, help_text='Last time items were added or their relevance was changed', verbose_name='Items Last Changed'),
+            model_name="datacollection",
+            name="items_last_changed",
+            field=models.DateTimeField(
+                default=django.utils.timezone.now,
+                help_text="Last time items were added or their relevance was changed",
+                verbose_name="Items Last Changed",
+            ),
         ),
         migrations.AddField(
-            model_name='historicaldatacollection',
-            name='items_last_changed',
-            field=models.DateTimeField(default=django.utils.timezone.now, help_text='Last time items were added or their relevance was changed', verbose_name='Items Last Changed'),
+            model_name="historicaldatacollection",
+            name="items_last_changed",
+            field=models.DateTimeField(
+                default=django.utils.timezone.now,
+                help_text="Last time items were added or their relevance was changed",
+                verbose_name="Items Last Changed",
+            ),
         ),
     ]

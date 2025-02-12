@@ -6,23 +6,37 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0025_collectionitem_search_source_id'),
+        ("data_map_backend", "0025_collectionitem_search_source_id"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collectioncolumn',
-            name='determines_relevance',
-            field=models.BooleanField(default=False, help_text="In this case, the value needs to be a JSON object with a boolean 'is_relevant' field, textual 'relevant_content' field, and optionally a 0.0-1.0 'relevance_score' field", verbose_name='Determines Relevance'),
+            model_name="collectioncolumn",
+            name="determines_relevance",
+            field=models.BooleanField(
+                default=False,
+                help_text="In this case, the value needs to be a JSON object with a boolean 'is_relevant' field, textual 'relevant_content' field, and optionally a 0.0-1.0 'relevance_score' field",
+                verbose_name="Determines Relevance",
+            ),
         ),
         migrations.AlterField(
-            model_name='collectioncolumn',
-            name='prompt_template',
-            field=models.TextField(blank=True, help_text='Template for the prompt if this column uses an LLM. If empty, a default template is used. There are some special variables like {{ document }} and {{ expression }} that can be used.', null=True, verbose_name='Prompt Template'),
+            model_name="collectioncolumn",
+            name="prompt_template",
+            field=models.TextField(
+                blank=True,
+                help_text="Template for the prompt if this column uses an LLM. If empty, a default template is used. There are some special variables like {{ document }} and {{ expression }} that can be used.",
+                null=True,
+                verbose_name="Prompt Template",
+            ),
         ),
         migrations.AlterField(
-            model_name='collectioncolumn',
-            name='source_fields',
-            field=models.JSONField(blank=True, default=list, help_text='List of source fields to be used for this column', verbose_name='Source Fields'),
+            model_name="collectioncolumn",
+            name="source_fields",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="List of source fields to be used for this column",
+                verbose_name="Source Fields",
+            ),
         ),
     ]

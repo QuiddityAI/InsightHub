@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0026_collectioncolumn_determines_relevance_and_more'),
+        ("data_map_backend", "0026_collectioncolumn_determines_relevance_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='collectionitem',
-            name='column_data',
-            field=models.JSONField(blank=True, default=dict, help_text='Extracted answers, notes, etc.', verbose_name='Column Data'),
+            model_name="collectionitem",
+            name="column_data",
+            field=models.JSONField(
+                blank=True, default=dict, help_text="Extracted answers, notes, etc.", verbose_name="Column Data"
+            ),
         ),
     ]

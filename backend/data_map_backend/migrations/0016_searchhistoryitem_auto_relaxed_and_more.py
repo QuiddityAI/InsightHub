@@ -8,34 +8,45 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0015_serviceusageperiod_usage_by_cause'),
+        ("data_map_backend", "0015_serviceusageperiod_usage_by_cause"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='searchhistoryitem',
-            name='auto_relaxed',
-            field=models.BooleanField(blank=True, help_text='Whether the search was automatically relaxed to find results', null=True, verbose_name='Auto Relaxed'),
+            model_name="searchhistoryitem",
+            name="auto_relaxed",
+            field=models.BooleanField(
+                blank=True,
+                help_text="Whether the search was automatically relaxed to find results",
+                null=True,
+                verbose_name="Auto Relaxed",
+            ),
         ),
         migrations.AddField(
-            model_name='searchhistoryitem',
-            name='cluster_count',
-            field=models.IntegerField(blank=True, null=True, verbose_name='Cluster Count'),
+            model_name="searchhistoryitem",
+            name="cluster_count",
+            field=models.IntegerField(blank=True, null=True, verbose_name="Cluster Count"),
         ),
         migrations.AddField(
-            model_name='searchhistoryitem',
-            name='result_information',
-            field=models.JSONField(blank=True, null=True, verbose_name='Other Result Information'),
+            model_name="searchhistoryitem",
+            name="result_information",
+            field=models.JSONField(blank=True, null=True, verbose_name="Other Result Information"),
         ),
         migrations.AddField(
-            model_name='searchhistoryitem',
-            name='total_matches',
-            field=models.IntegerField(blank=True, null=True, verbose_name='Total Matches'),
+            model_name="searchhistoryitem",
+            name="total_matches",
+            field=models.IntegerField(blank=True, null=True, verbose_name="Total Matches"),
         ),
         migrations.AlterField(
-            model_name='searchhistoryitem',
-            name='user',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL, verbose_name='User'),
+            model_name="searchhistoryitem",
+            name="user",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="User",
+            ),
         ),
     ]

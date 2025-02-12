@@ -6,28 +6,48 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0031_datacollection_map_data_and_more'),
+        ("data_map_backend", "0031_datacollection_map_data_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='datacollection',
-            name='map_metadata',
-            field=models.JSONField(blank=True, default=dict, help_text='Last update, progress, readiness etc.', verbose_name='Map Metadata'),
+            model_name="datacollection",
+            name="map_metadata",
+            field=models.JSONField(
+                blank=True,
+                default=dict,
+                help_text="Last update, progress, readiness etc.",
+                verbose_name="Map Metadata",
+            ),
         ),
         migrations.AddField(
-            model_name='historicaldatacollection',
-            name='map_metadata',
-            field=models.JSONField(blank=True, default=dict, help_text='Last update, progress, readiness etc.', verbose_name='Map Metadata'),
+            model_name="historicaldatacollection",
+            name="map_metadata",
+            field=models.JSONField(
+                blank=True,
+                default=dict,
+                help_text="Last update, progress, readiness etc.",
+                verbose_name="Map Metadata",
+            ),
         ),
         migrations.AlterField(
-            model_name='datacollection',
-            name='map_data',
-            field=models.JSONField(blank=True, default=dict, help_text='The actual map data like positions and labels', verbose_name='Map Data'),
+            model_name="datacollection",
+            name="map_data",
+            field=models.JSONField(
+                blank=True,
+                default=dict,
+                help_text="The actual map data like positions and labels",
+                verbose_name="Map Data",
+            ),
         ),
         migrations.AlterField(
-            model_name='historicaldatacollection',
-            name='map_data',
-            field=models.JSONField(blank=True, default=dict, help_text='The actual map data like positions and labels', verbose_name='Map Data'),
+            model_name="historicaldatacollection",
+            name="map_data",
+            field=models.JSONField(
+                blank=True,
+                default=dict,
+                help_text="The actual map data like positions and labels",
+                verbose_name="Map Data",
+            ),
         ),
     ]
