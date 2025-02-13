@@ -62,7 +62,9 @@ def create_and_run_search_task(
     user: User,
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
-) -> list[CollectionItem]:
+    return_task_object: bool = False,
+    set_agent_step: bool = True,
+) -> list[CollectionItem] | tuple[list[CollectionItem], SearchTask]:
     """
     Executes a search task on a given data collection.
 
@@ -76,9 +78,9 @@ def create_and_run_search_task(
     Returns:
         list[CollectionItem]: A list of collection items resulting from the search task.
     """
-
-    collection.current_agent_step = "Running search task..."
-    collection.save(update_fields=["current_agent_step"])
+    if set_agent_step:
+        collection.current_agent_step = "Running search task..."
+        collection.save(update_fields=["current_agent_step"])
 
     keyword_query = search_task.user_input
 
@@ -145,7 +147,7 @@ def create_and_run_search_task(
         ranking_settings=search_task.ranking_settings or {},
         retrieval_mode=search_task.retrieval_mode or "hybrid",
         auto_relax_query=search_task.auto_relax_query,
-        use_reranking=True,
+        use_reranking=search_task.use_reranking,
         # similar_to_item
         reference_item_id=search_task.reference_item_id,
         reference_dataset_id=search_task.reference_dataset_id,
@@ -161,7 +163,7 @@ def create_and_run_search_task(
         retrieval_parameters=parameters.dict(),
         last_retrieval_status=status.dict(),
     )
-    return run_search_task(
+    items = run_search_task(
         task,
         user,
         after_columns_were_processed=after_columns_were_processed,
@@ -169,6 +171,9 @@ def create_and_run_search_task(
         set_agent_step=False,
         from_ui=True,
     )
+    if return_task_object:
+        return items, task
+    return items
 
 
 def run_search_task(

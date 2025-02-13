@@ -49,7 +49,7 @@ class SearchTaskSettings(Schema):
     reference_dataset_id: Optional[int] = None
     reference_item_id: Optional[str] = None
     origin_name: Optional[str] = None  # mostly name of reference item for similarity search
-
+    use_reranking: bool = True  # should be always true except when agent handles it
 
 class RetrievalParameters(Schema):
     # Derived from SearchTaskSettings, but more precise for actual retrieval.

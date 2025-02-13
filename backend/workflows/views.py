@@ -4,7 +4,7 @@ from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
 # need to be loaded somewhere (after Django apps where loaded, therfore not in __init__.py)
-import workflows.available_workflows.agent_workflows
+from workflows.available_workflows.agents import research_agent, exhaustive_search
 import workflows.available_workflows.base_workflows
 import workflows.available_workflows.map_workflows
 import workflows.available_workflows.question_workflows
