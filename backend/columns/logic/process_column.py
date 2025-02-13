@@ -6,7 +6,7 @@ from typing import Iterable
 from django.db.models.manager import BaseManager
 from django.utils import timezone
 
-from columns.logic.llm_column import generate_llm_cell_data
+from columns.logic.llm_column import generate_llm_cell_data, generate_dspy_cell_data
 from columns.logic.web_search_column import google_search
 from columns.logic.website_scraping_column import scrape_website_module
 from columns.schemas import CellData, ColumnCellRange
@@ -88,6 +88,7 @@ def _process_cell_batch(
 
     module_definitions = {
         "llm": {"input_type": "natural_language"},
+        "dspy": {"input_type": "json"},
         "relevance": {"input_type": "natural_language"},
         "python_expression": {"input_type": "json"},
         "web_search": {"input_type": "json"},
@@ -152,6 +153,8 @@ def _process_cell_batch(
         if module == "python_expression":
             cell_data.value = "Not implemented"
             cell_data.is_computed = True
+        elif module == "dspy":
+            cell_data = generate_dspy_cell_data(input_data, column, user_id) # type: ignore
         elif module == "website_scraping":
             cell_data = scrape_website_module(input_data, column.source_fields)
         elif module == "web_search":

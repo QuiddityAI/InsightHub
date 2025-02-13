@@ -5,6 +5,8 @@ from llmonkey.llms import BaseLLMModel
 from columns.schemas import CellData, Criterion
 from config.utils import get_default_model
 from data_map_backend.models import CollectionColumn, ServiceUsage
+from workflows.dspy_models import dspy_model_registry
+import dspy
 
 
 class RelevanceSignature(dspy.Signature):
@@ -97,6 +99,39 @@ def generate_custom_prompt_response(
         max_tokens=2000,
     )
     return response.conversation[-1].content, system_prompt
+
+
+def generate_dspy_cell_data(input_data: dict, column: CollectionColumn, user_id: int) -> CellData:
+    default_model = get_default_model("medium").__class__.__name__
+    model_name = column.parameters.get("model") or default_model
+
+    cell_data = CellData(
+        changed_at=timezone.now().isoformat(),
+        is_ai_generated=True,
+        is_computed=True,
+        is_manually_edited=False,
+        used_llm_model=model_name,
+    )
+    model = BaseLLMModel.load(model_name)
+
+    # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:
+    ai_credits = model.config.euro_per_1M_output_tokens / 5.0
+    usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
+    result = usage_tracker.track_usage(ai_credits, f"extract information using {model.__class__.__name__}")
+    if result["approved"] != True:
+        cell_data.value = "AI usage limit exceeded"
+        return cell_data
+    dspy_model_name = column.parameters.get("dspy_model")
+    if not dspy_model_name:
+        cell_data.value = "No model specified"
+        return cell_data
+    dspy_model = dspy_model_registry.get(dspy_model_name)
+    if not dspy_model:
+        cell_data.value = "Specified model not found"
+        return cell_data
+    with dspy.context(lm=dspy.LM(**model.to_litellm())):
+        cell_data.value = dspy_model()(column, input_data)
+    return cell_data
 
 
 def generate_llm_cell_data(
