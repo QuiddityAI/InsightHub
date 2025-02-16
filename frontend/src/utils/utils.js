@@ -32,6 +32,12 @@ export class FieldType {
   static ARBITRARY_OBJECT = "ARBITRARY_OBJECT"
 }
 
+export class META_SOURCE_FIELDS {
+  static DESCRIPTIVE_TEXT_FIELDS = "_descriptive_text_fields"
+  static FULL_TEXT_SNIPPETS = "_full_text_snippets"
+  static ALL_COLUMNS = "_all_columns"
+}
+
 export class CollectionItemSizeMode {
   static SMALL = 1
   static MEDIUM = 2

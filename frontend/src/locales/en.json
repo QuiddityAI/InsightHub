@@ -242,7 +242,8 @@
     "used-prompt-dialog-header": "Used Prompt",
     "show-the-used-prompt": "Show the used prompt",
     "revert-changes-alert": "Are you sure you want to revert to the last version? This cannot be undone.",
-    "source-select-label": "Source(s)"
+    "source-select-label": "Source(s)",
+    "all-column-content": "All Column Content"
   },
   "general": {
     "descriptive-text-fields": "Descriptive Text",
