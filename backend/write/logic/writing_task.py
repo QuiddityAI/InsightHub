@@ -213,7 +213,11 @@ def _execute_default_writing_task(task: WritingTask, context: str):
             response_text = writing_task_writer(task=task.expression, documents=context).output
     else:
         response_text = "AI usage limit exceeded"
-    return response_text, model, "WritingTaskSignature", task.expression
+    information_used_in_prompt = (
+        f"prompt template: {WritingTaskSignature.__doc__}\n- task: {task.expression}\n- documents: {context}"
+    )
+    used_user_prompt = ""
+    return response_text, model, information_used_in_prompt, used_user_prompt
 
 
 def _format_prompt_and_get_result(task: WritingTask, context: str, prompt_template):
