@@ -238,7 +238,7 @@ class VectorSearchEngineClient(object):
 
     def upsert_items(self, database_name: str, vector_field: str, ids: list, payloads: list[dict], vectors: list):
         collection_name = self._get_collection_name(database_name, vector_field)
-        is_array_of_vectors = isinstance(vectors[0][0], Iterable)
+        is_array_of_vectors = len(vectors[0]) == 0 or isinstance(vectors[0][0], Iterable)
         if is_array_of_vectors:
             # if an array vector field is changed that existed before, we can't just override it
             # but need to delete all sub points before adding the new ones as there might be less new ones
