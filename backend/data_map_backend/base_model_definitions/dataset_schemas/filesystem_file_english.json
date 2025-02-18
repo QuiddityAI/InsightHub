@@ -369,7 +369,7 @@
       "identifier": "full_text_chunk_embeddings",
       "name": null,
       "created_at": "2024-06-24T11:26:59.057Z",
-      "changed_at": "2025-01-16T17:43:30.677Z",
+      "changed_at": "2025-02-12T08:48:08.198Z",
       "schema": "filesystem_file_english",
       "description": null,
       "field_type": "VECTOR",
@@ -384,7 +384,7 @@
       "index_parameters": {
         "datatype": "float16"
       },
-      "generator": "e5_multilingual_base_text_embedding",
+      "generator": "e5_base_text_embedding",
       "generator_parameters": {
         "prefix": "passage: "
       },
