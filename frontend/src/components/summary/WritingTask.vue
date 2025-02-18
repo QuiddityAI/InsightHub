@@ -18,7 +18,7 @@ import BorderlessButton from "../widgets/BorderlessButton.vue";
 import TipTapEditor from "../text_editor/TipTapEditor.vue";
 import LlmSelect from "../widgets/LlmSelect.vue";
 
-import { debounce } from "../../utils/utils"
+import { debounce, META_SOURCE_FIELDS } from "../../utils/utils"
 
 import { httpClient } from "../../api/httpClient"
 
@@ -68,16 +68,20 @@ export default {
       for (const column of this.collectionStore.collection.columns) {
         available_fields[column.identifier] = {
           identifier: '_column__' + column.identifier,
-          name: column.name,
+          name: this.$t('general.column') + ': ' + column.name,
         }
       }
-      available_fields['_descriptive_text_fields'] = {
-        identifier: '_descriptive_text_fields',
+      available_fields[META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS] = {
+        identifier: META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,
         name: this.$t('general.descriptive-text-fields'),
       }
-      available_fields['_full_text_snippets'] = {
-        identifier: '_full_text_snippets',
+      available_fields[META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS] = {
+        identifier: META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
         name: this.$t('general.full-text-excerpts'),
+      }
+      available_fields[META_SOURCE_FIELDS.ALL_COLUMNS] = {
+        identifier: META_SOURCE_FIELDS.ALL_COLUMNS,
+        name: this.$t('WritingTask.all-column-content'),
       }
       return Object.values(available_fields).sort((a, b) => a.identifier.localeCompare(b.identifier))
     },

@@ -239,10 +239,11 @@
     "save-changes": "Änderungen speichern",
     "select-sources-placeholder": "Quellen auswählen ...",
     "show-the-used-prompt": "Zeige den verwendeten Prompt an",
-    "used-prompt-dialog-header": "Genutzter Promot",
+    "used-prompt-dialog-header": "Genutzter Prompt",
     "writing-task-dialog-name": "Schreibaufgabe",
     "writing-task-name-placeholder": "Name",
-    "source-select-label": "Quelle(n)"
+    "source-select-label": "Quelle(n)",
+    "all-column-content": "Inhalt aller Spalten"
   },
   "general": {
     "column": "Spalte",

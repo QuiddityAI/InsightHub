@@ -7,6 +7,7 @@ import BorderButton from "../widgets/BorderButton.vue";
 import BorderlessButton from "../widgets/BorderlessButton.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
+import { META_SOURCE_FIELDS } from '../../utils/utils';
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
@@ -34,7 +35,7 @@ export default {
           name: 'Summary',
           options: {
             expression: 'Summarize the main points of the items in this collection.',
-            source_fields: ['_descriptive_text_fields'],
+            source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
             model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
@@ -44,7 +45,7 @@ export default {
           name: 'Challenges',
           options: {
             expression: 'Summarize the key challenges mentioned in the items in this collection.',
-            source_fields: ['_descriptive_text_fields'],
+            source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
             model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
@@ -54,7 +55,7 @@ export default {
           name: 'Research Questions',
           options: {
             expression: 'What are some possible research questions that come up when looking at the items in this collection? Use bullet points in markdown syntax.',
-            source_fields: ['_descriptive_text_fields'],
+            source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
             model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
@@ -116,7 +117,7 @@ export default {
       }
       const options = {
         expression: question,
-        source_fields: ['_descriptive_text_fields', '_all_columns'],
+        source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
         model: 'Mistral_Mistral_Large',
         use_all_items: true,
       }
