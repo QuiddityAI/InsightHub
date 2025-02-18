@@ -1,15 +1,15 @@
-import logging
-import os
-import json
 import base64
 import datetime
+import json
+import logging
+import os
 from typing import Callable
 
 import cv2
 import numpy as np
 
-from ingest.schemas import AiFileProcessingInput, AiFileProcessingOutput
 from ingest.logic.common import UPLOADED_FILES_FOLDER, store_thumbnail
+from ingest.schemas import AiFileProcessingInput, AiFileProcessingOutput
 from legacy_backend.logic.model_client import get_clip_image_embeddings
 
 

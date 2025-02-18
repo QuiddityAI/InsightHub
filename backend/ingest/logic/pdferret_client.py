@@ -1,12 +1,77 @@
-import os
 import json
 import logging
+import os
+from enum import Enum
+from typing import List, Tuple, TypeAlias
 
 import requests
-from data_map_backend.utils import DotDict
+
 from config.llm import default_pdferret_models
+from data_map_backend.utils import DotDict
 
 PDFERRET_BASE_URL = os.getenv("PDFERRET_BASE_URL", "http://localhost:8000")
+
+
+PDFFile: TypeAlias = str
+
+
+class ChunkType(str, Enum):
+    TEXT = "text"
+    FIGURE = "figure"
+    TABLE = "table"
+    EQUATION = "equation"
+    OTHER = "other"
+
+
+class PDFError:
+    exc: str = ""
+    traceback: str | list[str] = ""
+    file: str = ""
+
+
+class PDFChunk:
+    page: int | None = None
+    coordinates: List[Tuple[float, float]] | None = None
+    section: str | None = None
+    prefix: str | None = None
+    text: str | None = None
+    suffix: str | None = None
+    locked: bool | None = None
+    chunk_type: ChunkType | None = ChunkType.TEXT
+
+
+class FileFeatures:
+    filename: str = ""
+    file: PDFFile | None = None
+    is_scanned: bool | None = None
+
+
+class MetaInfo:
+    doi: str = ""
+    title: str = ""
+    document_type: str = ""
+    search_description: str = ""
+    abstract: str = ""
+    authors: List[str]
+    pub_date: str = ""
+    mentioned_date: str = ""
+    language: str = ""
+    detected_language: str = ""
+    file_features: FileFeatures = FileFeatures()
+    npages: int = -1
+    thumbnail: bytes | str = ""
+    extra_metainfo: dict
+    ai_metadata: str = ""
+
+
+class PDFDoc:
+    metainfo: MetaInfo
+    chunks: List[PDFChunk]
+
+
+class PDFerretResults:
+    extracted: List[PDFDoc]
+    errors: List[PDFError]
 
 
 def extract_using_pdferret(

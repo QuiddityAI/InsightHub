@@ -3,35 +3,56 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+
 def make_sure_scientific_articles_schema_exists(apps, schema_editor):
-    DatasetSchema = apps.get_model('data_map_backend', 'DatasetSchema')
-    if not DatasetSchema.objects.filter(identifier='scientific_articles').exists():
-        DatasetSchema.objects.create(identifier='scientific_articles', name='Scientific Articles')
+    DatasetSchema = apps.get_model("data_map_backend", "DatasetSchema")
+    if not DatasetSchema.objects.filter(identifier="scientific_articles").exists():
+        DatasetSchema.objects.create(identifier="scientific_articles", name="Scientific Articles")
         # will be overwritten by the actual schema using update_base_models
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0006_datasetschema_and_more'),
+        ("data_map_backend", "0006_datasetschema_and_more"),
     ]
 
     operations = [
         migrations.RunPython(make_sure_scientific_articles_schema_exists, reverse_code=migrations.RunPython.noop),
         migrations.AddField(
-            model_name='dataset',
-            name='schema',
-            field=models.ForeignKey(default='scientific_articles', on_delete=django.db.models.deletion.PROTECT, related_name='datasets', to='data_map_backend.datasetschema', verbose_name='Schema'),
+            model_name="dataset",
+            name="schema",
+            field=models.ForeignKey(
+                default="scientific_articles",
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="datasets",
+                to="data_map_backend.datasetschema",
+                verbose_name="Schema",
+            ),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='historicaldataset',
-            name='schema',
-            field=models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='data_map_backend.datasetschema', verbose_name='Schema'),
+            model_name="historicaldataset",
+            name="schema",
+            field=models.ForeignKey(
+                blank=True,
+                db_constraint=False,
+                null=True,
+                on_delete=django.db.models.deletion.DO_NOTHING,
+                related_name="+",
+                to="data_map_backend.datasetschema",
+                verbose_name="Schema",
+            ),
         ),
         migrations.AlterField(
-            model_name='datasetfield',
-            name='source_fields',
-            field=models.JSONField(blank=True, default=list, help_text='List of source field identifiers', null=True, verbose_name='Source Fields'),
+            model_name="datasetfield",
+            name="source_fields",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="List of source field identifiers",
+                null=True,
+                verbose_name="Source Fields",
+            ),
         ),
     ]

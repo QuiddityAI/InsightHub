@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0050_datasetschema_translated_entity_name'),
+        ("data_map_backend", "0050_datasetschema_translated_entity_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='preferences',
-            field=models.JSONField(blank=True, default=dict, help_text='User preferences', verbose_name='Preferences'),
+            model_name="user",
+            name="preferences",
+            field=models.JSONField(blank=True, default=dict, help_text="User preferences", verbose_name="Preferences"),
         ),
     ]

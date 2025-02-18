@@ -1,6 +1,6 @@
-from collections import defaultdict, OrderedDict
-from hashlib import md5
 import json
+from collections import OrderedDict, defaultdict
+from hashlib import md5
 
 # global temp storage:
 local_maps = {}

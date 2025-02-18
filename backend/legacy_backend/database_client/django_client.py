@@ -1,15 +1,11 @@
 import logging
-from typing import Iterable
-import requests
 import os
-import json
-import base64
+from typing import Iterable
 
 import cachetools.func
+import requests
 
 from data_map_backend.utils import DotDict
-from ..utils.custom_json_encoder import CustomJSONEncoder
-
 
 backend_url = os.getenv("backend_host", "http://localhost:55125")
 
@@ -28,40 +24,6 @@ def get_dataset(dataset_id: int) -> DotDict:
     }
     result = django_client.post(url, json=data)
     return DotDict(result.json())
-
-
-def add_stored_map(map_id, user_id, organization_id, name, display_name, map_data) -> dict:
-    url = backend_url + "/org/data_map/add_stored_map"
-    encoded_map_data = base64.b64encode(json.dumps(map_data, cls=CustomJSONEncoder).encode()).decode()
-    logging.warning(f"storing map, size: {len(encoded_map_data) / 1024 / 1024} MB")
-    body = {
-        "user_id": user_id,
-        "organization_id": organization_id,
-        "name": name,
-        "display_name": display_name,
-        "map_id": map_id,
-        "map_data": encoded_map_data,
-    }
-    result = django_client.post(url, json=body)
-    return result.json()
-
-
-def get_stored_map_data(map_id: str) -> dict | None:
-    url = backend_url + "/org/data_map/stored_map_data"
-    data = {
-        "map_id": map_id,
-    }
-    result = django_client.post(url, json=data)
-    if result.status_code == 200:
-        map_data = json.loads(base64.b64decode(result.content.decode()))
-        # during serialization, the keys are converted to strings, so we need to convert them back to integers
-        for dataset_id_str in map_data["results"]["slimmed_items_per_dataset"].keys():
-            map_data["results"]["slimmed_items_per_dataset"][int(dataset_id_str)] = map_data["results"][
-                "slimmed_items_per_dataset"
-            ].pop(dataset_id_str)
-        return map_data
-    else:
-        return None
 
 
 def get_collection(collection_id: int) -> DotDict | None:
@@ -166,15 +128,6 @@ def set_trained_classifier(
     if result.status_code != 204:
         logging.warning("Couldn't set trained classifier")
     return None
-
-
-def get_generators() -> list[DotDict]:
-    url = backend_url + "/org/data_map/get_generators"
-    result = django_client.post(url)
-    if result.status_code != 200:
-        logging.warning("Couldn't get generators")
-        return []
-    return [DotDict(generator) for generator in result.json()]
 
 
 def get_import_converter(import_converter_identifier: str) -> DotDict:

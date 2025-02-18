@@ -1,7 +1,7 @@
 import time
-from sentence_transformers import SentenceTransformer
-import torch
 
+import torch
+from sentence_transformers import SentenceTransformer
 
 last_used_model: str | None = None
 model = None

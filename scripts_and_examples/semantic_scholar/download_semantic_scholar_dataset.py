@@ -1,25 +1,10 @@
 import gzip
-import requests
 import json
-from pathlib import Path
 import os
+from pathlib import Path
 
 import orjson
-from tqdm import tqdm
-
-
-def load_env_file():
-    with open("../../.env", "r") as f:
-        for line in f:
-            if line.startswith("#"):
-                continue
-            if "=" not in line:
-                continue
-            key, value = line.strip().split("=")
-            os.environ[key] = value
-
-
-load_env_file()
+import requests
 
 API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
 

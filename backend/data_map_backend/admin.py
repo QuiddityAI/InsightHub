@@ -21,12 +21,8 @@ from djangoql.admin import DjangoQLSearchMixin
 from import_export.admin import ImportExportMixin
 from simple_history.admin import SimpleHistoryAdmin
 
-from legacy_backend.logic.generate_missing_values import generate_missing_values
-
-from .data_backend_client import DATA_BACKEND_HOST
-from .import_export import UserResource
-from .models import (
-    Chat,
+from data_map_backend.import_export import UserResource
+from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
     DataCollection,
@@ -44,12 +40,14 @@ from .models import (
     SearchHistoryItem,
     ServiceUsage,
     ServiceUsagePeriod,
-    StoredMap,
     TrainedClassifier,
     User,
     WritingTask,
 )
-from .utils import get_vector_field_dimensions
+from data_map_backend.utils import get_vector_field_dimensions
+from data_map_backend.views.data_backend_proxy_views import DATA_BACKEND_HOST
+from legacy_backend.logic.generate_missing_values import generate_missing_values
+from legacy_backend.logic.insert_logic import update_database_layout
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 
@@ -540,11 +538,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
 
     @action(label="Update Database Layout", description="Update Database Layout")
     def update_database_layout(self, request, obj):
-        url = DATA_BACKEND_HOST + "/data_backend/update_database_layout"
-        data = {
-            "dataset_id": obj.id,
-        }
-        backend_client.post(url, json=data)
+        update_database_layout(obj.id)
         self.message_user(request, "Updated the database layout")
 
     @action(label="Delete Content", description="Delete all items from the database")
@@ -587,29 +581,13 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
     # @action(label="Delete Content", description="Delete field data and index")
     # def delete_content(self, request, obj):
     #     # http://localhost:55125/admin/data_map_backend/objectfield/27/actions/delete_content/
-    #     url = DATA_BACKEND_HOST + '/data_backend/delete_field'
-    #     data = {
-    #         'dataset_id': obj.dataset_id,
-    #         'field_identifier': obj.identifier,
-    #     }
-    #     backend_client.post(url, json=data)
+    #     delete_field_content(obj.dataset_id, obj.identifier)
     #     self.message_user(request, "Deleted this fields content")
 
-    # @action(label="Generate Missing Values", description="Generate missing values")
-    # def generate_missing_values(self, request, obj):
-    #     url = DATA_BACKEND_HOST + '/data_backend/generate_missing_values'
-    #     data = {
-    #         'dataset_id': obj.dataset_id,
-    #         'field_identifier': obj.identifier,
-    #     }
-    #     backend_client.post(url, json=data)
-    #     self.message_user(request, "Now generating missing values...")
-
-    # change_actions = ('delete_content', 'generate_missing_values')
+    # change_actions = ('delete_content', )
 
     # def action_buttons(self, obj):
-    #     return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button> \
-    #                      <button type=button class="btn-info" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/generate_missing_values/\';">Generate Missing Values</button>')
+    #     return mark_safe(f'<button type=button class="btn-danger" onclick="window.location.href=\'/admin/data_map_backend/objectfield/{obj.id}/actions/delete_content/\';">Delete Content</button>')
     # action_buttons.short_description = "Actions"
 
 
@@ -673,16 +651,6 @@ class SearchHistoryItemAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     formfield_overrides = {
         models.JSONField: {"widget": json_widget},
     }
-
-
-@admin.register(StoredMap)
-class StoredMapAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
-    djangoql_completion_enabled_by_default = False  # make normal search the default
-    list_display = ("id", "name")
-    list_display_links = ("id", "name")
-    search_fields = ("name",)
-    ordering = ["name"]
-    readonly_fields = ("changed_at", "created_at")
 
 
 @admin.register(DatasetSpecificSettingsOfCollection)
@@ -933,22 +901,6 @@ class DataCollectionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         TrainedClassifierInline,
         WritingTaskInline,
     ]
-
-    formfield_overrides = {
-        models.TextField: {"widget": Textarea(attrs={"rows": 2})},
-        models.JSONField: {"widget": json_widget},
-    }
-
-
-@admin.register(Chat)
-class ChatAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
-    djangoql_completion_enabled_by_default = False
-    list_display = ("created_at", "created_by", "name", "collection")
-    list_display_links = ("name",)
-    search_fields = ("id", "name")
-    list_filter = ("created_by",)
-    ordering = ["-created_at"]
-    readonly_fields = ("changed_at", "created_at")
 
     formfield_overrides = {
         models.TextField: {"widget": Textarea(attrs={"rows": 2})},

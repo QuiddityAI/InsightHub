@@ -1,5 +1,6 @@
 from import_export import resources
-from .models import User
+
+from data_map_backend.models import User
 
 
 class UserResource(resources.ModelResource):

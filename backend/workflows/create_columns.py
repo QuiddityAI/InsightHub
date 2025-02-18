@@ -1,6 +1,12 @@
-from data_map_backend.models import DataCollection, CollectionColumn, COLUMN_META_SOURCE_FIELDS, FieldType, User
-from workflows.prompts import criteria_prompt
 from config.utils import get_default_model
+from data_map_backend.models import (
+    COLUMN_META_SOURCE_FIELDS,
+    CollectionColumn,
+    DataCollection,
+    FieldType,
+    User,
+)
+from workflows.prompts import criteria_prompt
 
 
 def create_relevance_column(

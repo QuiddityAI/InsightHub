@@ -1,8 +1,7 @@
 import time
 
 import torch
-from transformers import AutoTokenizer, AutoModel
-
+from transformers import AutoModel, AutoTokenizer
 
 # from https://github.com/berenslab/pubmed-landscape/blob/main/pubmed_landscape_src/data.py
 

@@ -1,14 +1,14 @@
-import logging
-import time
+import csv
 import gzip
 import json
+import logging
 import sys
-import csv
+import time
 
-import tqdm
 import orjson
+import tqdm
 
-from data_backend_client import update_database_layout, insert_many, files_in_folder
+from data_backend_client import files_in_folder, insert_many, update_database_layout
 
 sys.path.append("../../data_backend/")
 from utils.dotdict import DotDict

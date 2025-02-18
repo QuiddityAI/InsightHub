@@ -6,18 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0022_collectioncolumn_auto_run_for_approved_items_and_more'),
+        ("data_map_backend", "0022_collectioncolumn_auto_run_for_approved_items_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='datacollection',
-            name='search_sources',
-            field=models.JSONField(blank=True, default=list, help_text='A list of active and past search sources', verbose_name='Search Sources'),
+            model_name="datacollection",
+            name="search_sources",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="A list of active and past search sources",
+                verbose_name="Search Sources",
+            ),
         ),
         migrations.AddField(
-            model_name='historicaldatacollection',
-            name='search_sources',
-            field=models.JSONField(blank=True, default=list, help_text='A list of active and past search sources', verbose_name='Search Sources'),
+            model_name="historicaldatacollection",
+            name="search_sources",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="A list of active and past search sources",
+                verbose_name="Search Sources",
+            ),
         ),
     ]

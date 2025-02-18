@@ -1,10 +1,11 @@
-from typing import Any
-import requests
 import json
+from typing import Any
 
-from data_map_backend.utils import DotDict
+import requests
+
 from data_map_backend.models import Dataset
-from ..utils.custom_json_encoder import CustomJSONEncoder
+from data_map_backend.utils import DotDict
+from legacy_backend.utils.custom_json_encoder import CustomJSONEncoder
 
 
 def use_remote_db(dataset: DotDict | Dataset, db_type: str, function_name: str, arguments: dict) -> Any:

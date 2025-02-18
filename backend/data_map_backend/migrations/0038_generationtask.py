@@ -8,26 +8,63 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0037_generator_requires_multiple_input_fields_and_more'),
+        ("data_map_backend", "0037_generator_requires_multiple_input_fields_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='GenerationTask',
+            name="GenerationTask",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Created at')),
-                ('changed_at', models.DateTimeField(auto_now=True, verbose_name='Changed at')),
-                ('regenerate_all', models.BooleanField(default=False, help_text='Regenerate all items, not only those that have not been generated yet', verbose_name='Regenerate all')),
-                ('status', models.CharField(choices=[('not_running', 'Not Running'), ('pending', 'Pending'), ('running', 'Running'), ('finished', 'Finished'), ('failed', 'Failed')], default='not_running', max_length=50, verbose_name='Status')),
-                ('progress', models.FloatField(default=0, verbose_name='Progress')),
-                ('log', models.TextField(blank=True, null=True, verbose_name='Log')),
-                ('dataset', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='generation_tasks', to='data_map_backend.dataset', verbose_name='Dataset')),
-                ('field', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='generation_tasks', to='data_map_backend.datasetfield', verbose_name='Field')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(default=django.utils.timezone.now, verbose_name="Created at")),
+                ("changed_at", models.DateTimeField(auto_now=True, verbose_name="Changed at")),
+                (
+                    "regenerate_all",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Regenerate all items, not only those that have not been generated yet",
+                        verbose_name="Regenerate all",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("not_running", "Not Running"),
+                            ("pending", "Pending"),
+                            ("running", "Running"),
+                            ("finished", "Finished"),
+                            ("failed", "Failed"),
+                        ],
+                        default="not_running",
+                        max_length=50,
+                        verbose_name="Status",
+                    ),
+                ),
+                ("progress", models.FloatField(default=0, verbose_name="Progress")),
+                ("log", models.TextField(blank=True, null=True, verbose_name="Log")),
+                (
+                    "dataset",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="generation_tasks",
+                        to="data_map_backend.dataset",
+                        verbose_name="Dataset",
+                    ),
+                ),
+                (
+                    "field",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="generation_tasks",
+                        to="data_map_backend.datasetfield",
+                        verbose_name="Field",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Generation Task',
-                'verbose_name_plural': 'Generation Tasks',
+                "verbose_name": "Generation Task",
+                "verbose_name_plural": "Generation Tasks",
             },
         ),
     ]

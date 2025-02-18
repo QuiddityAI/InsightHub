@@ -1,7 +1,28 @@
-from prometheus_client.core import StateSetMetricFamily, GaugeMetricFamily, REGISTRY
+import logging
+
+from prometheus_client.core import REGISTRY, GaugeMetricFamily, StateSetMetricFamily
 from prometheus_client.registry import Collector
 
-from .data_backend_client import get_data_backend_health, get_data_backend_database_health
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
+)
+from legacy_backend.database_client.vector_search_engine_client import (
+    VectorSearchEngineClient,
+)
+
+
+def get_db_health():
+    try:
+        text_search_engine_client = TextSearchEngineClient()
+        if not text_search_engine_client.check_status():
+            raise Exception("Text search engine not healthy")
+        vector_search_engine_client = VectorSearchEngineClient()
+        if not vector_search_engine_client.check_status():
+            raise Exception("Vector search engine not healthy")
+    except Exception as e:
+        logging.error("Error checking database status", exc_info=True)
+        return False
+    return True
 
 
 class DataBackendStatusCollector(Collector):
@@ -15,12 +36,10 @@ class DataBackendStatusCollector(Collector):
         data_backend_database_status = StateSetMetricFamily(
             "data_backend_database_status", "Status of the data_backend databases"
         )
-        if get_data_backend_health():
-            data_backend_status.add_metric([], {"healthy": True})
-        else:
-            data_backend_status.add_metric([], {"healthy": False})
+        # old metric from when backend was split into two parts:
+        data_backend_status.add_metric([], {"healthy": True})
         yield data_backend_status
-        if get_data_backend_database_health():
+        if get_db_health():
             data_backend_database_status.add_metric([], {"healthy": True})
         else:
             data_backend_database_status.add_metric([], {"healthy": False})
@@ -32,7 +51,7 @@ class UserCountCollector(Collector):
         yield GaugeMetricFamily("user_count", "Number of users in the system")
 
     def collect(self):
-        from .models import User
+        from data_map_backend.models import User
 
         user_count = GaugeMetricFamily("user_count", "Number of users in the system")
         user_count.add_metric([], User.objects.count())
@@ -47,7 +66,12 @@ class UsageStatisticsCollector(Collector):
         yield GaugeMetricFamily("collection_item_count", "Number of items in collections in the system")
 
     def collect(self):
-        from .models import SearchHistoryItem, DataCollection, Dataset, CollectionItem
+        from data_map_backend.models import (
+            CollectionItem,
+            DataCollection,
+            Dataset,
+            SearchHistoryItem,
+        )
 
         search_count = GaugeMetricFamily("search_count", "Number of searches in the system")
         search_count.add_metric([], SearchHistoryItem.objects.count())

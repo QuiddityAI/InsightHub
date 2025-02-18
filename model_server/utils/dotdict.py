@@ -1,5 +1,5 @@
-from typing import Any, Iterable, List
 from copy import deepcopy
+from typing import Any, Iterable, List
 
 
 class DotDict(dict):

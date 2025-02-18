@@ -6,79 +6,87 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0003_embeddingspace_identifier_generator_identifier_and_more'),
+        ("data_map_backend", "0003_embeddingspace_identifier_generator_identifier_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='embeddingspace',
-            name='id',
+            model_name="embeddingspace",
+            name="id",
         ),
         migrations.RemoveField(
-            model_name='exportconverter',
-            name='id',
+            model_name="exportconverter",
+            name="id",
         ),
         migrations.RemoveField(
-            model_name='generator',
-            name='id',
+            model_name="generator",
+            name="id",
         ),
         migrations.RemoveField(
-            model_name='historicalembeddingspace',
-            name='id',
+            model_name="historicalembeddingspace",
+            name="id",
         ),
         migrations.RemoveField(
-            model_name='historicalexportconverter',
-            name='id',
+            model_name="historicalexportconverter",
+            name="id",
         ),
         migrations.RemoveField(
-            model_name='historicalgenerator',
-            name='id',
+            model_name="historicalgenerator",
+            name="id",
         ),
         migrations.RemoveField(
-            model_name='historicalimportconverter',
-            name='id',
+            model_name="historicalimportconverter",
+            name="id",
         ),
         migrations.RemoveField(
-            model_name='importconverter',
-            name='id',
+            model_name="importconverter",
+            name="id",
         ),
         migrations.AlterField(
-            model_name='embeddingspace',
-            name='identifier',
-            field=models.CharField(max_length=200, primary_key=True, serialize=False, unique=True, verbose_name='Identifier'),
+            model_name="embeddingspace",
+            name="identifier",
+            field=models.CharField(
+                max_length=200, primary_key=True, serialize=False, unique=True, verbose_name="Identifier"
+            ),
         ),
         migrations.AlterField(
-            model_name='exportconverter',
-            name='identifier',
-            field=models.CharField(max_length=200, primary_key=True, serialize=False, unique=True, verbose_name='Identifier'),
+            model_name="exportconverter",
+            name="identifier",
+            field=models.CharField(
+                max_length=200, primary_key=True, serialize=False, unique=True, verbose_name="Identifier"
+            ),
         ),
         migrations.AlterField(
-            model_name='generator',
-            name='identifier',
-            field=models.CharField(max_length=200, primary_key=True, serialize=False, unique=True, verbose_name='Identifier'),
+            model_name="generator",
+            name="identifier",
+            field=models.CharField(
+                max_length=200, primary_key=True, serialize=False, unique=True, verbose_name="Identifier"
+            ),
         ),
         migrations.AlterField(
-            model_name='historicalembeddingspace',
-            name='identifier',
-            field=models.CharField(db_index=True, max_length=200, verbose_name='Identifier'),
+            model_name="historicalembeddingspace",
+            name="identifier",
+            field=models.CharField(db_index=True, max_length=200, verbose_name="Identifier"),
         ),
         migrations.AlterField(
-            model_name='historicalgenerator',
-            name='identifier',
-            field=models.CharField(db_index=True, max_length=200, verbose_name='Identifier'),
+            model_name="historicalgenerator",
+            name="identifier",
+            field=models.CharField(db_index=True, max_length=200, verbose_name="Identifier"),
         ),
         migrations.AlterField(
-            model_name='historicalimportconverter',
-            name='identifier',
-            field=models.CharField(db_index=True, max_length=200, verbose_name='Identifier'),
+            model_name="historicalimportconverter",
+            name="identifier",
+            field=models.CharField(db_index=True, max_length=200, verbose_name="Identifier"),
         ),
         migrations.AlterField(
-            model_name='importconverter',
-            name='identifier',
-            field=models.CharField(max_length=200, primary_key=True, serialize=False, unique=True, verbose_name='Identifier'),
+            model_name="importconverter",
+            name="identifier",
+            field=models.CharField(
+                max_length=200, primary_key=True, serialize=False, unique=True, verbose_name="Identifier"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='objectfield',
-            unique_together={('dataset', 'identifier')},
+            name="objectfield",
+            unique_together={("dataset", "identifier")},
         ),
     ]

@@ -1,4 +1,4 @@
-from .client import QuiddityClient
+from quiddity_client.client import QuiddityClient
 
 if __name__ == "__main__":
     client = QuiddityClient(username="user", password="pass")

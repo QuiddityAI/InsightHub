@@ -6,43 +6,73 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0036_datacollection_filters_and_more'),
+        ("data_map_backend", "0036_datacollection_filters_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='generator',
-            name='requires_multiple_input_fields',
-            field=models.BooleanField(default=False, help_text='Requires multiple different input fields to generate a result', verbose_name='Requires multiple input fields'),
+            model_name="generator",
+            name="requires_multiple_input_fields",
+            field=models.BooleanField(
+                default=False,
+                help_text="Requires multiple different input fields to generate a result",
+                verbose_name="Requires multiple input fields",
+            ),
         ),
         migrations.AddField(
-            model_name='generator',
-            name='returns_multiple_fields',
-            field=models.BooleanField(default=False, help_text='Returns multiple different fields as result', verbose_name='Returns multiple fields'),
+            model_name="generator",
+            name="returns_multiple_fields",
+            field=models.BooleanField(
+                default=False,
+                help_text="Returns multiple different fields as result",
+                verbose_name="Returns multiple fields",
+            ),
         ),
         migrations.AddField(
-            model_name='historicalgenerator',
-            name='requires_multiple_input_fields',
-            field=models.BooleanField(default=False, help_text='Requires multiple different input fields to generate a result', verbose_name='Requires multiple input fields'),
+            model_name="historicalgenerator",
+            name="requires_multiple_input_fields",
+            field=models.BooleanField(
+                default=False,
+                help_text="Requires multiple different input fields to generate a result",
+                verbose_name="Requires multiple input fields",
+            ),
         ),
         migrations.AddField(
-            model_name='historicalgenerator',
-            name='returns_multiple_fields',
-            field=models.BooleanField(default=False, help_text='Returns multiple different fields as result', verbose_name='Returns multiple fields'),
+            model_name="historicalgenerator",
+            name="returns_multiple_fields",
+            field=models.BooleanField(
+                default=False,
+                help_text="Returns multiple different fields as result",
+                verbose_name="Returns multiple fields",
+            ),
         ),
         migrations.AlterField(
-            model_name='generator',
-            name='requires_context',
-            field=models.BooleanField(default=False, help_text='Requires a set of other documents, generates a non-universal result', verbose_name='Requires context'),
+            model_name="generator",
+            name="requires_context",
+            field=models.BooleanField(
+                default=False,
+                help_text="Requires a set of other documents, generates a non-universal result",
+                verbose_name="Requires context",
+            ),
         ),
         migrations.AlterField(
-            model_name='historicalgenerator',
-            name='requires_context',
-            field=models.BooleanField(default=False, help_text='Requires a set of other documents, generates a non-universal result', verbose_name='Requires context'),
+            model_name="historicalgenerator",
+            name="requires_context",
+            field=models.BooleanField(
+                default=False,
+                help_text="Requires a set of other documents, generates a non-universal result",
+                verbose_name="Requires context",
+            ),
         ),
         migrations.AlterField(
-            model_name='datasetfield',
-            name='source_fields',
-            field=models.JSONField(blank=True, default=list, help_text='List of source field identifiers, or dict generator input -> source field', null=True, verbose_name='Source Fields'),
+            model_name="datasetfield",
+            name="source_fields",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="List of source field identifiers, or dict generator input -> source field",
+                null=True,
+                verbose_name="Source Fields",
+            ),
         ),
     ]

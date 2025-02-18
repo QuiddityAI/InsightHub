@@ -1,12 +1,13 @@
 """
 Run with "python3 -m test.import_openalex"
 """
-import json
-import time
-import os
-import logging
+
 import gzip
+import json
+import logging
+import os
 import sys
+import time
 from typing import Tuple
 
 import orjson
@@ -108,9 +109,11 @@ def import_gz_file(filename, dataset_id):
                     "type": work["type"],
                     "title": work["title"],
                     "authors": [x.get("author", {}).get("display_name", "unknown") for x in work["authorships"]],
-                    "primary_location_name": primary_location_source.get("display_name", "unknown")
-                    if primary_location_source
-                    else "unknown",
+                    "primary_location_name": (
+                        primary_location_source.get("display_name", "unknown")
+                        if primary_location_source
+                        else "unknown"
+                    ),
                     "abstract": reconstruct_abstract(work.get("abstract_inverted_index")),
                     "publication_year": work.get("publication_year"),
                     "publication_date": work.get("publication_date"),

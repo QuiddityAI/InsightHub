@@ -8,28 +8,28 @@ from typing import Iterable
 import cachetools.func
 import numpy as np
 
+from data_map_backend.models import Generator
 from data_map_backend.utils import DotDict, pk_to_uuid_id
 from data_map_backend.views.other_views import get_serialized_dataset_cached
-
-from ..api_clients import openalex_api
-from ..api_clients.cohere_reranking import get_reranking_results
-from ..database_client.django_client import (
-    get_dataset,
-    get_generators,
-    get_related_collection_items,
+from legacy_backend.api_clients import openalex_api
+from legacy_backend.api_clients.cohere_reranking import get_reranking_results
+from legacy_backend.database_client.django_client import get_related_collection_items
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
 )
-from ..database_client.text_search_engine_client import TextSearchEngineClient
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..logic.autocut import get_number_of_useful_items
-from ..logic.generator_functions import (
+from legacy_backend.database_client.vector_search_engine_client import (
+    VectorSearchEngineClient,
+)
+from legacy_backend.logic.autocut import get_number_of_useful_items
+from legacy_backend.logic.generator_functions import (
     get_generator_function,
     get_generator_function_from_field,
 )
-from ..logic.postprocess_search_results import enrich_search_results
-from ..utils.collect_timings import Timings
-from ..utils.field_types import FieldType
-from ..utils.helpers import normalize_array
-from ..utils.source_plugin_types import SourcePlugin
+from legacy_backend.logic.postprocess_search_results import enrich_search_results
+from legacy_backend.utils.collect_timings import Timings
+from legacy_backend.utils.field_types import FieldType
+from legacy_backend.utils.helpers import normalize_array
+from legacy_backend.utils.source_plugin_types import SourcePlugin
 
 
 class QueryInput(object):
@@ -233,7 +233,6 @@ def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
     if (
         purpose == "map"
         and vectorize_settings.map_vector_field
-        and vectorize_settings.map_vector_field != "w2v_vector"
         and vectorize_settings.map_vector_field not in required_fields
     ):
         required_fields.append(vectorize_settings.map_vector_field)
@@ -242,7 +241,7 @@ def get_required_fields(dataset, vectorize_settings: DotDict, purpose: str):
         required_fields.append(dataset.schema.thumbnail_image)
 
     if purpose == "map":
-        # used for cluster titles and potentially w2v:
+        # used for cluster titles:
         # TODO: this may be slow, maybe use only subset for cluster titles?
         required_fields += dataset.schema.descriptive_text_fields
         required_fields += dataset.schema.get("statistics", {}).get("required_fields", [])
@@ -354,7 +353,7 @@ def get_fulltext_search_results(
 
 
 def get_suitable_generator(dataset, vector_field: str):
-    generators: list[DotDict] = get_generators()
+    generators = Generator.objects.all()
     field = dataset.schema.object_fields[vector_field]
     embedding_space_identifier = (
         field.generator.embedding_space.identifier if field.generator else field.embedding_space.identifier
@@ -383,7 +382,7 @@ def get_suitable_generator(dataset, vector_field: str):
         )
     else:
         generator_function = get_generator_function(
-            suitable_generator.module, suitable_generator.default_parameters, False
+            suitable_generator.module, suitable_generator.default_parameters or {}, False
         )
     return generator_function
 

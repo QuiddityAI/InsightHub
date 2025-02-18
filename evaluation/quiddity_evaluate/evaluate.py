@@ -4,9 +4,8 @@ import time
 import uuid
 
 import boto3
-
-from . import config
-from .data_models import ExampleDocument
+from quiddity_evaluate import config
+from quiddity_evaluate.data_models import ExampleDocument
 
 
 class QuiddityEvaluator:

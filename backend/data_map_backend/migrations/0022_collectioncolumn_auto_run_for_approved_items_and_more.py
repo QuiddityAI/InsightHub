@@ -6,53 +6,85 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0021_alter_datacollection_items_last_changed_and_more'),
+        ("data_map_backend", "0021_alter_datacollection_items_last_changed_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collectioncolumn',
-            name='auto_run_for_approved_items',
-            field=models.BooleanField(default=False, verbose_name='Auto Run for Approved Items'),
+            model_name="collectioncolumn",
+            name="auto_run_for_approved_items",
+            field=models.BooleanField(default=False, verbose_name="Auto Run for Approved Items"),
         ),
         migrations.AddField(
-            model_name='collectioncolumn',
-            name='auto_run_for_candidates',
-            field=models.BooleanField(default=False, verbose_name='Auto Run for Candidates'),
+            model_name="collectioncolumn",
+            name="auto_run_for_candidates",
+            field=models.BooleanField(default=False, verbose_name="Auto Run for Candidates"),
         ),
         migrations.AddField(
-            model_name='collectioncolumn',
-            name='prompt_template',
-            field=models.TextField(blank=True, help_text="Template for the prompt if this column uses an LLM'", null=True, verbose_name='Prompt Template'),
+            model_name="collectioncolumn",
+            name="prompt_template",
+            field=models.TextField(
+                blank=True,
+                help_text="Template for the prompt if this column uses an LLM'",
+                null=True,
+                verbose_name="Prompt Template",
+            ),
         ),
         migrations.AddField(
-            model_name='collectionitem',
-            name='full_text',
-            field=models.TextField(blank=True, help_text='Full text extracted from PDF or web page etc.', null=True, verbose_name='Full Text'),
+            model_name="collectionitem",
+            name="full_text",
+            field=models.TextField(
+                blank=True,
+                help_text="Full text extracted from PDF or web page etc.",
+                null=True,
+                verbose_name="Full Text",
+            ),
         ),
         migrations.AddField(
-            model_name='collectionitem',
-            name='metadata',
-            field=models.JSONField(blank=True, default=dict, help_text='Item content except for full text etc.', null=True, verbose_name='Metadata'),
+            model_name="collectionitem",
+            name="metadata",
+            field=models.JSONField(
+                blank=True,
+                default=dict,
+                help_text="Item content except for full text etc.",
+                null=True,
+                verbose_name="Metadata",
+            ),
         ),
         migrations.AddField(
-            model_name='collectionitem',
-            name='origins',
-            field=models.JSONField(blank=True, default=list, help_text='Searches where this item came from', null=True, verbose_name='Sources'),
+            model_name="collectionitem",
+            name="origins",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="Searches where this item came from",
+                null=True,
+                verbose_name="Sources",
+            ),
         ),
         migrations.AddField(
-            model_name='collectionitem',
-            name='relevance',
-            field=models.IntegerField(default=3, help_text='From +3 to -3. 0 is a new, non-reviewed candidate', verbose_name='Relevance'),
+            model_name="collectionitem",
+            name="relevance",
+            field=models.IntegerField(
+                default=3, help_text="From +3 to -3. 0 is a new, non-reviewed candidate", verbose_name="Relevance"
+            ),
         ),
         migrations.AddField(
-            model_name='collectionitem',
-            name='relevant_parts',
-            field=models.JSONField(blank=True, default=list, help_text='Highlights from text search, relevant chunks from vector search, image regions etc.', null=True, verbose_name='Relevant Parts'),
+            model_name="collectionitem",
+            name="relevant_parts",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text="Highlights from text search, relevant chunks from vector search, image regions etc.",
+                null=True,
+                verbose_name="Relevant Parts",
+            ),
         ),
         migrations.AddField(
-            model_name='collectionitem',
-            name='search_score',
-            field=models.FloatField(blank=True, help_text='Score from the search engine', null=True, verbose_name='Search Score'),
+            model_name="collectionitem",
+            name="search_score",
+            field=models.FloatField(
+                blank=True, help_text="Score from the search engine", null=True, verbose_name="Search Score"
+            ),
         ),
     ]

@@ -1,17 +1,13 @@
-import time
-
-import torch
-from transformers import AutoTokenizer, AutoModel
-
 import csv
-from pathlib import Path
+import json
 import time
 import uuid
-import json
+from pathlib import Path
 
-import weaviate
 import numpy as np
-
+import torch
+import weaviate
+from transformers import AutoModel, AutoTokenizer
 
 weaviate_server_url = "http://localhost:8080"
 item_class_name = "Paper"
@@ -122,8 +118,8 @@ while True:
             distances.append(e["_additional"]["distance"])
             titles.append(e["title"])
 
-        from sklearn.manifold import TSNE
         import plotly.express as px
+        from sklearn.manifold import TSNE
 
         features = np.asarray(vectors)
         print(features.shape)

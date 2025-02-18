@@ -3,32 +3,30 @@ Note: the backend container port needs to be exposed for this script to work,
 it does not work by going through the backend proxy for now.
 """
 
-
 import gzip
-import requests
 import json
-from pathlib import Path
+import logging
 import os
 import pickle
-import logging
-import time
 import sys
+import time
 from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
+from pathlib import Path
 from threading import Thread
 
 import orjson
-from tqdm import tqdm
-
+import requests
 from download_semantic_scholar_dataset import (
     DatasetNames,
+    download_gz_file_using_curl,
     get_dataset_file_urls,
     streaming_download,
-    download_gz_file_using_curl,
 )
+from tqdm import tqdm
 
 # add '../import_scripts/' to sys.path:
 sys.path.append(str(Path(__file__).resolve().parents[1] / "import_scripts"))
-from data_backend_client import update_database_layout, insert_many, insert_vectors
+from data_backend_client import insert_many, insert_vectors, update_database_layout
 
 # configure logging like [timestamp] [loglevel with fixed length] message
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)-8s] %(message)s")

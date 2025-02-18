@@ -1,4 +1,3 @@
-import datetime
 import json
 import logging
 import os
@@ -16,14 +15,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
-
-from .chatgpt_client import get_chatgpt_response_using_history
-from .data_backend_client import (
-    DATA_BACKEND_HOST,
-    delete_dataset_content,
-    get_global_question_context,
-    get_item_by_id,
-)
 
 BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
 
@@ -727,17 +718,12 @@ class DatasetField(models.Model, ModelTypedImplicitIdField):
         if not self.is_available_for_search and not self.is_available_for_filtering:
             # OpenSearch can't easily count values that are not indexed
             return "?"
+        from legacy_backend.logic.search import get_items_having_value_count
+
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{dataset.id}/{self.identifier}/items_having_value_count"
-            result = backend_client.get(url)
-            count = result.json()["count"]
+            count = get_items_having_value_count(dataset.id, self.identifier)
             if self.field_type == FieldType.VECTOR and self.is_array:
-                url = (
-                    DATA_BACKEND_HOST
-                    + f"/data_backend/dataset/{dataset.id}/{self.identifier}/sub_items_having_value_count"
-                )
-                result = backend_client.get(url)
-                sub_count = result.json()["count"]
+                sub_count = get_items_having_value_count(dataset.id, self.identifier, count_sub_items=True)
                 return f"{count} (~{sub_count / count:.0f} ppi)"
             else:
                 return count
@@ -862,10 +848,10 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
 
     @property
     def item_count(self):
+        from legacy_backend.logic.search import get_item_count
+
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/item_count"
-            result = backend_client.get(url)
-            return result.json()["count"]
+            return get_item_count(self.id)
         except Exception as e:
             return repr(e)
 
@@ -873,10 +859,11 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
 
     @property
     def random_item(self):
+        from legacy_backend.logic.search import get_random_items
+
         try:
-            url = DATA_BACKEND_HOST + f"/data_backend/dataset/{self.id}/random_item"
-            result = backend_client.get(url)
-            item = result.json()["item"]
+            items = get_random_items(self.id, 1)
+            item = items[0] if len(items) else {}
 
             def replace_long_arrays(value):
                 if isinstance(value, list):
@@ -908,6 +895,8 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
         return {**self.schema.advanced_options, **self.advanced_options}  # type: ignore
 
     def delete_content(self):
+        from legacy_backend.logic.insert_logic import delete_dataset_content
+
         delete_dataset_content(self.id)
         collection_items = CollectionItem.objects.filter(dataset_id=self.id)
         collection_items.delete()
@@ -1057,50 +1046,6 @@ class SearchHistoryItem(models.Model, ModelTypedImplicitIdField):
     class Meta:
         verbose_name = "Search History Item"
         verbose_name_plural = "Search History Items"
-
-
-class StoredMap(models.Model):
-    id = models.CharField(
-        verbose_name="ID",
-        primary_key=True,
-        editable=False,
-        max_length=50,
-        blank=False,
-        null=False,
-    )
-    name = models.CharField(verbose_name="Name", max_length=200, blank=False, null=False)
-    display_name = models.CharField(
-        verbose_name="Display Name",
-        help_text="Name to be displayed in the frontend, including HTML markup",
-        max_length=300,
-        blank=True,
-        null=True,
-    )
-    created_at = models.DateTimeField(verbose_name="Created at", default=timezone.now, blank=False, null=False)
-    changed_at = models.DateTimeField(
-        verbose_name="Changed at",
-        auto_now=True,
-        editable=False,
-        blank=False,
-        null=False,
-    )
-    user = models.ForeignKey(verbose_name="User", to=User, on_delete=models.CASCADE, blank=False, null=False)
-    organization = models.ForeignKey(
-        verbose_name="Organization",
-        to=Organization,
-        related_name="+",
-        on_delete=models.CASCADE,
-        blank=False,
-        null=False,
-    )
-    map_data = models.BinaryField(verbose_name="Data", blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.name}"
-
-    class Meta:
-        verbose_name = "Stored Map"
-        verbose_name_plural = "Stored Maps"
 
 
 def class_field_default():
@@ -1798,146 +1743,6 @@ class WritingTask(models.Model, ModelTypedImplicitIdField):
     class Meta:
         verbose_name = "Writing Task"
         verbose_name_plural = "Writing Tasks"
-
-
-class Chat(models.Model, ModelTypedImplicitIdField):
-    name = models.CharField(verbose_name="Name", max_length=200, blank=True, null=True)
-    created_by = models.ForeignKey(
-        verbose_name="Created By",
-        to=User,
-        related_name="+",
-        on_delete=models.CASCADE,
-        blank=False,
-        null=False,
-    )
-    search_settings = models.JSONField(verbose_name="Search Settings", default=dict, blank=True, null=True)
-    collection = models.ForeignKey(
-        verbose_name="Collection",
-        to=DataCollection,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-    )
-    class_name = models.CharField(verbose_name="Class", max_length=200, blank=True, null=True)
-    created_at = models.DateTimeField(
-        verbose_name="Created at",
-        default=timezone.now,
-        editable=False,
-        blank=False,
-        null=False,
-    )
-    changed_at = models.DateTimeField(
-        verbose_name="Changed at",
-        auto_now=True,
-        editable=False,
-        blank=False,
-        null=False,
-    )
-    chat_history = models.JSONField(verbose_name="Chat History", default=list, blank=True, null=False)
-    is_processing = models.BooleanField(verbose_name="Is Processing", default=False, blank=False, null=False)
-
-    def add_question(self, question: str, user_id: int):
-        assert isinstance(self.chat_history, list)
-        self.chat_history.append(
-            {
-                "role": "user",
-                "content": question,
-                "date": timezone.now().isoformat(),
-            }
-        )
-        self.is_processing = True
-        self.save()
-
-        obj = self
-
-        def answer_question():
-            system_prompt = (
-                "You are a helpful assistant. You can answer questions based on the following items. "
-                + "Answer in one or two concise sentences. "
-                + "Mention the item identifier '[dataset_id, item_id]' you got the answer from after the sentence (only one identifier pair per square bracket). "
-                + "If the provided information does not contain the answer, say that you couldn't find the information. "
-            )
-
-            if obj.collection is not None:
-                collection_items = CollectionItem.objects.filter(
-                    collection=self.collection, classes__contains=[obj.class_name]
-                )
-                included_items = 0
-                for item in collection_items:
-                    text = None
-                    if item.field_type == FieldType.TEXT:
-                        text = json.dumps({"_id": item.id, "text": item.value}, indent=2)
-                    if item.field_type == FieldType.IDENTIFIER:
-                        assert item.dataset_id is not None
-                        assert item.item_id is not None
-                        fields = list(
-                            Dataset.objects.get(id=item.dataset_id)
-                            .schema.descriptive_text_fields.all()
-                            .values_list("identifier", flat=True)
-                        )
-                        fields.append("_id")
-                        full_item = get_item_by_id(item.dataset_id, item.item_id, fields)
-                        text = json.dumps(full_item, indent=2)
-                    if not text:
-                        continue
-                    included_items += 1
-                    system_prompt += "\n" + text + "\n"
-                    if included_items > 5:
-                        break
-            else:
-                assert isinstance(obj.search_settings, dict)
-                context = get_global_question_context(obj.search_settings)
-                system_prompt += "\n\n" + context + "\n"
-            logging.warning(system_prompt)
-
-            history = []
-            history.append({"role": "system", "content": system_prompt})
-            for chat_item in obj.chat_history:
-                history.append(
-                    {
-                        "role": chat_item["role"],
-                        "content": chat_item["content"],
-                    }
-                )
-            usage_tracker = ServiceUsage.get_usage_tracker(user_id, "External AI")
-            result = usage_tracker.track_usage(1, "chat answer")
-            if result["approved"]:
-                response_text = get_chatgpt_response_using_history(history)
-            else:
-                response_text = "AI usage limit exceeded."
-            # response_text = "I'm sorry, I can't answer that question yet."
-
-            obj.chat_history.append(
-                {
-                    "role": "system",
-                    "content": response_text,
-                    "date": timezone.now().isoformat(),
-                }
-            )
-            obj.is_processing = False
-            obj.save()
-
-        def safe_answer_question():
-            obj.is_processing = True
-            obj.save()
-            try:
-                answer_question()
-            except Exception as e:
-                logging.error("Error in answer_question", e)
-                obj.is_processing = False
-                obj.save()
-
-        try:
-            thread = threading.Thread(target=safe_answer_question)
-            thread.start()
-        except Exception as e:
-            logging.error("Error in add_question", e)
-            obj.is_processing = False
-            obj.save()
-
-    class Meta:
-        verbose_name = "Chat"
-        verbose_name_plural = "Chats"
 
 
 class PeriodType(models.TextChoices):

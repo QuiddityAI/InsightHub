@@ -6,23 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0034_remove_collectioncolumn_determines_relevance'),
+        ("data_map_backend", "0034_remove_collectioncolumn_determines_relevance"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='dataset',
-            name='filter_prompts',
-            field=models.TextField(blank=True, help_text="Prompts for filter detection, start each with '# language: de / en / ...'. Overrides those of the schema.", null=True, verbose_name='Filter Prompts'),
+            model_name="dataset",
+            name="filter_prompts",
+            field=models.TextField(
+                blank=True,
+                help_text="Prompts for filter detection, start each with '# language: de / en / ...'. Overrides those of the schema.",
+                null=True,
+                verbose_name="Filter Prompts",
+            ),
         ),
         migrations.AddField(
-            model_name='datasetschema',
-            name='filter_prompts',
-            field=models.TextField(blank=True, help_text="Prompts for filter detection, start each with '# language: de / en / ...'", null=True, verbose_name='Filter Prompts'),
+            model_name="datasetschema",
+            name="filter_prompts",
+            field=models.TextField(
+                blank=True,
+                help_text="Prompts for filter detection, start each with '# language: de / en / ...'",
+                null=True,
+                verbose_name="Filter Prompts",
+            ),
         ),
         migrations.AddField(
-            model_name='historicaldataset',
-            name='filter_prompts',
-            field=models.TextField(blank=True, help_text="Prompts for filter detection, start each with '# language: de / en / ...'. Overrides those of the schema.", null=True, verbose_name='Filter Prompts'),
+            model_name="historicaldataset",
+            name="filter_prompts",
+            field=models.TextField(
+                blank=True,
+                help_text="Prompts for filter detection, start each with '# language: de / en / ...'. Overrides those of the schema.",
+                null=True,
+                verbose_name="Filter Prompts",
+            ),
         ),
     ]

@@ -6,20 +6,17 @@ from django.db import migrations
 
 
 def change_user_type(apps, schema_editor):
-    ContentType = apps.get_model('contenttypes', 'ContentType')
-    ct = ContentType.objects.filter(
-        app_label='auth',
-        model='user'
-    ).first()
+    ContentType = apps.get_model("contenttypes", "ContentType")
+    ct = ContentType.objects.filter(app_label="auth", model="user").first()
     if ct:
-        ct.app_label = 'user'
+        ct.app_label = "user"
         ct.save()
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0016_searchhistoryitem_auto_relaxed_and_more'),
+        ("data_map_backend", "0016_searchhistoryitem_auto_relaxed_and_more"),
     ]
 
     operations = [

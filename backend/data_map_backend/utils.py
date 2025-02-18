@@ -1,12 +1,12 @@
-from typing import Any, Iterable
-from copy import deepcopy
 import os
 import uuid
+from copy import deepcopy
+from typing import Any, Iterable
 from uuid import uuid5
 
 import numpy as np
 
-from .models import DatasetField
+from data_map_backend.models import DatasetField
 
 
 def get_vector_field_dimensions(field: DatasetField):
@@ -74,9 +74,9 @@ class DotDict(dict):
 # a decorator to profile a function using cProfile and print the results to stdout:
 def profile(func):
     import cProfile
-    import pstats
     import io
     import logging
+    import pstats
 
     def wrapper(*args, **kwargs):
         pr = cProfile.Profile()

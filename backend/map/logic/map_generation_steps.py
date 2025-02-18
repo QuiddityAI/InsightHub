@@ -16,8 +16,7 @@ from data_map_backend.views.other_views import (
 from legacy_backend.logic.clusters_and_titles import get_cluster_titles
 from legacy_backend.logic.search import get_items_by_ids
 from legacy_backend.utils.collect_timings import Timings
-
-from ..schemas import (
+from map.schemas import (
     ClusterDescription,
     MapData,
     MapMetadata,

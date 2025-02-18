@@ -6,18 +6,29 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0027_alter_collectionitem_column_data'),
+        ("data_map_backend", "0027_alter_collectionitem_column_data"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='collectionitem',
-            name='dataset_id',
-            field=models.IntegerField(blank=True, db_index=True, null=True, verbose_name='Dataset ID (in case this is an item reference aka IDENTIFIER)'),
+            model_name="collectionitem",
+            name="dataset_id",
+            field=models.IntegerField(
+                blank=True,
+                db_index=True,
+                null=True,
+                verbose_name="Dataset ID (in case this is an item reference aka IDENTIFIER)",
+            ),
         ),
         migrations.AlterField(
-            model_name='collectionitem',
-            name='item_id',
-            field=models.CharField(blank=True, db_index=True, max_length=200, null=True, verbose_name='Item ID (in case this is an item reference aka IDENTIFIER)'),
+            model_name="collectionitem",
+            name="item_id",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                max_length=200,
+                null=True,
+                verbose_name="Item ID (in case this is an item reference aka IDENTIFIER)",
+            ),
         ),
     ]

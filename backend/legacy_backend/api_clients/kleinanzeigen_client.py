@@ -1,15 +1,14 @@
+import logging
 import math
-from typing import Any, Iterable
 import os
 import time
-import requests
-import logging
+from typing import Any, Iterable
 
-from diskcache import Cache
 import requests
 from bs4 import BeautifulSoup
+from diskcache import Cache
 
-from ..logic.insert_logic import insert_many
+from legacy_backend.logic.insert_logic import insert_many
 
 KLEINANZEIGEN_URL = ""
 

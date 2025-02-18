@@ -2,21 +2,20 @@
 Run with "python3 -m test.test_django_backend"
 """
 
-import json
-import time
 import csv
+import json
 import logging
+import time
 from typing import Callable
 
 import tqdm
-from data_map_backend.utils import DotDict
-
 from database_client.django_client import get_dataset
+from database_client.vector_search_engine_client import VectorSearchEngineClient
 from logic.extract_pipeline import get_pipeline_steps
 from logic.insert_logic import insert_many, update_database_layout
-from database_client.vector_search_engine_client import VectorSearchEngineClient
-
 from utils.custom_json_encoder import CustomJSONEncoder
+
+from data_map_backend.utils import DotDict
 
 logging.root.setLevel(logging.INFO)
 

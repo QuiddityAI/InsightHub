@@ -6,28 +6,52 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0009_remove_dataset_defaults_and_more'),
+        ("data_map_backend", "0009_remove_dataset_defaults_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='historicalimportconverter',
-            name='manual_insert_form',
-            field=models.JSONField(blank=True, default=list, help_text='A list of fields like [{"identifier": "field_name", "label": "Field Label", "type": "text", "required": true}]', null=True, verbose_name='Manual Insert Form'),
+            model_name="historicalimportconverter",
+            name="manual_insert_form",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text='A list of fields like [{"identifier": "field_name", "label": "Field Label", "type": "text", "required": true}]',
+                null=True,
+                verbose_name="Manual Insert Form",
+            ),
         ),
         migrations.AddField(
-            model_name='importconverter',
-            name='manual_insert_form',
-            field=models.JSONField(blank=True, default=list, help_text='A list of fields like [{"identifier": "field_name", "label": "Field Label", "type": "text", "required": true}]', null=True, verbose_name='Manual Insert Form'),
+            model_name="importconverter",
+            name="manual_insert_form",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text='A list of fields like [{"identifier": "field_name", "label": "Field Label", "type": "text", "required": true}]',
+                null=True,
+                verbose_name="Manual Insert Form",
+            ),
         ),
         migrations.AlterField(
-            model_name='dataset',
-            name='advanced_options',
-            field=models.JSONField(blank=True, default=dict, help_text='Remote access tokens etc., also overrides schema advanced options', null=True, verbose_name='Advanced Options'),
+            model_name="dataset",
+            name="advanced_options",
+            field=models.JSONField(
+                blank=True,
+                default=dict,
+                help_text="Remote access tokens etc., also overrides schema advanced options",
+                null=True,
+                verbose_name="Advanced Options",
+            ),
         ),
         migrations.AlterField(
-            model_name='historicaldataset',
-            name='advanced_options',
-            field=models.JSONField(blank=True, default=dict, help_text='Remote access tokens etc., also overrides schema advanced options', null=True, verbose_name='Advanced Options'),
+            model_name="historicaldataset",
+            name="advanced_options",
+            field=models.JSONField(
+                blank=True,
+                default=dict,
+                help_text="Remote access tokens etc., also overrides schema advanced options",
+                null=True,
+                verbose_name="Advanced Options",
+            ),
         ),
     ]

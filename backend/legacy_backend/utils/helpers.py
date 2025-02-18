@@ -1,7 +1,8 @@
+import math
 import os
 from concurrent.futures import ThreadPoolExecutor
-import math
 from typing import Any, Callable, Iterable
+
 import numpy as np
 
 from data_map_backend.utils import DotDict
@@ -94,23 +95,12 @@ def get_field_from_all_items(
     return [items_by_dataset[ds_id][item_id].get(field_name, default_value) for (ds_id, item_id) in sorted_ids]
 
 
-def load_env_file():
-    with open("../.env", "r") as f:
-        for line in f:
-            if line.startswith("#"):
-                continue
-            if "=" not in line:
-                continue
-            key, value = line.strip().split("=")
-            os.environ[key] = value
-
-
 # a decorator to profile a function using cProfile and print the results to stdout:
 def profile(func):
     import cProfile
-    import pstats
     import io
     import logging
+    import pstats
 
     def wrapper(*args, **kwargs):
         pr = cProfile.Profile()
@@ -128,8 +118,9 @@ def profile(func):
 
 
 def profile_with_viztracer(*d_args, max_stack_depth: int | None = 7, store_each_call: bool = False, **d_kwargs):
-    from viztracer import VizTracer
     import time
+
+    from viztracer import VizTracer
 
     if max_stack_depth:
         d_kwargs["max_stack_depth"] = max_stack_depth
@@ -138,9 +129,9 @@ def profile_with_viztracer(*d_args, max_stack_depth: int | None = 7, store_each_
         def wrapper(*args, **kwargs):
             with VizTracer(
                 *d_args,
-                output_file=f"trace_{func.__name__}_{time.time()}.json"
-                if store_each_call
-                else f"trace_{func.__name__}.json",
+                output_file=(
+                    f"trace_{func.__name__}_{time.time()}.json" if store_each_call else f"trace_{func.__name__}.json"
+                ),
                 **d_kwargs,
             ) as tracer:
                 ret = func(*args, **kwargs)

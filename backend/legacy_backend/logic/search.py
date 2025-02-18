@@ -1,45 +1,52 @@
-from collections import defaultdict
 import copy
 import itertools
 import json
 import logging
+from collections import defaultdict
 
 import numpy as np
 
-
-from ..utils.field_types import FieldType
-from ..utils.collect_timings import Timings
 from data_map_backend.utils import DotDict
-from ..utils.source_plugin_types import SourcePlugin
-
-from ..api_clients.bing_web_search import bing_web_search_formatted
-from ..api_clients.semantic_scholar_client import semantic_scholar_search_formatted
-from ..api_clients.kleinanzeigen_client import get_kleinanzeigen_results
-from ..database_client.django_client import get_trained_classifier, get_dataset, get_collection
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..database_client.text_search_engine_client import TextSearchEngineClient
-from ..logic.local_map_cache import local_maps
-from ..logic.extract_pipeline import get_pipeline_steps
-from ..logic.generate_missing_values import generate_missing_values_for_given_elements
-from ..logic.search_common import (
+from data_map_backend.views.other_views import get_serialized_dataset_cached
+from legacy_backend.api_clients.bing_web_search import bing_web_search_formatted
+from legacy_backend.api_clients.kleinanzeigen_client import get_kleinanzeigen_results
+from legacy_backend.api_clients.semantic_scholar_client import (
+    semantic_scholar_search_formatted,
+)
+from legacy_backend.database_client.django_client import (
+    get_collection,
+    get_dataset,
+    get_trained_classifier,
+)
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
+)
+from legacy_backend.database_client.vector_search_engine_client import (
+    VectorSearchEngineClient,
+)
+from legacy_backend.logic.extract_pipeline import get_pipeline_steps
+from legacy_backend.logic.generate_missing_values import (
+    generate_missing_values_for_given_elements,
+)
+from legacy_backend.logic.local_map_cache import local_maps
+from legacy_backend.logic.reranking import rerank
+from legacy_backend.logic.search_common import (
     QueryInput,
+    adapt_filters_to_dataset,
+    check_filters,
+    combine_and_sort_result_sets,
+    fill_in_vector_data_list,
+    get_field_similarity_threshold,
+    get_fulltext_search_results,
     get_required_fields,
     get_vector_search_results,
     get_vector_search_results_matching_collection,
-    get_fulltext_search_results,
-    combine_and_sort_result_sets,
-    sort_items_and_complete_them,
-    get_field_similarity_threshold,
-    fill_in_vector_data_list,
-    adapt_filters_to_dataset,
-    check_filters,
     separate_text_and_vector_fields,
+    sort_items_and_complete_them,
 )
-from ..logic.reranking import rerank
-
-from ..database_client.django_client import get_dataset
-
-from data_map_backend.views.other_views import get_serialized_dataset_cached
+from legacy_backend.utils.collect_timings import Timings
+from legacy_backend.utils.field_types import FieldType
+from legacy_backend.utils.source_plugin_types import SourcePlugin
 
 
 # @lru_cache()
@@ -548,31 +555,6 @@ def get_search_results_included_in_collection(
 
     required_fields = get_required_fields(dataset, vectorize_settings, purpose)
     return sort_items_and_complete_them(dataset, total_items, required_fields, limit, timings)
-
-
-def get_search_results_for_stored_map(map_data):
-    timings = Timings()
-    params = DotDict(map_data["parameters"])
-    search_settings = params.search
-    purpose = "list"
-    limit = (
-        search_settings.result_list_items_per_page if purpose == "list" else search_settings.max_items_used_for_mapping
-    )
-    page = search_settings.result_list_current_page if purpose == "list" else 0
-
-    # TODO: implement paging
-    sorted_ids = map_data["results"]["per_point_data"]["item_ids"][:limit]
-    all_items_by_dataset = map_data["results"]["slimmed_items_per_dataset"]
-    items_by_dataset = defaultdict(dict)
-    for dataset_id, item_id in sorted_ids:
-        items_by_dataset[dataset_id][item_id] = all_items_by_dataset[dataset_id][item_id]
-
-    result = {
-        "sorted_ids": sorted_ids,
-        "items_by_dataset": items_by_dataset,
-        "timings": timings.get_timestamps(),
-    }
-    return result
 
 
 def get_search_results_for_global_map(

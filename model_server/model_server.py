@@ -1,20 +1,22 @@
 import logging
 
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug import serving
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
 
-from utils.dotdict import DotDict
-from utils.batching import run_in_batches
-
-from logic.bert_models import bert_models, bert_embedding_strategies, get_bert_embeddings
+from logic.bert_models import (
+    bert_embedding_strategies,
+    bert_models,
+    get_bert_embeddings,
+)
+from logic.clip_models import get_clip_image_embeddings, get_clip_text_embeddings
 from logic.sentence_transformer_models import get_sentence_transformer_embeddings
-from logic.clip_models import get_clip_text_embeddings, get_clip_image_embeddings
-
 from PIL import ImageFile
+from utils.batching import run_in_batches
+from utils.dotdict import DotDict
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

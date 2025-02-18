@@ -6,18 +6,18 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0018_user_accepted_cookies_user_accepted_emails_and_more'),
+        ("data_map_backend", "0018_user_accepted_cookies_user_accepted_emails_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='datacollection',
-            old_name='current_extraction_processes',
-            new_name='columns_with_running_processes',
+            model_name="datacollection",
+            old_name="current_extraction_processes",
+            new_name="columns_with_running_processes",
         ),
         migrations.RenameField(
-            model_name='historicaldatacollection',
-            old_name='current_extraction_processes',
-            new_name='columns_with_running_processes',
+            model_name="historicaldatacollection",
+            old_name="current_extraction_processes",
+            new_name="columns_with_running_processes",
         ),
     ]

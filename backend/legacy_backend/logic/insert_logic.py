@@ -4,13 +4,16 @@ from uuid import uuid4
 
 from data_map_backend.models import SearchTask
 from data_map_backend.utils import DotDict, pk_to_uuid_id
+from legacy_backend.database_client.django_client import get_dataset
+from legacy_backend.database_client.text_search_engine_client import (
+    TextSearchEngineClient,
+)
+from legacy_backend.database_client.vector_search_engine_client import (
+    VectorSearchEngineClient,
+)
+from legacy_backend.logic.extract_pipeline import get_pipeline_steps
+from legacy_backend.utils.field_types import FieldType
 from search.logic.notify_about_new_items import notify_about_new_items
-
-from ..database_client.django_client import get_dataset
-from ..database_client.text_search_engine_client import TextSearchEngineClient
-from ..database_client.vector_search_engine_client import VectorSearchEngineClient
-from ..logic.extract_pipeline import get_pipeline_steps
-from ..utils.field_types import FieldType
 
 
 def update_database_layout(dataset_id: int):
@@ -84,10 +87,9 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
                 if pipeline_step.requires_multiple_input_fields:
                     assert isinstance(pipeline_step.source_fields, dict)
                     # pipeline_step.source_fields maps generator input -> source_field
-                    source_data = {}
+                    source_data = {"_id": element["_id"]}
                     for generator_input, source_field in pipeline_step.source_fields.items():
                         source_data[generator_input] = element.get(source_field, None)
-                    source_data = source_data
                 else:
                     for source_field in pipeline_step.source_fields:
                         if source_field in element and element[source_field] is not None:

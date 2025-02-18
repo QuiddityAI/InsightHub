@@ -4,10 +4,14 @@ from typing import Any, List, Optional
 
 import requests
 from pydantic import Field
+from quiddity_client.utils import FileUploadManager
 from requests.exceptions import RequestException
 
-from .models import RunSearchTaskPayload, SearchResult, SearchTaskSettings
-from .utils import FileUploadManager
+from data_map_backend.models import (
+    RunSearchTaskPayload,
+    SearchResult,
+    SearchTaskSettings,
+)
 
 
 class QuiddityClient:

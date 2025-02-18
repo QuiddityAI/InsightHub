@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0033_alter_collectioncolumn_parameters_and_more'),
+        ("data_map_backend", "0033_alter_collectioncolumn_parameters_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='collectioncolumn',
-            name='determines_relevance',
+            model_name="collectioncolumn",
+            name="determines_relevance",
         ),
     ]

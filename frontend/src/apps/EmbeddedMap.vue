@@ -158,7 +158,7 @@ export default {
     this.appStateStore.retrieve_current_user()
     this.appStateStore.retrieve_available_organizations(() => {
       this.evaluate_url_query_parameters()
-      this.appStateStore.retrieve_stored_maps_history_and_collections()
+      this.appStateStore.retrieve_collections()
     })
     this.eventBus.on("datasets_are_loaded", () => {
       const queryParams = new URLSearchParams(window.location.search)
@@ -185,7 +185,7 @@ export default {
   watch: {
     "appStateStore.organization_id"() {
       this.appStateStore.reset_search_results_and_map()
-      this.appStateStore.retrieve_stored_maps_history_and_collections()
+      this.appStateStore.retrieve_collections()
     },
   },
 }

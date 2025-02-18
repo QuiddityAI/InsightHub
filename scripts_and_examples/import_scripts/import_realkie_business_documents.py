@@ -1,8 +1,8 @@
-import time
-import os
-
-from data_backend_client import upload_files, files_in_folder
 import csv
+import os
+import time
+
+from data_backend_client import files_in_folder, upload_files
 
 csv_log = []
 

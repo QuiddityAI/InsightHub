@@ -10,12 +10,11 @@ from opensearchpy import OpenSearch, RequestError
 
 from data_map_backend.models import Dataset
 from data_map_backend.utils import DotDict
-
-from ..database_client.remote_instance_client import use_remote_db
-from ..utils.custom_json_encoder import CustomJSONEncoder
-from ..utils.field_types import FieldType
-from ..utils.helpers import run_in_batches_without_result
-from ..utils.source_plugin_types import SourcePlugin
+from legacy_backend.database_client.remote_instance_client import use_remote_db
+from legacy_backend.utils.custom_json_encoder import CustomJSONEncoder
+from legacy_backend.utils.field_types import FieldType
+from legacy_backend.utils.helpers import run_in_batches_without_result
+from legacy_backend.utils.source_plugin_types import SourcePlugin
 
 with open("../credentials.json", "rb") as f:
     credentials = json.load(f)

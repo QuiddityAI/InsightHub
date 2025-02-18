@@ -1,9 +1,10 @@
+import dspy
 from django.db.models import Q
 from django.db.models.manager import BaseManager
 from django.utils import timezone
-import dspy
 
 from columns.schemas import Criterion
+from config.utils import get_default_dspy_llm
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     CollectionColumn,
@@ -13,9 +14,7 @@ from data_map_backend.models import (
 )
 from data_map_backend.schemas import ItemRelevance
 from legacy_backend.logic.chat_and_extraction import get_item_question_context
-from search.prompts import approve_using_comparison_prompt
 from search.schemas import ApprovalUsingComparisonReason, SearchTaskSettings
-from config.utils import get_default_dspy_llm
 
 
 class DocComparisonSignature(dspy.Signature):
@@ -116,8 +115,6 @@ def approve_using_comparison(
     max_selections: int | None = None,
     forced_selections: int = 0,
 ):
-    prompt = approve_using_comparison_prompt[search_task.result_language or "en"]
-    prompt = prompt.replace("{{ user_input }}", search_task.user_input)
     relevance_columns = [column for column in collection.columns.all() if column.module == "relevance"]
 
     documents = ""

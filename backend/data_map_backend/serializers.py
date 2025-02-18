@@ -1,7 +1,6 @@
 from rest_framework import serializers as drf_serializers
 
-from .models import (
-    Chat,
+from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
     DataCollection,
@@ -16,7 +15,6 @@ from .models import (
     Organization,
     SearchHistoryItem,
     SearchTask,
-    StoredMap,
     TrainedClassifier,
     WritingTask,
 )
@@ -159,18 +157,3 @@ class WritingTaskSerializer(drf_serializers.ModelSerializer):
     class Meta:
         model = WritingTask
         exclude = []
-
-
-class StoredMapSerializer(drf_serializers.ModelSerializer):
-    user = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
-    organization = drf_serializers.PrimaryKeyRelatedField(many=False, read_only=True)
-
-    class Meta:
-        model = StoredMap
-        exclude = ["map_data"]
-
-
-class ChatSerializer(drf_serializers.ModelSerializer):
-    class Meta:
-        model = Chat
-        exclude = ["created_at", "changed_at"]

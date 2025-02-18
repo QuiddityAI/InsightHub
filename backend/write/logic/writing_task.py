@@ -2,8 +2,8 @@ import json
 import logging
 import threading
 
-from django.db.models.manager import BaseManager
 import dspy
+from django.db.models.manager import BaseManager
 from llmonkey.llms import BaseLLMModel
 
 from config.utils import get_default_model
@@ -15,10 +15,8 @@ from data_map_backend.models import (
     WritingTask,
 )
 from data_map_backend.schemas import ItemRelevance
-from legacy_backend.logic.chat_and_extraction import (
-    get_item_question_context as get_item_question_context_native,
-)
-from write.prompts import writing_task_prompt, writing_task_prompt_without_items
+from legacy_backend.logic.chat_and_extraction import get_item_question_context
+from write.prompts import writing_task_prompt_without_items
 
 
 class WritingTaskSignature(dspy.Signature):
@@ -114,7 +112,7 @@ def _execute_writing_task(task: WritingTask):
         elif item.field_type == FieldType.IDENTIFIER:
             assert item.dataset_id is not None
             assert item.item_id is not None
-            item_context = get_item_question_context_native(
+            item_context = get_item_question_context(
                 item.dataset_id, item.item_id, task.source_fields, task.expression
             )["context"]
             item_text = f"Document ID: {len(provided_data_items) + 1}\n{item_context}"

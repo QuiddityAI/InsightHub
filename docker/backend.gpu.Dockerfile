@@ -15,8 +15,6 @@ RUN apt update && apt install -y tesseract-ocr tesseract-ocr-eng ghostscript pan
 RUN apt install -y curl
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
-#COPY docker/docker_container_base_python_packages.txt /app
-#RUN pip install --no-cache-dir -r docker_container_base_python_packages.txt
 #COPY Pipfile /app
 #COPY Pipfile.lock /app
 #RUN pipenv requirements > requirements.txt \

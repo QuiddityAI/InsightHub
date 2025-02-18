@@ -1,11 +1,10 @@
 import logging
 import time
 
-import tqdm
 import orjson
+import tqdm
 
-from data_backend_client import update_database_layout, insert_many
-
+from data_backend_client import insert_many, update_database_layout
 
 # see https://github.com/shuttie/esci-s
 

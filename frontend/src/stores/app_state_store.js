@@ -85,12 +85,6 @@ export const useAppStateStore = defineStore("appState", {
       last_used_collection_id: null,
       last_used_collection_class: null,
 
-      // chats:
-      chats: [],
-
-      search_history: [],
-      stored_maps: [],
-
       // writing tasks:
       selected_writing_task_id: null,
       selected_writing_task: null,
@@ -296,7 +290,7 @@ export const useAppStateStore = defineStore("appState", {
       }
       httpClient.post("/org/data_map/set_user_preferences", body)
     },
-    retrieve_stored_maps_history_and_collections() {
+    retrieve_collections() {
       const that = this
       if (this.organization_id == null) {
         console.log("organization_id is null, cannot retrieve stored maps, history and collections")
@@ -306,16 +300,6 @@ export const useAppStateStore = defineStore("appState", {
         console.log("not logged in, cannot retrieve stored maps, history and collections")
         return
       }
-      this.search_history = []
-      // FIXME: refactor with organization_id
-      const get_history_body = {
-        organization_id: this.organization_id,
-      }
-      httpClient
-        .post("/org/data_map/get_search_history", get_history_body)
-        .then(function (response) {
-          that.search_history = response.data
-        })
 
       this.collections = []
       const get_collections_body = {
@@ -325,24 +309,6 @@ export const useAppStateStore = defineStore("appState", {
         .post("/org/data_map/get_collections", get_collections_body)
         .then(function (response) {
           that.collections = response.data || []
-        })
-
-      this.stored_maps = []
-      const get_stored_maps_body = {
-        organization_id: this.organization_id,
-      }
-      httpClient
-        .post("/org/data_map/get_stored_maps", get_stored_maps_body)
-        .then(function (response) {
-          that.stored_maps = response.data
-        })
-
-      this.chats = []
-      const get_chats_body = {}
-      httpClient
-        .post("/org/data_map/get_chats", get_chats_body)
-        .then(function (response) {
-          that.chats = response.data
         })
     },
     retrieve_available_organizations(on_success = null) {
@@ -795,68 +761,6 @@ export const useAppStateStore = defineStore("appState", {
           }
         }
     },
-    answer_question() {
-      // FIXME: outdated, replaced by create_chat_from_search_settings
-      const that = this
-      if (this.settings.search.dataset_ids.length === 0) return
-      if (
-        this.settings.search.search_type == "external_input" &&
-        !this.settings.search.use_separate_queries &&
-        !this.settings.search.all_field_query &&
-        !this.settings.search.filters.length
-      ) {
-        this.reset_search_results_and_map()
-        this.reset_search_box()
-        return
-      }
-
-      this.reset_search_results_and_map({ leave_map_unchanged: false })
-      this.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")  // is this needed?
-
-      this.convert_quoted_parts_to_filter()
-
-      const body = { search_settings: this.settings.search }
-      httpClient
-        .post(`/org/data_map/create_chat_from_search_settings`, body)
-        .then(function (response) {
-          const chat_data = response.data
-          that.chats.unshift(chat_data)
-          that.eventBus.emit("show_chat", {chat_id: chat_data.id})
-          that.reset_search_box()
-        })
-    },
-    create_chat_from_search_settings(on_success) {
-      const that = this
-      if (this.settings.search.dataset_ids.length === 0) return
-      if (!this.settings.search.all_field_query) return
-
-      // TODO: needs to be checked if it removes the quoted parts (what it should in this case)
-      // this.convert_quoted_parts_to_filter()
-
-      const body = { search_settings: this.settings.search }
-      httpClient
-        .post(`/org/data_map/create_chat_from_search_settings`, body)
-        .then(function (response) {
-          const chat_data = response.data
-          that.chats.unshift(chat_data)
-          if (on_success) {
-            on_success(chat_data)
-          }
-          that.eventBus.emit("show_chat", {chat_id: chat_data.id})
-          that.reset_search_box()
-        })
-    },
-    remove_chat(chat_id, on_success) {
-      const that = this
-      httpClient
-        .post(`/org/data_map/delete_chat`, { chat_id: chat_id })
-        .then(function (response) {
-          if (on_success) {
-            on_success()
-          }
-          that.chats = that.chats.filter((chat) => chat.id !== chat_id)
-        })
-    },
     get_current_map_name() {
       let name = ""
       let display_name = ""
@@ -902,15 +806,6 @@ export const useAppStateStore = defineStore("appState", {
       const that = this
       if (!this.store_search_history) return
 
-      if (
-        this.search_history.length > 0 &&
-        JSON.stringify(this.search_history[this.search_history.length - 1].parameters) ==
-          JSON.stringify(this.settings)
-      ) {
-        // -> same query as before, don't save this duplicate:
-        return
-      }
-
       const [name, display_name] = this.get_current_map_name()
       if (!name) return
 
@@ -924,7 +819,6 @@ export const useAppStateStore = defineStore("appState", {
       httpClient
         .post("/org/data_map/add_search_history_item", history_item_body)
         .then(function (response) {
-          that.search_history.push(response.data)
         })
 
       umami.track("search", { name: name })
@@ -936,7 +830,7 @@ export const useAppStateStore = defineStore("appState", {
       // TODO: check if map_settings are actully the ones in the last history item
 
       const history_item_body = {
-        item_id: this.search_history[this.search_history.length - 1].id,
+        item_id: null, // FIXME: this.search_history[this.search_history.length - 1].id,
         total_matches: this.search_result_total_matches,
         auto_relaxed: null,  // TODO: implement
         cluster_count: this.mapState.clusterData.length,
@@ -948,7 +842,6 @@ export const useAppStateStore = defineStore("appState", {
       httpClient
         .post("/org/data_map/update_search_history_item", history_item_body)
         .then(function (response) {
-          that.search_history[that.search_history.length - 1] = response.data
         })
     },
     show_received_search_results(response_data) {
@@ -1410,71 +1303,6 @@ export const useAppStateStore = defineStore("appState", {
     },
     get_hover_rendering_by_index(item_index) {
       return this.get_dataset_by_index(item_index)?.schema.hover_label_rendering
-    },
-    store_current_map() {
-      const that = this
-      const [name, display_name] = this.get_current_map_name()
-      if (!name) return
-      const store_map_body = {
-        user_id: this.user.id,
-        organization_id: this.organization_id,
-        name: name,
-        display_name: display_name,
-        map_id: this.map_id,
-      }
-      httpClient.post("/data_backend/map/store", store_map_body).then(function (response) {
-        that.stored_maps.push(response.data)
-      })
-    },
-    delete_stored_map(stored_map_id) {
-      const that = this
-      const delete_stored_map_body = {
-        stored_map_id: stored_map_id,
-      }
-      httpClient
-        .post("/org/data_map/delete_stored_map", delete_stored_map_body)
-        .then(function (response) {
-          const index_to_be_removed = that.stored_maps.findIndex((item) => item.id === stored_map_id)
-          if (index_to_be_removed !== null) {
-            that.stored_maps.splice(index_to_be_removed, 1)
-          }
-        })
-    },
-    show_stored_map(stored_map_id) {
-      // console.log("showing stored map", stored_map_id)
-      const that = this
-
-      this.reset_search_results_and_map()
-      this.eventBus.emit("show_results_tab")
-
-      that.map_id = stored_map_id
-      const body = {
-        map_id: this.map_id,
-      }
-
-      httpClient
-        .post("/data_backend/stored_map/parameters_and_search_results", body)
-        .then(function (response) {
-          const parameters = response.data.parameters
-          that.settings = parameters
-          that.eventBus.emit("map_regenerate_attribute_arrays_from_fallbacks")
-
-          // now done when map results are received
-          //that.show_received_search_results(response.data)
-
-          that.map_viewport_is_adjusted = false
-          that.map_is_in_progess = true
-          that.extended_search_results_are_loading = true
-          that.request_mapping_progress()
-        })
-        .catch(function (error) {
-          if (error.response && error.response.status === 404) {
-            // map doesn't exist anymore, go back to clear page and reset URL parameters:
-            that.show_error_dialog = true
-            that.error_dialog_message = `The requested map doesn't exist anymore.`
-            that.reset_search_box()
-          }
-        })
     },
     add_selected_points_to_collection(collection_id, class_name, is_positive) {
       // TODO: implement more efficient way

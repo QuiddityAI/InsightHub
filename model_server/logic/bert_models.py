@@ -1,11 +1,10 @@
-import time
 import logging
+import time
 
+import numpy as np
 import torch
 import transformers
-from transformers import AutoTokenizer, AutoModel
-import numpy as np
-
+from transformers import AutoModel, AutoTokenizer
 
 bert_models = {
     "BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext": "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext",  # https://github.com/berenslab/pubmed-landscape/blob/main/scripts/02-ls-data-obtain-BERT-embeddings.ipynb

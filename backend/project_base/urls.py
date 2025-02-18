@@ -14,22 +14,24 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include, re_path
-from django.shortcuts import redirect
 
+from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from .views import login_from_app, signup_from_app, change_password_from_app
-from data_map_backend.views import data_backend_proxy_views
-from data_map_backend.views import other_views
-from workflows.views import api as workflows_api
-from search.views import api as search_api
-from map.views import api as map_api
-from ingest.views import api as ingest_api
+from django.shortcuts import redirect
+from django.urls import include, path, re_path
+
 from columns.views import api as columns_api
+from data_map_backend.views import data_backend_proxy_views, other_views
+from data_map_backend.views.collection_management import (
+    api as collection_management_api,
+)
 from filter.views import api as filter_api
+from ingest.views import api as ingest_api
+from map.views import api as map_api
+from project_base.views import change_password_from_app, login_from_app, signup_from_app
+from search.views import api as search_api
+from workflows.views import api as workflows_api
 from write.views import api as write_api
-from data_map_backend.views.collection_management import api as collection_management_api
 
 
 def redirect_to_admin(request):

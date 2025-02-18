@@ -1,18 +1,17 @@
-import logging
-import time
+import csv
 import gzip
 import json
+import logging
 import sys
-import csv
+import time
 
-import tqdm
 import orjson
+import tqdm
 
-from data_backend_client import update_database_layout, insert_many, files_in_folder
+from data_backend_client import files_in_folder, insert_many, update_database_layout
 
 sys.path.append("../../data_backend/")
 from utils.dotdict import DotDict
-
 
 """
 {
@@ -180,12 +179,16 @@ def preprocess_item(raw_item: DotDict, image_id_to_path) -> dict:
         "asin": raw_item.item_id,
         "name": raw_item.item_name[0].value if raw_item.item_name else None,
         "description": raw_item.product_description[0].value if raw_item.product_description else None,
-        "bullet_points": [e["value"] for e in raw_item.bullet_point if e["language_tag"].startswith("en_")]
-        if raw_item.bullet_point
-        else None,
-        "keywords": list({e["value"] for e in raw_item.item_keywords if e["language_tag"].startswith("en_")})
-        if raw_item.item_keywords
-        else None,
+        "bullet_points": (
+            [e["value"] for e in raw_item.bullet_point if e["language_tag"].startswith("en_")]
+            if raw_item.bullet_point
+            else None
+        ),
+        "keywords": (
+            list({e["value"] for e in raw_item.item_keywords if e["language_tag"].startswith("en_")})
+            if raw_item.item_keywords
+            else None
+        ),
         "image": image_id_to_path[raw_item.main_image_id] if raw_item.main_image_id else None,
         "other_images": [image_id_to_path[e] for e in raw_item.other_image_id] if raw_item.other_image_id else None,
         "category": raw_item.product_type[0].value if raw_item.product_type else None,

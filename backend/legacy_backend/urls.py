@@ -1,4 +1,3 @@
-from .backend_server import URLS
+from legacy_backend.backend_server import URLS
 
 urlpatterns = URLS
-import logging

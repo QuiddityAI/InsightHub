@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0008_alter_objectfield_unique_together_and_more'),
+        ("data_map_backend", "0008_alter_objectfield_unique_together_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='dataset',
-            old_name='defaults',
-            new_name='advanced_options',
+            model_name="dataset",
+            old_name="defaults",
+            new_name="advanced_options",
         ),
         migrations.RenameField(
-            model_name='historicaldataset',
-            old_name='defaults',
-            new_name='advanced_options',
+            model_name="historicaldataset",
+            old_name="defaults",
+            new_name="advanced_options",
         ),
     ]

@@ -1,7 +1,7 @@
 import json
 
-import requests
 import cachetools.func
+import requests
 
 
 @cachetools.func.ttl_cache(maxsize=128, ttl=60 * 60)  # seconds

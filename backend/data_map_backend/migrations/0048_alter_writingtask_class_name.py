@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0047_datacollection_search_tasks_and_more'),
+        ("data_map_backend", "0047_datacollection_search_tasks_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='writingtask',
-            name='class_name',
-            field=models.CharField(default='_default', max_length=200, verbose_name='Class'),
+            model_name="writingtask",
+            name="class_name",
+            field=models.CharField(default="_default", max_length=200, verbose_name="Class"),
         ),
     ]

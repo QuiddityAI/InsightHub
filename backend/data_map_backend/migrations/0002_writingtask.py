@@ -8,33 +8,54 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data_map_backend', '0001_initial'),
+        ("data_map_backend", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='WritingTask',
+            name="WritingTask",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, verbose_name='Name')),
-                ('class_name', models.CharField(max_length=200, verbose_name='Class')),
-                ('created_at', models.DateTimeField(default=django.utils.timezone.now, editable=False, verbose_name='Created at')),
-                ('changed_at', models.DateTimeField(auto_now=True, verbose_name='Changed at')),
-                ('is_processing', models.BooleanField(default=False, verbose_name='Is Processing')),
-                ('source_fields', models.JSONField(blank=True, default=list, null=True, verbose_name='Source Fields')),
-                ('use_all_items', models.BooleanField(default=True, verbose_name='Use All Items')),
-                ('selected_item_ids', models.JSONField(blank=True, default=list, null=True, verbose_name='Selected Item IDs')),
-                ('module', models.CharField(blank=True, max_length=200, null=True, verbose_name='Code Module Name')),
-                ('parameters', models.JSONField(blank=True, default=dict, null=True, verbose_name='Parameters')),
-                ('prompt', models.TextField(blank=True, null=True, verbose_name='Prompt')),
-                ('text', models.TextField(blank=True, null=True, verbose_name='Text')),
-                ('additional_results', models.JSONField(blank=True, default=dict, null=True, verbose_name='Additional Results')),
-                ('previous_versions', models.JSONField(blank=True, default=list, null=True, verbose_name='Previous Versions')),
-                ('collection', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='data_map_backend.datacollection', verbose_name='Collection')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=200, verbose_name="Name")),
+                ("class_name", models.CharField(max_length=200, verbose_name="Class")),
+                (
+                    "created_at",
+                    models.DateTimeField(default=django.utils.timezone.now, editable=False, verbose_name="Created at"),
+                ),
+                ("changed_at", models.DateTimeField(auto_now=True, verbose_name="Changed at")),
+                ("is_processing", models.BooleanField(default=False, verbose_name="Is Processing")),
+                ("source_fields", models.JSONField(blank=True, default=list, null=True, verbose_name="Source Fields")),
+                ("use_all_items", models.BooleanField(default=True, verbose_name="Use All Items")),
+                (
+                    "selected_item_ids",
+                    models.JSONField(blank=True, default=list, null=True, verbose_name="Selected Item IDs"),
+                ),
+                ("module", models.CharField(blank=True, max_length=200, null=True, verbose_name="Code Module Name")),
+                ("parameters", models.JSONField(blank=True, default=dict, null=True, verbose_name="Parameters")),
+                ("prompt", models.TextField(blank=True, null=True, verbose_name="Prompt")),
+                ("text", models.TextField(blank=True, null=True, verbose_name="Text")),
+                (
+                    "additional_results",
+                    models.JSONField(blank=True, default=dict, null=True, verbose_name="Additional Results"),
+                ),
+                (
+                    "previous_versions",
+                    models.JSONField(blank=True, default=list, null=True, verbose_name="Previous Versions"),
+                ),
+                (
+                    "collection",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="data_map_backend.datacollection",
+                        verbose_name="Collection",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Writing Task',
-                'verbose_name_plural': 'Writing Tasks',
+                "verbose_name": "Writing Task",
+                "verbose_name_plural": "Writing Tasks",
             },
         ),
     ]

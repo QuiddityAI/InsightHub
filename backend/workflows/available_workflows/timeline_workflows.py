@@ -1,8 +1,6 @@
 from django.contrib.auth.models import User
 
-from data_map_backend.models import (
-    DataCollection,
-)
+from data_map_backend.models import DataCollection
 from workflows.logic import WorkflowBase, workflow
 from workflows.schemas import (
     CreateCollectionSettings,

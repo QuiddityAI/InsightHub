@@ -1,6 +1,6 @@
 import json
-from typing import Callable
 import uuid
+from typing import Callable
 
 import numpy as np
 

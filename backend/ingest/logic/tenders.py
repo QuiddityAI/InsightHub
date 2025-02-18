@@ -1,12 +1,12 @@
 from multiprocessing.pool import ThreadPool
 from typing import Callable
 
+import dspy
 from ninja import Schema
 
 from columns.logic.website_scraping_column import scrape_website_plain
-from data_map_backend.utils import DotDict
-import dspy
 from config.utils import get_default_dspy_llm
+from data_map_backend.utils import DotDict
 
 
 class TenderSummarySignature:
