@@ -3,23 +3,23 @@
 ## Notes
 
 - docker compose down
-- on v2: source start_ssh_agent.sh
 - git stash
 - git pull
 - git stash pop (& fix merging problems)
 - update .env file
 - update npm env in frontend/? (not needed if npm install is in RUN command of container, July 2024)
 - rebuild / update docker containers? (was not needed July 2024)
-  - poetry install
   - update qdrant:
   - docker compose pull qdrant
   - docker compose up --force-recreate --build -d qdrant
+- update virtualenv:
+  - uv sync
 - docker compose up -d postgres backend
-- apply migrations?
-  - Attention: on v2, there is a different postgres running on same port, migrations must be done in container!
+- apply migrations:
   - from within container:
-  - docker exec -it visual-data-map-backend-1 bash
-  - docker exec -it vsm_staging-backend-staging-1 bash
+  - docker compose exec -it backend bash
+  - docker compose exec -it backend-showcase bash
+  - docker compose exec -it backend-staging bash
   - ../.venv/bin/python manage.py migrate
   - ../.venv/bin/python manage.py update_base_models
 - docker compose restart backend
