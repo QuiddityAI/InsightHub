@@ -72,6 +72,7 @@ services:
 
   postgres:
     image: postgres:16
+    command: -c 'max_connections=500'
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
