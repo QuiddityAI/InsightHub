@@ -1,0 +1,133 @@
+name: vsm_staging
+services:
+  backend-staging-at:
+    image: visual_data_map/backend
+    build:
+      context: ./
+      dockerfile: ./docker/backend.Dockerfile
+    ports:
+      - "127.0.0.1:56125:55125"
+      - "127.0.0.1:30001:30001"
+    volumes:
+      - ./:/source_code/
+      - "${DATA_PATH}/datia:/data"
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
+    environment:
+      - data_backend_host=http://localhost:55125
+      - postgres_host=postgres-staging-at
+      - BACKEND_AUTHENTICATION_SECRET
+      - QUIDDITY_DEBUG=1
+      - model_server_host=http://model-server:55180
+      - infinity_server_host=http://infinity-model-server:55181
+      - backend_host=http://localhost:55125
+      - vector_database_host=qdrant
+      - search_engine_host=opensearch
+      - PDFERRET_BASE_URL=http://pdferret:80
+      - PDFERRET_GROBID_URL=http://grobid:8070
+      - PDFERRET_TIKA_SERVER_URL=http://tika:9998
+      - TIKA_SERVER_ENDPOINT=http://tika:9998
+      - TIKA_CLIENT_ONLY=True
+      - GOOGLE_APPLICATION_CREDENTIALS=/source_code/adc.json
+      - HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS="http://localhost:56440,http://localhost:56140"
+      - PYTHONHOME=${DOCKER_PYTHONHOME}
+      - LOCAL_OLLAMA_URL=http://ollama:11434
+
+  webserver-staging-at:
+    image: visual_data_map/webserver
+    build:
+      context: ./frontend
+      dockerfile: ../docker/webserver.Dockerfile
+    volumes:
+      - ./:/source_code/
+      - ./adc.json:/app/pdferret/application_default_credentials.json
+    ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
+      - "${WEBSERVER_STAGING_EXPOSED_IP:-127.0.0.1}:56440:55140"
+    environment:
+      - backend_host=http://backend-staging-at:55125
+
+  postgres-staging-at:
+    image: postgres:16
+    command: -c 'max_connections=300'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=visdatamap
+
+  # pgbouncer:
+  #   image: edoburu/pgbouncer:latest
+  #   environment:
+  #     - DB_HOST=postgres-staging-at
+  #     - DB_PORT=5432
+  #     - DB_USER=postgres
+  #     - DB_PASSWORD=${POSTGRES_PASSWORD}
+  #     - ADMIN_USERS=postgres,admin
+  #     - AUTH_TYPE=scram-sha-256
+  #     - POOL_MODE=transaction
+  #     - MAX_CLIENT_CONN=1000
+
+
+    # ports:
+    #   - "5432:5432"
+
+
+  qdrant:
+    image: "qdrant/qdrant:latest"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    ports:  # expose port outside of this virtual network
+      - "${QDRANT_EXPOSED_IP:-127.0.0.1}:${QDRANT_EXPOSED_PORT:-6333}:6333"  # needed for qdrant web dashboard
+
+  opensearch:
+    image: "opensearchproject/opensearch:latest"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    ports:  # expose port outside of this virtual network
+      - "127.0.0.1:9200:9200"
+    #   - "127.0.0.1:9600:9600"
+    environment:
+      - discovery.type=single-node
+      - http.port=9200
+      # - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358,http://tim-desktop:1358
+      - http.cors.enabled=true
+      - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
+      - http.cors.allow-credentials=true
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    ports:  # exposed to the outside, remember to use a secure password
+      - "${OPENSEARCH_DASHBOARD_EXPOSED_IP:-127.0.0.1}:${OPENSEARCH_DASHBOARD_EXPOSED_PORT:-5601}:5601"
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
+
+  ollama:
+    image: alpine/ollama
+    container_name: vsd_ollama
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama serve &
+        DAEMON_PID=$!
+        sleep 3
+        ollama pull jeffh/intfloat-e5-base-v2:f16 &&
+        ollama pull yxchia/multilingual-e5-base
+        wait $DAEMON_PID
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ./ollama:/root/.ollama
+    restart: unless-stopped
+
+
+volumes:
+  model_server_cache:
+  qdrant_storage:
+  opensearch_data:
+  postgres_data:
+  swag_data:
+networks:
+  default:
+    name: visualdatamapnetwork
