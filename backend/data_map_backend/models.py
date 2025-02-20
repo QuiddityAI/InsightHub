@@ -848,6 +848,14 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
         null=True,
     )
 
+    languages = models.JSONField(
+        verbose_name="Languages",
+        help_text="Languages of the dataset, e.g. ['en', 'de']",
+        default=list,
+        blank=True,
+        null=False,
+    )
+
     history = HistoricalRecords()
 
     if TYPE_CHECKING:
