@@ -115,7 +115,10 @@ def ai_file_processing_single(
         if len(chunk["text"]) > max_chars_per_chunk:
             chunk["text"] = chunk["text"][:max_chars_per_chunk] + "..."
         chunks.append(chunk)
-    full_text = " ".join([chunk["text"] for chunk in chunks[:max_chunks]])
+    if full_text := parsed_data.get("full_text"):
+        full_text = full_text
+    else:
+        full_text = " ".join([chunk["text"] for chunk in chunks[:max_chunks]])
 
     content_date = None
     if file_metainfo.mentioned_date:
