@@ -208,7 +208,6 @@ def get_search_results_using_combined_query(
     timings.log("search preparation")
 
     # TODO: currently only first page is returned
-
     queries = QueryInput.from_raw_query(raw_query, negative_query, image_query, negative_image_query)
     filters = adapt_filters_to_dataset(
         search_settings.filters, dataset, limit, search_settings.retrieval_mode, search_settings.result_language
@@ -231,7 +230,7 @@ def get_search_results_using_combined_query(
                     dataset,
                     field.identifier,
                     query,
-                    None,
+                    search_settings.vector,
                     filters,
                     required_fields=[],
                     internal_input_weight=search_settings.internal_input_weight,

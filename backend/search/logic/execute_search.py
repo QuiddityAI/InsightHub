@@ -142,7 +142,7 @@ def create_and_run_search_task(
         limit=search_task.candidates_per_step,  # uses max_candidates if not from_ui
         # external_input
         keyword_query=keyword_query,
-        vector=None,
+        vector=search_task.vector,
         filters=search_task.filters or [],
         ranking_settings=search_task.ranking_settings or {},
         retrieval_mode=search_task.retrieval_mode or "hybrid",
@@ -425,6 +425,7 @@ def _convert_retrieval_parameters_to_old_format(
             "max_sub_items_per_item": 1,
             "return_highlights": True,
             "use_bolding_in_highlights": True,
+            "vector": retrieval_parameters.vector,
             # TODO: add support for vector search, similar to collection
         }
     }

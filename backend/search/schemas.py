@@ -21,6 +21,7 @@ class SearchTaskSettings(Schema):
     search_type: SearchType = SearchType.EXTERNAL_INPUT  # normal (external_input), similarity search or random sample
     dataset_id: int
     user_input: str  # the raw (potentially natural language) user input
+    vector: list[float] | None = None  # search query as vector, user_input is ignored if set
     result_language: Optional[str] = None  # might be used to filter the results
     auto_set_filters: bool = False  # auto query optimization, filters, ranking + retrieval_mode
     filters: Optional[list] = None
@@ -51,6 +52,7 @@ class SearchTaskSettings(Schema):
     origin_name: Optional[str] = None  # mostly name of reference item for similarity search
     use_reranking: bool = True  # should be always true except when agent handles it
 
+
 class RetrievalParameters(Schema):
     # Derived from SearchTaskSettings, but more precise for actual retrieval.
     # It is separate from SearchTaskSettings to be able to see what
@@ -62,7 +64,7 @@ class RetrievalParameters(Schema):
 
     # external_input aka normal search
     keyword_query: Optional[str] = None
-    vector: Optional[list] = None
+    vector: list[float] | None = None
     filters: Optional[list] = None
     ranking_settings: Optional[dict] = None
     retrieval_mode: str = RetrievalMode.HYBRID
