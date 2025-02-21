@@ -1,6 +1,6 @@
 import dspy
 
-from data_map_backend.models import CollectionItem, DataCollection, SearchTask
+from data_map_backend.models import CollectionItem, DataCollection, Dataset, SearchTask
 from workflows.available_workflows.agents.agent_api import QuiddityAgentAPI
 from workflows.available_workflows.buiilding_blocks.base_bb import (
     BaseBBContext,
@@ -38,31 +38,51 @@ class ExhaustiveSearchBB(BaseBuidingBlock[ExhaustiveSearchInputContext, Exhausti
         dspy_lm: dspy.LM,
         max_queries: int = 5,
         top_best_queries: int = 3,
+        max_depth: int = 5,
         items_per_page: int = 10,
         explore_around_rare: bool = True,
     ):
+        """
+        Initializes the ExhaustiveSearchBB class.
+
+        Args:
+            dspy_lm (dspy.LM): The LM instance from the dspy library.
+            max_queries (int, optional): The maximum number of search queries to explore
+            top_best_queries (int, optional): The number of top best queries to consider. Defaults to 3.
+            max_depth (int, optional): The maximum depth (in pages) for exploring the best queries. Defaults to 5.
+            items_per_page (int, optional): Items per page. Defaults to 10.
+            explore_around_rare (bool, optional): Whether to explore around rare items. Defaults to True.
+        """
+
         self.max_queries = max_queries
         self.items_per_page = items_per_page
         self.dspy_lm = dspy_lm
         self.top_best_queries = top_best_queries
         self.explore_around_rare = explore_around_rare
+        self.max_depth = max_depth
 
     def __call__(
         self, api: QuiddityAgentAPI, collection: DataCollection, context: ExhaustiveSearchInputContext
     ) -> tuple[DataCollection, ExhaustiveSearchOutputContext]:
 
         s = dspy.make_signature(
-            "user_query: str, example_docs: list[str] -> search_queries: list[str]",
+            "user_query: str, language_code: str -> search_queries: list[str]",
             """Generate detailed list of potential search queries to find documents relevant to user query. Include synonyms.
-                                Use provided example documents to improve the query.""",
+            For languages with compound words like German, split compounds into single words, e.g. "Wirtschaftswissenschaften" -> ["Wirtschaftswissenschaften", "Wirtschaft", "Wissenschaften"].
+            Output queries in language, given by language_code""",
         )
         queries_gen = dspy.ChainOfThought(s)
-        with dspy.context(lm=self.dspy_lm):
-            # take first N queries
-            candidate_queries = queries_gen(user_query=context.user_input, example_docs=[]).search_queries[
-                : self.max_queries
-            ]
+        dataset = Dataset.objects.get(id=api.settings.dataset_id)
+        candidate_queries = []
+        # generate queries for all languages in the dataset
+        for lang in dataset.languages or ["en"]:
+            with dspy.context(lm=self.dspy_lm):
+                # take first N queries
+                candidate_queries.extend(
+                    queries_gen(user_query=context.user_input, language_code=lang).search_queries[: self.max_queries]
+                )
 
+        relevance_column = api.create_relevance_column(context.user_input)
         # stage 1: search for the best queries
         api.update_message(f"Searching for the best queries...")
         queries: list[tuple[str, float, SearchTask]] = []
@@ -81,7 +101,7 @@ class ExhaustiveSearchBB(BaseBuidingBlock[ExhaustiveSearchInputContext, Exhausti
         api.update_message(f"Exploring the best queries in details...")
         for q, mean_relevance_first, task in queries[: self.top_best_queries]:
             collection.log_explanation(f"Exploring query '{q}'...")
-            for page in range(2, 3):
+            for page in range(2, self.max_depth + 1):
                 new_items = api.continue_search(task, process_columns=True, blocking=True)
                 items_counter = group_objects_by_key([i for i in new_items if i.relevance], "item_id", items_counter)
                 if not new_items:
@@ -104,7 +124,7 @@ class ExhaustiveSearchBB(BaseBuidingBlock[ExhaustiveSearchInputContext, Exhausti
                     items, task = api.search(abstract, num_search_results=self.items_per_page, blocking=True)
                     mean_relevance = sum([c.relevance for c in items]) / len(items)
                     if mean_relevance > 0.5:
-                        for page in range(2, 5):
+                        for page in range(2, self.max_depth + 1):
                             new_items = api.continue_search(task, process_columns=True, blocking=True)
                             if not new_items:
                                 break
