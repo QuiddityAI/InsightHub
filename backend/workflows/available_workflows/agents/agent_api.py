@@ -1,32 +1,33 @@
 import time
 from typing import Callable
+
 import dspy
 
-from workflows.create_columns import create_relevance_column
 from columns.logic.process_column import process_cells_blocking
+from config.utils import get_default_model
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     CollectionColumn,
     CollectionItem,
     DataCollection,
     FieldType,
-    User,
     SearchTask,
+    User,
 )
 from data_map_backend.schemas import CollectionUiSettings
-from search.logic.execute_search import (
-    create_and_run_search_task,
-    add_items_from_task,
-    add_items_from_task_and_run_columns,
-)
-from search.schemas import SearchTaskSettings
-from workflows.schemas import CreateCollectionSettings
-from config.utils import get_default_model
 from search.logic.approve_items_and_exit_search import (
     approve_using_comparison,
     auto_approve_items,
     exit_search_mode,
 )
+from search.logic.execute_search import (
+    add_items_from_task,
+    add_items_from_task_and_run_columns,
+    create_and_run_search_task,
+)
+from search.schemas import SearchTaskSettings
+from workflows.create_columns import create_relevance_column
+from workflows.schemas import CreateCollectionSettings
 
 
 class QuiddityAgentAPI:
@@ -67,12 +68,20 @@ class QuiddityAgentAPI:
             )
 
     def search(
-        self, query: str, num_search_results: int = 10, exit_search_mode=False, blocking=True
+        self,
+        query: str = "",
+        vector: list[float] | None = None,
+        num_search_results: int = 10,
+        exit_search_mode=False,
+        blocking=True,
     ) -> tuple[list[CollectionItem], SearchTask]:
+        if not (query or vector):
+            raise ValueError("Either query or vector must be provided")
         search_task = SearchTaskSettings(
             dataset_id=self.settings.dataset_id,
             user_input=query,
             result_language=self.settings.result_language,
+            vector=vector,
             auto_set_filters=False,
             filters=None,
             retrieval_mode="vector",
@@ -176,3 +185,7 @@ class QuiddityAgentAPI:
 
     def exit_search_mode(self):
         exit_search_mode(self.collection, "_default", from_ui=True)
+
+    def set_agent_running(self, is_running: bool):
+        self.collection.agent_is_running = is_running
+        self.collection.save(update_fields=["agent_is_running"])
