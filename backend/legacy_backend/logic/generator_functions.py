@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Callable
+from typing import Callable, Literal
 
 import litellm
 
@@ -21,15 +21,21 @@ from legacy_backend.utils.helpers import join_extracted_text_sources
 GPU_IS_AVAILABLE = os.getenv("GPU_IS_AVAILABLE", "False") == "True"
 
 
-def get_generator_function_from_field(field: DotDict, always_return_single_value_per_item: bool = False) -> Callable:
+def get_generator_function_from_field(
+    field: DotDict, always_return_single_value_per_item: bool = False, mode: Literal["ingest", "search"] = "ingest"
+) -> Callable:
     parameters = field.generator.default_parameters or {}
     if field.generator_parameters:
         parameters.update(field.generator_parameters)
     module = field.generator.module
-    return get_generator_function(module, parameters, field.is_array and not always_return_single_value_per_item)
+    return get_generator_function(
+        module, parameters, field.is_array and not always_return_single_value_per_item, mode=mode
+    )
 
 
-def get_generator_function(module: str, parameters: dict, target_field_is_array: bool) -> Callable:
+def get_generator_function(
+    module: str, parameters: dict, target_field_is_array: bool, mode: Literal["ingest", "search"] = "ingest"
+) -> Callable:
     # the input to the generators is a list ('batch') of source_fields for each item in the batch
     # source_fields is itself again a list of the data in the source fields assigned to this generated field
     # and the data can then be either a simple data type like str, url or int, or a list of such data
@@ -48,13 +54,18 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
 
     # migrated to litellm
     def sentence_transformer_generator(batch, log_error=default_log):
+        prefix = parameters.get("prefix" if mode == "ingest" else "query_prefix", "")
+        if mode not in ["ingest", "search"]:
+            logging.warning(f"Unknown prefix mode {mode}")
         if GPU_IS_AVAILABLE or len(batch) == 1:
             return get_local_embeddings(
-                add_e5_prefix([join_extracted_text_sources(t) for t in batch], parameters.prefix),
+                add_e5_prefix([join_extracted_text_sources(t) for t in batch], prefix),
                 parameters.model_name,
             )
         else:
-            return get_hosted_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name)
+            return get_hosted_embeddings(
+                add_e5_prefix([join_extracted_text_sources(t) for t in batch], prefix), parameters.model_name
+            )
 
     def clip_text_generator(batch, log_error=default_log):
         return get_clip_text_embeddings([join_extracted_text_sources(t) for t in batch], parameters.model_name)
