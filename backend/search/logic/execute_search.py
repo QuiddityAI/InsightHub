@@ -201,6 +201,11 @@ def run_search_task(
         collection.save(update_fields=["most_recent_search_task", "search_task_navigation_history"])
 
     def after_columns_were_processed_internal(new_items):
+        # `auto_approve_items` basically only sets positive relevance from the column, i.e.
+        # it assumes that the relevance before it was called is always 0,
+        #  which is not necessarily true, since for multiple calls of search the item could have been approved before
+        for item in new_items:
+            item.relevance = 0
         if search_task.auto_approve:
             auto_approve_items(
                 collection, new_items, search_task.max_selections, search_task.forced_selections, from_ui
