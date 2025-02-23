@@ -22,15 +22,34 @@ workflows_by_id: dict[str, type[WorkflowBase]] = {}
 
 
 class QueryLanguageSignature(dspy.Signature):
-    """Given the user question or task and the title, provide the language code of this question or task.
-    Output language code should be a two-letter code.
-    """
+    """In a high-pressure, time-sensitive situation where a user is
+    seeking critical information about a specific country, and every second counts,
+    provide the two-letter language code of the user\'s question.
+    You must respond quickly and accurately to ensure the user
+    receives the necessary information in their native language.
+    Ignore any mention of the country or language in the question and focus solely on
+    identifying the language code. The fate of the user\'s understanding of
+    their rights hangs in the balance, and your response will be crucial in
+    providing them with the correct information.
+    Output the two-letter language code that corresponds to the user\'s question."""
 
     user_question: str = dspy.InputField()
     language_code: str = dspy.OutputField()
 
 
 query_language_predictor = dspy.Predict(QueryLanguageSignature)
+query_language_predictor.demos = [  # some examples from dspy optimization run
+    {"user_question": "droits Russie", "language_code": "fr"},
+    {"user_question": "Lituanie", "language_code": "fr"},
+    {"user_question": "Hongrie", "language_code": "fr"},
+    {"user_question": "Lettonie", "language_code": "fr"},
+    {"user_question": "ubezpieczenie Egipt", "language_code": "pl"},
+    {"user_question": "documents fiscaux Japon", "language_code": "fr"},
+    {"user_question": "Brasilien", "language_code": "de"},
+    {"user_question": "Pologne", "language_code": "fr"},
+    {"user_question": "Tschechien", "language_code": "de"},
+    {"user_question": "inwestycje Arabia", "language_code": "pl"},
+]
 
 
 def workflow(cls: type[WorkflowBase]):
