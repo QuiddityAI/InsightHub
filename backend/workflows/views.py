@@ -3,8 +3,6 @@ import json
 from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
-# need to be loaded somewhere (after Django apps where loaded, therfore not in __init__.py)
-from workflows.available_workflows.agents import research_agent, exhaustive_search
 import workflows.available_workflows.base_workflows
 import workflows.available_workflows.map_workflows
 import workflows.available_workflows.question_workflows
@@ -13,6 +11,13 @@ from data_map_backend.models import DataCollection, Dataset, User
 from data_map_backend.notifier import default_notifier
 from data_map_backend.schemas import CollectionIdentifier
 from data_map_backend.serializers import CollectionSerializer
+
+# need to be loaded somewhere (after Django apps where loaded, therfore not in __init__.py)
+from workflows.available_workflows.agents import (
+    exhaustive_search,
+    exhaustive_search_with_answer,
+    research_agent,
+)
 from workflows.logic import create_collection_using_workflow, workflows_by_id
 from workflows.schemas import (
     AvailableWorkflowsPaylaod,
@@ -50,8 +55,8 @@ def get_available_workflows_route(request: HttpRequest, payload: AvailableWorkfl
             continue
         if available_workflows and workflow_cls.metadata.workflow_id not in available_workflows:
             continue
-        # if workflow_cls.metadata.needs_opt_in and workflow_cls.metadata.workflow_id not in opt_in_workflows:
-        #     continue
+        if workflow_cls.metadata.needs_opt_in and workflow_cls.metadata.workflow_id not in opt_in_workflows:
+            continue
         additional_workflows.append(workflow_cls.metadata)
 
     additional_workflows = sorted(additional_workflows, key=lambda x: x.order)
