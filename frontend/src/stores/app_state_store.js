@@ -28,6 +28,8 @@ export const useAppStateStore = defineStore("appState", {
       logged_in: false,
       username: null,
       dev_mode: false,
+      product_explorer_is_open: false,
+      product_slug: null,
 
       selected_app_tab: "collections",
 
@@ -275,6 +277,26 @@ export const useAppStateStore = defineStore("appState", {
       } else {
         this.enable_simplified_absclust_user_mode()
       }
+    },
+    show_product_explorer() {
+      this.product_explorer_is_open = true
+      // change path to /products:
+      history.pushState(null, null, "/products")
+    },
+    select_product(slug) {
+      this.product_slug = slug
+      // change path to /products/:slug:
+      history.pushState(null, null, "/products/" + slug)
+    },
+    close_product_details() {
+      this.product_slug = null
+      // change path back to /products:
+      history.pushState(null, null, "/products")
+    },
+    hide_product_explorer() {
+      this.product_explorer_is_open = false
+      // change path back to /:
+      history.pushState(null, null, "/")
     },
     retrieve_current_user(on_success = null) {
       const that = this

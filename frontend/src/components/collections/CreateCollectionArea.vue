@@ -18,6 +18,8 @@ import AddFilterMenu from "../search/AddFilterMenu.vue"
 import ToolIntroBox from "../general/ToolIntroBox.vue";
 import UserMenu from "../search/UserMenu.vue";
 import LoginButton from "../general/LoginButton.vue";
+import BorderlessButton from "../widgets/BorderlessButton.vue";
+import BorderButton from "../widgets/BorderButton.vue";
 
 import { httpClient, djangoClient } from "../../api/httpClient"
 import { languages } from "../../utils/utils"
@@ -326,9 +328,15 @@ export default {
 
         <div v-if="selected_workflow == null" class="flex flex-col gap-5 items-start">
 
-          <h1 class="pl-11 pt-1 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
-            {{ $t('CreateCollectionArea.what-do-you-want-to-do') }}
-          </h1>
+          <div class="w-full pr-5 flex flex-row gap-2 items-center justify-between">
+            <h1 class="pl-11 pt-1 text-3xl font-bold bg-gradient-to-r from-black via-fuchsia-700 to-blue-700 text-transparent bg-clip-text">
+              {{ $t('CreateCollectionArea.what-do-you-want-to-do') }}
+            </h1>
+            <BorderButton class="!text-lg" v-if="appState.user?.shows_all_organizations_and_products"
+              @click="appState.show_product_explorer()">
+              Explore Products
+            </BorderButton>
+          </div>
 
           <div class="ml-11 -mb-5 flex flex-row gap-6">
             <button v-for="category in available_categories" @click="workflow_category = category.id"
