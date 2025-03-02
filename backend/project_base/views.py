@@ -7,7 +7,13 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
-from data_map_backend.models import CollectionColumn, DataCollection, Organization, User
+from data_map_backend.models import (
+    CollectionColumn,
+    DataCollection,
+    Organization,
+    ServiceUsage,
+    User,
+)
 from data_map_backend.notifier import default_notifier
 
 
@@ -101,4 +107,34 @@ def change_password_from_app(request):
     user.set_password(new_password)
     user.save()
     default_notifier.info(f"User {request.user.username} just updated password", user=request.user)
+    return HttpResponse(status=200)
+
+
+@csrf_exempt
+def consider_buying(request):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    if not request.user.is_authenticated:
+        return HttpResponse(status=400)
+    request.user.preferences["considered_buying"] = True
+    request.user.save()
+    default_notifier.info(f"User {request.user.username} just considered buying credits", user=request.user)
+    return HttpResponse(status=200)
+
+
+@csrf_exempt
+def credits_bought(request):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    form_values = json.loads(json.loads(request.body)["data"]["form_values"])
+    email = [v["value"] for v in form_values if v["label"] == "Email"][0]
+    user = User.objects.get(username=email)
+    if user.preferences.get("considered_buying") is not True:
+        return HttpResponse(status=200)  # wix wants a 200 response otherwise will be repeating the hook
+    usage = ServiceUsage.get_usage_tracker(user.id, "External AI")  # type: ignore
+    usage.limit_per_period = 1000
+    usage.save()
+    default_notifier.info(f"User {email} just bought credits", user=user)
+    user.preferences["considered_buying"] = False
+    user.save()
     return HttpResponse(status=200)

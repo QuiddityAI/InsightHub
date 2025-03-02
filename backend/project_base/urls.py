@@ -28,7 +28,13 @@ from data_map_backend.views.collection_management import (
 from filter.views import api as filter_api
 from ingest.views import api as ingest_api
 from map.views import api as map_api
-from project_base.views import change_password_from_app, login_from_app, signup_from_app
+from project_base.views import (
+    change_password_from_app,
+    consider_buying,
+    credits_bought,
+    login_from_app,
+    signup_from_app,
+)
 from search.views import api as search_api
 from workflows.views import api as workflows_api
 from write.views import api as write_api
@@ -65,6 +71,8 @@ urlpatterns = [
     path("org/login/", auth_views.LoginView.as_view(), name="login"),
     path("org/logout/", auth_views.LogoutView.as_view(next_page="home"), name="logout"),
     path("org/login_from_app/", login_from_app, name="login_from_app"),
+    path("org/consider_buying/", consider_buying, name="consider_buying"),
+    path("org/credits_bought/", credits_bought, name="credits_bought"),
     path("org/signup_from_app/", signup_from_app, name="signup_from_app"),
     path("org/change_password_from_app/", change_password_from_app, name="change_password_from_app"),
     # OAuth toolkit
