@@ -8,14 +8,13 @@ from data_map_backend.utils import DotDict
 from ingest.logic.office_documents import ai_file_processing_generator
 from ingest.logic.scientific_articles import scientific_article_processing_generator
 from ingest.logic.tenders import tender_enrichment_generator
-from legacy_backend.api_clients import deepinfra_client
 from legacy_backend.logic.chunking import chunk_text_generator
 from legacy_backend.logic.model_client import (
     add_e5_prefix,
     get_clip_image_embeddings,
     get_clip_text_embeddings,
-    get_local_embeddings,
     get_hosted_embeddings,
+    get_local_embeddings,
     get_pubmedbert_embeddings,
 )
 from legacy_backend.utils.helpers import join_extracted_text_sources
