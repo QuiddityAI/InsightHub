@@ -1,19 +1,23 @@
+name: vsm_staging
 services:
-  backend:
+  backend-staging-at:
     image: visual_data_map/backend
     build:
       context: ./
       dockerfile: ./docker/backend.Dockerfile
+    ports:
+      - "127.0.0.1:56125:55125"
+      - "127.0.0.1:30001:30001"
     volumes:
       - ./:/source_code/
-      - "${DATA_PATH:-/data}:/data"
+      - "${DATA_PATH}/datia:/data"
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
-    # ports:  # expose port outside of this virtual network
-    #   - "127.0.0.1:55125:55125"
     environment:
       - data_backend_host=http://localhost:55125
-      - postgres_host=postgres
+      - postgres_host=postgres-staging-at
       - BACKEND_AUTHENTICATION_SECRET
+      - QUIDDITY_DEBUG=1
+      - model_server_host=http://model-server:55180
       - infinity_server_host=http://infinity-model-server:55181
       - backend_host=http://localhost:55125
       - vector_database_host=qdrant
@@ -23,41 +27,61 @@ services:
       - PDFERRET_TIKA_SERVER_URL=http://tika:9998
       - TIKA_SERVER_ENDPOINT=http://tika:9998
       - TIKA_CLIENT_ONLY=True
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
-  webserver:
+      - GOOGLE_APPLICATION_CREDENTIALS=/source_code/adc.json
+      - HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS="http://localhost:56440,http://localhost:56140"
+      - PYTHONHOME=${DOCKER_PYTHONHOME}
+      - LOCAL_OLLAMA_URL=http://ollama:11434
+
+  webserver-staging-at:
     image: visual_data_map/webserver
     build:
       context: ./frontend
       dockerfile: ../docker/webserver.Dockerfile
-    profiles:
-      - development_webserver  # the container only starts if env variable COMPOSE_PROFILES=development_server
     volumes:
       - ./:/source_code/
+      - ./adc.json:/app/pdferret/application_default_credentials.json
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
-      - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
+      - "${WEBSERVER_STAGING_EXPOSED_IP:-127.0.0.1}:56440:55140"
     environment:
-      - backend_host=http://backend:55125
-  webserver-prod:
-    image: visual_data_map/webserver_prod
-    build:
-      context: ./frontend
-      dockerfile: ../docker/webserver_prod.Dockerfile
-    profiles:
-      - production_webserver  # the container only starts if env variable COMPOSE_PROFILES=production_server
+      - backend_host=http://backend-staging-at:55125
+  postgres-staging-at:
+    image: postgres:16
+    command: -c 'max_connections=300'
     volumes:
-      - ./:/source_code/
-    ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
-      - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
+      - postgres_data:/var/lib/postgresql/data/
     environment:
-      - backend_host=http://backend:55125
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=visdatamap
+
+  # pgbouncer:
+  #   image: edoburu/pgbouncer:latest
+  #   environment:
+  #     - DB_HOST=postgres-staging-at
+  #     - DB_PORT=5432
+  #     - DB_USER=postgres
+  #     - DB_PASSWORD=${POSTGRES_PASSWORD}
+  #     - ADMIN_USERS=postgres,admin
+  #     - AUTH_TYPE=scram-sha-256
+  #     - POOL_MODE=transaction
+  #     - MAX_CLIENT_CONN=1000
+
+
+    # ports:
+    #   - "5432:5432"
+
+
   qdrant:
     image: "qdrant/qdrant:latest"
     volumes:
       - qdrant_storage:/qdrant/storage
     ports:  # expose port outside of this virtual network
       - "${QDRANT_EXPOSED_IP:-127.0.0.1}:${QDRANT_EXPOSED_PORT:-6333}:6333"  # needed for qdrant web dashboard
+    ulimits:
+      nofile:
+        soft: "655360"
+        hard: "655360"
+
   opensearch:
     image: "opensearchproject/opensearch:latest"
     volumes:
@@ -65,68 +89,29 @@ services:
       - ./docker/resources/german_decompound.txt:/usr/share/opensearch/config/german_decompound.txt
       - ./docker/resources/german_synonym.txt:/usr/share/opensearch/config/german_synonym.txt
       - ./docker/resources/hyphenation_patterns_de_DR.xml:/usr/share/opensearch/config/hyphenation_patterns_de_DR.xml
-    # ports:  # expose port outside of this virtual network
-    #   - "127.0.0.1:9200:9200"
+    ports:  # expose port outside of this virtual network
+      - "127.0.0.1:9200:9200"
     #   - "127.0.0.1:9600:9600"
     environment:
       - discovery.type=single-node
       - http.port=9200
-      - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358,http://tim-desktop:1358
+      # - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358,http://tim-desktop:1358
       - http.cors.enabled=true
       - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
       - http.cors.allow-credentials=true
+      - cluster.routing.allocation.disk.threshold_enabled=false
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD
-  postgres:
-    image: postgres:16
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=visdatamap
-    ports:  # expose port outside of this virtual network
-      - "127.0.0.1:${POSTGRES_EXPOSED_PORT:-5432}:5432"
-    # expose port to be able to use export scripts from outside the virtual network
+
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:latest
     ports:  # exposed to the outside, remember to use a secure password
       - "${OPENSEARCH_DASHBOARD_EXPOSED_IP:-127.0.0.1}:${OPENSEARCH_DASHBOARD_EXPOSED_PORT:-5601}:5601"
     environment:
       OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
-  infinity-model-server:
-    image: michaelf34/infinity:latest
-    # ports:  # expose port outside of this virtual network
-    #   - 127.0.0.1:55181:55181
-    volumes:
-      - infinity_model_cache:/app/.cache/torch
-    command: --model-name-or-path intfloat/e5-base-v2 --port 55181 --engine ctranslate2
-  swag:
-    image: lscr.io/linuxserver/swag:latest
-    container_name: swag
-    profiles:
-      - https_proxy  # the container only starts if env variable COMPOSE_PROFILES=https_proxy
-    cap_add:
-      - NET_ADMIN
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - URL=${SERVER_URL}
-      - VALIDATION=http
-      # - SUBDOMAINS=www, #optional
-      # - CERTPROVIDER= #optional
-      # - DNSPLUGIN=cloudflare #optional
-      # - PROPAGATION= #optional
-      - EMAIL=${SSL_CERT_EMAIL}
-    volumes:
-      - ./swag_https_proxy_config:/config
-    ports:
-      - 443:443
-      - 80:80 #optional
-    restart: unless-stopped
 
   ollama:
     image: alpine/ollama
+    container_name: vsd_ollama
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -142,12 +127,12 @@ services:
       - ./ollama:/root/.ollama
     restart: unless-stopped
 
+
 volumes:
   model_server_cache:
   qdrant_storage:
   opensearch_data:
   postgres_data:
-  infinity_model_cache:
   swag_data:
 networks:
   default:
