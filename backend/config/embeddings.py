@@ -2,7 +2,6 @@ import os
 
 default_embedding_provider = "sentence_transformer"
 
-# TODO: intfloat/e5-large-v2 is not available in ollama, need to add it manually
 local_embedding_models = {
     "intfloat/e5-base-v2": "openai/intfloat/e5-base-v2",
     "intfloat/multilingual-e5-base": "openai/intfloat/multilingual-e5-base",
@@ -13,8 +12,8 @@ local_embedding_models = {
 def get_local_emb_litellm_kwargs(model: str) -> dict:
     model_str = local_embedding_models.get(model)
     if model_str is None:
-        raise ValueError(f"Model {model} not present in ollama")
-    api_base = os.getenv("LOCAL_OLLAMA_URL", "http://ollama:11434/v1/")
+        raise ValueError(f"Model {model} not present in infinity")
+    api_base = os.getenv("LOCAL_MODEL_SERVER_URL", "http://infinity-model-server:55181")
     return dict(model=model_str, api_base=api_base)
 
 

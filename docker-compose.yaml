@@ -23,7 +23,7 @@ services:
       - TIKA_SERVER_ENDPOINT=http://tika:9998
       - TIKA_CLIENT_ONLY=True
       - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
-      - LOCAL_OLLAMA_URL=http://infinity:55181
+      - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
   webserver:
     image: visual_data_map/webserver
     build:
@@ -119,19 +119,12 @@ services:
       - 80:80 #optional
     restart: unless-stopped
 
-  infinity:
+  infinity-model-server:
     image: michaelf34/infinity:latest
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
     volumes:
-      - ./data/infinity:/app/.cache
-    ports:
-      - "127.0.0.1:55181:55181"
+      - infinity_model_cache:/app/.cache
+    # ports:  # expose port outside of this virtual network
+    #   - 127.0.0.1:55181:55181
     command: # add any models needed, e.g. CLIP
       - v2
       - --model-id
