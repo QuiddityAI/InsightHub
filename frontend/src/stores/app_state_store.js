@@ -12,6 +12,8 @@ import { useCollectionStore } from "./collection_store";
 export const useAppStateStore = defineStore("appState", {
   state: () => {
     return {
+      payment_supported: import.meta.env?.VITE_PAYMENT_SUPPORTED == "true",
+      payment_plans_url: import.meta.env?.VITE_PAYMENT_PLANS_URL,
       eventBus: inject("eventBus"),
       toast: useToast(),
       mapState: useMapStateStore(),
