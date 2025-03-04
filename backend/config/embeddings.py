@@ -6,6 +6,7 @@ local_embedding_models = {
     "intfloat/e5-base-v2": "openai/intfloat/e5-base-v2",
     "intfloat/multilingual-e5-base": "openai/intfloat/multilingual-e5-base",
     "intfloat/multilingual-e5-large-instruct": "openai/intfloat/multilingual-e5-large-instruct",
+    "allenai/specter2_base": "openai/allenai/specter2_base",
 }
 
 

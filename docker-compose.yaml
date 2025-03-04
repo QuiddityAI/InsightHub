@@ -133,6 +133,8 @@ services:
       - intfloat/multilingual-e5-base
       - --model-id
       - intfloat/multilingual-e5-large-instruct
+      - --model-id
+      - allenai/specter2_base
       - --port
       - "55181"
 
