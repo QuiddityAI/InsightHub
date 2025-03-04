@@ -1,11 +1,13 @@
-from collections import defaultdict
+import base64
 import logging
 import os
 import pickle
+from collections import defaultdict
+
 import litellm
-import base64
-import config.embeddings as emb_config
 from dotenv import load_dotenv
+
+import config.embeddings as emb_config
 
 load_dotenv()
 
@@ -30,19 +32,19 @@ def get_pubmedbert_embeddings(texts: list[str]):
     raise NotImplementedError("PubmedBERT embeddings are not supported in this version")
 
 
-def get_clip_text_embeddings(texts: list[str], model_name: str | None = None) -> list[list[float]]:
+def get_google_text_embeddings(texts: list[str], model_name: str | None = None) -> list[list[float]]:
     logging.warning("model_name is ignored for clip embeddings")
     embeddings = []
     for txt in texts:  # google model ony supports single text as input
         response = litellm.embedding(
             input=txt,
-            **emb_config.clip_model_kwargs,  # type: ignore
+            **emb_config.google_multimodal_model_kwargs,  # type: ignore
         )
         embeddings.append(response.data[0]["embedding"])
     return embeddings
 
 
-def get_clip_image_embeddings(image_paths: list[str], model_name: str | None = None) -> list[list[float]]:
+def get_google_image_embeddings(image_paths: list[str], model_name: str | None = None) -> list[list[float]]:
     logging.warning("model_name is ignored for clip embeddings")
 
     def encode_image_to_base64(image_path: str) -> str:
@@ -55,9 +57,39 @@ def get_clip_image_embeddings(image_paths: list[str], model_name: str | None = N
     for img in encoded_images:  # google model ony supports single image as input
         response = litellm.embedding(
             input=img,
-            **emb_config.clip_model_kwargs,  # type: ignore
+            **emb_config.google_multimodal_model_kwargs,  # type: ignore
         )
         embeddings.append(response.data[0]["embedding"])
+    return embeddings
+
+
+def get_clip_text_embeddings(texts: list[str], model_name: str) -> list[list[float]]:
+    resp = litellm.embedding(
+        input=texts, **emb_config.get_local_emb_litellm_kwargs(model_name), extra_body={"modality": "text"}
+    )
+    return [d["embedding"] for d in resp["data"]]
+
+
+def get_clip_image_embeddings(image_paths: list[str], model_name: str) -> list[list[float]]:
+    def file_to_base64(file, modality="image"):
+        with open(file, "rb") as f:
+            content = f.read()
+        base64_encoded = base64.b64encode(content).decode("utf-8")
+        mimetype = f"{modality}/{file.split('.')[-1]}"
+        return f"data:{mimetype};base64,{base64_encoded}"
+
+    batch_size = 64
+    embeddings = []
+    # infinity batches internally but let's not load too many images in memory at once
+    for i in range(0, len(image_paths), batch_size):
+        batch_image_paths = image_paths[i : i + batch_size]
+        encoded_images = [file_to_base64(image_path) for image_path in batch_image_paths]
+        resp = litellm.embedding(
+            input=encoded_images,
+            **emb_config.get_local_emb_litellm_kwargs(model_name),
+            extra_body={"modality": "image"},
+        )
+        embeddings.extend([d["embedding"] for d in resp["data"]])
     return embeddings
 
 
