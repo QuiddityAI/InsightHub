@@ -41,14 +41,14 @@ const product = computed(() => {
     </BorderlessButton>
 
     <div class="flex flex-row justify-between w-full mt-10 items-end">
-      <div class="text-3xl font-['Lexend'] font-bold text-left text-indigo-500 border-b">
+      <div class="text-3xl font-['Urbanist'] font-bold text-left text-indigo-500 border-b">
         <span class="text-gray-500">Quiddity</span> {{ product.product_name }}
       </div>
       <BorderButton class="text-indigo-500 text-xl border-indigo-300">
         {{ product.cost }} ➤
       </BorderButton>
     </div>
-    <div class="text-4xl font-['Lexend'] font-bold text-gray-800 mt-2 w-full text-left">
+    <div class="text-4xl font-['Urbanist'] font-bold text-gray-800 mt-2 w-full text-left">
       {{ product.use_case }}
     </div>
 

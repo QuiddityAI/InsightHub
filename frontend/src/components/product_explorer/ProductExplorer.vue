@@ -44,7 +44,7 @@ onMounted(() => {
 
         <img class="h-11" src="/assets/quiddity_logo.png" alt="Quiddity Logo">
 
-        <span class="font-['Lexend'] font-bold text-2xl text-gray-800">
+        <span class="font-['Urbanist'] font-bold text-2xl text-gray-800">
           Quiddity
         </span>
 

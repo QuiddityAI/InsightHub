@@ -23,18 +23,18 @@ const eventBus = inject('eventBus')
 
   <div class="flex flex-col gap-1">
 
-    <div class="text-xl font-['Lexend'] font-bold text-gray-600 mt-32 w-full text-center">
+    <div class="text-xl font-['Urbanist'] font-bold text-gray-600 mt-32 w-full text-center">
       Our <span class="underline decoration-2">universal platform</span> Quiddity Engine provides
     </div>
-    <div class="text-4xl font-['Lexend'] font-bold text-gray-800 mt-2 w-full text-center">
+    <div class="text-4xl font-['Urbanist'] font-bold text-gray-800 mt-2 w-full text-center">
       AI search and processing <br>
       <span class="text-indigo-600">in a unique tabular format</span>
     </div>
 
-    <div class="text-2xl font-['Lexend'] font-bold text-gray-600 mt-32 w-full text-center">
+    <div class="text-2xl font-['Urbanist'] font-bold text-gray-600 mt-32 w-full text-center">
       Our curated <span class="underline decoration-2">product portfolio</span>
     </div>
-    <div class="text-3xl font-['Lexend'] font-bold text-gray-800 mt-2 w-full text-center">
+    <div class="text-3xl font-['Urbanist'] font-bold text-gray-800 mt-2 w-full text-center">
       Serves <span class="text-indigo-600">highly specific use cases</span>, find yours now:
     </div>
 
