@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   server: {
     host: "::",
+    allowedHosts: true,  // allow any hosts
     port: 55140,
     proxy: {
       "/data_backend": {  // data-backend is now a part of the backend
