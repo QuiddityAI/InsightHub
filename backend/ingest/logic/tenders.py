@@ -9,7 +9,7 @@ from config.utils import get_default_dspy_llm
 from data_map_backend.utils import DotDict
 
 
-class TenderSummarySignature:
+class TenderSummarySignature(dspy.Signature):
     """\
     You receive a description and text of a webpage for a tender from the user.
     Summarize the subject of the tender and the services to be provided in about 2-3 sentences.
