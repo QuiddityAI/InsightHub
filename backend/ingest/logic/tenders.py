@@ -98,7 +98,7 @@ def _summarize_tender_information(item: TenderInput, website_text: str | None = 
             ).summary
         except Exception as e:
             # an error can happend e.g. when dspy fails to parse the output as JSON
-            logging.error(e)
+            logging.error(e, stack_info=True)
             summary = "n/a"
 
     if summary == "n/a":
