@@ -94,7 +94,11 @@ json_widget = MyJsonWidget(
 
 class UserAdmin(ImportExportMixin, UserAdmin):
     resource_class = UserResource
-    list_display = UserAdmin.list_display + ("id", "accepted_cookies", "accepted_emails")  # type: ignore
+    list_display = UserAdmin.list_display + ("id", "accepted_cookies", "accepted_emails", "get_groups")  # type: ignore
+
+    @admin.display(description="Groups")
+    def get_groups(self, obj):
+        return ", ".join(obj.groups.values_list("name", flat=True)) if obj.groups.exists() else "-"
 
 
 admin.site.register(User, UserAdmin)
