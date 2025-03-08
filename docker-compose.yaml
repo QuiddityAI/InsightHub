@@ -17,6 +17,7 @@ services:
       - backend_host=http://localhost:55125
       - vector_database_host=qdrant
       - search_engine_host=opensearch
+      - GPU_UTILITY_SERVER_URL=http://gpu-utility-server:55180
       - PDFERRET_BASE_URL=http://pdferret:80
       - PDFERRET_GROBID_URL=http://grobid:8070
       - PDFERRET_TIKA_SERVER_URL=http://tika:9998
@@ -52,6 +53,13 @@ services:
       - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
     environment:
       - backend_host=http://backend:55125
+  gpu-utility-server:
+    image: visual_data_map/gpu_utility_server
+    build:
+      context: ./
+      dockerfile: ./docker/gpu_utility_server.Dockerfile
+    # ports:  # expose port outside of this virtual network
+    #   - "127.0.0.1:55180:55180"
   qdrant:
     image: "qdrant/qdrant:latest"
     volumes:
@@ -140,7 +148,6 @@ services:
 
 
 volumes:
-  model_server_cache:
   qdrant_storage:
   opensearch_data:
   postgres_data:

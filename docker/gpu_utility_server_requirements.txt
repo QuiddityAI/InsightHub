@@ -1,0 +1,8 @@
+flask
+flask_cors
+numpy
+umap-learn
+werkzeug
+
+--extra-index-url=https://pypi.nvidia.com
+cuml-cu12==24.12.*

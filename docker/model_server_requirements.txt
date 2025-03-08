@@ -1,7 +1,0 @@
-flask
-flask_cors
-numpy
-sentence_transformers
-torch
-transformers
-werkzeug

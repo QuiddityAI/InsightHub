@@ -1,8 +1,10 @@
 import logging
+import os
 import time
 from collections import defaultdict
 
 import numpy as np
+import requests
 from django.db.models.manager import BaseManager
 from django.utils.timezone import now
 
@@ -52,11 +54,33 @@ def get_vector_field_dimensions(field: DotDict):
 
 
 def do_umap(vectors: np.ndarray, projection_parameters: dict, reduced_dimensions_required: int) -> np.ndarray:
-    # import it only when needed as it slows down the startup time
     try:
-        from cuml.manifold.umap import UMAP
-    except ImportError:
-        from umap import UMAP
+        raw_projections = _umap_on_external_server(vectors, projection_parameters, reduced_dimensions_required)
+        logging.debug("Successfully used remote UMAP")
+    except Exception as e:
+        logging.warning(f"Remote UMAP failed: {e}")
+        logging.warning("Falling back to local UMAP")
+        raw_projections = _local_umap(vectors, projection_parameters, reduced_dimensions_required)
+    return raw_projections
+
+
+def _umap_on_external_server(
+    vectors: np.ndarray, projection_parameters: dict, reduced_dimensions_required: int
+) -> np.ndarray:
+    url = os.getenv("GPU_UTILITY_SERVER_URL", "http://localhost:55180") + "/api/umap"
+    data = {
+        "vectors": vectors.tolist(),
+        "reduced_dimensions": reduced_dimensions_required,
+        "projection_parameters": projection_parameters,
+    }
+    result = requests.post(url, json=data)
+    projections = np.asarray(result.json()["projections"])
+    return projections
+
+
+def _local_umap(vectors: np.ndarray, projection_parameters: dict, reduced_dimensions_required: int) -> np.ndarray:
+    # this is using the CPU-based, slow UMAP implementation (but therefore doesn't require the heavy cuml library)
+    from umap import UMAP
 
     reducer = UMAP(
         n_components=reduced_dimensions_required,

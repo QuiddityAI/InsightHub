@@ -1,15 +1,5 @@
 services:
-  model-server:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [gpu]
-  backend:
-    build:
-      context: ./
-      dockerfile: ./docker/backend.gpu.Dockerfile
+  gpu-utility-server:
     deploy:
       resources:
         reservations:

@@ -23,7 +23,6 @@ Local setup, mostly for IDE auto-complete (but might be needed for Docker contai
 ```
 python3.11 -m pip install pipenv
 python3.11 -m pipenv install
-python3 -m spacy download en_core_web_sm  # not sure if this is still needed
 
 cd frontend/visual-data-map
 npm install
