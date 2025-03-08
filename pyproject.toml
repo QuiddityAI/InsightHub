@@ -60,10 +60,9 @@ dependencies = [
     "psycopg2-binary",
     "python-box",
     "qdrant-client",
-    "ratelimit",
     "scikit-learn",
     "social-auth-app-django",
-    "umap-learn @ git+https://github.com/luminosuslight/umap_with_progress_callback.git",
+    "umap-learn",
     "werkzeug",
     "numpy<2.0",
     "dspy",
@@ -75,11 +74,9 @@ readme = "README.md"
 
 [project.optional-dependencies]
 debug = ["debugpy"]
-#gpu = ["cuml-cu12==24.6.*",]  # needed for GPU based UMAP, or pip install --extra-index-url=https://pypi.nvidia.com "cuml-cu12==24.12.*"
 
 [dependency-groups]
 dev = [
     "viztracer",
-    "spacy",
     "kolo",
 ]

@@ -13,9 +13,8 @@ services:
       - data_backend_host=http://localhost:55125
       - postgres_host=postgres-showcase
       - BACKEND_AUTHENTICATION_SECRET
-      - model_server_host=http://model-server:55180
-      - infinity_server_host=http://infinity-model-server:55181
       - backend_host=http://localhost:55125
+      - GPU_UTILITY_SERVER_URL=http://gpu-utility-server:55180
       - vector_database_host=qdrant
       - search_engine_host=opensearch
       - PDFERRET_BASE_URL=http://pdferret:80
@@ -24,6 +23,7 @@ services:
       - TIKA_SERVER_ENDPOINT=http://tika:9998
       - TIKA_CLIENT_ONLY=True
       - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
+      - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
   webserver-prod-showcase:
     image: visual_data_map/webserver_prod
     build:
@@ -45,12 +45,9 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=visdatamap
 volumes:
-  model_server_cache:
   qdrant_storage:
   opensearch_data:
   postgres_data:
-  infinity_model_cache:
-  swag_data:
 networks:
   default:
     external: true

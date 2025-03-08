@@ -15,7 +15,6 @@ from legacy_backend.logic.model_client import (
     get_clip_text_embeddings,
     get_hosted_embeddings,
     get_local_embeddings,
-    get_pubmedbert_embeddings,
 )
 from legacy_backend.utils.helpers import join_extracted_text_sources
 
@@ -42,11 +41,6 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
     parameters = DotDict(parameters)
     generator: Callable | None = None
     default_log = logging.warning
-
-    def pubmedbert_generator(batch, log_error=default_log):
-        return get_pubmedbert_embeddings(
-            [join_extracted_text_sources(source_fields_list) for source_fields_list in batch]
-        )
 
     # migrated to litellm
     def open_ai_text_embedding_ada_002_generator(batch, log_error=default_log):
@@ -86,7 +80,6 @@ def get_generator_function(module: str, parameters: dict, target_field_is_array:
         return tender_enrichment_generator(batch, log_error, parameters)
 
     generator_mapping = {
-        "pubmedbert": pubmedbert_generator,
         "open_ai_text_embedding_ada_002": open_ai_text_embedding_ada_002_generator,
         "sentence_transformer": sentence_transformer_generator,
         "clip_text": clip_text_generator,

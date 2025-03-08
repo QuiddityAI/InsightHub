@@ -1,35 +1,9 @@
 import base64
 import logging
-import os
-import pickle
-from collections import defaultdict
 
 import litellm
-from dotenv import load_dotenv
 
 import config.embeddings as emb_config
-
-load_dotenv()
-
-
-embedding_strategy = "sep_token"
-embedding_cache_path = "embedding_cache.pkl"
-
-
-if os.path.exists(embedding_cache_path):
-    with open(embedding_cache_path, "rb") as f:
-        embedding_cache = pickle.load(f)
-else:
-    embedding_cache = defaultdict(dict().copy)
-
-
-def save_embedding_cache():
-    with open(embedding_cache_path, "wb") as f:
-        pickle.dump(embedding_cache, f)
-
-
-def get_pubmedbert_embeddings(texts: list[str]):
-    raise NotImplementedError("PubmedBERT embeddings are not supported in this version")
 
 
 def get_google_text_embeddings(texts: list[str], model_name: str | None = None) -> list[list[float]]:
