@@ -1,3 +1,4 @@
+import logging
 from multiprocessing.pool import ThreadPool
 from typing import Callable
 
@@ -9,7 +10,7 @@ from config.utils import get_default_dspy_llm
 from data_map_backend.utils import DotDict
 
 
-class TenderSummarySignature:
+class TenderSummarySignature(dspy.Signature):
     """\
     You receive a description and text of a webpage for a tender from the user.
     Summarize the subject of the tender and the services to be provided in about 2-3 sentences.
@@ -90,10 +91,15 @@ def _summarize_tender_information(item: TenderInput, website_text: str | None = 
         return TenderEnrichmentOutput(summary="", website_text="")
     model = get_default_dspy_llm("tender_summary")
     with dspy.context(lm=dspy.LM(**model.to_litellm())):
-        summary = tender_summary(
-            description=item.description[:10000] if item.description else "n/a",
-            website_text=website_text[:10000] if website_text else "n/a",
-        ).summary
+        try:
+            summary = tender_summary(
+                description=item.description[:10000] if item.description else "n/a",
+                website_text=website_text[:10000] if website_text else "n/a",
+            ).summary
+        except Exception as e:
+            # an error can happend e.g. when dspy fails to parse the output as JSON
+            logging.error(e, stack_info=True)
+            summary = "n/a"
 
     if summary == "n/a":
         summary = ""

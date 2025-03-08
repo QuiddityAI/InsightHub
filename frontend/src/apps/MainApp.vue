@@ -14,6 +14,7 @@ import DatasetsTab from "../components/datasets/DatasetsTab.vue"
 import ObjectDetailsModal from "../components/search/ObjectDetailsModal.vue"
 import LegalFooter from '../components/general/LegalFooter.vue';
 import HoverLabel from "../components/map/HoverLabel.vue"
+import ProductExplorer from '../components/product_explorer/ProductExplorer.vue';
 
 import { httpClient } from "../api/httpClient"
 
@@ -106,6 +107,16 @@ export default {
         setTimeout(() => {
           this.appStateStore.show_document_details([ds_id, item_id])
         }, 500)
+      }
+      // if url starts with /products, show product explorer
+      if (window.location.pathname.startsWith("/products")) {
+        this.appStateStore.product_explorer_is_open = true
+        if (window.location.pathname.split("/").length > 2) {
+          const product_slug = window.location.pathname.split("/").pop()
+          this.appStateStore.product_slug = product_slug
+        } else {
+          this.appStateStore.product_slug = ""
+        }
       }
       this.collectionStore.check_url_parameters()
     },
@@ -234,13 +245,16 @@ export default {
     </Dialog>
 
     <!-- content area -->
-    <div class="h-screen flex flex-col pointer-events-none relative">
+    <div class="h-screen flex flex-col pointer-events-none relative" v-if="!appState.product_explorer_is_open">
 
       <CollectionsTab v-show="appState.selected_app_tab === 'collections'" class="flex-1 pointer-events-auto"></CollectionsTab>
 
       <DatasetsTab v-if="appState.selected_app_tab === 'datasets'" class="flex-1 pointer-events-auto relative"></DatasetsTab>
 
     </div>
+
+    <ProductExplorer class="h-screen w-screen" v-if="appState.product_explorer_is_open">
+    </ProductExplorer>
 
     <LegalFooter class="absolute z-50"
       :class="{

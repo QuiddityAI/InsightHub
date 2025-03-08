@@ -72,6 +72,7 @@ def get_current_user(request):
         )
         return HttpResponse(response_json, status=200, content_type="application/json")
     ai_service_usage = ServiceUsage.get_usage_tracker(user.id, "External AI")
+    hostname = request.META.get("HTTP_HOST", "")
     response_json = json.dumps(
         {
             "id": user.id,
@@ -81,6 +82,7 @@ def get_current_user(request):
             "used_ai_credits": ai_service_usage.get_current_period().usage,
             "total_ai_credits": ai_service_usage.limit_per_period,
             "preferences": user.preferences,
+            "shows_all_organizations_and_products": server_shows_all_organizations_and_products(hostname),
         }
     )
     return HttpResponse(response_json, status=200, content_type="application/json")
@@ -106,6 +108,18 @@ def set_user_preferences_route(request):
     return HttpResponse(status=204)
 
 
+def server_shows_all_organizations_and_products(hostname: str) -> bool:
+    # restrict some domains to certain organizations:
+    hostnames_that_show_all_orgs = [
+        "home-server:55140",
+        "feldberg.absclust.com",
+        "backend-staging-at:55125",
+    ]
+    hostnames_that_show_all_orgs += os.environ.get("HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS", "").split(",")
+
+    return hostname in hostnames_that_show_all_orgs or hostname.startswith(("localhost", "127.0.0.1"))
+
+
 @csrf_exempt
 def get_available_organizations(request):
     if request.method != "POST":
@@ -117,16 +131,8 @@ def get_available_organizations(request):
         organizations = Organization.objects.filter(is_public=True)
     organizations = organizations.distinct().order_by("name")
 
-    # restrict some domains to certain organizations:
-    hostname = request.META.get("HTTP_HOST")
-    hostnames_that_show_all_orgs = [
-        "home-server:55140",
-        "feldberg.absclust.com",
-        "backend-staging-at:55125",
-    ]
-    hostnames_that_show_all_orgs += os.environ.get("HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS", "").split(",")
-
-    if hostname not in hostnames_that_show_all_orgs and not hostname.startswith(("localhost", "127.0.0.1")):
+    hostname = request.META.get("HTTP_HOST", "")
+    if not server_shows_all_organizations_and_products(hostname):
         organizations = organizations.filter(domains__contains=[hostname])
 
     serialized_data = OrganizationSerializer(organizations, many=True).data

@@ -75,8 +75,12 @@ def _execute_writing_task(task: WritingTask):
 
     # source items:
     items: BaseManager[CollectionItem]
+    using_candidates = False
     if task.use_all_items:
         items = task.collection.items.filter(relevance__gte=ItemRelevance.APPROVED_BY_AI)
+        if not items:
+            items = task.collection.items.filter(relevance__gte=ItemRelevance.CANDIDATE)
+            using_candidates = True
     else:
         assert isinstance(task.selected_item_ids, list)
         items = CollectionItem.objects.filter(id__in=task.selected_item_ids)
@@ -86,9 +90,77 @@ def _execute_writing_task(task: WritingTask):
     else:
         items = items.order_by("-date_added", "-search_score")
 
-    if not items:
-        return _execute_writing_task_without_items(task)
+    if task.use_all_items and using_candidates:
+        # limit number of items:
+        items = items[:20]
 
+    if not items:
+        if not task.collection.most_recent_search_task:
+            # no prior search task, just behave like chat:
+            return _execute_writing_task_like_chat_without_context(task)
+
+        contexts = ["No relevant documents were found."]
+        provided_data_items = []
+    else:
+        contexts, provided_data_items = _get_documents_context(task, items)
+
+    if task.include_previous_tasks:
+        contexts.extend(_get_previous_tasks_context(task))
+    context = "\n\n".join(contexts)
+
+    # if the prompt was not provided by the user, use the default DSPy model:
+    if not task.prompt_template:
+        response_text, model, system_prompt, user_prompt = _execute_default_writing_task(task, context)
+    else:
+        response_text, model, system_prompt, user_prompt = _format_prompt_and_get_result(
+            task, context, task.prompt_template
+        )
+
+    # replace reference numbers with actual document IDs:
+    for i, ds_and_item_id in enumerate(provided_data_items):
+        if f"[{i + 1}]" in response_text:
+            response_text = response_text.replace(f"[{i + 1}]", f"[{ds_and_item_id[0]}, {ds_and_item_id[1]}]")
+
+    _move_last_result_to_previous_versions(task)
+
+    # save results:
+    task.text = response_text
+    task.additional_results = {
+        "used_prompt": f"model: {model.__class__.__name__}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
+        "references": provided_data_items,
+    }
+    task.is_processing = False
+    task.save()
+
+
+def _execute_writing_task_like_chat_without_context(task: WritingTask):
+    assert task.expression is not None
+    contexts = []
+    if task.include_previous_tasks:
+        contexts.extend(_get_previous_tasks_context(task))
+    context = "\n\n".join(contexts)
+
+    # prompt:
+    language = task.parameters.get("language", "en")
+    prompt_template = task.prompt_template or writing_task_prompt_without_items[language]
+
+    # get LLM answer:
+    response_text, model, system_prompt, user_prompt = _format_prompt_and_get_result(task, context, prompt_template)
+
+    _move_last_result_to_previous_versions(task)
+
+    # save results:
+    task.text = response_text
+    task.additional_results = {
+        "used_prompt": f"model: {model.__class__.__name__}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
+        "references": [],
+    }
+    task.is_processing = False
+    task.save()
+
+
+def _get_documents_context(task: WritingTask, items: BaseManager[CollectionItem]):
+    assert task.expression is not None, "Expression must be set for writing task"
     # source fields:
     assert isinstance(task.source_fields, list)
     if "_all_columns" in task.source_fields:
@@ -129,60 +201,7 @@ def _execute_writing_task(task: WritingTask):
         if not item_text:
             continue
         contexts.append(item_text)
-
-    if task.include_previous_tasks:
-        contexts.extend(_get_previous_tasks_context(task))
-    context = "\n\n".join(contexts)
-
-    # if the prompt was not provided by the user, use the default DSPy model:
-    if not task.prompt_template:
-        response_text, model, system_prompt, user_prompt = _execute_default_writing_task(task, context)
-    else:
-        response_text, model, system_prompt, user_prompt = _format_prompt_and_get_result(
-            task, context, task.prompt_template
-        )
-
-    # replace reference numbers with actual document IDs:
-    for i, ds_and_item_id in enumerate(provided_data_items):
-        if f"[{i + 1}]" in response_text:
-            response_text = response_text.replace(f"[{i + 1}]", f"[{ds_and_item_id[0]}, {ds_and_item_id[1]}]")
-
-    _move_last_result_to_previous_versions(task)
-
-    # save results:
-    task.text = response_text
-    task.additional_results = {
-        "used_prompt": f"model: {model.__class__.__name__}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
-        "references": provided_data_items,
-    }
-    task.is_processing = False
-    task.save()
-
-
-def _execute_writing_task_without_items(task: WritingTask):
-    assert task.expression is not None
-    contexts = []
-    if task.include_previous_tasks:
-        contexts.extend(_get_previous_tasks_context(task))
-    context = "\n\n".join(contexts)
-
-    # prompt:
-    language = task.parameters.get("language", "en")
-    prompt_template = task.prompt_template or writing_task_prompt_without_items[language]
-
-    # get LLM answer:
-    response_text, model, system_prompt, user_prompt = _format_prompt_and_get_result(task, context, prompt_template)
-
-    _move_last_result_to_previous_versions(task)
-
-    # save results:
-    task.text = response_text
-    task.additional_results = {
-        "used_prompt": f"model: {model.__class__.__name__}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
-        "references": [],
-    }
-    task.is_processing = False
-    task.save()
+    return contexts, provided_data_items
 
 
 def _get_previous_tasks_context(task: WritingTask):
