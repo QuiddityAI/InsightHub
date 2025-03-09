@@ -452,6 +452,19 @@ wheels = [
 ]
 
 [[package]]
+name = "django-auth-ldap"
+version = "5.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "python-ldap" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/91/e4/2e8781840cc54f719be3241e16640524a9aabf94a599f5e083b0115042ce/django_auth_ldap-5.1.0.tar.gz", hash = "sha256:9c607e8d9c53cf2a0ccafbe0acfc33eb1d1fd474c46ec52d30aee0dca1da9668", size = 55059 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/47/f3492884addbb17672cc9a6053381162010d6e40ccd8440dedf22f72bc7f/django_auth_ldap-5.1.0-py3-none-any.whl", hash = "sha256:a5f7bdb54b2ab80e4e9eb080cd3e06e89e4c9d2d534ddb39b66cd970dd6d3536", size = 20833 },
+]
+
+[[package]]
 name = "django-cors-headers"
 version = "4.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1964,6 +1977,16 @@ wheels = [
 ]
 
 [[package]]
+name = "python-ldap"
+version = "3.4.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyasn1" },
+    { name = "pyasn1-modules" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fd/8b/1eeb4025dc1d3ac2f16678f38dec9ebdde6271c74955b72db5ce7a4dbfbd/python-ldap-3.4.4.tar.gz", hash = "sha256:7edb0accec4e037797705f3a05cbf36a9fde50d08c8f67f2aef99a2628fab828", size = 377889 }
+
+[[package]]
 name = "python-multipart"
 version = "0.0.18"
 source = { registry = "https://pypi.org/simple" }
@@ -2556,6 +2579,7 @@ dependencies = [
     { name = "cohere" },
     { name = "diskcache" },
     { name = "django" },
+    { name = "django-auth-ldap" },
     { name = "django-cors-headers" },
     { name = "django-extensions" },
     { name = "django-filter" },
@@ -2606,6 +2630,7 @@ requires-dist = [
     { name = "debugpy", marker = "extra == 'debug'" },
     { name = "diskcache" },
     { name = "django" },
+    { name = "django-auth-ldap" },
     { name = "django-cors-headers" },
     { name = "django-extensions" },
     { name = "django-filter" },
