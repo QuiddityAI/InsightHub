@@ -55,7 +55,7 @@ def run_search_task_route(request: HttpRequest, payload: RunSearchTaskPayload):
 
     def thread_function():
         try:
-            create_and_run_search_task(collection, payload.search_task, request.user.id)  # type: ignore
+            create_and_run_search_task(collection, payload.search_task, request.user)  # type: ignore
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
@@ -90,7 +90,7 @@ def perform_search_route(request: HttpRequest, payload: RunSearchTaskPayload):
     collection.save(update_fields=["agent_is_running", "current_agent_step"])
 
     try:
-        results = run_search_task(collection, payload.search_task, request.user.id)  # type: ignore
+        results = run_search_task(collection, payload.search_task, request.user)  # type: ignore
     finally:
         collection.agent_is_running = False
         collection.current_agent_step = None
@@ -128,7 +128,7 @@ def run_previous_search_task_route(request: HttpRequest, payload: RunPreviousSea
 
     def thread_function():
         try:
-            run_search_task(previous_task, request.user.id, from_ui=True)  # type: ignore
+            run_search_task(previous_task, request.user, from_ui=True)  # type: ignore
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
@@ -166,7 +166,7 @@ def run_existing_search_task_route(request: HttpRequest, payload: RunExistingSea
 
     def thread_function():
         try:
-            run_search_task(task, request.user.id, from_ui=True)  # type: ignore
+            run_search_task(task, request.user, from_ui=True)  # type: ignore
         finally:
             collection.agent_is_running = False
             collection.current_agent_step = None
@@ -201,7 +201,7 @@ def add_more_items_from_active_task_route(request: HttpRequest, payload: Collect
 
     new_items = add_items_from_task_and_run_columns(
         collection.most_recent_search_task,
-        request.user.id,  # type: ignore
+        request.user,  # type: ignore
         ignore_last_retrieval=False,
         is_new_collection=False,
         from_ui=True,

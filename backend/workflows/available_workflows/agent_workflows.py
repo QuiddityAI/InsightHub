@@ -67,7 +67,7 @@ class ResearchAgentWorkflow(WorkflowBase):
             exit_search_mode=False,
             candidates_per_step=10,  # this is the number of search results
         )
-        new_items = create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        new_items = create_and_run_search_task(collection, search_task, user, is_new_collection=True)  # type: ignore
         # now the results are already there (search is run synchronously, but if there would already be columns, they are run asynchronously)
 
         time.sleep(2)  # just for the demo to understand the process
