@@ -38,6 +38,7 @@ dependencies = [
     "cohere",
     "diskcache",
     "django",
+    "django-auth-ldap",
     "django-ninja",
     "django-cors-headers",
     "django-extensions",

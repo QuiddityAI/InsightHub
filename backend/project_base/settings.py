@@ -13,6 +13,47 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
+import ldap
+from django_auth_ldap.config import GroupOfUniqueNamesType, LDAPSearch
+
+# Baseline configuration.
+AUTH_LDAP_SERVER_URI = "ldap://185.192.97.117"
+
+AUTH_LDAP_BIND_DN = "uid=admin,ou=system"
+AUTH_LDAP_BIND_PASSWORD = "secret"
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    "ou=users,ou=system",
+    ldap.SCOPE_SUBTREE,
+    "(uid=%(user)s)",
+)
+
+# Set up the basic group parameters.
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    "ou=groups,ou=system",
+    ldap.SCOPE_SUBTREE,
+    "(objectClass=groupOfUniqueNames)",
+)
+AUTH_LDAP_GROUP_TYPE = GroupOfUniqueNamesType(name_attr="cn")
+
+# Simple group restrictions
+# AUTH_LDAP_REQUIRE_GROUP = 'cn=enabled,ou=django,ou=groups,dc=example,dc=com'
+# AUTH_LDAP_DENY_GROUP = 'cn=disabled,ou=django,ou=groups,dc=example,dc=com'
+
+# Populate the Django user from the LDAP directory.
+AUTH_LDAP_USER_ATTR_MAP = {
+    "first_name": "sn",
+    # 'last_name': 'sn',
+    # 'email': 'mail',
+}
+
+AUTH_LDAP_MIRROR_GROUPS = True
+
+# AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+#     'is_active': 'cn=active,ou=django,ou=groups,dc=example,dc=com',
+#     'is_staff': 'cn=staff,ou=django,ou=groups,dc=example,dc=com',
+#     'is_superuser': 'cn=superuser,ou=django,ou=groups,dc=example,dc=com',
+# }
+
 
 def load_env_file():
     with open("../.env", "r") as f:
@@ -210,6 +251,7 @@ AUTHENTICATION_BACKENDS = (
     "social_core.backends.google.GoogleOAuth2",
     "drf_social_oauth2.backends.DjangoOAuth2",
     "django.contrib.auth.backends.ModelBackend",
+    "django_auth_ldap.backend.LDAPBackend",
 )
 
 DRFSO2_PROPRIETARY_BACKEND_NAME = "VisualDataMapBackend"
