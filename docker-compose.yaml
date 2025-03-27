@@ -1,4 +1,7 @@
 services:
+
+  # --------------- Custom Quiddity Containers ---------------
+
   backend:
     image: visual_data_map/backend
     build:
@@ -18,6 +21,7 @@ services:
       - GPU_UTILITY_SERVER_URL=http://gpu-utility-server:55180
       - PDFERRET_BASE_URL=http://pdferret:80
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
+
   webserver:
     image: visual_data_map/webserver
     build:
@@ -28,6 +32,7 @@ services:
       - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
     environment:
       - backend_host=http://backend:55125
+
   gpu-utility-server:
     image: visual_data_map/gpu_utility_server
     build:
@@ -35,12 +40,16 @@ services:
       dockerfile: ./docker/gpu_utility_server.Dockerfile
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55180:55180"
+
+  # --------------- 3rd Party Containers ---------------
+
   qdrant:
     image: "qdrant/qdrant:latest"
     volumes:
       - qdrant_storage:/qdrant/storage
-    ports:  # expose port outside of this virtual network
-      - "${QDRANT_EXPOSED_IP:-127.0.0.1}:${QDRANT_EXPOSED_PORT:-6333}:6333"  # needed for qdrant web dashboard
+    # ports:  # expose port outside of this virtual network
+    #   - "${QDRANT_EXPOSED_IP:-127.0.0.1}:${QDRANT_EXPOSED_PORT:-6333}:6333"  # needed for qdrant web dashboard
+
   opensearch:
     image: "opensearchproject/opensearch:latest"
     volumes:
@@ -54,11 +63,12 @@ services:
     environment:
       - discovery.type=single-node
       - http.port=9200
-      - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358,http://tim-desktop:1358
+      - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358
       - http.cors.enabled=true
       - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
       - http.cors.allow-credentials=true
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD
+
   postgres:
     image: postgres:16
     volumes:
@@ -67,9 +77,9 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=visdatamap
-    ports:  # expose port outside of this virtual network
-      - "127.0.0.1:${POSTGRES_EXPOSED_PORT:-5432}:5432"
-    # expose port to be able to use export scripts from outside the virtual network
+    # ports:  # expose port outside of this virtual network
+    #   - "127.0.0.1:${POSTGRES_EXPOSED_PORT:-5432}:5432"
+
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:latest
     ports:  # exposed to the outside, remember to use a secure password
@@ -121,14 +131,12 @@ services:
       - --port
       - "55181"
 
-
 volumes:
   quiddity_data:
   qdrant_storage:
   opensearch_data:
   postgres_data:
   infinity_model_cache:
-  swag_data:
 networks:
   default:
     name: visualdatamapnetwork
