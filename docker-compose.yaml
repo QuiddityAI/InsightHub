@@ -23,6 +23,8 @@ services:
       - PDFERRET_BASE_URL=http://pdferret:80
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
       - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
+      - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_PASSWORD:-admin}
+      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-admin}
 
   webserver:
     image: visual_data_map/webserver

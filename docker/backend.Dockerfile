@@ -25,5 +25,7 @@ HEALTHCHECK --interval=30s --timeout=3s \
 EXPOSE 55125
 USER appuser
 WORKDIR /app/backend
-ENTRYPOINT ["uv", "run"]
-CMD ["manage.py", "runserver", "--insecure", "0.0.0.0:55125"]
+# create Django superuser using environment variables:
+RUN uv run manage.py createsuperuser --noinput
+ENTRYPOINT ["sh", "-c"]
+CMD ["uv run manage.py migrate && uv run manage.py runserver --insecure 0.0.0.0:55125"]
