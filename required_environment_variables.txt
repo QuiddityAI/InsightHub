@@ -10,9 +10,6 @@ BING_SEARCH_V7_ENDPOINT=?
 SEMANTIC_SCHOLAR_API_KEY=?
 
 COHERE_API_KEY=?
-DEEPINFRA_API_KEY=?
-
-PIPENV_VENV_IN_PROJECT=1
 
 OPENSEARCH_INITIAL_ADMIN_PASSWORD=?
 
@@ -21,6 +18,12 @@ SERVER_URL= e.g. something.absclust.com
 SSL_CERT_EMAIL= email to notify about SSL certificate expiration
 
 optionally, store data in local folder instead of /data:
+Add this to the docker compose ovveride file:
+services:
+  backend:
+    volumes:
+      - "${DATA_PATH:-/data}:/data"
+And this env variable:
 DATA_PATH=./data
 
 optionally, set IP where the containers should be available (e.g. 127.0.0.1 or 0.0.0.0) and
@@ -40,8 +43,7 @@ OPENSEARCH_DASHBOARD_EXPOSED_IP=127.0.0.1
 OPENSEARCH_DASHBOARD_EXPOSED_PORT=5601
 
 optionally, specify different docker compose file:
-COMPOSE_FILE=docker-compose-staging.yaml
-
+COMPOSE_FILE=docker-compose-staging.yaml:docker-compose.override.gpu.yaml
 
 credentials.json file with the following content:
 {
@@ -49,17 +51,11 @@ credentials.json file with the following content:
   "open_search_password": "?"  # password from above
 }
 
-
-openai_credentials.json file with the following content:
-{"secret_key": "?"}
-
 For Telegram notifier to work, following env vars must be set:
-
 TELEGRAM_TOKEN=
 TELEGRAM_CHAT_ID=
 
-LLM temperature can be set using LLM_TEMPERATURE env var
-
+# for website scraping with "UseScraper.com":
 USE_SCRAPER_API_KEY=
 
 LLMONKEY_OPENAI_API_KEY=
@@ -67,8 +63,20 @@ LLMONKEY_GROQ_API_KEY=
 LLMONKEY_DEEPINFRA_API_KEY=
 LLMONKEY_COHERE_API_KEY=
 
+# for e-mail notifications e.g. on new items added to collections:
 NOTIFICATION_EMAIL_ADDRESS=
 NOTIFICATION_EMAIL_SMTP_HOST=smtp.gmail.com
 NOTIFICATION_EMAIL_SMTP_PORT=465
 NOTIFICATION_EMAIL_SMTP_USER=
 NOTIFICATION_EMAIL_SMTP_PASSWORD=
+
+# for LLM models using LLMonkey library:
+LLMONKEY_OPENAI_API_KEY=
+LLMONKEY_GROQ_API_KEY=
+LLMONKEY_DEEPINFRA_API_KEY=
+LLMONKEY_COHERE_API_KEY=
+LLMONKEY_IONOS_API_KEY=
+LLMONKEY_MISTRAL_API_KEY=
+LLMONKEY_AZURE_OPENAI_URL=
+LLMONKEY_AZURE_INFERENCE_URL=
+LLMONKEY_AZURE_API_KEY=
