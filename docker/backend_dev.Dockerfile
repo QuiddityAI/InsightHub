@@ -2,6 +2,8 @@ FROM --platform=$BUILDPLATFORM python:3.11 AS python_env
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
 RUN chown -R appuser /app
+RUN mkdir -p /data && chown -R appuser /data
+RUN mkdir -p /data/quiddity_data && chown -R appuser /data/quiddity_data
 
 FROM python_env as backend
 

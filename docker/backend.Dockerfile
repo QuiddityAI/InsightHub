@@ -6,6 +6,8 @@ COPY --from=ghcr.io/astral-sh/uv:0.6.10 /uv /uvx /bin/
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
 RUN chown -R appuser /app
+RUN mkdir -p /data && chown -R appuser /data
+RUN mkdir -p /data/quiddity_data && chown -R appuser /data/quiddity_data
 
 # setup python environment and install packages:
 COPY pyproject.toml uv.lock README.md /app/
