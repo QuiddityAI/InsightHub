@@ -5,7 +5,7 @@ COPY package.json /app
 COPY package-lock.json /app
 RUN npm install
 
-FROM vite_env as webserver_prod
+FROM vite_env as webserver
 
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost:55140 || exit 1
@@ -13,5 +13,5 @@ HEALTHCHECK --interval=30s --timeout=3s \
 EXPOSE 55140
 WORKDIR /source_code/frontend
 USER node
-ENTRYPOINT ["sh", "-c"]
-CMD ["npm install && npx vite build && npx vite preview --port 55140"]
+ENTRYPOINT ["npx", "vite", "--force"]
+CMD []

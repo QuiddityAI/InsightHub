@@ -30,7 +30,7 @@ npm install
 
 - install docker >= v24.0 (and nvidia-docker if an Nvidia GPU is available, test the GPU setup with a simple container)
 - By default, the docker setup uses `/data/quiddity_data` as a folder to store app data. Make sure it exists and is writable or change the mounting point in the docker-compose.yaml file to something else.
-- If you want to hot-reload the backend code, add `docker-compose.override.dev.yaml` to your COMPOSE_FILE env variable (with a : after the main docker compose file)
+- If you want to hot-reload the front- and backend code, add `docker-compose.override.dev.yaml` to your COMPOSE_FILE env variable (with a : after the main docker compose file)
 - If an Nvidia GPU is available, add `docker-compose.override.gpu.yaml` to your COMPOSE_FILE env variable (with a : after the other docker compose files)
 - Make sure the env variables and credential files described in `required_environment_variables.txt` exist
 - Django backend database: start the postgres container using `docker compose up -d postgres`, then run `./manage.py migrate` in the `backend` folder

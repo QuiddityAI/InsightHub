@@ -1,7 +1,15 @@
 services:
   backend:
+    image: visual_data_map/backend_dev
     volumes:
       - ./:/source_code/
     build:
       context: ./
       dockerfile: ./docker/backend_dev.Dockerfile
+  webserver:
+    image: visual_data_map/webserver_dev
+    volumes:
+      - ./:/source_code/
+    build:
+      context: ./frontend
+      dockerfile: ../docker/webserver_dev.Dockerfile

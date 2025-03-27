@@ -27,24 +27,6 @@ services:
     build:
       context: ./frontend
       dockerfile: ../docker/webserver.Dockerfile
-    profiles:
-      - development_webserver  # the container only starts if env variable COMPOSE_PROFILES=development_server
-    volumes:
-      - ./:/source_code/
-    ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
-      - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
-    environment:
-      - backend_host=http://backend:55125
-  webserver-prod:
-    image: visual_data_map/webserver_prod
-    build:
-      context: ./frontend
-      dockerfile: ../docker/webserver_prod.Dockerfile
-    profiles:
-      - production_webserver  # the container only starts if env variable COMPOSE_PROFILES=production_server
-    volumes:
-      - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
       - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
       - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"

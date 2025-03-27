@@ -21,13 +21,11 @@ services:
       - TIKA_SERVER_ENDPOINT=http://tika:9998
       - TIKA_CLIENT_ONLY=True
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
-  webserver-prod-staging:
-    image: visual_data_map/webserver_prod
+  webserver-staging:
+    image: visual_data_map/webserver
     build:
       context: ./frontend
-      dockerfile: ../docker/webserver_prod.Dockerfile
-    volumes:
-      - ./:/source_code/
+      dockerfile: ../docker/webserver.Dockerfile
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
       - "${WEBSERVER_STAGING_EXPOSED_IP_V4:-127.0.0.1}:55440:55140"
       - "${WEBSERVER_STAGING_EXPOSED_IP_V6:-[::1]}:55440:55140"
@@ -43,8 +41,6 @@ services:
       - POSTGRES_DB=visdatamap
 volumes:
   quiddity_data:
-  qdrant_storage:
-  opensearch_data:
   postgres_data:
 networks:
   default:
