@@ -33,6 +33,7 @@ npm install
 - If you want to hot-reload the front- and backend code, add `docker-compose.override.dev.yaml` to your COMPOSE_FILE env variable (with a : after the main docker compose file)
 - If an Nvidia GPU is available, add `docker-compose.override.gpu.yaml` to your COMPOSE_FILE env variable (with a : after the other docker compose files)
 - Make sure the env variables and credential files described in `required_environment_variables.txt` exist
+- To use Google LLMs, create a credentials file before building the Docker container using: `gcloud auth application-default login`, it will then be mounted to the container.
 - Django backend database: start the postgres container using `docker compose up -d postgres`, then run `./manage.py migrate` in the `backend` folder
   - If starting without a database backup, run `python manage.py createsuperuser` to create the first user
   - To use a backup, run `./manage.py loaddata db_export.json` in the `backend` folder

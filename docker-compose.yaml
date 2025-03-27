@@ -9,6 +9,7 @@ services:
       dockerfile: ./docker/backend.Dockerfile
     volumes:
       - quiddity_data:/data
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55125:55125"
     environment:
@@ -21,6 +22,7 @@ services:
       - GPU_UTILITY_SERVER_URL=http://gpu-utility-server:55180
       - PDFERRET_BASE_URL=http://pdferret:80
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
 
   webserver:
     image: visual_data_map/webserver

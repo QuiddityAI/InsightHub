@@ -7,6 +7,7 @@ services:
       dockerfile: ./docker/backend.Dockerfile
     volumes:
       - quiddity_data:/data
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
     environment:
       - data_backend_host=http://localhost:55125
       - postgres_host=postgres-showcase
@@ -17,6 +18,7 @@ services:
       - search_engine_host=opensearch
       - PDFERRET_BASE_URL=http://pdferret:80
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
   webserver-showcase:
     image: visual_data_map/webserver
     build:
