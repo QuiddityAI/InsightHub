@@ -1,0 +1,7 @@
+services:
+  backend:
+    volumes:
+      - ./:/source_code/
+    build:
+      context: ./
+      dockerfile: ./docker/backend_dev.Dockerfile

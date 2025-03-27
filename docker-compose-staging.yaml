@@ -6,9 +6,7 @@ services:
       context: ./
       dockerfile: ./docker/backend.Dockerfile
     volumes:
-      - ./:/source_code/
-      - "${DATA_PATH:-/datia}:/data"
-      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
+      - quiddity_data:/data
     environment:
       - data_backend_host=http://localhost:55125
       - postgres_host=postgres-staging
@@ -22,7 +20,6 @@ services:
       - PDFERRET_TIKA_SERVER_URL=http://tika:9998
       - TIKA_SERVER_ENDPOINT=http://tika:9998
       - TIKA_CLIENT_ONLY=True
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
   webserver-prod-staging:
     image: visual_data_map/webserver_prod
@@ -45,6 +42,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=visdatamap
 volumes:
+  quiddity_data:
   qdrant_storage:
   opensearch_data:
   postgres_data:
