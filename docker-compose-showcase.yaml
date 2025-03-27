@@ -16,10 +16,6 @@ services:
       - vector_database_host=qdrant
       - search_engine_host=opensearch
       - PDFERRET_BASE_URL=http://pdferret:80
-      - PDFERRET_GROBID_URL=http://grobid:8070
-      - PDFERRET_TIKA_SERVER_URL=http://tika:9998
-      - TIKA_SERVER_ENDPOINT=http://tika:9998
-      - TIKA_CLIENT_ONLY=True
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
   webserver-showcase:
     image: visual_data_map/webserver
