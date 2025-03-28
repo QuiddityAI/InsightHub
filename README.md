@@ -11,42 +11,47 @@ Main features:
 
 -> a "funnel" from massive data amounts to a curated set of items with extracted information
 
-## Development Setup
+## Status and Security
 
-Currently, the docker containers in this repo are configured for a development setup, i.e. they mount this source folder into the container and have live reload enabled. This means that running `docker compose up -d` should ideally be enough to run the code, modify it and see changes immediately.
+**Status:** The InsightHub works and when configured correctly, it can provide value in a real life setting.
+But the project and codebase is still in alpha stage, i.e. not everything is properly documented, some features might not work as expected or are not even implemented.
 
-This also means that the current docker containers are not meant for production use, due to hot reload they are slow and insecure.
+**Maintenance:** The project is not maintened actively at the moment. Let us know if you are interested in maintaining it or paying for maintenance.
 
-### Steps
+**Security:** Currently, the system is not meant for production use. There are several major security issues with the current set up, e.g. using the vite and Django development webservers instead of a production server like gunicorn. Even though the databases are not exposed to the outside, the connections should not use default passwords as currently. Lastly, the API does not use authentication for every endpoint yet, and even the endpoints that use it are not tested for security.
 
-Local setup, mostly for IDE auto-complete (but might be needed for Docker containers, too, at the moment, because they mount the source folder):
-```
-python3.11 -m pip install pipenv
-python3.11 -m pipenv install
+In total, the project can provide value e.g. in a controlled environment like an intranet, and many issues can be solved rather easily, but it should not be used exposed to the internet and with confidential data at the moment.
 
-cd frontend/visual-data-map
-npm install
-```
+## Running the system
 
 - install docker >= v24.0 (and nvidia-docker if an Nvidia GPU is available, test the GPU setup with a simple container)
-- By default, the docker setup uses `/data/quiddity_data` as a folder to store app data. Make sure it exists and is writable or change the mounting point in the docker-compose.yaml file to something else.
-- If you want to hot-reload the front- and backend code, add `docker-compose.override.dev.yaml` to your COMPOSE_FILE env variable (with a : after the main docker compose file)
-- If an Nvidia GPU is available, add `docker-compose.override.gpu.yaml` to your COMPOSE_FILE env variable (with a : after the other docker compose files)
-- Make sure the env variables and credential files described in `required_environment_variables.txt` exist
-- To use Google LLMs, create a credentials file before building the Docker container using: `gcloud auth application-default login`, it will then be mounted to the container.
-- Django backend database: start the postgres container using `docker compose up -d postgres`, then run `./manage.py migrate` in the `backend` folder
-  - If starting without a database backup, run `python manage.py createsuperuser` to create the first user
-  - To use a backup, run `./manage.py loaddata db_export.json` in the `backend` folder
-- Run `python manage.py collectstatic` in the `backend` folder
-- (optionally) Set up VSCode by installing recommended extensions in `vsc-extensions.txt` (can be installed using `VSC Export & Import` extensions, but should be done carefully)
+- check out the git repository
+- create a `.env` file according to the variables listed in [required_environment_variables.txt](required_environment_variables.txt)
 - run `docker compose up -d`
+- go to `localhost:55140` and log in with e-mail `admin@example.com` and password `admin` (if not changed using env variables)
+- visit the admin interface using the top right user menu and the "database" icon for more settings
 
-### Testing the setup
+### Updating the system
 
-- the main frontend should be available at `localhost:55140`
-- the OpenSearch admin should be available at `localhost:5601`
-- check the docker logs manually for errors or install a tool to easily monitor the logs like `Dozzle`
+Not tested yet, but should work like this:
 
+- `git pull`
+- `docker compose down backend webserver`
+- `docker compose up -d --build backend`
+- `docker compose up -d --build webserver`
+
+## Further Setup Configuration
+
+- Data storage: By default, a docker volumes are used to store data like uploaded files and the database content. Override the docker volume setup to change this.
+- GPU: The system can work without a GPU. If an Nvidia GPU is available, add `docker-compose.override.gpu.yaml` to your COMPOSE_FILE env variable (with a : after the other docker compose files). It enables GPU support for the containers to e.g. generate embeddings or maps using the GPU.
+- To use Google LLMs, create a credentials file before building the Docker container using: `gcloud auth application-default login`, it will then be mounted to the container.
+
+## Development Setup
+
+Using the `docker-compose.override.dev.yaml` file, you get containers that are configured for a development setup, i.e. they mount this source folder into the container and have live reload enabled. This means that running `docker compose up -d` should ideally be enough to run the code, modify it and see changes immediately.
+
+- If you want to hot-reload the front- and backend code, add `docker-compose.override.dev.yaml` to your COMPOSE_FILE env variable (with a : after the main docker compose file)
+- (optionally) Set up VSCode by installing recommended extensions in `vsc-extensions.txt` (can be installed using `VSC Export & Import` extensions, but should be done carefully)
 
 ### Pre-commit
 
@@ -57,15 +62,6 @@ pre-commit usage is recommended. To install it run `pip install pre-commit` and 
 - The main structure and the level of high or low 'abstraction' is hopefully quite thought-through and should enable fast development, easy maintanability and high scalability where needed.
 - Everything else is quite rudimental and the code is not very clean in many parts, just being there as a proof-of-concept.
   - Please change and improve wherever needed!
-  - And especially before we have any customers, make breaking changes and rename stuff as much as needed to improve the code quickly.
 - Parts that need to be improved the most (especially before any public deployment):
   - [ ] User registration: currently, no e-mail verification is set up and access rights are not really managed.
-  - [ ] docker files and docker compose setup (maybe create different ones for production and development, improve time to update dependencies)
-  - [ ] Make sure computation power and OpenAI credits are used responsibly: currently, you could accidentially create millions of embeddings, using all of the CPU for ages, and you could also extract information from millions of items using the ChatGPT API -> we need to implement some sort of limits and / or display how much an action costs / needs CPU.
-- Other main TODOs:
-  - [ ] De-duplicate and simplify code to generate missing fields of items
-  - [ ] allow to export and import Dataset definitions from the Django admin page
-  - [ ] replace pipenv with a faster dependency manager
-  - [ ] Use a proper third party ML model server instead of the custom one / Infinity (at the moment, using different models simultaniously might fill up the memory and crash, and performance + scalability can also be improved with a third party model server)
-  - [ ] move these TODOs to an issue tracker
-  - ...
+  - many more...
