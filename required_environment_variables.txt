@@ -50,11 +50,8 @@ OPENSEARCH_DASHBOARD_EXPOSED_PORT=5601
 optionally, specify different docker compose file:
 COMPOSE_FILE=docker-compose-staging.yaml:docker-compose.override.gpu.yaml
 
-credentials.json file with the following content:
-{
-  "open_search_user": "?",
-  "open_search_password": "?"  # password from above
-}
+OPENSEARCH_USERNAME= specify a default username for the database connection
+OPENSEARCH_PASSWORD= set a random password
 
 For Telegram notifier to work, following env vars must be set:
 TELEGRAM_TOKEN=

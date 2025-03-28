@@ -16,12 +16,9 @@ from legacy_backend.utils.field_types import FieldType
 from legacy_backend.utils.helpers import run_in_batches_without_result
 from legacy_backend.utils.source_plugin_types import SourcePlugin
 
-with open("../credentials.json", "rb") as f:
-    credentials = json.load(f)
-
 open_search_host = os.getenv("search_engine_host", "localhost")
 open_search_port = 9200
-open_search_auth = (credentials["open_search_user"], credentials["open_search_password"])
+open_search_auth = (os.getenv("OPENSEARCH_USERNAME"), os.getenv("OPENSEARCH_PASSWORD"))
 
 
 class TextSearchEngineClient(object):
