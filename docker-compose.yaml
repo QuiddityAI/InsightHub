@@ -37,14 +37,6 @@ services:
     environment:
       - backend_host=http://backend:55125
 
-  gpu-utility-server:
-    image: visual_data_map/gpu_utility_server
-    build:
-      context: ./
-      dockerfile: ./docker/gpu_utility_server.Dockerfile
-    # ports:  # expose port outside of this virtual network
-    #   - "127.0.0.1:55180:55180"
-
   # --------------- 3rd Party Containers ---------------
 
   qdrant:

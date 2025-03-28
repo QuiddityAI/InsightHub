@@ -1,11 +1,19 @@
 services:
+
   gpu-utility-server:
+    image: visual_data_map/gpu_utility_server
+    build:
+      context: ./
+      dockerfile: ./docker/gpu_utility_server.Dockerfile
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               capabilities: [gpu]
+    # ports:  # expose port outside of this virtual network
+    #   - "127.0.0.1:55180:55180"
+
   infinity-model-server:
     deploy:
       resources:
