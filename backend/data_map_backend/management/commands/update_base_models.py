@@ -102,13 +102,21 @@ class Command(BaseCommand):
                 obj.applicable_import_converters.set(definition.applicable_import_converters)
                 obj.applicable_export_converters.set(definition.applicable_export_converters)
                 for field in definition.object_fields:
-                    field["generator"] = (
-                        Generator.objects.get(pk=field["generator"]) if field["generator"] is not None else None
-                    )
-                    field["embedding_space"] = (
-                        EmbeddingSpace.objects.get(pk=field["embedding_space"])
-                        if field["embedding_space"] is not None
-                        else None
-                    )
+                    try:
+                        field["generator"] = (
+                            Generator.objects.get(pk=field["generator"]) if field["generator"] is not None else None
+                        )
+                    except Generator.DoesNotExist as e:
+                        logging.error(f"Generator with pk {field['generator']} does not exist")
+                        raise e
+                    try:
+                        field["embedding_space"] = (
+                            EmbeddingSpace.objects.get(pk=field["embedding_space"])
+                            if field["embedding_space"] is not None
+                            else None
+                        )
+                    except EmbeddingSpace.DoesNotExist as e:
+                        logging.error(f"EmbeddingSpace with pk {field['embedding_space']} does not exist")
+                        raise e
                     obj.object_fields.create(**field)
                 obj.save()
