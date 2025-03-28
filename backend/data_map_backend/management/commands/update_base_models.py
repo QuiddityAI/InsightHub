@@ -12,6 +12,8 @@ from data_map_backend.models import (
     ExportConverter,
     Generator,
     ImportConverter,
+    Organization,
+    User,
 )
 from data_map_backend.utils import DotDict
 
@@ -32,6 +34,8 @@ class Command(BaseCommand):
         self.load_model(ImportConverter, "import_converters")
         self.load_model(ExportConverter, "export_converters")
         self.load_dataset_schemas()
+        self.create_default_user()
+        self.create_default_organization()
 
     def load_model(self, model_class, sub_path):
         logging.warning(f"--- Loading model '{model_class.__name__}'")
@@ -120,3 +124,43 @@ class Command(BaseCommand):
                         raise e
                     obj.object_fields.create(**field)
                 obj.save()
+
+    def create_default_user(self):
+        if User.objects.all().count() > 0:
+            logging.warning(f"--- A user already exists, skipping creating a default one")
+            return
+        logging.warning(f"--- Creating default user")
+        username = os.getenv("DJANGO_SUPERUSER_USERNAME")
+        email = os.getenv("DJANGO_SUPERUSER_EMAIL")
+        password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+        if not username or not email or not password:
+            logging.error(
+                f"--- DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL and DJANGO_SUPERUSER_PASSWORD must be set"
+            )
+            return
+        try:
+            User.objects.create_superuser(username, email, password)
+        except Exception as e:
+            logging.error(f"--- Error creating superuser: {e}")
+        logging.warning(f"--- Default user {username}, e-mail {email} created")
+
+    def create_default_organization(self):
+        if Organization.objects.all().count() > 0:
+            logging.warning(f"--- An organization already exists, skipping creating a default one")
+            return
+        logging.warning(f"--- Creating default organization")
+
+        default_schemas_names = [
+            "scientific_articles",
+            "filesystem_file_german",
+            "filesystem_file_english",
+            "generic_data_non-english",
+        ]
+        default_schemas = DatasetSchema.objects.filter(name__in=default_schemas_names)
+        try:
+            Organization.objects.create(
+                name="Quiddity", is_public=True, schemas_for_user_created_datasets=default_schemas
+            )
+        except Exception as e:
+            logging.error(f"--- Error creating organization: {e}")
+        logging.warning(f"--- Default organization 'Quiddity' created")

@@ -25,6 +25,6 @@ HEALTHCHECK --interval=30s --timeout=3s \
 EXPOSE 55125
 USER appuser
 WORKDIR /app/backend
-# run migrations, import base objects, create Django superuser using environment variables and start app:
+# run migrations, import base objects + create Django superuser using environment variables and start app:
 ENTRYPOINT ["sh", "-c"]
-CMD ["uv run manage.py migrate && uv run manage.py update_base_models && uv run manage.py createsuperuser --noinput || true && uv run manage.py runserver --insecure 0.0.0.0:55125"]
+CMD ["uv run manage.py migrate && uv run manage.py update_base_models && uv run manage.py runserver --insecure 0.0.0.0:55125"]
