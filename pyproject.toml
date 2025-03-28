@@ -52,7 +52,7 @@ dependencies = [
     "djangorestframework",
     "drf-social-oauth2",
     "hdbscan",
-    "llmonkey @ git@github.com:QuiddityAI/LLMonkey.git",
+    "llmonkey @ git+https://git@github.com:QuiddityAI/LLMonkey.git",
     "markdown",
     "opensearch-py",
     "orjson",
