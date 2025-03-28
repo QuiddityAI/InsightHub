@@ -273,31 +273,6 @@
       "_order": 8
     },
     {
-      "identifier": "title_vector",
-      "name": null,
-      "created_at": "2023-09-04T10:24:51.793Z",
-      "changed_at": "2024-05-30T13:54:10.907Z",
-      "schema": "fashion_44k",
-      "description": null,
-      "field_type": "VECTOR",
-      "is_array": false,
-      "language_analysis": null,
-      "embedding_space": null,
-      "is_available_for_search": true,
-      "text_similarity_threshold": null,
-      "image_similarity_threshold": null,
-      "is_available_for_filtering": false,
-      "index_parameters": {},
-      "generator": "pubmedbert_(simple_tokenizer)",
-      "generator_parameters": null,
-      "generating_condition": "",
-      "source_fields": [
-        "productDisplayName"
-      ],
-      "should_be_generated": false,
-      "_order": 9
-    },
-    {
       "identifier": "title_vector_e5_base",
       "name": null,
       "created_at": "2023-09-19T13:18:14.676Z",
