@@ -1349,7 +1349,7 @@ proxy = [
 [[package]]
 name = "llmonkey"
 version = "0.1.1"
-source = { git = "https://github.com/Trel725/LLMonkey.git#1207641d2809babe28324ab8eccd74c4e9d3702a" }
+source = { git = "https://github.com/QuiddityAI/LLMonkey.git#1207641d2809babe28324ab8eccd74c4e9d3702a" }
 dependencies = [
     { name = "google-cloud-aiplatform" },
     { name = "json-repair" },
@@ -2621,7 +2621,7 @@ requires-dist = [
     { name = "drf-social-oauth2" },
     { name = "dspy" },
     { name = "hdbscan" },
-    { name = "llmonkey", git = "https://github.com/Trel725/LLMonkey.git" },
+    { name = "llmonkey", git = "https://github.com/QuiddityAI/LLMonkey.git" },
     { name = "markdown" },
     { name = "numpy", specifier = "<2.0" },
     { name = "opensearch-py" },
