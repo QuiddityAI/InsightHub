@@ -19,6 +19,8 @@ services:
       - PDFERRET_BASE_URL=http://pdferret:80
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
       - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
   webserver-staging:
     image: visual_data_map/webserver
     build:

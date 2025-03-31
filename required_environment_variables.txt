@@ -16,7 +16,7 @@ SEMANTIC_SCHOLAR_API_KEY=?
 
 COHERE_API_KEY=?
 
-OPENSEARCH_INITIAL_ADMIN_PASSWORD=?
+OPENSEARCH_INITIAL_ADMIN_PASSWORD= specify a default username for the database connection
 
 COMPOSE_PROFILES=  # add https_proxy to also start the SWAG reverse proxy
 SERVER_URL= e.g. something.absclust.com
@@ -49,9 +49,6 @@ OPENSEARCH_DASHBOARD_EXPOSED_PORT=5601
 
 optionally, specify different docker compose file:
 COMPOSE_FILE=docker-compose-staging.yaml:docker-compose.override.gpu.yaml
-
-OPENSEARCH_USERNAME= specify a default username for the database connection
-OPENSEARCH_PASSWORD= set a random password
 
 For Telegram notifier to work, following env vars must be set:
 TELEGRAM_TOKEN=
