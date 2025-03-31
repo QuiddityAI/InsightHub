@@ -159,6 +159,7 @@ class Command(BaseCommand):
         default_schemas = DatasetSchema.objects.filter(name__in=default_schemas_names)
         try:
             org = Organization(name="Quiddity", is_public=True)
+            org.save()
             org.schemas_for_user_created_datasets.set(default_schemas)
             org.save()
         except Exception as e:
