@@ -158,9 +158,9 @@ class Command(BaseCommand):
         ]
         default_schemas = DatasetSchema.objects.filter(name__in=default_schemas_names)
         try:
-            Organization.objects.create(
-                name="Quiddity", is_public=True, schemas_for_user_created_datasets=default_schemas
-            )
+            org = Organization(name="Quiddity", is_public=True)
+            org.schemas_for_user_created_datasets.set(default_schemas)
+            org.save()
         except Exception as e:
             logging.error(f"--- Error creating organization: {e}")
         logging.warning(f"--- Default organization 'Quiddity' created")
