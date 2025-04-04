@@ -7,6 +7,7 @@ from django.core.serializers.python import Deserializer
 from django.utils.dateparse import parse_datetime
 
 from data_map_backend.models import (
+    Dataset,
     DatasetSchema,
     EmbeddingSpace,
     ExportConverter,
@@ -36,6 +37,7 @@ class Command(BaseCommand):
         self.load_dataset_schemas()
         self.create_default_user()
         self.create_default_organization()
+        self.create_default_dataset()
 
     def load_model(self, model_class, sub_path):
         logging.warning(f"--- Loading model '{model_class.__name__}'")
@@ -164,3 +166,28 @@ class Command(BaseCommand):
         except Exception as e:
             logging.error(f"--- Error creating organization: {e}")
         logging.warning(f"--- Default organization 'Quiddity' created")
+
+    def create_default_dataset(self):
+        if Dataset.objects.all().count() > 0:
+            logging.warning(f"--- A dataset already exists, skipping creating a default one")
+            return
+        logging.warning(f"--- Creating default dataset")
+        schema = DatasetSchema.objects.filter(identifier="filesystem_file_english").first()
+        if not schema:
+            logging.error(f"--- Dataset schema 'filesystem_file_english' does not exist")
+            return
+        organization = Organization.objects.first()
+        if not organization:
+            logging.error(f"--- Organization does not exist")
+            return
+        user = User.objects.filter(username="admin@example.com").first() or User.objects.first()
+        if not user:
+            logging.error(f"--- User does not exist")
+            return
+        try:
+            dataset = Dataset.objects.create(name="My Dataset", schema=schema, organization=organization)
+            dataset.admins.set([user])
+            dataset.save()
+        except Exception as e:
+            logging.error(f"--- Error creating dataset: {e}")
+        logging.warning(f"--- Default dataset created")
