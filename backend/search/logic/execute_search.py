@@ -15,7 +15,9 @@ from data_map_backend.models import (
     Dataset,
     FieldType,
     SearchTask,
+    User,
 )
+from data_map_backend.views.other_views import get_dataset_cached
 from legacy_backend.logic.search import get_search_results
 from search.logic.approve_items_and_exit_search import (
     approve_using_comparison,
@@ -57,7 +59,7 @@ search_query_predictor = dspy.Predict(SearchQuerySignature)
 def create_and_run_search_task(
     collection: DataCollection,
     search_task: SearchTaskSettings,
-    user_id: int,
+    user: User,
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
 ) -> list[CollectionItem]:
@@ -161,7 +163,7 @@ def create_and_run_search_task(
     )
     return run_search_task(
         task,
-        user_id,
+        user,
         after_columns_were_processed=after_columns_were_processed,
         is_new_collection=is_new_collection,
         set_agent_step=False,
@@ -171,7 +173,7 @@ def create_and_run_search_task(
 
 def run_search_task(
     task: SearchTask,
-    user_id: int,
+    user: User,
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
     set_agent_step: bool = True,
@@ -219,14 +221,14 @@ def run_search_task(
             after_columns_were_processed(new_items)
 
     new_items = add_items_from_task_and_run_columns(
-        task, user_id, True, is_new_collection, from_ui, restrict_to_item_ids, after_columns_were_processed_internal
+        task, user, True, is_new_collection, from_ui, restrict_to_item_ids, after_columns_were_processed_internal
     )
     return new_items
 
 
 def add_items_from_task_and_run_columns(
     task: SearchTask,
-    user_id: int,
+    user: User,
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     from_ui: bool = True,
@@ -241,7 +243,7 @@ def add_items_from_task_and_run_columns(
         collection.save(update_fields=["filters"])
 
     new_items = add_items_from_task(
-        collection, task, ignore_last_retrieval, is_new_collection, from_ui, restrict_to_item_ids
+        collection, task, user, ignore_last_retrieval, is_new_collection, from_ui, restrict_to_item_ids
     )
 
     def in_thread():
@@ -252,7 +254,7 @@ def add_items_from_task_and_run_columns(
             items_to_process = new_items
         for column in collection.columns.filter(auto_run_for_candidates=True):
             assert isinstance(column, CollectionColumn)
-            process_cells_blocking(items_to_process, column, collection, user_id)
+            process_cells_blocking(items_to_process, column, collection, user.id)  # type: ignore
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 
@@ -264,6 +266,7 @@ def add_items_from_task_and_run_columns(
 def add_items_from_task(
     collection: DataCollection,
     task: SearchTask,
+    user: User,
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     from_ui: bool = True,
@@ -271,6 +274,12 @@ def add_items_from_task(
 ) -> list[CollectionItem]:
     parameters = RetrievalParameters(**task.retrieval_parameters)
     status = RetrievalStatus(**task.last_retrieval_status)
+
+    if not get_dataset_cached(parameters.dataset_id).user_has_permission(user):
+        logging.warning(
+            f"User {user.id}: {user.email} doesn't have permission to access dataset {parameters.dataset_id}"
+        )
+        return []
 
     if not from_ui:
         # directly retrieve all items

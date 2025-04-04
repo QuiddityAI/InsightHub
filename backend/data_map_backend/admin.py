@@ -465,6 +465,7 @@ class DatasetAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin)
         "organization",
         "is_public",
         "is_organization_wide",
+        "is_available_to_groups",
         "admins",
         "source_plugin",
         "source_plugin_parameters",

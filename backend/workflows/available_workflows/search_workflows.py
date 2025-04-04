@@ -46,7 +46,7 @@ class ClassicSearchWorkflow(WorkflowBase):
             retrieval_mode=settings.retrieval_mode,
             ranking_settings=settings.ranking_settings,
         )
-        create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user, is_new_collection=True)  # type: ignore
         collection.agent_is_running = False
         collection.save()  # 7 ms
 
@@ -87,6 +87,6 @@ class AssistedSearchWorkflow(WorkflowBase):
             retrieval_mode=settings.retrieval_mode,
             ranking_settings=settings.ranking_settings,
         )
-        create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user, is_new_collection=True)  # type: ignore
         collection.agent_is_running = False
         collection.save()
