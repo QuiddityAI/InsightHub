@@ -1,5 +1,9 @@
 FROM --platform=$BUILDPLATFORM python:3.11 AS python_env
 
+# install system dependencies:
+RUN apt-get update && apt-get install -y build-essential python3-dev \
+libldap2-dev libsasl2-dev slapd ldap-utils
+
 # install UV python package manager:
 COPY --from=ghcr.io/astral-sh/uv:0.6.10 /uv /uvx /bin/
 
