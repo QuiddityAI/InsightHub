@@ -111,9 +111,7 @@ def set_user_preferences_route(request):
 def server_shows_all_organizations_and_products(hostname: str) -> bool:
     # restrict some domains to certain organizations:
     hostnames_that_show_all_orgs = [
-        "home-server:55140",
-        "feldberg.absclust.com",
-        "backend-staging-at:55125",
+        "demo.quiddityai.com",
     ]
     hostnames_that_show_all_orgs += os.environ.get("HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS", "").split(",")
 

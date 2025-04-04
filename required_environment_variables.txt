@@ -23,6 +23,10 @@ BACKEND_AUTHENTICATION_SECRET= generate any random secret
 POSTGRES_PASSWORD= generate any random password
 OPENSEARCH_INITIAL_ADMIN_PASSWORD= specify a default username for the database connection
 
+# if your are not using localhost and still want to show all organization
+# (regardless of their 'domains' setting), add your domain here (comma separated):
+HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS=www.example.org:55140,www.other-example.com
+
 # --------------------- Data Storage -------------------------
 
 optionally, store data in local folder instead of /data:
