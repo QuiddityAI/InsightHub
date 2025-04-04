@@ -3,18 +3,21 @@
 This is a Python-Django-backend, Vue-frontend tool to visualize, search, organize and extract data.
 
 As of April 2025, this is the **only open source (and even proprietary) tool** that combines:
-- AI question answering (knowledge management): advanced RAG system + PDF / document processing to answer questions
-- AI search: show lists of results (not just summarized answers) using the latest AI search features (hybrid keyword + vector search, reranking, individual result checking using LLM etc.)
-- AI smart tables: extract data interactively from documents in a tabular interface and automate whole workflows (think of V7 Go, the new Microsoft SharePoint auto-fill columns etc.)
-- AI visual data maps: using dimensionality reduction and smart cluster titles to create interactive maps of any data (e.g. to understand your machine learning training data set, find patterns in result sets etc.)
+
+| Feature | Modality  | Description |
+| ------------- | ------------- | ------------- |
+| **AI Knowledge Management**  | Editable Textual Answer  | advanced RAG system + PDF / document processing to answer questions  |
+| **AI Search**  | Interactive Result List  | show lists of results (not just summarized answers) using the latest AI search features (hybrid keyword + vector search, reranking, individual result checking using LLM etc.), create curate lists of results, add own notes to results, extract infos using LLMs etc.  |
+| **AI Smart Tables**  | Interactive Table  | extract data interactively from documents in a tabular interface and automate whole workflows (think of V7 Go, the new Microsoft SharePoint auto-fill columns etc.)  |
+| **AI Visual Data Maps**  | Interactive Map  | using dimensionality reduction and smart cluster titles to create interactive maps of any data (e.g. to understand your machine learning training data set, find patterns in result sets etc.)  |
 
 This is done using a combination of the following **techniques**:
-- custom developed document processing (see PDFerret, extracting information from documents like PDFs, xlsx, docx, CAD files etc. using Vision Language Models like Pixtral in combination with traditional tools like Tika and Grobid, ability to pre-process documents offline using LLMs to e.g. generate summaries and tags)
-- production-ready embedding generation pipeline (overcoming downsides of 'simple' embedding generation: generate multiple embeddings per document, add new embedding types at runtime without changing the database structure, generate hundreds of millions of embeddings efficiently)
-- adaptability to any data structure or even existing OpenSearch / ElasticSearch indexes without reingestion of the data (using "Data Schemas", describing the structure and rendering of the data)
-- architecture to combine all state-of-the-art techniques for AI-based search plus agentic behavior in a clear and explainable data structure (tracking and making every step explainable and changable by the user: from vector search, over evaluating individual documents using LLMs, selecting the most relevant ones, iterating searches using agents to generating the final answer (editable by the user) including references)
-- GPU-accelerated generation of embedding maps using UMAP in milliseconds
-- mixed-language support, not just English (language-specific embedding models and prompts, settings for language of offline generated per-document summaries + metadata, mixed languages in tables e.g. to translate documents on-the-fly)
+- custom developed **document processing** (see PDFerret, extracting information from documents like PDFs, xlsx, docx, CAD files etc. using Vision Language Models like Pixtral in combination with traditional tools like Tika and Grobid, ability to pre-process documents offline using LLMs to e.g. generate summaries and tags)
+- production-ready **embedding generation pipeline** (overcoming downsides of 'simple' embedding generation: generate multiple embeddings per document, add new embedding types at runtime without changing the database structure, generate hundreds of millions of embeddings efficiently)
+- **adaptability to any data structure** or even **existing OpenSearch / ElasticSearch indexes** without reingestion of the data (using "Data Schemas", describing the structure and rendering of the data)
+- architecture to combine all state-of-the-art techniques for **AI-based search** plus **agentic behavior** in a clear and explainable data structure (tracking and making every step explainable and changable by the user: from vector search, over evaluating individual documents using LLMs, selecting the most relevant ones, iterating searches using agents to generating the final answer (editable by the user) including references)
+- GPU-accelerated generation of **embedding maps using UMAP** in milliseconds
+- **mixed-language support**, not just English (language-specific embedding models and prompts, settings for language of offline generated per-document summaries + metadata, mixed languages in tables e.g. to translate documents on-the-fly)
 
 **Main features:**
 - ingest data, convert it to embeddings and index it automatically
@@ -36,7 +39,23 @@ This is done using a combination of the following **techniques**:
 
 ### Screenshots and Videos
 
-![Quiddity InsightHub demo Charity Annual Reports Summary.png](screenshots/Quiddity InsightHub demo Charity Annual Reports Summary.png)
+<img width="700" alt="summaries" src="https://github.com/user-attachments/assets/053023bc-c7b3-452c-9eac-324b1e4fcac5" />
+
+<img width="700" alt="screenshot_smart_tables" src="https://github.com/user-attachments/assets/c519ee6f-b727-452c-9cd6-17f62a7b5366" />
+
+<img width="700" alt="screenshot_map_mxene" src="https://github.com/user-attachments/assets/e18afb1f-cada-47f5-9b91-bf6d7aeb37a6" />
+
+Video: Answer question about documents
+
+https://github.com/user-attachments/assets/cca50a83-ad02-4037-804a-c68a78fcf749
+
+Video: Generate visual maps
+
+https://github.com/user-attachments/assets/07db5549-c205-4c26-926e-48ea2b41a3d6
+
+Video: Find similar documents
+
+https://github.com/user-attachments/assets/376f4bcf-38b1-4fb0-afd9-9561e25114a1
 
 ## Status and Security
 
@@ -111,3 +130,9 @@ pre-commit usage is recommended. To install it run `pip install pre-commit` and 
 - Parts that need to be improved the most (especially before any public deployment):
   - [ ] User registration: currently, no e-mail verification is set up and access rights are not really managed.
   - many more...
+ 
+## License
+
+This project is under Apache 2.0 License.
+
+
