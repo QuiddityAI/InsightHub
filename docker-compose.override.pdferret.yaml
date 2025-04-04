@@ -9,7 +9,6 @@ services:
       - 8.8.8.8
       - 4.4.4.4
     environment:
-      - PDFERRET_GROBID_URL=http://grobid:8070
       - PDFERRET_TIKA_SERVER_URL=http://tika:9998
       - LLMONKEY_GROQ_API_KEY=${LLMONKEY_GROQ_API_KEY}
       - LLMONKEY_OPENAI_API_KEY=${LLMONKEY_OPENAI_API_KEY}
@@ -21,22 +20,7 @@ services:
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
 
-
   tika :
-    image: apache/tika:3.0.0.0-full
+    image: apache/tika:3.1.0.0-full
     # ports:  # expose port outside of this virtual network
     #   - "9998:9998"
-
-  grobid:
-    image: grobid/grobid:latest-develop
-    init: true
-    # ports:  # expose port outside of this virtual network
-    #   - "127.0.0.1:8070:8070"
-    #   - "127.0.0.1:8071:8071"
-    environment:
-      - grobid__3rdparty__pdf2xml__memory__limit__mb=8000
-    deploy:
-      resources:
-        limits:
-          cpus: "8"
-          memory: "10000mb"
