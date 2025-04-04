@@ -36,7 +36,7 @@ This is done using a combination of the following **techniques**:
 
 ### Screenshots and Videos
 
-TODO
+![Quiddity InsightHub demo Charity Annual Reports Summary.png](screenshots/Quiddity InsightHub demo Charity Annual Reports Summary.png)
 
 ## Status and Security
 
