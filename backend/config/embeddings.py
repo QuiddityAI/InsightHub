@@ -15,7 +15,7 @@ def get_local_emb_litellm_kwargs(model: str) -> dict:
     if model_str is None:
         raise ValueError(f"Model {model} not present in infinity")
     api_base = os.getenv("LOCAL_MODEL_SERVER_URL", "http://infinity-model-server:55181")
-    return dict(model=model_str, api_base=api_base)
+    return dict(model=model_str, api_base=api_base, api_key="no_api_key")
 
 
 def get_hosted_emb_litellm_kwargs(model: str) -> dict:
