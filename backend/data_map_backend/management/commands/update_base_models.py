@@ -159,9 +159,14 @@ class Command(BaseCommand):
             "generic_data_non-english",
         ]
         default_schemas = DatasetSchema.objects.filter(name__in=default_schemas_names)
+        user = User.objects.filter(username="admin@example.com").first() or User.objects.first()
+        if not user:
+            logging.error(f"--- User does not exist")
+            return
         try:
             org = Organization.objects.create(name="Quiddity", is_public=True)
             org.schemas_for_user_created_datasets.set(default_schemas)
+            org.members.set([user])
             org.save()
         except Exception as e:
             logging.error(f"--- Error creating organization: {e}")
