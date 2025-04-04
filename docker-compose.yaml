@@ -112,7 +112,7 @@ services:
     restart: unless-stopped
 
   infinity-model-server:
-    image: michaelf34/infinity:latest
+    image: michaelf34/infinity:latest-cpu
     volumes:
       - infinity_model_cache:/app/.cache
     # ports:  # expose port outside of this virtual network

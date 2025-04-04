@@ -15,6 +15,7 @@ services:
     #   - "127.0.0.1:55180:55180"
 
   infinity-model-server:
+    image: michaelf34/infinity:latest
     deploy:
       resources:
         reservations:
