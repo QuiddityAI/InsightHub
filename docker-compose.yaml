@@ -28,6 +28,8 @@ services:
       - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-admin}
       - OPENSEARCH_USERNAME=admin
       - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      # More env variables are taken from the .env file that is copied into the container.
+      # Changing variables there will require a rebuild of the container!
 
   webserver:
     image: visual_data_map/webserver

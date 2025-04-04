@@ -227,28 +227,11 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:55140",
-    "http://home-server:55140",
     "http://localhost:55440",
-    "http://home-server:55440",
     "http://localhost:55441",
-    "http://home-server:55441",
-    "http://luminosus-server-new.dynv6.net:55140",
-    "http://luminosus-server-new.dynv6.net:55441",
-    "http://www.luminosus.org:55440",
-    "http://www.luminosus.org:55140",
-    "https://bondiq.absclust.com",
-    "https://v2.absclust.com",
-    "https://feldberg.absclust.com",
-    "https://bondiq.quiddityai.com",
-    "https://v2.quiddityai.com",
-    "https://feldberg.quiddityai.com",
-    "https://bondiq.quiddity-ai.com",
-    "https://v2.quiddity-ai.com",
-    "https://feldberg.quiddity-ai.com",
-    "https://tenders.absclust.com",
-    "https://tenders.quiddityai.com",
-    "https://tenders.enda.eu",
 ]
+
+CSRF_TRUSTED_ORIGINS += os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
 
 
 JAZZMIN_SETTINGS = {
