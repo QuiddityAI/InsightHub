@@ -11,7 +11,7 @@ import weaviate
 
 if sys.platform == "darwin":
     # Macbook
-    data_root = Path("/Users/tim/vector-search/pubmed_embeddings/")
+    data_root = Path("/Users/user/vector-search/pubmed_embeddings/")
 else:
     # Desktop
     data_root = Path("/data/pubmed_embeddings/")
