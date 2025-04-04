@@ -1,6 +1,17 @@
-.env file in the root of this repo with the following variables:
+Create a .env file in the root of this repo with the following variables:
 
+(The first two sections are required, it is also advised to add at least
+one LLM provider API key (check default model), the rest is optional)
+
+# --------------------- Required: General -------------------------
+
+# specify docker-compose files to use (see Readme):
+COMPOSE_FILE=docker-compose-staging.yaml:docker-compose.override.gpu.yaml
+
+# used to decide for local embedding server or remote provider in some cases:
 GPU_IS_AVAILABLE=False
+
+# --------------------- Required: General: Default Users and Passwords -------------------------
 
 # change the default superuser credentials:
 DJANGO_SUPERUSER_USERNAME=?
@@ -9,18 +20,10 @@ DJANGO_SUPERUSER_PASSWORD=?
 
 BACKEND_AUTHENTICATION_SECRET= generate any random secret
 
-BING_SEARCH_V7_SUBSCRIPTION_KEY=?
-BING_SEARCH_V7_ENDPOINT=?
-
-SEMANTIC_SCHOLAR_API_KEY=?
-
-COHERE_API_KEY=?
-
+POSTGRES_PASSWORD= generate any random password
 OPENSEARCH_INITIAL_ADMIN_PASSWORD= specify a default username for the database connection
 
-COMPOSE_PROFILES=  # add https_proxy to also start the SWAG reverse proxy
-SERVER_URL= e.g. something.absclust.com
-SSL_CERT_EMAIL= email to notify about SSL certificate expiration
+# --------------------- Data Storage -------------------------
 
 optionally, store data in local folder instead of /data:
 Add this to the docker compose ovveride file:
@@ -30,6 +33,14 @@ services:
       - "${DATA_PATH:-/data}:/data"
 And this env variable:
 DATA_PATH=./data
+
+# --------------------- Network Setup: HTTPS -------------------------
+
+COMPOSE_PROFILES=  # add https_proxy to also start the SWAG reverse proxy
+SERVER_URL= e.g. something.absclust.com
+SSL_CERT_EMAIL= email to notify about SSL certificate expiration
+
+# --------------------- Network Setup: Optional Port Exposure -------------------------
 
 optionally, set IP where the containers should be available (e.g. 127.0.0.1 or 0.0.0.0) and
   port that is exposed outside the docker network:
@@ -47,20 +58,11 @@ POSTGRES_EXPOSED_PORT=5432
 OPENSEARCH_DASHBOARD_EXPOSED_IP=127.0.0.1
 OPENSEARCH_DASHBOARD_EXPOSED_PORT=5601
 
-optionally, specify different docker compose file:
-COMPOSE_FILE=docker-compose-staging.yaml:docker-compose.override.gpu.yaml
+# --------------------- Notifications -------------------------
 
 For Telegram notifier to work, following env vars must be set:
 TELEGRAM_TOKEN=
 TELEGRAM_CHAT_ID=
-
-# for website scraping with "UseScraper.com":
-USE_SCRAPER_API_KEY=
-
-LLMONKEY_OPENAI_API_KEY=
-LLMONKEY_GROQ_API_KEY=
-LLMONKEY_DEEPINFRA_API_KEY=
-LLMONKEY_COHERE_API_KEY=
 
 # for e-mail notifications e.g. on new items added to collections:
 NOTIFICATION_EMAIL_ADDRESS=
@@ -68,6 +70,11 @@ NOTIFICATION_EMAIL_SMTP_HOST=smtp.gmail.com
 NOTIFICATION_EMAIL_SMTP_PORT=465
 NOTIFICATION_EMAIL_SMTP_USER=
 NOTIFICATION_EMAIL_SMTP_PASSWORD=
+
+# --------------------- API Keys -------------------------
+
+# for website scraping with "UseScraper.com":
+USE_SCRAPER_API_KEY=
 
 # for LLM models using LLMonkey library:
 LLMONKEY_OPENAI_API_KEY=
@@ -79,3 +86,10 @@ LLMONKEY_MISTRAL_API_KEY=
 LLMONKEY_AZURE_OPENAI_URL=
 LLMONKEY_AZURE_INFERENCE_URL=
 LLMONKEY_AZURE_API_KEY=
+
+BING_SEARCH_V7_SUBSCRIPTION_KEY=?
+BING_SEARCH_V7_ENDPOINT=?
+
+SEMANTIC_SCHOLAR_API_KEY=?
+
+COHERE_API_KEY=?
