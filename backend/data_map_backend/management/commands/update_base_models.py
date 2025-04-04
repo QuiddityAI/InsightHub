@@ -158,7 +158,7 @@ class Command(BaseCommand):
             "filesystem_file_english",
             "generic_data_non-english",
         ]
-        default_schemas = DatasetSchema.objects.filter(name__in=default_schemas_names)
+        default_schemas = DatasetSchema.objects.filter(identifier__in=default_schemas_names)
         user = User.objects.filter(username="admin@example.com").first() or User.objects.first()
         if not user:
             logging.error(f"--- User does not exist")
