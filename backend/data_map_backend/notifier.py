@@ -3,6 +3,10 @@ import os
 
 import requests
 
+WORDS_IN_USERNAMES_TO_EXCLUDE_FOR_NOTIFICATIONS = os.environ.get(
+    "WORDS_IN_USERNAMES_TO_EXCLUDE_FOR_NOTIFICATIONS", ""
+).split(",")
+
 
 class BaseNotifier:
     def __init__(self, name) -> None:
@@ -12,9 +16,13 @@ class BaseNotifier:
         raise NotImplementedError()
 
     def send(self, kind, message, user=None):
-        if user and (user.is_staff or "remondis" in user.email):
+        if user and user.is_staff:
             # not logging staff actions for now
             return
+        for word in WORDS_IN_USERNAMES_TO_EXCLUDE_FOR_NOTIFICATIONS:
+            if user and word in user.email:
+                # not logging user actions for now
+                return
         prfx = kind + ": \n"
         if self.name:
             prfx += self.name + ", "
