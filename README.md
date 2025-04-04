@@ -27,6 +27,7 @@ In total, the project can provide value e.g. in a controlled environment like an
 - install docker >= v24.0 (and nvidia-docker if an Nvidia GPU is available, test the GPU setup with a simple container)
 - check out the git repository
 - create a `.env` file according to the variables listed in [required_environment_variables.txt](required_environment_variables.txt)
+- add `docker-compose.override.pdferret.yaml` to your `COMPOSE_FILE` env variable (colon separated) if you want to be able to upload and parse PDF files (and other documents)
 - run `docker compose up -d`
 - go to `localhost:55140` and log in with e-mail `admin@example.com` and password `admin` (if not changed using env variables)
 - visit the admin interface using the top right user menu and the "database" icon for more settings
