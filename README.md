@@ -29,9 +29,9 @@ This is done using a combination of the following **techniques**:
 -> a "funnel" from massive data amounts to a curated set of items with extracted information
 
 **Tested Use Cases:**
-- AbsClust: paper search engine for 100M+ scientific papers [v2.absclust.com](v2.absclust.com)
+- AbsClust: paper search engine for 100M+ scientific papers [v2.absclust.com](https://v2.absclust.com)
 - enterprise knowledge management: tested with an international company for thousands of documents, including technical drawings and project plans in English and German
-- tender search platform: cooperation with IT agency to build a platform to search and curate public tenders in Germany [tenders.enda.eu](tenders.enda.eu)
+- tender search platform: cooperation with IT agency to build a platform to search and curate public tenders in Germany [tenders.enda.eu](https://tenders.enda.eu)
 - e-commerce product search engine: prototype to search for product using natural language and showing results on a visual map
 - perplexity-like internet search and summaries
 - web page scraping and information extraction for lead generation, job search, real estate property evaluation etc. in a tabular interface
