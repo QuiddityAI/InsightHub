@@ -59,12 +59,12 @@ https://github.com/user-attachments/assets/376f4bcf-38b1-4fb0-afd9-9561e25114a1
 
 ## Status and Security
 
-**Status:** The InsightHub works and when configured correctly, it can provide value in a real life setting.
-But the project and codebase is still in alpha stage, i.e. not everything is properly documented, some features might not work as expected or are not even implemented.
+**Status:** The InsightHub is functional and when configured correctly, it can provide value in a real life setting.
+But the project and codebase are still in alpha stage, i.e. not everything is properly documented, some features might not work as expected or are not even implemented.
 
-**Maintenance:** The project is not maintened actively at the moment. Let us know if you are interested in maintaining it or paying for maintenance.
+**Maintenance:** The project is not actively maintained at the moment. Let us know if you are interested in maintaining it or paying for maintenance / us it for your company.
 
-**Security:** Currently, the system is not meant for production use. There are several major security issues with the current set up, e.g. using the vite and Django development webservers instead of a production server like gunicorn. Even though the databases are not exposed to the outside, the connections should not use default passwords as currently. Lastly, the API does not use authentication for every endpoint yet, and even the endpoints that use it are not tested for security.
+**Security:** Currently, the system is not meant for production use. There are several major security issues with the current set up, e.g. using the vite and Django development webservers instead of a production server like gunicorn. The API does not use authentication for every endpoint yet, and even the endpoints that use it are not tested for security.
 
 In total, the project can provide value e.g. in a controlled environment like an intranet, and many issues can be solved rather easily, but it should not be used exposed to the internet and with confidential data at the moment.
 
@@ -76,7 +76,7 @@ In total, the project can provide value e.g. in a controlled environment like an
 - add `docker-compose.override.pdferret.yaml` to your `COMPOSE_FILE` env variable (colon separated) if you want to be able to upload and parse PDF files (and other documents)
 - run `docker compose up -d`
 - go to `localhost:55140` and log in with e-mail `admin@example.com` and password `admin` (if not changed using env variables)
-- visit the admin interface using the top right user menu and the "database" icon for more settings
+- visit the Django admin interface (using the top right user menu and the "database" icon) for more settings
 
 ### Things to try after initial installation
 
@@ -130,9 +130,7 @@ pre-commit usage is recommended. To install it run `pip install pre-commit` and 
 - Parts that need to be improved the most (especially before any public deployment):
   - [ ] User registration: currently, no e-mail verification is set up and access rights are not really managed.
   - many more...
- 
+
 ## License
 
 This project is under Apache 2.0 License.
-
-
