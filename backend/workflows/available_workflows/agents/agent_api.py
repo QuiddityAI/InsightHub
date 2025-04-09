@@ -148,8 +148,8 @@ class QuiddityAgentAPI:
         return column
 
     def create_column(
-        self, expression: str, name: str, module="llm", dspy_model: type[dspy.Module] | None = None
-    ) -> CollectionColumn:
+        self, expression: str, name: str, module="llm", dspy_model: type[dspy.Module] | None = None,
+    dspy_model_parameters={}) -> CollectionColumn:
         column = CollectionColumn.objects.create(
             collection=self.collection,
             name=name,
@@ -166,6 +166,7 @@ class QuiddityAgentAPI:
                 "model": get_default_model("medium").__class__.__name__,
                 "language": self.settings.result_language,
                 "dspy_model": dspy_model.__name__ if dspy_model else None,
+                "dspy_model_parameters": dspy_model_parameters,
             },
             auto_run_for_candidates=True,  # set this to run this column for all search results
         )

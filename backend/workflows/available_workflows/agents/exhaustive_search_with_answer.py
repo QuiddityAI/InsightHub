@@ -52,13 +52,15 @@ class ExtractorSignature(dspy.Signature):
 
 @register_dspy_model
 class LongTextExtractor(dspy.Module):
-    def __init__(self):
+    """This model is used to extract information from long text."""
+    def __init__(self, chunks_field: str):
         self.extractor = dspy.Predict(ExtractorSignature)
+        self.chunks_field = chunks_field
 
     def forward(self, column: CollectionColumn, input_data: dict) -> str:
         facts = []
         max_retries = 3
-        for chunk in input_data["full_text_chunks"]:
+        for chunk in input_data[self.chunks_field]:
             if not chunk["text"]:
                 continue
             if len(chunk["text"]) > 5000:
@@ -129,10 +131,20 @@ class ExhaustiveSearchWithAnswerWorkflow(WorkflowBase):
         needs_opt_in=False,
     )
 
+    def _get_chunks_field_name(self, dataset) -> str:
+        fields = dataset.schema.object_fields.all()
+        chunk_fields = [f for f in fields if f.field_type == 'CHUNK']
+        if not chunk_fields:
+            raise ValueError("No chunk fields found in the dataset")
+        if len(chunk_fields) > 1:
+            raise ValueError("Multiple chunk fields found in the dataset")
+        return chunk_fields[0].identifier
+
     def run(self, collection: DataCollection, settings: CreateCollectionSettings, user: User) -> None:
         assert settings.user_input is not None
 
         dataset = Dataset.objects.get(id=settings.dataset_id)
+        chunks_field = self._get_chunks_field_name(dataset)
         total_items: int = dataset.item_count or 100  # type: ignore
         # set parameters for the exhaustive search based on the dataset size
         params_per_size = {  # TODO: for small dataset use true exhaustive search
@@ -167,7 +179,8 @@ class ExhaustiveSearchWithAnswerWorkflow(WorkflowBase):
             cell_task_params = column_task_gen(task=settings.user_input)
         collection.log_explanation(f"Applied task {cell_task_params.assistant_task} to the results...")
         info_column = api.create_column(
-            cell_task_params.assistant_task, cell_task_params.task_name, module="dspy", dspy_model=LongTextExtractor
+            cell_task_params.assistant_task, cell_task_params.task_name, module="dspy", dspy_model=LongTextExtractor,
+            dspy_model_parameters={"chunks_field": chunks_field},
         )
         all_found_items: list[CollectionItem] = collection.items.all()  # type: ignore
         api.execute_column(info_column, all_found_items)

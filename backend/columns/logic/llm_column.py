@@ -104,6 +104,7 @@ def generate_custom_prompt_response(
 def generate_dspy_cell_data(input_data: dict, column: CollectionColumn, user_id: int) -> CellData:
     default_model = get_default_model("medium").__class__.__name__
     model_name = column.parameters.get("model") or default_model
+    dspy_model_parameters = column.parameters.get("dspy_model_parameters") or {}
 
     cell_data = CellData(
         changed_at=timezone.now().isoformat(),
@@ -130,7 +131,7 @@ def generate_dspy_cell_data(input_data: dict, column: CollectionColumn, user_id:
         cell_data.value = "Specified model not found"
         return cell_data
     with dspy.context(lm=dspy.LM(**model.to_litellm())):
-        cell_data.value = dspy_model()(column, input_data)
+        cell_data.value = dspy_model(**dspy_model_parameters)(column, input_data)
     return cell_data
 
 
