@@ -3,8 +3,8 @@ services:
 
   pdferret:
     image: quiddityai/pdferret:v1.0.0
-    # ports:  # expose port outside of this virtual network
-    #   - "127.0.0.1:58080:80"
+    ports:  # expose port outside of this virtual network
+      - "127.0.0.1:58081:80"
     dns:
       - 8.8.8.8
       - 4.4.4.4
@@ -20,7 +20,12 @@ services:
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
 
+
   tika :
     image: apache/tika:3.1.0.0-full
     # ports:  # expose port outside of this virtual network
     #   - "9998:9998"
+
+networks:
+  visualdatamapnetwork:
+    external: true
