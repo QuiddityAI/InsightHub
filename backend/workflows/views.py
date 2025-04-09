@@ -3,8 +3,6 @@ import json
 from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
-# need to be loaded somewhere (after Django apps where loaded, therfore not in __init__.py)
-import workflows.available_workflows.agent_workflows
 import workflows.available_workflows.base_workflows
 import workflows.available_workflows.map_workflows
 import workflows.available_workflows.question_workflows
@@ -13,6 +11,13 @@ from data_map_backend.models import DataCollection, Dataset, User
 from data_map_backend.notifier import default_notifier
 from data_map_backend.schemas import CollectionIdentifier
 from data_map_backend.serializers import CollectionSerializer
+
+# need to be loaded somewhere (after Django apps where loaded, therfore not in __init__.py)
+from workflows.available_workflows.agents import (
+    exhaustive_search,
+    exhaustive_search_with_answer,
+    research_agent,
+)
 from workflows.logic import create_collection_using_workflow, workflows_by_id
 from workflows.schemas import (
     AvailableWorkflowsPaylaod,

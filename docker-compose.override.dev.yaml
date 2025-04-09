@@ -1,0 +1,20 @@
+services:
+  backend:
+    image: visual_data_map/backend_dev
+    volumes:
+      - ./:/source_code/
+    build:
+      context: ./
+      dockerfile: ./docker/backend_dev.Dockerfile
+    environment:
+     - QUIDDITY_DEBUG=1
+     - PYTHONHOME=${DOCKER_PYTHONHOME}
+    ports:
+      - 30001:30001 # debugger
+  webserver:
+    image: visual_data_map/webserver_dev
+    volumes:
+      - ./:/source_code/
+    build:
+      context: ./frontend
+      dockerfile: ../docker/webserver_dev.Dockerfile

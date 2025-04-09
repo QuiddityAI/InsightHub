@@ -69,8 +69,7 @@ def get_clip_image_embeddings(image_paths: list[str], model_name: str) -> list[l
 
 def add_e5_prefix(texts: list[str], prefix: str, max_text_length: int = 2000):
     # e5 supports 512 tokens ~ 2000 characters
-    prefix = prefix or "query:"
-    # alternative: "passage: " for documents meant for retrieval
+    prefix = prefix or ""
     texts = [prefix + " " + t[:max_text_length] for t in texts]
     return texts
 

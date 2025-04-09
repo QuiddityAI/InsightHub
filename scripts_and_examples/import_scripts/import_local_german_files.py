@@ -213,9 +213,9 @@ def get_parent_folders(folder) -> list:
 
 if __name__ == "__main__":
     try:
-        # import_files("/data/remondis/", 98, 500)
-        # import_files("/home/tim/test_folder/", 111, 10)
-        import_files("/data/remondis/", 111, 500)
+        # import_files("/data/your_data/", 98, 500)
+        # import_files("/home/user/test_folder/", 111, 10)
+        import_files("/data/your_data/", 111, 500)
     finally:
         with open(f"import_log_{time.strftime('%Y%m%d_%H%M%S')}.csv", "w") as f:
             writer = csv.writer(f)

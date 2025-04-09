@@ -84,6 +84,6 @@ class ShowAllWorkflow(WorkflowBase):
             ranking_settings=settings.ranking_settings,
             candidates_per_step=10,
         )
-        create_and_run_search_task(collection, search_task, user.id, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user, is_new_collection=True)  # type: ignore
         collection.agent_is_running = False
         collection.save()

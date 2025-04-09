@@ -12,6 +12,7 @@ import Badge from 'primevue/badge';
 import Message from 'primevue/message';
 import ProgressBar from 'primevue/progressbar';
 import Checkbox from 'primevue/checkbox';
+import InputText from 'primevue/inputtext';
 
 import CollectionItem from "../collections/CollectionItem.vue";
 import SelectCollection from '../collections/SelectCollection.vue';
@@ -34,6 +35,7 @@ export default {
   data() {
     return {
       preselected_import_converter: null,
+      groups_string: "",
     }
   },
   computed: {
@@ -42,6 +44,7 @@ export default {
   },
   mounted() {
     this.preselected_import_converter = this.dataset.schema.applicable_import_converters.length ? this.dataset.schema.applicable_import_converters[0] : null
+    this.groups_string = this.dataset.is_available_to_groups.join(", ")
     this.get_dataset_additional_info()
   },
   watch: {
@@ -72,6 +75,7 @@ export default {
         updates: {
           is_public: that.dataset.is_public,
           is_organization_wide: that.dataset.is_organization_wide,
+          is_available_to_groups: that.groups_string.split(",").map(x => x.trim()),
         },
       }
       httpClient.post(`/org/data_map/change_dataset`, body)
@@ -184,15 +188,21 @@ export default {
         <div>
 
         </div>
-        <div class="flex flex-col gap-2">
-          <label class="flex items-center" v-if="appState.user.is_staff || dataset.is_public">
+        <div class="flex flex-col gap-2 w-full">
+          <label class="flex items-center gap-2" v-if="appState.user.is_staff || dataset.is_public">
             <input type="checkbox" v-model="dataset.is_public" :disabled="!dataset.admins?.includes(appState.user.id) || !appState.user.is_staff">
-            <span class="ml-2 text-sm text-gray-600">Public for everyone on the internet {{ !appState.user.is_staff ? '(can only be changed by staff)': '' }}</span>
+            <span class="text-sm text-gray-600">Public for everyone on the internet {{ !appState.user.is_staff ? '(can only be changed by staff)': '' }}</span>
           </label>
-          <label class="flex items-center" v-if="!appState.organization.is_public">
+          <label class="flex items-center gap-2" v-if="!appState.organization.is_public">
             <input type="checkbox" v-model="dataset.is_organization_wide" :disabled="!dataset.admins?.includes(appState.user.id)">
-            <span class="ml-2 text-sm text-gray-600">Available to other organization members</span>
+            <span class="text-sm text-gray-600">Available to all organization members</span>
           </label>
+          <div class="flex items-center gap-2 h-6" v-if="!appState.organization.is_public">
+            <span class="text-sm text-gray-600">Groups that have access (comma-separated):</span>
+            <InputText type="text" class="flex-1 text-sm text-gray-600"
+              v-model="groups_string" :disabled="!dataset.admins?.includes(appState.user.id)"></InputText>
+            <Button @click="update_dataset" class="ml-2" label="Save Groups" size="small"></Button>
+          </div>
         </div>
       </div>
 

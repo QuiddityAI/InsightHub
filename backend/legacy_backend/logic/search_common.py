@@ -3,7 +3,7 @@ import json
 import logging
 import math
 from functools import lru_cache
-from typing import Iterable
+from typing import Iterable, Literal
 
 import cachetools.func
 import numpy as np
@@ -352,7 +352,7 @@ def get_fulltext_search_results(
     return items, total_matches
 
 
-def get_suitable_generator(dataset, vector_field: str):
+def get_suitable_generator(dataset, vector_field: str, mode: Literal["ingest", "search"] = "ingest"):
     generators = Generator.objects.all()
     field = dataset.schema.object_fields[vector_field]
     embedding_space_identifier = (
@@ -378,11 +378,11 @@ def get_suitable_generator(dataset, vector_field: str):
         and not (suitable_generator and suitable_generator.is_preferred_for_search)
     ):
         generator_function = get_generator_function_from_field(
-            dataset.schema.object_fields[vector_field], always_return_single_value_per_item=True
+            dataset.schema.object_fields[vector_field], always_return_single_value_per_item=True, mode=mode
         )
     else:
         generator_function = get_generator_function(
-            suitable_generator.module, suitable_generator.default_parameters or {}, False
+            suitable_generator.module, suitable_generator.default_parameters or {}, False, mode=mode
         )
     return generator_function
 
@@ -403,7 +403,7 @@ def get_vector_search_results(
     positive_query_vector = None
     negative_query_vector = None
     if query.positive_query_str or query.negative_query_str:
-        generator_function = get_suitable_generator(dataset, vector_field)
+        generator_function = get_suitable_generator(dataset, vector_field, mode="search")
         if not generator_function:
             return {}
         if query.positive_query_str:
@@ -885,7 +885,7 @@ def get_document_details_by_id(
         )
 
     if get_new_full_text_chunks:
-        generator_function = get_suitable_generator(dataset, chunk_vector_field_name)
+        generator_function = get_suitable_generator(dataset, chunk_vector_field_name, mode="search")
         assert generator_function is not None and isinstance(top_n_full_text_chunks, int)
         query_vector = generator_function([[query]])[0]
         score_threshold = get_field_similarity_threshold(chunk_vector_field, input_is_image=False)

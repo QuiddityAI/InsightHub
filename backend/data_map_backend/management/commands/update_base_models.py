@@ -7,11 +7,14 @@ from django.core.serializers.python import Deserializer
 from django.utils.dateparse import parse_datetime
 
 from data_map_backend.models import (
+    Dataset,
     DatasetSchema,
     EmbeddingSpace,
     ExportConverter,
     Generator,
     ImportConverter,
+    Organization,
+    User,
 )
 from data_map_backend.utils import DotDict
 
@@ -32,6 +35,9 @@ class Command(BaseCommand):
         self.load_model(ImportConverter, "import_converters")
         self.load_model(ExportConverter, "export_converters")
         self.load_dataset_schemas()
+        self.create_default_user()
+        self.create_default_organization()
+        self.create_default_dataset()
 
     def load_model(self, model_class, sub_path):
         logging.warning(f"--- Loading model '{model_class.__name__}'")
@@ -102,13 +108,91 @@ class Command(BaseCommand):
                 obj.applicable_import_converters.set(definition.applicable_import_converters)
                 obj.applicable_export_converters.set(definition.applicable_export_converters)
                 for field in definition.object_fields:
-                    field["generator"] = (
-                        Generator.objects.get(pk=field["generator"]) if field["generator"] is not None else None
-                    )
-                    field["embedding_space"] = (
-                        EmbeddingSpace.objects.get(pk=field["embedding_space"])
-                        if field["embedding_space"] is not None
-                        else None
-                    )
+                    try:
+                        field["generator"] = (
+                            Generator.objects.get(pk=field["generator"]) if field["generator"] is not None else None
+                        )
+                    except Generator.DoesNotExist as e:
+                        logging.error(f"Generator with pk {field['generator']} does not exist")
+                        raise e
+                    try:
+                        field["embedding_space"] = (
+                            EmbeddingSpace.objects.get(pk=field["embedding_space"])
+                            if field["embedding_space"] is not None
+                            else None
+                        )
+                    except EmbeddingSpace.DoesNotExist as e:
+                        logging.error(f"EmbeddingSpace with pk {field['embedding_space']} does not exist")
+                        raise e
                     obj.object_fields.create(**field)
                 obj.save()
+
+    def create_default_user(self):
+        if User.objects.all().count() > 0:
+            logging.warning(f"--- A user already exists, skipping creating a default one")
+            return
+        logging.warning(f"--- Creating default user")
+        username = os.getenv("DJANGO_SUPERUSER_USERNAME")
+        email = os.getenv("DJANGO_SUPERUSER_EMAIL")
+        password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+        if not username or not email or not password:
+            logging.error(
+                f"--- DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL and DJANGO_SUPERUSER_PASSWORD must be set"
+            )
+            return
+        try:
+            User.objects.create_superuser(username, email, password)
+        except Exception as e:
+            logging.error(f"--- Error creating superuser: {e}")
+        logging.warning(f"--- Default user {username}, e-mail {email} created")
+
+    def create_default_organization(self):
+        if Organization.objects.all().count() > 0:
+            logging.warning(f"--- An organization already exists, skipping creating a default one")
+            return
+        logging.warning(f"--- Creating default organization")
+
+        default_schemas_names = [
+            "scientific_articles",
+            "filesystem_file_german",
+            "filesystem_file_english",
+            "generic_data_non-english",
+        ]
+        default_schemas = DatasetSchema.objects.filter(identifier__in=default_schemas_names)
+        user = User.objects.filter(username="admin@example.com").first() or User.objects.first()
+        if not user:
+            logging.error(f"--- User does not exist")
+            return
+        try:
+            org = Organization.objects.create(name="Quiddity", is_public=True)
+            org.schemas_for_user_created_datasets.set(default_schemas)
+            org.members.set([user])
+            org.save()
+        except Exception as e:
+            logging.error(f"--- Error creating organization: {e}")
+        logging.warning(f"--- Default organization 'Quiddity' created")
+
+    def create_default_dataset(self):
+        if Dataset.objects.all().count() > 0:
+            logging.warning(f"--- A dataset already exists, skipping creating a default one")
+            return
+        logging.warning(f"--- Creating default dataset")
+        schema = DatasetSchema.objects.filter(identifier="filesystem_file_english").first()
+        if not schema:
+            logging.error(f"--- Dataset schema 'filesystem_file_english' does not exist")
+            return
+        organization = Organization.objects.first()
+        if not organization:
+            logging.error(f"--- Organization does not exist")
+            return
+        user = User.objects.filter(username="admin@example.com").first() or User.objects.first()
+        if not user:
+            logging.error(f"--- User does not exist")
+            return
+        try:
+            dataset = Dataset.objects.create(name="My Dataset", schema=schema, organization=organization)
+            dataset.admins.set([user])
+            dataset.save()
+        except Exception as e:
+            logging.error(f"--- Error creating dataset: {e}")
+        logging.warning(f"--- Default dataset created")

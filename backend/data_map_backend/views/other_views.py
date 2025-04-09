@@ -111,9 +111,7 @@ def set_user_preferences_route(request):
 def server_shows_all_organizations_and_products(hostname: str) -> bool:
     # restrict some domains to certain organizations:
     hostnames_that_show_all_orgs = [
-        "home-server:55140",
-        "feldberg.absclust.com",
-        "backend-staging-at:55125",
+        "demo.quiddityai.com",
     ]
     hostnames_that_show_all_orgs += os.environ.get("HOSTNAMES_THAT_SHOW_ALL_ORGANIZATIONS", "").split(",")
 
@@ -125,8 +123,9 @@ def get_available_organizations(request):
     if request.method != "POST":
         return HttpResponse(status=405)
 
-    if request.user.is_authenticated:
-        organizations = Organization.objects.filter(Q(is_public=True) | Q(members=request.user))
+    user: User = request.user
+    if user.is_authenticated:
+        organizations = Organization.objects.filter(Q(is_public=True) | Q(members=user))
     else:
         organizations = Organization.objects.filter(is_public=True)
     organizations = organizations.distinct().order_by("name")
@@ -138,21 +137,27 @@ def get_available_organizations(request):
     serialized_data = OrganizationSerializer(organizations, many=True).data
 
     # replace list of all datasets of each organization with list of available datasets:
+    groups = user.groups.values_list("name", flat=True)
     for organization, serialized in zip(organizations, serialized_data):
-        is_member = request.user.is_authenticated and organization.members.filter(id=request.user.id).exists()
-        serialized["is_member"] = is_member
-        if is_member:
+        is_org_member = user.is_authenticated and organization.members.filter(id=user.id).exists()
+        has_permission_filter = Q(is_public=True)
+        if is_org_member:
+            has_permission_filter |= Q(is_organization_wide=True)
+            has_permission_filter |= Q(admins=user)
+            for group in groups:
+                has_permission_filter |= Q(is_available_to_groups__contains=[group])
+
             serialized["datasets"] = [
                 dataset.id
-                for dataset in Dataset.objects.filter(
-                    Q(organization_id=organization.id)
-                    & (Q(is_public=True) | Q(is_organization_wide=True) | Q(admins=request.user))
-                )
+                for dataset in Dataset.objects.filter(Q(organization_id=organization.id) & has_permission_filter)
             ]
         else:
+            for group in groups:
+                has_permission_filter |= Q(is_available_to_groups__contains=[group])
+
             serialized["datasets"] = [
                 dataset.id
-                for dataset in Dataset.objects.filter(Q(organization_id=organization.id) & Q(is_public=True))
+                for dataset in Dataset.objects.filter(Q(organization_id=organization.id) & has_permission_filter)
             ]
 
     result = json.dumps(serialized_data)
@@ -173,11 +178,8 @@ def get_dataset(request):
 
     dataset: Dataset = get_dataset_cached(dataset_id)
 
-    if not is_from_backend(request) and not dataset.is_public:
-        is_member = request.user.is_authenticated and dataset.organization.members.filter(id=request.user.id).exists()
-        is_admin = request.user.is_authenticated and dataset.admins.filter(id=request.user.id).exists()
-        if not ((dataset.is_organization_wide and is_member) or is_admin):
-            return HttpResponse(status=401)
+    if not is_from_backend(request) and not dataset.user_has_permission(request.user):
+        return HttpResponse(status=401)
 
     dataset_dict = get_serialized_dataset_cached(dataset_id, additional_fields)
 
@@ -388,7 +390,7 @@ def change_dataset(request):
     if not dataset.admins.filter(id=request.user.id).exists():
         return HttpResponse(status=401)
 
-    allowed_fields = ["name", "short_description", "is_public", "is_organization_wide"]
+    allowed_fields = ["name", "short_description", "is_public", "is_organization_wide", "is_available_to_groups"]
     for key in updates.keys():
         if key not in allowed_fields:
             return HttpResponse(status=400)

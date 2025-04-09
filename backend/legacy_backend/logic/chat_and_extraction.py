@@ -68,7 +68,7 @@ def get_item_question_context(
                 text += f"Full Text:\n"
                 text += f"{full_text}\n"
             else:
-                generator_function = get_suitable_generator(dataset, chunk_vector_field_name)
+                generator_function = get_suitable_generator(dataset, chunk_vector_field_name, mode="search")
                 assert generator_function is not None
                 # TODO: the query vector should ideally be only generated once for all items
                 query_vector = generator_function([[question]])[0]

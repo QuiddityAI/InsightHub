@@ -1,0 +1,31 @@
+
+services:
+
+  pdferret:
+    image: quiddityai/pdferret:v1.0.0
+    ports:  # expose port outside of this virtual network
+      - "127.0.0.1:58081:80"
+    dns:
+      - 8.8.8.8
+      - 4.4.4.4
+    environment:
+      - PDFERRET_TIKA_SERVER_URL=http://tika:9998
+      - LLMONKEY_GROQ_API_KEY=${LLMONKEY_GROQ_API_KEY}
+      - LLMONKEY_OPENAI_API_KEY=${LLMONKEY_OPENAI_API_KEY}
+      - LLMONKEY_DEEPINFRA_API_KEY=${LLMONKEY_DEEPINFRA_API_KEY}
+      - LLMONKEY_COHERE_API_KEY=${LLMONKEY_COHERE_API_KEY}
+      - LLMONKEY_MISTRAL_API_KEY=${LLMONKEY_MISTRAL_API_KEY}
+      - LLMONKEY_NEBIUS_API_KEY=${LLMONKEY_NEBIUS_API_KEY}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
+    volumes:
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
+
+
+  tika :
+    image: apache/tika:3.1.0.0-full
+    # ports:  # expose port outside of this virtual network
+    #   - "9998:9998"
+
+networks:
+  visualdatamapnetwork:
+    external: true

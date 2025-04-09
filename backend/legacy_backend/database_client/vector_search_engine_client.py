@@ -577,6 +577,7 @@ class VectorSearchEngineClient(object):
         score_threshold: float | None = None,
         limit: int = 5,
         min_results: int = 2,
+        with_vectors: bool = False,
     ) -> list:
         if len(query_vector) > 0 and np.isnan(query_vector).any():
             logging.warning("Query vector is NaN, returning empty list")
@@ -588,7 +589,7 @@ class VectorSearchEngineClient(object):
             query_vector=NamedVector(name=vector_field, vector=query_vector),
             query_filter=Filter(must=[FieldCondition(key="parent_id", match=models.MatchValue(value=parent_id))]),
             with_payload=["array_index"],
-            with_vectors=False,
+            with_vectors=with_vectors,
             limit=limit,
             score_threshold=None,
         )

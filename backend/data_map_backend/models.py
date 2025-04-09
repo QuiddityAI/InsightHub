@@ -70,7 +70,13 @@ class SourcePlugin(models.TextChoices):
     KLEINANZEIGEN = "KLEINANZEIGEN", "Kleinanzeigen Search"
 
 
-class User(AbstractUser):
+class ModelTypedImplicitIdField:
+
+    if TYPE_CHECKING:
+        id = models.BigAutoField(primary_key=True)
+
+
+class User(AbstractUser, ModelTypedImplicitIdField):
     # assume user didn't accept cookies by default
     accepted_cookies = models.BooleanField(verbose_name="Cookies accepted", default=False, blank=False, null=False)
 
@@ -108,12 +114,6 @@ class User(AbstractUser):
 
     def __str__(self):
         return "{}".format(self.email)
-
-
-class ModelTypedImplicitIdField:
-
-    if TYPE_CHECKING:
-        id = models.BigAutoField(primary_key=True)
 
 
 class EmbeddingSpace(models.Model):
@@ -801,6 +801,13 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
         blank=False,
         null=False,
     )
+    is_available_to_groups = models.JSONField(
+        verbose_name="Is available to groups",
+        help_text="List of group names that can access this dataset",
+        default=list,  # is a JSON list instead of a Relation to be able to specify groups that don't exist yet, e.g. for Active Directory
+        blank=False,
+        null=False,
+    )
     admins = models.ManyToManyField(
         verbose_name="Admins",
         help_text="Users who can change the dataset and upload items to it",
@@ -839,6 +846,14 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
         help_text="Prompts for filter detection, start each with '# language: de / en / ...'. Overrides those of the schema.",
         blank=True,
         null=True,
+    )
+
+    languages = models.JSONField(
+        verbose_name="Languages",
+        help_text="Languages of the dataset, e.g. ['en', 'de']",
+        default=list,
+        blank=True,
+        null=False,
     )
 
     history = HistoricalRecords()
@@ -915,6 +930,25 @@ class Dataset(models.Model, ModelTypedImplicitIdField):
     def delete_with_content(self):
         self.delete_content()
         self.delete()
+
+    def user_has_permission(self, user: User) -> bool:
+        if self.is_public:
+            return True
+
+        is_admin = user.is_authenticated and self.admins.filter(id=user.id).exists()
+        if is_admin:
+            return True
+
+        user_groups = user.groups.values_list("name", flat=True)
+        is_group_member = user.is_authenticated and any(g in user_groups for g in self.is_available_to_groups)
+        if is_group_member:
+            return True
+
+        is_org_member = user.is_authenticated and self.organization.members.filter(id=user.id).exists()
+        if self.is_organization_wide and is_org_member:
+            return True
+
+        return False
 
     def __str__(self):
         return f"{self.name}"

@@ -186,7 +186,7 @@ def run_periodic_searches(dataset_id: int, item_ids: list[str], restrict_to_coll
         # could be a problem if many items are inserted in multiple insert_many calls
         run_search_task(
             task,
-            task.collection.created_by.id,  # type: ignore
+            task.collection.created_by,  # type: ignore
             set_agent_step=False,
             from_ui=False,
             restrict_to_item_ids=item_ids,

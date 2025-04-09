@@ -84,7 +84,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
             collection.agent_is_running = False
             collection.save()
 
-        create_and_run_search_task(collection, search_task, user.id, after_columns_were_processed, is_new_collection=True)  # type: ignore
+        create_and_run_search_task(collection, search_task, user, after_columns_were_processed, is_new_collection=True)  # type: ignore
         collection.current_agent_step = "Waiting for search results and columns..."
         collection.save(update_fields=["current_agent_step"])
 

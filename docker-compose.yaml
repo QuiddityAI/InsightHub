@@ -1,12 +1,14 @@
 services:
+
+  # --------------- Custom Quiddity Containers ---------------
+
   backend:
     image: visual_data_map/backend
     build:
       context: ./
       dockerfile: ./docker/backend.Dockerfile
     volumes:
-      - ./:/source_code/
-      - "${DATA_PATH:-/data}:/data"
+      - quiddity_data:/data
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55125:55125"
@@ -19,53 +21,36 @@ services:
       - search_engine_host=opensearch
       - GPU_UTILITY_SERVER_URL=http://gpu-utility-server:55180
       - PDFERRET_BASE_URL=http://pdferret:80
-      - PDFERRET_GROBID_URL=http://grobid:8070
-      - PDFERRET_TIKA_SERVER_URL=http://tika:9998
-      - TIKA_SERVER_ENDPOINT=http://tika:9998
-      - TIKA_CLIENT_ONLY=True
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
+      - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-admin@example.com}
+      - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
+      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-admin}
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      # More env variables are taken from the .env file that is copied into the container.
+      # Changing variables there will require a rebuild of the container!
+
   webserver:
     image: visual_data_map/webserver
     build:
       context: ./frontend
       dockerfile: ../docker/webserver.Dockerfile
-    profiles:
-      - development_webserver  # the container only starts if env variable COMPOSE_PROFILES=development_server
-    volumes:
-      - ./:/source_code/
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
       - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
       - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
     environment:
       - backend_host=http://backend:55125
-  webserver-prod:
-    image: visual_data_map/webserver_prod
-    build:
-      context: ./frontend
-      dockerfile: ../docker/webserver_prod.Dockerfile
-    profiles:
-      - production_webserver  # the container only starts if env variable COMPOSE_PROFILES=production_server
-    volumes:
-      - ./:/source_code/
-    ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
-      - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"
-    environment:
-      - backend_host=http://backend:55125
-  gpu-utility-server:
-    image: visual_data_map/gpu_utility_server
-    build:
-      context: ./
-      dockerfile: ./docker/gpu_utility_server.Dockerfile
-    # ports:  # expose port outside of this virtual network
-    #   - "127.0.0.1:55180:55180"
+
+  # --------------- 3rd Party Containers ---------------
+
   qdrant:
     image: "qdrant/qdrant:latest"
     volumes:
       - qdrant_storage:/qdrant/storage
-    ports:  # expose port outside of this virtual network
-      - "${QDRANT_EXPOSED_IP:-127.0.0.1}:${QDRANT_EXPOSED_PORT:-6333}:6333"  # needed for qdrant web dashboard
+    # ports:  # expose port outside of this virtual network
+    #   - "${QDRANT_EXPOSED_IP:-127.0.0.1}:${QDRANT_EXPOSED_PORT:-6333}:6333"  # needed for qdrant web dashboard
+
   opensearch:
     image: "opensearchproject/opensearch:latest"
     volumes:
@@ -79,22 +64,24 @@ services:
     environment:
       - discovery.type=single-node
       - http.port=9200
-      - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358,http://tim-desktop:1358
+      - http.cors.allow-origin=http://localhost:1358,http://127.0.0.1:1358
       - http.cors.enabled=true
       - http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization
       - http.cors.allow-credentials=true
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+
   postgres:
     image: postgres:16
+    command: -c 'max_connections=500'
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=visdatamap
-    ports:  # expose port outside of this virtual network
-      - "127.0.0.1:${POSTGRES_EXPOSED_PORT:-5432}:5432"
-    # expose port to be able to use export scripts from outside the virtual network
+    # ports:  # expose port outside of this virtual network
+    #   - "127.0.0.1:${POSTGRES_EXPOSED_PORT:-5432}:5432"
+
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:latest
     ports:  # exposed to the outside, remember to use a secure password
@@ -128,7 +115,7 @@ services:
     restart: unless-stopped
 
   infinity-model-server:
-    image: michaelf34/infinity:latest
+    image: michaelf34/infinity:latest-cpu
     volumes:
       - infinity_model_cache:/app/.cache
     # ports:  # expose port outside of this virtual network
@@ -146,13 +133,12 @@ services:
       - --port
       - "55181"
 
-
 volumes:
+  quiddity_data:
   qdrant_storage:
   opensearch_data:
   postgres_data:
   infinity_model_cache:
-  swag_data:
 networks:
   default:
     name: visualdatamapnetwork

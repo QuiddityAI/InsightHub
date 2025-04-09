@@ -15,7 +15,9 @@ from data_map_backend.models import (
     Dataset,
     FieldType,
     SearchTask,
+    User,
 )
+from data_map_backend.views.other_views import get_dataset_cached
 from legacy_backend.logic.search import get_search_results
 from search.logic.approve_items_and_exit_search import (
     approve_using_comparison,
@@ -57,10 +59,12 @@ search_query_predictor = dspy.Predict(SearchQuerySignature)
 def create_and_run_search_task(
     collection: DataCollection,
     search_task: SearchTaskSettings,
-    user_id: int,
+    user: User,
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
-) -> list[CollectionItem]:
+    return_task_object: bool = False,
+    set_agent_step: bool = True,
+) -> list[CollectionItem] | tuple[list[CollectionItem], SearchTask]:
     """
     Executes a search task on a given data collection.
 
@@ -74,9 +78,9 @@ def create_and_run_search_task(
     Returns:
         list[CollectionItem]: A list of collection items resulting from the search task.
     """
-
-    collection.current_agent_step = "Running search task..."
-    collection.save(update_fields=["current_agent_step"])
+    if set_agent_step:
+        collection.current_agent_step = "Running search task..."
+        collection.save(update_fields=["current_agent_step"])
 
     keyword_query = search_task.user_input
 
@@ -138,12 +142,12 @@ def create_and_run_search_task(
         limit=search_task.candidates_per_step,  # uses max_candidates if not from_ui
         # external_input
         keyword_query=keyword_query,
-        vector=None,
+        vector=search_task.vector,
         filters=search_task.filters or [],
         ranking_settings=search_task.ranking_settings or {},
         retrieval_mode=search_task.retrieval_mode or "hybrid",
         auto_relax_query=search_task.auto_relax_query,
-        use_reranking=True,
+        use_reranking=search_task.use_reranking,
         # similar_to_item
         reference_item_id=search_task.reference_item_id,
         reference_dataset_id=search_task.reference_dataset_id,
@@ -159,19 +163,22 @@ def create_and_run_search_task(
         retrieval_parameters=parameters.dict(),
         last_retrieval_status=status.dict(),
     )
-    return run_search_task(
+    items = run_search_task(
         task,
-        user_id,
+        user,
         after_columns_were_processed=after_columns_were_processed,
         is_new_collection=is_new_collection,
         set_agent_step=False,
         from_ui=True,
     )
+    if return_task_object:
+        return items, task
+    return items
 
 
 def run_search_task(
     task: SearchTask,
-    user_id: int,
+    user: User,
     after_columns_were_processed: Callable | None = None,
     is_new_collection: bool = False,
     set_agent_step: bool = True,
@@ -194,6 +201,11 @@ def run_search_task(
         collection.save(update_fields=["most_recent_search_task", "search_task_navigation_history"])
 
     def after_columns_were_processed_internal(new_items):
+        # `auto_approve_items` basically only sets positive relevance from the column, i.e.
+        # it assumes that the relevance before it was called is always 0,
+        #  which is not necessarily true, since for multiple calls of search the item could have been approved before
+        for item in new_items:
+            item.relevance = 0
         if search_task.auto_approve:
             auto_approve_items(
                 collection, new_items, search_task.max_selections, search_task.forced_selections, from_ui
@@ -219,14 +231,14 @@ def run_search_task(
             after_columns_were_processed(new_items)
 
     new_items = add_items_from_task_and_run_columns(
-        task, user_id, True, is_new_collection, from_ui, restrict_to_item_ids, after_columns_were_processed_internal
+        task, user, True, is_new_collection, from_ui, restrict_to_item_ids, after_columns_were_processed_internal
     )
     return new_items
 
 
 def add_items_from_task_and_run_columns(
     task: SearchTask,
-    user_id: int,
+    user: User,
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     from_ui: bool = True,
@@ -241,7 +253,7 @@ def add_items_from_task_and_run_columns(
         collection.save(update_fields=["filters"])
 
     new_items = add_items_from_task(
-        collection, task, ignore_last_retrieval, is_new_collection, from_ui, restrict_to_item_ids
+        collection, task, user, ignore_last_retrieval, is_new_collection, from_ui, restrict_to_item_ids
     )
 
     def in_thread():
@@ -252,7 +264,7 @@ def add_items_from_task_and_run_columns(
             items_to_process = new_items
         for column in collection.columns.filter(auto_run_for_candidates=True):
             assert isinstance(column, CollectionColumn)
-            process_cells_blocking(items_to_process, column, collection, user_id)
+            process_cells_blocking(items_to_process, column, collection, user.id)  # type: ignore
         if after_columns_were_processed:
             after_columns_were_processed(new_items)
 
@@ -264,6 +276,7 @@ def add_items_from_task_and_run_columns(
 def add_items_from_task(
     collection: DataCollection,
     task: SearchTask,
+    user: User,
     ignore_last_retrieval: bool = True,
     is_new_collection: bool = False,
     from_ui: bool = True,
@@ -271,6 +284,12 @@ def add_items_from_task(
 ) -> list[CollectionItem]:
     parameters = RetrievalParameters(**task.retrieval_parameters)
     status = RetrievalStatus(**task.last_retrieval_status)
+
+    if not get_dataset_cached(parameters.dataset_id).user_has_permission(user):
+        logging.warning(
+            f"User {user.id}: {user.email} doesn't have permission to access dataset {parameters.dataset_id}"
+        )
+        return []
 
     if not from_ui:
         # directly retrieve all items
@@ -411,6 +430,7 @@ def _convert_retrieval_parameters_to_old_format(
             "max_sub_items_per_item": 1,
             "return_highlights": True,
             "use_bolding_in_highlights": True,
+            "vector": retrieval_parameters.vector,
             # TODO: add support for vector search, similar to collection
         }
     }

@@ -1,15 +1,31 @@
 FROM --platform=$BUILDPLATFORM python:3.11 AS python_env
 
-# install uv package manager:
-COPY --from=ghcr.io/astral-sh/uv:0.6.5 /uv /uvx /bin/
+# install system dependencies:
+RUN apt-get update && apt-get install -y build-essential python3-dev \
+libldap2-dev libsasl2-dev slapd ldap-utils
 
-# for django-auth-ldap:
-RUN apt update && apt install -y libldap2-dev libsasl2-dev libssl-dev
+# install UV python package manager:
+COPY --from=ghcr.io/astral-sh/uv:0.6.10 /uv /uvx /bin/
 
-# setup user and working directory:
 RUN useradd -ms /bin/bash appuser
 WORKDIR /app
 RUN chown -R appuser /app
+RUN mkdir -p /data && chown -R appuser /data
+RUN mkdir -p /data/quiddity_data && chown -R appuser /data/quiddity_data
+
+# setup python environment and install packages:
+COPY pyproject.toml uv.lock README.md /app/
+RUN uv sync --frozen
+
+# copy source code:
+COPY .env credentials.json /app/
+COPY backend /app/backend
+
+# copy requirements and install them:
+COPY uv.lock /app
+COPY pyproject.toml /app
+COPY README.md /app
+RUN uv sync --frozen
 
 # copy requirements and install them:
 COPY uv.lock /app
@@ -24,10 +40,7 @@ HEALTHCHECK --interval=30s --timeout=3s \
 
 EXPOSE 55125
 USER appuser
-
-# in this development container, the source code is mounted from the host:
-WORKDIR /source_code/backend
-
-# we are still using the virtual environment in the container created by uv before:
-ENTRYPOINT ["/app/.venv/bin/python3.11"]
-CMD ["manage.py", "runserver", "--insecure", "0.0.0.0:55125"]
+WORKDIR /app/backend
+# run migrations, import base objects + create Django superuser using environment variables and start app:
+ENTRYPOINT ["sh", "-c"]
+CMD ["uv run manage.py migrate && uv run manage.py update_base_models && uv run manage.py runserver --insecure 0.0.0.0:55125"]

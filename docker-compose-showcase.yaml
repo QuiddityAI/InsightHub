@@ -6,8 +6,7 @@ services:
       context: ./
       dockerfile: ./docker/backend.Dockerfile
     volumes:
-      - ./:/source_code/
-      - "${DATA_PATH:-/datia}:/data"
+      - quiddity_data:/data
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
     environment:
       - data_backend_host=http://localhost:55125
@@ -18,19 +17,15 @@ services:
       - vector_database_host=qdrant
       - search_engine_host=opensearch
       - PDFERRET_BASE_URL=http://pdferret:80
-      - PDFERRET_GROBID_URL=http://grobid:8070
-      - PDFERRET_TIKA_SERVER_URL=http://tika:9998
-      - TIKA_SERVER_ENDPOINT=http://tika:9998
-      - TIKA_CLIENT_ONLY=True
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
-  webserver-prod-showcase:
-    image: visual_data_map/webserver_prod
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+  webserver-showcase:
+    image: visual_data_map/webserver
     build:
       context: ./frontend
-      dockerfile: ../docker/webserver_prod.Dockerfile
-    volumes:
-      - ./:/source_code/
+      dockerfile: ../docker/webserver.Dockerfile
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
       - "${WEBSERVER_STAGING_EXPOSED_IP_V4:-127.0.0.1}:55441:55140"
       - "${WEBSERVER_STAGING_EXPOSED_IP_V6:-[::1]}:55441:55140"
@@ -45,8 +40,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=visdatamap
 volumes:
-  qdrant_storage:
-  opensearch_data:
+  quiddity_data:
   postgres_data:
 networks:
   default:
