@@ -273,8 +273,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:55441",
 ]
 
-CSRF_TRUSTED_ORIGINS += os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
-
+extra_origins = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+if extra_origins:
+    CSRF_TRUSTED_ORIGINS += extra_origins
 
 JAZZMIN_SETTINGS = {
     # Hide these models when generating side menu (e.g auth.user)
