@@ -97,18 +97,18 @@ class QuiddityAgentAPI:
             new_items, task = create_and_run_search_task(
                 self.collection,
                 search_task,
-                self.user.id,  # type: ignore
+                self.user,
                 return_task_object=True,
                 set_agent_step=False,
                 after_columns_were_processed=self.make_finish_running_handler(),
-            )  # type: ignore
+            )
             while self._is_running:
                 time.sleep(0.1)
         else:
             new_items, task = create_and_run_search_task(
                 self.collection,
                 search_task,
-                self.user.id,  # type: ignore
+                self.user,
                 set_agent_step=False,
                 return_task_object=True,
             )
@@ -119,7 +119,7 @@ class QuiddityAgentAPI:
             if process_columns:
                 items = add_items_from_task_and_run_columns(
                     task,
-                    self.user.id,
+                    self.user,
                     ignore_last_retrieval=False,
                     # this is needed to duplicate logic of run_search_task to auto approve items
                     after_columns_were_processed=self.make_finish_running_handler(
@@ -130,6 +130,7 @@ class QuiddityAgentAPI:
                 items = add_items_from_task(
                     self.collection,
                     task,
+                    self.user,
                     ignore_last_retrieval=False,
                 )
             return items
