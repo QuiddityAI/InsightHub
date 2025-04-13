@@ -1,0 +1,67 @@
+site_name: Quiddity InsightHub Docs
+site_url: https://docs.quiddityai.com
+theme:
+  name: material
+  palette:
+     # Palette toggle for light mode
+    - scheme: default
+      toggle:
+        icon: material/lightbulb 
+        name: Switch to dark mode
+      primary: deep purple
+      accent: blue
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+      primary: deep purple
+      accent: blue
+  font:
+    text: Roboto
+  logo: img/logo.png
+  favicon: img/favicon.png
+  features:
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.code.select
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tabs
+
+
+copyright: Copyright &copy; 2020 - 2025 Quiddity Technologies
+repo_url: https://github.com/quiddityai/insighthub
+
+
+extra:
+  homepage: https://docs.quiddityai.com
+  social:
+  - icon: fontawesome/brands/github 
+    link: https://github.com/quiddityai
+  - icon: fontawesome/brands/linkedin
+    link: https://www.linkedin.com/company/quiddityai/ 
+  - icon : fontawesome/solid/house
+    link: https://quiddityai.com
+
+markdown_extensions:
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - footnotes
+  - attr_list
+  - md_in_html
+  - pymdownx.blocks.caption
+  - pymdownx.betterem
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - awesome-nav
+  - search

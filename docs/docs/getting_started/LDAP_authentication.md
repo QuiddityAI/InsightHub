@@ -1,0 +1,4 @@
+LDAP (Lightweight Directory Access Protocol) is a protocol used to access and manage directory information services over a network. It is commonly used for authentication and authorization in enterprise environments.
+In the context of the InsightHub, LDAP authentication allows users to log in using their existing credentials from an LDAP server, such as Active Directory or OpenLDAP. This can simplify user management and enhance security by centralizing authentication.
+## Setting Up LDAP Authentication
+To set up LDAP authentication in the InsightHub, the `backend/project_base/settings.py` file needs to be configured with the appropriate LDAP settings (they are not exposed via env variables yet). The setup depends on the specific LDAP server being used, see [documentation for the `django-auth-ldap` package for more details](https://github.com/django-auth-ldap/django-auth-ldap).
