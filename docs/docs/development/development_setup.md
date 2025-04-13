@@ -7,21 +7,21 @@ Using the `docker-compose.override.dev.yaml` file, you get containers that are c
 
 ## Backend
 
-Since development setup is using host python environment, you need to install the required packages in your host environment. To do this  
+Since development setup is using host python environment, you need to install the required packages in your host environment. To do this
 
 1. Install [uv](https://github.com/astral-sh/uv)
-2. Create local install of python in the project root (py3.11 here for example)
+2. Create local install of Python in the project root (py3.11 here for example)
 `uv python install -i ./ 3.11`. This will create a directory like `cpython-3.11.11-linux-x86_64-gnu` in the project root.
 3. Install the required packages using uv:
 `uv sync --python cpython-3.11.11-linux-x86_64-gnu` (replace with the name of the directory created in the previous step)
-4. run the script `fix-python-install.sh cpython-3.11.11-linux-x86_64-gnu` that will fix the symlinks and update the PYTHONHOME environment to be used inside the docker container. 
+4. run the script `fix-python-install.sh cpython-3.11.11-linux-x86_64-gnu` that will fix the symlinks and update the PYTHONHOME environment to be used inside the docker container.
 
 This is necessary to set up correctly the host python environment inside the docker container.
 
  If your setup requires using docker with `sudo`, run `sudo -E docker compose up -d` instead. This important because docker-compose is mounting HOME directory in the containe to get access to gcloud credentials. If `sudo` is used without `-E`, the HOME directory will be different (`/root`) and the credentials will not be found.
 
 ### Debugging the backend
-The dev setup exposes debugpy on port 30001. You can attach a debugger using Python Debugger: Remote Attach configuration in VSCode. Make sure to correctly set pathMapping, so that VSCode can find the source code in the container. 
+The dev setup exposes debugpy on port 30001. You can attach a debugger using Python Debugger: Remote Attach configuration in VSCode. Make sure to correctly set pathMapping, so that VSCode can find the source code in the container.
 ```json
 ...
 "pathMappings": [
@@ -35,7 +35,7 @@ The dev setup exposes debugpy on port 30001. You can attach a debugger using Pyt
 
 ## Frontend
 
-The idea of mounting host folder is also used for the frontend. It is necessary to install the required packages in the host environment. To do this  
+The idea of mounting host folder is also used for the frontend. It is necessary to install the required packages in the host environment. To do this
 
 1. Make sure you have nodejs and npm installed on your host machine
 2. Install the required packages using npm:
