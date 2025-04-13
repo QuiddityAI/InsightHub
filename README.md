@@ -1,5 +1,13 @@
 # Quiddity InsightHub
 
+<div align="center">
+<p align="center">
+  <a href="https://quiddityai.com"><img src="https://raw.githubusercontent.com/quiddityAI/InsightHub/main/docs/docs/img/quiddity_logo_blue_pink.png" alt="Quiddity InsightHub"></a>
+</p>
+
+[Running app](https://v2.absclust.com/) — [Documentation](https://docs.quiddityai.com)
+</div>
+
 This is a Python-Django-backend, Vue-frontend tool to visualize, search, organize and extract data.
 
 As of April 2025, this is the **only open source (and even proprietary) tool** that combines:
