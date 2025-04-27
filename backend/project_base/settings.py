@@ -55,20 +55,6 @@ AUTH_LDAP_MIRROR_GROUPS = True
 # }
 
 
-def load_env_file():
-    with open("../.env", "r") as f:
-        for line in f:
-            if line.startswith("#"):
-                continue
-            if "=" not in line:
-                continue
-            key, value = line.strip().split("=")
-            os.environ[key] = value
-
-
-load_env_file()
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
