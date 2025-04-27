@@ -23,11 +23,17 @@ def get_hosted_emb_litellm_kwargs(model: str) -> dict:
     # also, EU hosting problem, we might want to always use local embeddings
     if model == "intfloat/multilingual-e5-large-instruct":
         return get_local_emb_litellm_kwargs(model)
+    for var_name in (var_names := ["DEEPINFRA_API_KEY", "LLMONKEY_DEEPINFRA_API_KEY"]):
+        api_key = os.getenv(var_name)
+        if api_key:
+            break
+    if not api_key:
+        raise ValueError(f"API key not found in env variables: {var_names}")
     kwargs = dict(
         model=f"openai/{model}",
         api_base="https://api.deepinfra.com/v1/openai",
         encoding_format="float",
-        api_key=os.environ.get("DEEPINFRA_API_KEY", "no_api_key"),
+        api_key=api_key,
     )
     return kwargs
 
