@@ -10,6 +10,7 @@ services:
     volumes:
       - quiddity_data:/data
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
+      - .env:/app/backend/.env
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55125:55125"
     environment:
