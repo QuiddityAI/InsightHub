@@ -141,6 +141,7 @@ def get_available_organizations(request):
     for organization, serialized in zip(organizations, serialized_data):
         is_org_member = user.is_authenticated and organization.members.filter(id=user.id).exists()
         has_permission_filter = Q(is_public=True)
+        serialized["is_member"] = is_org_member
         if is_org_member:
             has_permission_filter |= Q(is_organization_wide=True)
             has_permission_filter |= Q(admins=user)
