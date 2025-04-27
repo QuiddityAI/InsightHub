@@ -141,7 +141,9 @@ def _move_to_path_containing_md5(temp_path: str, filename: str, dataset_id: int)
     md5 = hashlib.md5(open(temp_path, "rb").read()).hexdigest()
     secure_name = secure_filename(filename)
     suffix = secure_name.split(".")[-1]
-    filename = secure_name[: -(len(suffix) + 1)] + f"_{md5}.{suffix}"
+    base_name = secure_name[: -len(suffix) - 1] if "." in secure_name else secure_name
+    base_name = base_name[:150]  # limit to 150 chars to prevent filename overflow
+    filename = base_name + f"_{md5}.{suffix}"
     sub_folder = f"{dataset_id}/{md5[:2]}"
     if not os.path.exists(f"{UPLOADED_FILES_FOLDER}/{sub_folder}"):
         os.makedirs(f"{UPLOADED_FILES_FOLDER}/{sub_folder}")
