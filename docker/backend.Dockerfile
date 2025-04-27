@@ -18,7 +18,7 @@ COPY pyproject.toml uv.lock README.md /app/
 RUN uv sync --frozen
 
 # copy source code:
-COPY .env credentials.json /app/
+COPY .env /app/
 COPY backend /app/backend
 
 # copy requirements and install them:
