@@ -35,7 +35,14 @@ def get_pipeline_steps(
                 or field.identifier in only_fields
                 or field.identifier in enabled_fields
             ):
-                dependencies: list[str] = field.source_fields
+                # we support dep: prefix to specify dependency-only fields,
+                # which are not passed to the generator function
+                # but are necessary for the generator function to be executed
+                dependencies: list[str] = (
+                    [f.replace("dep:", "") for f in field.source_fields]
+                    if isinstance(field.source_fields, list)
+                    else []
+                )
                 if field.generator and field.generator.requires_multiple_input_fields:
                     assert isinstance(field.source_fields, dict)
                     dependencies = list(field.source_fields.values())
@@ -58,7 +65,7 @@ def get_pipeline_steps(
                     required_fields |= set(field.source_fields.values())
                 else:
                     assert isinstance(field.source_fields, list)
-                    required_fields |= set(field.source_fields)
+                    required_fields |= set([f.replace("dep:", "") for f in field.source_fields])
                 potentially_changed_fields.add(field.identifier)
                 if field.generator and field.generator.returns_multiple_fields:
                     potentially_changed_fields |= set(field.generator_parameters.output_to_item_mapping.values())
@@ -102,7 +109,9 @@ def has_circular_dependency(dataset: dict) -> bool:
             if field.identifier in steps_added:
                 continue
             this_field_skipped = False
-            dependencies = field.source_fields
+            dependencies = (
+                [f.replace("dep:", "") for f in field.source_fields] if isinstance(field.source_fields, list) else []
+            )
             if field.generator and field.generator.requires_multiple_input_fields:
                 assert isinstance(field.source_fields, dict)
                 dependencies = list(field.source_fields.values())

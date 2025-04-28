@@ -697,7 +697,8 @@ class DatasetField(models.Model, ModelTypedImplicitIdField):
     generating_condition = models.TextField(verbose_name="Generating Condition", blank=True, null=True)
     source_fields = models.JSONField(
         verbose_name="Source Fields",
-        help_text="List of source field identifiers, or dict generator input -> source field",
+        help_text="List of source field identifiers, or dict generator input -> source field."
+        "Use prefix 'dep:' to indicate a dependency-only field, which is not passed to the generator function",
         default=list,
         blank=True,
         null=True,
