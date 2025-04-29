@@ -53,6 +53,7 @@ class ExtractorSignature(dspy.Signature):
 @register_dspy_model
 class LongTextExtractor(dspy.Module):
     """This model is used to extract information from long text."""
+
     def __init__(self, chunks_field: str):
         self.extractor = dspy.Predict(ExtractorSignature)
         self.chunks_field = chunks_field
@@ -133,7 +134,7 @@ class ExhaustiveSearchWithAnswerWorkflow(WorkflowBase):
 
     def _get_chunks_field_name(self, dataset) -> str:
         fields = dataset.schema.object_fields.all()
-        chunk_fields = [f for f in fields if f.field_type == 'CHUNK']
+        chunk_fields = [f for f in fields if f.field_type == "CHUNK"]
         if not chunk_fields:
             raise ValueError("No chunk fields found in the dataset")
         if len(chunk_fields) > 1:
@@ -179,8 +180,11 @@ class ExhaustiveSearchWithAnswerWorkflow(WorkflowBase):
             cell_task_params = column_task_gen(task=settings.user_input)
         collection.log_explanation(f"Applied task {cell_task_params.assistant_task} to the results...")
         info_column = api.create_column(
-            cell_task_params.assistant_task, cell_task_params.task_name, module="dspy", dspy_model=LongTextExtractor,
-            dspy_model_parameters={"chunks_field": chunks_field},
+            cell_task_params.assistant_task,
+            cell_task_params.task_name,
+            module="llm",
+            # module="dspy", dspy_model=LongTextExtractor,
+            # dspy_model_parameters={"chunks_field": chunks_field},
         )
         all_found_items: list[CollectionItem] = collection.items.all()  # type: ignore
         api.execute_column(info_column, all_found_items)
