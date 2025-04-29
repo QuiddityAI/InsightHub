@@ -101,5 +101,6 @@ BING_SEARCH_V7_SUBSCRIPTION_KEY=?
 BING_SEARCH_V7_ENDPOINT=?
 
 SEMANTIC_SCHOLAR_API_KEY=?
-
+# to enable reranking with Cohere:
+# will fallback to no reranking if not set
 COHERE_API_KEY=?

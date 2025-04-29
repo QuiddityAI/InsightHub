@@ -3,7 +3,7 @@ import box
 default_models = box.Box(
     {
         "small": "Mistral_Ministral8b",
-        "medium": "Mistral_Mistral_Large",
+        "medium": "Mistral_Mistral_Small",
         "large": "Mistral_Mistral_Large",
     }
 )
