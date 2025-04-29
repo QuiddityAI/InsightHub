@@ -139,7 +139,7 @@ class EmbeddingSpaceAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistor
 
 
 @admin.register(Generator)
-class GeneratorAdmin(DjangoQLSearchMixin, SimpleHistoryAdmin):
+class GeneratorAdmin(DjangoQLSearchMixin, DjangoObjectActions, SimpleHistoryAdmin):
     djangoql_completion_enabled_by_default = False  # make normal search the default
     list_display = ("identifier", "name", "embedding_space", "text_similarity_threshold", "image_similarity_threshold")
     list_display_links = ("identifier", "name")
