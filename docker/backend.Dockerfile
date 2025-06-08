@@ -21,18 +21,6 @@ RUN uv sync --frozen
 COPY .env /app/
 COPY backend /app/backend
 
-# copy requirements and install them:
-COPY uv.lock /app
-COPY pyproject.toml /app
-COPY README.md /app
-RUN uv sync --frozen
-
-# copy requirements and install them:
-COPY uv.lock /app
-COPY pyproject.toml /app
-COPY README.md /app
-RUN uv sync --frozen
-
 FROM python_env as backend
 
 HEALTHCHECK --interval=30s --timeout=3s \
