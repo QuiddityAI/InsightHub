@@ -1,0 +1,16 @@
+[Unit]
+Description=AbsClust Dev Docker Compose
+Requires=docker.service
+After=network.target docker.service pdferret.service
+Wants=pdferret.service
+
+[Service]
+User=absclust_user
+Group=absclust_user
+WorkingDirectory=/home/absclust_user/visual-data-map
+ExecStart=/usr/bin/docker compose up
+ExecStop=/usr/bin/docker compose down
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
