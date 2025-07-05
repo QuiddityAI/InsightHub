@@ -1,0 +1,35 @@
+[Unit]
+Description=AutoSSH Reverse Tunnel for AbsClust staging (port 55441)
+After=network.target
+
+[Service]
+# Run as the 'absclust_user' user and group
+User=absclust_user
+Group=absclust_user
+
+# Important: This tells autossh to not use a monitoring port,
+# but rely on SSH's ServerAlive options instead.
+# -N: Do not execute a remote command (essential for port forwarding)
+# -T: Disable pseudo-terminal allocation (good for non-interactive sessions)
+# -R: The reverse tunnel specification.
+#     Ensure [::1] (IPv6 loopback) is what you intend.
+#     For IPv4 loopback, use 127.0.0.1:55441.
+# -o ExitOnForwardFailure=yes: Important for reliability. If the tunnel fails to set up, exit so autossh retries.
+# -o ServerAliveInterval=60: How often (seconds) to send a null packet to the remote host.
+# -o ServerAliveCountMax=3: How many consecutive unresponsive intervals before disconnecting.
+ExecStart=/usr/bin/autossh -M 0 -N -T -R 55441:[::1]:55441 user@v2.absclust.com -o ExitOnForwardFailure=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=3
+
+# If autossh itself crashes or exits (e.g., due to an unrecoverable error),
+# systemd will restart it after a short delay.
+Restart=on-failure
+RestartSec=5s
+
+# Give autossh some time to gracefully shut down the SSH tunnel before being killed.
+TimeoutStopSec=30s
+
+# Type=simple is the default, but explicitly stating it can be good for clarity.
+# AutoSSH will be the main process.
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
