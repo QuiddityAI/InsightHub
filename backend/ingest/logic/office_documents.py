@@ -11,7 +11,8 @@ from requests import ReadTimeout
 from config.utils import get_default_model
 from data_map_backend.utils import DotDict
 from ingest.logic.common import UPLOADED_FILES_FOLDER, store_thumbnail
-from ingest.logic.pdferret_client import MetaInfo, extract_using_pdferret
+# from ingest.logic.pdferret_client import MetaInfo, extract_using_pdferret
+from ingest.logic.mistral_ocr_client import MetaInfo, extract_using_mistral
 from ingest.prompts import folder_summary_prompt
 from ingest.schemas import (
     AiFileProcessingInput,
@@ -34,13 +35,12 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
 
     def process_file_batch(batch: list[AiFileProcessingInput]):
         try:
-            parsed, failed = extract_using_pdferret(
+            parsed, failed = extract_using_mistral(
                 [f"{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}" for input_item in batch],
-                doc_lang=document_language,
             )
         except ReadTimeout:
-            logging.error("PDFerret timeout")
-            failed = [DotDict({"file": item.uploaded_file_path, "exc": "pdferret timeout"}) for item in batch]
+            logging.error("Mistral OCR timeout")
+            failed = [DotDict({"file": item.uploaded_file_path, "exc": "Mistral OCR timeout"}) for item in batch]
             parsed = [None] * len(batch)
         if failed:
             for failed_item in failed:
