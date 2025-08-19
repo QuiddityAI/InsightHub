@@ -1,0 +1,32 @@
+[
+{
+  "model": "data_map_backend.generator",
+  "pk": "e5_large_multilingual_instruct_text_embedding",
+  "fields": {
+    "name": "E5 Large Multilingual Instruct Text Embedding",
+    "description": "",
+    "created_at": "2025-04-27T13:30:07.648Z",
+    "changed_at": "2025-04-27T13:30:07.710Z",
+    "requires_context": false,
+    "requires_multiple_input_fields": false,
+    "returns_multiple_fields": false,
+    "module": "sentence_transformer",
+    "embedding_space": "e5_large_multilingual_instruct_embedding",
+    "is_preferred_for_search": false,
+    "default_parameters": {
+      "prefix": "",
+      "model_name": "intfloat/multilingual-e5-large-instruct",
+      "query_prefix": "Given a web search query, retrieve relevant passages that answer the query"
+    },
+    "parameter_description": "",
+    "input_type": "TEXT",
+    "input_is_array": false,
+    "input_description": "",
+    "output_type": "VECTOR",
+    "output_is_array": false,
+    "output_description": "",
+    "text_similarity_threshold": null,
+    "image_similarity_threshold": null
+  }
+}
+]
