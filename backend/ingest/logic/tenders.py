@@ -6,7 +6,7 @@ import dspy
 from ninja import Schema
 
 from columns.logic.website_scraping_column import scrape_website_plain
-from config.utils import get_default_dspy_llm
+from config.utils import get_default_dspy_llm_kwargs
 from data_map_backend.utils import DotDict
 
 
@@ -89,8 +89,8 @@ def enrich_tender(item: TenderInput) -> TenderEnrichmentOutput:
 def _summarize_tender_information(item: TenderInput, website_text: str | None = None) -> TenderEnrichmentOutput:
     if not item.description and not website_text:
         return TenderEnrichmentOutput(summary="", website_text="")
-    model = get_default_dspy_llm("tender_summary")
-    with dspy.context(lm=dspy.LM(**model.to_litellm())):
+    model_kwargs = get_default_dspy_llm_kwargs("tender_summary")
+    with dspy.context(lm=dspy.LM(**model_kwargs)):
         try:
             summary = tender_summary(
                 description=item.description[:10000] if item.description else "n/a",

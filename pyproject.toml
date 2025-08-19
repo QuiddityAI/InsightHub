@@ -67,6 +67,8 @@ dependencies = [
     "werkzeug",
     "numpy<2.0",
     "dspy",
+    "mistralai",
+    "pdf2image",
 ]
 name = "visual-data-map"
 version = "0.1.0"

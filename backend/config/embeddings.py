@@ -11,6 +11,7 @@ local_embedding_models = {
 
 
 def get_local_emb_litellm_kwargs(model: str) -> dict:
+    return get_hosted_emb_litellm_kwargs(model)
     model_str = local_embedding_models.get(model)
     if model_str is None:
         raise ValueError(f"Model {model} not present in infinity")

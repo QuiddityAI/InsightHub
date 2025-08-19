@@ -21,7 +21,7 @@ from columns.schemas import (
     ProcessColumnPayload,
     UpdateColumnConfig,
 )
-from config.utils import get_default_dspy_llm
+from config.utils import get_default_dspy_llm_kwargs
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
 from data_map_backend.notifier import default_notifier
 from data_map_backend.serializers import (
@@ -70,8 +70,8 @@ def add_column_route(request: HttpRequest, payload: ColumnConfig):
         return HttpResponse(status=400)
 
     if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
-        model = get_default_dspy_llm("column_language")
-        with dspy.context(lm=dspy.LM(**model.to_litellm())):
+        model_kwargs = get_default_dspy_llm_kwargs("column_language")
+        with dspy.context(lm=dspy.LM(**model_kwargs)):
             lang = column_language_predictor(user_question=payload.expression).language_code
         payload.parameters["language"] = lang
     else:
@@ -83,8 +83,8 @@ def add_column_route(request: HttpRequest, payload: ColumnConfig):
                 logging.error("No expression provided for LLM column.")
                 return HttpResponse(status=400)
             try:
-                model = get_default_dspy_llm("column_title")
-                with dspy.context(lm=dspy.LM(**model.to_litellm())):
+                model_kwargs = get_default_dspy_llm_kwargs("column_title")
+                with dspy.context(lm=dspy.LM(**model_kwargs)):
                     payload.name = title_predictor(user_question=payload.expression, target_language=lang).title
             except Exception as e:
                 payload.name = "Column"

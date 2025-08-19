@@ -7,7 +7,7 @@ import dspy
 from django.utils import timezone
 
 from columns.logic.process_column import process_cells_blocking
-from config.utils import get_default_dspy_llm
+from config.utils import get_default_dspy_llm_kwargs
 from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
@@ -91,9 +91,9 @@ def create_and_run_search_task(
 
         if search_task.user_input:
             collection.log_explanation("Use AI model to generate **suitable query**", save=False)
-            model = get_default_dspy_llm("search_query")
+            model_kwargs = get_default_dspy_llm_kwargs("search_query")
             try:
-                with dspy.context(lm=dspy.LM(**model.to_litellm())):
+                with dspy.context(lm=dspy.LM(**model_kwargs)):
                     keyword_query = (
                         search_query_predictor(
                             user_input=search_task.user_input, target_language=search_task.result_language or "en"

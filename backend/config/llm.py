@@ -1,22 +1,59 @@
+import os
 import box
+
+from llmonkey.llms.base_llm import BaseLLMModel
+from llmonkey.models import ModelConfig, ModelCapabilities, ModelLocation
+from llmonkey.providers import ModelProvider
+
+
+class Deepinfra_GPTOSS120b(BaseLLMModel):
+    @property
+    def provider(self):
+        return ModelProvider.deepinfra
+
+    @property
+    def config(self) -> ModelConfig:
+        return ModelConfig(
+            identifier="openai/gpt-oss-120b",
+            verbose_name="Deepinfra OpenAI GPT-OSS-120b",
+            description="gpt-oss-120b is an open-weight, 117B-parameter Mixture-of-Experts (MoE) language model from OpenAI designed for high-reasoning, agentic, and general-purpose production use cases. The model supports configurable reasoning depth, full chain-of-thought access, and native tool use, including function calling, browsing, and structured output generation.",
+            max_input_tokens=131072,
+            euro_per_1M_input_tokens=0.09,
+            euro_per_1M_output_tokens=0.45,
+            capabilities=[ModelCapabilities.chat],
+            location=ModelLocation.US,
+            parameters="120B",
+        )
+
+    def to_litellm(self) -> dict:
+        kwargs = super().to_litellm()
+        kwargs.update(
+            {
+                "reasoning_effort": "low",
+                "allowed_openai_params": ['reasoning_effort'],
+                "temperature": 0.1,
+            }
+        )
+        return kwargs
+
 
 default_models = box.Box(
     {
-        "small": "Mistral_Ministral8b",
-        "medium": "Mistral_Mistral_Small",
-        "large": "Mistral_Mistral_Large",
+        "small": "Deepinfra_GPTOSS120b",
+        "medium": "Deepinfra_GPTOSS120b",
+        "large": "Deepinfra_GPTOSS120b",
     }
 )
 
-
+# supports direct kwargs for litellm or llmonkey model name
 default_dspy_models = box.Box(
     {
-        "column_title": "Mistral_Ministral8b",
-        "column_language": "Mistral_Ministral3b",
-        "query_language": "Mistral_Ministral3b",
-        "doc_comparison": "Mistral_Mistral_Large",
-        "search_query": "Mistral_Mistral_Small",
-        "tender_summary": "Mistral_Mistral_Small",
+        "column_title": "Deepinfra_GPTOSS120b",
+        "column_language": "Deepinfra_GPTOSS120b",
+        "query_language": "Deepinfra_GPTOSS120b",
+        "doc_comparison": "Deepinfra_GPTOSS120b",
+        "search_query": "Deepinfra_GPTOSS120b",
+        "tender_summary": "Deepinfra_GPTOSS120b",
     }
 )
 
