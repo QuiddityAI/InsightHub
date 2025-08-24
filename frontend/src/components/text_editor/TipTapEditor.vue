@@ -1,14 +1,19 @@
 <script setup>
 import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
 import { Editor, EditorContent } from '@tiptap/vue-3'
+import { TableKit } from '@tiptap/extension-table'
 import TurndownService from 'turndown'
-import {marked} from "marked";
+import { marked } from "marked";
+import { Placeholder } from '@tiptap/extensions'
 
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 
 import ItemReferenceExtension from './item_reference_extension.js'
+import { tables } from 'joplin-turndown-plugin-gfm'
+import { httpClient } from "../../api/httpClient"
+
+
 
 const appState = useAppStateStore()
 
@@ -44,7 +49,8 @@ export default {
     return {
       editor: null,
       last_user_change: new Date(),
-    }
+      showPopup: false, // State for popup visibility
+    };
   },
 
   methods: {
@@ -72,9 +78,86 @@ export default {
       }
       const html = marked.parse(text)
       return html
-    }
-  },
+    },
+    async exportMarkdown() {
+      const markdownContent = this.modelValue;
 
+      // Replace references with actual names
+      const regex = /\[([0-9]+),\s([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})\]/g;
+      let match;
+      let updatedMarkdown = markdownContent;
+
+      while ((match = regex.exec(markdownContent)) !== null) {
+        const dataset_id = match[1];
+        const item_id = match[2];
+
+        try {
+          // Fetch the item details (simulate API call or use existing data)
+          const response = await httpClient.post("/data_backend/document/details_by_id", {
+            dataset_id,
+            item_id,
+            fields: ["title"], // Assuming "title" is the field containing the reference title
+          });
+
+          const itemTitle = response.data.title || "[Unknown Reference]";
+          updatedMarkdown = updatedMarkdown.replace(match[0], itemTitle);
+        } catch (error) {
+          console.error(`Failed to fetch details for [${dataset_id}, ${item_id}]`, error);
+          updatedMarkdown = updatedMarkdown.replace(match[0], "[Error Fetching Reference]");
+        }
+      }
+
+      // Export the updated markdown
+      const blob = new Blob([updatedMarkdown], { type: 'text/markdown;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'summary.md';
+      link.click();
+      URL.revokeObjectURL(url);
+    },
+    async copyInnerHtml() {
+      const htmlContent = this.editor.getHTML();
+
+      // Replace references with actual names
+      const regex = /<item-reference dataset_id="([0-9]+)" item_id="([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})" reference_idx="([0-9]+)" reference_title="([^"]+)"><\/item-reference>/g;
+      let match;
+      let updatedHtmlContent = htmlContent;
+
+      while ((match = regex.exec(htmlContent)) !== null) {
+        const dataset_id = match[1];
+        const item_id = match[2];
+
+        try {
+          // Fetch the item details (simulate API call or use existing data)
+          const response = await httpClient.post("/data_backend/document/details_by_id", {
+            dataset_id,
+            item_id,
+            fields: ["title"], // Assuming "title" is the field containing the reference title
+          });
+
+          const itemTitle = `[${response.data.title || "Unknown Reference"}]`;
+          updatedHtmlContent = updatedHtmlContent.replace(match[0], itemTitle);
+        } catch (error) {
+          console.error(`Failed to fetch details for [${dataset_id}, ${item_id}]`, error);
+          updatedHtmlContent = updatedHtmlContent.replace(match[0], "[Error Fetching Reference]");
+        }
+      }
+
+      try {
+        const blob = new Blob([updatedHtmlContent], { type: 'text/html' });
+        const clipboardItem = new ClipboardItem({ 'text/html': blob });
+        await navigator.clipboard.write([clipboardItem]);
+        console.log('Rich text content copied to clipboard');
+        this.showPopup = true; // Show popup
+        setTimeout(() => {
+          this.showPopup = false; // Hide popup after 2 seconds
+        }, 2000);
+      } catch (err) {
+        console.error('Could not copy text: ', err);
+      }
+    },
+  },
   watch: {
     modelValue(markdown) {
       if (new Date() - this.last_user_change < 200) {
@@ -94,6 +177,7 @@ export default {
     this.editor = new Editor({
       extensions: [
         StarterKit,
+        TableKit,
         Placeholder.configure({
           placeholder: 'No text yet …',
         }),
@@ -111,7 +195,8 @@ export default {
           const replacement = `[${match[1]}, ${match[2]}]`;
           text = text.replace(match[0], replacement);
         }
-        const markdown = new TurndownService({'headingStyle': 'atx'}).turndown(text)
+        const turndownService = new TurndownService({ 'headingStyle': 'atx' }).use(tables)
+        const markdown = turndownService.turndown(text)
         this.last_user_change = new Date()
         this.$emit('update:modelValue', markdown)
         this.$emit('change')
@@ -126,14 +211,20 @@ export default {
 </script>
 
 <template>
-  <editor-content :editor="editor" class="use-default-html-styles use-default-html-styles-large text-[14px]" spellcheck="false" />
+  <editor-content :editor="editor" class="use-default-html-styles use-default-html-styles-large text-[14px]"
+    spellcheck="false" />
+  <div class="flex gap-2 mt-2">
+    <button @click="exportMarkdown" class="export-button">Download</button>
+    <button @click="copyInnerHtml" class="export-button">Copy to clipboard</button>
+  </div>
+  <div v-if="showPopup" class="popup-notification">Copied to clipboard!</div>
 </template>
 
 <style lang="scss">
 /* Basic editor styles */
 
 .ProseMirror:focus {
-    outline: none;
+  outline: none;
 }
 
 .tiptap {
@@ -234,6 +325,49 @@ export default {
     float: left;
     height: 0;
     pointer-events: none;
+  }
+}
+
+.export-button {
+  margin-top: 0.1rem;
+  padding: 0.25rem 0.5rem;
+  background-color: white;
+  color: var(--black);
+  border: 1px solid gray;
+  /* Thin gray outline */
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.export-button:hover {
+  background-color: var(--gray-2);
+  border-color: var(--gray-3);
+}
+
+.popup-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  animation: fadeInOut 2.5s;
+}
+
+@keyframes fadeInOut {
+
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  10%,
+  90% {
+    opacity: 1;
   }
 }
 </style>

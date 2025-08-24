@@ -19,6 +19,9 @@ const toast = useToast()
 
 <script>
 
+
+let default_large_llm = null // will be set after fetching from backend
+
 export default {
   inject: ["eventBus"],
   props: ["collection_id", "class_name"],
@@ -28,46 +31,57 @@ export default {
       collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       writing_task_ids: [],
       quick_question_text: '',
-
-      templates: [
-        {
-          intent: 'Summarize the items',
-          name: 'Summary',
-          options: {
-            expression: 'Summarize the main points of the items in this collection.',
-            source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
-            model: 'Mistral_Mistral_Large',
-            use_all_items: true,
-          }
-        },
-        {
-          intent: 'Key Challenges',
-          name: 'Challenges',
-          options: {
-            expression: 'Summarize the key challenges mentioned in the items in this collection.',
-            source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
-            model: 'Mistral_Mistral_Large',
-            use_all_items: true,
-          }
-        },
-        {
-          intent: 'Possible Research Questions',
-          name: 'Research Questions',
-          options: {
-            expression: 'What are some possible research questions that come up when looking at the items in this collection? Use bullet points in markdown syntax.',
-            source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
-            model: 'Mistral_Mistral_Large',
-            use_all_items: true,
-          }
-        },
-      ]
+      templates: [],
+      default_models: {},
     }
   },
   computed: {
     ...mapStores(useMapStateStore),
     ...mapStores(useAppStateStore),
   },
-  mounted() {
+  async mounted() {
+    // Fetch default models from backend
+    try {
+      const response = await httpClient.get('/api/v1/write/get_default_models')
+      this.default_models = response.data
+      default_large_llm = this.default_models.large
+    } catch (e) {
+      // fallback if backend fails
+      default_large_llm = 'Mistral_Mistral_Large'
+    }
+    // Now set up templates using the fetched model
+    this.templates = [
+      {
+        intent: 'Summarize the items',
+        name: 'Summary',
+        options: {
+          expression: 'Summarize the main points of the items in this collection.',
+          source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
+          model: default_large_llm,
+          use_all_items: true,
+        }
+      },
+      {
+        intent: 'Key Challenges',
+        name: 'Challenges',
+        options: {
+          expression: 'Summarize the key challenges mentioned in the items in this collection.',
+          source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
+          model: default_large_llm,
+          use_all_items: true,
+        }
+      },
+      {
+        intent: 'Possible Research Questions',
+        name: 'Research Questions',
+        options: {
+          expression: 'What are some possible research questions that come up when looking at the items in this collection? Use bullet points in markdown syntax.',
+          source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
+          model: default_large_llm,
+          use_all_items: true,
+        }
+      },
+    ]
     this.get_writing_tasks()
   },
   watch: {
@@ -118,7 +132,7 @@ export default {
       const options = {
         expression: question,
         source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
-        model: 'Mistral_Mistral_Large',
+        model: default_large_llm,
         use_all_items: true,
       }
       let name_ellipsis = question.slice(0, 100)
