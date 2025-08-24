@@ -4,6 +4,8 @@ import logging
 from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
+from backend.config.utils import get_default_model
+from backend.config.llm import default_models
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     DataCollection,
@@ -19,6 +21,15 @@ from write.schemas import (
 )
 
 api = NinjaAPI(urls_namespace="write")
+
+@api.get("get_default_models")
+def get_default_models_route(request: HttpRequest):
+    """Return a dict of default models for small, medium, large."""
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+    # Convert box.Box to dict if needed
+    models_dict = dict(default_models)
+    return HttpResponse(json.dumps(models_dict), content_type="application/json", status=200)
 
 
 @api.post("get_writing_tasks")
@@ -57,7 +68,7 @@ def add_writing_task_route(request: HttpRequest, paylaod: AddWritingTaskPayload)
         collection_id=paylaod.collection_id,
         class_name=paylaod.class_name,
         name=paylaod.name,
-        model="Mistral_Mistral_Large",  # might be overwritten by options
+        model=get_default_model("large").__class__.__name__,  # might be overwritten by options
         source_fields=[
             COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,
             COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,

@@ -30,6 +30,7 @@ class WritingTaskSignature(dspy.Signature):
     Highlight important phrases using two asterisks.
 
     Mention the document ID where a statement is taken from behind the sentence, with the document id in square brackets, like this: [3].
+    Don't use other symbols for the document ID, just simple square brackets. If multiple document IDs are relevant, put each in its own square bracket, like this: [1][3][5].
 
     Reply only with the requested text in the language of the question, without introductory sentence.
     """
@@ -228,8 +229,11 @@ def _execute_default_writing_task(task: WritingTask, context: str):
     usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by.id, "External AI")  # type: ignore
     result = usage_tracker.track_usage(ai_credits, f"write summary using {model.__class__.__name__}")
     if result["approved"] == True:
-        with dspy.context(lm=dspy.LM(**model.to_litellm(), max_tokens=10000, temperature=0.7)):  # type: ignore
+        kwargs = model.to_litellm()
+        kwargs.update(dict(max_tokens=10000, temperature=0.7))
+        with dspy.context(lm=dspy.LM(**kwargs)):  # type: ignore
             response_text = writing_task_writer(task=task.expression, documents=context).output
+        response_text = response_text.replace("【", "[").replace("】", "]") # in case the model used other brackets
     else:
         response_text = "AI usage limit exceeded"
     information_used_in_prompt = (

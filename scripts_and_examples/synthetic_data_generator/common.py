@@ -2,11 +2,11 @@ import json
 import os
 
 import dspy
-from llmonkey.llms import Google_Gemini_Flash_1_5
 
-Model = Google_Gemini_Flash_1_5
-model = Model()
+from backend.config.utils import get_default_model
 
+
+model = get_default_model("medium")
 
 BASE_FOLDER = "scripts_and_examples/generated_data"
 FILE_NAME = "stored_data.json"

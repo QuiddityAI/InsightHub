@@ -6,7 +6,6 @@ import subprocess
 import dspy
 import json_repair
 from common import BASE_FOLDER, generate_company, model, set_stored_data, stored_data
-from llmonkey.llms import Google_Gemini_Flash_1_5
 
 DATA_FOLDER = os.path.join(BASE_FOLDER, "beer_files_german")
 if not os.path.exists(DATA_FOLDER):

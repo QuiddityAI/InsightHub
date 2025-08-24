@@ -1,5 +1,6 @@
 import logging
 
+from backend.config.utils import get_default_model
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     DataCollection,
@@ -69,7 +70,7 @@ class FindFactFromSingleDocumentWorkflow(WorkflowBase):
                 COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
             ],
             use_all_items=True,
-            model=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
+            model=user.preferences.get("default_large_llm") or get_default_model("large").__class__.__name__,
         )
         writing_task.expression = settings.user_input
         writing_task.save()

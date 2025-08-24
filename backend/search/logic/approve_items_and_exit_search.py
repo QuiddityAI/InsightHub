@@ -28,10 +28,10 @@ class DocComparisonSignature(dspy.Signature):
     If a relevance justification is provided ("Relevance: reason"), trust this justification.
     """
 
-    documents: list[str] = dspy.InputField()
+    documents: list[str] = dspy.InputField(desc="List of documents starting with 'document_id <id>:'")
     target_language: str = dspy.InputField(desc="The desired output language for reason")
-    selected_documents: dict[str, str] = dspy.OutputField(
-        desc="Dictionary having item_id as key and a very short explanation of why the criterion is fulfilled or not (in target_language)"
+    selected_documents: dict[int, str] = dspy.OutputField(
+        desc="Dictionary having document_id as key and a very short explanation of why the criterion is fulfilled or not (in target_language)"
     )
 
 

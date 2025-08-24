@@ -109,7 +109,7 @@ class TextSearchEngineClient(object):
             }
         }
         try:
-            response = self.client.indices.create(index_name, body=index_body)
+            response = self.client.indices.create(index=index_name, body=index_body)
         except RequestError as e:
             if e.error == "resource_already_exists_exception":
                 logging.warning(f"Index {index_name} already exists, continuing.")

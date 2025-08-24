@@ -1,13 +1,24 @@
 import logging
 import re
+import json
 
-from llmonkey.llms import Google_Gemini_Flash_1_5_v1
+import dspy
+from pydantic import BaseModel
 
+from backend.config.utils import get_default_model
 from data_map_backend.models import DataCollection, Dataset
-from search.schemas import Filter, SearchTaskSettings
+from search.schemas import SearchTaskSettings
 
 # TODO: migrate to DSPy + optimize prompts + re-enable feature
 
+model = get_default_model("medium")
+
+class Filter(BaseModel):
+    field: str
+    dataset_id: int | None = None
+    operator: str
+    value: str
+    label: str | None = None
 
 def get_filter_prompt(dataset_id: int, language: str):
     dataset = Dataset.objects.get(id=dataset_id)
@@ -29,13 +40,35 @@ def _get_filter_prompt_for_language(filter_prompts: str | None, language: str):
     return None
 
 
+class ExtractFiltersSignature(dspy.Signature):
+    """Given a user prompt, generate a JSON array of filter objects matching the Filter schema.
+    """
+    user_input: str = dspy.InputField(desc="User input to extract filters from")
+    filters: list[Filter] = dspy.OutputField(desc="array of filter objects")
+
+
+extract_filters_predictor = dspy.Predict(ExtractFiltersSignature)
+
+
 def extract_filters(search_task: SearchTaskSettings, filter_prompt: str):
-    filters, response = Google_Gemini_Flash_1_5_v1().generate_structured_array_response(
-        Filter, filter_prompt, as_dicts=True
-    )
-    for filter in filters:
-        assert isinstance(filter, dict)
-        filter["dataset_id"] = search_task.dataset_id
-    if filters is None:
-        logging.warning(f"Failed to generate filters: {response}")
+    """
+    Generate filters using DSPy + the configured LM. Returns a list of dicts or None on failure.
+    """
+    try:
+        with dspy.context(lm=dspy.LM(**model.to_litellm())):
+            result = extract_filters_predictor(user_input=filter_prompt)
+            filters = result.filters
+    except Exception as e:
+        logging.warning(f"Failed to call LM for filters: {e}")
+        return None
+
+    if not isinstance(filters, list):
+        logging.warning(f"Generated filters is not a list: {filters}")
+        return None
+
+    for f in filters:
+        if isinstance(f, dict):
+            f["dataset_id"] = search_task.dataset_id
+    if not filters:
+        logging.warning(f"Failed to generate filters: empty result")
     return filters
