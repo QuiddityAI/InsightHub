@@ -48,11 +48,38 @@ const custom_prompt = ref('')
 const { t } = useI18n();
 
 // Constants
-const default_models = [
-  { 'title': t('AddColumnDialog.small-ai'), 'subtitle': t('AddColumnDialog.small-ai-subtitle'), 'model': 'Mistral_Ministral8b' },
-  { 'title': t('AddColumnDialog.medium-ai'), 'subtitle': t('AddColumnDialog.medium-ai-subtitle'), 'model': 'Deepinfra_GPTOSS120b_Medium' },
-  { 'title': t('AddColumnDialog.large-ai'), 'subtitle': t('AddColumnDialog.large-ai-subtitle'), 'model': 'Deepinfra_GPTOSS120b_High' },
+let default_models = [
+  { 'title': t('AddColumnDialog.small-ai'), 'subtitle': t('AddColumnDialog.small-ai-subtitle'), 'size': 'small', 'model': 'Mistral_Ministral8b' },
+  { 'title': t('AddColumnDialog.medium-ai'), 'subtitle': t('AddColumnDialog.medium-ai-subtitle'), 'size': 'medium', 'model': 'Mistral_Mistral_Large' },
+  { 'title': t('AddColumnDialog.large-ai'), 'subtitle': t('AddColumnDialog.large-ai-subtitle'), 'size': 'large', 'model': 'Mistral_Mistral_Large' },
 ]
+
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  httpClient.get('/api/v1/write/get_default_models')
+    .then(response => {
+      const default_models_from_backend = response.data
+      selected_llm.value = default_models_from_backend.medium
+      for (const model of default_models) {
+        model.model = default_models_from_backend[model.size] || model.model
+      }
+      console.log("Default models:", default_models)
+    })
+    .catch(() => {
+      // fallback if backend fails
+      const default_models_from_backend = {
+        "large": "Mistral_Mistral_Large",
+        "medium": "Mistral_Mistral_Large",
+        "small": "Mistral_Ministral8b"
+      }
+      selected_llm.value = default_models_from_backend.medium
+      for (const model of default_models) {
+        model.model = default_models_from_backend[model.size] || model.model
+      }
+      console.log("Default models (fallback):", default_models)
+    })
+})
 
 // Computed properties
 const show_full_text_issue_hint = computed(() => {
@@ -211,69 +238,59 @@ watch(selected_module, () => {
 
     <div class="flex flex-row items-center gap-2 flex-wrap">
       <BorderButton v-for="module in appState.column_modules.filter(module => module.highlight)"
-        @click="selected_module = module.identifier"
-        :highlighted="selected_module === module.identifier">
+        @click="selected_module = module.identifier" :highlighted="selected_module === module.identifier">
         {{ $t(module.name) }}
       </BorderButton>
       <BorderButton v-tooltip.top="{ value: $t('AddColumnDialog.show-advanced-modules') }"
-        @click="show_advanced_modules = !show_advanced_modules"
-        :highlighted="show_advanced_modules">
+        @click="show_advanced_modules = !show_advanced_modules" :highlighted="show_advanced_modules">
         ...
       </BorderButton>
     </div>
     <div class="flex flex-row items-center gap-2 flex-wrap" v-if="show_advanced_modules">
       <BorderButton v-for="module in appState.column_modules.filter(module => !module.highlight)"
-        @click="selected_module = module.identifier"
-        :highlighted="selected_module === module.identifier">
+        @click="selected_module = module.identifier" :highlighted="selected_module === module.identifier">
         {{ $t(module.name) }}
       </BorderButton>
     </div>
     <div class="text-xs text-gray-500">
-      {{ $t(appState.column_modules.find(module => module.identifier === selected_module).help_text) }}
+      {{$t(appState.column_modules.find(module => module.identifier === selected_module).help_text)}}
     </div>
 
     <div class="flex flex-row items-center mb-4 mt-4" v-if="['llm', 'relevance', 'email'].includes(selected_module)">
       <textarea type="text" v-model="expression"
         class="flex-auto rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
         :placeholder="expression_label" />
-      <LanguageSelect v-if="!use_auto_language"
-        :available_language_codes="['en', 'de']"
-        v-model="selected_language"
-        :offer_wildcard="true" :use_last_used_language="false"
-        :tooltip="$t('AddColumnDialog.language-tooltip')">
+      <LanguageSelect v-if="!use_auto_language" :available_language_codes="['en', 'de']" v-model="selected_language"
+        :offer_wildcard="true" :use_last_used_language="false" :tooltip="$t('AddColumnDialog.language-tooltip')">
       </LanguageSelect>
     </div>
 
     <div class="flex flex-row gap-5 items-center">
-      <div class="flex flex-row items-center"
-        v-tooltip.top="{ value: $t('AddColumnDialog.auto-title-tooltip') }">
+      <div class="flex flex-row items-center" v-tooltip.top="{ value: $t('AddColumnDialog.auto-title-tooltip') }">
         <Checkbox v-model="use_auto_title" :binary="true" />
-        <button class="ml-2 text-xs text-gray-500"
-          @click="use_auto_title = !use_auto_title">
+        <button class="ml-2 text-xs text-gray-500" @click="use_auto_title = !use_auto_title">
           {{ $t('AddColumnDialog.auto-title') }}
         </button>
       </div>
       <div class="flex flex-row items-center" v-if="['llm', 'relevance'].includes(selected_module)"
         v-tooltip.top="{ value: $t('AddColumnDialog.auto-language-tooltip') }">
         <Checkbox v-model="use_auto_language" :binary="true" />
-        <button class="ml-2 text-xs text-gray-500"
-          @click="use_auto_language = !use_auto_language">
+        <button class="ml-2 text-xs text-gray-500" @click="use_auto_language = !use_auto_language">
           {{ $t('AddColumnDialog.auto-language') }}
         </button>
       </div>
       <div class="flex flex-row items-center" v-if="['llm', 'email'].includes(selected_module)"
         v-tooltip.top="{ value: $t('AddColumnDialog.default-prompt-tooltip') }">
         <Checkbox v-model="use_auto_prompt" :binary="true" />
-        <button class="ml-2 text-xs text-gray-500"
-          @click="use_auto_prompt = !use_auto_prompt">
-          {{ selected_module == 'email' ? $t('AddColumnDialog.default-email-template') : $t('AddColumnDialog.auto-prompt') }}
+        <button class="ml-2 text-xs text-gray-500" @click="use_auto_prompt = !use_auto_prompt">
+          {{ selected_module == 'email' ? $t('AddColumnDialog.default-email-template') :
+            $t('AddColumnDialog.auto-prompt') }}
         </button>
       </div>
       <div class="flex flex-row items-center" v-if="['llm', 'relevance', 'email'].includes(selected_module)"
         v-tooltip.top="{ value: $t('AddColumnDialog.default-sources-tooltip') }">
         <Checkbox v-model="use_default_sources" :binary="true" />
-        <button class="ml-2 text-xs text-gray-500"
-          @click="use_default_sources = !use_default_sources">
+        <button class="ml-2 text-xs text-gray-500" @click="use_default_sources = !use_default_sources">
           {{ $t('AddColumnDialog.default-sources') }}
         </button>
       </div>
@@ -283,16 +300,14 @@ watch(selected_module, () => {
       <div class="flex flex-row items-center"
         v-tooltip.top="{ value: $t('AddColumnDialog.auto-run-approved-tooltip') }">
         <Checkbox v-model="auto_run_for_approved_items" :binary="true" />
-        <button class="ml-2 text-xs text-gray-500"
-          @click="auto_run_for_approved_items = !auto_run_for_approved_items">
+        <button class="ml-2 text-xs text-gray-500" @click="auto_run_for_approved_items = !auto_run_for_approved_items">
           {{ $t('AddColumnDialog.auto-run-for-approved-items') }}
         </button>
       </div>
       <div class="flex flex-row items-center"
         v-tooltip.top="{ value: $t('AddColumnDialog.auto-run-candidates-tooltip') }">
         <Checkbox v-model="auto_run_for_candidates" :binary="true" />
-        <button class="ml-2 text-xs text-gray-500"
-          @click="auto_run_for_candidates = !auto_run_for_candidates">
+        <button class="ml-2 text-xs text-gray-500" @click="auto_run_for_candidates = !auto_run_for_candidates">
           {{ $t('AddColumnDialog.auto-run-for-candidates') }}
         </button>
       </div>
@@ -316,7 +331,8 @@ watch(selected_module, () => {
           <code> {{ title }} </code> for the column title,
           <code> {{ expression }} </code> for the question / task,
           <code> {{ document }} </code> for the input data.<br><br>
-          Attention: If <code> {{ document }} </code> is not used, it does not know about the item at all and won't produce meaningful results.
+          Attention: If <code> {{ document }} </code> is not used, it does not know about the item at all and won't
+          produce meaningful results.
           If <code> {{ expression }} </code> is not used, the question / task is ignored.
         </span>
       </div>
@@ -331,8 +347,8 @@ watch(selected_module, () => {
     <div class="flex flex-row gap-2 items-center" v-if="!use_default_sources">
       <span class="w-20 text-gray-500">{{ sources_label }}</span>
       <div class="flex-1 min-w-0">
-        <MultiSelect v-model="selected_source_fields" :options="collectionStore.available_source_fields" optionLabel="name"
-          optionValue="identifier" placeholder="Select Sources..." :maxSelectedLabels="3"
+        <MultiSelect v-model="selected_source_fields" :options="collectionStore.available_source_fields"
+          optionLabel="name" optionValue="identifier" placeholder="Select Sources..." :maxSelectedLabels="3"
           selectedItemsLabel="{0} Source(s)"
           class="w-full h-full mr-4 text-sm text-gray-500 focus:border-blue-500 focus:ring-blue-500" />
       </div>
@@ -346,16 +362,13 @@ watch(selected_module, () => {
 
     <div class="flex flex-row gap-2 flex-wrap" v-if="['llm', 'relevance'].includes(selected_module)">
       <BorderButton v-for="model in default_models" class="flex-1 py-1"
-        @click="selected_llm = model.model; use_custom_llm = false"
-        :highlighted="selected_llm === model.model">
+        @click="selected_llm = model.model; use_custom_llm = false" :highlighted="selected_llm === model.model">
         <div class="flex flex-col">
           <div class="font-semibold">{{ model.title }}</div>
           <div class="text-xs text-gray-500">{{ model.subtitle }}</div>
         </div>
       </BorderButton>
-      <BorderButton class="w-24"
-        @click="use_custom_llm = true"
-        :highlighted="use_custom_llm">
+      <BorderButton class="w-24" @click="use_custom_llm = true" :highlighted="use_custom_llm">
         <div class="flex flex-col">
           <div class="font-semibold">{{ $t('AddColumnDialog.custom-llm') }}</div>
         </div>
@@ -371,14 +384,12 @@ watch(selected_module, () => {
     <div class="flex flex-row gap-3 mt-4">
       <button v-if="show_process_now_button"
         class="rounded-md border-0 px-2 py-1.5 bg-green-100 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-        type="button"
-        @click="add_extraction_question(true)">
+        type="button" @click="add_extraction_question(true)">
         {{ $t('AddColumnDialog.add-and-process-current-page') }}
       </button>
       <button v-if="show_add_without_processing_button"
         class="rounded-md border-0 px-2 py-1.5 font-semibold text-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-400 sm:text-sm sm:leading-6"
-        type="button"
-        @click="add_extraction_question(false)">
+        type="button" @click="add_extraction_question(false)">
         {{ show_process_now_button ? $t('AddColumnDialog.add-without-processing') : $t('AddColumnDialog.add-column') }}
       </button>
     </div>

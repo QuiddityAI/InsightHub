@@ -293,7 +293,7 @@ export default {
     </OverlayPanel>
   </div>
 
-  <div class="mt-[200px] w-[650px] flex flex-col gap-5 pb-10">
+  <div class="mt-[200px] w-[800px] flex flex-col gap-5 pb-10">
 
     <!-- create collection box -->
     <div class="bg-white rounded-lg shadow-md transition-[height] duration-200 ease-out overflow-hidden min-h-0 max-h-none"
