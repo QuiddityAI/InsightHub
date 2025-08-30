@@ -30,8 +30,9 @@ def update_database_layout(dataset_id: int):
     search_engine_client.ensure_dataset_exists(dataset)
 
 
-def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = False) -> list[tuple]:
+def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = False) -> tuple[list[tuple], list[dict]]:
     dataset = get_dataset(dataset_id)
+    failed_items = []  # Track items that fail during processing
 
     for element in elements:
         # make sure primary key exists, if not, generate it
@@ -104,6 +105,18 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
             if pipeline_step.returns_multiple_fields:
                 for element_index, result in zip(element_indexes, results):
                     target_field_value, result_dict = result
+                    # Track AI processing failures
+                    if target_field_value == False:
+                        element = elements[element_index]
+                        failed_items.append({
+                            **element,
+                            "filename": element.get("full_path") or "Unknown file",
+                            "reason": "AI processing failed - could not extract content from file"
+                        })
+                        # Mark element for removal
+                        elements[element_index]["_should_remove"] = True
+                        continue
+
                     elements[element_index][pipeline_step.target_field] = target_field_value
                     if not result_dict:
                         # e.g. when an error happened during the generation
@@ -113,6 +126,9 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
             else:
                 for element_index, result in zip(element_indexes, results):
                     elements[element_index][pipeline_step.target_field] = result
+
+    # Filter out failed items after all pipeline processing
+    elements = [element for element in elements if not element.get("_should_remove", False)]
 
     for field in dataset.schema.object_fields.values():
         if field.field_type == FieldType.CLASS_PROBABILITY and not field.is_array:
@@ -168,7 +184,7 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
     if not skip_generators and elements:
         run_periodic_searches(dataset_id, item_ids)
 
-    return [(dataset.id, item["_id"]) for item in elements]
+    return [(dataset.id, item["_id"]) for item in elements], failed_items
 
 
 def run_periodic_searches(dataset_id: int, item_ids: list[str], restrict_to_collection_id: int | None = None):

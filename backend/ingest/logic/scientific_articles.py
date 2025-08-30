@@ -46,7 +46,8 @@ def scientific_article_processing_generator(
         assert len(parsed) == len(batch)  # TODO: handle failed items
         for parsed_item, input_item in zip(parsed, batch):
             if not parsed_item:
-                results[input_item.id] = [target_field_value, None]
+                # Mark as failed instead of creating empty document
+                results[input_item.id] = [False, None]  # False indicates processing failed
                 continue
             result = scientific_article_processing_single(input_item, parsed_item, parameters)
             results[input_item.id] = [target_field_value, result.model_dump()]
@@ -123,6 +124,7 @@ def scientific_article_pdf(
             "id": pk_to_uuid_id(uploaded_file.local_path),
             "title": uploaded_file.original_filename,
             "file_path": uploaded_file.local_path,  # relative to UPLOADED_FILES_FOLDER
+            "md5_hex": uploaded_file.metadata.md5_hex if uploaded_file.metadata else None,
         }
         items.append(item)
     failed_items = []
@@ -161,6 +163,7 @@ def scientific_article_csv(
                         "thumbnail_path": None,
                         "full_text": None,
                         "full_text_original_chunks": [],
+                        "md5": uploaded_file.metadata.md5_hex if uploaded_file.metadata else None,
                     }
                 )
             except Exception as e:

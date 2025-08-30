@@ -8,13 +8,21 @@ Mistral OCR Client for PDF processing and metadata extraction.
 import base64
 import io
 import logging
-import os
 import re
 import time
 import traceback as tb
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from typing import Any, Callable, List, Optional, Tuple, Union
+import concurrent.futures
+
+
+# Configure logging for detailed output
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("mistral_ocr_client")
 
 import dspy
 from mistralai import Mistral
@@ -86,14 +94,16 @@ class PDFDoc(BaseModel):
 # Utility functions
 def encode_pdf(pdf_path: str) -> Optional[str]:
     """Encode the PDF to base64 string. Returns None on error."""
+    logger.debug(f"Encoding PDF: {pdf_path}")
     try:
         with open(pdf_path, "rb") as pdf_file:
+            logger.info(f"Successfully opened PDF: {pdf_path}")
             return base64.b64encode(pdf_file.read()).decode("utf-8")
     except FileNotFoundError:
-        logging.error("Error: The file %s was not found.", pdf_path)
+        logger.error(f"Error: The file {pdf_path} was not found.")
         return None
     except Exception as e:
-        logging.error("Error encoding PDF %s: %s", pdf_path, e)
+        logger.error(f"Error encoding PDF {pdf_path}: {e}")
         return None
 
 
@@ -108,6 +118,7 @@ def get_combined_markdown(ocr_response: OCRResponse) -> str:
         Combined markdown string with embedded images
     """
     markdowns: List[str] = []
+    logger.debug("Combining OCR response pages into markdown.")
     for page in ocr_response.pages:
         # Build image map if images exist on the page (kept for potential use)
         image_data: dict = {img.id: img.image_base64 for img in getattr(page, "images", [])}
@@ -118,6 +129,7 @@ def get_combined_markdown(ocr_response: OCRResponse) -> str:
 
 def remove_images_from_markdown(markdown: str) -> str:
     """Remove image links (e.g., ![alt](url)) from markdown text."""
+    logger.debug("Removing images from markdown.")
     return re.sub(r"!\[.*?\]\(.*?\)", "", markdown)
 
 
@@ -131,6 +143,8 @@ def combine_short_sections(
     Combine consecutive sections if their length is below min_len (in words),
     but only if their combined length does not exceed max_len (in words).
     """
+
+    logger.debug(f"Combining short sections: {len(sections)} sections, min_len={min_len}, max_len={max_len}")
 
     def word_count(text: str) -> int:
         return len(text.split())
@@ -164,6 +178,7 @@ def chunk_markdown_sections(markdown: str, max_tokens: int = 384) -> List[PDFChu
     """
     Chunk a markdown research article into sections and further split large sections.
     """
+    logger.debug(f"Chunking markdown into sections with max_tokens={max_tokens}")
     tokenizer = lambda s: s.split()
 
     # Regex to find section headers (e.g., ## Section, ### Subsection)
@@ -171,6 +186,7 @@ def chunk_markdown_sections(markdown: str, max_tokens: int = 384) -> List[PDFChu
     matches = list(section_pattern.finditer(markdown))
 
     if not matches:
+        logger.info("No section headers found in markdown. Splitting as a single section.")
         chunks_dict = _split_text_to_chunks(markdown, "Document", max_tokens, tokenizer)
         return [PDFChunk(section=c["section"], text=c["text"], chunk_type=ChunkType.TEXT) for c in chunks_dict]
 
@@ -180,6 +196,7 @@ def chunk_markdown_sections(markdown: str, max_tokens: int = 384) -> List[PDFChu
         end = matches[idx + 1].start() if idx + 1 < len(matches) else len(markdown)
         section_title = match.group(2).strip()
         section_text = markdown[start:end].strip()
+        logger.debug(f"Splitting section: {section_title}")
         section_chunks = _split_text_to_chunks(section_text, section_title, max_tokens, tokenizer)
         chunks.extend(section_chunks)
 
@@ -193,12 +210,14 @@ def chunk_markdown_sections(markdown: str, max_tokens: int = 384) -> List[PDFChu
         PDFChunk(section=section["section"], text=section["text"], chunk_type=ChunkType.TEXT) for section in chunks
     ]
 
+    logger.info(f"Total chunks created: {len(pdf_chunks)}")
     return pdf_chunks
 
 
 def _split_text_to_chunks(text: str, section_title: str, max_tokens: int, tokenizer) -> List[dict]:
     tokens = tokenizer(text)
     n_tokens = len(tokens)
+    logger.debug(f"Splitting section '{section_title}' into chunks. Total tokens: {n_tokens}")
     if n_tokens <= max_tokens:
         return [{"section": section_title, "text": text, "chunk_idx": 0}]
 
@@ -211,6 +230,7 @@ def _split_text_to_chunks(text: str, section_title: str, max_tokens: int, tokeni
         chunk_tokens = tokens[start:end]
         chunk_text = " ".join(chunk_tokens)
         chunks.append({"section": section_title, "text": chunk_text, "chunk_idx": i})
+    logger.debug(f"Section '{section_title}' split into {len(chunks)} chunks.")
     return chunks
 
 
@@ -309,9 +329,11 @@ class Translator(dspy.Module):
                     buffer = section
         if buffer:
             combined_sections.append(buffer)
+        logger.debug(f"Cut markdown into {len(combined_sections)} manageable sections for translation.")
         return combined_sections
 
     def forward(self, markdown: str) -> str:
+        logger.info("Translating markdown to English if needed.")
         sections = self._cut_managable_sections(markdown)
         translated_sections: List[str] = []
         for section in sections:
@@ -322,17 +344,21 @@ class Translator(dspy.Module):
 
 def prepare_markdown(markdown: str) -> str:
     """Prepare markdown for processing by removing images and translating if needed."""
+    logger.info("Preparing markdown for further processing.")
     markdown = remove_images_from_markdown(markdown)
     pred_language = dspy.Predict(LanguageSignature)
     lang = pred_language(fulltext=markdown[:5000]).detected_language
+    logger.info(f"Detected language: {lang}")
     if lang != "en":
         translator = Translator()
+        logger.info("Translating markdown to English.")
         markdown = translator(markdown)
     return markdown
 
 
 def extract_metainfo_llm(markdown: str) -> MetaInfo:
     """Extract metadata from markdown text using DSPy signatures."""
+    logger.info("Extracting metadata from markdown using LLM.")
     pred_metainfo = dspy.Predict(MetainfoSignature)
     pred_abstract = dspy.Predict(AbstractSignature)
     pred_summary = dspy.Predict(SummarySignature)
@@ -340,7 +366,8 @@ def extract_metainfo_llm(markdown: str) -> MetaInfo:
 
     metainfo = pred_metainfo(fulltext=markdown[:5000])
     abstract = pred_abstract(fulltext=markdown[:5000]).abstract
-    if len(abstract) < 20:
+    if not abstract or len(abstract) < 20:
+        logger.info("Abstract is too short or not provided, generating summary instead.")
         abstract = pred_summary(fulltext=markdown).summary
 
     info = f"Title: {metainfo.title}\n Abstract: {abstract}\n"
@@ -360,6 +387,7 @@ def extract_metainfo_llm(markdown: str) -> MetaInfo:
 
 def convert_pdf_to_jpg(file: str) -> bytes:
     """Convert first page of PDF to JPEG bytes."""
+    logger.info(f"Converting PDF to JPEG thumbnail: {file}")
     # pdf2image pages are 1-indexed; request the first page explicitly
     pages_as_pil = convert_from_path(file, first_page=1, last_page=1, dpi=100)
     pil_page = pages_as_pil[0]
@@ -373,13 +401,16 @@ def convert_pdf_to_jpg(file: str) -> bytes:
 
 
 def _extract_using_mistral_single(file_path: str) -> PDFDoc:
+    logger.info(f"Processing file with Mistral OCR: {file_path}")
     client = Mistral(api_key=default_mistral_ocr_models.api_key)
 
     base64_pdf = encode_pdf(file_path)
     if not base64_pdf:
+        logger.error(f"Could not read PDF: {file_path}")
         raise FileNotFoundError(f"Could not read PDF: {file_path}")
 
     # Call the OCR API
+    logger.info(f"Calling Mistral OCR API for file: {file_path}")
     pdf_response = client.ocr.process(
         model=default_mistral_ocr_models.ocr,
         document={
@@ -387,10 +418,13 @@ def _extract_using_mistral_single(file_path: str) -> PDFDoc:
             "document_url": f"data:application/pdf;base64,{base64_pdf}",
         },
         include_image_base64=False,
+        pages = list(range(50)) # Process up to first 50 pages
     )
+    logger.info(f"OCR API call complete for file: {file_path}")
     lm = dspy.LM(**default_mistral_ocr_models.metadata_llm_kwargs)
 
     with dspy.context(lm=lm):
+        logger.info(f"Extracting markdown and metadata for file: {file_path}")
         # get combined markdown from OCR response
         raw_markdown = get_combined_markdown(pdf_response)
         # remove images and translate if necessary
@@ -404,6 +438,7 @@ def _extract_using_mistral_single(file_path: str) -> PDFDoc:
     metainfo.language = metainfo.detected_language
 
     final_pdfdoc = PDFDoc(metainfo=metainfo, chunks=chunks, full_text=markdown)
+    logger.info(f"Finished processing file: {file_path}")
     return final_pdfdoc
 
 
@@ -413,41 +448,58 @@ def process_files_with_retries(
     max_threads: int = 5,
     max_retries: int = 3,
     retry_delay: float = 1.0,
+    task_timeout: float = 120.0,
 ) -> Tuple[List[Any], List[PDFError]]:
     """
     Process a list of files in parallel using threads, retrying failed files up to max_retries times.
     Returns a tuple: (list of successful results, list of PDFError objects for failed files)
     """
+    logger.info(f"Starting parallel processing of {len(file_paths)} files with up to {max_threads} threads.")
     results_map: dict[str, Any] = {fp: None for fp in file_paths}
     failed = []
     attempts = {fp: 0 for fp in file_paths}
     remaining = set(file_paths)
 
     while remaining:
+        logger.info(f"Files remaining to process: {len(remaining)}")
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
             future_to_file = {executor.submit(process_func, fp): fp for fp in remaining}
             next_remaining = set()
             for future in as_completed(future_to_file):
                 fp = future_to_file[future]
                 try:
-                    result = future.result()
+                    logger.info(f"Processing file: {fp}")
+                    result = future.result(timeout=task_timeout)
+                    logger.info(f"Successfully processed file: {fp}")
                     results_map[fp] = result
                 except Exception as e:
+                    # Check for timeout
+                    is_timeout = False
+                    try:
+                        if isinstance(e, concurrent.futures.TimeoutError):
+                            is_timeout = True
+                    except ImportError:
+                        pass
                     attempts[fp] += 1
                     if attempts[fp] <= max_retries:
+                        logger.warning(f"Retrying file {fp} (attempt {attempts[fp]}/{max_retries}) due to error: {e}")
                         next_remaining.add(fp)
                     else:
-                        err = PDFError(exc=str(e), traceback=tb.format_exception(type(e), e, e.__traceback__), file=fp)
+                        err_msg = f"Timeout after {task_timeout}s: {str(e)}" if is_timeout else str(e)
+                        logger.error(f"Failed to process file {fp} after {max_retries} attempts: {err_msg}")
+                        err = PDFError(exc=err_msg, traceback=tb.format_exception(type(e), e, e.__traceback__), file=fp)
                         failed.append(err)
                         dummy_doc = PDFDoc(
-                            metainfo=MetaInfo(file_features=FileFeatures(filename=fp)), chunks=[], full_text=""
+                            metainfo=MetaInfo(title="__failed__", file_features=FileFeatures(filename=fp)), chunks=[], full_text=""
                         )
                         results_map[fp] = dummy_doc
             remaining = next_remaining
         if remaining:
+            logger.info(f"Sleeping for {retry_delay} seconds before retrying failed files.")
             time.sleep(retry_delay)
     # Maintain the order of file_paths in the results
     results = [results_map[fp] for fp in file_paths]
+    logger.info(f"Processing complete. {len(failed)} files failed.")
     return results, failed
 
 
@@ -461,6 +513,7 @@ def extract_using_mistral(
     Process a list of PDF files using the Mistral OCR client, with retries and parallelism.
     Returns a tuple: (list of successful PDFDoc results, list of PDFError objects for failed files)
     """
+    logger.info(f"Starting extract_using_mistral for {len(file_paths)} files.")
     results: list[PDFDoc]
     failed: list[PDFError] = []
     results, failed = process_files_with_retries(
@@ -484,4 +537,10 @@ def extract_using_mistral(
     docs = [DotDict(doc.model_dump()) for doc in results]
     errors = [DotDict(err.model_dump()) for err in failed_errors]
 
+    if errors:
+        logger.error(f"Failed to process {len(errors)} files: {errors}")
+        for error in errors:
+            logger.error(f"Error processing file {error.file}: {error.exc}\n{error.traceback}")
+
+    logger.info(f"extract_using_mistral complete. {len(docs)} docs, {len(errors)} errors.")
     return docs, errors

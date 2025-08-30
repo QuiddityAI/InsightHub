@@ -14,6 +14,7 @@ from ingest.logic.scientific_articles import (
     scientific_article_pdf,
 )
 from ingest.logic.store_on_disk import store_uploaded_file, unpack_archive
+from ingest.models import UploadedFileWithHash
 from ingest.schemas import (
     CustomUploadedFile,
     UploadedFileMetadata,
@@ -176,6 +177,11 @@ def _store_files_and_import_them(
         # logging.warning(f"saving file: {file.name}")
         try:
             sub_path, md5 = store_uploaded_file(file, dataset_id)
+            # Check if file with same hash already exists for this user and dataset
+            if UploadedFileWithHash.objects.filter(user_id=user_id, dataset_id=dataset_id, md5=md5).exists():
+                logging.info(f"File {file.name} with md5 {md5} already uploaded by user {user_id} to dataset {dataset_id}, skipping.")
+                failed_files.append({"filename": file.name, "reason": "File already uploaded"})
+                continue
             uploaded_files.append(
                 UploadedOrExtractedFile(
                     local_path=sub_path,
@@ -189,6 +195,7 @@ def _store_files_and_import_them(
                     ),
                 )
             )
+            # MD5 hash will be saved only after successful processing
         except Exception as e:
             logging.warning(f"failed to save file: {e}")
             # print traceback
@@ -217,7 +224,7 @@ def _store_files_and_import_them(
 def _import_items(
     dataset_id: int,
     import_converter_identifier: str,
-    files_or_dicts: list,
+    files_or_dicts: list[UploadedOrExtractedFile] | list[dict],
     collection_id: int | None,
     collection_class: str | None,
     task_id: str,
@@ -250,11 +257,54 @@ def _import_items(
     _set_task_status(dataset_id, task_id, "inserting into DB", 0.1)
     batch_size = 128
     inserted_ids = []
+
+    # Create a mapping from filename/title to md5_hex for tracking successful processing
+    file_to_md5_mapping = {}
+    for item in items:
+        filename = item.get("uploaded_file_path")
+        md5_hex = item.get("md5_hex")
+        if md5_hex and filename:
+            file_to_md5_mapping[filename] = md5_hex
+
+    successfully_processed_md5s = set()
+
     for i in range(0, len(items), batch_size):
         _set_task_status(dataset_id, task_id, "inserting into DB", 0.1 + i / len(items) * 0.9)
-        inserted_ids += insert_many(dataset_id, items[i : i + batch_size], skip_generators=skip_generators)
-    logging.warning(f"inserted {len(items)} items to dataset {dataset_id}")
+        batch_inserted_ids, batch_failed_items = insert_many(dataset_id, items[i : i + batch_size], skip_generators=skip_generators)
+        inserted_ids += batch_inserted_ids
+        failed_files += batch_failed_items
+
+        # Track which files failed processing
+        failed_filenames = {failed_item.get("uploaded_file_path") for failed_item in batch_failed_items}
+
+        # For the current batch, identify which files were processed successfully
+        batch_items = items[i : i + batch_size]
+        for item in batch_items:
+            filename = item.get("uploaded_file_path", "Unknown file")
+            if filename not in failed_filenames:
+                # This file was successfully processed
+                md5_hex = file_to_md5_mapping.get(filename)
+                if md5_hex:
+                    successfully_processed_md5s.add(md5_hex)
+
+    # Save MD5 hashes only for successfully processed files
+    for md5_hex in successfully_processed_md5s:
+        try:
+            UploadedFileWithHash.objects.create(
+                user_id=user_id,
+                dataset_id=dataset_id,
+                md5=md5_hex,
+                filename="",
+            )
+        except Exception as e:
+            logging.warning(f"Failed to save MD5 hash record for {md5_hex}: {e}")
+
+    logging.warning(f"inserted {len(inserted_ids)} items to dataset {dataset_id}")
     clear_local_map_cache()
+
+    for f in failed_files:
+        logging.warning(f"Failed to import file: {f}")
+        # No need to remove MD5 records since they were never saved for failed files
 
     if collection_id is not None and collection_class is not None:
         _set_task_status(dataset_id, task_id, "adding to collection", 0.0)

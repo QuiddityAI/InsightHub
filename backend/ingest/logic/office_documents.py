@@ -46,12 +46,12 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
             for failed_item in failed:
                 if not failed_item:
                     continue
-                # TODO: write the error in the description of the returned item?
                 log_error(f"Failed to extract text from {failed_item.file}: {failed_item.exc}")
         assert len(parsed) == len(batch)  # TODO: handle failed items
         for parsed_item, input_item in zip(parsed, batch):
-            if not parsed_item:
-                results[input_item.id] = [target_field_value, None]
+            if not parsed_item or parsed_item.metainfo.title == "__failed__":
+                # Mark as failed instead of creating empty document
+                results[input_item.id] = [False, None]  # False indicates processing failed
                 continue
             result = ai_file_processing_single(input_item, parsed_item, parameters)
             results[input_item.id] = [target_field_value, result.model_dump()]
@@ -226,6 +226,7 @@ def import_office_document(
             "uploaded_file_path": uploaded_file.local_path,  # relative to UPLOADED_FILES_FOLDER
             "parent_folders": get_parent_folders(folder),
             "is_folder": False,
+            "md5_hex": uploaded_file.metadata.md5_hex if uploaded_file.metadata else None,
         }
         items.append(item)
     failed_items = []
