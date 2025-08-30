@@ -25,7 +25,9 @@ globalThis.icon_for_file_suffix = icon_for_file_suffix;
 globalThis.marked = marked;
 
 const katex_options = {
-  throwOnError: false
+  throwOnError: false,
+  strict: false,
+  errorColor: '#555',
 };
 
 marked.use(markedKatex(katex_options))
