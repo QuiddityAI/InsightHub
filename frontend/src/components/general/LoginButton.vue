@@ -19,6 +19,8 @@ const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
 const _window = window
+const registration_disabled = import.meta.env.VITE_REGISTRATION_DISABLED === 'true'
+
 </script>
 
 <script>
@@ -151,7 +153,7 @@ export default {
           </form>
         </AccordionTab>
 
-        <AccordionTab :header="$t('LoginButton.register-create-a-new-account')">
+        <AccordionTab :header="$t('LoginButton.register-create-a-new-account')" v-if="!registration_disabled">
           <form ref="register_form" :action="`/org/signup_from_app/?next=/`" method="post" class="flex flex-col gap-3">
             <InputGroup>
               <InputGroupAddon>
@@ -190,7 +192,7 @@ export default {
           </form>
         </AccordionTab>
 
-        <AccordionTab :header="$t('LoginButton.try-without-logging-in')">
+        <AccordionTab :header="$t('LoginButton.try-without-logging-in')" v-if="!registration_disabled">
           <div class="flex flex-col gap-3">
 
             <div class="text-gray-700 whitespace-pre-wrap">

@@ -3,7 +3,7 @@ import {
   XMarkIcon,
   MagnifyingGlassIcon,
   ArrowDownCircleIcon,
- } from "@heroicons/vue/24/outline"
+} from "@heroicons/vue/24/outline"
 
 import AddToCollectionButtons from "../collections/AddToCollectionButtons.vue"
 import ExportSingleItem from "./ExportSingleItem.vue"
@@ -22,6 +22,7 @@ import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { useMapStateStore } from "../../stores/map_state_store"
 import { useCollectionStore } from "../../stores/collection_store"
+import { marked } from "marked";
 
 const appState = useAppStateStore()
 const mapState = useMapStateStore()
@@ -60,7 +61,7 @@ export default {
   },
   watch: {
     initial_item() {
-      this.item = {...this.initial_item, ...this.appStateStore.selected_document_initial_item}
+      this.item = { ...this.initial_item, ...this.appStateStore.selected_document_initial_item }
       this.item._relevant_parts = this.appStateStore.selected_document_relevant_parts
       this.checking_for_fulltext = false
       this.checked_for_fulltext = false
@@ -86,12 +87,12 @@ export default {
     this.eventBus.off("show_table", this.on_show_table)
   },
   methods: {
-    on_item_added({collection_id, class_name, is_positive, created_item}) {
+    on_item_added({ collection_id, class_name, is_positive, created_item }) {
       if (created_item.dataset_id === this.item._dataset_id && created_item.item_id === this.item._id) {
         this.item._related_collection_items.push(created_item)
       }
     },
-    on_item_removed({collection_id, class_name, collection_item_id}) {
+    on_item_removed({ collection_id, class_name, collection_item_id }) {
       const index = this.item._related_collection_items.findIndex((item) => item.id === collection_item_id)
       if (index !== -1) {
         this.item._related_collection_items.splice(index, 1)
@@ -127,7 +128,11 @@ export default {
             that.update_show_scroll_indicator()
           }, 100)
 
-          umami.track("document_details", { title: that.rendering.title(that.item) })
+          try {
+            umami.track("document_details", { title: that.rendering.title(that.item) })
+          } catch (e) {
+            console.warn("Umami tracking failed:", e)
+          }
         })
         .finally(function () {
           that.loading_item = false
@@ -166,7 +171,7 @@ export default {
   <div class="flex flex-col h-full">
 
     <div class="p-[1px] flex flex-col overflow-y-auto" ref="scroll_area"
-      :class="{'shadow-[inset_0_-10px_20px_-20px_rgba(0,0,0,0.3)]': show_scroll_indicator}">
+      :class="{ 'shadow-[inset_0_-10px_20px_-20px_rgba(0,0,0,0.3)]': show_scroll_indicator }">
 
       <div class="flex flex-row w-full mb-3">
 
@@ -204,7 +209,7 @@ export default {
 
           <!-- Body -->
           <ExpandableTextArea max_lines="12" class="mt-2 custom-cite-style"
-            :html_content="(rendering && rendering.body(item)) ? highlight_words_in_text(rendering.body(item), appState.selected_document_query.split(' ')) : (loading_item ? 'loading...' : '-')" />
+            :html_content="marked.parse((rendering && rendering.body(item)) ? highlight_words_in_text(rendering.body(item), appState.selected_document_query.split(' ')) : (loading_item ? 'loading...' : '-'))" />
 
         </div>
 
@@ -215,21 +220,17 @@ export default {
       </div>
 
       <!-- Relevant Vector Parts -->
-      <RelevantPartsVector v-if="relevant_chunks.length"
-        class="my-2"
-        :item="item" :highlights="relevant_chunks"
+      <RelevantPartsVector v-if="relevant_chunks.length" class="my-2" :item="item" :highlights="relevant_chunks"
         :rendering="rendering">
       </RelevantPartsVector>
 
       <!-- Relevant Keyword Parts -->
-      <RelevantPartsKeyword :highlights="relevant_keyword_highlights"
-        class="my-2" :dataset_id="item._dataset_id">
+      <RelevantPartsKeyword :highlights="relevant_keyword_highlights" class="my-2" :dataset_id="item._dataset_id">
       </RelevantPartsKeyword>
 
       <!-- Export & Buttons -->
       <div class="mt-2 flex flex-none flex-row">
-        <button
-          v-tooltip.bottom="{ value: `Export this item in different formats`, showDelay: 500 }"
+        <button v-tooltip.bottom="{ value: `Export this item in different formats`, showDelay: 500 }"
           @click="show_export_dialog = true"
           class="mr-3 rounded-md px-3 text-sm text-gray-500 ring-1 ring-gray-300 hover:bg-blue-100">
           {{ dataset.merged_advanced_options.export_button_name || "Export" }}
@@ -244,7 +245,8 @@ export default {
         </div>
       </div>
 
-      <Dialog v-model:visible="show_export_dialog" modal :header="dataset.merged_advanced_options.export_button_name || 'Export'">
+      <Dialog v-model:visible="show_export_dialog" modal
+        :header="dataset.merged_advanced_options.export_button_name || 'Export'">
         <ExportSingleItem :dataset="dataset" :item="item">
         </ExportSingleItem>
       </Dialog>
@@ -254,8 +256,7 @@ export default {
       <hr>
       <h3 class="mt-5 text-lg font-bold">Collections</h3>
       <div v-for="collection_item in item._related_collection_items" class="mt-3">
-        <RelatedCollectionItem :collection_item="collection_item"
-          @refresh_item="update_column_data_only()">
+        <RelatedCollectionItem :collection_item="collection_item" @refresh_item="update_column_data_only()">
         </RelatedCollectionItem>
       </div>
 
@@ -266,25 +267,25 @@ export default {
 
       <!-- has to be here (although displayed above) because otherwise it would scroll with the content -->
       <div v-if="show_scroll_indicator" class="absolute -top-12 right-1 h-6 w-6 rounded-full bg-white text-gray-400"
-        v-tooltip.left="{'value': 'Scroll down for more'}">
+        v-tooltip.left="{ 'value': 'Scroll down for more' }">
         <ArrowDownCircleIcon></ArrowDownCircleIcon>
       </div>
 
       <AddToCollectionButtons v-if="appState.collections?.length && appState.selected_app_tab !== 'collections'"
         @addToCollection="(collection_id, class_name, is_positive) =>
-            appState.add_item_to_collection(
-                appState.selected_document_ds_and_id,
-                collection_id,
-                class_name,
-                is_positive,
+          appState.add_item_to_collection(
+            appState.selected_document_ds_and_id,
+            collection_id,
+            class_name,
+            is_positive,
                 /*show_toast=*/false,
-              )
-          " @removeFromCollection="(collection_id, class_name) =>
+          )
+        " @removeFromCollection="(collection_id, class_name) =>
             appState.remove_item_from_collection(
-                appState.selected_document_ds_and_id,
-                collection_id,
-                class_name
-              )
+              appState.selected_document_ds_and_id,
+              collection_id,
+              class_name
+            )
           ">
       </AddToCollectionButtons>
 
@@ -303,8 +304,7 @@ export default {
       </a>
 
       <div class="flex-1"></div>
-      <button v-if="show_close_button"
-        @click="appState.close_document_details"
+      <button v-if="show_close_button" @click="appState.close_document_details"
         class="h-full w-10 rounded-md px-2 text-gray-500 hover:bg-gray-100">
         <XMarkIcon></XMarkIcon>
       </button>
@@ -314,7 +314,6 @@ export default {
 </template>
 
 <style>
-
 .custom-cite-style cite {
   font-style: normal;
   border-left: 4px solid gray;
@@ -324,5 +323,4 @@ export default {
   margin-bottom: 0.6rem;
   color: rgb(73, 73, 73);
 }
-
 </style>

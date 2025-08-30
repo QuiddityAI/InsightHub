@@ -10,8 +10,12 @@ import ExpandableTextArea from "../widgets/ExpandableTextArea.vue";
 import { mapStores } from "pinia"
 import { useAppStateStore } from "../../stores/app_state_store"
 import { highlight_words_in_text } from "../../utils/utils"
+import { marked } from "marked";
+import markedKatex from "marked-katex-extension";
+import { e } from "mathjs";
 
 const appState = useAppStateStore()
+
 </script>
 
 <script>
@@ -66,7 +70,7 @@ export default {
       </div>
     </div>
     <ExpandableTextArea class="mt-1 text-gray-700 text-xs break-words" :max_lines="12"
-      :html_content="highlight_words_in_text(relevant_chunk.value.text, appState.selected_document_query.split(' '))">
+      :html_content="marked.parse(highlight_words_in_text(relevant_chunk.value.text, appState.selected_document_query.split(' ')))">
     </ExpandableTextArea>
 
     <a v-if="rendering.full_text_pdf_url && rendering.full_text_pdf_url(item)"

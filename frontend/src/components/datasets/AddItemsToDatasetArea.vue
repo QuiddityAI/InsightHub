@@ -41,6 +41,7 @@ export default {
       actual_dataset_id: this.dataset_id,
       manually_created_item: {},
       service_usage_info: {},
+      collapsed_existing_files: {},
     }
   },
   computed: {
@@ -249,6 +250,17 @@ export default {
         })
       this.manually_created_item = {}
     },
+    retryFailedFile(filename) {
+      this.$toast.add({
+        severity: 'info',
+        summary: 'Retry',
+        detail: `To retry "${filename}", please re-upload the file. Consider converting to PDF or checking if the file is corrupted.`,
+        life: 5000
+      })
+    },
+    toggleExistingFiles(taskId) {
+      this.collapsed_existing_files[taskId] = !this.collapsed_existing_files[taskId]
+    },
   },
 }
 </script>
@@ -376,18 +388,67 @@ export default {
       <p class="text-gray-700">
         Status: {{ task.status }} ({{ (task.progress * 100).toFixed(0) }}%)
       </p>
-      <p v-if="task.failed_files.length !== 0" class="text-red-700">
-        Some files could not be processed ({{ task.failed_files.length }} errors in total):
-      </p>
-      <ul role="list" class="mt-1 text-sm">
-        <li
-          v-for="failure in task.failed_files"
-          :key="failure.filename"
-          class="justify-between pb-3">
-          <span class="text-red-700">{{ failure.filename }}</span><br>
-          <span class="text-gray-500">{{ failure.reason }}</span>
-        </li>
-      </ul>
+      <div v-if="task.failed_files.length !== 0" class="bg-red-50 border border-red-200 rounded-md p-3 mb-3">
+        <!-- Count and display actual failures (non-existing files) -->
+        <div v-if="task.failed_files.filter(f => !f.reason.toLowerCase().includes('already exists') && !f.reason.toLowerCase().includes('file already')).length > 0">
+          <p class="text-red-700 font-semibold mb-2">
+            {{ task.failed_files.filter(f => !f.reason.toLowerCase().includes('already exists') && !f.reason.toLowerCase().includes('file already')).length }}
+            file{{ task.failed_files.filter(f => !f.reason.toLowerCase().includes('already exists') && !f.reason.toLowerCase().includes('file already')).length === 1 ? '' : 's' }} could not be processed:
+          </p>
+          <ul role="list" class="space-y-2 mb-3">
+            <li v-for="failure in task.failed_files.filter(f => !f.reason.toLowerCase().includes('already exists') && !f.reason.toLowerCase().includes('file already'))"
+                :key="failure.filename">
+              <div class="bg-white border border-red-100 rounded p-2">
+                <div class="flex justify-between items-start gap-2">
+                  <div class="flex-1">
+                    <span class="text-red-700 font-medium">{{ failure.filename }}</span>
+                    <br>
+                    <span class="text-gray-600 text-sm">{{ failure.reason }}</span>
+                    <div v-if="failure.reason.includes('AI processing failed')" class="mt-1">
+                      <span class="text-blue-600 text-xs">
+                        💡 This file may be corrupted, password-protected, or in an unsupported format. Try converting to PDF or checking the file.
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    v-if="failure.reason.includes('AI processing failed')"
+                    @click="retryFailedFile(failure.filename)"
+                    size="small"
+                    severity="secondary"
+                    outlined
+                    class="flex-none">
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Collapsible section for already existing files -->
+        <div v-if="task.failed_files.filter(f => f.reason.toLowerCase().includes('already exists') || f.reason.toLowerCase().includes('file already')).length > 0">
+          <div class="cursor-pointer flex items-center gap-2 py-1" @click="toggleExistingFiles(task.task_id)">
+            <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-90': !collapsed_existing_files[task.task_id] }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            <span class="text-gray-600 text-sm">
+              {{ task.failed_files.filter(f => f.reason.toLowerCase().includes('already exists') || f.reason.toLowerCase().includes('file already')).length }}
+              file{{ task.failed_files.filter(f => f.reason.toLowerCase().includes('already exists') || f.reason.toLowerCase().includes('file already')).length === 1 ? '' : 's' }}
+              already exist{{ task.failed_files.filter(f => f.reason.toLowerCase().includes('already exists') || f.reason.toLowerCase().includes('file already')).length === 1 ? 's' : '' }} in dataset
+            </span>
+          </div>
+          <div v-show="collapsed_existing_files[task.task_id]" class="ml-6 mt-2">
+            <ul role="list" class="space-y-1">
+              <li v-for="failure in task.failed_files.filter(f => f.reason.toLowerCase().includes('already exists') || f.reason.toLowerCase().includes('file already'))"
+                  :key="failure.filename">
+                <div class="bg-gray-50 border border-gray-200 rounded p-2 text-sm text-gray-600">
+                  <span class="font-medium">{{ failure.filename }}</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
       <p v-if="task.inserted_ids.length !== 0" class="text-gray-700 text-sm">
         Items successfully uploaded: {{ task.inserted_ids.length }} (showing max. 10)<br>
         Duration: {{ (((new Date(task.finished_at)).getTime() - (new Date(task.started_at)).getTime()) / (60*1000)).toFixed(1) }} min
