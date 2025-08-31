@@ -81,8 +81,8 @@ def get_generator_function(
     def chunking_generator(batch, log_error=default_log):
         return chunk_text_generator(batch, parameters.chunk_size_in_characters, parameters.overlap_in_characters)
 
-    def ai_file_processing_generator_func(batch, log_error=default_log):
-        return ai_file_processing_generator(batch, log_error, parameters)
+    def ai_file_processing_generator_func(batch, log_error=default_log, progress_callback: Callable[[float], None] = lambda progress: None):
+        return ai_file_processing_generator(batch, log_error, parameters, progress_callback=progress_callback)
 
     def scientific_article_processing_func(batch, log_error=default_log):
         return scientific_article_processing_generator(batch, log_error, parameters)

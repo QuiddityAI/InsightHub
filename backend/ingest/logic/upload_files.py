@@ -270,7 +270,20 @@ def _import_items(
 
     for i in range(0, len(items), batch_size):
         _set_task_status(dataset_id, task_id, "inserting into DB", 0.1 + i / len(items) * 0.9)
-        batch_inserted_ids, batch_failed_items = insert_many(dataset_id, items[i : i + batch_size], skip_generators=skip_generators)
+
+        batch_progress = 0.0
+        batch_progress_lock = threading.Lock()
+        def progress_callback(progress):
+            nonlocal batch_progress
+            logging.warning(f"Batch progress: {batch_progress}, Progress increment: {progress}")
+            with batch_progress_lock:
+                batch_progress += progress
+                # Adjust progress calculation to handle cases where len(items) < batch_size
+                effective_batch_size = min(batch_size, len(items) - i)
+                overall_progress = 0.9 * ((batch_progress * effective_batch_size / len(items)) + (i / len(items))) + 0.1
+                _set_task_status(dataset_id, task_id, "inserting into DB", min(overall_progress, 1.0))
+
+        batch_inserted_ids, batch_failed_items = insert_many(dataset_id, items[i : i + batch_size], skip_generators=skip_generators, progress_callback=progress_callback)
         inserted_ids += batch_inserted_ids
         failed_files += batch_failed_items
 

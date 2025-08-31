@@ -1,5 +1,7 @@
+import inspect
 import logging
 import time
+from typing import Callable
 from uuid import uuid4
 
 from data_map_backend.models import SearchTask
@@ -30,7 +32,12 @@ def update_database_layout(dataset_id: int):
     search_engine_client.ensure_dataset_exists(dataset)
 
 
-def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = False) -> tuple[list[tuple], list[dict]]:
+def insert_many(
+    dataset_id: int,
+    elements: list[dict],
+    skip_generators: bool = False,
+    progress_callback: Callable[[float], None] = lambda x: None,
+) -> tuple[list[tuple], list[dict]]:
     dataset = get_dataset(dataset_id)
     failed_items = []  # Track items that fail during processing
 
@@ -100,7 +107,11 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
                     element_indexes.append(i)
                     source_data_total.append(source_data)
 
-            results = pipeline_step.generator_function(source_data_total)
+            signature = inspect.signature(pipeline_step.generator_function)
+            if "progress_callback" in signature.parameters:
+               results = pipeline_step.generator_function(source_data_total, progress_callback=progress_callback)
+            else:
+                results = pipeline_step.generator_function(source_data_total)
 
             if pipeline_step.returns_multiple_fields:
                 for element_index, result in zip(element_indexes, results):
@@ -108,11 +119,13 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
                     # Track AI processing failures
                     if target_field_value == False:
                         element = elements[element_index]
-                        failed_items.append({
-                            **element,
-                            "filename": element.get("full_path") or "Unknown file",
-                            "reason": "AI processing failed - could not extract content from file"
-                        })
+                        failed_items.append(
+                            {
+                                **element,
+                                "filename": element.get("full_path") or "Unknown file",
+                                "reason": "AI processing failed - could not extract content from file",
+                            }
+                        )
                         # Mark element for removal
                         elements[element_index]["_should_remove"] = True
                         continue

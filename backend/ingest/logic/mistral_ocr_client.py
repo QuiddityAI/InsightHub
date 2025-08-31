@@ -508,6 +508,7 @@ def extract_using_mistral(
     max_threads: int = 5,
     max_retries: int = 3,
     retry_delay: float = 1.0,
+    progress_callback: Callable[[float], None] = lambda progress: None,
 ) -> tuple[list[DotDict], list[DotDict]]:
     """
     Process a list of PDF files using the Mistral OCR client, with retries and parallelism.
@@ -516,9 +517,16 @@ def extract_using_mistral(
     logger.info(f"Starting extract_using_mistral for {len(file_paths)} files.")
     results: list[PDFDoc]
     failed: list[PDFError] = []
+
+    def extract_with_progress(file_path: str) -> PDFDoc:
+        """Wrapper to add progress callback."""
+        doc = _extract_using_mistral_single(file_path)
+        progress_callback(1.0 / len(file_paths))
+        return doc
+
     results, failed = process_files_with_retries(
         file_paths=file_paths,
-        process_func=_extract_using_mistral_single,
+        process_func=extract_with_progress,
         max_threads=max_threads,
         max_retries=max_retries,
         retry_delay=retry_delay,

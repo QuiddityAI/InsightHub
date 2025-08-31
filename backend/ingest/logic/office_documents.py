@@ -11,6 +11,7 @@ from requests import ReadTimeout
 from config.utils import get_default_model
 from data_map_backend.utils import DotDict
 from ingest.logic.common import UPLOADED_FILES_FOLDER, store_thumbnail
+
 # from ingest.logic.pdferret_client import MetaInfo, extract_using_pdferret
 from ingest.logic.mistral_ocr_client import MetaInfo, extract_using_mistral
 from ingest.prompts import folder_summary_prompt
@@ -24,7 +25,12 @@ from ingest.schemas import (
 # from ingest.logic.video import process_video
 
 
-def ai_file_processing_generator(input_items: list[dict], log_error: Callable, parameters: DotDict) -> list[dict]:
+def ai_file_processing_generator(
+    input_items: list[dict],
+    log_error: Callable,
+    parameters: DotDict,
+    progress_callback: Callable[[float], None] = lambda progress: None,
+) -> list[dict]:
     results = {}
     target_field_value = True  # just storing that this item was processed
     file_batch = []
@@ -37,6 +43,7 @@ def ai_file_processing_generator(input_items: list[dict], log_error: Callable, p
         try:
             parsed, failed = extract_using_mistral(
                 [f"{UPLOADED_FILES_FOLDER}/{input_item.uploaded_file_path}" for input_item in batch],
+                progress_callback=progress_callback
             )
         except ReadTimeout:
             logging.error("Mistral OCR timeout")
