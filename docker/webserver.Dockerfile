@@ -9,6 +9,8 @@ COPY --chown=appuser package.json package-lock.json /app/
 USER appuser
 RUN npm install
 
+ARG IS_ON_PREMISE=${IS_ON_PREMISE:-false}
+ARG VITE_REGISTRATION_DISABLED=${IS_ON_PREMISE}
 # copy rest of source code:
 COPY --chown=appuser . /app/
 RUN npx vite build

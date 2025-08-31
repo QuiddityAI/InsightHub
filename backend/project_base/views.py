@@ -1,6 +1,7 @@
 import json
 import logging
 
+from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpResponse
@@ -41,6 +42,10 @@ def login_from_app(request):
 
 @csrf_exempt
 def signup_from_app(request):
+    # Check if registration is disabled for on-premise deployments
+    if getattr(settings, 'IS_ON_PREMISE', False):
+        return HttpResponse("Registration is disabled for this deployment", status=403)
+
     if request.method != "POST":
         # not allowed
         return HttpResponse(status=405)

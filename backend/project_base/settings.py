@@ -68,6 +68,9 @@ SECRET_KEY = "django-insecure-%q9_x-^4%d128ss#4xp&*hzg%%7&gru*=mg@qzb=w)$40_5lae
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("QUIDDITY_DEBUG", False) == "1"
 
+# On-premise deployment setting - disables user registration when True
+IS_ON_PREMISE = os.environ.get("IS_ON_PREMISE", False) == "1"
+
 ALLOWED_HOSTS = ["*"]  # TODO: change this as soons as fixed IP is used to IPv4 and v6 of server
 
 
