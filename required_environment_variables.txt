@@ -11,6 +11,9 @@ COMPOSE_FILE=docker-compose.yaml
 # used to decide for local embedding server or remote provider in some cases:
 GPU_IS_AVAILABLE=False
 
+# set to '1' to disable user registration (for on-premise deployments):
+# IS_ON_PREMISE=false
+
 # --------------------- Required: General: Default Users and Passwords -------------------------
 
 # change the default superuser credentials:

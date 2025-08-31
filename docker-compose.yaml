@@ -29,6 +29,7 @@ services:
       - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-admin}
       - OPENSEARCH_USERNAME=admin
       - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      - IS_ON_PREMISE=${IS_ON_PREMISE:-false}
       # More env variables are taken from the .env file that is copied into the container.
       # Changing variables there will require a rebuild of the container!
 
@@ -37,6 +38,8 @@ services:
     build:
       context: ./frontend
       dockerfile: ../docker/webserver.Dockerfile
+      args:
+        IS_ON_PREMISE: ${IS_ON_PREMISE:-false}
     ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
       - "${WEBSERVER_EXPOSED_IP_V4:-127.0.0.1}:55140:55140"
       - "${WEBSERVER_EXPOSED_IP_V6:-[::1]}:55140:55140"

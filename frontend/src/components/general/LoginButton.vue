@@ -19,7 +19,7 @@ const appState = useAppStateStore()
 const mapState = useMapStateStore()
 const toast = useToast()
 const _window = window
-const registration_disabled = import.meta.env.VITE_REGISTRATION_DISABLED === 'true'
+const registration_disabled = import.meta.env.VITE_REGISTRATION_DISABLED === '1'
 
 </script>
 
