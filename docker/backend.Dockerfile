@@ -15,11 +15,11 @@ RUN mkdir -p /data/quiddity_data && chown -R appuser /data/quiddity_data
 
 # setup python environment and install packages:
 COPY pyproject.toml uv.lock README.md /app/
-RUN uv sync --frozen
+RUN uv sync --frozen && chown -R appuser /app
 
 # copy source code:
-COPY .env /app/
-COPY backend /app/backend
+COPY --chown=appuser .env /app/
+COPY --chown=appuser backend /app/backend
 
 FROM python_env as backend
 

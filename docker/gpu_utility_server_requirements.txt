@@ -5,4 +5,4 @@ umap-learn
 werkzeug
 
 --extra-index-url=https://pypi.nvidia.com
-cuml-cu12==24.12.*
+cuml-cu12==26.2.*

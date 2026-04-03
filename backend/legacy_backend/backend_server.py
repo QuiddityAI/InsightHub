@@ -83,6 +83,7 @@ def convert_flask_to_django_route(path_pattern, methods=["GET"]):
                 if request.body and request.headers.get("Content-Type") == "application/json"
                 else {}
             )
+            request.data = request.body
             request.args = request.GET
             request.form = request.POST
             result = original_route(request, *args, **kwargs)

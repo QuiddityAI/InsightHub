@@ -17,7 +17,7 @@ import ldap
 from django_auth_ldap.config import GroupOfUniqueNamesType, LDAPSearch
 
 # Baseline configuration.
-AUTH_LDAP_SERVER_URI = "ldap://185.192.97.117"
+# AUTH_LDAP_SERVER_URI = "ldap://185.192.97.117"
 
 AUTH_LDAP_BIND_DN = "uid=admin,ou=system"
 AUTH_LDAP_BIND_PASSWORD = "secret"
@@ -237,7 +237,7 @@ AUTHENTICATION_BACKENDS = (
     "social_core.backends.google.GoogleOAuth2",
     "drf_social_oauth2.backends.DjangoOAuth2",
     "django.contrib.auth.backends.ModelBackend",
-    "django_auth_ldap.backend.LDAPBackend",
+    # "django_auth_ldap.backend.LDAPBackend", # turn off LDAP auth for now, as it is currently only used for testing and causes issues with some LDAP setups
 )
 
 DRFSO2_PROPRIETARY_BACKEND_NAME = "VisualDataMapBackend"

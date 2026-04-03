@@ -57,3 +57,5 @@ scripts_and_examples/generated_data/*
 cpython*
 ollama*
 backend/litellmcache/*
+absclust_prod_backup_old_server
+semantic_scholar/*

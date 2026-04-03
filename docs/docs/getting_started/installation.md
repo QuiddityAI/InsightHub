@@ -13,7 +13,7 @@ cd InsightHub
 ```console
 cp required_environment_variables.txt .env
 ```
-and edit the `.env` file to set the variables. File specifies which environment variables are required for the system to run. The LLM functionality (handled by [LLMonkey](https://github.com/QuiddityAI/LLMonkey)) uses Mistral models by default, so it's sufficient to only set `LLMONKEY_MISTRAL_API_KEY` env var. See [their manual for details](https://docs.mistral.ai/getting-started/quickstart/).
+and edit the `.env` file to set the variables. File specifies which environment variables are required for the system to run. The LLM functionality uses DeepInfra models by default (via [litellm](https://github.com/BerriAI/litellm)), so it's sufficient to only set `DEEPINFRA_API_KEY` env var. See [their docs for details](https://deepinfra.com/docs).
 
 - add `docker-compose.override.pdferret.yaml` to your `COMPOSE_FILE` env variable (colon separated) if you want to be able to upload and parse PDF files (and other documents)
 - run `docker compose up -d`. If your setup requires using docker with `sudo`, run `sudo -E docker compose up -d` instead. This important because docker-compose is mounting HOME directory in the containe to get access to gcloud credentials. If `sudo` is used without `-E`, the HOME directory will be different (`/root`) and the credentials will not be found.
