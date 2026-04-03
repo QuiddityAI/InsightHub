@@ -8,13 +8,23 @@ import cbor2
 import requests
 
 data_backend_url = os.getenv("backend_host", "http://127.0.0.1:55125")
+BACKEND_AUTHENTICATION_SECRET = os.getenv("BACKEND_AUTHENTICATION_SECRET", "not_set")
+
+data_backend_client = requests.Session()
+data_backend_client.headers.update({"Authorization": BACKEND_AUTHENTICATION_SECRET})
 
 
-def update_database_layout(dataset_id: int):
+def update_database_layout(dataset_id: int, ignore_known_mapping_conflicts: bool = False):
     url = data_backend_url + "/data_backend/update_database_layout"
     data = {"dataset_id": dataset_id}
-    response = requests.post(url, json=data)
+    response = data_backend_client.post(url, json=data)
     if response.status_code != 204:
+        if ignore_known_mapping_conflicts and "mapper [oa_url] cannot be changed from type [text] to [keyword]" in response.text:
+            logging.warning(
+                "Ignoring known OpenSearch mapping conflict for oa_url while updating database layout: %s",
+                response.text,
+            )
+            return
         logging.error(f"Error during update_database_layout: {repr(response)}, {response.text}")
         raise Exception(response)
     else:
@@ -28,7 +38,7 @@ def insert_many(dataset_id: int, elements: list[dict], skip_generators: bool = F
         "elements": elements,
         "skip_generators": skip_generators,
     }
-    response = requests.post(url, json=data)
+    response = data_backend_client.post(url, json=data)
     if response.status_code != 204:
         logging.error(f"Error during insert_many_sync: {repr(response)}, {response.text}")
         raise Exception(response)
@@ -50,7 +60,7 @@ def insert_vectors(
         "excluded_filter_fields": excluded_filter_fields,
     }
     cbor_data = cbor2.dumps(data)
-    response = requests.post(url, data=cbor_data)
+    response = data_backend_client.post(url, data=cbor_data)
     if response.status_code != 204:
         logging.error(f"Error during insert_vectors_sync: {repr(response)}, {response.text}")
         raise Exception(response)
@@ -95,7 +105,7 @@ def upload_files(
                 "md5_hex": None,
             }
         )
-    response = requests.post(url, data=data, files=files)
+    response = data_backend_client.post(url, data=data, files=files)
     if response.status_code != 200:
         logging.error(f"Error during upload_files: {repr(response)}, {response.text}")
         raise Exception(response)
@@ -109,7 +119,7 @@ def check_pk_existence(dataset_id: int, pks: list[str], access_token: str):
         "pks": pks,
         "access_token": access_token,
     }
-    response = requests.post(url, json=data)
+    response = data_backend_client.post(url, json=data)
     if response.status_code != 200:
         logging.error(f"Error during check_pk_existence: {repr(response)}, {response.text}, {data}")
         raise Exception(response)

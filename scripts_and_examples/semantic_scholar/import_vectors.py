@@ -168,6 +168,7 @@ def import_vector_file(file_path, dataset_id):
 if __name__ == "__main__":
     dataset_id = 80
     release = "2024-06-18"
+    update_database_layout(dataset_id)
     retries = 5
     success = False
     while not success and retries > 0:

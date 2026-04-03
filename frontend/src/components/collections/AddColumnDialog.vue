@@ -31,7 +31,7 @@ const eventBus = inject('eventBus')
 // Reactive state
 const selected_source_fields = ref(['_descriptive_text_fields', '_full_text_snippets'])
 const selected_module = ref('llm')
-const selected_llm = ref('Google_Gemini_Flash_1_5_v1')
+const selected_llm = ref('')
 const selected_language = ref(null)
 const show_advanced_modules = ref(false)
 const use_auto_title = ref(true)
@@ -47,12 +47,20 @@ const custom_prompt = ref('')
 
 const { t } = useI18n();
 
-// Constants
-const default_models = [
-  { 'title': t('AddColumnDialog.small-ai'), 'subtitle': t('AddColumnDialog.small-ai-subtitle'), 'model': 'Mistral_Ministral8b' },
-  { 'title': t('AddColumnDialog.medium-ai'), 'subtitle': t('AddColumnDialog.medium-ai-subtitle'), 'model': 'Google_Gemini_Flash_1_5_v1' },
-  { 'title': t('AddColumnDialog.large-ai'), 'subtitle': t('AddColumnDialog.large-ai-subtitle'), 'model': 'Mistral_Mistral_Large' },
-]
+// Fetch default models from backend
+const default_models = ref([])
+
+httpClient.get('/api/v1/columns/default_models').then((response) => {
+  const defaults = response.data
+  default_models.value = [
+    { 'title': t('AddColumnDialog.small-ai'), 'subtitle': t('AddColumnDialog.small-ai-subtitle'), 'model': defaults.small },
+    { 'title': t('AddColumnDialog.medium-ai'), 'subtitle': t('AddColumnDialog.medium-ai-subtitle'), 'model': defaults.medium },
+    { 'title': t('AddColumnDialog.large-ai'), 'subtitle': t('AddColumnDialog.large-ai-subtitle'), 'model': defaults.large },
+  ]
+  if (!selected_llm.value) {
+    selected_llm.value = defaults.medium
+  }
+})
 
 // Computed properties
 const show_full_text_issue_hint = computed(() => {

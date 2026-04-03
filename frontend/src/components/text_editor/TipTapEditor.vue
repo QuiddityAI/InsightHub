@@ -61,7 +61,6 @@ export default {
         try {
           const dataset_id = match[1]
           const item_id = match[2]
-          console.log(dataset_id, item_id, this.reference_order)
           const idx = this.reference_order.findIndex(([d, i]) => d.toString() === dataset_id && i === item_id) + 1
           const replacement = `<item-reference dataset_id="${dataset_id}" item_id="${item_id}" reference_idx="${idx}"></item-reference>`;
           text = text.replace(match[0], replacement);
@@ -70,6 +69,30 @@ export default {
           text = text.replace(match[0], `[?]`);
         }
       }
+
+      // handle remaining numeric-only citations like [1], [2, 3], [1, 2, 3]
+      // these occur when the LLM outputs grouped citations that the backend didn't expand
+      if (this.reference_order && this.reference_order.length > 0) {
+        const numericRegex = /\[(\d+(?:,\s*\d+)*)\]/g
+        let numMatch
+        while ((numMatch = numericRegex.exec(text)) !== null) {
+          try {
+            const nums = numMatch[1].split(',').map(n => parseInt(n.trim()))
+            // only replace if all numbers are valid reference indices
+            if (nums.every(n => n >= 1 && n <= this.reference_order.length)) {
+              let replacement = ''
+              for (const num of nums) {
+                const [dataset_id, item_id] = this.reference_order[num - 1]
+                replacement += `<item-reference dataset_id="${dataset_id}" item_id="${item_id}" reference_idx="${num}"></item-reference>`
+              }
+              text = text.replace(numMatch[0], replacement)
+            }
+          } catch (error) {
+            console.error(error)
+          }
+        }
+      }
+
       const html = marked.parse(text)
       return html
     }

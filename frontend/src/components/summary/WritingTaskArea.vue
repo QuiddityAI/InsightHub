@@ -28,6 +28,7 @@ export default {
       collection: useAppStateStore().collections.find((collection) => collection.id === this.collection_id),
       writing_task_ids: [],
       quick_question_text: '',
+      default_large_model: '',
 
       templates: [
         {
@@ -36,7 +37,6 @@ export default {
           options: {
             expression: 'Summarize the main points of the items in this collection.',
             source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
-            model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -46,7 +46,6 @@ export default {
           options: {
             expression: 'Summarize the key challenges mentioned in the items in this collection.',
             source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
-            model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -56,7 +55,6 @@ export default {
           options: {
             expression: 'What are some possible research questions that come up when looking at the items in this collection? Use bullet points in markdown syntax.',
             source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
-            model: 'Mistral_Mistral_Large',
             use_all_items: true,
           }
         },
@@ -69,10 +67,16 @@ export default {
   },
   mounted() {
     this.get_writing_tasks()
+    this.fetch_default_models()
   },
   watch: {
   },
   methods: {
+    fetch_default_models() {
+      httpClient.get('/api/v1/columns/default_models').then((response) => {
+        this.default_large_model = response.data.large
+      })
+    },
     get_writing_tasks() {
       const that = this
       const body = {
@@ -98,6 +102,8 @@ export default {
       }
       if (this.appStateStore.user.preferences.default_large_llm) {
         body.options.model = this.appStateStore.user.preferences.default_large_llm
+      } else if (this.default_large_model) {
+        body.options.model = this.default_large_model
       }
       httpClient.post(`/api/v1/write/add_writing_task`, body)
       .then(function (response) {
@@ -118,7 +124,6 @@ export default {
       const options = {
         expression: question,
         source_fields: [META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS, META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS, META_SOURCE_FIELDS.ALL_COLUMNS],
-        model: 'Mistral_Mistral_Large',
         use_all_items: true,
       }
       let name_ellipsis = question.slice(0, 100)
