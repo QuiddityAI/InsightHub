@@ -2,6 +2,7 @@ import time
 
 from columns.logic.process_column import process_cells_blocking
 from columns.schemas import CellData
+from config.llm import default_models
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     CollectionColumn,
@@ -85,7 +86,7 @@ class ResearchAgentWorkflow(WorkflowBase):
                 COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
             ],
             module="llm",  # there is also a special 'relevance' module, but that's a different story
-            parameters={"model": get_default_model("medium").__class__.__name__, "language": settings.result_language},
+            parameters={"model": get_default_model("medium").model_id, "language": settings.result_language},
             auto_run_for_candidates=True,  # set this to run this column for all search results
         )
         time.sleep(2)  # just for the demo to understand the process
@@ -118,7 +119,7 @@ class ResearchAgentWorkflow(WorkflowBase):
                 COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,
             ],
             use_all_items=True,
-            model=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
+            model=user.preferences.get("default_large_llm") or default_models.large,
             expression=f"Summarize the results of the search in regard to this question '{settings.user_input}'.",
             # its always using a default prompt plus this prompt, I just realized it doesn't have the option to override the default prompt yet
         )

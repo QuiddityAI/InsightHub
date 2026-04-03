@@ -1,0 +1,178 @@
+# ============================================================
+# InsightHub LLM Model Registry
+# ============================================================
+# Each top-level key is the canonical model ID used in the app.
+# For standard litellm providers the key IS the litellm model string.
+# For custom OpenAI-compatible providers (nebius, ionos), the key
+# uses a virtual prefix and litellm_model specifies the actual string.
+#
+# Fields:
+#   verbose_name   - Display name
+#   description    - Short description (optional)
+#   capabilities   - [chat], [embeddings], [rerank], [vision, chat]
+#   location       - EU / US / CA / OTHER (optional)
+#   parameters     - Model size label (optional)
+#   aliases        - Old LLMonkey class names for backward compat
+#   litellm_model  - Override the model string passed to litellm (optional)
+#   litellm_kwargs - Extra kwargs for litellm.completion() (optional)
+#   usd_per_1M_input_tokens  - Price override (optional, litellm provides defaults)
+#   usd_per_1M_output_tokens - Price override (optional, litellm provides defaults)
+#   max_input_tokens          - Context window override (optional)
+
+# ============================================================
+# Default model assignments
+# ============================================================
+defaults:
+  # General-purpose tiers
+  models:
+    small: deepinfra/zai-org/GLM-4.7-Flash
+    medium: deepinfra/MiniMaxAI/MiniMax-M2.5
+    large: deepinfra/moonshotai/Kimi-K2.5-Turbo
+
+  # DSPy task-specific models
+  dspy:
+    column_title: deepinfra/zai-org/GLM-4.7-Flash
+    column_language: deepinfra/zai-org/GLM-4.7-Flash
+    query_language: deepinfra/zai-org/GLM-4.7-Flash
+    doc_comparison: deepinfra/MiniMaxAI/MiniMax-M2.5
+    search_query: deepinfra/zai-org/GLM-4.7-Flash
+    tender_summary: deepinfra/zai-org/GLM-4.7-Flash
+
+  # PDFerret processing models
+  pdferret:
+    vision: mistral/mistral-small-latest
+    text: mistral/pixtral-12b-2409
+# ============================================================
+
+# ==================== Mistral (EU) ====================
+
+mistral/ministral-3b-latest:
+  verbose_name: "Ministral 3B"
+  description: "Considered the world's best edge model for various tasks."
+  capabilities: [chat]
+  location: EU
+  parameters: "3B"
+  usd_per_1M_input_tokens: 0.04
+  usd_per_1M_output_tokens: 0.04
+  max_input_tokens: 131072
+  aliases:
+    - Mistral_Ministral3b
+
+mistral/ministral-8b-latest:
+  verbose_name: "Ministral 8B"
+  description: "High-performance model with a great performance/price ratio."
+  capabilities: [chat]
+  location: EU
+  parameters: "8B"
+  usd_per_1M_input_tokens: 0.10
+  usd_per_1M_output_tokens: 0.10
+  max_input_tokens: 131072
+  aliases:
+    - Mistral_Ministral8b
+
+mistral/mistral-large-latest:
+  verbose_name: "Mistral Large"
+  description: "Top-tier reasoning model for high-complexity tasks."
+  capabilities: [chat]
+  location: EU
+  parameters: "123B"
+  aliases:
+    - Mistral_Mistral_Large
+
+mistral/mistral-small-latest:
+  verbose_name: "Mistral Small"
+  description: "Enterprise-grade model for small-scale tasks."
+  capabilities: [chat]
+  location: EU
+  parameters: "22B"
+  aliases:
+    - Mistral_Mistral_Small
+
+mistral/mistral-embed:
+  verbose_name: "Mistral Embed"
+  description: "Designed for extracting semantic representations from text."
+  capabilities: [embeddings]
+  location: EU
+  parameters: "N/A"
+  aliases:
+    - Mistral_Mistral_Embed
+
+mistral/open-mistral-nemo:
+  verbose_name: "Mistral Nemo"
+  description: "A multilingual model released in July 2024."
+  capabilities: [chat]
+  location: EU
+  parameters: "12B"
+  aliases:
+    - Mistral_Mistral_Nemo
+
+mistral/codestral-latest:
+  verbose_name: "Codestral"
+  description: "A language model optimized for coding tasks."
+  capabilities: [chat]
+  location: EU
+  parameters: "22B"
+  aliases:
+    - Mistral_Codestral
+
+mistral/pixtral-12b-2409:
+  verbose_name: "Pixtral"
+  description: "A 12B model combining image understanding with text processing."
+  capabilities: [vision, chat]
+  location: EU
+  parameters: "12B"
+  aliases:
+    - Mistral_Pixtral
+
+mistral/pixtral-large-latest:
+  verbose_name: "Pixtral Large"
+  description: "A 123B model combining image understanding with text processing."
+  capabilities: [vision, chat]
+  location: EU
+  parameters: "123B"
+  aliases:
+    - Mistral_Pixtral_Large
+
+
+# ==================== DeepInfra (US) ====================
+
+deepinfra/zai-org/GLM-4.7-Flash:
+  verbose_name: "GLM-4.7 Flash (DeepInfra)"
+  description: "Fast and affordable model by Zhipu AI."
+  capabilities: [chat]
+  location: US
+  parameters: "~9B"
+  usd_per_1M_input_tokens: 0.06
+  usd_per_1M_output_tokens: 0.40
+  max_input_tokens: 202752
+
+deepinfra/MiniMaxAI/MiniMax-M2.5:
+  verbose_name: "MiniMax M2.5 (DeepInfra)"
+  description: "MiniMax M2.5 with 1M context window."
+  capabilities: [chat]
+  location: US
+  parameters: "M2.5"
+  usd_per_1M_input_tokens: 0.27
+  usd_per_1M_output_tokens: 0.95
+  max_input_tokens: 196608
+
+deepinfra/moonshotai/Kimi-K2.5:
+  verbose_name: "Kimi K2.5 (DeepInfra)"
+  description: "Moonshot AI's Kimi K2.5 reasoning model."
+  capabilities: [chat]
+  location: US
+  parameters: "K2.5"
+  usd_per_1M_input_tokens: 0.45
+  usd_per_1M_output_tokens: 2.25
+  max_input_tokens: 262144
+
+
+deepinfra/moonshotai/Kimi-K2.5-Turbo:
+  verbose_name: "Kimi K2.5 Turbo (DeepInfra)"
+  description: "Moonshot AI's Kimi K2.5 Turbo reasoning model."
+  capabilities: [chat]
+  location: US
+  parameters: "K2.5"
+  usd_per_1M_input_tokens: 0.45
+  usd_per_1M_output_tokens: 3.0
+  max_input_tokens: 262144

@@ -3,6 +3,7 @@ import logging
 import dspy
 import numpy as np
 
+from config.llm import default_models
 from config.utils import get_default_model
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
@@ -201,7 +202,7 @@ class ExhaustiveSearchWithAnswerWorkflow(WorkflowBase):
                 "_column__" + info_column.identifier,
             ],
             use_all_items=True,
-            model=user.preferences.get("default_large_llm") or "Mistral_Mistral_Large",
+            model=user.preferences.get("default_large_llm") or default_models.large,
             expression=f"Summarize the results of the search in regard to this question '{settings.user_input}'.",
             # its always using a default prompt plus this prompt, I just realized it doesn't have the option to override the default prompt yet
         )

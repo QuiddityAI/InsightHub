@@ -164,7 +164,7 @@ class QuiddityAgentAPI:
             ],
             module=module,  # there is also a special 'relevance' module, but that's a different story
             parameters={
-                "model": get_default_model("medium").__class__.__name__,
+                "model": get_default_model("medium").model_id,
                 "language": self.settings.result_language,
                 "dspy_model": dspy_model.__name__ if dspy_model else None,
                 "dspy_model_parameters": dspy_model_parameters,

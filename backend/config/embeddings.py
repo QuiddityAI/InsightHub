@@ -23,7 +23,7 @@ def get_hosted_emb_litellm_kwargs(model: str) -> dict:
     # also, EU hosting problem, we might want to always use local embeddings
     if model == "intfloat/multilingual-e5-large-instruct":
         return get_local_emb_litellm_kwargs(model)
-    for var_name in (var_names := ["DEEPINFRA_API_KEY", "LLMONKEY_DEEPINFRA_API_KEY"]):
+    for var_name in (var_names := ["DEEPINFRA_API_KEY"]):
         api_key = os.getenv(var_name)
         if api_key:
             break
@@ -38,8 +38,8 @@ def get_hosted_emb_litellm_kwargs(model: str) -> dict:
     return kwargs
 
 
-VERTEX_PROJECT_ID = "visual-data-map"
-VERTEX_LOCATION = "europe-west3"
+VERTEX_PROJECT_ID = os.getenv("VERTEXAI_PROJECT", "visual-data-map")
+VERTEX_LOCATION = os.getenv("VERTEXAI_LOCATION", "europe-west3")
 
 google_multimodal_model_kwargs = dict(
     model="vertex_ai/multimodalembedding@001",

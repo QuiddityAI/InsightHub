@@ -1,7 +1,7 @@
 import logging
 import re
 
-from llmonkey.llms import Google_Gemini_Flash_1_5_v1
+from litellmonkey import LiteLLModel
 
 from data_map_backend.models import DataCollection, Dataset
 from search.schemas import Filter, SearchTaskSettings
@@ -30,7 +30,7 @@ def _get_filter_prompt_for_language(filter_prompts: str | None, language: str):
 
 
 def extract_filters(search_task: SearchTaskSettings, filter_prompt: str):
-    filters, response = Google_Gemini_Flash_1_5_v1().generate_structured_array_response(
+    filters, response = LiteLLModel("vertex_ai/gemini-1.5-flash-001").generate_structured_array_response(
         Filter, filter_prompt, as_dicts=True
     )
     for filter in filters:

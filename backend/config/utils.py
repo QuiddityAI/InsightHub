@@ -1,7 +1,7 @@
 from typing import Literal, Type
 
 import dspy
-from llmonkey.llms import BaseLLMModel
+from litellmonkey import BaseLLMModel
 
 from config.llm import default_dspy_models, default_models
 
@@ -22,7 +22,7 @@ def get_default_dspy_llm(task_name: str) -> BaseLLMModel:
 
     """
     try:
-        llmonkey_model = BaseLLMModel.load(default_dspy_models[task_name])
+        model = BaseLLMModel.load(default_dspy_models[task_name])
     except KeyError:
         raise ValueError(f"Default model not found for signature {task_name}")
-    return llmonkey_model
+    return model

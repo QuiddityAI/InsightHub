@@ -2,10 +2,9 @@ import json
 import os
 
 import dspy
-from llmonkey.llms import Google_Gemini_Flash_1_5
+from litellmonkey import LiteLLModel
 
-Model = Google_Gemini_Flash_1_5
-model = Model()
+model = LiteLLModel("vertex_ai/gemini-1.5-flash-001")
 
 
 BASE_FOLDER = "scripts_and_examples/generated_data"

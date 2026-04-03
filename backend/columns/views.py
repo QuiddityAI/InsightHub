@@ -5,7 +5,7 @@ import time
 
 import dspy
 from django.http import HttpRequest, HttpResponse
-from llmonkey.llms import BaseLLMModel
+from litellmonkey import BaseLLMModel
 from ninja import NinjaAPI
 
 from columns.logic.process_column import (
@@ -268,3 +268,13 @@ def get_available_llm_models_route(request):
         if required_capability in config["capabilities"]:
             configs.append(config)
     return configs
+
+
+@api.get("default_models")
+def get_default_models_route(request):
+    from config.llm import default_models
+    return {
+        "small": default_models.small,
+        "medium": default_models.medium,
+        "large": default_models.large,
+    }

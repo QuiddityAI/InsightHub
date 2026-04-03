@@ -4,6 +4,7 @@ import logging
 from django.http import HttpRequest, HttpResponse
 from ninja import NinjaAPI
 
+from config.llm import default_models
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     DataCollection,
@@ -57,7 +58,7 @@ def add_writing_task_route(request: HttpRequest, paylaod: AddWritingTaskPayload)
         collection_id=paylaod.collection_id,
         class_name=paylaod.class_name,
         name=paylaod.name,
-        model="Mistral_Mistral_Large",  # might be overwritten by options
+        model=default_models.large,  # might be overwritten by options
         source_fields=[
             COLUMN_META_SOURCE_FIELDS.DESCRIPTIVE_TEXT_FIELDS,
             COLUMN_META_SOURCE_FIELDS.FULL_TEXT_SNIPPETS,

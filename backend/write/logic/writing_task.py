@@ -1,10 +1,11 @@
 import json
 import logging
+import re
 import threading
 
 import dspy
 from django.db.models.manager import BaseManager
-from llmonkey.llms import BaseLLMModel
+from litellmonkey import BaseLLMModel
 
 from config.utils import get_default_model
 from data_map_backend.models import (
@@ -117,16 +118,27 @@ def _execute_writing_task(task: WritingTask):
         )
 
     # replace reference numbers with actual document IDs:
-    for i, ds_and_item_id in enumerate(provided_data_items):
-        if f"[{i + 1}]" in response_text:
-            response_text = response_text.replace(f"[{i + 1}]", f"[{ds_and_item_id[0]}, {ds_and_item_id[1]}]")
+    # handles both single [1] and grouped [1, 2] or [1, 2, 3] citations
+    def _replace_citation_match(match):
+        nums = [int(n.strip()) for n in match.group(1).split(",")]
+        parts = []
+        for num in nums:
+            idx = num - 1
+            if 0 <= idx < len(provided_data_items):
+                ds_and_item_id = provided_data_items[idx]
+                parts.append(f"[{ds_and_item_id[0]}, {ds_and_item_id[1]}]")
+            else:
+                parts.append(f"[{num}]")
+        return "".join(parts)
+
+    response_text = re.sub(r"\[([\d]+(?:,\s*[\d]+)*)\]", _replace_citation_match, response_text)
 
     _move_last_result_to_previous_versions(task)
 
     # save results:
     task.text = response_text
     task.additional_results = {
-        "used_prompt": f"model: {model.__class__.__name__}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
+        "used_prompt": f"model: {model.model_id}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
         "references": provided_data_items,
     }
     task.is_processing = False
@@ -152,7 +164,7 @@ def _execute_writing_task_like_chat_without_context(task: WritingTask):
     # save results:
     task.text = response_text
     task.additional_results = {
-        "used_prompt": f"model: {model.__class__.__name__}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
+        "used_prompt": f"model: {model.model_id}\nsystem_prompt: {system_prompt}\nuser_prompt: {user_prompt}",
         "references": [],
     }
     task.is_processing = False
@@ -220,13 +232,13 @@ def _get_previous_tasks_context(task: WritingTask):
 def _execute_default_writing_task(task: WritingTask, context: str):
     assert task.expression is not None, "Expression must be set for writing task"
 
-    default_model = get_default_model("large").__class__.__name__
+    default_model = get_default_model("large").model_id
     model = BaseLLMModel.load(task.model or default_model)
 
     # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:
-    ai_credits = model.config.euro_per_1M_output_tokens / 5.0
+    ai_credits = model.config.usd_per_1M_output_tokens / 5.0
     usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by.id, "External AI")  # type: ignore
-    result = usage_tracker.track_usage(ai_credits, f"write summary using {model.__class__.__name__}")
+    result = usage_tracker.track_usage(ai_credits, f"write summary using {model.model_id}")
     if result["approved"] == True:
         with dspy.context(lm=dspy.LM(**model.to_litellm(), max_tokens=10000, temperature=0.7)):  # type: ignore
             response_text = writing_task_writer(task=task.expression, documents=context).output
@@ -248,13 +260,13 @@ def _format_prompt_and_get_result(task: WritingTask, context: str, prompt_templa
     else:
         user_prompt = task.expression
 
-    default_model = get_default_model("large").__class__.__name__
+    default_model = get_default_model("large").model_id
     model = BaseLLMModel.load(task.model or default_model)
 
     # necessary 'AI credits' is defined by us as the cost per 1M tokens / factor:
-    ai_credits = model.config.euro_per_1M_output_tokens / 5.0
+    ai_credits = model.config.usd_per_1M_output_tokens / 5.0
     usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by.id, "External AI")  # type: ignore
-    result = usage_tracker.track_usage(ai_credits, f"write summary using {model.__class__.__name__}")
+    result = usage_tracker.track_usage(ai_credits, f"write summary using {model.model_id}")
     if result["approved"] == True:
         response = model.generate_prompt_response(
             system_prompt=system_prompt,

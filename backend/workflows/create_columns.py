@@ -30,7 +30,7 @@ def create_relevance_column(
         ],
         module="relevance",
         parameters={
-            "model": user.preferences.get("default_small_llm") or med_model.__class__.__name__,
+            "model": user.preferences.get("default_small_llm") or med_model.model_id,
             "language": language,
         },
         auto_run_for_candidates=True,

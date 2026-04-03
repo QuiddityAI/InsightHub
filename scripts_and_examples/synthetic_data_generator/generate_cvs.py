@@ -6,7 +6,6 @@ import subprocess
 import dspy
 import json_repair
 from common import BASE_FOLDER, generate_company, model, set_stored_data, stored_data
-from llmonkey.llms import Google_Gemini_Flash_1_5
 
 CV_FOLDER = os.path.join(BASE_FOLDER, "cvs_de")
 if not os.path.exists(CV_FOLDER):
