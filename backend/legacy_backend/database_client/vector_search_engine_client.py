@@ -74,13 +74,21 @@ class VectorSearchEngineClient(object):
             if (field.index_parameters or {}).get("datatype") == "float16"
             else models.Datatype.FLOAT32
         )
+        quantization_type = (field.index_parameters or {}).get("quantization", "product_x32")
         quantization_config = None
-        if (field.index_parameters or {}).get("quantization") == "scalar_int8":
+        if quantization_type == "scalar_int8":
             quantization_config = models.ScalarQuantization(
                 scalar=models.ScalarQuantizationConfig(
                     type=models.ScalarType.INT8,
                     quantile=0.99,
                     always_ram=False,
+                ),
+            )
+        elif quantization_type == "product_x32":
+            quantization_config = models.ProductQuantization(
+                product=models.ProductQuantizationConfig(
+                    compression=models.CompressionRatio.X32,
+                    always_ram=True,
                 ),
             )
         vector_configs[field.identifier] = models.VectorParams(
@@ -346,6 +354,13 @@ class VectorSearchEngineClient(object):
                 group_by="parent_id",
                 group_size=max_sub_items,
                 query_filter=qdrant_filters,
+                search_params=models.SearchParams(
+                    quantization=models.QuantizationSearchParams(
+                        ignore=False,
+                        rescore=True,
+                        oversampling=4.0,
+                    ),
+                ),
             )
             # hits.groups is a list of {'id': parent_id, 'hits': [{'id': sub_id, 'score': score, 'payload': dict} ...]}
             hits = []
@@ -389,6 +404,11 @@ class VectorSearchEngineClient(object):
             query_filter=qdrant_filters,
             search_params=models.SearchParams(
                 hnsw_ef=50,  # higher ef means more accurate search, but slower, default is 100
+                quantization=models.QuantizationSearchParams(
+                    ignore=False,
+                    rescore=True,
+                    oversampling=4.0,
+                ),
             ),
         )
         if min_results > 0 and len(hits) < min_results and score_threshold:
@@ -592,6 +612,13 @@ class VectorSearchEngineClient(object):
             with_vectors=with_vectors,
             limit=limit,
             score_threshold=None,
+            search_params=models.SearchParams(
+                quantization=models.QuantizationSearchParams(
+                    ignore=False,
+                    rescore=True,
+                    oversampling=4.0,
+                ),
+            ),
         )
         if score_threshold is not None:
             for i in range(min_results, len(hits)):
