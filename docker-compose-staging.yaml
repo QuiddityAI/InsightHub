@@ -2,15 +2,21 @@ name: vsm_staging
 services:
   backend-staging:
     image: visual_data_map/backend
+    restart: unless-stopped
     build:
       context: ./
       dockerfile: ./docker/backend.Dockerfile
     volumes:
       - quiddity_data:/data
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
+      - .env:/app/backend/.env
+    extra_hosts:
+      # makes the local (host-side) LLM server reachable from inside the container
+      - "host.docker.internal:host-gateway"
     environment:
       - data_backend_host=http://localhost:55125
-      - postgres_host=postgres-staging
+      - LOCAL_LLM_SERVER_URL=${LOCAL_LLM_SERVER_URL:-http://host.docker.internal:18234/v1}
+      - postgres_host=postgres
       - BACKEND_AUTHENTICATION_SECRET
       - backend_host=http://localhost:55125
       - GPU_UTILITY_SERVER_URL=http://gpu-utility-server:55180
@@ -23,6 +29,7 @@ services:
       - OPENSEARCH_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
   webserver-staging:
     image: visual_data_map/webserver
+    restart: unless-stopped
     build:
       context: ./frontend
       dockerfile: ../docker/webserver.Dockerfile
@@ -31,17 +38,10 @@ services:
       - "${WEBSERVER_STAGING_EXPOSED_IP_V6:-[::1]}:55440:55140"
     environment:
       - backend_host=http://backend-staging:55125
-  postgres-staging:
-    image: postgres:16
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=visdatamap
 volumes:
   quiddity_data:
-  postgres_data:
+    external: true
+    name: insighthub_quiddity_data
 networks:
   default:
     external: true

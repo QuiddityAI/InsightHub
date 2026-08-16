@@ -8,7 +8,12 @@ from litellmonkey.models import ModelCapabilities, ModelConfig, ModelLocation
 
 logger = logging.getLogger(__name__)
 
-_CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "llm_models.yaml"
+# Defaults to the sibling config/ dir; LLM_MODELS_CONFIG_PATH lets a host app
+# (e.g. pdferret, which vendors this package) point at its own registry.
+_CONFIG_PATH = Path(
+    os.environ.get("LLM_MODELS_CONFIG_PATH")
+    or Path(__file__).resolve().parent.parent / "config" / "llm_models.yaml"
+)
 
 _registry: dict[str, dict] = {}  # canonical_id -> raw YAML dict
 _alias_map: dict[str, str] = {}  # alias -> canonical_id
@@ -18,10 +23,14 @@ _loaded = False
 
 
 def _resolve_env_vars(value):
-    """Resolve ${ENV_VAR} references in a string."""
+    """Resolve ${ENV_VAR} / ${ENV_VAR:-default} references in a string."""
     if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
-        env_var = value[2:-1]
-        return os.environ.get(env_var, "")
+        expr = value[2:-1]
+        env_var, sep, default = expr.partition(":-")
+        resolved = os.environ.get(env_var, "")
+        if not resolved and sep:
+            return default
+        return resolved
     return value
 
 
@@ -143,3 +152,10 @@ def get_defaults(section: str) -> dict[str, str]:
     """Get default model assignments for a section (models, dspy, pdferret)."""
     _load()
     return dict(_defaults.get(section, {}))
+
+
+def get_defaults_list(section: str) -> list[str]:
+    """Get a list-valued default section (e.g. fallback_chain)."""
+    _load()
+    value = _defaults.get(section, [])
+    return list(value) if value else []

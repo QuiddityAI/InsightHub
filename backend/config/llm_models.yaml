@@ -25,24 +25,75 @@
 defaults:
   # General-purpose tiers
   models:
-    small: deepinfra/zai-org/GLM-4.7-Flash
-    medium: deepinfra/MiniMaxAI/MiniMax-M2.5
-    large: deepinfra/moonshotai/Kimi-K2.5-Turbo
+    small: local/qwen3.6-35b-a3b-nothink
+    medium: local/qwen3.6-35b-a3b
+    large: fireworks_ai/accounts/fireworks/models/deepseek-v4-flash-0731
 
-  # DSPy task-specific models
+  # DSPy task-specific models. These are short-output tasks (titles, language
+  # codes, queries), so reasoning is disabled: it dominates latency without
+  # improving the answer.
   dspy:
-    column_title: deepinfra/zai-org/GLM-4.7-Flash
-    column_language: deepinfra/zai-org/GLM-4.7-Flash
-    query_language: deepinfra/zai-org/GLM-4.7-Flash
-    doc_comparison: deepinfra/MiniMaxAI/MiniMax-M2.5
-    search_query: deepinfra/zai-org/GLM-4.7-Flash
-    tender_summary: deepinfra/zai-org/GLM-4.7-Flash
+    column_title: local/qwen3.6-35b-a3b-nothink
+    column_language: local/qwen3.6-35b-a3b-nothink
+    query_language: local/qwen3.6-35b-a3b-nothink
+    doc_comparison: local/qwen3.6-35b-a3b-nothink
+    search_query: local/qwen3.6-35b-a3b-nothink
+    tender_summary: local/qwen3.6-35b-a3b-nothink
 
-  # PDFerret processing models
+  # Fallback chain: models tried in order when the primary model fails
+  # (e.g. the local model server is down or the input exceeds its context).
+  # Supports any litellm model ID registered below.
+  fallback_chain:
+    - fireworks_ai/accounts/fireworks/models/deepseek-v4-flash-0731
+
+  # PDFerret processing models. PDFerret vendors litellmonkey and reads this
+  # same file (mounted into its container), so these are canonical IDs too.
+  # Reasoning is disabled here: pdferret caps output at 500-1000 max_tokens, which
+  # reasoning tokens exhaust before any content is produced (yielding empty responses).
   pdferret:
-    vision: mistral/mistral-small-latest
-    text: mistral/pixtral-12b-2409
+    vision: local/qwen3.6-35b-a3b-nothink
+    text: local/qwen3.6-35b-a3b-nothink
 # ============================================================
+
+# ==================== Local (self-hosted) ====================
+
+# llama.cpp / OpenAI-compatible server on the Docker host.
+# LOCAL_LLM_SERVER_URL overrides the endpoint (inside containers this must be
+# reachable from the container, e.g. http://host.docker.internal:18234/v1).
+local/qwen3.6-35b-a3b:
+  verbose_name: "Qwen3.6 35B A3B (local)"
+  description: "Locally hosted Qwen3.6 35B-A3B MoE, served by llama.cpp. Vision requires the server to be started with --mmproj."
+  capabilities: [vision, chat]
+  location: EU
+  parameters: "35B-A3B"
+  litellm_model: openai/qwen3.6-35b-a3b
+  litellm_kwargs:
+    api_base: "${LOCAL_LLM_SERVER_URL:-http://localhost:18234/v1}"
+    api_key: "no_api_key"
+  usd_per_1M_input_tokens: 0.0
+  usd_per_1M_output_tokens: 0.0
+  max_input_tokens: 32768
+
+# Same local model with reasoning turned off (the Qwen3.6 chat template emits an
+# empty <think></think> block when enable_thinking is false). Used for the "small"
+# tier, where reasoning tokens dominate latency and can starve max_tokens.
+local/qwen3.6-35b-a3b-nothink:
+  verbose_name: "Qwen3.6 35B A3B (local, no reasoning)"
+  description: "Locally hosted Qwen3.6 35B-A3B with reasoning disabled, served by llama.cpp."
+  capabilities: [vision, chat]
+  location: EU
+  parameters: "35B-A3B"
+  litellm_model: openai/qwen3.6-35b-a3b
+  litellm_kwargs:
+    api_base: "${LOCAL_LLM_SERVER_URL:-http://localhost:18234/v1}"
+    api_key: "no_api_key"
+    extra_body:
+      chat_template_kwargs:
+        enable_thinking: false
+  usd_per_1M_input_tokens: 0.0
+  usd_per_1M_output_tokens: 0.0
+  max_input_tokens: 32768
+
 
 # ==================== Mistral (EU) ====================
 
@@ -176,3 +227,34 @@ deepinfra/moonshotai/Kimi-K2.5-Turbo:
   usd_per_1M_input_tokens: 0.45
   usd_per_1M_output_tokens: 3.0
   max_input_tokens: 262144
+
+fireworks_ai/accounts/fireworks/models/deepseek-v4-flash-0731:
+  verbose_name: "DeepSeek V4 Flash (Fireworks)"
+  description: "DeepSeek V4 Flash 0731, provided by Fireworks. Large tier + fallback for the local model."
+  capabilities: [chat]
+  location: US
+  parameters: "V4-Flash"
+  # NOTE: prices are estimates - litellm has no entry for this model yet.
+  usd_per_1M_input_tokens: 0.35
+  usd_per_1M_output_tokens: 1.40
+  max_input_tokens: 1048576
+
+fireworks_ai/accounts/fireworks/models/minimax-m2p7:
+  verbose_name: "MiniMax M2.7 (Fireworks)"
+  description: "MiniMax M2.7, provided by Fireworks."
+  capabilities: [chat]
+  location: US
+  parameters: "125B"
+  usd_per_1M_input_tokens: 0.30
+  usd_per_1M_output_tokens: 1.20
+  max_input_tokens: 196608
+
+fireworks_ai/accounts/fireworks/models/deepseek-v3p2:
+  verbose_name: "DeepSeek v3.2 (Fireworks)"
+  description: "DeepSeek v3.2, provided by Fireworks."
+  capabilities: [chat]
+  location: US
+  parameters: "125B"
+  usd_per_1M_input_tokens: 0.35
+  usd_per_1M_output_tokens: 1.40
+  max_input_tokens: 196608

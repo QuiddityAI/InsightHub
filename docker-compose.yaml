@@ -1,3 +1,5 @@
+name: insighthub
+
 services:
 
   # --------------- Custom Quiddity Containers ---------------
@@ -13,6 +15,9 @@ services:
       - .env:/app/backend/.env
     # ports:  # expose port outside of this virtual network
     #   - "127.0.0.1:55125:55125"
+    extra_hosts:
+      # makes the local (host-side) LLM server reachable from inside the container
+      - "host.docker.internal:host-gateway"
     environment:
       - data_backend_host=http://localhost:55125
       - postgres_host=postgres
@@ -23,6 +28,7 @@ services:
       - GPU_UTILITY_SERVER_URL=http://gpu-utility-server:55180
       - PDFERRET_BASE_URL=http://pdferret:80
       - LOCAL_MODEL_SERVER_URL=http://infinity-model-server:55181
+      - LOCAL_LLM_SERVER_URL=${LOCAL_LLM_SERVER_URL:-http://host.docker.internal:18234/v1}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
       - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-admin@example.com}
       - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
@@ -47,6 +53,7 @@ services:
 
   qdrant:
     image: "qdrant/qdrant:latest"
+    restart: unless-stopped
     volumes:
       - qdrant_storage:/qdrant/storage
     ports:
@@ -54,6 +61,7 @@ services:
 
   opensearch:
     image: "opensearchproject/opensearch:latest"
+    restart: unless-stopped
     volumes:
       - opensearch_data:/usr/share/opensearch/data
       - ./docker/resources/german_decompound.txt:/usr/share/opensearch/config/german_decompound.txt
@@ -73,9 +81,11 @@ services:
 
   postgres:
     image: postgres:16
+    restart: unless-stopped
     command: -c 'max_connections=500'
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./docker/resources/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -85,6 +95,7 @@ services:
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:latest
+    restart: unless-stopped
     ports:  # exposed to the outside, remember to use a secure password
       - "${OPENSEARCH_DASHBOARD_EXPOSED_IP:-127.0.0.1}:${OPENSEARCH_DASHBOARD_EXPOSED_PORT:-5601}:5601"
     environment:
@@ -117,6 +128,7 @@ services:
 
   infinity-model-server:
     image: michaelf34/infinity:latest-cpu
+    restart: unless-stopped
     volumes:
       - infinity_model_cache:/app/.cache
     # ports:  # expose port outside of this virtual network

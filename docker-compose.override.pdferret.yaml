@@ -2,23 +2,31 @@
 services:
 
   pdferret:
-    image: quiddityai/pdferret:v1.0.0
+    # built locally from ~/pdferret (migrated from llmonkey to litellmonkey); not pushed to a registry
+    image: quiddityai/pdferret:v1.1.0-litellmonkey
     ports:  # expose port outside of this virtual network
       - "127.0.0.1:58081:80"
     dns:
       - 8.8.8.8
       - 4.4.4.4
+    extra_hosts:
+      # makes the local (host-side) LLM server reachable from inside the container
+      - "host.docker.internal:host-gateway"
     environment:
       - PDFERRET_TIKA_SERVER_URL=http://tika:9998
+      - LOCAL_LLM_SERVER_URL=${LOCAL_LLM_SERVER_URL:-http://host.docker.internal:18234/v1}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEEPINFRA_API_KEY=${DEEPINFRA_API_KEY}
       - COHERE_API_KEY=${COHERE_API_KEY}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       - NEBIUS_API_KEY=${NEBIUS_API_KEY}
+      - FIREWORKS_AI_API_KEY=${FIREWORKS_AI_API_KEY}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/pdferret/application_default_credentials.json
     volumes:
       - ${HOME}/.config/gcloud/application_default_credentials.json:/app/pdferret/application_default_credentials.json
+      # single source of truth for the model registry, shared with the backend
+      - ./backend/config/llm_models.yaml:/app/config/llm_models.yaml:ro
 
 
   tika :
