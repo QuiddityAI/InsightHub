@@ -12,7 +12,7 @@ from data_map_backend.models import Generator
 from data_map_backend.utils import DotDict, pk_to_uuid_id
 from data_map_backend.views.other_views import get_serialized_dataset_cached
 from legacy_backend.api_clients import openalex_api
-from legacy_backend.api_clients.cohere_reranking import get_reranking_results
+from legacy_backend.api_clients.reranking import get_reranking_results
 from legacy_backend.database_client.django_client import get_related_collection_items
 from legacy_backend.database_client.text_search_engine_client import (
     TextSearchEngineClient,
@@ -602,7 +602,9 @@ def get_relevant_parts_of_item_using_query_vector(
     if rerank and query and source_texts and len(vector_search_results) > 1:
         texts = [source_texts[item.payload["array_index"]] for item in vector_search_results]
         reranking = get_reranking_results(query, tuple(texts), limit)
-        vector_search_results = [vector_search_results[rerank_result.index] for rerank_result in reranking.results]
+        vector_search_results = [
+            vector_search_results[rerank_result.index] for rerank_result in reranking.reranked_documents
+        ]
     if len(vector_search_results) == 0:
         logging.warning(
             f"No relevant parts found for item {item_id} using vector search, this should not happen if the item is expected to have full text chunks"

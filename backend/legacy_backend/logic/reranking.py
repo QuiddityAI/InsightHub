@@ -1,19 +1,21 @@
 import json
 import logging
 
-import cohere
 from diskcache import Cache
 
-from legacy_backend.api_clients.cohere_reranking import get_reranking_results
+from config.llm import default_rerank_model
+from legacy_backend.api_clients.reranking import get_reranking_results
 from legacy_backend.logic.chat_and_extraction_common import (
     get_context_for_each_item_in_search_results,
 )
+from litellmonkey.models import RerankResponse
 
 cache = Cache("/data/quiddity_data/reranking_cache/")
 
 
 def rerank(query: str, sorted_ids: list[tuple[int, str]], items_by_dataset: dict, top_n=10) -> list[tuple[int, str]]:
-    cache_key = f"rerank_{query}_{json.dumps(sorted_ids[:top_n])}_{top_n}"
+    # the model is part of the cache key: different rerankers give different rankings
+    cache_key = f"rerank_{default_rerank_model}_{query}_{json.dumps(sorted_ids[:top_n])}_{top_n}"
     if cache_key in cache:
         # logging.warning(f"Using reranking cache for query: {query}")
         try:
@@ -22,14 +24,14 @@ def rerank(query: str, sorted_ids: list[tuple[int, str]], items_by_dataset: dict
             logging.error(f"Error while getting reranking cache: {e}", exc_info=True)
             cache.delete(cache_key)
             return rerank(query, sorted_ids, items_by_dataset, top_n)
-        assert isinstance(response, cohere.RerankResponse)
+        assert isinstance(response, RerankResponse)
     else:
         contexts = get_context_for_each_item_in_search_results(sorted_ids[:top_n], items_by_dataset)
         response = get_reranking_results(query, tuple(contexts), top_n)
         cache.set(cache_key, response, expire=3600 * 24 * 7 * 4)  # 4 weeks
 
-    new_indicies = [rerank_result.index for rerank_result in response.results]
-    for rank, rerank_result in enumerate(response.results):
+    new_indicies = [rerank_result.index for rerank_result in response.reranked_documents]
+    for rank, rerank_result in enumerate(response.reranked_documents):
         idx = rerank_result.index
         item = items_by_dataset[sorted_ids[idx][0]][sorted_ids[idx][1]]
         if "_origins" not in item:
@@ -39,7 +41,7 @@ def rerank(query: str, sorted_ids: list[tuple[int, str]], items_by_dataset: dict
                 "type": "reranking",
                 "field": None,
                 "query": query,
-                "score": rerank_result.relevance_score,
+                "score": rerank_result.score,
                 "rank": rank + 1,
             }
         )

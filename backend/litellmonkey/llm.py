@@ -1,7 +1,6 @@
 import base64
 import json
 import logging
-import os
 import re
 from typing import Dict, List, Type, TypeVar
 
@@ -25,8 +24,11 @@ from litellmonkey.models import (
     RerankResponse,
     TokenUsage,
 )
+from litellmonkey.rerank_compat import apply_rerank_compat_patches
 
 logger = logging.getLogger(__name__)
+
+apply_rerank_compat_patches()
 
 T = TypeVar("T")
 
@@ -294,25 +296,39 @@ class LiteLLModel:
         rank_fields: list = None,
         api_key: str = "",
     ) -> RerankResponse:
-        import cohere
+        kwargs = {
+            "model": self._litellm_model,
+            "query": query,
+            "documents": documents or [],
+            "top_n": top_n,
+            "return_documents": False,
+            **self._litellm_kwargs,
+        }
+        if rank_fields:
+            kwargs["rank_fields"] = rank_fields
+        if api_key:
+            kwargs["api_key"] = api_key
 
-        api_key = api_key or self._litellm_kwargs.get("api_key") or os.environ.get("COHERE_API_KEY", "")
-        client = cohere.Client(api_key)
-        # Strip provider prefix from model name for Cohere API
-        model_name = self._config.identifier.split("/")[-1] if "/" in self._config.identifier else self._config.identifier
-        resp = client.rerank(
-            model=model_name,
-            query=query,
-            documents=documents or [],
-            top_n=top_n,
-            rank_fields=rank_fields if rank_fields else None,
+        response = litellm.rerank(**kwargs)
+
+        billed_units = (response.meta or {}).get("billed_units", {}) or {}
+        tokens = (response.meta or {}).get("tokens", {}) or {}
+        token_usage = TokenUsage(
+            prompt_tokens=tokens.get("input_tokens"),
+            total_tokens=billed_units.get("total_tokens") or tokens.get("input_tokens"),
+            search_units=billed_units.get("search_units"),
         )
+        if token_usage.prompt_tokens:
+            # reranking has no output tokens, so the average-price fallback in
+            # _calculate_cost() would be wrong here
+            token_usage.total_cost = token_usage.prompt_tokens / 1e6 * self._config.usd_per_1M_input_tokens
+
         return RerankResponse(
-            provider_used="cohere",
+            provider_used=self._canonical_id.split("/")[0],
             model_used=self._canonical_id,
-            token_usage=TokenUsage(search_units=resp.meta.billed_units.search_units),
+            token_usage=token_usage,
             reranked_documents=[
-                RerankItem(index=item.index, score=item.relevance_score) for item in resp.results
+                RerankItem(index=item["index"], score=item["relevance_score"]) for item in response.results
             ],
         )
 

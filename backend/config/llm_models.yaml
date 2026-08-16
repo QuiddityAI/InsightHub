@@ -46,6 +46,11 @@ defaults:
   fallback_chain:
     - fireworks_ai/accounts/fireworks/models/deepseek-v4-flash-0731
 
+  # Reranking model used for search result / chunk reranking.
+  # Any model below with capabilities: [rerank] can be used here.
+  rerank:
+    default: fireworks_ai/accounts/fireworks/models/qwen3-reranker-8b
+
   # PDFerret processing models. PDFerret vendors litellmonkey and reads this
   # same file (mounted into its container), so these are canonical IDs too.
   # Reasoning is disabled here: pdferret caps output at 500-1000 max_tokens, which
@@ -239,6 +244,25 @@ fireworks_ai/accounts/fireworks/models/deepseek-v4-flash-0731:
   usd_per_1M_output_tokens: 1.40
   max_input_tokens: 1048576
 
+fireworks_ai/accounts/fireworks/models/qwen3-reranker-8b:
+  verbose_name: "Qwen3 Reranker 8B (Fireworks)"
+  description: "Multilingual cross-encoder reranker, provided by Fireworks. Default reranking model."
+  capabilities: [rerank]
+  location: US
+  parameters: "8B"
+  # Fireworks serves a Cohere-style /v1/rerank endpoint. litellm has no
+  # fireworks_ai rerank provider, so the request goes through its "infinity"
+  # provider, which speaks the same format (see litellmonkey/rerank_compat.py).
+  litellm_model: infinity/accounts/fireworks/models/qwen3-reranker-8b
+  litellm_kwargs:
+    api_base: "https://api.fireworks.ai/inference"
+    api_key: "${FIREWORKS_AI_API_KEY}"
+  # NOTE: Fireworks does not list rerank pricing separately; this is the price
+  # of their Qwen3 8B embedding tier, which the reranker is billed like.
+  usd_per_1M_input_tokens: 0.10
+  usd_per_1M_output_tokens: 0.0
+  max_input_tokens: 32768
+
 fireworks_ai/accounts/fireworks/models/minimax-m2p7:
   verbose_name: "MiniMax M2.7 (Fireworks)"
   description: "MiniMax M2.7, provided by Fireworks."
@@ -258,3 +282,20 @@ fireworks_ai/accounts/fireworks/models/deepseek-v3p2:
   usd_per_1M_input_tokens: 0.35
   usd_per_1M_output_tokens: 1.40
   max_input_tokens: 196608
+
+
+# ==================== Cohere (US) ====================
+
+# Previous default reranker, kept as an alternative: set defaults.rerank.default
+# to this ID (needs COHERE_API_KEY).
+cohere/rerank-v3.5:
+  verbose_name: "Cohere Rerank v3.5"
+  description: "Cohere's combined English + multilingual reranker."
+  capabilities: [rerank]
+  location: US
+  litellm_kwargs:
+    api_key: "${COHERE_API_KEY}"
+  # Cohere bills reranking per search unit (USD 2.00 / 1k), not per token.
+  usd_per_1M_input_tokens: 0.0
+  usd_per_1M_output_tokens: 0.0
+  max_input_tokens: 4096

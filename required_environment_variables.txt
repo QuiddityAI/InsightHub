@@ -91,6 +91,7 @@ OPENAI_API_KEY=
 GROQ_API_KEY=
 DEEPINFRA_API_KEY=
 COHERE_API_KEY=
+FIREWORKS_AI_API_KEY=
 IONOS_API_KEY=
 MISTRAL_API_KEY=
 NEBIUS_API_KEY=
@@ -103,6 +104,9 @@ BING_SEARCH_V7_SUBSCRIPTION_KEY=?
 BING_SEARCH_V7_ENDPOINT=?
 
 SEMANTIC_SCHOLAR_API_KEY=?
-# to enable reranking with Cohere:
+# to enable reranking (default model: Qwen3 Reranker 8B on Fireworks):
 # will fallback to no reranking if not set
+# the rerank model is configured in backend/config/llm_models.yaml (defaults.rerank)
+FIREWORKS_AI_API_KEY=?
+# only needed if the rerank model is switched back to cohere/rerank-v3.5:
 COHERE_API_KEY=?
