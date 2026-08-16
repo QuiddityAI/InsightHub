@@ -21,7 +21,7 @@ from columns.schemas import (
     ProcessColumnPayload,
     UpdateColumnConfig,
 )
-from config.utils import get_default_dspy_llm
+from config.utils import dspy_call_with_fallback, get_default_dspy_llm
 from data_map_backend.models import CollectionColumn, CollectionItem, DataCollection
 from data_map_backend.notifier import default_notifier
 from data_map_backend.serializers import (
@@ -71,8 +71,9 @@ def add_column_route(request: HttpRequest, payload: ColumnConfig):
 
     if payload.module in ["llm", "relevance"] and not payload.parameters.get("language"):
         model = get_default_dspy_llm("column_language")
-        with dspy.context(lm=dspy.LM(**model.to_litellm())):
-            lang = column_language_predictor(user_question=payload.expression).language_code
+        lang = dspy_call_with_fallback(
+            column_language_predictor, model, user_question=payload.expression
+        ).language_code
         payload.parameters["language"] = lang
     else:
         lang = payload.parameters.get("language")
@@ -84,8 +85,9 @@ def add_column_route(request: HttpRequest, payload: ColumnConfig):
                 return HttpResponse(status=400)
             try:
                 model = get_default_dspy_llm("column_title")
-                with dspy.context(lm=dspy.LM(**model.to_litellm())):
-                    payload.name = title_predictor(user_question=payload.expression, target_language=lang).title
+                payload.name = dspy_call_with_fallback(
+                    title_predictor, model, user_question=payload.expression, target_language=lang
+                ).title
             except Exception as e:
                 payload.name = "Column"
         else:

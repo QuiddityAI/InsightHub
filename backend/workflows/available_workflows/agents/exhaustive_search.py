@@ -1,11 +1,8 @@
 import logging
 
-import dspy
-
 from config.utils import get_default_model
 from data_map_backend.models import CollectionColumn, DataCollection, Dataset, User
 from workflows.available_workflows.agents.agent_api import QuiddityAgentAPI
-from workflows.available_workflows.agents.utils import override_dspy_model
 from workflows.available_workflows.buiilding_blocks.exhaustive_search_bb import (
     ExhaustiveSearchBB,
 )
@@ -19,7 +16,7 @@ from workflows.schemas import (
     WorkflowOrder,
 )
 
-dspy_lm = dspy.LM(**get_default_model("medium").to_litellm())
+dspy_base_model = get_default_model("medium")
 
 
 @workflow
@@ -69,7 +66,7 @@ class ExhaustiveSearchWorkflow(WorkflowBase):
 
         api = QuiddityAgentAPI(collection, settings, user)
 
-        search_bb = ExhaustiveSearchBB(dspy_lm=dspy_lm, explore_around_rare=False, **selected_params, learn_query=True)
+        search_bb = ExhaustiveSearchBB(dspy_model=dspy_base_model, explore_around_rare=False, **selected_params, learn_query=True)
         collection, out_context = search_bb(api, collection, search_bb.InputContext(user_input=settings.user_input))
 
         api.exit_search_mode()

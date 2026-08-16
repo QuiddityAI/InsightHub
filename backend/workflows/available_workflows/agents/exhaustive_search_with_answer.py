@@ -4,7 +4,7 @@ import dspy
 import numpy as np
 
 from config.llm import default_models
-from config.utils import get_default_model
+from config.utils import dspy_call_with_fallback, get_default_model
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     CollectionColumn,
@@ -36,7 +36,7 @@ from workflows.schemas import (
 )
 from write.logic.writing_task import execute_writing_task_safe
 
-dspy_lm = dspy.LM(**get_default_model("medium").to_litellm())
+dspy_base_model = get_default_model("medium")
 
 
 class ExtractorSignature(dspy.Signature):
@@ -90,7 +90,7 @@ class LongTextExtractor(dspy.Module):
                                     logging.error(
                                         f"Can't get predictions, giving up. Last response: {lm.history[0]['response'].choices[0]}"
                                     )
-                                    # we'll just skip this chunk then
+                                    raise  # escalate so dspy_call_with_fallback can try the next model
         return "\n".join(f"- {fact}" for fact in facts)
 
     def split_text_into_chunks(self, text, chunk_length, overlap_length):
@@ -167,7 +167,7 @@ class ExhaustiveSearchWithAnswerWorkflow(WorkflowBase):
 
         api = QuiddityAgentAPI(collection, settings, user)
 
-        search_bb = ExhaustiveSearchBB(dspy_lm=dspy_lm, explore_around_rare=False, **selected_params, learn_query=True)
+        search_bb = ExhaustiveSearchBB(dspy_model=dspy_base_model, explore_around_rare=False, **selected_params, learn_query=True)
         collection, out_context = search_bb(api, collection, search_bb.InputContext(user_input=settings.user_input))
 
         api.exit_search_mode()
@@ -177,8 +177,7 @@ class ExhaustiveSearchWithAnswerWorkflow(WorkflowBase):
             "Given the user task, tell assistant working with single document what to extract from the document. Also provide the short name of the task.",
         )
         column_task_gen = dspy.Predict(s)
-        with dspy.context(lm=dspy_lm):
-            cell_task_params = column_task_gen(task=settings.user_input)
+        cell_task_params = dspy_call_with_fallback(column_task_gen, dspy_base_model, task=settings.user_input)
         collection.log_explanation(f"Applied task {cell_task_params.assistant_task} to the results...")
         info_column = api.create_column(
             cell_task_params.assistant_task,

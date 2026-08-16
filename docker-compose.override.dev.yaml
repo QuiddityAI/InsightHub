@@ -9,6 +9,7 @@ services:
     environment:
      - QUIDDITY_DEBUG=1
      - PYTHONHOME=${DOCKER_PYTHONHOME}
+     - POSTGRES_DB=visdatamap_dev
     ports:
       - 30001:30001 # debugger
   webserver:

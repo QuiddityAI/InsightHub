@@ -2,6 +2,7 @@ import logging
 
 import dspy
 import numpy as np
+from litellmonkey import BaseLLMModel
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
@@ -22,6 +23,7 @@ from workflows.available_workflows.buiilding_blocks.base_bb import (
     BaseBBContext,
     BaseBuidingBlock,
 )
+from config.utils import dspy_call_with_fallback
 
 
 def group_objects_by_key(objects: list[CollectionItem], key: str, grouped_objects: dict | None = None) -> dict:
@@ -55,7 +57,7 @@ class ExhaustiveSearchBB(BaseBuidingBlock[ExhaustiveSearchInputContext, Exhausti
 
     def __init__(
         self,
-        dspy_lm: dspy.LM,
+        dspy_model: BaseLLMModel,
         max_queries: int = 5,
         top_best_queries: int = 3,
         max_depth: int = 5,
@@ -68,7 +70,7 @@ class ExhaustiveSearchBB(BaseBuidingBlock[ExhaustiveSearchInputContext, Exhausti
         Initializes the ExhaustiveSearchBB class.
 
         Args:
-            dspy_lm (dspy.LM): The LM instance from the dspy library.
+            dspy_model (BaseLLMModel): The language model used for dspy query generation.
             max_queries (int, optional): The maximum number of search queries to explore
             top_best_queries (int, optional): The number of top best queries to consider. Defaults to 3.
             max_depth (int, optional): The maximum depth (in pages) for exploring the best queries. Defaults to 5.
@@ -78,7 +80,7 @@ class ExhaustiveSearchBB(BaseBuidingBlock[ExhaustiveSearchInputContext, Exhausti
 
         self.max_queries = max_queries
         self.items_per_page = items_per_page
-        self.dspy_lm = dspy_lm
+        self.dspy_model = dspy_model
         self.top_best_queries = top_best_queries
         self.explore_around_rare = explore_around_rare
         self.max_depth = max_depth
@@ -102,11 +104,14 @@ class ExhaustiveSearchBB(BaseBuidingBlock[ExhaustiveSearchInputContext, Exhausti
         candidate_queries = []
         # generate queries for all languages in the dataset
         for lang in dataset.languages or ["en"]:
-            with dspy.context(lm=self.dspy_lm):
-                # take first N queries
-                candidate_queries.extend(
-                    queries_gen(user_query=context.user_input, language_code=lang).search_queries[: self.max_queries]
-                )
+            result = dspy_call_with_fallback(
+                queries_gen,
+                self.dspy_model,
+                user_query=context.user_input,
+                language_code=lang,
+            )
+            # take first N queries
+            candidate_queries.extend(result.search_queries[: self.max_queries])
 
         # stage 1: search for the best queries
         api.update_message(f"Searching for the best queries...")

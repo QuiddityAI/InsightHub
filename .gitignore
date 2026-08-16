@@ -59,3 +59,5 @@ ollama*
 backend/litellmcache/*
 absclust_prod_backup_old_server
 semantic_scholar/*
+.gstack/
+landing_page/*

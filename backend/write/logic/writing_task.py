@@ -7,7 +7,7 @@ import dspy
 from django.db.models.manager import BaseManager
 from litellmonkey import BaseLLMModel
 
-from config.utils import get_default_model
+from config.utils import dspy_call_with_fallback, get_default_model
 from data_map_backend.models import (
     CollectionColumn,
     CollectionItem,
@@ -240,8 +240,13 @@ def _execute_default_writing_task(task: WritingTask, context: str):
     usage_tracker = ServiceUsage.get_usage_tracker(task.collection.created_by.id, "External AI")  # type: ignore
     result = usage_tracker.track_usage(ai_credits, f"write summary using {model.model_id}")
     if result["approved"] == True:
-        with dspy.context(lm=dspy.LM(**model.to_litellm(), max_tokens=10000, temperature=0.7)):  # type: ignore
-            response_text = writing_task_writer(task=task.expression, documents=context).output
+        response_text = dspy_call_with_fallback(
+            writing_task_writer,
+            model,
+            lm_kwargs={"max_tokens": 10000, "temperature": 0.7},
+            task=task.expression,
+            documents=context,
+        ).output  # type: ignore
     else:
         response_text = "AI usage limit exceeded"
     information_used_in_prompt = (

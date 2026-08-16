@@ -4,7 +4,7 @@ import threading
 import dspy
 from django.utils import timezone
 
-from config.utils import get_default_dspy_llm
+from config.utils import dspy_call_with_fallback, get_default_dspy_llm
 from data_map_backend.models import DataCollection, User
 from workflows.schemas import CreateCollectionSettings, WorkflowMetadata
 
@@ -86,10 +86,11 @@ def create_collection_using_workflow(user: User, settings: CreateCollectionSetti
                     settings.result_language = "en"
                 else:
                     model = get_default_dspy_llm("query_language")
-                    with dspy.context(lm=dspy.LM(**model.to_litellm())):
-                        settings.result_language = query_language_predictor(
-                            user_question=settings.user_input
-                        ).language_code
+                    settings.result_language = dspy_call_with_fallback(
+                        query_language_predictor,
+                        model,
+                        user_question=settings.user_input,
+                    ).language_code
             workflow_cls().run(collection, settings, user)
         except Exception as e:
             collection.agent_is_running = False

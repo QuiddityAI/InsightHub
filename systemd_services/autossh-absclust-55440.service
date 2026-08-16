@@ -17,7 +17,7 @@ Group=absclust_user
 # -o ExitOnForwardFailure=yes: Important for reliability. If the tunnel fails to set up, exit so autossh retries.
 # -o ServerAliveInterval=60: How often (seconds) to send a null packet to the remote host.
 # -o ServerAliveCountMax=3: How many consecutive unresponsive intervals before disconnecting.
-ExecStart=/usr/bin/autossh -M 0 -N -T -R 55440:[::1]:55440 user@v2.absclust.com -o ExitOnForwardFailure=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=3
+ExecStart=/usr/bin/autossh -M 0 -N -T -R 55445:[::1]:55440 user@v2.absclust.com -o ExitOnForwardFailure=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=3
 
 # If autossh itself crashes or exits (e.g., due to an unrecoverable error),
 # systemd will restart it after a short delay.

@@ -3,10 +3,9 @@ from django.utils import timezone
 from litellmonkey import BaseLLMModel
 
 from columns.schemas import CellData, Criterion
-from config.utils import get_default_model
+from config.utils import dspy_call_with_fallback, get_default_model
 from data_map_backend.models import CollectionColumn, ServiceUsage
 from workflows.dspy_models import dspy_model_registry
-import dspy
 
 
 class RelevanceSignature(dspy.Signature):
@@ -130,8 +129,8 @@ def generate_dspy_cell_data(input_data: dict, column: CollectionColumn, user_id:
     if not dspy_model:
         cell_data.value = "Specified model not found"
         return cell_data
-    with dspy.context(lm=dspy.LM(**model.to_litellm())):
-        cell_data.value = dspy_model(**dspy_model_parameters)(column, input_data)
+    instance = dspy_model(**dspy_model_parameters)
+    cell_data.value = dspy_call_with_fallback(instance, model, column=column, input_data=input_data)
     return cell_data
 
 
@@ -167,8 +166,9 @@ def generate_llm_cell_data(
         language = column.parameters.get("language") or "en"
         judge = RelevanceJudge()
         criteria = column.expression.split("\n")
-        with dspy.context(lm=dspy.LM(**model.to_litellm())):
-            criteria_review = judge(document=input_data, criteria=criteria, target_language=language)
+        criteria_review = dspy_call_with_fallback(
+            judge, model, document=input_data, criteria=criteria, target_language=language
+        )
         relevance_score = sum([c.fulfilled for c in criteria_review]) / max(len(criteria_review), 1)
         value = {
             "criteria_review": [c.model_dump() for c in criteria_review],  # type: ignore
@@ -189,13 +189,14 @@ def generate_llm_cell_data(
         # otherwise we use the default DSPy module to generate the response
         language = column.parameters.get("language") or "en"
         executor = CellPromptExecutor()
-        with dspy.context(lm=dspy.LM(**model.to_litellm())):
-            value = executor(
-                document=input_data.strip(),
-                column_title=column.name,
-                target_language=language,
-                user_prompt=column.expression,
-            )
+        value = dspy_call_with_fallback(
+            executor,
+            model,
+            document=input_data.strip(),
+            column_title=column.name,
+            target_language=language,
+            user_prompt=column.expression,
+        )
         cell_data.value = value
         cell_data.used_prompt = f"system_prompt: {executor.__class__.__name__}"
         return cell_data

@@ -1,0 +1,6 @@
+services:
+  backend:
+    volumes:
+      - ./absclust_prod_backup_old_server:/import_data
+      - ./scripts_and_examples/import_scripts:/import_data/import_scripts
+      - ./semantic_scholar:/data/semantic_scholar

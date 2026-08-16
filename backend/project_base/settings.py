@@ -158,7 +158,7 @@ DATABASES = {
     # },
     "default": {
         "ENGINE": "django_prometheus.db.backends.postgresql",
-        "NAME": "visdatamap",
+        "NAME": os.environ.get("POSTGRES_DB", "visdatamap"),
         "USER": "postgres",
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
         "HOST": os.environ.get("postgres_host", "localhost"),

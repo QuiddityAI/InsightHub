@@ -4,7 +4,7 @@ from django.db.models.manager import BaseManager
 from django.utils import timezone
 
 from columns.schemas import Criterion
-from config.utils import get_default_dspy_llm
+from config.utils import dspy_call_with_fallback, get_default_dspy_llm
 from data_map_backend.models import (
     COLUMN_META_SOURCE_FIELDS,
     CollectionColumn,
@@ -148,8 +148,12 @@ def approve_using_comparison(
         documents += "\n\n\n"
 
     model = get_default_dspy_llm("doc_comparison")
-    with dspy.context(lm=dspy.LM(**model.to_litellm())):
-        sel_docs = doc_comparison(documents=documents, target_language=search_task.result_language).selected_documents
+    sel_docs = dspy_call_with_fallback(
+        doc_comparison,
+        model,
+        documents=documents,
+        target_language=search_task.result_language,
+    ).selected_documents
     results = [ApprovalUsingComparisonReason(item_id=k, reason=v) for k, v in sel_docs.items()]
 
     relevance_column = relevance_columns[0] if relevance_columns else None
