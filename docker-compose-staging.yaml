@@ -33,15 +33,82 @@ services:
     build:
       context: ./frontend
       dockerfile: ../docker/webserver.Dockerfile
-    ports:  # this should be the only port in this docker compose setup that is exposed to the outside (except DB dashboards)
-      - "${WEBSERVER_STAGING_EXPOSED_IP_V4:-127.0.0.1}:55440:55140"
-      - "${WEBSERVER_STAGING_EXPOSED_IP_V6:-[::1]}:55440:55140"
+    # No published ports: this is reached only through tls-terminator, which is
+    # the sole entry point into the stack.
     environment:
       - backend_host=http://backend-staging:55125
+
+  # Terminates TLS for ${PUBLIC_HOSTNAME}. The private key exists only in the
+  # letsencrypt volume on this machine; the network-facing host relays the
+  # encrypted bytes without being able to read them.
+  tls-terminator:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - webserver-staging
+    environment:
+      - PUBLIC_HOSTNAME=${PUBLIC_HOSTNAME:-v2.absclust.com}
+      # Substitute only PUBLIC_HOSTNAME, leaving nginx's own $variables alone.
+      - NGINX_ENVSUBST_FILTER=PUBLIC_HOSTNAME
+    volumes:
+      - ./docker/tls-terminator/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/tls-terminator/templates:/etc/nginx/templates:ro
+      - ./docker/tls-terminator/snippets:/etc/nginx/snippets:ro
+      - ./docker/tls-terminator/docker-entrypoint.d/99-certificate-reload.sh:/docker-entrypoint.d/99-certificate-reload.sh:ro
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 16384
+    ports:
+      # HTTP: the port the existing reverse tunnel already targets. Bound to
+      # loopback only - the tunnel connects from localhost.
+      - "${WEBSERVER_STAGING_EXPOSED_IP_V4:-127.0.0.1}:55440:8080"
+      - "${WEBSERVER_STAGING_EXPOSED_IP_V6:-[::1]}:55440:8080"
+      # TLS passthrough target, used once v2 stops terminating.
+      - "127.0.0.1:55443:8443"
+      - "[::1]:55443:8443"
+      # Same, but expecting a PROXY protocol header (real client IPs).
+      - "127.0.0.1:55444:8444"
+      - "[::1]:55444:8444"
+    # The command must start with "nginx" or the image skips its entrypoint
+    # scripts, which is what renders templates/ and starts the reload loop.
+    command: ["nginx", "-g", "daemon off;"]
+
+  # Renews the certificate in the background. Uses the http-01 challenge via
+  # the shared webroot, which v2 forwards on port 80.
+  certbot-renew:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    depends_on:
+      - tls-terminator
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    entrypoint: >
+      sh -c "while :; do
+               certbot renew --webroot -w /var/www/certbot --quiet;
+               sleep 43200;
+             done"
+
+  # One-shot helper for issuing or revoking certificates by hand, e.g.
+  #   docker compose -f docker-compose-staging.yaml run --rm certbot certonly \
+  #     --webroot -w /var/www/certbot -d v2.absclust.com
+  # Not started by `up` (see profiles).
+  certbot:
+    image: certbot/certbot:latest
+    profiles: ["tools"]
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+
 volumes:
   quiddity_data:
     external: true
     name: insighthub_quiddity_data
+  letsencrypt:
+  certbot_webroot:
 networks:
   default:
     external: true

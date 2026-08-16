@@ -1,0 +1,29 @@
+[Unit]
+Description=AutoSSH Reverse Tunnel for AbsClust TLS passthrough (55447/55448)
+After=network.target
+
+[Service]
+User=absclust_user
+Group=absclust_user
+
+# Carries the TLS passthrough traffic from v2 to the local TLS terminator.
+# Two forwards so that PROXY protocol can be switched on from v2 alone:
+#   v2:55447 -> tls-terminator :55443   plain TLS
+#   v2:55448 -> tls-terminator :55444   TLS preceded by a PROXY protocol header
+#
+# The existing autossh-absclust-55440.service stays as it is: it carries plain
+# HTTP for the ACME challenge, which is deliberately kept off this tunnel so a
+# broken TLS path can never block certificate renewal.
+ExecStart=/usr/bin/autossh -M 0 -N -T \
+  -R 55447:[::1]:55443 \
+  -R 55448:[::1]:55444 \
+  user@v2.absclust.com \
+  -o ExitOnForwardFailure=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=3
+
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

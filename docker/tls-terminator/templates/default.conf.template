@@ -1,0 +1,79 @@
+# Rendered to /etc/nginx/conf.d/default.conf at container start by the nginx
+# image's envsubst step. Only ${PUBLIC_HOSTNAME} is substituted (see
+# NGINX_ENVSUBST_FILTER in docker-compose-staging.yaml) so that nginx's own
+# $variables survive untouched.
+
+# ---------------------------------------------------------------------------
+# Plain HTTP, published on the host as :55440.
+#
+# This is the port the existing reverse tunnel already targets
+# (v2:55445 -> [::1]:55440), so today it carries real user traffic while v2
+# still terminates TLS. After v2 switches to SNI passthrough it keeps serving
+# the ACME challenge, which is why certificate renewal never depends on the
+# TLS path being healthy.
+# ---------------------------------------------------------------------------
+server {
+    listen      8080 default_server;
+    listen      [::]:8080 default_server;
+    server_name _;
+
+    include /etc/nginx/snippets/acme.conf;
+
+    location / {
+        include /etc/nginx/snippets/proxy_app.conf;
+    }
+}
+
+# ---------------------------------------------------------------------------
+# TLS, published on the host as :55443. This is where TLS terminates once v2
+# passes :443 through untouched. Nothing reaches this port except the tunnel.
+# ---------------------------------------------------------------------------
+server {
+    listen      8443 ssl default_server;
+    listen      [::]:8443 ssl default_server;
+    http2       on;
+    server_name ${PUBLIC_HOSTNAME};
+
+    ssl_certificate     /etc/letsencrypt/live/${PUBLIC_HOSTNAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${PUBLIC_HOSTNAME}/privkey.pem;
+    include /etc/nginx/snippets/ssl.conf;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    include /etc/nginx/snippets/acme.conf;
+
+    location / {
+        include /etc/nginx/snippets/proxy_app.conf;
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Same as above but expects a PROXY protocol header, published as :55444.
+#
+# Offered as a separate port so that turning real client IPs on or off is a
+# one-line change on v2 alone (proxy_protocol on; + point at :55444) with no
+# coordinated restart here. Trusting any source for the header is safe because
+# the port is bound to loopback and only the tunnel can reach it.
+# ---------------------------------------------------------------------------
+server {
+    listen      8444 ssl proxy_protocol;
+    listen      [::]:8444 ssl proxy_protocol;
+    http2       on;
+    server_name ${PUBLIC_HOSTNAME};
+
+    set_real_ip_from 0.0.0.0/0;
+    set_real_ip_from ::/0;
+    real_ip_header   proxy_protocol;
+
+    ssl_certificate     /etc/letsencrypt/live/${PUBLIC_HOSTNAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${PUBLIC_HOSTNAME}/privkey.pem;
+    include /etc/nginx/snippets/ssl.conf;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    include /etc/nginx/snippets/acme.conf;
+
+    location / {
+        include /etc/nginx/snippets/proxy_app.conf;
+    }
+}

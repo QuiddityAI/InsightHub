@@ -60,4 +60,5 @@ backend/litellmcache/*
 absclust_prod_backup_old_server
 semantic_scholar/*
 .gstack/
+QuiddityAI-InsightHub
 landing_page/*
